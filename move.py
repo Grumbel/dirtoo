@@ -23,7 +23,7 @@ import os
 
 class Context:
 
-    def __init__(self)
+    def __init__(self):
         self.verbose = False
         self.dry_run = False
 
