@@ -100,7 +100,7 @@ def move_multi_cmd(ctx, sources, destdir, relative):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='move')
+    parser = argparse.ArgumentParser(description="Move files and directories.")
     parser.add_argument('FILE', action='store', nargs='+',
                         help='Files to move')
     parser.add_argument('-t', '--target-directory', metavar='DIRECTORY', required=True,
@@ -129,5 +129,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 # EOF #
