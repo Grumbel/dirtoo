@@ -56,7 +56,17 @@ def move_file(ctx, source, destdir):
     dest = os.path.join(destdir, base)
 
     if os.path.exists(dest):
-        raise Exception("{}: destination file already exists".format(dest))
+        print("Conflict: {}: destination file already exists".format(dest))
+        print("source: {}".format(source))
+        print("target: {}".format(dest))
+        while True:
+            c = input("Overwrite {} (y/n)? ".format(dest))
+            if c == 'n':
+                print("skipping {}".format(source))
+                break
+            elif c == 'y':
+                ctx.rename(source, dest)
+                break
     else:
         ctx.rename(source, dest)
 
