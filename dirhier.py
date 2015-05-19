@@ -19,22 +19,16 @@
 
 import os
 import argparse
-import functools
-import shutil
-import filecmp
-from itertools import chain
-import os
-import json
-import os
-from os.path import join, getsize
 import logging
 import hashlib
+
 
 # {"name":"dirtool.py","asize":9848,"dsize":12288,"ino":4560601}
 # {}
 
 # give absolute path for directory
 # local name for files
+
 
 def hashfile(fin, hasher, blocksize=65536):
     buf = fin.read(blocksize)
