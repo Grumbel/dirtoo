@@ -27,11 +27,11 @@ filesystem, it will not copy files across filesystems.
 
 ### TODO
 
-* detailed progress bar/reports
-* dry-run support [done]
-* support for merging directories [done]
-* no overwrite warning when source and destination files are identical
+* [DONE] dry-run support (-n, --dry-run)
+* [DONE] support for merging directories
 * conflict resolution on overwrite (i.e. rename one of the files)
 * copying to multiple targets at once
+* detailed progress bar/reports (`-P`, `--progress`)
 * multi-threading (i.e. continue copying in the background while I handle conflict resolution in the foreground)
+* no overwrite warning when source and destination files are identical
 
