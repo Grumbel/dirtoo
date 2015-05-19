@@ -19,9 +19,10 @@
 
 import argparse
 import os
+import hashlib
 
 
-class Context:
+class MoveContext:
 
     def __init__(self):
         self.verbose = False
@@ -41,6 +42,44 @@ class Context:
         if not self.dry_run:
             os.makedirs(path)
 
+    def resolve_conflict(self, source, dest):
+        source_sha1 = sha1sum(source)
+        dest_sha1 = sha1sum(dest)
+        if source == dest:
+            print("skipping '{}' same file as '{}'".format(source, dest))
+        elif source_sha1 == dest_sha1:
+            print("skipping '{}' same content as '{}'".format(source, dest))
+        else:
+            print("Conflict: {}: destination file already exists".format(dest))
+            print("source:\n{}\n  sha1: {}".format(file_info(source), source_sha1))
+            print("target:\n{}\n  sha1: {}".format(file_info(dest), dest_sha1))
+            while True:
+                c = input("Overwrite {} (y/n)? ".format(dest))
+                if c == 'n':
+                    print("skipping {}".format(source))
+                    return "skip"
+                elif c == 'y':
+                    return "continue"
+
+
+def bytes2human(num_bytes):
+    if num_bytes < 1000:
+        return "{} B".format(num_bytes)
+    elif num_bytes < 1000 * 1000:
+        return "{} KB".format(num_bytes)
+    elif num_bytes < 1000 * 1000 * 1000:
+        return "{} MB".format(num_bytes)
+    elif num_bytes < 1000 * 1000 * 1000 * 1000:
+        return "{} GB".format(num_bytes)
+    else:
+        return "{} TB".format(num_bytes)
+
+
+def file_info(filename):
+    return ("  name: {}\n"
+            "  size: {}").format(filename,
+                                 bytes2human(os.path.getsize(filename)))
+
 
 def merge_directory(ctx, source, destdir):
     for name in os.listdir(source):
@@ -51,22 +90,28 @@ def merge_directory(ctx, source, destdir):
             move_file(ctx, path, destdir)
 
 
+def sha1sum(filename, blocksize=65536):
+    with open(filename, 'rb') as fin:
+        hasher = hashlib.sha1()
+        buf = fin.read(blocksize)
+        while len(buf) > 0:
+            hasher.update(buf)
+            buf = fin.read(blocksize)
+        return hasher.hexdigest()
+
+
 def move_file(ctx, source, destdir):
     base = os.path.basename(source)
     dest = os.path.join(destdir, base)
 
     if os.path.exists(dest):
-        print("Conflict: {}: destination file already exists".format(dest))
-        print("source: {}".format(source))
-        print("target: {}".format(dest))
-        while True:
-            c = input("Overwrite {} (y/n)? ".format(dest))
-            if c == 'n':
-                print("skipping {}".format(source))
-                break
-            elif c == 'y':
-                ctx.rename(source, dest)
-                break
+        resolution = ctx.resolve_conflict(source, dest)
+        if resolution == "skip":
+            pass
+        elif resolution == "continue":
+            ctx.rename(source, dest)
+        else:
+            assert False
     else:
         ctx.rename(source, dest)
 
@@ -127,7 +172,7 @@ def parse_args():
 def main():
     args = parse_args()
 
-    ctx = Context()
+    ctx = MoveContext()
     ctx.verbose = args.verbose
     ctx.dry_run = args.dry_run
 
