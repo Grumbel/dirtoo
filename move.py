@@ -27,9 +27,14 @@ class MoveContext:
     def __init__(self):
         self.verbose = False
         self.dry_run = False
+        self.overwrite = None
+
+    def skip_rename(self, oldpath, newpath):
+        if self.verbose:
+            print("skipping {} -> {}".format(oldpath, newpath))
 
     def rename(self, oldpath, newpath):
-        if self.verbose:
+        if self.verbose or self.dry_run:
             print("{} -> {}".format(oldpath, newpath))
 
         if not self.dry_run:
@@ -54,12 +59,19 @@ class MoveContext:
             print("source:\n{}\n  sha1: {}".format(file_info(source), source_sha1))
             print("target:\n{}\n  sha1: {}".format(file_info(dest), dest_sha1))
             while True:
-                c = input("Overwrite {} (y/n)? ".format(dest))
+                c = input("Overwrite {} ([Y]es, [N]o, [A]lways, n[E]ver)? ".format(dest))  # [R]ename, [Q]uit
+                c = c.lower()
                 if c == 'n':
                     print("skipping {}".format(source))
                     return "skip"
                 elif c == 'y':
                     return "continue"
+                elif c == 'a':
+                    self.overwrite = 'always'
+                    return "continue"
+                elif c == 'e':
+                    self.overwrite = 'never'
+                    return "skip"
 
 
 def bytes2human(num_bytes):
@@ -104,14 +116,17 @@ def move_file(ctx, source, destdir):
     base = os.path.basename(source)
     dest = os.path.join(destdir, base)
 
-    if os.path.exists(dest):
-        resolution = ctx.resolve_conflict(source, dest)
-        if resolution == "skip":
-            pass
-        elif resolution == "continue":
-            ctx.rename(source, dest)
+    if os.path.exists(dest) and ctx.overwrite != "always":
+        if ctx.overwrite == "never":
+            ctx.skip_rename(source, dest)
         else:
-            assert False
+            resolution = ctx.resolve_conflict(source, dest)
+            if resolution == "skip":
+                ctx.skip_rename(source, dest)
+            elif resolution == "continue":
+                ctx.rename(source, dest)
+            else:
+                assert False
     else:
         ctx.rename(source, dest)
 
@@ -163,9 +178,13 @@ def parse_args():
     parser.add_argument('-R', '--relative', action='store_true', default=False,
                         help="Preserve the path prefix on move")
     parser.add_argument('-n', '--dry-run', action='store_true', default=False,
-                        help="Don't do anything")
+                        help="Don't do anything, just print the actions")
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help="Be more verbose")
+    parser.add_argument('-N', '--never', action='store_true', default=False,
+                        help="Never overwrite any files")
+    parser.add_argument('-Y', '--always', action='store_true', default=False,
+                        help="Always overwrite files on conflict")
     return parser.parse_args()
 
 
@@ -175,6 +194,10 @@ def main():
     ctx = MoveContext()
     ctx.verbose = args.verbose
     ctx.dry_run = args.dry_run
+    if args.always:
+        ctx.overwrite = 'always'
+    if args.never:
+        ctx.overwrite = 'never'
 
     sources = [os.path.normpath(p) for p in args.FILE]
     destdir = os.path.normpath(args.target_directory)
