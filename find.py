@@ -31,8 +31,22 @@ import subprocess
 # os.path.isfile(path) -> isfile()
 # print/formating expression
 
+class Action:
 
-class Printer:
+    def __init__(self):
+        pass
+
+    def file(self, root, filename):
+        pass
+
+    def directory(self, root, filename):
+        pass
+
+    def finish(self):
+        pass
+
+
+class PrinterAction(Action):
 
     def __init__(self, fmt, finisher=False):
         self.fmt = fmt
@@ -46,7 +60,7 @@ class Printer:
 
         fullpath = os.path.join(root, filename)
 
-        byte_size = os.path.getsize(fullpath)
+        byte_size = os.lstat(fullpath).st_size
 
         self.size_total += byte_size
 
@@ -75,6 +89,39 @@ class Printer:
             print("{} {} files in total".format(self.size_total, self.file_count))
 
 
+class ExecAction(Action):
+
+    def __init__(self, exec_str):
+        self.on_file_cmd = None
+        self.on_multi_cmd = None
+        self.all_files = []
+
+        cmd = shlex.split(exec_str)
+
+        if "{}+" in cmd:
+            self.on_multi_cmd = cmd
+        elif "{}" in cmd:
+            self.on_file_cmd = cmd
+        else:
+            pass  # FIXME
+
+    def file(self, root, name):
+        if self.on_file_cmd:
+            cmd = replace_item(self.on_file_cmd, "{}", [os.path.join(root, name)])
+            subprocess.call(cmd)
+
+        if self.on_multi_cmd:
+            self.all_files.append(os.path.join(root, name))
+
+    def directory(self, root, name):
+        pass
+
+    def finish(self):
+        if self.on_multi_cmd:
+            multi_cmd = replace_item(self.on_multi_cmd, "{}+", self.all_files)
+            subprocess.call(multi_cmd)
+
+
 def age_in_days(filename):
     a = os.path.getmtime(filename)
     b = time.time()
@@ -82,7 +129,7 @@ def age_in_days(filename):
 
 
 def size_in_bytes(filename):
-    return os.path.getsize(filename)
+    return os.lstat(filename).st_size
 
 def name_match(filename, glob):
     return fnmatch.fnmatch(filename, glob)
@@ -109,17 +156,17 @@ def eval_filter(filter, root, filename):
     return eval(filter, g)
 
 
-def find_files(directory, filter, recursive, printer):
+def find_files(directory, filter, recursive, action):
     result = []
 
     for root, dirs, files in os.walk(directory):
         for f in files:
             if filter is None:
-                printer.file(root, f)
+                action.file(root, f)
                 result.append(os.path.join(root, f))
             else:
                 if eval_filter(filter, root, f):
-                    printer.file(root, f)
+                    action.file(root, f)
                     result.append(os.path.join(root, f))
 
         if not recursive:
@@ -138,8 +185,9 @@ def replace_item(lst, needle, replacements):
     return result
 
 
-def main(argv):
+def parse_args(args):
     parser = argparse.ArgumentParser(description="Find files")
+
     parser.add_argument("DIRECTORY", nargs='*')
     parser.add_argument("-0", "--null", action="store_true",
                         help="Print \0 delimitered file list")
@@ -153,29 +201,36 @@ def main(argv):
                         help="List files with the given format string")
     parser.add_argument("--exec", metavar="EXEC",
                         help="Execute EXEC")
-    args = parser.parse_args(argv[1:])
+
+    return parser.parse_args(args)
+
+
+def create_action(args):
+    if args.exec:
+        action = ExecAction(args.exec)
+    elif args.null:
+        action = PrinterAction("{fullpath}\0")
+    elif args.list:
+        action = PrinterAction("{size} {fullpath}\n", finisher=True)
+    elif args.print:
+        action = PrinterAction(args.print)
+    else:
+        action = PrinterAction("{fullpath}\n")
+
+    return action
+
+def main(argv):
+    args = parse_args(argv[1:])
 
     directories = args.DIRECTORY or ['.']
 
-    if args.null:
-        printer = Printer("{fullpath}\0")
-    elif args.list:
-        printer = Printer("{size} {fullpath}\n", finisher=True)
-    elif args.print:
-        printer = Printer(args.print)
-    else:
-        printer = Printer("{fullpath}\n")
+    action = create_action(args)
 
     results = []
     for dir in directories:
-        results += find_files(dir, args.filter, args.recursive, printer)
+        results += find_files(dir, args.filter, args.recursive, action)
 
-    if args.exec:
-        cmd = shlex.split(args.exec)
-        cmd = replace_item(cmd, "{}", results)
-        subprocess.call(cmd)
-
-    printer.finish()
+    action.finish()
 
 
 if __name__ == "__main__":
