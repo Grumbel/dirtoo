@@ -26,11 +26,6 @@ import shlex
 import subprocess
 
 
-# TODO:
-# more filter expression stuff:
-# os.path.isfile(path) -> isfile()
-# print/formating expression
-
 class Action:
 
     def __init__(self):
@@ -67,7 +62,7 @@ class PrinterAction(Action):
         values = {
             's': byte_size,
             'size': byte_size,
-            'kB': byte_size / 1000 ,
+            'kB': byte_size / 1000,
             'KiB': byte_size / 1024,
             'MB': byte_size / 1000 / 1000,
             'MiB': byte_size / 1024 / 1024,
@@ -122,6 +117,91 @@ class ExecAction(Action):
             subprocess.call(multi_cmd)
 
 
+class NoFilter:
+
+    def __init__(self):
+        pass
+
+    def match_file(self, root, filename):
+        return True
+
+
+class Context:
+
+    def __init__(self):
+        self.current_file = None
+
+    def daysago(self):
+        return age_in_days(self.current_file)
+
+    def size(self):
+        return size_in_bytes(self.current_file)
+
+    def name(self, glob):
+        return name_match(self.current_file, glob)
+
+    def iname(self, glob):
+        return name_match(self.current_file.lower(), glob.lower())
+
+    def kB(self, s):
+        return s * 1000
+
+    def KiB(self, s):
+        return s * 1024
+
+    def MB(self, s):
+        return s * 1000 ** 2
+
+    def MiB(self):
+        return s * 1024 ** 2
+
+    def GB(self, s):
+        return s * 1000 ** 3
+
+    def GiB(self, s):
+        return s * 1024 ** 3
+
+    def TB(self):
+        return s * 1000 ** 4
+
+    def TiB(self, s):
+        return s * 1024 ** 4
+
+
+class ExprFilter:
+
+    def __init__(self, expr):
+        self.expr = expr
+        self.local_vars = {}
+        self.ctx = Context()
+        self.global_vars = globals().copy()
+        self.global_vars.update({
+            'daysago' : self.ctx.daysago,
+            'size': self.ctx.size,
+            'name': self.ctx.name,
+            'iname': self.ctx.iname,
+            'kB': self.ctx.kB,
+            'KiB': self.ctx.KiB,
+            'MB': self.ctx.MB,
+            'MiB': self.ctx.MiB,
+            'GB': self.ctx.GB,
+            'GiB': self.ctx.GiB,
+            'TB': self.ctx.TB,
+            'TiB': self.ctx.TiB
+            })
+
+    def match_file(self, root, filename):
+        fullpath = os.path.join(root, filename)
+
+        self.ctx.current_file = fullpath
+        local_vars = {
+            'p': fullpath,
+            '_': filename
+            }
+        result = eval(self.expr, self.global_vars, local_vars)
+        return result
+
+
 def age_in_days(filename):
     a = os.path.getmtime(filename)
     b = time.time()
@@ -135,39 +215,15 @@ def name_match(filename, glob):
     return fnmatch.fnmatch(filename, glob)
 
 
-def eval_filter(filter, root, filename):
-    fullpath = os.path.join(root, filename)
-
-    g = globals().copy()
-    g.update({
-        'p': os.path.join(root, filename),
-        '_': filename,
-        'daysago' : lambda f=fullpath: age_in_days(f),
-        'size' : lambda f=fullpath: size_in_bytes(f),
-        'name' : lambda glob, f=fullpath: name_match(f, glob),
-        'iname' : lambda glob, f=fullpath: name_match(f.lower(), glob.lower()),
-        'kB' : lambda s: s * 1000 * 1000,
-        'KiB' : lambda s: s * 1024 * 1024,
-        'MB' : lambda s: s * 1000 * 1000,
-        'MiB' : lambda s: s * 1024 * 1024,
-        'GB' : lambda s: s * 1000 * 1000 * 1000,
-        'GiB' : lambda s: s * 1024 * 1024 * 1024,
-        })
-    return eval(filter, g)
-
-
 def find_files(directory, filter, recursive, action):
     result = []
 
     for root, dirs, files in os.walk(directory):
         for f in files:
-            if filter is None:
+            if filter.match_file(root, f):
                 action.file(root, f)
-                result.append(os.path.join(root, f))
-            else:
-                if eval_filter(filter, root, f):
-                    action.file(root, f)
-                    result.append(os.path.join(root, f))
+                fullpath = os.path.join(root, f)
+                result.append(fullpath)
 
         if not recursive:
             del dirs[:]
@@ -219,16 +275,25 @@ def create_action(args):
 
     return action
 
+
+def create_filter(args):
+    if args.filter:
+        return ExprFilter(args.filter)
+    else:
+        return NoFilter()
+
+
 def main(argv):
     args = parse_args(argv[1:])
 
     directories = args.DIRECTORY or ['.']
 
     action = create_action(args)
+    filter = create_filter(args)
 
     results = []
     for dir in directories:
-        results += find_files(dir, args.filter, args.recursive, action)
+        results += find_files(dir, filter, args.recursive, action)
 
     action.finish()
 
