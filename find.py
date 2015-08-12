@@ -29,6 +29,7 @@ import pwd
 import grp
 import stat
 import string
+import datetime
 
 
 class Action:
@@ -169,6 +170,18 @@ class Context:
             'rnd': self.random,
             'rand': self.random,
             'daysago' : self.daysago,
+            'age': self.age,
+            'sec': self.sec,
+            'min': self.min,
+            'hour': self.hour,
+            'hours': self.hour,
+            'days': self.day,
+            'day': self.day,
+            'week': self.week,
+            'weeks': self.week,
+            'month': self.month,
+            'year': self.year,
+            'years': self.year,
             'size': self.size,
             'name': self.name,
             'iname': self.iname,
@@ -208,6 +221,32 @@ class Context:
 
     def fullpath(self):
         return self.current_file
+
+    def age(self):
+        a = os.path.getmtime(self.current_file)
+        b = time.time()
+        return (b - a)
+
+    def sec(self, sec):
+        return sec
+
+    def min(self, min):
+        return min * 60
+
+    def hour(self, hours):
+        return hours * 60 * 60
+
+    def day(self, days):
+        return days * 60 * 60 * 24
+
+    def week(self, weeks):
+        return weeks * 60 * 60 * 24 * 7
+
+    def month(self, month):
+        return month * 60 * 60 * 24 * 7 * 30.4368
+
+    def year(self, years):
+        return years * 60 * 60 * 24 * 7 * 30.4368 * 12
 
     def daysago(self):
         return age_in_days(self.current_file)
