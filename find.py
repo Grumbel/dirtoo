@@ -379,13 +379,13 @@ def create_action(args):
     if args.quiet:
         pass
     elif args.null:
-        action.add(PrinterAction("{fullpath}\0"))
+        action.add(PrinterAction("{fullpath()}\0"))
     elif args.list:
-        action.add(PrinterAction("{size} {fullpath}\n", finisher=True))
+        action.add(PrinterAction("{size()} {fullpath()}\n", finisher=True))
     elif args.print:
         action.add(PrinterAction(args.print))
     else:
-        action.add(PrinterAction("{fullpath}\n"))
+        action.add(PrinterAction("{fullpath()}\n"))
 
     if args.exec:
         action.add(ExecAction(args.exec))
