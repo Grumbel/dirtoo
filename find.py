@@ -24,6 +24,7 @@ import time
 import fnmatch
 import shlex
 import subprocess
+import random
 
 
 class Action:
@@ -84,6 +85,26 @@ class PrinterAction(Action):
             print("{} {} files in total".format(self.size_total, self.file_count))
 
 
+class MultiAction(Action):
+
+    def __init__(self):
+        self.actions = []
+
+    def add(self, action):
+        self.actions.append(action)
+
+    def file(self, root, filename):
+        for action in self.actions:
+            action.file(root, filename)
+
+    def directory(self, root, filename):
+        for action in self.actions:
+            action.directory(root, filename)
+
+    def finish(self):
+        for action in self.actions:
+            action.finish()
+
 class ExecAction(Action):
 
     def __init__(self, exec_str):
@@ -131,6 +152,9 @@ class Context:
     def __init__(self):
         self.current_file = None
 
+    def random(self, p=0.5):
+        return random.random() < p
+
     def daysago(self):
         return age_in_days(self.current_file)
 
@@ -176,6 +200,9 @@ class ExprFilter:
         self.ctx = Context()
         self.global_vars = globals().copy()
         self.global_vars.update({
+            'random': self.ctx.random,
+            'rnd': self.ctx.random,
+            'rand': self.ctx.random,
             'daysago' : self.ctx.daysago,
             'size': self.ctx.size,
             'name': self.ctx.name,
@@ -255,6 +282,8 @@ def parse_args(args):
                         help="List files verbosely")
     parser.add_argument("-p", "--print", metavar="FMT",
                         help="List files with the given format string")
+    parser.add_argument("-q", "--quiet", action='store_true',
+                        help="Be quiet")
     parser.add_argument("--exec", metavar="EXEC",
                         help="Execute EXEC")
 
@@ -262,16 +291,21 @@ def parse_args(args):
 
 
 def create_action(args):
-    if args.exec:
-        action = ExecAction(args.exec)
+    action = MultiAction()
+
+    if args.quiet:
+        pass
     elif args.null:
-        action = PrinterAction("{fullpath}\0")
+        action.add(PrinterAction("{fullpath}\0"))
     elif args.list:
-        action = PrinterAction("{size} {fullpath}\n", finisher=True)
+        action.add(PrinterAction("{size} {fullpath}\n", finisher=True))
     elif args.print:
-        action = PrinterAction(args.print)
+        action.add(PrinterAction(args.print))
     else:
-        action = PrinterAction("{fullpath}\n")
+        action.add(PrinterAction("{fullpath}\n"))
+
+    if args.exec:
+        action.add(ExecAction(args.exec))
 
     return action
 
