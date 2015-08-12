@@ -25,6 +25,10 @@ import fnmatch
 import shlex
 import subprocess
 import random
+import pwd
+import grp
+import stat
+import string
 
 
 class Action:
@@ -44,12 +48,16 @@ class Action:
 
 class PrinterAction(Action):
 
-    def __init__(self, fmt, finisher=False):
-        self.fmt = fmt
+    def __init__(self, fmt_str, finisher=False):
+        self.fmt_str = fmt_str
         self.finisher = finisher
 
         self.file_count = 0
         self.size_total = 0
+
+        self.ctx = Context()
+        self.global_vars = globals().copy()
+        self.global_vars.update(self.ctx.get_hash())
 
     def file(self, root, filename):
         self.file_count += 1
@@ -60,24 +68,22 @@ class PrinterAction(Action):
 
         self.size_total += byte_size
 
-        values = {
-            's': byte_size,
-            'size': byte_size,
-            'kB': byte_size / 1000,
-            'KiB': byte_size / 1024,
-            'MB': byte_size / 1000 / 1000,
-            'MiB': byte_size / 1024 / 1024,
-            'GB': byte_size / 1000 / 1000 / 1000,
-            'GiB': byte_size / 1024 / 1024 / 1024,
+        self.ctx.current_file = fullpath
+
+        local_vars = {
             'p': fullpath,
-            'r': root,
-            'root': root,
-            '_': filename,
-            'fullpath': fullpath
+            '_': os.path.basename(filename)
             }
 
-        line = self.fmt.format(**values)
-        sys.stdout.write(line)
+        hsh = self.ctx.get_hash()
+        fmt = string.Formatter()
+        for (literal_text, field_name, format_spec, conversion) in fmt.parse(self.fmt_str):
+            if literal_text is not None:
+                sys.stdout.write(literal_text)
+
+            if field_name is not None:
+                value = str(eval(field_name, self.global_vars, local_vars))
+                sys.stdout.write(format(value, format_spec))
 
     def finish(self):
         if self.finisher:
@@ -104,6 +110,7 @@ class MultiAction(Action):
     def finish(self):
         for action in self.actions:
             action.finish()
+
 
 class ExecAction(Action):
 
@@ -152,8 +159,55 @@ class Context:
     def __init__(self):
         self.current_file = None
 
+    def get_hash(self):
+        return {
+            '_': self.basename,
+            'p': self.fullpath,
+            'fullpath': self.fullpath,
+            'abspath': self.fullpath,
+            'random': self.random,
+            'rnd': self.random,
+            'rand': self.random,
+            'daysago' : self.daysago,
+            'size': self.size,
+            'name': self.name,
+            'iname': self.iname,
+            'atime': self.atime,
+            'ctime': self.ctime,
+            'mtime': self.mtime,
+            'uid': self.uid,
+            'gid': self.gid,
+            'owner': self.owner,
+            'group': self.group,
+            'mode': self.mode,
+            'ino': self.ino,
+            'isblk': self.isblk,
+            'islnk': self.islnk,
+            'islink': self.islnk,
+            'isdir': self.isdir,
+            'ischr': self.ischr,
+            'isfifo': self.isfifo,
+            'isreg': self.isreg,
+            'mode': self.mode,
+            'ino': self.ino,
+            'kB': self.kB,
+            'KiB': self.KiB,
+            'MB': self.MB,
+            'MiB': self.MiB,
+            'GB': self.GB,
+            'GiB': self.GiB,
+            'TB': self.TB,
+            'TiB': self.TiB
+            }
+
     def random(self, p=0.5):
         return random.random() < p
+
+    def basename(self):
+        return os.path.basename(self.current_file)
+
+    def fullpath(self):
+        return self.current_file
 
     def daysago(self):
         return age_in_days(self.current_file)
@@ -167,28 +221,73 @@ class Context:
     def iname(self, glob):
         return name_match(self.current_file.lower(), glob.lower())
 
-    def kB(self, s):
+    def atime(self):
+        return os.lstat(self.current_file).st_atime
+
+    def ctime(self):
+        return os.lstat(self.current_file).st_ctime
+
+    def mtime(self):
+        return os.lstat(self.current_file).st_mtime
+
+    def uid(self):
+        return os.lstat(self.current_file).st_uid
+
+    def gid(self):
+        return os.lstat(self.current_file).st_gid
+
+    def owner(self):
+        return pwd.getpwuid(os.lstat(self.current_file).st_uid).pw_name
+
+    def group(self):
+        return grp.getgrgid(os.lstat(self.current_file).st_gid).gr_name
+
+    def isblk(self):
+        return stat.S_ISBLK(os.lstat(self.current_file).st_mode)
+
+    def islnk(self):
+        return stat.S_ISLNK(os.lstat(self.current_file).st_mode)
+
+    def isdir(self):
+        return stat.S_ISDIR(os.lstat(self.current_file).st_mode)
+
+    def ischr(self):
+        return stat.S_ISCHR(os.lstat(self.current_file).st_mode)
+
+    def isfifo(self):
+        return stat.S_ISFIFO(os.lstat(self.current_file).st_mode)
+
+    def isreg(self):
+        return stat.S_ISREG(os.lstat(self.current_file).st_mode)
+
+    def mode(self):
+        return stat.S_IMODE(os.lstat(self.current_file).st_mode)
+
+    def ino(self):
+        return os.lstat(self.current_file).st_ino
+
+    def kB(self, s=None):
         return s * 1000
 
-    def KiB(self, s):
+    def KiB(self, s=None):
         return s * 1024
 
-    def MB(self, s):
+    def MB(self, s=None):
         return s * 1000 ** 2
 
-    def MiB(self):
+    def MiB(self, s=None):
         return s * 1024 ** 2
 
-    def GB(self, s):
+    def GB(self, s=None):
         return s * 1000 ** 3
 
-    def GiB(self, s):
+    def GiB(self, s=None):
         return s * 1024 ** 3
 
-    def TB(self):
+    def TB(self, s=None):
         return s * 1000 ** 4
 
-    def TiB(self, s):
+    def TiB(self, s=None):
         return s * 1024 ** 4
 
 
@@ -199,23 +298,7 @@ class ExprFilter:
         self.local_vars = {}
         self.ctx = Context()
         self.global_vars = globals().copy()
-        self.global_vars.update({
-            'random': self.ctx.random,
-            'rnd': self.ctx.random,
-            'rand': self.ctx.random,
-            'daysago' : self.ctx.daysago,
-            'size': self.ctx.size,
-            'name': self.ctx.name,
-            'iname': self.ctx.iname,
-            'kB': self.ctx.kB,
-            'KiB': self.ctx.KiB,
-            'MB': self.ctx.MB,
-            'MiB': self.ctx.MiB,
-            'GB': self.ctx.GB,
-            'GiB': self.ctx.GiB,
-            'TB': self.ctx.TB,
-            'TiB': self.ctx.TiB
-            })
+        self.global_vars.update(self.ctx.get_hash())
 
     def match_file(self, root, filename):
         fullpath = os.path.join(root, filename)
