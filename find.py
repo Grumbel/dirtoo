@@ -50,6 +50,8 @@ class Action:
 class PrinterAction(Action):
 
     def __init__(self, fmt_str, finisher=False):
+        super().__init__()
+
         self.fmt_str = fmt_str
         self.finisher = finisher
 
@@ -76,7 +78,6 @@ class PrinterAction(Action):
             '_': os.path.basename(filename)
             }
 
-        hsh = self.ctx.get_hash()
         fmt = string.Formatter()
         for (literal_text, field_name, format_spec, conversion) in fmt.parse(self.fmt_str):
             if literal_text is not None:
@@ -95,6 +96,8 @@ class PrinterAction(Action):
 class MultiAction(Action):
 
     def __init__(self):
+        super().__init__()
+
         self.actions = []
 
     def add(self, action):
@@ -116,6 +119,8 @@ class MultiAction(Action):
 class ExecAction(Action):
 
     def __init__(self, exec_str):
+        super().__init__()
+
         self.on_file_cmd = None
         self.on_multi_cmd = None
         self.all_files = []
@@ -169,7 +174,7 @@ class Context:
             'random': self.random,
             'rnd': self.random,
             'rand': self.random,
-            'daysago' : self.daysago,
+            'daysago': self.daysago,
             'age': self.age,
             'iso': self.iso,
 
@@ -206,7 +211,6 @@ class Context:
             'owner': self.owner,
             'group': self.group,
             'mode': self.mode,
-            'ino': self.ino,
             'isblk': self.isblk,
             'islnk': self.islnk,
             'islink': self.islnk,
@@ -214,7 +218,6 @@ class Context:
             'ischr': self.ischr,
             'isfifo': self.isfifo,
             'isreg': self.isreg,
-            'mode': self.mode,
             'ino': self.ino,
 
             'kB': self.kB,
@@ -248,21 +251,21 @@ class Context:
     def age(self):
         a = os.path.getmtime(self.current_file)
         b = time.time()
-        return (b - a)
+        return b - a
 
     def iso(self, t=None):
-        if t is None: t = self.mtime()
+        if t is None:
+            t = self.mtime()
         return datetime.date.fromtimestamp(t).isoformat()
 
-    def sec(self, sec):
-        return sec
+    def sec(self, s):
+        return s
 
+    def min(self, m):
+        return m * 60
 
-    def min(self, min):
-        return min * 60
-
-    def hour(self, hours):
-        return hours * 60 * 60
+    def hour(self, h):
+        return h * 60 * 60
 
     def day(self, days):
         return days * 60 * 60 * 24
@@ -297,14 +300,16 @@ class Context:
     def in_years(self, sec):
         return sec / 60 / 60 / 24 / 7 / 30.4368 / 12
 
-
     def daysago(self):
-        return age_in_days(self.current_file)
+        a = os.path.getmtime(self.current_file)
+        b = time.time()
+        return (b - a) / (60 * 60 * 24)
 
     def sizehr(self, s=None):
         """Returns size() formated a human readable string"""
 
-        if s is None: s = self.size()
+        if s is None:
+            s = self.size()
 
         if s < 1000:
             return "{}B".format(s)
@@ -396,35 +401,43 @@ class Context:
         return s * 1024 ** 4
 
     def in_kB(self, s=None):
-        if s is None: s = self.size()
+        if s is None:
+            s = self.size()
         return s / 1000
 
     def in_KiB(self, s=None):
-        if s is None: s = self.size()
+        if s is None:
+            s = self.size()
         return s / 1024
 
     def in_MB(self, s=None):
-        if s is None: s = self.size()
+        if s is None:
+            s = self.size()
         return s / 1000 ** 2
 
     def in_MiB(self, s=None):
-        if s is None: s = self.size()
+        if s is None:
+            s = self.size()
         return s / 1024 ** 2
 
     def in_GB(self, s=None):
-        if s is None: s = self.size()
+        if s is None:
+            s = self.size()
         return s / 1000 ** 3
 
     def in_GiB(self, s=None):
-        if s is None: s = self.size()
+        if s is None:
+            s = self.size()
         return s / 1024 ** 3
 
     def in_TB(self, s=None):
-        if s is None: s = self.size()
+        if s is None:
+            s = self.size()
         return s / 1000 ** 4
 
     def in_TiB(self, s=None):
-        if s is None: s = self.size()
+        if s is None:
+            s = self.size()
         return s / 1024 ** 4
 
 
@@ -449,20 +462,15 @@ class ExprFilter:
         return result
 
 
-def age_in_days(filename):
-    a = os.path.getmtime(filename)
-    b = time.time()
-    return (b - a) / (60 * 60 * 24)
-
-
 def size_in_bytes(filename):
     return os.lstat(filename).st_size
+
 
 def name_match(filename, glob):
     return fnmatch.fnmatch(filename, glob)
 
 
-def find_files(directory, filter, recursive, action):
+def find_files(directory, recursive, filter, action):
     result = []
 
     for root, dirs, files in os.walk(directory):
@@ -542,14 +550,13 @@ def main(argv):
 
     directories = args.DIRECTORY or ['.']
 
-    action = create_action(args)
-    filter = create_filter(args)
+    find_action = create_action(args)
+    find_filter = create_filter(args)
 
-    results = []
-    for dir in directories:
-        results += find_files(dir, filter, args.recursive, action)
+    for d in directories:
+        find_files(d, args.recursive, find_filter, find_action)
 
-    action.finish()
+    find_action.finish()
 
 
 if __name__ == "__main__":
