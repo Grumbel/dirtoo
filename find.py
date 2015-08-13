@@ -83,7 +83,7 @@ class PrinterAction(Action):
                 sys.stdout.write(literal_text)
 
             if field_name is not None:
-                value = str(eval(field_name, self.global_vars, local_vars))
+                value = eval(field_name, self.global_vars, local_vars)
                 sys.stdout.write(format(value, format_spec))
 
     def finish(self):
