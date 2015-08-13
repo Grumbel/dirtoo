@@ -89,7 +89,7 @@ class PrinterAction(Action):
     def finish(self):
         if self.finisher:
             print("-" * 72)
-            print("{} {} files in total".format(self.size_total, self.file_count))
+            print("{:>12}  {} files in total".format(self.ctx.sizehr(self.size_total), self.file_count))
 
 
 class MultiAction(Action):
@@ -171,6 +171,8 @@ class Context:
             'rand': self.random,
             'daysago' : self.daysago,
             'age': self.age,
+            'iso': self.iso,
+
             'sec': self.sec,
             'min': self.min,
             'hour': self.hour,
@@ -182,6 +184,17 @@ class Context:
             'month': self.month,
             'year': self.year,
             'years': self.year,
+
+            'in_sec': self.in_sec,
+            'in_min': self.in_mins,
+            'in_mins': self.in_mins,
+            'in_hours': self.in_hours,
+            'in_days': self.in_days,
+            'in_weeks': self.in_weeks,
+            'in_month': self.in_month,
+            'in_years': self.in_years,
+
+            'sizehr': self.sizehr,
             'size': self.size,
             'name': self.name,
             'iname': self.iname,
@@ -203,6 +216,7 @@ class Context:
             'isreg': self.isreg,
             'mode': self.mode,
             'ino': self.ino,
+
             'kB': self.kB,
             'KiB': self.KiB,
             'MB': self.MB,
@@ -210,7 +224,16 @@ class Context:
             'GB': self.GB,
             'GiB': self.GiB,
             'TB': self.TB,
-            'TiB': self.TiB
+            'TiB': self.TiB,
+
+            'in_kB': self.in_kB,
+            'in_KiB': self.in_KiB,
+            'in_MB': self.in_MB,
+            'in_MiB': self.in_MiB,
+            'in_GB': self.in_GB,
+            'in_GiB': self.in_GiB,
+            'in_TB': self.in_TB,
+            'in_TiB': self.in_TiB
             }
 
     def random(self, p=0.5):
@@ -227,8 +250,13 @@ class Context:
         b = time.time()
         return (b - a)
 
+    def iso(self, t=None):
+        if t is None: t = self.mtime()
+        return datetime.date.fromtimestamp(t).isoformat()
+
     def sec(self, sec):
         return sec
+
 
     def min(self, min):
         return min * 60
@@ -248,8 +276,46 @@ class Context:
     def year(self, years):
         return years * 60 * 60 * 24 * 7 * 30.4368 * 12
 
+    def in_sec(self, sec):
+        return sec
+
+    def in_mins(self, sec):
+        return sec / 60
+
+    def in_hours(self, sec):
+        return sec / 60 / 60
+
+    def in_days(self, sec):
+        return sec / 60 / 60 / 24
+
+    def in_weeks(self, sec):
+        return sec / 60 / 60 / 24 / 7
+
+    def in_month(self, sec):
+        return sec / 60 / 60 / 24 / 7 / 30.4368
+
+    def in_years(self, sec):
+        return sec / 60 / 60 / 24 / 7 / 30.4368 / 12
+
+
     def daysago(self):
         return age_in_days(self.current_file)
+
+    def sizehr(self, s=None):
+        """Returns size() formated a human readable string"""
+
+        if s is None: s = self.size()
+
+        if s < 1000:
+            return "{}B".format(s)
+        elif s < 1000 ** 2:
+            return "{:.2f}kB".format(self.in_kB(s))
+        elif s < 1000 ** 3:
+            return "{:.2f}MB".format(self.in_MB(s))
+        elif s < 1000 ** 4:
+            return "{:.2f}GB".format(self.in_GB(s))
+        else:
+            return "{:.2f}TB".format(self.in_TB(s))
 
     def size(self):
         return size_in_bytes(self.current_file)
@@ -305,29 +371,61 @@ class Context:
     def ino(self):
         return os.lstat(self.current_file).st_ino
 
-    def kB(self, s=None):
+    def kB(self, s):
         return s * 1000
 
-    def KiB(self, s=None):
+    def KiB(self, s):
         return s * 1024
 
-    def MB(self, s=None):
+    def MB(self, s):
         return s * 1000 ** 2
 
-    def MiB(self, s=None):
+    def MiB(self, s):
         return s * 1024 ** 2
 
-    def GB(self, s=None):
+    def GB(self, s):
         return s * 1000 ** 3
 
-    def GiB(self, s=None):
+    def GiB(self, s):
         return s * 1024 ** 3
 
-    def TB(self, s=None):
+    def TB(self, s):
         return s * 1000 ** 4
 
-    def TiB(self, s=None):
+    def TiB(self, s):
         return s * 1024 ** 4
+
+    def in_kB(self, s=None):
+        if s is None: s = self.size()
+        return s / 1000
+
+    def in_KiB(self, s=None):
+        if s is None: s = self.size()
+        return s / 1024
+
+    def in_MB(self, s=None):
+        if s is None: s = self.size()
+        return s / 1000 ** 2
+
+    def in_MiB(self, s=None):
+        if s is None: s = self.size()
+        return s / 1024 ** 2
+
+    def in_GB(self, s=None):
+        if s is None: s = self.size()
+        return s / 1000 ** 3
+
+    def in_GiB(self, s=None):
+        if s is None: s = self.size()
+        return s / 1024 ** 3
+
+    def in_TB(self, s=None):
+        if s is None: s = self.size()
+        return s / 1000 ** 4
+
+    def in_TiB(self, s=None):
+        if s is None: s = self.size()
+        return s / 1024 ** 4
 
 
 class ExprFilter:
@@ -420,7 +518,7 @@ def create_action(args):
     elif args.null:
         action.add(PrinterAction("{fullpath()}\0"))
     elif args.list:
-        action.add(PrinterAction("{size()} {fullpath()}\n", finisher=True))
+        action.add(PrinterAction("{size():12}  {fullpath()}\n", finisher=True))
     elif args.print:
         action.add(PrinterAction(args.print))
     else:
