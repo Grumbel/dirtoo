@@ -177,6 +177,7 @@ class Context:
             'daysago': self.daysago,
             'age': self.age,
             'iso': self.iso,
+            'stdout': self.stdout,
 
             'sec': self.sec,
             'min': self.min,
@@ -257,6 +258,14 @@ class Context:
         if t is None:
             t = self.mtime()
         return datetime.date.fromtimestamp(t).isoformat()
+
+    def stdout(self, exec_str):
+        cmd = shlex.split(exec_str)
+
+        # FIXME: can't use {} inside format str: unexpected '{' in field name
+        cmd = replace_item(cmd, "(FILE)", [self.current_file])
+
+        return subprocess.check_output(cmd).decode('utf-8').strip()
 
     def sec(self, s):
         return s
