@@ -513,6 +513,10 @@ def parse_args(args):
                         help="Print \0 delimitered file list")
     parser.add_argument("-f", "--filter", metavar="EXPR", type=str,
                         help="Filter filename through EXPR")
+    parser.add_argument("-s", "--sort", metavar="EXPR", type=str,
+                        help="Sort filename by EXPR")
+    parser.add_argument("-R", "--reverse", default=False, action='store_true',
+                        help="Reverse sort order")
     parser.add_argument("-r", "--recursive", action='store_true',
                         help="Recursize into the directory tree")
     parser.add_argument("-l", "--list", action='store_true',
@@ -553,6 +557,60 @@ def create_filter(args):
     else:
         return NoFilter()
 
+class ExprSorterAction(Action):
+
+    def __init__(self, expr, reverse, find_action):
+        super().__init__()
+        self.expr = expr
+        self.find_action = find_action
+        self.reverse = reverse
+
+        self.files = []
+
+        self.ctx = Context()
+        self.global_vars = globals().copy()
+        self.global_vars.update(self.ctx.get_hash())
+
+    def file(self, root, filename):
+        self.files.append((root, filename))
+
+    def directory(self, root, filename):
+        pass
+
+    def finish(self):
+        files = []
+
+        if self.expr:
+            for root, filename in self.files:
+                fullpath = os.path.join(root, filename)
+                self.ctx.current_file = fullpath
+                local_vars = {
+                    'p': fullpath,
+                    '_': os.path.basename(filename)
+                    }
+                key = eval(self.expr, self.global_vars, local_vars)
+
+                files.append((key, root, filename))
+
+            files = sorted(files, key=lambda x: x[0], reverse=self.reverse)
+            files = [(b, c) for _, b, c in files]
+        else:
+            if self.reverse:
+                files = reversed(self.files)
+            else:
+                files = self.files
+
+        for root, filename in files:
+            self.find_action.file(root, filename)
+        self.find_action.finish()
+
+
+def create_sorter_wrapper(args, find_action):
+    if args.sort is None and args.reverse == False:
+        return find_action
+    else:
+        return ExprSorterAction(args.sort, args.reverse, find_action)
+
 
 def main(argv):
     args = parse_args(argv[1:])
@@ -561,6 +619,8 @@ def main(argv):
 
     find_action = create_action(args)
     find_filter = create_filter(args)
+
+    find_action = create_sorter_wrapper(args, find_action)
 
     for d in directories:
         find_files(d, args.recursive, find_filter, find_action)
