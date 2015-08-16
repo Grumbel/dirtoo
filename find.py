@@ -177,6 +177,8 @@ class Context:
             'daysago': self.daysago,
             'age': self.age,
             'iso': self.iso,
+            'time': self.time,
+            'strftime': self.strftime,
             'stdout': self.stdout,
 
             'sec': self.sec,
@@ -212,6 +214,7 @@ class Context:
             'owner': self.owner,
             'group': self.group,
             'mode': self.mode,
+            'modehr': self.modehr,
             'isblk': self.isblk,
             'islnk': self.islnk,
             'islink': self.islnk,
@@ -257,7 +260,17 @@ class Context:
     def iso(self, t=None):
         if t is None:
             t = self.mtime()
-        return datetime.date.fromtimestamp(t).isoformat()
+        return datetime.datetime.fromtimestamp(t).strftime("%F")
+
+    def time(self, t=None):
+        if t is None:
+            t = self.mtime()
+        return datetime.datetime.fromtimestamp(t).strftime("%H:%M")
+
+    def strftime(self, fmt, t=None):
+        if t is None:
+            t = self.mtime()
+        return datetime.datetime.fromtimestamp(t).strftime(fmt)
 
     def stdout(self, exec_str):
         cmd = shlex.split(exec_str)
@@ -381,6 +394,74 @@ class Context:
 
     def mode(self):
         return stat.S_IMODE(os.lstat(self.current_file).st_mode)
+
+    def modehr(self):
+        mode = os.lstat(self.current_file).st_mode
+
+        s = ""
+
+        if stat.S_ISDIR(mode):
+            s += "d"
+        elif stat.S_ISCHR(mode):
+            s += "c"
+        elif stat.S_ISBLK(mode):
+            s += "b"
+        elif stat.S_ISREG(mode):
+            s += "-"
+        elif stat.S_ISFIFO(mode):
+            s += "p"
+        elif stat.S_ISLNK(mode):
+            s += "l"
+        elif stat.S_ISSOCK(mode):
+            s += "s"
+        else:
+            s += "?"
+
+        if mode & stat.S_IRUSR:
+            s += "r"
+        else:
+            s += "-"
+
+        if mode & stat.S_IWUSR:
+            s += "w"
+        else:
+            s += "-"
+
+        if mode & stat.S_IXUSR:
+            s += "s" if mode & stat.S_ISGID else "x"
+        else:
+            s += "S" if mode & stat.S_ISGID else "-"
+
+        if mode & stat.S_IRGRP:
+            s += "r"
+        else:
+            s += "-"
+        if mode & stat.S_IWGRP:
+            s += "w"
+        else:
+            s += "-"
+
+        if mode & stat.S_IXGRP:
+            s += "s" if mode & stat.S_ISGID else "x"
+        else:
+            s += "S" if mode & stat.S_ISGID else "-"
+
+        if mode & stat.S_IROTH:
+            s += "r"
+        else:
+            s += "-"
+
+        if mode & stat.S_IWOTH:
+            s += "w"
+        else:
+            s += "-"
+
+        if mode & stat.S_IXOTH: # stat.S_ISVTX:
+            s += "t" if mode & stat.S_ISGID else "x"
+        else:
+            s += "T" if mode & stat.S_ISGID else "-"
+
+        return s
 
     def ino(self):
         return os.lstat(self.current_file).st_ino
@@ -539,7 +620,7 @@ def create_action(args):
     elif args.null:
         action.add(PrinterAction("{fullpath()}\0"))
     elif args.list:
-        action.add(PrinterAction("{size():12}  {fullpath()}\n", finisher=True))
+        action.add(PrinterAction("{modehr()}  {owner()}  {group()}  {sizehr():>8}  {iso()} {time()}  {fullpath()}\n", finisher=True))
     elif args.print:
         action.add(PrinterAction(args.print))
     else:
