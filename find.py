@@ -30,6 +30,7 @@ import grp
 import stat
 import string
 import datetime
+import re
 
 
 class Action:
@@ -206,6 +207,12 @@ class Context:
             'size': self.size,
             'name': self.name,
             'iname': self.iname,
+            'regex': self.regex,
+            'iregex': self.iregex,
+            'rx': self.regex,
+            'irx': self.iregex,
+            're': self.regex,
+            'ire': self.iregex,
             'atime': self.atime,
             'ctime': self.ctime,
             'mtime': self.mtime,
@@ -349,6 +356,16 @@ class Context:
 
     def name(self, glob):
         return name_match(self.current_file, glob)
+
+    def regex(self, regex, path=None):
+        if path is None:
+            path = self.basename()
+        return re.search(regex, path)
+
+    def iregex(self, regex, path=None):
+        if path is None:
+            path = self.basename()
+        return re.search(regex, path, flags=re.IGNORECASE)
 
     def iname(self, glob):
         return name_match(self.current_file.lower(), glob.lower())
