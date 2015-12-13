@@ -710,8 +710,8 @@ def create_sorter_wrapper(args, find_action):
         return ExprSorterAction(args.sort, args.reverse, find_action)
 
 
-def main(argv):
-    args = parse_args(argv[1:])
+def main():
+    args = parse_args(sys.argv[1:])
 
     directories = args.DIRECTORY or ['.']
 
@@ -724,10 +724,6 @@ def main(argv):
         find_files(d, args.recursive, find_filter, find_action)
 
     find_action.finish()
-
-
-if __name__ == "__main__":
-    main(sys.argv)
 
 
 # EOF #

@@ -22,6 +22,12 @@ import argparse
 import sys
 
 
+# iso limits:
+# max directories: 65535
+# file size limit: 2GiB/4GiB
+# filename: ~200 chars?
+
+
 def check_utf8(text, verbose):
     try:
         text.encode("utf-8")
@@ -35,18 +41,46 @@ def check_utf8(text, verbose):
             sys.stdout.buffer.write(os.fsencode(text))
             sys.stdout.buffer.write(b"\n")
     else:
-        sys.stdout.buffer.write(b"FAIL ")
+        sys.stdout.buffer.write(b"UTF-8 FAIL ")
         sys.stdout.buffer.write(os.fsencode(text))
         sys.stdout.buffer.write(b"\n")
+
+
+def check_length(text, verbose):
+    if len(text) > 200:
+        sys.stdout.buffer.write(b"LENGTH FAIL ")
+        sys.stdout.buffer.write(os.fsencode(text))
+        sys.stdout.buffer.write(b"\n")
+
+
+def check_newline(text, verbose):
+    if "\n" in text:
+        sys.stdout.buffer.write(b"NEWLINE FAIL ")
+        sys.stdout.buffer.write(os.fsencode(text))
+        sys.stdout.buffer.write(b"\n")
+
+
+def check_file(text, verbose):
+    check_length(text, verbose)
+    check_utf8(text, verbose)
+    check_newline(text, verbose)
 
 
 def check_utf8_path(path, recursive, verbose):
     if recursive and os.path.isdir(path):
         for root, dirs, files in os.walk(path):
+            if len(dirs) > 1000:
+                sys.stdout.buffer.write(b"MANY DIRS FAIL ")
+                sys.stdout.buffer.write(os.fsencode(root))
+                sys.stdout.buffer.write(b"\n")
+            if len(files) > 1000:
+                sys.stdout.buffer.write(b"MANY FILES FAIL ")
+                sys.stdout.buffer.write(os.fsencode(root))
+                sys.stdout.buffer.write(b"\n")
             for f in files:
-                check_utf8(os.path.join(root, f), verbose)
+                check_file(os.path.join(root, f), verbose)
     else:
-        check_utf8(path, verbose)
+        check_file(path, verbose)
 
 
 def parse_args():
@@ -66,9 +100,6 @@ def main():
 
     for p in args.PATH:
         check_utf8_path(p, args.recursive, args.verbose)
-
-if __name__ == "__main__":
-    main()
 
 
 # EOF #
