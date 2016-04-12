@@ -31,6 +31,7 @@ import stat
 import string
 import datetime
 import re
+import hashlib
 
 
 class Action:
@@ -247,7 +248,10 @@ class Context:
             'in_GB': self.in_GB,
             'in_GiB': self.in_GiB,
             'in_TB': self.in_TB,
-            'in_TiB': self.in_TiB
+            'in_TiB': self.in_TiB,
+
+            'sha1': self.sha1,
+            'md5': self.md5,
             }
 
     def random(self, p=0.5):
@@ -258,6 +262,26 @@ class Context:
 
     def fullpath(self):
         return self.current_file
+
+    def sha1(self):
+        sha1 = hashlib.sha1()
+        with open(self.current_file, 'rb') as fin:
+            data = fin.read(65536)
+            while data:
+                sha1.update(data)
+                data = fin.read(65536)
+
+        return sha1.hexdigest()
+
+    def md5(self):
+        md5 = hashlib.md5()
+        with open(self.current_file, 'rb') as fin:
+            data = fin.read(65536)
+            while data:
+                md5.update(data)
+                data = fin.read(65536)
+
+        return md5.hexdigest()
 
     def age(self):
         a = os.path.getmtime(self.current_file)
