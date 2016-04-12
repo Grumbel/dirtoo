@@ -52,8 +52,10 @@ class MoveContext:
         dest_sha1 = sha1sum(dest)
         if source == dest:
             print("skipping '{}' same file as '{}'".format(source, dest))
+            return "skip"
         elif source_sha1 == dest_sha1:
             print("skipping '{}' same content as '{}'".format(source, dest))
+            return "skip"
         else:
             print("Conflict: {}: destination file already exists".format(dest))
             print("source:\n{}\n  sha1: {}".format(file_info(source), source_sha1))
@@ -72,6 +74,8 @@ class MoveContext:
                 elif c == 'e':
                     self.overwrite = 'never'
                     return "skip"
+                else:
+                    pass  # try to read input again
 
 
 def bytes2human(num_bytes):
@@ -126,7 +130,7 @@ def move_file(ctx, source, destdir):
             elif resolution == "continue":
                 ctx.rename(source, dest)
             else:
-                assert False
+                assert False, "unknown conflict resolution: %r" % resolution
     else:
         ctx.rename(source, dest)
 
