@@ -45,7 +45,9 @@ class MoveContext:
             print("makedirs: {}".format(path))
 
         if not self.dry_run:
-            os.makedirs(path)
+            # makedirs() fails if the last element in the path already exists
+            if not os.path.isdir(path):
+                os.makedirs(path)
 
     def resolve_conflict(self, source, dest):
         source_sha1 = sha1sum(source)
