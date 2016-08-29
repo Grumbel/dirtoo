@@ -23,7 +23,7 @@ those two directories together.
 filesystem, it will not copy files across filesystems.
 
 
-dt-file
+dt-find
 -------
 
 `dt-find` is an alternative to the classic Unix `find` tool, it
