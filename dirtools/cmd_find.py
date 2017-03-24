@@ -35,6 +35,8 @@ import hashlib
 import ngram
 import shlex
 
+from dirtools.fuzzy import fuzzy
+
 
 class Action:
 
@@ -215,6 +217,7 @@ class Context:
             'name': self.name,
             'iname': self.iname,
             'fuzzy': self.fuzzy,
+            'ngram': self.ngram,
             'regex': self.regex,
             'iregex': self.iregex,
             'rx': self.regex,
@@ -401,8 +404,13 @@ class Context:
     def iname(self, glob):
         return name_match(self.current_file.lower(), glob.lower())
 
-    def fuzzy(self, text, threshold=0.15):
+    def ngram(self, text, threshold=0.15):
         return ngram.NGram.compare(os.path.basename(self.current_file).lower(), text.lower()) >= threshold
+
+    def fuzzy(self, text, threshold=0.5, N=3):
+        neddle = text.lower()
+        haystack = os.path.basename(self.current_file).lower()
+        return fuzzy(neddle, haystack, N=N) >= threshold
 
     def atime(self):
         return os.lstat(self.current_file).st_atime
