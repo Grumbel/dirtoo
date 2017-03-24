@@ -28,6 +28,7 @@ setup(name='dirtools',
                               'dt-find = dirtools.cmd_find:main',
                               'dt-fsck = dirtools.cmd_fsck:main',
                               'dt-hlnascii = dirtools.cmd_hlnascii:main',
+                              'dt-mediainfo = dirtools.cmd_mediainfo:main',
           ],
           'gui_scripts': []
           },
