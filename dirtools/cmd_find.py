@@ -33,6 +33,7 @@ import datetime
 import re
 import hashlib
 import ngram
+import shlex
 
 
 class Action:
@@ -77,9 +78,13 @@ class PrinterAction(Action):
         self.ctx.current_file = fullpath
 
         local_vars = {
+            '_': os.path.basename(filename),
             'p': fullpath,
-            '_': os.path.basename(filename)
-            }
+            'ap': os.path.abspath(fullpath),
+            'apq': shlex.quote(os.path.abspath(fullpath)),
+            'pq': shlex.quote(fullpath),
+            'q': shlex.quote(filename),
+        }
 
         fmt = string.Formatter()
         for (literal_text, field_name, format_spec, conversion) in fmt.parse(self.fmt_str):
