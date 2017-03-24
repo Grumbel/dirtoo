@@ -15,14 +15,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-def ngram(text, N=3):
+def ngram(text, n=3):
     """Returns a set containing the ngrams"""
-    return {"".join(g) for g in zip(*[text[i:] for i in range(N)])}
+    return {"".join(g) for g in zip(*[text[i:] for i in range(n)])}
 
 
-def fuzzy(neddle, haystack, N=3):
-    neddle_ngrams = ngram(neddle)
-    haystack_ngrams = ngram(haystack)
+def fuzzy(neddle, haystack, n=3):
+    neddle_ngrams = ngram(neddle, n)
+    haystack_ngrams = ngram(haystack, n)
 
     matches = 0
     for k in neddle_ngrams:

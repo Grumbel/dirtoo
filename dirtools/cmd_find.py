@@ -33,7 +33,6 @@ import datetime
 import re
 import hashlib
 import ngram
-import shlex
 
 from dirtools.fuzzy import fuzzy
 
@@ -407,10 +406,10 @@ class Context:
     def ngram(self, text, threshold=0.15):
         return ngram.NGram.compare(os.path.basename(self.current_file).lower(), text.lower()) >= threshold
 
-    def fuzzy(self, text, threshold=0.5, N=3):
+    def fuzzy(self, text, threshold=0.5, n=3):
         neddle = text.lower()
         haystack = os.path.basename(self.current_file).lower()
-        return fuzzy(neddle, haystack, N=N) >= threshold
+        return fuzzy(neddle, haystack, n=n) >= threshold
 
     def atime(self):
         return os.lstat(self.current_file).st_atime
@@ -515,7 +514,7 @@ class Context:
         else:
             s += "-"
 
-        if mode & stat.S_IXOTH: # stat.S_ISVTX:
+        if mode & stat.S_IXOTH:  # stat.S_ISVTX:
             s += "t" if mode & stat.S_ISGID else "x"
         else:
             s += "T" if mode & stat.S_ISGID else "-"
@@ -525,66 +524,66 @@ class Context:
     def ino(self):
         return os.lstat(self.current_file).st_ino
 
-    def kB(self, s):
+    def kB(self, s):  # noqa: N802
         return s * 1000
 
-    def KiB(self, s):
+    def KiB(self, s):  # noqa: N802
         return s * 1024
 
-    def MB(self, s):
+    def MB(self, s):  # noqa: N802
         return s * 1000 ** 2
 
-    def MiB(self, s):
+    def MiB(self, s):  # noqa: N802
         return s * 1024 ** 2
 
-    def GB(self, s):
+    def GB(self, s):  # noqa: N802
         return s * 1000 ** 3
 
-    def GiB(self, s):
+    def GiB(self, s):  # noqa: N802
         return s * 1024 ** 3
 
-    def TB(self, s):
+    def TB(self, s):  # noqa: N802
         return s * 1000 ** 4
 
-    def TiB(self, s):
+    def TiB(self, s):  # noqa: N802
         return s * 1024 ** 4
 
-    def in_kB(self, s=None):
+    def in_kB(self, s=None):  # noqa: N802
         if s is None:
             s = self.size()
         return s / 1000
 
-    def in_KiB(self, s=None):
+    def in_KiB(self, s=None):  # noqa: N802
         if s is None:
             s = self.size()
         return s / 1024
 
-    def in_MB(self, s=None):
+    def in_MB(self, s=None):  # noqa: N802
         if s is None:
             s = self.size()
         return s / 1000 ** 2
 
-    def in_MiB(self, s=None):
+    def in_MiB(self, s=None):  # noqa: N802
         if s is None:
             s = self.size()
         return s / 1024 ** 2
 
-    def in_GB(self, s=None):
+    def in_GB(self, s=None):  # noqa: N802
         if s is None:
             s = self.size()
         return s / 1000 ** 3
 
-    def in_GiB(self, s=None):
+    def in_GiB(self, s=None):  # noqa: N802
         if s is None:
             s = self.size()
         return s / 1024 ** 3
 
-    def in_TB(self, s=None):
+    def in_TB(self, s=None):  # noqa: N802
         if s is None:
             s = self.size()
         return s / 1000 ** 4
 
-    def in_TiB(self, s=None):
+    def in_TiB(self, s=None):  # noqa: N802
         if s is None:
             s = self.size()
         return s / 1024 ** 4
@@ -679,7 +678,8 @@ def create_action(args):
     elif args.null:
         action.add(PrinterAction("{fullpath()}\0"))
     elif args.list:
-        action.add(PrinterAction("{modehr()}  {owner()}  {group()}  {sizehr():>8}  {iso()} {time()}  {fullpath()}\n", finisher=True))
+        action.add(PrinterAction("{modehr()}  {owner()}  {group()}  {sizehr():>8}  {iso()} {time()}  {fullpath()}\n",
+                                 finisher=True))
     elif args.print:
         action.add(PrinterAction(args.print))
     else:
@@ -696,6 +696,7 @@ def create_filter(args):
         return ExprFilter(args.filter)
     else:
         return NoFilter()
+
 
 class ExprSorterAction(Action):
 
@@ -746,7 +747,7 @@ class ExprSorterAction(Action):
 
 
 def create_sorter_wrapper(args, find_action):
-    if args.sort is None and args.reverse == False:
+    if args.sort is None and not args.reverse:
         return find_action
     else:
         return ExprSorterAction(args.sort, args.reverse, find_action)

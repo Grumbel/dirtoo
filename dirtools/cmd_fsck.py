@@ -37,7 +37,7 @@ def check_utf8(text, verbose):
 
     if valid_utf8:
         if verbose:
-            sys.stdout.buffer.write(b"GOOD ")
+            sys.stdout.buffer.write(b"GOOD ")  # noqa: E11001
             sys.stdout.buffer.write(os.fsencode(text))
             sys.stdout.buffer.write(b"\n")
     else:
