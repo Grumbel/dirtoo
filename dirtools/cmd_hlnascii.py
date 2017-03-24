@@ -1,6 +1,6 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 
-# dirtools - Python Scripts for directory stuff
+# dirtool.py - diff tool for directories
 # Copyright (C) 2015 Ingo Ruhnke <grumbel@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -17,21 +17,24 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from setuptools import setup, find_packages
+import argparse
+import re
+import sys
+from colorama import Fore, Back, Style
 
 
-setup(name='dirtools',
-      version='0.1.0',
-      scripts=[],
-      entry_points={
-          'console_scripts': ['dt-move = dirtools.cmd_move:main',
-                              'dt-find = dirtools.cmd_find:main',
-                              'dt-fsck = dirtools.cmd_fsck:main',
-                              'dt-hlnascii = dirtools.cmd_hlnascii:main',
-          ],
-          'gui_scripts': []
-          },
-      packages=['dirtools'])
+def parse_args(args):
+    parser = argparse.ArgumentParser(description="Highlight non-ascii characters")
+    return parser.parse_args(args)
+
+def main():
+    args = parse_args(sys.argv[1:])
+
+    for line in sys.stdin.readlines():
+        line_colored = re.sub(r'([^\x00-\x7F])',
+                              Back.RED + Fore.WHITE + r'\1' + Style.RESET_ALL,
+                              line)
+        sys.stdout.write(line_colored)
 
 
 # EOF #
