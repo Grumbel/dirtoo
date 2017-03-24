@@ -24,9 +24,9 @@ setup(name='dirtools',
       version='0.1.0',
       scripts=[],
       entry_points={
-          'console_scripts': ['dt-move = dirtools.move:main',
-                              'dt-find = dirtools.find:main',
-                              'dt-fsck = dirtools.fsck:main'],
+          'console_scripts': ['dt-move = dirtools.cmd_move:main',
+                              'dt-find = dirtools.cmd_find:main',
+                              'dt-fsck = dirtools.cmd_fsck:main'],
           'gui_scripts': []
           },
       packages=['dirtools'])
