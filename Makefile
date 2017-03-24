@@ -27,7 +27,7 @@ test:
 	python3 -m unittest discover -s tests/
 
 flake:
-	python3 -m flake8.run --max-line-length=120 $(SOURCES)
+	flake8 --max-line-length=120 $(SOURCES)
 
 PYLINT_TARGETS := $(addprefix .pylint/, $(SOURCES))
 
