@@ -32,6 +32,7 @@ import string
 import datetime
 import re
 import hashlib
+import ngram
 
 
 class Action:
@@ -208,6 +209,7 @@ class Context:
             'size': self.size,
             'name': self.name,
             'iname': self.iname,
+            'fuzzy': self.fuzzy,
             'regex': self.regex,
             'iregex': self.iregex,
             'rx': self.regex,
@@ -393,6 +395,9 @@ class Context:
 
     def iname(self, glob):
         return name_match(self.current_file.lower(), glob.lower())
+
+    def fuzzy(self, text, threshold=0.15):
+        return ngram.NGram.compare(os.path.basename(self.current_file).lower(), text.lower()) >= threshold
 
     def atime(self):
         return os.lstat(self.current_file).st_atime
