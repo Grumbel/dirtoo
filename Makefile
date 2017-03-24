@@ -41,8 +41,8 @@ pylint: $(PYLINT_TARGETS)
 clean:
 	rm -vrf .pylint/
 
-run:
-	python3 -m clockgr_qt
+install:
+	sudo -H pip3 install --force-reinstall --ignore-installed .
 
 .PHONY: autopep test flake pylint clean all default run
 
