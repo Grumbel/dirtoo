@@ -41,7 +41,7 @@ look like this:
 output, in this case the file modification date is printed in iso
 format followed by the filename:
 
-    $ dt-find -p $'{iso():>15}  {p}\n' .git/
+    $ dt-find -p '{iso():>15}  {p}' .git/
        2015-05-17  .git/description
        2015-05-17  .git/HEAD
        2015-08-13  .git/COMMIT_EDITMSG
@@ -53,7 +53,7 @@ Python's string formating can be used to change alignment and field width.
 
 Calling external programs in tests is possible as well:
 
-    $ dt-find -f 'stdout("file -b --mime-type (FILE)") != "text/plain"' -p $'{stdout("file -b --mime-type (FILE)"):>16}  {p}\n'
+    $ dt-find -f 'stdout("file -b --mime-type (FILE)") != "text/plain"' -p '{stdout("file -b --mime-type (FILE)"):>16}  {p}'
        text/x-python  ./dirtool.py~
        text/x-python  ./dirhier.py~
        text/x-python  ./dirmove.py~

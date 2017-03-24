@@ -660,8 +660,10 @@ def parse_args(args):
                         help="Recursize into the directory tree")
     parser.add_argument("-l", "--list", action='store_true',
                         help="List files verbosely")
-    parser.add_argument("-p", "--print", metavar="FMT",
-                        help="List files with the given format string")
+    parser.add_argument("-p", "--println", metavar="FMT",
+                        help="List files with the given format string (with newline)")
+    parser.add_argument("-P", "--print", metavar="FMT",
+                        help="List files with the given format string (without newline)")
     parser.add_argument("-q", "--quiet", action='store_true',
                         help="Be quiet")
     parser.add_argument("--exec", metavar="EXEC",
@@ -680,6 +682,8 @@ def create_action(args):
     elif args.list:
         action.add(PrinterAction("{modehr()}  {owner()}  {group()}  {sizehr():>8}  {iso()} {time()}  {fullpath()}\n",
                                  finisher=True))
+    elif args.println:
+        action.add(PrinterAction(args.println + "\n"))
     elif args.print:
         action.add(PrinterAction(args.print))
     else:
