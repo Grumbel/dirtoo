@@ -223,6 +223,7 @@ class Context:
             'irx': self.iregex,
             're': self.regex,
             'ire': self.iregex,
+            'ascii': self.ascii,
             'atime': self.atime,
             'ctime': self.ctime,
             'mtime': self.mtime,
@@ -410,6 +411,14 @@ class Context:
         neddle = text.lower()
         haystack = os.path.basename(self.current_file).lower()
         return fuzzy(neddle, haystack, n=n) >= threshold
+
+    def ascii(self):
+        filename = os.path.basename(self.current_file)
+        try:
+            filename.encode("ascii")
+        except UnicodeError:
+            return False
+        return True
 
     def atime(self):
         return os.lstat(self.current_file).st_atime
