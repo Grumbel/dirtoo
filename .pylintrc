@@ -1,2 +1,11 @@
 [MESSAGES CONTROL]
-disable=invalid-name,missing-docstring,too-many-instance-attributes,too-few-public-methods,no-self-use
+disable=
+  invalid-name,
+  missing-docstring,
+  too-many-instance-attributes,
+  too-few-public-methods,
+  no-self-use,
+  fixme,
+  unused-argument,
+  locally-disabled
+generated-members=sys.stdout.buffer,sys.stderr.buffer

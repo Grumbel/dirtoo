@@ -16,7 +16,7 @@
 
 SOURCES := $(wildcard dirtools/*.py)
 
-default: flake test pylint
+default: flake test
 
 all: autopep flake test pylint
 

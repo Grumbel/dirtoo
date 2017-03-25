@@ -32,7 +32,7 @@ import string
 import datetime
 import re
 import hashlib
-import ngram
+import ngram  # pylint: disable=E0401
 
 from dirtools.fuzzy import fuzzy
 
@@ -88,12 +88,12 @@ class PrinterAction(Action):
         }
 
         fmt = string.Formatter()
-        for (literal_text, field_name, format_spec, conversion) in fmt.parse(self.fmt_str):
+        for (literal_text, field_name, format_spec, _) in fmt.parse(self.fmt_str):
             if literal_text is not None:
                 sys.stdout.write(literal_text)
 
             if field_name is not None:
-                value = eval(field_name, self.global_vars, local_vars)
+                value = eval(field_name, self.global_vars, local_vars)  # pylint: disable=W0123
                 sys.stdout.write(format(value, format_spec))
 
     def finish(self):
@@ -169,7 +169,7 @@ class NoFilter:
         return True
 
 
-class Context:
+class Context:  # pylint: disable=R0904,R0915
 
     def __init__(self):
         self.current_file = None
@@ -462,7 +462,7 @@ class Context:
     def mode(self):
         return stat.S_IMODE(os.lstat(self.current_file).st_mode)
 
-    def modehr(self):
+    def modehr(self):  # pylint: disable=R0912
         mode = os.lstat(self.current_file).st_mode
 
         s = ""
@@ -615,7 +615,7 @@ class ExprFilter:
             'p': fullpath,
             '_': filename
             }
-        result = eval(self.expr, self.global_vars, local_vars)
+        result = eval(self.expr, self.global_vars, local_vars)  # pylint: disable=W0123
         return result
 
 
@@ -627,12 +627,12 @@ def name_match(filename, glob):
     return fnmatch.fnmatch(filename, glob)
 
 
-def find_files(directory, recursive, filter, action):
+def find_files(directory, recursive, filter_op, action):
     result = []
 
     for root, dirs, files in os.walk(directory):
         for f in files:
-            if filter.match_file(root, f):
+            if filter_op.match_file(root, f):
                 action.file(root, f)
                 fullpath = os.path.join(root, f)
                 result.append(fullpath)
@@ -742,7 +742,7 @@ class ExprSorterAction(Action):
                     'p': fullpath,
                     '_': os.path.basename(filename)
                     }
-                key = eval(self.expr, self.global_vars, local_vars)
+                key = eval(self.expr, self.global_vars, local_vars)  # pylint: disable=W0123
 
                 files.append((key, root, filename))
 
@@ -750,7 +750,7 @@ class ExprSorterAction(Action):
             files = [(b, c) for _, b, c in files]
         else:
             if self.reverse:
-                files = reversed(self.files)
+                files = list(reversed(self.files))
             else:
                 files = self.files
 

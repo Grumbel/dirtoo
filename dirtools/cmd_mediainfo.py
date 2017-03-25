@@ -18,9 +18,8 @@
 
 
 import argparse
+from ctypes import c_void_p, c_size_t, c_char_p
 import MediaInfoDLL3
-from ctypes import *
-
 
 # Monkey patching a bug in MediaInfoDLL3
 MediaInfoDLL3.MediaInfo.MediaInfoA_Get.argtypes = [
@@ -42,16 +41,13 @@ def print_mediainfo(filename):
         print("Error")
         return
 
-    # info = milib.Inform()
-    # print("XXX", info)
-
-    general_count = milib.Count_Get(MediaInfoDLL3.Stream.General)
-    video_count = milib.Count_Get(MediaInfoDLL3.Stream.Video)
-    audio_count = milib.Count_Get(MediaInfoDLL3.Stream.Audio)
+    # general_count = milib.Count_Get(MediaInfoDLL3.Stream.General)
+    # video_count = milib.Count_Get(MediaInfoDLL3.Stream.Video)
+    # audio_count = milib.Count_Get(MediaInfoDLL3.Stream.Audio)
 
     duration = milib.Get(MediaInfoDLL3.Stream.General, 0, "Duration")
-    bitrate = milib.Get(MediaInfoDLL3.Stream.General, 0, "OverallBitRate")
-    filesize = milib.Get(MediaInfoDLL3.Stream.General, 0, "FileSize")
+    # bitrate = milib.Get(MediaInfoDLL3.Stream.General, 0, "OverallBitRate")
+    # filesize = milib.Get(MediaInfoDLL3.Stream.General, 0, "FileSize")
     framerate = milib.Get(MediaInfoDLL3.Stream.General, 0, "FrameRate")
 
     width = milib.Get(MediaInfoDLL3.Stream.Video, 0, "Width")
@@ -65,7 +61,7 @@ def print_mediainfo(filename):
     height = int(height)
 
     hours = duration // 1000 // 60 // 60
-    duration -= 1000 * 60 * 60  * hours
+    duration -= 1000 * 60 * 60 * hours
     minutes = duration // 1000 // 60
     duration -= 1000 * 60 * minutes
     seconds = duration // 1000
@@ -75,7 +71,6 @@ def print_mediainfo(filename):
         framerate,
         "{}x{}".format(width, height),
         filename))
-    #repr(filesize))
 
 
 def main():
