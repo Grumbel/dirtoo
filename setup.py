@@ -30,6 +30,7 @@ setup(name='dirtools',
               'dt-fsck = dirtools.cmd_fsck:main',
               'dt-unidecode = dirtools.cmd_unidecode:main',
               'dt-mediainfo = dirtools.cmd_mediainfo:main',
+              'dt-fileview = dirtools.cmd_fileview:main',
           ],
           'gui_scripts': []
           },
