@@ -3,3 +3,4 @@
 /build/
 /dirtools.egg-info/
 /dist/
+/dirtools/__pycache__/
