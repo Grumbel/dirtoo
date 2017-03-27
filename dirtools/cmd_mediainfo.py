@@ -38,7 +38,15 @@ def print_mediainfo(filename):
     milib = MediaInfoDLL3.MediaInfo()
     ret = milib.Open(filename)
     if ret != 1:
-        print("Error")
+        # mediainfo isn't returning a reason for why the Open() call
+        # has failed, so we try to open the file ourselves to produce
+        # a more useful error message
+        try:
+            with open(filename) as fin:
+                pass
+            print("Error {}: cannot access {}".format(ret, filename))
+        except OSError as err:
+            print("Error {}: {}: {}".format(ret, filename, err.strerror))
         return
 
     # general_count = milib.Count_Get(MediaInfoDLL3.Stream.General)
@@ -56,9 +64,9 @@ def print_mediainfo(filename):
     milib.Close()
 
     framerate = float(framerate) if framerate else 0
-    duration = int(duration)
-    width = int(width)
-    height = int(height)
+    duration = int(duration) if duration != "" else 0
+    width = int(width) if width != "" else 0
+    height = int(height) if height != "" else 0
 
     hours = duration // 1000 // 60 // 60
     duration -= 1000 * 60 * 60 * hours
