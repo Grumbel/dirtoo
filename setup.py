@@ -31,6 +31,8 @@ setup(name='dirtools',
               'dt-unidecode = dirtools.cmd_unidecode:main',
               'dt-mediainfo = dirtools.cmd_mediainfo:main',
               'dt-fileview = dirtools.cmd_fileview:main',
+              'dt-archiveinfo = dirtools.cmd_archiveinfo:main',
+              'dt-guessarchivename = dirtools.cmd_guessarchivename:main',
           ],
           'gui_scripts': []
           },

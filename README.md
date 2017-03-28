@@ -74,3 +74,41 @@ of the expression is used as key for the sorting:
 
     $ dt-find -s 'size()'
 
+
+dt-archiveinfo
+--------------
+
+Provides a summary of the content of the archive.
+
+
+dt-guessarchivename
+-------------------
+
+A simple script that tries to guess a good filename for an archive file
+based on the content of the archive.
+
+    usage: guessarchivename [-h] [-t THRESHOLD] [-E] [-M MIN_LENGTH] [-m] [-i]
+                            [-b] [-s] [-p] [-v]
+                            FILE [FILE ...]
+
+    Find common prefix from archive content
+
+    positional arguments:
+      FILE                  Archive file to search
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -t THRESHOLD, --threshold THRESHOLD
+                            Threshold for when a character is considered common
+                            (default: 0.8)
+      -E, --ignore-ext      Don't include file extension in the result
+      -M MIN_LENGTH, --min-length MIN_LENGTH
+                            Minimum result length that is considered valid
+      -m, --move            Rename files to the suggested names
+      -i, --interactive     Ask before renaming each file
+      -b, --basename        Use basename only, not the full path for guessing
+      -s, --strip           Strip unimportant characters from the resulting string
+      -p, --preserve        Preserves the original filename by prepending it to
+                            the output
+      -v, --verbose         Be more verbose
+
