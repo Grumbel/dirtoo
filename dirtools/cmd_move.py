@@ -38,7 +38,10 @@ class MoveContext:
             print("{} -> {}".format(oldpath, newpath))
 
         if not self.dry_run:
-            os.rename(oldpath, newpath)
+            if os.path.exists(newpath):
+                raise FileExistsError(newpath)
+            else:
+                os.rename(oldpath, newpath)
 
     def makedirs(self, path):
         if self.verbose:

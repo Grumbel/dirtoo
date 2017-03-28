@@ -25,6 +25,13 @@ import sys
 from collections import defaultdict
 
 
+def rename_safe(src, dst):
+    if os.path.exists(dst):
+        raise FileExistsError(dst)
+    else:
+        os.rename(src, dst)
+
+
 def most_common(lst, threshold):
     el = max(set(lst), key=lst.count)
     if lst.count(el) < len(lst) * threshold:
@@ -117,20 +124,24 @@ def main(argv):
                     answer = input()
                 if answer == "y":
                     print(filename, "->", common)
-                    os.rename(filename, outfilename)
+                    rename_safe(filename, outfilename)
                 else:
                     print("ignoring", filename)
             else:
                 print(filename, "->", common)
-                os.rename(filename, outfilename)
+                rename_safe(filename, outfilename)
         elif args.verbose or len(args.FILE) > 1:
             print(filename, "->", common)
         else:
             print(common)
 
 
-if __name__ == "__main__":
+def main_entrypoint():
     main(sys.argv)
+
+
+if __name__ == "__main__":
+    main_entrypoint()
 
 
 # EOF #
