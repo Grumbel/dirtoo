@@ -115,8 +115,12 @@ def main(argv):
             continue
 
 
-if __name__ == "__main__":
+def main_entrypoint():
     main(sys.argv)
+
+
+if __name__ == "__main__":
+    main_entrypoint()
 
 
 # EOF #
