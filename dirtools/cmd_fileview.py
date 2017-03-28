@@ -208,6 +208,10 @@ def expand_directories(files):
 
 
 def main():
+    # Allow Ctrl-C killing of the Qt app, see:
+    # http://stackoverflow.com/questions/4938723/
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
     args = parse_args(sys.argv[1:])
 
     if args.null:
@@ -218,7 +222,7 @@ def main():
         files = args.FILE
 
     app = QApplication([])
-    signal.signal(signal.SIGINT, lambda *a: app.quit())
+    signal.signal(signal.SIGINT,signal.SIG_DFL)
     window = FileViewWindow()
     window.file_view.timespace = args.timespace
     files = expand_directories(files)
