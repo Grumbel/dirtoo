@@ -92,18 +92,11 @@ def parse_args(argv):
     parser.add_argument('FILE', metavar='FILE', type=str, nargs='+', help='Archive files to process')
     return parser.parse_args(argv[1:])
 
-'''
---query EXPR -> return true/false shell exit code
-
-file_type_count(".jpg") > 100
-'''
 
 def main(argv):
     args = parse_args(argv)
     for filename in args.FILE:
-        basedir = os.path.dirname(filename)
-        basename = os.path.basename(filename)
-        original_filename, ext = os.path.splitext(basename)
+        _, ext = os.path.splitext(filename)
         try:
             with libarchive.file_reader(filename) as archive_entries:
                 archive_info = ArchiveInfo(archive_entries)

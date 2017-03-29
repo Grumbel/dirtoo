@@ -42,7 +42,7 @@ def print_mediainfo(filename):
         # has failed, so we try to open the file ourselves to produce
         # a more useful error message
         try:
-            with open(filename) as fin:
+            with open(filename):
                 pass
             print("Error {}: cannot access {}".format(ret, filename))
         except OSError as err:

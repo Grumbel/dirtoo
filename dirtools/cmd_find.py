@@ -262,7 +262,7 @@ class Context:  # pylint: disable=R0904,R0915
 
             'sha1': self.sha1,
             'md5': self.md5,
-            }
+        }
 
     def random(self, p=0.5):
         return random.random() < p
@@ -614,7 +614,7 @@ class ExprFilter:
         local_vars = {
             'p': fullpath,
             '_': filename
-            }
+        }
         result = eval(self.expr, self.global_vars, local_vars)  # pylint: disable=W0123
         return result
 
@@ -741,7 +741,7 @@ class ExprSorterAction(Action):
                 local_vars = {
                     'p': fullpath,
                     '_': os.path.basename(filename)
-                    }
+                }
                 key = eval(self.expr, self.global_vars, local_vars)  # pylint: disable=W0123
 
                 files.append((key, root, filename))

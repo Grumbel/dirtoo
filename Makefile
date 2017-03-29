@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-SOURCES := $(wildcard dirtools/*.py)
+SOURCES := $(wildcard dirtools/*.py dirtools/*/*.py)
 
 default: flake test
 
@@ -27,7 +27,7 @@ test:
 	python3 -m unittest discover -s tests/
 
 flake:
-	flake8 --max-line-length=120 $(SOURCES)
+	flake8 --max-line-length=120 --ignore=N802 $(SOURCES)
 
 PYLINT_TARGETS := $(addprefix .pylint/, $(SOURCES))
 
