@@ -19,10 +19,20 @@ import html
 import os
 import subprocess
 
-from PyQt5.QtGui import QPixmap, QColor
-from PyQt5.QtWidgets import (QGraphicsItemGroup, QGraphicsTextItem, QGraphicsPixmapItem)
+from PyQt5.QtCore import Qt, QRectF
+from PyQt5.QtGui import QPixmap, QColor, QPen, QIcon
+from PyQt5.QtWidgets import (
+    QGraphicsItemGroup,
+    QGraphicsTextItem,
+    QGraphicsPixmapItem,
+    QGraphicsRectItem,
+)
 
 from dirtools.thumbnail import make_thumbnail_filename
+from dirtools.util import expand_file
+
+
+windows = []
 
 
 class FileItem(QGraphicsItemGroup):
@@ -32,17 +42,40 @@ class FileItem(QGraphicsItemGroup):
         self.thumbnail = None
         self.filename = filename
         self.abspath = os.path.abspath(filename)
-        self.dirname = os.path.dirname(filename)
-        self.basename = os.path.basename(filename)
+        self.dirname = os.path.dirname(self.abspath)
+        self.basename = os.path.basename(self.abspath)
 
-        self.text = QGraphicsTextItem()
-        self.text.setToolTip(self.filename)
-        self.addToGroup(self.text)
+        self.setAcceptHoverEvents(True)
 
+        self.text = None
+        self.make_items()
         self.show_abspath()
 
     def mousePressEvent(self, ev):
-        subprocess.Popen(["xdg-open", self.filename])
+        # PyQt will route the event to the child items when we don't
+        # override this
+        pass
+
+    def mouseReleaseEvent(self, ev):
+        if os.path.isdir(self.filename):
+            from dirtools.fileview.file_view_window import FileViewWindow
+            window = FileViewWindow()
+            files = expand_file(self.filename, recursive=False)
+            window.file_view.add_files(files)
+            window.thumb_view.add_files(files)
+            window.show()
+            windows.append(window)
+        else:
+            subprocess.Popen(["xdg-open", self.filename])
+
+    def show_basename(self):
+        pass
+
+    def show_abspath(self):
+        pass
+
+
+class DetailFileItem(FileItem):
 
     def hoverEnterEvent(self, ev):
         self.show_thumbnail()
@@ -51,6 +84,12 @@ class FileItem(QGraphicsItemGroup):
     def hoverLeaveEvent(self, ev):
         self.hide_thumbnail()
         self.text.setDefaultTextColor(QColor(0, 0, 0))
+
+    def make_items(self):
+        self.text = QGraphicsTextItem()
+        # tooltips don't work for the whole group
+        self.text.setToolTip(self.filename)
+        self.addToGroup(self.text)
 
     def show_thumbnail(self):
         if self.thumbnail is None:
@@ -84,6 +123,58 @@ class FileItem(QGraphicsItemGroup):
 
     def show_basename(self):
         self.text.setPlainText(self.basename)
+
+
+class ThumbFileItem(FileItem):
+
+    def hoverEnterEvent(self, ev):
+        self.setZValue(2.0)
+        self.text.setVisible(True)
+        self.rect.setVisible(True)
+
+    def hoverLeaveEvent(self, ev):
+        self.setZValue(0)
+        self.rect.setVisible(False)
+        self.text.setVisible(False)
+
+    def make_items(self):
+        self.rect = QGraphicsRectItem(-16, -8, 128 + 32, 128 + 32)
+        self.rect.setBrush(QColor(32, 32, 32))
+        self.rect.setVisible(False)
+        self.rect.setAcceptHoverEvents(False)
+        self.addToGroup(self.rect)
+
+        self.text = QGraphicsTextItem(self.basename)
+        self.text.setDefaultTextColor(QColor(255, 255, 255))
+        self.text.setAcceptHoverEvents(False)
+        self.text.setPos(64 - self.text.boundingRect().width()/2, 128)
+        self.text.setVisible(False)
+        self.addToGroup(self.text)
+
+        # tooltips don't work for the whole group
+        # tooltips break the however events!
+        # self.text.setToolTip(self.filename)
+
+        rect = QGraphicsRectItem(-2, -2, 128 + 4, 128 + 4)
+        rect.setPen(QPen(Qt.NoPen))
+        rect.setBrush(QColor(192+32, 192+32, 192+32))
+        self.addToGroup(rect)
+
+        thumbnail_filename = make_thumbnail_filename(self.filename)
+        if os.path.isdir(self.filename):
+            pixmap = QIcon.fromTheme("folder").pixmap(96)
+        elif thumbnail_filename:
+            pixmap = QPixmap(thumbnail_filename)
+        else:
+            pixmap = QIcon.fromTheme("error").pixmap(96)
+
+        thumb = QGraphicsPixmapItem(pixmap)
+        thumb.setPos(64 - pixmap.width() / 2,
+                     64 - pixmap.height() / 2)
+        self.addToGroup(thumb)
+
+    def boundingRect(self):
+        return QRectF(0, 0, 128, 128)
 
 
 # EOF #

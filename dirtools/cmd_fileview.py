@@ -25,6 +25,7 @@ import signal
 from PyQt5.QtWidgets import QApplication
 
 from dirtools.fileview.file_view_window import FileViewWindow
+from dirtools.util import expand_directories, expand_file
 
 
 def parse_args(args):
@@ -37,24 +38,6 @@ def parse_args(args):
     parser.add_argument("-r", "--recursive", action='store_true',
                         help="Be recursive")
     return parser.parse_args(args)
-
-
-def expand_file(f, recursive):
-    if os.path.isdir(f):
-        if recursive:
-            lst = [expand_file(os.path.join(f, x), recursive) for x in os.listdir(f)]
-            return [item for sublist in lst for item in sublist]
-        else:
-            return [os.path.join(f, x) for x in os.listdir(f)]
-    else:
-        return [f]
-
-
-def expand_directories(files, recursive):
-    results = []
-    for f in files:
-        results += expand_file(f, recursive)
-    return results
 
 
 def get_file_list(args):

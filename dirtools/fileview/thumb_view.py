@@ -15,7 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPixmap, QBrush
 from PyQt5.QtWidgets import (
     QGraphicsView,
     QGraphicsScene,
@@ -23,6 +24,7 @@ from PyQt5.QtWidgets import (
 )
 
 from dirtools.thumbnail import make_thumbnail_filename
+from dirtools.fileview.file_item import ThumbFileItem
 
 
 class ThumbView(QGraphicsView):
@@ -31,8 +33,12 @@ class ThumbView(QGraphicsView):
         super().__init__()
         self.setAcceptDrops(True)
 
+        self.files = []
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
+
+        self.setBackgroundBrush(QBrush(Qt.gray, Qt.SolidPattern))
+
 
     def dragMoveEvent(self, e):
         # the default implementation will check if any item in the
@@ -48,37 +54,39 @@ class ThumbView(QGraphicsView):
             e.ignore()
 
     def dropEvent(self, e):
-        print("drag leve")
-        print(e.mimeData().urls())
+        urls = e.mimeData().urls()
         # [PyQt5.QtCore.QUrl('file:///home/ingo/projects/dirtool/trunk/setup.py')]
+        self.add_files([url.path() for url in urls])
 
     def add_files(self, files):
-        self.files = files
+        print(files)
+        self.files += files
         self.thumbnails = []
 
         for filename in self.files:
-            thumbnail_filename = make_thumbnail_filename(filename)
-            if thumbnail_filename:
-                thumb = QGraphicsPixmapItem(QPixmap(thumbnail_filename))
-                self.scene.addItem(thumb)
-                self.thumbnails.append(thumb)
-                thumb.setToolTip(filename)
-                thumb.show()
+            thumb = ThumbFileItem(filename)
+            self.scene.addItem(thumb)
+            self.thumbnails.append(thumb)
 
         self.layout_thumbnails()
 
+    def resizeEvent(self, ev):
+        super().resizeEvent(ev)
+        self.layout_thumbnails()
+
     def layout_thumbnails(self):
+        xs = 128 + 8
+        ys = 128 + 8
         x = 0
         y = 0
-        max_height = 0
         for thumb in self.thumbnails:
             thumb.setPos(x, y)
-            x += thumb.boundingRect().width()
-            max_height = max(max_height, thumb.boundingRect().height())
-            if x > 1024:
-                y += max_height
+            x += xs
+            if x + xs > self.width() - 64:
+                y += ys
                 x = 0
-                max_height = 0
+
+        self.setSceneRect(self.scene.itemsBoundingRect())
 
 
 # EOF #
