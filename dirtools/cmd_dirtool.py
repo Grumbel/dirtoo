@@ -18,6 +18,7 @@
 
 
 import os
+import sys
 import argparse
 import functools
 import shutil
@@ -105,14 +106,10 @@ class FileDataId:
 
     def __lt__(self, other):
         return (self.size, self.md5sum) < (other.size, other.md5sum)
-        
-    @staticmethod
-    def from_file(filename):
-        return FileId()
 
 
 class FileObject:
-    
+
     def __init__(self):
         self.mtime == 0
         self.ctime == 0
@@ -280,7 +277,7 @@ def merge_command(source, target, dry_run, force):
         os.rmdir(source)
 
 
-if __name__ == "__main__":
+def main(argv):
     parser = argparse.ArgumentParser(description='dirtool')
     parser.add_argument('COMMAND', action='store', type=str,
                         help='diff, extract-diff, merge')
@@ -298,7 +295,7 @@ if __name__ == "__main__":
                         help="don't act, just show actions")
     parser.add_argument('-i', '--ignore-case', action='store_true',
                         help="ignore case differences in filenames")
-    args = parser.parse_args()
+    args = parser.parse_args(argv[1:])
 
     if args.COMMAND == "diff":
         compare_command(args.FILE1, args.FILE2, args.ignore_case)
@@ -308,6 +305,10 @@ if __name__ == "__main__":
         merge_command(args.FILE1, args.FILE2, args.dry_run, args.force)
     else:
         raise Exception("unknown command: %s" % args.COMMAND)
+
+
+def main_entrypoint():
+    main(sys.argv)
 
 
 # EOF #
