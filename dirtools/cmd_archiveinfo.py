@@ -90,6 +90,8 @@ class ArchiveInfo:
 def parse_args(argv):
     parser = argparse.ArgumentParser(description="Print Archive Information")
     parser.add_argument('FILE', metavar='FILE', type=str, nargs='+', help='Archive files to process')
+    parser.add_argument('--file-count', action='store_true', default=False,
+                        help="Print number of files inside the archive")
     return parser.parse_args(argv[1:])
 
 
@@ -100,9 +102,12 @@ def main(argv):
         try:
             with libarchive.file_reader(filename) as archive_entries:
                 archive_info = ArchiveInfo(archive_entries)
-                print("Archive: {}".format(shlex.quote(filename)))
-                archive_info.print_summary()
-                print()
+                if args.file_count:
+                    print("{}\t{}".format(archive_info.file_count, filename))
+                else:
+                    print("Archive: {}".format(shlex.quote(filename)))
+                    archive_info.print_summary()
+                    print()
         except libarchive.exception.ArchiveError as err:
             print("{}: error: couldn't process archive".format(filename))
             continue
