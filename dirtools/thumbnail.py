@@ -19,11 +19,14 @@ import os
 import hashlib
 import urllib
 
+# FIXME: use xdg for cache
 
-def make_thumbnail_filename(filename):
+
+def make_thumbnail_filename(filename, flavor="normal"):
     url = "file://" + urllib.parse.quote(os.path.abspath(filename))
     digest = hashlib.md5(os.fsencode(url)).hexdigest()
-    result = os.path.expanduser(os.path.join("~/.thumbnails/normal", digest + ".png"))
+    result = os.path.expanduser(os.path.join("~/.cache/thumbnails", flavor, digest + ".png"))
+    print(result)
     if os.path.exists(result):
         return result
     else:

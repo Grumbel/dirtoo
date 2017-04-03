@@ -33,6 +33,7 @@ setup(name='dirtools',
               'dt-fileview = dirtools.cmd_fileview:main_entrypoint',
               'dt-archiveinfo = dirtools.cmd_archiveinfo:main_entrypoint',
               'dt-guessarchivename = dirtools.cmd_guessarchivename:main_entrypoint',
+              'dt-thumbnailer = dirtools.cmd_thumbnailer:main_entrypoint',
           ],
           'gui_scripts': []
           },
