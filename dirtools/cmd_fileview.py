@@ -43,8 +43,10 @@ def parse_args(args):
 def get_file_list(args):
     if args.null:
         return filter(bool, sys.stdin.read().split('\0'))
-    elif args.FILE == []:
+    elif args.FILE == ["-"]:
         return sys.stdin.read().splitlines()
+    elif args.FILE == []:
+        return []
     else:
         return args.FILE
 
