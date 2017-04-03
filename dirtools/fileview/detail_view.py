@@ -28,9 +28,10 @@ from dirtools.fileview.file_item import DetailFileItem
 
 class DetailView(QGraphicsView):
 
-    def __init__(self):
+    def __init__(self, controller):
         super().__init__()
 
+        self.controller = controller
         self.timespace = False
         self.file_items = []
 
@@ -67,7 +68,7 @@ class DetailView(QGraphicsView):
             text = self.scene.addText(datetime.datetime.fromtimestamp(mtime).strftime("%F %T"))
             text.setPos(20, y)
 
-            text = DetailFileItem(filename)
+            text = DetailFileItem(filename, self)
             text.filename = filename
             self.scene.addItem(text)
             text.setPos(200, y)
@@ -100,5 +101,10 @@ class DetailView(QGraphicsView):
     def on_file_click(self, filename, *args):
         print("FileClick:", filename, args)
 
+    def set_filename(self, filename):
+        if filename:
+            self.controller.set_filename(os.path.abspath(filename))
+        else:
+            self.controller.set_filename("")
 
 # EOF #

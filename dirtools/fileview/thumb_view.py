@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import os
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QBrush
 from PyQt5.QtWidgets import (
@@ -29,10 +31,11 @@ from dirtools.fileview.file_item import ThumbFileItem
 
 class ThumbView(QGraphicsView):
 
-    def __init__(self):
+    def __init__(self, controller):
         super().__init__()
         self.setAcceptDrops(True)
 
+        self.controller = controller
         self.files = []
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
@@ -59,12 +62,11 @@ class ThumbView(QGraphicsView):
         self.add_files([url.path() for url in urls])
 
     def add_files(self, files):
-        print(files)
         self.files += files
         self.thumbnails = []
 
         for filename in self.files:
-            thumb = ThumbFileItem(filename)
+            thumb = ThumbFileItem(filename, self)
             self.scene.addItem(thumb)
             self.thumbnails.append(thumb)
 
@@ -76,7 +78,7 @@ class ThumbView(QGraphicsView):
 
     def layout_thumbnails(self):
         xs = 128 + 8
-        ys = 128 + 8
+        ys = 128 + 8 + 16
         x = 0
         y = 0
         for thumb in self.thumbnails:
@@ -87,6 +89,12 @@ class ThumbView(QGraphicsView):
                 x = 0
 
         self.setSceneRect(self.scene.itemsBoundingRect())
+
+    def set_filename(self, filename):
+        if filename:
+            self.controller.set_filename(os.path.abspath(filename))
+        else:
+            self.controller.set_filename("")
 
 
 # EOF #

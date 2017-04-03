@@ -19,9 +19,10 @@ import html
 import os
 import subprocess
 
-from PyQt5.QtCore import Qt, QRectF
-from PyQt5.QtGui import QPixmap, QColor, QPen, QIcon
+from PyQt5.QtCore import Qt, QRectF, QMimeData, QUrl
+from PyQt5.QtGui import QPixmap, QColor, QPen, QIcon, QDrag
 from PyQt5.QtWidgets import (
+    QGraphicsItem,
     QGraphicsItemGroup,
     QGraphicsTextItem,
     QGraphicsPixmapItem,
@@ -37,36 +38,61 @@ windows = []
 
 class FileItem(QGraphicsItemGroup):
 
-    def __init__(self, filename):
+    def __init__(self, filename, controller):
         super().__init__()
         self.thumbnail = None
         self.filename = filename
         self.abspath = os.path.abspath(filename)
         self.dirname = os.path.dirname(self.abspath)
         self.basename = os.path.basename(self.abspath)
-
+        self.controller = controller
         self.setAcceptHoverEvents(True)
+
+        # allow moving objects around
+        # self.setFlag(QGraphicsItem.ItemIsMovable, True)
 
         self.text = None
         self.make_items()
         self.show_abspath()
 
+        self.press_pos = None
+        self.dragging = False
+
     def mousePressEvent(self, ev):
         # PyQt will route the event to the child items when we don't
         # override this
-        pass
+        self.press_pos = ev.pos()
+
+
+    def mouseMoveEvent(self, ev):
+        if not self.dragging and (ev.pos() - self.press_pos).manhattanLength() > 16:
+            print("drag start")
+            self.dragging = True
+
+            mimeData = QMimeData()
+            mimeData.setUrls([QUrl("file://" + self.filename)])
+            self.drag = QDrag(self.controller)
+            self.drag.setPixmap(self.pixmap)
+            self.drag.setMimeData(mimeData)
+            # drag.setHotSpot(e.pos() - self.rect().topLeft())
+            self.dropAction = self.drag.exec_(Qt.CopyAction)
 
     def mouseReleaseEvent(self, ev):
-        if os.path.isdir(self.filename):
-            from dirtools.fileview.file_view_window import FileViewWindow
-            window = FileViewWindow()
-            files = expand_file(self.filename, recursive=False)
-            window.file_view.add_files(files)
-            window.thumb_view.add_files(files)
-            window.show()
-            windows.append(window)
+        if self.dragging:
+            pass
         else:
-            subprocess.Popen(["xdg-open", self.filename])
+            if os.path.isdir(self.filename):
+                from dirtools.fileview.file_view_window import FileViewWindow
+                window = FileViewWindow()
+                files = expand_file(self.filename, recursive=False)
+                window.file_view.add_files(files)
+                window.thumb_view.add_files(files)
+                window.show()
+                windows.append(window)
+            else:
+                subprocess.Popen(["xdg-open", self.filename])
+
+        self.dragging = False
 
     def show_basename(self):
         pass
@@ -80,10 +106,12 @@ class DetailFileItem(FileItem):
     def hoverEnterEvent(self, ev):
         self.show_thumbnail()
         self.text.setDefaultTextColor(QColor(0, 128, 128))
+        self.controller.set_filename(self.filename)
 
     def hoverLeaveEvent(self, ev):
         self.hide_thumbnail()
         self.text.setDefaultTextColor(QColor(0, 0, 0))
+        self.controller.set_filename("")
 
     def make_items(self):
         self.text = QGraphicsTextItem()
@@ -129,36 +157,46 @@ class ThumbFileItem(FileItem):
 
     def hoverEnterEvent(self, ev):
         self.setZValue(2.0)
-        self.text.setVisible(True)
+        # self.text.setVisible(True)
+        self.text.setDefaultTextColor(QColor(255, 255, 255))
         self.rect.setVisible(True)
+        self.controller.set_filename(self.filename)
 
     def hoverLeaveEvent(self, ev):
         self.setZValue(0)
         self.rect.setVisible(False)
-        self.text.setVisible(False)
+        # self.text.setVisible(False)
+        self.text.setDefaultTextColor(QColor(0, 0, 0))
+        self.controller.set_filename("")
 
     def make_items(self):
-        self.rect = QGraphicsRectItem(-16, -8, 128 + 32, 128 + 32)
+        rect = QGraphicsRectItem(-2, -2, 128 + 4, 128 + 4 + 16)
+        rect.setPen(QPen(Qt.NoPen))
+        rect.setBrush(QColor(192+32, 192+32, 192+32))
+        self.addToGroup(rect)
+
+        self.rect = QGraphicsRectItem(-8, -8, 128 + 16, 128 + 24 + 8)
         self.rect.setBrush(QColor(32, 32, 32))
         self.rect.setVisible(False)
         self.rect.setAcceptHoverEvents(False)
         self.addToGroup(self.rect)
 
-        self.text = QGraphicsTextItem(self.basename)
-        self.text.setDefaultTextColor(QColor(255, 255, 255))
+        text = self.basename
+        if len(text) > 20:
+            text = text[0:20] + "…"
+        self.text = QGraphicsTextItem(text)
+        font = self.text.font()
+        font.setPixelSize(10)
+        self.text.setFont(font)
+        self.text.setDefaultTextColor(QColor(0, 0, 0))
         self.text.setAcceptHoverEvents(False)
         self.text.setPos(64 - self.text.boundingRect().width()/2, 128)
-        self.text.setVisible(False)
+        # self.text.setVisible(False)
         self.addToGroup(self.text)
 
         # tooltips don't work for the whole group
         # tooltips break the however events!
         # self.text.setToolTip(self.filename)
-
-        rect = QGraphicsRectItem(-2, -2, 128 + 4, 128 + 4)
-        rect.setPen(QPen(Qt.NoPen))
-        rect.setBrush(QColor(192+32, 192+32, 192+32))
-        self.addToGroup(rect)
 
         thumbnail_filename = make_thumbnail_filename(self.filename)
         if os.path.isdir(self.filename):
@@ -167,6 +205,7 @@ class ThumbFileItem(FileItem):
             pixmap = QPixmap(thumbnail_filename)
         else:
             pixmap = QIcon.fromTheme("error").pixmap(96)
+        self.pixmap = pixmap
 
         thumb = QGraphicsPixmapItem(pixmap)
         thumb.setPos(64 - pixmap.width() / 2,
