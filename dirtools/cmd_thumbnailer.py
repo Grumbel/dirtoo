@@ -33,17 +33,18 @@ from dirtools.thumbnail import make_thumbnail_filename
 def parse_args(args):
     parser = argparse.ArgumentParser(description="Make thumbnails for files")
     parser.add_argument("FILE", nargs='+')
+    parser.add_argument('-f', '--flavour', metavar="FLAVOUR", type=str, default="normal",
+                        help="Generate flavour (normal, large)")
     return parser.parse_args(args)
 
 
-def make_thumbnail(thumbnailer, filename):
+def make_thumbnail(thumbnailer, filename, flavour):
     print("Generating thumbnail for", filename)
-
 
     handle = thumbnailer.Queue(
         ["file://" + os.path.abspath(filename)], # <arg type="as" name="uris" direction="in" />
         ["image/jpeg"], # <arg type="as" name="mime_types" direction="in" />
-        "large", # <arg type="s" name="flavor" direction="in" />
+        flavour, # <arg type="s" name="flavor" direction="in" />
         "default", # <arg type="s" name="scheduler" direction="in" />
         dbus.UInt32(0), # <arg type="u" name="handle_to_dequeue" direction="in" />
         # <arg type="u" name="handle" direction="out" />
@@ -100,8 +101,8 @@ def main(argv):
     # print("Supported:", thumbnailer.GetSupported())
 
     for filename in args.FILE:
-        make_thumbnail(thumbnailer, filename)
-        print(">>>", make_thumbnail_filename(filename, "large"))
+        make_thumbnail(thumbnailer, filename, flavour=args.flavour)
+        print(">>>", make_thumbnail_filename(filename, args.flavour))
 
     loop = GLib.MainLoop()
     loop.run()
