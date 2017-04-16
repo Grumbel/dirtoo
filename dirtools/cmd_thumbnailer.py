@@ -20,9 +20,10 @@
 # qdbus org.freedesktop.thumbnails.Thumbnailer1 /org/freedesktop/thumbnails/Thumbnailer1
 
 
+import signal
+from PyQt5.QtCore import QCoreApplication
+from dbus.mainloop.qt import DBusQtMainLoop
 import dbus
-from dbus.mainloop.glib import DBusGMainLoop
-from gi.repository import GLib
 import argparse
 import sys
 import os
@@ -64,7 +65,7 @@ def signal_handler(*args, **kwargs):
 def main(argv):
     args = parse_args(argv[1:])
 
-    dbus_loop = DBusGMainLoop(set_as_default=True)
+    dbus_loop = DBusQtMainLoop(set_as_default=True)
     session_bus = dbus.SessionBus()
 
     if False:
@@ -104,12 +105,14 @@ def main(argv):
         make_thumbnail(thumbnailer, filename, flavour=args.flavour)
         print(">>>", make_thumbnail_filename(filename, args.flavour))
 
-    loop = GLib.MainLoop()
-    loop.run()
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+    app = QCoreApplication([])
+    rc = app.exec_()
+    return rc
 
 
 def main_entrypoint():
-    main(sys.argv)
+    exit(main(sys.argv))
 
 
 # EOF #
