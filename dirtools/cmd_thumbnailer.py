@@ -28,7 +28,7 @@ import sys
 from PyQt5.QtCore import QCoreApplication
 from dbus.mainloop.pyqt5 import DBusQtMainLoop
 
-from dirtools.thumbnailer import Thumbnailer
+from dirtools.thumbnailer import Thumbnailer, ThumbnailerListener
 
 
 def parse_args(args):
@@ -36,6 +36,8 @@ def parse_args(args):
     parser.add_argument("FILE", nargs='*')
     parser.add_argument('-f', '--flavor', metavar="FLAVOR", type=str, default="normal",
                         help="Thumbnail size to generate (normal, large)")
+    parser.add_argument('-v', '--verbose', action='store_true', default=False,
+                        help="Be more verbose")
     parser.add_argument('-F', '--list-flavors', action='store_true', default=False,
                         help="List supported flavors")
     parser.add_argument('-M', '--list-mime-types', action='store_true', default=False,
@@ -47,6 +49,34 @@ def parse_args(args):
     return parser.parse_args(args)
 
 
+class ThumbnailerProgressListener(ThumbnailerListener):
+
+    def __init__(self, app, flavor, verbose):
+        self.app = app
+        self.flavor = flavor
+        self.verbose = verbose
+
+    def started(self, handle):
+        # print("[Started]", handle)
+        pass
+
+    def ready(self, handle, urls):
+        if self.verbose:
+            for url in urls:
+                print(url, "->", Thumbnailer.thumbnail_from_url(url, flavor=self.flavor))
+
+    def error(self, handle, failed_uris, error_code, message):
+        for uri in failed_uris:
+            print("[Error {}] {}: {}".format(error_code, uri, message), file=sys.stderr)
+
+    def finished(self, handle):
+        # print("[Finished]", handle)
+        pass
+
+    def idle(self):
+        self.app.quit()
+
+
 def main(argv):
     args = parse_args(argv[1:])
 
@@ -56,7 +86,10 @@ def main(argv):
     dbus_loop = DBusQtMainLoop(set_as_default=True)  # noqa: F841
     session_bus = dbus.SessionBus()
 
-    thumber = Thumbnailer(session_bus)
+    thumber = Thumbnailer(session_bus,
+                          ThumbnailerProgressListener(app,
+                                                      flavor=args.flavor,
+                                                      verbose=args.verbose))
 
     rc = 0
 
@@ -77,7 +110,7 @@ def main(argv):
         for scheduler in thumber.get_schedulers():
             print(scheduler)
     else:
-        thumber.set_idle_callback(app.quit)
+        # thumber.set_idle_callback(app.quit)
         thumber.queue(args.FILE, flavor=args.flavor)
         rc = app.exec_()
 
