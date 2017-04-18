@@ -21,93 +21,66 @@
 
 
 import signal
-from PyQt5.QtCore import QCoreApplication
-from dbus.mainloop.qt import DBusQtMainLoop
 import dbus
 import argparse
 import sys
-import os
 
-from dirtools.thumbnail import make_thumbnail_filename
+from PyQt5.QtCore import QCoreApplication
+from dbus.mainloop.pyqt5 import DBusQtMainLoop
+
+from dirtools.thumbnailer import Thumbnailer
 
 
 def parse_args(args):
     parser = argparse.ArgumentParser(description="Make thumbnails for files")
-    parser.add_argument("FILE", nargs='+')
-    parser.add_argument('-f', '--flavour', metavar="FLAVOUR", type=str, default="normal",
-                        help="Generate flavour (normal, large)")
+    parser.add_argument("FILE", nargs='*')
+    parser.add_argument('-f', '--flavor', metavar="FLAVOR", type=str, default="normal",
+                        help="Thumbnail size to generate (normal, large)")
+    parser.add_argument('-F', '--list-flavors', action='store_true', default=False,
+                        help="List supported flavors")
+    parser.add_argument('-M', '--list-mime-types', action='store_true', default=False,
+                        help="List supported mime-types")
+    parser.add_argument('-U', '--list-uri-types', action='store_true', default=False,
+                        help="List supported URI types")
+    parser.add_argument('-S', '--list-schedulers', action='store_true', default=False,
+                        help="List supported schedulers")
     return parser.parse_args(args)
-
-
-def make_thumbnail(thumbnailer, filename, flavour):
-    print("Generating thumbnail for", filename)
-
-    handle = thumbnailer.Queue(
-        ["file://" + os.path.abspath(filename)], # <arg type="as" name="uris" direction="in" />
-        ["image/jpeg"], # <arg type="as" name="mime_types" direction="in" />
-        flavour, # <arg type="s" name="flavor" direction="in" />
-        "default", # <arg type="s" name="scheduler" direction="in" />
-        dbus.UInt32(0), # <arg type="u" name="handle_to_dequeue" direction="in" />
-        # <arg type="u" name="handle" direction="out" />
-    )
-    print(handle)
-
-    #thumbnailer.connect_to_signal("org.freedesktop.thumbnails.Thumbnailer1.Finished",
-    #                              handler,
-    #                              sender_keyword='sender')
-
-def signal_handler(*args, **kwargs):
-    print("  ", kwargs)
-    print("  ", args)
-    print()
 
 
 def main(argv):
     args = parse_args(argv[1:])
 
-    dbus_loop = DBusQtMainLoop(set_as_default=True)
-    session_bus = dbus.SessionBus()
-
-    if False:
-        session_bus.add_signal_receiver(
-            signal_handler, # handler
-            None, # signal name
-            None, # dbus interface
-            None, # bus name
-            None, # sender object path
-            sender_keyword="sender",
-            destination_keyword="destination",
-            interface_keyword="interface",
-            member_keyword="member",
-        )
-
-    session_bus.add_signal_receiver(
-        signal_handler,
-        None,
-        'org.freedesktop.thumbnails.Thumbnailer1',
-        None,
-        None,
-        sender_keyword="sender",
-        destination_keyword="destination",
-        interface_keyword="interface",
-        member_keyword="member",
-    )
-
-    thumbnailer = session_bus.get_object('org.freedesktop.thumbnails.Thumbnailer1',
-                                        '/org/freedesktop/thumbnails/Thumbnailer1')
-    print(dir(thumbnailer))
-
-    print("Flavours:", thumbnailer.GetFlavors())
-    print("Schedulers:", thumbnailer.GetSchedulers())
-    # print("Supported:", thumbnailer.GetSupported())
-
-    for filename in args.FILE:
-        make_thumbnail(thumbnailer, filename, flavour=args.flavour)
-        print(">>>", make_thumbnail_filename(filename, args.flavour))
-
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     app = QCoreApplication([])
-    rc = app.exec_()
+
+    dbus_loop = DBusQtMainLoop(set_as_default=True)  # noqa: F841
+    session_bus = dbus.SessionBus()
+
+    thumber = Thumbnailer(session_bus)
+
+    rc = 0
+
+    if args.list_flavors:
+        for flavor in thumber.get_flavors():
+            print(flavor)
+    elif args.list_uri_types:
+        uri_types, mime_types = thumber.get_supported()
+
+        for uri_type in sorted(set(uri_types)):
+            print(uri_type)
+    elif args.list_mime_types:
+        uri_types, mime_types = thumber.get_supported()
+
+        for mime_type in sorted(set(mime_types)):
+            print(mime_type)
+    elif args.list_schedulers:
+        for scheduler in thumber.get_schedulers():
+            print(scheduler)
+    else:
+        thumber.set_idle_callback(app.quit)
+        thumber.queue(args.FILE, flavor=args.flavor)
+        rc = app.exec_()
+
     return rc
 
 
