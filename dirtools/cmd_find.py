@@ -28,26 +28,41 @@ def parse_args(args):
     parser = argparse.ArgumentParser(description="Find files")
 
     parser.add_argument("DIRECTORY", nargs='*')
-    parser.add_argument("-0", "--null", action="store_true",
-                        help="Print \0 delimitered file list")
-    parser.add_argument("-f", "--filter", metavar="EXPR", type=str,
-                        help="Filter filename through EXPR")
-    parser.add_argument("-s", "--sort", metavar="EXPR", type=str,
-                        help="Sort filename by EXPR")
-    parser.add_argument("-R", "--reverse", default=False, action='store_true',
-                        help="Reverse sort order")
-    parser.add_argument("-r", "--recursive", action='store_true',
-                        help="Recursize into the directory tree")
-    parser.add_argument("-l", "--list", action='store_true',
-                        help="List files verbosely")
-    parser.add_argument("-p", "--println", metavar="FMT",
-                        help="List files with the given format string (with newline)")
-    parser.add_argument("-P", "--print", metavar="FMT",
-                        help="List files with the given format string (without newline)")
-    parser.add_argument("-q", "--quiet", action='store_true',
-                        help="Be quiet")
-    parser.add_argument("--exec", metavar="EXEC",
-                        help="Execute EXEC")
+
+    trav_grp = parser.add_argument_group("Traversial Options")
+    trav_grp.add_argument("-r", "--recursive", action='store_true',
+                          help="Recursize into the directory tree")
+    # FIXME: implement this
+    # trav_grp.add_argument("-D", "--maxdepth", metavar="INT", type=int,
+    #                       help="Maximum recursion depth")
+    # trav_grp.add_argument("-d", "--depth", metavar="INT", type=int,
+    #                       help="Process directory content before the directory itself")
+
+    print_grp = parser.add_argument_group("Print Options")
+    print_grp.add_argument("-0", "--null", action="store_true",
+                           help="Print \0 delimitered file list")
+    print_grp.add_argument("-l", "--list", action='store_true',
+                           help="List files verbosely")
+    print_grp.add_argument("-p", "--println", metavar="FMT",
+                           help="List files with the given format string (with newline)")
+    print_grp.add_argument("-P", "--print", metavar="FMT",
+                           help="List files with the given format string (without newline)")
+    print_grp.add_argument("-q", "--quiet", action='store_true',
+                           help="Be quiet")
+
+    sort_grp = parser.add_argument_group("Sort Options")
+    sort_grp.add_argument("-s", "--sort", metavar="EXPR", type=str,
+                          help="Sort filename by EXPR")
+    sort_grp.add_argument("-R", "--reverse", default=False, action='store_true',
+                          help="Reverse sort order")
+
+    filter_grp = parser.add_argument_group("Filter Options")
+    filter_grp.add_argument("-f", "--filter", metavar="EXPR", type=str,
+                            help="Filter filename through EXPR")
+
+    action_grp = parser.add_argument_group("Action Options")
+    action_grp.add_argument("--exec", metavar="CMD",
+                            help="Execute CMD")
 
     return parser.parse_args(args)
 
