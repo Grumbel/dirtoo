@@ -49,6 +49,7 @@ class FilePathLineEdit(QLineEdit):
         if os.path.exists(self.text()):
             self.controller.set_directory(self.text())
 
+
 class FileViewWindow(QMainWindow):
 
     def __init__(self, *args):

@@ -17,7 +17,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os
 import sys
 import argparse
 import signal
@@ -25,7 +24,7 @@ import signal
 from PyQt5.QtWidgets import QApplication
 
 from dirtools.fileview.file_view_window import FileViewWindow
-from dirtools.util import expand_directories, expand_file
+from dirtools.util import expand_directories
 
 
 def parse_args(args):

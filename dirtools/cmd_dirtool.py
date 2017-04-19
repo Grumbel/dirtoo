@@ -65,7 +65,7 @@ def move_files(sourcedir, targetdir, files, ignore_case):
     print("move_files(%s, %s, ...)" % (sourcedir, targetdir))
 
     # TODO: implement this
-    assert not args.ignore_case, "--ignore-case is not implemented for extract-diff"
+    assert not ignore_case, "--ignore-case is not implemented for extract-diff"
 
     assert os.path.isdir(sourcedir)
     assert not os.path.exists(targetdir) or os.path.isdir(targetdir)

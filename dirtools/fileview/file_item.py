@@ -22,7 +22,6 @@ import subprocess
 from PyQt5.QtCore import Qt, QRectF, QMimeData, QUrl
 from PyQt5.QtGui import QPixmap, QColor, QPen, QIcon, QDrag
 from PyQt5.QtWidgets import (
-    QGraphicsItem,
     QGraphicsItemGroup,
     QGraphicsTextItem,
     QGraphicsPixmapItem,
@@ -71,11 +70,11 @@ class FileItem(QGraphicsItemGroup):
             print("drag start")
             self.dragging = True
 
-            mimeData = QMimeData()
-            mimeData.setUrls([QUrl("file://" + self.filename)])
+            mime_data = QMimeData()
+            mime_data.setUrls([QUrl("file://" + self.filename)])
             self.drag = QDrag(self.controller)
             self.drag.setPixmap(self.pixmap)
-            self.drag.setMimeData(mimeData)
+            self.drag.setMimeData(mime_data)
             # drag.setHotSpot(e.pos() - self.rect().topLeft())
             self.dropAction = self.drag.exec_(Qt.CopyAction)
 
@@ -175,7 +174,7 @@ class ThumbFileItem(FileItem):
     def make_items(self):
         rect = QGraphicsRectItem(-2, -2, 128 + 4, 128 + 4 + 16)
         rect.setPen(QPen(Qt.NoPen))
-        rect.setBrush(QColor(192+32, 192+32, 192+32))
+        rect.setBrush(QColor(192 + 32, 192 + 32, 192 + 32))
         self.addToGroup(rect)
 
         self.rect = QGraphicsRectItem(-8, -8, 128 + 16, 128 + 24 + 8)
@@ -193,7 +192,7 @@ class ThumbFileItem(FileItem):
         self.text.setFont(font)
         self.text.setDefaultTextColor(QColor(0, 0, 0))
         self.text.setAcceptHoverEvents(False)
-        self.text.setPos(64 - self.text.boundingRect().width()/2, 128)
+        self.text.setPos(64 - self.text.boundingRect().width() / 2, 128)
         # self.text.setVisible(False)
         self.addToGroup(self.text)
 

@@ -18,14 +18,12 @@
 import os
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QBrush
+from PyQt5.QtGui import QBrush
 from PyQt5.QtWidgets import (
     QGraphicsView,
     QGraphicsScene,
-    QGraphicsPixmapItem,
 )
 
-from dirtools.thumbnail import make_thumbnail_filename
 from dirtools.fileview.file_item import ThumbFileItem
 
 
@@ -41,7 +39,6 @@ class ThumbView(QGraphicsView):
         self.setScene(self.scene)
 
         self.setBackgroundBrush(QBrush(Qt.gray, Qt.SolidPattern))
-
 
     def dragMoveEvent(self, e):
         # the default implementation will check if any item in the
