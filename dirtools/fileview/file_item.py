@@ -61,8 +61,10 @@ class FileItem(QGraphicsItemGroup):
     def mousePressEvent(self, ev):
         # PyQt will route the event to the child items when we don't
         # override this
-        self.press_pos = ev.pos()
-
+        if ev.button() == Qt.LeftButton:
+            self.press_pos = ev.pos()
+        elif ev.button() == Qt.RightButton:
+            pass
 
     def mouseMoveEvent(self, ev):
         if not self.dragging and (ev.pos() - self.press_pos).manhattanLength() > 16:
@@ -78,21 +80,22 @@ class FileItem(QGraphicsItemGroup):
             self.dropAction = self.drag.exec_(Qt.CopyAction)
 
     def mouseReleaseEvent(self, ev):
-        if self.dragging:
-            pass
-        else:
-            if os.path.isdir(self.filename):
-                from dirtools.fileview.file_view_window import FileViewWindow
-                window = FileViewWindow()
-                files = expand_file(self.filename, recursive=False)
-                window.file_view.add_files(files)
-                window.thumb_view.add_files(files)
-                window.show()
-                windows.append(window)
+        if ev.button() == Qt.LeftButton:
+            if self.dragging:
+                pass
             else:
-                subprocess.Popen(["xdg-open", self.filename])
+                if os.path.isdir(self.filename):
+                    from dirtools.fileview.file_view_window import FileViewWindow
+                    window = FileViewWindow()
+                    files = expand_file(self.filename, recursive=False)
+                    window.file_view.add_files(files)
+                    window.thumb_view.add_files(files)
+                    window.show()
+                    windows.append(window)
+                else:
+                    subprocess.Popen(["xdg-open", self.filename])
 
-        self.dragging = False
+            self.dragging = False
 
     def show_basename(self):
         pass
