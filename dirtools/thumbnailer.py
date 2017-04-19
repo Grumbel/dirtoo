@@ -87,6 +87,9 @@ class Thumbnailer:
         self.listener.error(handle, failed_uris, error_code, message)
 
     def queue(self, files, flavor="default"):
+        if files == []:
+            return
+
         urls = ["file://" + urllib.parse.quote(os.path.abspath(f)) for f in files]
         mime_types = [
             mimetypes.guess_type(url)[0] or "application/octet-stream"

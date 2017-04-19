@@ -24,6 +24,7 @@ import signal
 import dbus
 import argparse
 import sys
+import os
 
 from PyQt5.QtCore import QCoreApplication
 from dbus.mainloop.pyqt5 import DBusQtMainLoop
@@ -38,6 +39,8 @@ def parse_args(args):
                         help="Thumbnail size to generate (normal, large)")
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help="Be more verbose")
+    parser.add_argument('-r', '--recursive', action='store_true', default=False,
+                        help="Recurse into directories")
     parser.add_argument('-F', '--list-flavors', action='store_true', default=False,
                         help="List supported flavors")
     parser.add_argument('-M', '--list-mime-types', action='store_true', default=False,
@@ -77,6 +80,29 @@ class ThumbnailerProgressListener(ThumbnailerListener):
         self.app.quit()
 
 
+def request_thumbnails_recursive(thumber, directory, flavor):
+    for root, dirs, files in os.walk(directory):
+        thumber.queue([os.path.join(root, f) for f in files], flavor)
+        for d in dirs:
+            request_thumbnails_recursive(thumber, os.path.join(root, d), flavor)
+
+
+def request_thumbnails(thumber, paths, flavor, recursive):
+    if recursive:
+        files = []
+        dirs = []
+        for p in paths:
+            if os.path.isdir(p):
+                dirs.append(p)
+            else:
+                files.append(p)
+        thumber.queue(files, flavor)
+        for d in dirs:
+            request_thumbnails_recursive(thumber, d, flavor)
+    else:
+        thumber.queue(paths, flavor)
+
+
 def main(argv):
     args = parse_args(argv[1:])
 
@@ -111,7 +137,7 @@ def main(argv):
             print(scheduler)
     else:
         # thumber.set_idle_callback(app.quit)
-        thumber.queue(args.FILE, flavor=args.flavor)
+        request_thumbnails(thumber, args.FILE, args.flavor, args.recursive)
         rc = app.exec_()
 
     return rc
