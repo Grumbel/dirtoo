@@ -155,7 +155,21 @@ class DetailFileItem(FileItem):
         self.text.setPlainText(self.basename)
 
 
+def pixmap_from_filename(filename):
+    _, ext = os.path.splitext(filename)
+    if ext == ".rar":
+        return QIcon.fromTheme("rar").pixmap(self.controller.tn_size)
+    elif ext == ".zip":
+        return QIcon.fromTheme("zip").pixmap(self.controller.tn_size)
+    elif ext == ".txt":
+        return QIcon.fromTheme("txt").pixmap(self.controller.tn_size)
+    else:
+        return QPixmap()
+
 class ThumbFileItem(FileItem):
+
+    def __init__(self, *args):
+        super().__init__(*args)
 
     def hoverEnterEvent(self, ev):
         self.setZValue(2.0)
@@ -172,12 +186,12 @@ class ThumbFileItem(FileItem):
         self.controller.set_filename("")
 
     def make_items(self):
-        rect = QGraphicsRectItem(-2, -2, 128 + 4, 128 + 4 + 16)
+        rect = QGraphicsRectItem(-2, -2, self.controller.tn_width + 4, self.controller.tn_height + 4 + 16)
         rect.setPen(QPen(Qt.NoPen))
         rect.setBrush(QColor(192 + 32, 192 + 32, 192 + 32))
         self.addToGroup(rect)
 
-        self.rect = QGraphicsRectItem(-8, -8, 128 + 16, 128 + 24 + 8)
+        self.rect = QGraphicsRectItem(-8, -8, self.controller.tn_width + 16, self.controller.tn_height + 24 + 8)
         self.rect.setBrush(QColor(32, 32, 32))
         self.rect.setVisible(False)
         self.rect.setAcceptHoverEvents(False)
@@ -192,30 +206,38 @@ class ThumbFileItem(FileItem):
         self.text.setFont(font)
         self.text.setDefaultTextColor(QColor(0, 0, 0))
         self.text.setAcceptHoverEvents(False)
-        self.text.setPos(64 - self.text.boundingRect().width() / 2, 128)
+        self.text.setPos(self.controller.tn_width / 2 - self.text.boundingRect().width() / 2, self.controller.tn_height)
         # self.text.setVisible(False)
         self.addToGroup(self.text)
 
         # tooltips don't work for the whole group
-        # tooltips break the however events!
+        # tooltips break the hover events!
         # self.text.setToolTip(self.filename)
 
-        thumbnail_filename = make_thumbnail_filename(self.filename)
+        thumbnail_filename = make_thumbnail_filename(self.filename, flavor=self.controller.flavor)
         if os.path.isdir(self.filename):
-            pixmap = QIcon.fromTheme("folder").pixmap(96)
+            pixmap = QIcon.fromTheme("folder").pixmap(self.controller.tn_size)
         elif thumbnail_filename:
             pixmap = QPixmap(thumbnail_filename)
         else:
-            pixmap = QIcon.fromTheme("error").pixmap(96)
+            pixmap = pixmap_from_filename(self.filename)
+            if pixmap.isNull():
+                pixmap = QIcon.fromTheme("error").pixmap(self.controller.tn_size)
         self.pixmap = pixmap
 
-        thumb = QGraphicsPixmapItem(pixmap)
-        thumb.setPos(64 - pixmap.width() / 2,
-                     64 - pixmap.height() / 2)
-        self.addToGroup(thumb)
+        self.thumbo = QGraphicsPixmapItem(pixmap)
+        self.thumbo.setPos(self.controller.tn_width/2 - pixmap.width() / 2,
+                          self.controller.tn_height/2 - pixmap.height() / 2)
+        self.addToGroup(self.thumbo)
 
     def boundingRect(self):
-        return QRectF(0, 0, 128, 128)
+        return QRectF(0, 0, self.controller.tn_width, self.controller.tn_height)
+
+    def refresh(self):
+        for item in self.childItems():
+            self.scene().removeItem(item)
+        self.setPos(0, 0)
+        self.make_items()
 
 
 # EOF #

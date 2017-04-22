@@ -84,6 +84,8 @@ class FileViewWindow(QMainWindow):
         self.toolbar.addAction("Show Time Gaps", self.file_view.toggle_timegaps)
         self.toolbar.addAction("Thumbnail View", self.show_thumb_view)
         self.toolbar.addAction("Detail View", self.show_detail_view)
+        self.toolbar.addAction("Zoom In", self.zoom_in)
+        self.toolbar.addAction("Zoom Out", self.zoom_out)
         info = QLabel("lots of files selected")
         self.toolbar.addWidget(info)
 
@@ -92,6 +94,12 @@ class FileViewWindow(QMainWindow):
     def show_detail_view(self):
         self.thumb_view.hide()
         self.file_view.show()
+
+    def zoom_in(self):
+        self.thumb_view.zoom_in()
+
+    def zoom_out(self):
+        self.thumb_view.zoom_out()
 
     def show_thumb_view(self):
         self.thumb_view.show()

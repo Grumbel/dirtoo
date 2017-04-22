@@ -38,6 +38,11 @@ class ThumbView(QGraphicsView):
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
 
+        self.tn_width = 256
+        self.tn_height = 256
+        self.tn_size = min(self.tn_width, self.tn_height)
+        self.flavor = "large"
+
         self.setBackgroundBrush(QBrush(Qt.gray, Qt.SolidPattern))
 
     def dragMoveEvent(self, e):
@@ -74,14 +79,14 @@ class ThumbView(QGraphicsView):
         self.layout_thumbnails()
 
     def layout_thumbnails(self):
-        xs = 128 + 8
-        ys = 128 + 8 + 16
+        xs = self.tn_width + 8
+        ys = self.tn_height + 8 + 16
         x = 0
         y = 0
         for thumb in self.thumbnails:
             thumb.setPos(x, y)
             x += xs
-            if x + xs > self.width() - 64:
+            if x + xs > self.width() - self.tn_width / 2:
                 y += ys
                 x = 0
 
@@ -92,6 +97,26 @@ class ThumbView(QGraphicsView):
             self.controller.set_filename(os.path.abspath(filename))
         else:
             self.controller.set_filename("")
+
+    def zoom_in(self):
+        self.tn_width = 256
+        self.tn_height = 256
+        self.tn_size = min(self.tn_width, self.tn_height)
+        self.flavor = "large"
+
+        for thumb in self.thumbnails:
+            thumb.refresh()
+        self.layout_thumbnails()
+
+    def zoom_out(self):
+        self.tn_width = 128
+        self.tn_height = 128
+        self.tn_size = min(self.tn_width, self.tn_height)
+        self.flavor = "normal"
+
+        for thumb in self.thumbnails:
+            thumb.refresh()
+        self.layout_thumbnails()
 
 
 # EOF #
