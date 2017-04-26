@@ -36,6 +36,8 @@ def parse_args(args):
                         help="Read \\0 separated lines")
     parser.add_argument("-r", "--recursive", action='store_true',
                         help="Be recursive")
+    parser.add_argument("-e", "--empty", action='store_true', default=False,
+                        help="Start with a empty workbench instead of the current directory")
     return parser.parse_args(args)
 
 
@@ -45,7 +47,10 @@ def get_file_list(args):
     elif args.FILE == ["-"]:
         return sys.stdin.read().splitlines()
     elif args.FILE == []:
-        return []
+        if args.empty:
+            return []
+        else:
+            return ["."]
     else:
         return args.FILE
 
