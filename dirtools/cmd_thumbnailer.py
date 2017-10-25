@@ -135,10 +135,12 @@ def main(argv):
     elif args.list_schedulers:
         for scheduler in thumber.get_schedulers():
             print(scheduler)
-    else:
+    elif args.FILE != []:
         # thumber.set_idle_callback(app.quit)
         request_thumbnails(thumber, args.FILE, args.flavor, args.recursive)
         rc = app.exec_()
+    else:
+        pass
 
     return rc
 
