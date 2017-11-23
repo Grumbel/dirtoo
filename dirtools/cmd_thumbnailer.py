@@ -62,10 +62,10 @@ class ThumbnailerProgressListener(ThumbnailerListener):
         # print("[Started]", handle)
         pass
 
-    def ready(self, handle, urls):
+    def ready(self, handle, urls, flavor):
         if self.verbose:
             for url in urls:
-                print(url)
+                print(url, "->", Thumbnailer.thumbnail_from_url(url, flavor))
 
     def error(self, handle, failed_uris, error_code, message):
         for uri in failed_uris:

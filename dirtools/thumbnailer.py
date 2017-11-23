@@ -35,7 +35,7 @@ class ThumbnailerListener:
     def started(self, handle):
         pass
 
-    def ready(self, handle, urls):
+    def ready(self, handle, urls, flavor):
         pass
 
     def error(self, handle, failed_uris, error_code, message):
@@ -63,8 +63,8 @@ class Thumbnailer:
         self.thumbnailer.connect_to_signal("Finished", self._receive_finished)
         self.thumbnailer.connect_to_signal("Error", self._receive_error)
 
-    def _add_request(self, handle, urls):
-        self.requests[handle] = urls
+    def _add_request(self, handle, data):
+        self.requests[handle] = data
 
     def _remove_request(self, handle):
         if handle in self.requests:
@@ -77,7 +77,8 @@ class Thumbnailer:
         self.listener.started(handle)
 
     def _receive_ready(self, handle, uris):
-        self.listener.ready(handle, uris)
+        data = self.requests[handle]
+        self.listener.ready(handle, uris, data[2])
 
     def _receive_finished(self, handle):
         self.listener.finished(handle)
@@ -104,7 +105,7 @@ class Thumbnailer:
             # <arg type="u" name="handle" direction="out" />
             dbus_interface="org.freedesktop.thumbnails.Thumbnailer1"
         )
-        self._add_request(handle, urls)
+        self._add_request(handle, (urls, mime_types, flavor))
 
     def dequeue(self, handle):
         self.thumbnailer.Dequeue(handle,
