@@ -34,6 +34,19 @@ def parse_args():
     return parser.parse_args()
 
 
+def to_int(text, default):
+    try:
+        return int(text)
+    except ValueError:
+        # mediainfo will sometimes return strings like "234234.0000"
+        try:
+            return int(float(text))
+        except ValueError:
+            return default
+    else:
+        return default
+
+
 def print_mediainfo(filename):
     milib = MediaInfoDLL3.MediaInfo()
     ret = milib.Open(filename)
@@ -64,7 +77,7 @@ def print_mediainfo(filename):
     milib.Close()
 
     framerate = float(framerate) if framerate else 0
-    duration = int(duration) if duration != "" else 0
+    duration = to_int(duration, 0)
     width = int(width) if width != "" else 0
     height = int(height) if height != "" else 0
 
