@@ -35,8 +35,8 @@ from dirtools.thumbnailer import Thumbnailer, ThumbnailerListener
 def parse_args(args):
     parser = argparse.ArgumentParser(description="Make thumbnails for files")
     parser.add_argument("FILE", nargs='*')
-    parser.add_argument('-f', '--flavor', metavar="FLAVOR", type=str, default="normal",
-                        help="Thumbnail size to generate (normal, large)")
+    parser.add_argument('-f', '--flavor', metavar="FLAVOR", type=str, default="all",
+                        help="Thumbnail size to generate (normal, large, all)")
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help="Be more verbose")
     parser.add_argument('-r', '--recursive', action='store_true', default=False,
@@ -54,9 +54,8 @@ def parse_args(args):
 
 class ThumbnailerProgressListener(ThumbnailerListener):
 
-    def __init__(self, app, flavor, verbose):
+    def __init__(self, app, verbose):
         self.app = app
-        self.flavor = flavor
         self.verbose = verbose
 
     def started(self, handle):
@@ -66,7 +65,7 @@ class ThumbnailerProgressListener(ThumbnailerListener):
     def ready(self, handle, urls):
         if self.verbose:
             for url in urls:
-                print(url, "->", Thumbnailer.thumbnail_from_url(url, flavor=self.flavor))
+                print(url)
 
     def error(self, handle, failed_uris, error_code, message):
         for uri in failed_uris:
@@ -114,7 +113,6 @@ def main(argv):
 
     thumber = Thumbnailer(session_bus,
                           ThumbnailerProgressListener(app,
-                                                      flavor=args.flavor,
                                                       verbose=args.verbose))
 
     rc = 0
@@ -136,8 +134,12 @@ def main(argv):
         for scheduler in thumber.get_schedulers():
             print(scheduler)
     elif args.FILE != []:
-        # thumber.set_idle_callback(app.quit)
-        request_thumbnails(thumber, args.FILE, args.flavor, args.recursive)
+        if args.flavor == 'all':
+            for flavor in thumber.get_flavors():
+                request_thumbnails(thumber, args.FILE, flavor, args.recursive)
+        else:
+            request_thumbnails(thumber, args.FILE, args.flavor, args.recursive)
+
         rc = app.exec_()
     else:
         pass
