@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # dirtool.py - diff tool for directories
 # Copyright (C) 2017 Ingo Ruhnke <grumbel@gmail.com>
 #

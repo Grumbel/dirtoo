@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # guessarchivename - Suggest new filename from archive file content
 # Copyright (C) 2017 Ingo Ruhnke <grumbel@gmail.com>
 #
