@@ -16,7 +16,7 @@
 
 SOURCES := $(wildcard dirtools/*.py dirtools/*/*.py)
 
-default: flake test
+default: mypy flake test
 
 all: autopep flake test pylint
 
@@ -25,6 +25,9 @@ autopep:
 
 test:
 	python3 -m unittest discover -s tests/
+
+mypy:
+	mypy --ignore-missing-imports $(SOURCES)
 
 flake:
 	flake8 --max-line-length=120 --ignore=N802 $(SOURCES)
