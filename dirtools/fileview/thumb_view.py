@@ -86,7 +86,7 @@ class ThumbView(QGraphicsView):
         for thumb in self.thumbnails:
             thumb.setPos(x, y)
             x += xs
-            if x + xs > self.width() - self.tn_width / 2:
+            if x + xs > self.viewport().width():
                 y += ys
                 x = 0
 

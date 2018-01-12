@@ -194,7 +194,7 @@ class ThumbFileItem(FileItem):
         rect.setBrush(QColor(192 + 32, 192 + 32, 192 + 32))
         self.addToGroup(rect)
 
-        self.rect = QGraphicsRectItem(-8, -8, self.controller.tn_width + 16, self.controller.tn_height + 24 + 8)
+        self.rect = QGraphicsRectItem(-2, -2, self.controller.tn_width + 4, self.controller.tn_height + 4 + 16)
         self.rect.setBrush(QColor(32, 32, 32))
         self.rect.setVisible(False)
         self.rect.setAcceptHoverEvents(False)
