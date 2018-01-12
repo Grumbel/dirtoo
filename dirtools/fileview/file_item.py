@@ -166,6 +166,7 @@ def pixmap_from_filename(filename):
     else:
         return QPixmap()
 
+
 class ThumbFileItem(FileItem):
 
     def __init__(self, *args):
@@ -226,8 +227,8 @@ class ThumbFileItem(FileItem):
         self.pixmap = pixmap
 
         self.thumbo = QGraphicsPixmapItem(pixmap)
-        self.thumbo.setPos(self.controller.tn_width/2 - pixmap.width() / 2,
-                          self.controller.tn_height/2 - pixmap.height() / 2)
+        self.thumbo.setPos(self.controller.tn_width / 2 - pixmap.width() / 2,
+                           self.controller.tn_height / 2 - pixmap.height() / 2)
         self.addToGroup(self.thumbo)
 
     def boundingRect(self):

@@ -108,20 +108,24 @@ class Thumbnailer:
         self._add_request(handle, (urls, mime_types, flavor))
 
     def dequeue(self, handle):
-        self.thumbnailer.Dequeue(handle,
-                                 dbus_interface="org.freedesktop.thumbnails.Thumbnailer1")
+        self.thumbnailer.Dequeue(
+            handle,
+            dbus_interface="org.freedesktop.thumbnails.Thumbnailer1")
         del self.requests[handle]
 
     def get_supported(self):
-        uri_schemes, mime_types = self.thumbnailer.GetSupported(dbus_interface="org.freedesktop.thumbnails.Thumbnailer1")
+        uri_schemes, mime_types = self.thumbnailer.GetSupported(
+            dbus_interface="org.freedesktop.thumbnails.Thumbnailer1")
         return (uri_schemes, mime_types)
 
     def get_schedulers(self):
-        schedulers = self.thumbnailer.GetSchedulers(dbus_interface="org.freedesktop.thumbnails.Thumbnailer1")
+        schedulers = self.thumbnailer.GetSchedulers(
+            dbus_interface="org.freedesktop.thumbnails.Thumbnailer1")
         return schedulers
 
     def get_flavors(self):
-        flavors = self.thumbnailer.GetFlavors(dbus_interface="org.freedesktop.thumbnails.Thumbnailer1")
+        flavors = self.thumbnailer.GetFlavors(
+            dbus_interface="org.freedesktop.thumbnails.Thumbnailer1")
         return flavors
 
     @staticmethod
