@@ -155,14 +155,16 @@ class DetailFileItem(FileItem):
         self.text.setPlainText(self.basename)
 
 
-def pixmap_from_filename(filename):
+def pixmap_from_filename(filename, tn_size):
+    tn_size = 3 * tn_size // 4
+
     _, ext = os.path.splitext(filename)
     if ext == ".rar":
-        return QIcon.fromTheme("rar").pixmap(self.controller.tn_size)
+        return QIcon.fromTheme("rar").pixmap(tn_size)
     elif ext == ".zip":
-        return QIcon.fromTheme("zip").pixmap(self.controller.tn_size)
+        return QIcon.fromTheme("zip").pixmap(tn_size)
     elif ext == ".txt":
-        return QIcon.fromTheme("txt").pixmap(self.controller.tn_size)
+        return QIcon.fromTheme("txt").pixmap(tn_size)
     else:
         return QPixmap()
 
@@ -217,13 +219,13 @@ class ThumbFileItem(FileItem):
 
         thumbnail_filename = make_thumbnail_filename(self.filename, flavor=self.controller.flavor)
         if os.path.isdir(self.filename):
-            pixmap = QIcon.fromTheme("folder").pixmap(self.controller.tn_size)
+            pixmap = QIcon.fromTheme("folder").pixmap(3 * self.controller.tn_size // 4)
         elif thumbnail_filename:
             pixmap = QPixmap(thumbnail_filename)
         else:
-            pixmap = pixmap_from_filename(self.filename)
+            pixmap = pixmap_from_filename(self.filename, 3 * self.controller.tn_size // 4)
             if pixmap.isNull():
-                pixmap = QIcon.fromTheme("error").pixmap(self.controller.tn_size)
+                pixmap = QIcon.fromTheme("error").pixmap(3 * self.controller.tn_size // 4)
         self.pixmap = pixmap
 
         self.thumbo = QGraphicsPixmapItem(pixmap)
