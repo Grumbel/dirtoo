@@ -28,6 +28,8 @@ import re
 import hashlib
 import ngram  # pylint: disable=E0401
 
+import bytefmt
+
 from dirtools.fuzzy import fuzzy
 from dirtools.find.util import replace_item, size_in_bytes, name_match
 
@@ -231,22 +233,13 @@ class Context:  # pylint: disable=R0904,R0915
         b = time.time()
         return (b - a) / (60 * 60 * 24)
 
-    def sizehr(self, s=None):
+    def sizehr(self, s=None, style="decimal", compact=False):
         """Returns size() formated a human readable string"""
 
         if s is None:
             s = self.size()
 
-        if s < 1000:
-            return "{}B".format(s)
-        elif s < 1000 ** 2:
-            return "{:.2f}kB".format(self.in_kB(s))
-        elif s < 1000 ** 3:
-            return "{:.2f}MB".format(self.in_MB(s))
-        elif s < 1000 ** 4:
-            return "{:.2f}GB".format(self.in_GB(s))
-        else:
-            return "{:.2f}TB".format(self.in_TB(s))
+        return bytefmt.humanize(s, style=style, compact=compact)
 
     def size(self):
         return size_in_bytes(self.current_file)

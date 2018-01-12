@@ -38,6 +38,7 @@ setup(name='dirtools',
           ],
           'gui_scripts': []
           },
+      install_requires=['bytefmt'],
       packages=['dirtools'])
 
 
