@@ -18,7 +18,11 @@
 import os
 
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (
+    QStyle,
+    QAction,
+    QActionGroup,
     QWidget,
     QLabel,
     QLineEdit,
@@ -78,14 +82,85 @@ class FileViewWindow(QMainWindow):
         vbox_widget.setLayout(self.vbox)
         self.setCentralWidget(vbox_widget)
 
+        exitAct = QAction(QIcon.fromTheme('exit'), '&Exit', self)
+        exitAct.setShortcut('Ctrl+Q')
+        exitAct.setStatusTip('Exit application')
+        exitAct.triggered.connect(self.close)
+
+        back_action = QAction(QIcon.fromTheme('back'), 'Go &back', self)
+        back_action.setShortcut('Alt+Left')
+        back_action.setStatusTip('Go back in history')
+        back_action.setEnabled(False)
+
+        forward_action = QAction(QIcon.fromTheme('forward'), 'Go &forward', self)
+        forward_action.setShortcut('Alt+Right')
+        forward_action.setStatusTip('Go forward in history')
+        forward_action.setEnabled(False)
+
+        view_detail_view = QAction("Detail View", self, checkable=True)
+        view_icon_view = QAction("Icon View", self, checkable=True)
+        view_small_icon_view = QAction("Small Icon View", self, checkable=True)
+
+        view_action_group = QActionGroup(self)
+        view_action_group.addAction(view_detail_view)
+        view_action_group.addAction(view_icon_view)
+        view_action_group.addAction(view_small_icon_view)
+
+        show_abspath_action = QAction("Show AbsPath", self, checkable=True)
+        show_abspath_action.triggered.connect(self.file_view.show_abspath)
+
+        show_basename_action = QAction("Show Basename", self, checkable=True)
+        show_basename_action.triggered.connect(self.file_view.show_basename)
+
+        path_options_group = QActionGroup(self)
+        path_options_group.addAction(show_abspath_action)
+        path_options_group.addAction(show_basename_action)
+
+        about_action = QAction(QIcon.fromTheme('about'), 'About dt-fileview', self)
+        about_action.setStatusTip('Show About dialog')
+
+        menubar = self.menuBar()
+        file_menu = menubar.addMenu('&File')
+        file_menu.addAction(exitAct)
+
+        view_menu = menubar.addMenu('&View')
+        view_menu.addSeparator().setText("View Style")
+        view_menu.addAction(view_detail_view)
+        view_menu.addAction(view_icon_view)
+        view_menu.addAction(view_small_icon_view)
+        view_menu.addSeparator().setText("Path Options")
+        view_menu.addAction("Show AbsPath", self.file_view.show_abspath)
+        view_menu.addAction("Show Basename", self.file_view.show_basename)
+        view_menu.addSeparator()
+
+        history_menu = menubar.addMenu('&History')
+        history_menu.addAction(back_action)
+        history_menu.addAction(forward_action)
+
+        help_menu = menubar.addMenu('&Help')
+        help_menu.addAction(about_action)
+
         self.toolbar = self.addToolBar("FileView")
+        self.toolbar.addAction(back_action)
+        self.toolbar.addAction(forward_action)
+        self.toolbar.addSeparator()
         self.toolbar.addAction("Show AbsPath", self.file_view.show_abspath)
         self.toolbar.addAction("Show Basename", self.file_view.show_basename)
+        self.toolbar.addSeparator()
         self.toolbar.addAction("Show Time Gaps", self.file_view.toggle_timegaps)
-        self.toolbar.addAction("Thumbnail View", self.show_thumb_view)
-        self.toolbar.addAction("Detail View", self.show_detail_view)
-        self.toolbar.addAction("Zoom In", self.zoom_in)
-        self.toolbar.addAction("Zoom Out", self.zoom_out)
+        self.toolbar.addSeparator()
+        # self.toolbar.addAction(self.style().standardIcon(QStyle.SP_FileDialogContentsView),
+        #                       "List View", self.show_list_view)
+        self.toolbar.addAction(self.style().standardIcon(QStyle.SP_FileDialogContentsView),
+                               "Thumbnail View",
+                               self.show_thumb_view)
+        self.toolbar.addAction(self.style().standardIcon(QStyle.SP_FileDialogDetailedView),
+                               "Detail View",
+                               self.show_detail_view)
+        self.toolbar.addSeparator()
+        self.toolbar.addAction(QIcon.fromTheme('zoom-in'), "Zoom In", self.zoom_in)
+        self.toolbar.addAction(QIcon.fromTheme('zoom-out'), "Zoom Out", self.zoom_out)
+        self.toolbar.addSeparator()
         info = QLabel("lots of files selected")
         self.toolbar.addWidget(info)
 
