@@ -116,7 +116,7 @@ class FileViewWindow(QMainWindow):
         path_options_group.addAction(show_abspath_action)
         path_options_group.addAction(show_basename_action)
 
-        about_action = QAction(QIcon.fromTheme('about'), 'About dt-fileview', self)
+        about_action = QAction(QIcon.fromTheme('help-about'), 'About dt-fileview', self)
         about_action.setStatusTip('Show About dialog')
 
         menubar = self.menuBar()
