@@ -32,11 +32,10 @@ def parse_args(args):
     trav_grp = parser.add_argument_group("Traversial Options")
     trav_grp.add_argument("-r", "--recursive", action='store_true',
                           help="Recursize into the directory tree")
-    # FIXME: implement this
-    # trav_grp.add_argument("-D", "--maxdepth", metavar="INT", type=int,
-    #                       help="Maximum recursion depth")
-    # trav_grp.add_argument("-d", "--depth", metavar="INT", type=int,
-    #                       help="Process directory content before the directory itself")
+    trav_grp.add_argument("-D", "--maxdepth", metavar="INT", type=int, default=None,
+                          help="Maximum recursion depth")
+    trav_grp.add_argument("-d", "--depth", action='store_true', default=False,
+                          help="Process directory content before the directory itself")
 
     print_grp = parser.add_argument_group("Print Options")
     print_grp.add_argument("-0", "--null", action="store_true",
@@ -115,7 +114,7 @@ def main():
     find_action = create_sorter_wrapper(args, find_action)
 
     for d in directories:
-        find_files(d, args.recursive, find_filter, find_action)
+        find_files(d, args.recursive, find_filter, find_action, topdown=args.depth, maxdepth=args.maxdepth)
 
     find_action.finish()
 

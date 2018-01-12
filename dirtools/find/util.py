@@ -37,20 +37,18 @@ def replace_item(lst, needle, replacements):
     return result
 
 
-def find_files(directory, recursive, filter_op, action):
-    result = []
+def find_files(directory, recursive, filter_op, action, topdown, maxdepth):
+    assert topdown is False, "not implemented"
+    assert maxdepth is None, "not implemented"
 
     for root, dirs, files in os.walk(directory):
         for f in files:
             if filter_op.match_file(root, f):
                 action.file(root, f)
                 fullpath = os.path.join(root, f)
-                result.append(fullpath)
 
         if not recursive:
             del dirs[:]
-
-    return result
 
 
 # EOF #
