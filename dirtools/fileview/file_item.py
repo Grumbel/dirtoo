@@ -108,12 +108,12 @@ class DetailFileItem(FileItem):
     def hoverEnterEvent(self, ev):
         self.show_thumbnail()
         self.text.setDefaultTextColor(QColor(0, 128, 128))
-        self.controller.set_filename(self.fileinfo.filename)
+        self.controller.show_current_filename(self.fileinfo.filename)
 
     def hoverLeaveEvent(self, ev):
         self.hide_thumbnail()
         self.text.setDefaultTextColor(QColor(0, 0, 0))
-        self.controller.set_filename("")
+        self.controller.show_current_filename("")
 
     def make_items(self):
         self.text = QGraphicsTextItem()
@@ -177,25 +177,26 @@ class ThumbFileItem(FileItem):
     def hoverEnterEvent(self, ev):
         self.setZValue(2.0)
         # self.text.setVisible(True)
-        self.text.setDefaultTextColor(QColor(255, 255, 255))
+        # self.text.setDefaultTextColor(QColor(255, 255, 255))
         self.select_rect.setVisible(True)
-        self.controller.set_filename(self.fileinfo.filename)
+        self.controller.show_current_filename(self.fileinfo.filename)
 
     def hoverLeaveEvent(self, ev):
         self.setZValue(0)
         self.select_rect.setVisible(False)
         # self.text.setVisible(False)
         self.text.setDefaultTextColor(QColor(0, 0, 0))
-        self.controller.set_filename("")
+        self.controller.show_current_filename("")
 
     def make_items(self):
         rect = QGraphicsRectItem(-2, -2, self.controller.tn_width + 4, self.controller.tn_height + 4 + 16)
         rect.setPen(QPen(Qt.NoPen))
-        rect.setBrush(QColor(192 + 32, 192 + 32, 192 + 32))
+        # rect.setBrush(QColor(192 + 32, 192 + 32, 192 + 32))
         self.addToGroup(rect)
 
         self.select_rect = QGraphicsRectItem(-2, -2, self.controller.tn_width + 4, self.controller.tn_height + 4 + 16)
-        self.select_rect.setBrush(QColor(32, 32, 32))
+        self.select_rect.setPen(QPen(Qt.NoPen))
+        self.select_rect.setBrush(QColor(192 + 32, 192 + 32, 192 + 32))
         self.select_rect.setVisible(False)
         self.select_rect.setAcceptHoverEvents(False)
         self.addToGroup(self.select_rect)

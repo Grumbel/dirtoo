@@ -18,6 +18,7 @@
 import os
 import datetime
 
+from PyQt5.QtCore import QRectF
 from PyQt5.QtWidgets import (
     QGraphicsScene,
     QGraphicsView,
@@ -35,8 +36,6 @@ class DetailView(QGraphicsView):
         self.controller = controller
         self.timespace = False
         self.file_items = []
-
-        # self.setTransformationAnchor(QGraphicsView.AnchorViewCenter)
 
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
@@ -69,7 +68,7 @@ class DetailView(QGraphicsView):
             text = self.scene.addText(datetime.datetime.fromtimestamp(mtime).strftime("%F %T"))
             text.setPos(20, y)
 
-            text = DetailFileItem(FileInfo(filename), self)
+            text = DetailFileItem(FileInfo(filename), self.controller)
             text.filename = filename
             self.scene.addItem(text)
             text.setPos(200, y)
@@ -80,8 +79,18 @@ class DetailView(QGraphicsView):
 
             y += 20
 
-        self.setSceneRect(self.scene.itemsBoundingRect())
-        # print(self.scene.itemsBoundingRect())
+        bounding_rect = QRectF(0,
+                               0,
+                               max(self.viewport().size().width(),
+                                   self.scene.itemsBoundingRect().width()),
+                               max(self.viewport().size().height(),
+                                   self.scene.itemsBoundingRect().height()))
+        print(bounding_rect)
+        self.setSceneRect(bounding_rect)
+
+    def resizeEvent(self, ev):
+        super().resizeEvent(ev)
+        self.layout_files()
 
     def toggle_timegaps(self):
         self.timespace = not self.timespace
@@ -104,8 +113,8 @@ class DetailView(QGraphicsView):
 
     def set_filename(self, filename):
         if filename:
-            self.controller.set_filename(os.path.abspath(filename))
+            self.controller.show_current_filename(os.path.abspath(filename))
         else:
-            self.controller.set_filename("")
+            self.controller.show_current_filename("")
 
 # EOF #

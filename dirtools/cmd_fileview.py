@@ -21,7 +21,7 @@ import signal
 
 from PyQt5.QtWidgets import QApplication
 
-from dirtools.fileview.file_view_window import FileViewWindow
+from dirtools.fileview.controller import Controller
 from dirtools.util import expand_directories
 
 
@@ -62,21 +62,15 @@ def main(argv):
     files = get_file_list(args)
 
     app = QApplication([])
-    window = FileViewWindow()
-    window.file_view.timespace = args.timespace
+
+    controller = Controller()
+
     files = expand_directories(files, args.recursive)
-    window.file_view.add_files(files)
-    window.thumb_view.add_files(files)
-    window.show()
+    controller.set_files(files)
 
-    rc = app.exec_()
+    controller.window.show()
 
-    # All Qt classes need to be destroyed before the app exists or we
-    # get a segfault
-    del window
-    del app
-
-    sys.exit(rc)
+    sys.exit(app.exec_())
 
 
 def main_entrypoint():

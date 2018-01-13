@@ -15,9 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os
-
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QRectF
 from PyQt5.QtGui import QBrush
 from PyQt5.QtWidgets import (
     QGraphicsView,
@@ -44,7 +42,7 @@ class ThumbView(QGraphicsView):
         self.tn_size = min(self.tn_width, self.tn_height)
         self.flavor = "large"
 
-        self.setBackgroundBrush(QBrush(Qt.gray, Qt.SolidPattern))
+        self.setBackgroundBrush(QBrush(Qt.white, Qt.SolidPattern))
 
     def dragMoveEvent(self, e):
         # the default implementation will check if any item in the
@@ -69,7 +67,7 @@ class ThumbView(QGraphicsView):
         self.thumbnails = []
 
         for filename in self.files:
-            thumb = ThumbFileItem(FileInfo(filename), self)
+            thumb = ThumbFileItem(FileInfo(filename), self.controller)
             self.scene.addItem(thumb)
             self.thumbnails.append(thumb)
 
@@ -91,13 +89,16 @@ class ThumbView(QGraphicsView):
                 y += ys
                 x = 0
 
-        self.setSceneRect(self.scene.itemsBoundingRect())
-
-    def set_filename(self, filename):
-        if filename:
-            self.controller.set_filename(os.path.abspath(filename))
+        if True:  # top/left alignment
+            bounding_rect = QRectF(0,
+                                   0,
+                                   max(self.viewport().size().width(),
+                                       self.scene.itemsBoundingRect().width()),
+                                   max(self.viewport().size().height(),
+                                       self.scene.itemsBoundingRect().height()))
+            self.setSceneRect(bounding_rect)
         else:
-            self.controller.set_filename("")
+            self.setSceneRect(self.scene.itemsBoundingRect())
 
     def zoom_in(self):
         self.tn_width = 256

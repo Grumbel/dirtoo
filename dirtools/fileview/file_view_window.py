@@ -18,18 +18,15 @@
 import os
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (
+    QFormLayout,
     QStyle,
-    QAction,
-    QActionGroup,
     QWidget,
     QLabel,
     QLineEdit,
     QMainWindow,
     QSizePolicy,
     QVBoxLayout,
-    QStatusBar,
 )
 
 from dirtools.fileview.detail_view import DetailView
@@ -56,9 +53,17 @@ class FilePathLineEdit(QLineEdit):
 
 class FileViewWindow(QMainWindow):
 
-    def __init__(self, *args):
-        super().__init__(*args)
+    def __init__(self, controller):
+        super().__init__()
 
+        self.controller = controller
+        self.actions = self.controller.actions
+
+        self.make_window()
+        self.make_menubar()
+        self.make_toolbar()
+
+    def make_window(self):
         self.setWindowTitle("dt-fileview")
         self.vbox = QVBoxLayout()
         self.vbox.setContentsMargins(0, 0, 0, 0)
@@ -67,110 +72,72 @@ class FileViewWindow(QMainWindow):
         self.file_view.hide()
         self.thumb_view = ThumbView(self)
         self.file_path = FilePathLineEdit(self)
-        self.file_filter = FileFilter()
+        self.file_filter = FileFilter(self)
+        # self.file_filter.setText("File Pattern Here")
         self.file_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.thumb_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.status_bar = QStatusBar(self)
+        self.status_bar = self.statusBar()
 
-        self.vbox.addWidget(self.file_path)
+        form = QFormLayout()
+        form.addRow("Path:", self.file_path)
+        self.vbox.addLayout(form)
+
         self.vbox.addWidget(self.file_view, Qt.AlignLeft)
         self.vbox.addWidget(self.thumb_view, Qt.AlignLeft)
-        self.vbox.addWidget(self.file_filter)
-        self.vbox.addWidget(self.status_bar)
+
+        form = QFormLayout()
+        form.addRow("Filter:", self.file_filter)
+        self.vbox.addLayout(form)
 
         vbox_widget = QWidget()
         vbox_widget.setLayout(self.vbox)
         self.setCentralWidget(vbox_widget)
 
-        exitAct = QAction(QIcon.fromTheme('exit'), '&Exit', self)
-        exitAct.setShortcut('Ctrl+Q')
-        exitAct.setStatusTip('Exit application')
-        exitAct.triggered.connect(self.close)
+    def make_menubar(self):
+        self.menubar = self.menuBar()
+        file_menu = self.menubar.addMenu('&File')
+        file_menu.addAction(self.actions.exit)
 
-        undo_action = QAction(QIcon.fromTheme('undo'), '&Undo', self)
-        undo_action.setShortcut('Ctrl+Q')
-        undo_action.setStatusTip('Undo the last action')
+        edit_menu = self.menubar.addMenu('&Edit')
+        edit_menu.addAction(self.actions.undo)
+        edit_menu.addAction(self.actions.redo)
 
-        redo_action = QAction(QIcon.fromTheme('redo'), '&Redo', self)
-        redo_action.setShortcut('Ctrl+Q')
-        redo_action.setStatusTip('Redo the last action')
-
-        zoom_in_action = QAction(QIcon.fromTheme('zoom-in'), "Zoom &In", self)
-        zoom_in_action.triggered.connect(self.zoom_in)
-        zoom_out_action = QAction(QIcon.fromTheme('zoom-out'), "Zoom &Out", self)
-        zoom_out_action.triggered.connect(self.zoom_out)
-
-        back_action = QAction(QIcon.fromTheme('back'), 'Go &back', self)
-        back_action.setShortcut('Alt+Left')
-        back_action.setStatusTip('Go back in history')
-        back_action.setEnabled(False)
-
-        forward_action = QAction(QIcon.fromTheme('forward'), 'Go &forward', self)
-        forward_action.setShortcut('Alt+Right')
-        forward_action.setStatusTip('Go forward in history')
-        forward_action.setEnabled(False)
-
-        view_detail_view = QAction("Detail View", self, checkable=True)
-        view_icon_view = QAction("Icon View", self, checkable=True)
-        view_small_icon_view = QAction("Small Icon View", self, checkable=True)
-
-        view_action_group = QActionGroup(self)
-        view_action_group.addAction(view_detail_view)
-        view_action_group.addAction(view_icon_view)
-        view_action_group.addAction(view_small_icon_view)
-
-        show_abspath_action = QAction("Show AbsPath", self, checkable=True)
-        show_abspath_action.triggered.connect(self.file_view.show_abspath)
-
-        show_basename_action = QAction("Show Basename", self, checkable=True)
-        show_basename_action.triggered.connect(self.file_view.show_basename)
-
-        path_options_group = QActionGroup(self)
-        path_options_group.addAction(show_abspath_action)
-        path_options_group.addAction(show_basename_action)
-
-        about_action = QAction(QIcon.fromTheme('help-about'), 'About dt-fileview', self)
-        about_action.setStatusTip('Show About dialog')
-
-        menubar = self.menuBar()
-        file_menu = menubar.addMenu('&File')
-        file_menu.addAction(exitAct)
-
-        edit_menu = menubar.addMenu('&Edit')
-        edit_menu.addAction(undo_action)
-        edit_menu.addAction(redo_action)
-
-        view_menu = menubar.addMenu('&View')
+        view_menu = self.menubar.addMenu('&View')
         view_menu.addSeparator().setText("View Style")
-        view_menu.addAction(view_detail_view)
-        view_menu.addAction(view_icon_view)
-        view_menu.addAction(view_small_icon_view)
+        view_menu.addAction(self.actions.view_detail_view)
+        view_menu.addAction(self.actions.view_icon_view)
+        view_menu.addAction(self.actions.view_small_icon_view)
         view_menu.addSeparator().setText("Path Options")
-        view_menu.addAction("Show AbsPath", self.file_view.show_abspath)
-        view_menu.addAction("Show Basename", self.file_view.show_basename)
+        view_menu.addAction(self.actions.show_abspath)
+        view_menu.addAction(self.actions.show_basename)
         view_menu.addSeparator().setText("Zoom")
-        view_menu.addAction(zoom_in_action)
-        view_menu.addAction(zoom_out_action)
+        view_menu.addAction(self.actions.zoom_in)
+        view_menu.addAction(self.actions.zoom_out)
         view_menu.addSeparator()
 
-        history_menu = menubar.addMenu('&History')
-        history_menu.addAction(back_action)
-        history_menu.addAction(forward_action)
+        history_menu = self.menubar.addMenu('&History')
+        history_menu.addAction(self.actions.back)
+        history_menu.addAction(self.actions.forward)
 
-        help_menu = menubar.addMenu('&Help')
-        help_menu.addAction(about_action)
+        help_menu = self.menubar.addMenu('&Help')
+        help_menu.addAction(self.actions.about)
 
+    def make_toolbar(self):
         self.toolbar = self.addToolBar("FileView")
-        self.toolbar.addAction(back_action)
-        self.toolbar.addAction(forward_action)
+        self.toolbar.addAction(self.style().standardIcon(QStyle.SP_FileDialogToParent),
+                               "Parent Directory",
+                               self.controller.parent_directory)
         self.toolbar.addSeparator()
-        self.toolbar.addAction(undo_action)
-        self.toolbar.addAction(redo_action)
+        self.toolbar.addAction(self.actions.back)
+        self.toolbar.addAction(self.actions.forward)
         self.toolbar.addSeparator()
-        self.toolbar.addAction("Show AbsPath", self.file_view.show_abspath)
-        self.toolbar.addAction("Show Basename", self.file_view.show_basename)
+        self.toolbar.addAction(self.actions.undo)
+        self.toolbar.addAction(self.actions.redo)
         self.toolbar.addSeparator()
-        self.toolbar.addAction("Show Time Gaps", self.file_view.toggle_timegaps)
+        self.toolbar.addAction(self.actions.show_abspath)
+        self.toolbar.addAction(self.actions.show_basename)
+        self.toolbar.addSeparator()
+        self.toolbar.addAction(self.actions.toggle_timegaps)
         self.toolbar.addSeparator()
         # self.toolbar.addAction(self.style().standardIcon(QStyle.SP_FileDialogContentsView),
         #                       "List View", self.show_list_view)
@@ -181,23 +148,38 @@ class FileViewWindow(QMainWindow):
                                "Detail View",
                                self.show_detail_view)
         self.toolbar.addSeparator()
-        self.toolbar.addAction(zoom_in_action)
-        self.toolbar.addAction(zoom_out_action)
+        self.toolbar.addAction(self.actions.zoom_in)
+        self.toolbar.addAction(self.actions.zoom_out)
         self.toolbar.addSeparator()
         info = QLabel("lots of files selected")
         self.toolbar.addWidget(info)
 
-        self.file_filter.setFocus()
+    # Temp Hacks
+    @property
+    def tn_width(self):
+        return self.thumb_view.tn_width
 
-    def show_detail_view(self):
-        self.thumb_view.hide()
-        self.file_view.show()
+    @property
+    def tn_height(self):
+        return self.thumb_view.tn_height
+
+    @property
+    def tn_size(self):
+        return self.thumb_view.tn_size
+
+    @property
+    def flavor(self):
+        return self.thumb_view.flavor
 
     def zoom_in(self):
         self.thumb_view.zoom_in()
 
     def zoom_out(self):
         self.thumb_view.zoom_out()
+
+    def show_detail_view(self):
+        self.thumb_view.hide()
+        self.file_view.show()
 
     def show_thumb_view(self):
         self.thumb_view.show()
@@ -207,7 +189,7 @@ class FileViewWindow(QMainWindow):
         self.path = path
         self.file_path.setText(self.path)
 
-    def set_filename(self, filename):
+    def show_current_filename(self, filename):
         self.status_bar.showMessage(filename)
 
 
