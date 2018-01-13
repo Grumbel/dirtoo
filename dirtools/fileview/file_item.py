@@ -72,7 +72,7 @@ class FileItem(QGraphicsItemGroup):
             self.drag = QDrag(self.controller)
             self.drag.setPixmap(self.pixmap)
             self.drag.setMimeData(mime_data)
-            # drag.setHotSpot(e.pos() - self.rect().topLeft())
+            # drag.setHotSpot(e.pos() - self.select_rect().topLeft())
             self.dropAction = self.drag.exec_(Qt.CopyAction)
 
     def mouseReleaseEvent(self, ev):
@@ -178,12 +178,12 @@ class ThumbFileItem(FileItem):
         self.setZValue(2.0)
         # self.text.setVisible(True)
         self.text.setDefaultTextColor(QColor(255, 255, 255))
-        self.rect.setVisible(True)
+        self.select_rect.setVisible(True)
         self.controller.set_filename(self.fileinfo.filename)
 
     def hoverLeaveEvent(self, ev):
         self.setZValue(0)
-        self.rect.setVisible(False)
+        self.select_rect.setVisible(False)
         # self.text.setVisible(False)
         self.text.setDefaultTextColor(QColor(0, 0, 0))
         self.controller.set_filename("")
@@ -194,11 +194,11 @@ class ThumbFileItem(FileItem):
         rect.setBrush(QColor(192 + 32, 192 + 32, 192 + 32))
         self.addToGroup(rect)
 
-        self.rect = QGraphicsRectItem(-2, -2, self.controller.tn_width + 4, self.controller.tn_height + 4 + 16)
-        self.rect.setBrush(QColor(32, 32, 32))
-        self.rect.setVisible(False)
-        self.rect.setAcceptHoverEvents(False)
-        self.addToGroup(self.rect)
+        self.select_rect = QGraphicsRectItem(-2, -2, self.controller.tn_width + 4, self.controller.tn_height + 4 + 16)
+        self.select_rect.setBrush(QColor(32, 32, 32))
+        self.select_rect.setVisible(False)
+        self.select_rect.setAcceptHoverEvents(False)
+        self.addToGroup(self.select_rect)
 
         text = self.fileinfo.basename
         if len(text) > 20:
