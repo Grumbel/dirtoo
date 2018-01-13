@@ -87,6 +87,19 @@ class FileViewWindow(QMainWindow):
         exitAct.setStatusTip('Exit application')
         exitAct.triggered.connect(self.close)
 
+        undo_action = QAction(QIcon.fromTheme('undo'), '&Undo', self)
+        undo_action.setShortcut('Ctrl+Q')
+        undo_action.setStatusTip('Undo the last action')
+
+        redo_action = QAction(QIcon.fromTheme('redo'), '&Redo', self)
+        redo_action.setShortcut('Ctrl+Q')
+        redo_action.setStatusTip('Redo the last action')
+
+        zoom_in_action = QAction(QIcon.fromTheme('zoom-in'), "Zoom &In", self)
+        zoom_in_action.triggered.connect(self.zoom_in)
+        zoom_out_action = QAction(QIcon.fromTheme('zoom-out'), "Zoom &Out", self)
+        zoom_out_action.triggered.connect(self.zoom_out)
+
         back_action = QAction(QIcon.fromTheme('back'), 'Go &back', self)
         back_action.setShortcut('Alt+Left')
         back_action.setStatusTip('Go back in history')
@@ -123,6 +136,10 @@ class FileViewWindow(QMainWindow):
         file_menu = menubar.addMenu('&File')
         file_menu.addAction(exitAct)
 
+        edit_menu = menubar.addMenu('&Edit')
+        edit_menu.addAction(undo_action)
+        edit_menu.addAction(redo_action)
+
         view_menu = menubar.addMenu('&View')
         view_menu.addSeparator().setText("View Style")
         view_menu.addAction(view_detail_view)
@@ -131,6 +148,9 @@ class FileViewWindow(QMainWindow):
         view_menu.addSeparator().setText("Path Options")
         view_menu.addAction("Show AbsPath", self.file_view.show_abspath)
         view_menu.addAction("Show Basename", self.file_view.show_basename)
+        view_menu.addSeparator().setText("Zoom")
+        view_menu.addAction(zoom_in_action)
+        view_menu.addAction(zoom_out_action)
         view_menu.addSeparator()
 
         history_menu = menubar.addMenu('&History')
@@ -143,6 +163,9 @@ class FileViewWindow(QMainWindow):
         self.toolbar = self.addToolBar("FileView")
         self.toolbar.addAction(back_action)
         self.toolbar.addAction(forward_action)
+        self.toolbar.addSeparator()
+        self.toolbar.addAction(undo_action)
+        self.toolbar.addAction(redo_action)
         self.toolbar.addSeparator()
         self.toolbar.addAction("Show AbsPath", self.file_view.show_abspath)
         self.toolbar.addAction("Show Basename", self.file_view.show_basename)
@@ -158,8 +181,8 @@ class FileViewWindow(QMainWindow):
                                "Detail View",
                                self.show_detail_view)
         self.toolbar.addSeparator()
-        self.toolbar.addAction(QIcon.fromTheme('zoom-in'), "Zoom In", self.zoom_in)
-        self.toolbar.addAction(QIcon.fromTheme('zoom-out'), "Zoom Out", self.zoom_out)
+        self.toolbar.addAction(zoom_in_action)
+        self.toolbar.addAction(zoom_out_action)
         self.toolbar.addSeparator()
         info = QLabel("lots of files selected")
         self.toolbar.addWidget(info)
