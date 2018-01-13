@@ -84,8 +84,8 @@ class FileItem(QGraphicsItemGroup):
                     from dirtools.fileview.file_view_window import FileViewWindow
                     window = FileViewWindow()
                     files = expand_file(self.fileinfo.filename, recursive=False)
-                    window.file_view.add_files(files)
-                    window.thumb_view.add_files(files)
+                    window.file_view.set_files(files)
+                    window.thumb_view.set_files(files)
                     window.show()
                     windows.append(window)
                 else:

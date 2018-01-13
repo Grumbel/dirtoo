@@ -64,8 +64,9 @@ class ThumbView(QGraphicsView):
         # [PyQt5.QtCore.QUrl('file:///home/ingo/projects/dirtool/trunk/setup.py')]
         self.add_files([url.path() for url in urls])
 
-    def add_files(self, files):
-        self.files += files
+    def set_files(self, files):
+        self.scene.clear()
+        self.files = files
         self.thumbnails = []
 
         for filename in self.files:

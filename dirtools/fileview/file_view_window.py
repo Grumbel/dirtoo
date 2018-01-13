@@ -18,6 +18,7 @@
 import os
 
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import (
     QFormLayout,
     QStyle,
@@ -35,8 +36,13 @@ from dirtools.fileview.thumb_view import ThumbView
 
 class FileFilter(QLineEdit):
 
-    def __init__(self, *args):
-        super().__init__(*args)
+    def __init__(self, controller):
+        super().__init__()
+        self.controller = controller
+        self.returnPressed.connect(self.on_return_pressed)
+
+    def on_return_pressed(self):
+        self.controller.set_filter(self.text())
 
 
 class FilePathLineEdit(QLineEdit):
@@ -71,22 +77,27 @@ class FileViewWindow(QMainWindow):
         self.file_view = DetailView(self)
         self.file_view.hide()
         self.thumb_view = ThumbView(self)
-        self.file_path = FilePathLineEdit(self)
-        self.file_filter = FileFilter(self)
+        self.file_path = FilePathLineEdit(self.controller)
+        self.file_filter = FileFilter(self.controller)
         # self.file_filter.setText("File Pattern Here")
         self.file_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.thumb_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.status_bar = self.statusBar()
 
         form = QFormLayout()
-        form.addRow("Path:", self.file_path)
+        label = QLabel("&Location:")
+        label.setBuddy(self.file_path)
+        form.addRow(label, self.file_path)
         self.vbox.addLayout(form)
 
         self.vbox.addWidget(self.file_view, Qt.AlignLeft)
         self.vbox.addWidget(self.thumb_view, Qt.AlignLeft)
 
+        QKeySequence("Ctrl+f")
         form = QFormLayout()
-        form.addRow("Filter:", self.file_filter)
+        label = QLabel("Filter:")
+        label.setBuddy(self.file_filter)
+        form.addRow(label, self.file_filter)
         self.vbox.addLayout(form)
 
         vbox_widget = QWidget()
@@ -151,8 +162,8 @@ class FileViewWindow(QMainWindow):
         self.toolbar.addAction(self.actions.zoom_in)
         self.toolbar.addAction(self.actions.zoom_out)
         self.toolbar.addSeparator()
-        info = QLabel("lots of files selected")
-        self.toolbar.addWidget(info)
+        self.info = QLabel("lots of files selected")
+        self.toolbar.addWidget(self.info)
 
     # Temp Hacks
     @property
@@ -188,6 +199,9 @@ class FileViewWindow(QMainWindow):
     def set_directory(self, path):
         self.path = path
         self.file_path.setText(self.path)
+
+    def show_info(self, text):
+        self.info.setText("  " + text)
 
     def show_current_filename(self, filename):
         self.status_bar.showMessage(filename)

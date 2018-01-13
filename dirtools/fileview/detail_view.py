@@ -40,7 +40,7 @@ class DetailView(QGraphicsView):
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
 
-    def add_files(self, files):
+    def set_files(self, files):
         self.files = files
         self.layout_files()
 

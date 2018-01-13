@@ -15,6 +15,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import os
+from fnmatch import fnmatch
+
 from PyQt5.QtCore import QObject
 from dirtools.fileview.actions import Actions
 from dirtools.fileview.file_collection import FileCollection
@@ -56,9 +59,25 @@ class Controller(QObject):
     def zoom_out(self):
         self.window.thumb_view.zoom_out()
 
+    def set_filter(self, pattern):
+        if pattern == "":
+            files = self.file_collection.files
+        else:
+            files = [f for f in self.file_collection.files
+                     if fnmatch(os.path.basename(f), pattern)]
+
+        self.window.show_info("{} items, {} filtered, {} total".format(
+            len(files),
+            len(self.file_collection.files) - len(files),
+            len(self.file_collection.files)))
+        self.window.file_view.set_files(files)
+        self.window.thumb_view.set_files(files)
+
     def set_files(self, files):
-        self.window.file_view.add_files(files)
-        self.window.thumb_view.add_files(files)
+        self.file_collection.files = files
+        self.window.show_info("{} items".format(len(files)))
+        self.window.file_view.set_files(files)
+        self.window.thumb_view.set_files(files)
 
     def toggle_timegaps(self):
         self.window.file_view.toggle_timegaps()
