@@ -23,6 +23,7 @@ from PyQt5.QtWidgets import (
     QGraphicsView,
 )
 
+from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.file_item import DetailFileItem
 
 
@@ -68,7 +69,7 @@ class DetailView(QGraphicsView):
             text = self.scene.addText(datetime.datetime.fromtimestamp(mtime).strftime("%F %T"))
             text.setPos(20, y)
 
-            text = DetailFileItem(filename, self)
+            text = DetailFileItem(FileInfo(filename), self)
             text.filename = filename
             self.scene.addItem(text)
             text.setPos(200, y)

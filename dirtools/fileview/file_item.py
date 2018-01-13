@@ -37,13 +37,10 @@ windows = []
 
 class FileItem(QGraphicsItemGroup):
 
-    def __init__(self, filename, controller):
+    def __init__(self, fileinfo, controller):
         super().__init__()
+        self.fileinfo = fileinfo
         self.thumbnail = None
-        self.filename = filename
-        self.abspath = os.path.abspath(filename)
-        self.dirname = os.path.dirname(self.abspath)
-        self.basename = os.path.basename(self.abspath)
         self.controller = controller
         self.setAcceptHoverEvents(True)
 
@@ -71,7 +68,7 @@ class FileItem(QGraphicsItemGroup):
             self.dragging = True
 
             mime_data = QMimeData()
-            mime_data.setUrls([QUrl("file://" + self.filename)])
+            mime_data.setUrls([QUrl("file://" + self.fileinfo.abspath)])
             self.drag = QDrag(self.controller)
             self.drag.setPixmap(self.pixmap)
             self.drag.setMimeData(mime_data)
@@ -83,16 +80,16 @@ class FileItem(QGraphicsItemGroup):
             if self.dragging:
                 pass
             else:
-                if os.path.isdir(self.filename):
+                if self.fileinfo.isdir:
                     from dirtools.fileview.file_view_window import FileViewWindow
                     window = FileViewWindow()
-                    files = expand_file(self.filename, recursive=False)
+                    files = expand_file(self.fileinfo.filename, recursive=False)
                     window.file_view.add_files(files)
                     window.thumb_view.add_files(files)
                     window.show()
                     windows.append(window)
                 else:
-                    subprocess.Popen(["xdg-open", self.filename])
+                    subprocess.Popen(["xdg-open", self.fileinfo.filename])
 
             self.dragging = False
 
@@ -105,10 +102,13 @@ class FileItem(QGraphicsItemGroup):
 
 class DetailFileItem(FileItem):
 
+    def __init__(self, *args):
+        super().__init__(*args)
+
     def hoverEnterEvent(self, ev):
         self.show_thumbnail()
         self.text.setDefaultTextColor(QColor(0, 128, 128))
-        self.controller.set_filename(self.filename)
+        self.controller.set_filename(self.fileinfo.filename)
 
     def hoverLeaveEvent(self, ev):
         self.hide_thumbnail()
@@ -118,14 +118,14 @@ class DetailFileItem(FileItem):
     def make_items(self):
         self.text = QGraphicsTextItem()
         # tooltips don't work for the whole group
-        self.text.setToolTip(self.filename)
+        self.text.setToolTip(self.fileinfo.filename)
         self.addToGroup(self.text)
 
     def show_thumbnail(self):
         if self.thumbnail is None:
-            thumbnail_filename = make_thumbnail_filename(self.filename)
+            thumbnail_filename = make_thumbnail_filename(self.fileinfo.filename)
             if thumbnail_filename is None:
-                print("no thumbnail for", self.filename)
+                print("no thumbnail for", self.fileinfo.filename)
             else:
                 print("showing thumbnail:", thumbnail_filename)
                 self.thumbnail = QGraphicsPixmapItem(QPixmap(thumbnail_filename))
@@ -135,24 +135,24 @@ class DetailFileItem(FileItem):
 
     def hide_thumbnail(self):
         if self.thumbnail is not None:
-            # print("hiding thumbnail", self.filename)
+            # print("hiding thumbnail", self.fileinfo.filename)
             self.removeFromGroup(self.thumbnail)
             self.thumbnail = None
 
     def show_abspath(self):
-        if len(self.basename) < 80:
+        if len(self.fileinfo.basename) < 80:
             html_text = '<font color="grey">{}/</font>{}'.format(
-                html.escape(self.dirname),
-                html.escape(self.basename))
+                html.escape(self.fileinfo.dirname),
+                html.escape(self.fileinfo.basename))
         else:
             html_text = '<font color="grey">{}/</font>{}<font color="grey">…</font>'.format(
-                html.escape(self.dirname),
-                html.escape(self.basename[0:80]))
+                html.escape(self.fileinfo.dirname),
+                html.escape(self.fileinfo.basename[0:80]))
 
         self.text.setHtml(html_text)
 
     def show_basename(self):
-        self.text.setPlainText(self.basename)
+        self.text.setPlainText(self.fileinfo.basename)
 
 
 def pixmap_from_filename(filename, tn_size):
@@ -179,7 +179,7 @@ class ThumbFileItem(FileItem):
         # self.text.setVisible(True)
         self.text.setDefaultTextColor(QColor(255, 255, 255))
         self.rect.setVisible(True)
-        self.controller.set_filename(self.filename)
+        self.controller.set_filename(self.fileinfo.filename)
 
     def hoverLeaveEvent(self, ev):
         self.setZValue(0)
@@ -200,7 +200,7 @@ class ThumbFileItem(FileItem):
         self.rect.setAcceptHoverEvents(False)
         self.addToGroup(self.rect)
 
-        text = self.basename
+        text = self.fileinfo.basename
         if len(text) > 20:
             text = text[0:20] + "…"
         self.text = QGraphicsTextItem(text)
@@ -215,15 +215,15 @@ class ThumbFileItem(FileItem):
 
         # tooltips don't work for the whole group
         # tooltips break the hover events!
-        # self.text.setToolTip(self.filename)
+        # self.text.setToolTip(self.fileinfo.filename)
 
-        thumbnail_filename = make_thumbnail_filename(self.filename, flavor=self.controller.flavor)
-        if os.path.isdir(self.filename):
+        thumbnail_filename = make_thumbnail_filename(self.fileinfo.filename, flavor=self.controller.flavor)
+        if self.fileinfo.isdir:
             pixmap = QIcon.fromTheme("folder").pixmap(3 * self.controller.tn_size // 4)
         elif thumbnail_filename:
             pixmap = QPixmap(thumbnail_filename)
         else:
-            pixmap = pixmap_from_filename(self.filename, 3 * self.controller.tn_size // 4)
+            pixmap = pixmap_from_filename(self.fileinfo.filename, 3 * self.controller.tn_size // 4)
             if pixmap.isNull():
                 pixmap = QIcon.fromTheme("error").pixmap(3 * self.controller.tn_size // 4)
         self.pixmap = pixmap

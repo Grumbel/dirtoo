@@ -24,6 +24,7 @@ from PyQt5.QtWidgets import (
     QGraphicsScene,
 )
 
+from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.file_item import ThumbFileItem
 
 
@@ -68,7 +69,7 @@ class ThumbView(QGraphicsView):
         self.thumbnails = []
 
         for filename in self.files:
-            thumb = ThumbFileItem(filename, self)
+            thumb = ThumbFileItem(FileInfo(filename), self)
             self.scene.addItem(thumb)
             self.thumbnails.append(thumb)
 
