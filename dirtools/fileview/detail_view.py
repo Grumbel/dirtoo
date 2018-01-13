@@ -85,7 +85,6 @@ class DetailView(QGraphicsView):
                                    self.scene.itemsBoundingRect().width()),
                                max(self.viewport().size().height(),
                                    self.scene.itemsBoundingRect().height()))
-        print(bounding_rect)
         self.setSceneRect(bounding_rect)
 
     def resizeEvent(self, ev):

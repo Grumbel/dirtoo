@@ -115,7 +115,7 @@ class ThumbView(QGraphicsView):
                 w = right_x
             else:
                 w = max(self.viewport().size().width(), right_x)
-            h = max(self.viewport().size().height(),bottom_y)
+            h = max(self.viewport().size().height(), bottom_y)
 
             bounding_rect = QRectF(0, 0, w, h)
             self.setSceneRect(bounding_rect)

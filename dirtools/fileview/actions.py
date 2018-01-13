@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (
     QAction,
@@ -36,11 +36,11 @@ class Actions(QObject):
         self.exit.triggered.connect(self.controller.close)
 
         self.undo = QAction(QIcon.fromTheme('undo'), '&Undo', self)
-        self.undo.setShortcut('Ctrl+Q')
+        self.undo.setShortcut('Ctrl+Z')
         self.undo.setStatusTip('Undo the last action')
 
         self.redo = QAction(QIcon.fromTheme('redo'), '&Redo', self)
-        self.redo.setShortcut('Ctrl+Q')
+        self.redo.setShortcut('Ctrl+Y')
         self.redo.setStatusTip('Redo the last action')
 
         self.zoom_in = QAction(QIcon.fromTheme('zoom-in'), "Zoom &In", self)

@@ -209,7 +209,7 @@ class ThumbFileItem(FileItem):
         self.text.setDefaultTextColor(QColor(0, 0, 0))
         self.text.setAcceptHoverEvents(False)
 
-        fm = QFontMetrics(font);
+        fm = QFontMetrics(font)
         tmp = text
         if fm.width(tmp) > self.boundingRect().width():
             while fm.width(tmp + "…") > self.boundingRect().width():
