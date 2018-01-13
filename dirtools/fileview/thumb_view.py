@@ -42,6 +42,8 @@ class ThumbView(QGraphicsView):
         self.tn_size = min(self.tn_width, self.tn_height)
         self.flavor = "large"
 
+        self.padding = 16
+
         self.setBackgroundBrush(QBrush(Qt.white, Qt.SolidPattern))
 
     def dragMoveEvent(self, e):
@@ -78,26 +80,45 @@ class ThumbView(QGraphicsView):
         self.layout_thumbnails()
 
     def layout_thumbnails(self):
-        xs = self.tn_width + 8
-        ys = self.tn_height + 8 + 16
-        x = 0
-        y = 0
+        tile_w = self.tn_width
+        tile_h = self.tn_height + 16
+
+        x_spacing = 16
+        y_spacing = 16
+
+        x_step = tile_w + x_spacing
+        y_step = tile_h + y_spacing
+
+        threshold = self.viewport().width() - self.padding
+
+        x = self.padding
+        y = self.padding
+
+        right_x = 0
+        bottom_y = 0
+
         for thumb in self.thumbnails:
+            right_x = max(x, right_x)
+            bottom_y = y
             thumb.setPos(x, y)
-            x += xs
-            if x + xs > self.viewport().width():
-                y += ys
-                x = 0
+            x += x_step
+            if x + tile_w >= threshold:
+                y += y_step
+                x = self.padding
 
         if True:  # top/left alignment
-            bounding_rect = QRectF(0,
-                                   0,
-                                   max(self.viewport().size().width(),
-                                       self.scene.itemsBoundingRect().width()),
-                                   max(self.viewport().size().height(),
-                                       self.scene.itemsBoundingRect().height()))
+            right_x += tile_w + self.padding
+            bottom_y += tile_h + self.padding
+
+            if True:  # center alignment
+                w = right_x
+            else:
+                w = max(self.viewport().size().width(), right_x)
+            h = max(self.viewport().size().height(),bottom_y)
+
+            bounding_rect = QRectF(0, 0, w, h)
             self.setSceneRect(bounding_rect)
-        else:
+        else:  # center alignment
             self.setSceneRect(self.scene.itemsBoundingRect())
 
     def zoom_in(self):
