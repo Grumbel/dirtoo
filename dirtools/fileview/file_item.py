@@ -20,7 +20,7 @@ import os
 import subprocess
 
 from PyQt5.QtCore import Qt, QRectF, QMimeData, QUrl
-from PyQt5.QtGui import QPixmap, QColor, QPen, QIcon, QDrag
+from PyQt5.QtGui import QPixmap, QColor, QPen, QIcon, QDrag, QFontMetrics
 from PyQt5.QtWidgets import (
     QGraphicsItemGroup,
     QGraphicsTextItem,
@@ -191,26 +191,38 @@ class ThumbFileItem(FileItem):
     def make_items(self):
         rect = QGraphicsRectItem(-2, -2, self.controller.tn_width + 4, self.controller.tn_height + 4 + 16)
         rect.setPen(QPen(Qt.NoPen))
-        # rect.setBrush(QColor(192 + 32, 192 + 32, 192 + 32))
+        rect.setBrush(QColor(192 + 32, 192 + 32, 192 + 32))
         self.addToGroup(rect)
 
         self.select_rect = QGraphicsRectItem(-2, -2, self.controller.tn_width + 4, self.controller.tn_height + 4 + 16)
         self.select_rect.setPen(QPen(Qt.NoPen))
-        self.select_rect.setBrush(QColor(192 + 32, 192 + 32, 192 + 32))
+        self.select_rect.setBrush(QColor(192, 192, 192))
         self.select_rect.setVisible(False)
         self.select_rect.setAcceptHoverEvents(False)
         self.addToGroup(self.select_rect)
 
         text = self.fileinfo.basename
-        if len(text) > 20:
-            text = text[0:20] + "…"
         self.text = QGraphicsTextItem(text)
         font = self.text.font()
         font.setPixelSize(10)
         self.text.setFont(font)
         self.text.setDefaultTextColor(QColor(0, 0, 0))
         self.text.setAcceptHoverEvents(False)
-        self.text.setPos(self.controller.tn_width / 2 - self.text.boundingRect().width() / 2, self.controller.tn_height)
+
+        fm = QFontMetrics(font);
+        tmp = text
+        if fm.width(tmp) > self.boundingRect().width():
+            while fm.width(tmp + "…") > self.boundingRect().width():
+                tmp = tmp[0:-1]
+
+        if tmp == text:
+            self.text.setPlainText(tmp)
+        else:
+            self.text.setPlainText(tmp + "…")
+
+        self.text.setPos(self.controller.tn_width / 2 - self.text.boundingRect().width() / 2,
+                         self.controller.tn_height - 2)
+
         # self.text.setVisible(False)
         self.addToGroup(self.text)
 
