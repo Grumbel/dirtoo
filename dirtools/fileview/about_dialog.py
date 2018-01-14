@@ -18,7 +18,7 @@
 from pkg_resources import resource_filename
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QDialogButtonBox, QSizePolicy
 
 
@@ -28,7 +28,7 @@ class AboutDialog(QDialog):
         super().__init__()
 
         self.vbox = QVBoxLayout()
-        self.vbox.setAlignment(Qt.AlignHCenter);
+        self.vbox.setAlignment(Qt.AlignHCenter)
         label = QLabel()
         p = label.sizePolicy()
         p.setHorizontalPolicy(QSizePolicy.Expanding)

@@ -134,7 +134,7 @@ class ThumbView(QGraphicsView):
         self.apply_zoom()
 
     def apply_zoom(self):
-        self.tn_width =  32 * 2 ** self.zoom_index
+        self.tn_width = 32 * 2 ** self.zoom_index
         self.tn_height = 32 * 2 ** self.zoom_index
         self.tn_size = min(self.tn_width, self.tn_height)
 

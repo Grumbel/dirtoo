@@ -15,7 +15,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os
 from fnmatch import fnmatch
 
 from PyQt5.QtWidgets import QFileDialog
@@ -98,5 +97,6 @@ class Controller(QObject):
 
     def parent_directory(self):
         pass
+
 
 # EOF #
