@@ -114,9 +114,9 @@ class FileViewWindow(QMainWindow):
         self.vbox = QVBoxLayout()
         self.vbox.setContentsMargins(0, 0, 0, 0)
 
-        self.file_view = DetailView(self)
+        self.file_view = DetailView(self.controller)
         self.file_view.hide()
-        self.thumb_view = ThumbView(self)
+        self.thumb_view = ThumbView(self.controller)
         self.file_path = FilePathLineEdit(self.controller)
         self.file_filter = FileFilter(self.controller)
         # self.file_filter.setText("File Pattern Here")
@@ -206,23 +206,6 @@ class FileViewWindow(QMainWindow):
         self.toolbar.addSeparator()
         self.info = QLabel("lots of files selected")
         self.toolbar.addWidget(self.info)
-
-    # Temp Hacks
-    @property
-    def tn_width(self):
-        return self.thumb_view.tn_width
-
-    @property
-    def tn_height(self):
-        return self.thumb_view.tn_height
-
-    @property
-    def tn_size(self):
-        return self.thumb_view.tn_size
-
-    @property
-    def flavor(self):
-        return self.thumb_view.flavor
 
     def zoom_in(self):
         self.thumb_view.zoom_in()

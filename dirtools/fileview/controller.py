@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import subprocess
 from fnmatch import fnmatch
 
 from PyQt5.QtWidgets import QFileDialog
@@ -97,6 +98,33 @@ class Controller(QObject):
 
     def parent_directory(self):
         pass
+
+    def on_click(self, fileinfo):
+        subprocess.Popen(["xdg-open", fileinfo.filename])
+
+    def show_current_filename(self, filename):
+        self.window.show_current_filename(filename)
+
+    def add_files(self, files):
+        for f in files:
+            self.file_collection.add_file(f)
+
+    # Temp Hacks
+    @property
+    def tn_width(self):
+        return self.window.thumb_view.tn_width
+
+    @property
+    def tn_height(self):
+        return self.window.thumb_view.tn_height
+
+    @property
+    def tn_size(self):
+        return self.window.thumb_view.tn_size
+
+    @property
+    def flavor(self):
+        return self.window.thumb_view.flavor
 
 
 # EOF #

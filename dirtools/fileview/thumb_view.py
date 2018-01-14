@@ -61,7 +61,7 @@ class ThumbView(QGraphicsView):
     def dropEvent(self, e):
         urls = e.mimeData().urls()
         # [PyQt5.QtCore.QUrl('file:///home/ingo/projects/dirtool/trunk/setup.py')]
-        self.add_files([url.path() for url in urls])
+        self.controller.add_files([url.path() for url in urls])
 
     def set_files(self, files):
         self.scene.clear()

@@ -21,8 +21,8 @@ from dirtools.fileview.file_info import FileInfo
 
 class FileCollection(QObject):
 
-    sig_file_added = pyqtSignal(str)
-    sig_file_removed = pyqtSignal(str)
+    sig_file_added = pyqtSignal(FileInfo)
+    sig_file_removed = pyqtSignal(FileInfo)
 
     def __init__(self):
         super().__init__()

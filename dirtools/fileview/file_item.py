@@ -17,7 +17,6 @@
 
 import html
 import os
-import subprocess
 
 from PyQt5.QtCore import Qt, QRectF, QMimeData, QUrl
 from PyQt5.QtGui import QPixmap, QColor, QPen, QIcon, QDrag, QFontMetrics
@@ -69,7 +68,7 @@ class FileItem(QGraphicsItemGroup):
 
             mime_data = QMimeData()
             mime_data.setUrls([QUrl("file://" + self.fileinfo.abspath)])
-            self.drag = QDrag(self.controller)
+            self.drag = QDrag(self.controller.window)
             self.drag.setPixmap(self.pixmap)
             self.drag.setMimeData(mime_data)
             # drag.setHotSpot(e.pos() - self.select_rect().topLeft())
@@ -89,7 +88,7 @@ class FileItem(QGraphicsItemGroup):
                     window.show()
                     windows.append(window)
                 else:
-                    subprocess.Popen(["xdg-open", self.fileinfo.filename])
+                    self.controller.on_click(self.fileinfo)
 
             self.dragging = False
 
