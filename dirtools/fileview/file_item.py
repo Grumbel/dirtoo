@@ -69,7 +69,7 @@ class FileItem(QGraphicsItemGroup):
             mime_data = QMimeData()
             mime_data.setUrls([QUrl("file://" + self.fileinfo.abspath)])
             self.drag = QDrag(self.controller.window)
-            self.drag.setPixmap(self.thumbo.pixmap())
+            self.drag.setPixmap(self.pixmap_item.pixmap())
             self.drag.setMimeData(mime_data)
             # drag.setHotSpot(e.pos() - self.select_rect().topLeft())
             self.dropAction = self.drag.exec_(Qt.CopyAction)
@@ -171,7 +171,14 @@ def pixmap_from_filename(filename, tn_size):
 class ThumbFileItem(FileItem):
 
     def __init__(self, *args):
+        self.pixmap_item = None
         super().__init__(*args)
+
+    def paint(self, *args):
+        # print("paint", self.fileinfo)
+        if self.pixmap_item is None:
+            self.make_thumbnail()
+        super().paint(*args)
 
     def hoverEnterEvent(self, ev):
         self.setZValue(2.0)
@@ -228,8 +235,11 @@ class ThumbFileItem(FileItem):
         # tooltips don't work for the whole group
         # tooltips break the hover events!
         # self.text.setToolTip(self.fileinfo.filename)
+        # self.make_thumbnail()
 
+    def make_thumbnail(self):
         thumbnail_filename = make_thumbnail_filename(self.fileinfo.filename, flavor=self.controller.flavor)
+
         if self.fileinfo.isdir:
             pixmap = QIcon.fromTheme("folder").pixmap(3 * self.controller.tn_size // 4)
         elif thumbnail_filename:
@@ -248,10 +258,11 @@ class ThumbFileItem(FileItem):
             if pixmap.isNull():
                 pixmap = QIcon.fromTheme("error").pixmap(3 * self.controller.tn_size // 4)
 
-        self.thumbo = QGraphicsPixmapItem(pixmap)
-        self.thumbo.setPos(self.controller.tn_width / 2 - pixmap.width() / 2,
-                           self.controller.tn_height / 2 - pixmap.height() / 2)
-        self.addToGroup(self.thumbo)
+        self.pixmap_item = QGraphicsPixmapItem(pixmap)
+        self.pixmap_item.setPos(
+            self.pos().x() + self.controller.tn_width / 2 - pixmap.width() / 2,
+            self.pos().y() + self.controller.tn_height / 2 - pixmap.height() / 2)
+        self.addToGroup(self.pixmap_item)
 
     def boundingRect(self):
         return QRectF(0, 0, self.controller.tn_width, self.controller.tn_height)
@@ -260,6 +271,7 @@ class ThumbFileItem(FileItem):
         for item in self.childItems():
             self.scene().removeItem(item)
         self.setPos(0, 0)
+        self.pixmap_item = None
         self.make_items()
 
 
