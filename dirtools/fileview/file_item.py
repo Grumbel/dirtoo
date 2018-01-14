@@ -69,7 +69,7 @@ class FileItem(QGraphicsItemGroup):
             mime_data = QMimeData()
             mime_data.setUrls([QUrl("file://" + self.fileinfo.abspath)])
             self.drag = QDrag(self.controller.window)
-            self.drag.setPixmap(self.pixmap)
+            self.drag.setPixmap(self.thumbo.pixmap())
             self.drag.setMimeData(mime_data)
             # drag.setHotSpot(e.pos() - self.select_rect().topLeft())
             self.dropAction = self.drag.exec_(Qt.CopyAction)
@@ -234,25 +234,23 @@ class ThumbFileItem(FileItem):
             pixmap = QIcon.fromTheme("folder").pixmap(3 * self.controller.tn_size // 4)
         elif thumbnail_filename:
             pixmap = QPixmap(thumbnail_filename)
+
+            w = pixmap.width() * self.controller.tn_width // pixmap.height()
+            h = pixmap.height() * self.controller.tn_height // pixmap.width()
+            if w <= self.controller.tn_width:
+                pixmap = pixmap.scaledToHeight(self.controller.tn_height,
+                                               Qt.SmoothTransformation)
+            elif h <= self.controller.tn_height:
+                pixmap = pixmap.scaledToWidth(self.controller.tn_width,
+                                              Qt.SmoothTransformation)
         else:
             pixmap = pixmap_from_filename(self.fileinfo.filename, 3 * self.controller.tn_size // 4)
             if pixmap.isNull():
                 pixmap = QIcon.fromTheme("error").pixmap(3 * self.controller.tn_size // 4)
 
-        w = pixmap.width() * self.controller.tn_width // pixmap.height()
-        h = pixmap.height() * self.controller.tn_height // pixmap.width()
-        if w <= self.controller.tn_width:
-            self.pixmap = pixmap.scaledToHeight(self.controller.tn_height,
-                                                Qt.SmoothTransformation)
-        elif h <= self.controller.tn_height:
-            self.pixmap = pixmap.scaledToWidth(self.controller.tn_width,
-                                               Qt.SmoothTransformation)
-        else:
-            self.pixmap = pixmap
-
-        self.thumbo = QGraphicsPixmapItem(self.pixmap)
-        self.thumbo.setPos(self.controller.tn_width / 2 - self.pixmap.width() / 2,
-                           self.controller.tn_height / 2 - self.pixmap.height() / 2)
+        self.thumbo = QGraphicsPixmapItem(pixmap)
+        self.thumbo.setPos(self.controller.tn_width / 2 - pixmap.width() / 2,
+                           self.controller.tn_height / 2 - pixmap.height() / 2)
         self.addToGroup(self.thumbo)
 
     def boundingRect(self):
