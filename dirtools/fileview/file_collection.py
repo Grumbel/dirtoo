@@ -16,6 +16,7 @@
 
 
 from PyQt5.QtCore import QObject, pyqtSignal
+from dirtools.fileview.file_info import FileInfo
 
 
 class FileCollection(QObject):
@@ -24,15 +25,29 @@ class FileCollection(QObject):
     sig_file_removed = pyqtSignal(str)
 
     def __init__(self):
-        self.files = []
+        super().__init__()
+        self.fileinfos = []
+
+    def set_files(self, files):
+        self.fileinfos = [FileInfo(f) for f in files]
 
     def add_file(self, filename):
-        self.files.append(filename)
-        self.sig_file_added.emit(filename)
+        fi = FileInfo(filename)
+        self.fileinfos.append(fi)
+        self.sig_file_added.emit(fi)
 
     def remove_file(self, filename):
-        self.files.remove(filename)
+        self.fileinfoss = [fi for fi in self.files if fi.abspath == filename]
         self.sig_file_removed.emit(filename)
+
+    def size(self):
+        return len(self.fileinfos)
+
+    def save_as(self, filename):
+        with open(filename, "w") as fout:
+            for fi in self.fileinfos:
+                fout.write(fi.abspath)
+                fout.write("\n")
 
 
 # EOF #

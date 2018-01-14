@@ -18,6 +18,7 @@
 import os
 from fnmatch import fnmatch
 
+from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtCore import QObject
 from dirtools.fileview.actions import Actions
 from dirtools.fileview.file_collection import FileCollection
@@ -31,6 +32,19 @@ class Controller(QObject):
         self.file_collection = FileCollection()
         self.actions = Actions(self)
         self.window = FileViewWindow(self)
+
+    def save_as(self):
+        options = QFileDialog.Options()
+        # options |= QFileDialog.DontUseNativeDialog
+        filename, kind = QFileDialog.getSaveFileName(
+            self.window,
+            "QFileDialog.getSaveFileName()",
+            "",  # dir
+            "URL List (*.urls);;Path List (*.txt);;NUL Path List (*.nlst)",
+            options=options)
+
+        if filename != "":
+            self.file_collection.save_as(filename)
 
     def close(self):
         self.window.close()
@@ -61,20 +75,20 @@ class Controller(QObject):
 
     def set_filter(self, pattern):
         if pattern == "":
-            files = self.file_collection.files
+            files = self.file_collection.fileinfos
         else:
-            files = [f for f in self.file_collection.files
-                     if fnmatch(os.path.basename(f), pattern)]
+            files = [f for f in self.file_collection.fileinfos
+                     if fnmatch(f.basename, pattern)]
 
         self.window.show_info("{} items, {} filtered, {} total".format(
             len(files),
-            len(self.file_collection.files) - len(files),
-            len(self.file_collection.files)))
-        self.window.file_view.set_files(files)
-        self.window.thumb_view.set_files(files)
+            self.file_collection.size() - len(files),
+            self.file_collection.size()))
+        self.window.file_view.set_files([f.filename for f in files])
+        self.window.thumb_view.set_files([f.filename for f in files])
 
     def set_files(self, files):
-        self.file_collection.files = files
+        self.file_collection.set_files(files)
         self.window.show_info("{} items".format(len(files)))
         self.window.file_view.set_files(files)
         self.window.thumb_view.set_files(files)

@@ -107,6 +107,8 @@ class FileViewWindow(QMainWindow):
     def make_menubar(self):
         self.menubar = self.menuBar()
         file_menu = self.menubar.addMenu('&File')
+        file_menu.addAction(self.actions.save_as)
+        file_menu.addSeparator()
         file_menu.addAction(self.actions.exit)
 
         edit_menu = self.menubar.addMenu('&Edit')

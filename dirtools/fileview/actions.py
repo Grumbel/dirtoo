@@ -30,6 +30,11 @@ class Actions(QObject):
 
         self.controller = controller
 
+        self.save_as = QAction(QIcon.fromTheme('save-as'), 'Save As', self)
+        self.save_as.setShortcut('Ctrl+s')
+        self.save_as.setStatusTip('Save the current file selection')
+        self.save_as.triggered.connect(self.controller.save_as)
+
         self.exit = QAction(QIcon.fromTheme('exit'), '&Exit', self)
         self.exit.setShortcut('Ctrl+Q')
         self.exit.setStatusTip('Exit application')
