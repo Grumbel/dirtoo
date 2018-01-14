@@ -17,8 +17,9 @@
 
 import os
 
+from pkg_resources import resource_filename
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QKeySequence
+from PyQt5.QtGui import QKeySequence, QIcon
 from PyQt5.QtWidgets import (
     QFormLayout,
     QStyle,
@@ -71,6 +72,7 @@ class FileViewWindow(QMainWindow):
 
     def make_window(self):
         self.setWindowTitle("dt-fileview")
+        self.setWindowIcon(QIcon(resource_filename("dirtools", "fileview/fileview.svg")))
         self.vbox = QVBoxLayout()
         self.vbox.setContentsMargins(0, 0, 0, 0)
 
