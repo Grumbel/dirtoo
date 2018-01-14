@@ -27,8 +27,9 @@ from dirtools.fileview.file_view_window import FileViewWindow
 
 class Controller(QObject):
 
-    def __init__(self):
+    def __init__(self, thumbnailer):
         super().__init__()
+        self.thumbnailer = thumbnailer
         self.file_collection = FileCollection()
         self.actions = Actions(self)
         self.window = FileViewWindow(self)

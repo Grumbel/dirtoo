@@ -18,11 +18,14 @@
 import sys
 import argparse
 import signal
+import dbus
 
 from PyQt5.QtWidgets import QApplication
+from dbus.mainloop.pyqt5 import DBusQtMainLoop
 
 from dirtools.fileview.controller import Controller
 from dirtools.util import expand_directories
+from dirtools.thumbnailer import Thumbnailer, ThumbnailerListener
 
 
 def parse_args(args):
@@ -63,7 +66,11 @@ def main(argv):
 
     app = QApplication([])
 
-    controller = Controller()
+    dbus_loop = DBusQtMainLoop(set_as_default=True)  # noqa: F841
+    session_bus = dbus.SessionBus()
+    thumbnailer = Thumbnailer(session_bus, listener=ThumbnailerListener())
+
+    controller = Controller(thumbnailer)
 
     files = expand_directories(files, args.recursive)
     controller.set_files(files)
