@@ -22,6 +22,8 @@ from PyQt5.QtWidgets import (
     QActionGroup
 )
 
+from dirtools.fileview.about_dialog import AboutDialog
+
 
 class Actions(QObject):
 
@@ -94,6 +96,7 @@ class Actions(QObject):
 
         self.about = QAction(QIcon.fromTheme('help-about'), 'About dt-fileview', self)
         self.about.setStatusTip('Show About dialog')
+        self.about.triggered.connect(lambda: AboutDialog().exec_())
 
 
 # EOF #
