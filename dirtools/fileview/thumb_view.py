@@ -37,12 +37,11 @@ class ThumbView(QGraphicsView):
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
 
-        self.tn_width = 256
-        self.tn_height = 256
-        self.tn_size = min(self.tn_width, self.tn_height)
-        self.flavor = "large"
-
         self.padding = 16
+        self.thumbnails = []
+
+        self.zoom_index = 2
+        self.apply_zoom()
 
         self.setBackgroundBrush(QBrush(Qt.white, Qt.SolidPattern))
 
@@ -123,20 +122,26 @@ class ThumbView(QGraphicsView):
             self.setSceneRect(self.scene.itemsBoundingRect())
 
     def zoom_in(self):
-        self.tn_width = 256
-        self.tn_height = 256
-        self.tn_size = min(self.tn_width, self.tn_height)
-        self.flavor = "large"
-
-        for thumb in self.thumbnails:
-            thumb.refresh()
-        self.layout_thumbnails()
+        self.zoom_index += 1
+        if self.zoom_index > 4:
+            self.zoom_index = 4
+        self.apply_zoom()
 
     def zoom_out(self):
-        self.tn_width = 128
-        self.tn_height = 128
+        self.zoom_index -= 1
+        if self.zoom_index < 0:
+            self.zoom_index = 0
+        self.apply_zoom()
+
+    def apply_zoom(self):
+        self.tn_width =  32 * 2 ** self.zoom_index
+        self.tn_height = 32 * 2 ** self.zoom_index
         self.tn_size = min(self.tn_width, self.tn_height)
-        self.flavor = "normal"
+
+        if self.zoom_index < 3:
+            self.flavor = "normal"
+        else:
+            self.flavor = "large"
 
         for thumb in self.thumbnails:
             thumb.refresh()

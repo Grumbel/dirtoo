@@ -239,11 +239,21 @@ class ThumbFileItem(FileItem):
             pixmap = pixmap_from_filename(self.fileinfo.filename, 3 * self.controller.tn_size // 4)
             if pixmap.isNull():
                 pixmap = QIcon.fromTheme("error").pixmap(3 * self.controller.tn_size // 4)
-        self.pixmap = pixmap
 
-        self.thumbo = QGraphicsPixmapItem(pixmap)
-        self.thumbo.setPos(self.controller.tn_width / 2 - pixmap.width() / 2,
-                           self.controller.tn_height / 2 - pixmap.height() / 2)
+        w = pixmap.width() * self.controller.tn_width // pixmap.height()
+        h = pixmap.height() * self.controller.tn_height // pixmap.width()
+        if w <= self.controller.tn_width:
+            self.pixmap = pixmap.scaledToHeight(self.controller.tn_height,
+                                                Qt.SmoothTransformation)
+        elif h <= self.controller.tn_height:
+            self.pixmap = pixmap.scaledToWidth(self.controller.tn_width,
+                                               Qt.SmoothTransformation)
+        else:
+            self.pixmap = pixmap
+
+        self.thumbo = QGraphicsPixmapItem(self.pixmap)
+        self.thumbo.setPos(self.controller.tn_width / 2 - self.pixmap.width() / 2,
+                           self.controller.tn_height / 2 - self.pixmap.height() / 2)
         self.addToGroup(self.thumbo)
 
     def boundingRect(self):
