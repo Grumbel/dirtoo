@@ -19,7 +19,7 @@ import os
 
 from pkg_resources import resource_filename
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QKeySequence, QIcon
+from PyQt5.QtGui import QKeySequence, QIcon, QPalette
 from PyQt5.QtWidgets import (
     QFormLayout,
     QStyle,
@@ -28,6 +28,7 @@ from PyQt5.QtWidgets import (
     QLineEdit,
     QMainWindow,
     QSizePolicy,
+    QShortcut,
     QVBoxLayout,
 )
 
@@ -40,10 +41,37 @@ class FileFilter(QLineEdit):
     def __init__(self, controller):
         super().__init__()
         self.controller = controller
+        self.is_unused = True
+        self.set_unused_text()
         self.returnPressed.connect(self.on_return_pressed)
 
     def on_return_pressed(self):
         self.controller.set_filter(self.text())
+
+    def focusInEvent(self, ev):
+        super().focusInEvent(ev)
+
+        if self.is_unused:
+            self.setText("")
+
+        p = self.palette()
+        p.setColor(QPalette.Text, Qt.black)
+        self.setPalette(p)
+
+    def focusOutEvent(self, ev):
+        super().focusOutEvent(ev)
+
+        if self.text() == "":
+            self.is_unused = True
+            self.set_unused_text()
+        else:
+            self.is_unused = False
+
+    def set_unused_text(self):
+        p = self.palette()
+        p.setColor(QPalette.Text, Qt.gray)
+        self.setPalette(p)
+        self.setText("enter a glob search pattern here")
 
 
 class FilePathLineEdit(QLineEdit):
@@ -69,6 +97,16 @@ class FileViewWindow(QMainWindow):
         self.make_window()
         self.make_menubar()
         self.make_toolbar()
+        self.make_shortcut()
+
+    def make_shortcut(self):
+        shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_L), self)
+        shortcut.setContext(Qt.ApplicationShortcut)
+        shortcut.activated.connect(lambda: self.file_path.setFocus(Qt.ShortcutFocusReason))
+
+        shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_K), self)
+        shortcut.setContext(Qt.ApplicationShortcut)
+        shortcut.activated.connect(lambda: self.file_filter.setFocus(Qt.ShortcutFocusReason))
 
     def make_window(self):
         self.setWindowTitle("dt-fileview")
@@ -87,7 +125,7 @@ class FileViewWindow(QMainWindow):
         self.status_bar = self.statusBar()
 
         form = QFormLayout()
-        label = QLabel("&Location:")
+        label = QLabel("Location:")
         label.setBuddy(self.file_path)
         form.addRow(label, self.file_path)
         self.vbox.addLayout(form)
