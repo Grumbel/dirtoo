@@ -24,6 +24,8 @@ from PyQt5.QtWidgets import (
     QGraphicsPixmapItem,
 )
 
+import bytefmt
+
 from dirtools.thumbnail import make_thumbnail_filename
 from dirtools.fileview.file_item import FileItem
 
@@ -41,8 +43,12 @@ class DetailFileItem(FileItem):
         self.date_item.setPos(0, 0)
         self.addToGroup(self.date_item)
 
+        self.size_item = QGraphicsTextItem(bytefmt.humanize(self.fileinfo.stat.st_size))
+        self.size_item.setPos(225 - self.size_item.boundingRect().width(), 0)
+        self.addToGroup(self.size_item)
+
         self.filename_item = QGraphicsTextItem(self.fileinfo.filename)
-        self.filename_item.setPos(200, 0)
+        self.filename_item.setPos(250, 0)
         self.addToGroup(self.filename_item)
 
         # tooltips don't work for the whole group
