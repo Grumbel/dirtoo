@@ -47,6 +47,7 @@ class ThumbFileItem(FileItem):
 
     def __init__(self, *args):
         self.pixmap_item = None
+        self.lock_item = None
         super().__init__(*args)
 
     def paint(self, *args):
@@ -138,6 +139,15 @@ class ThumbFileItem(FileItem):
             self.pos().y() + self.controller.tn_height / 2 - pixmap.height() / 2)
         self.addToGroup(self.pixmap_item)
 
+        if not self.fileinfo.have_access:
+            pixmap = QIcon.fromTheme("locked").pixmap(3 * self.controller.tn_size // 4)
+            self.lock_item = QGraphicsPixmapItem(pixmap)
+            self.lock_item.setOpacity(0.5)
+            self.lock_item.setPos(
+                self.pos().x() + self.controller.tn_width / 2 - pixmap.width() / 2,
+                self.pos().y() + self.controller.tn_height / 2 - pixmap.height() / 2)
+            self.addToGroup(self.lock_item)
+
     def boundingRect(self):
         return QRectF(0, 0, self.controller.tn_width, self.controller.tn_height)
 
@@ -146,6 +156,7 @@ class ThumbFileItem(FileItem):
             self.removeFromGroup(item)
         self.setPos(0, 0)
         self.pixmap_item = None
+        self.lock_item = None
         self.make_items()
 
 

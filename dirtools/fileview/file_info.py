@@ -28,6 +28,11 @@ class FileInfo:
         self._isdir = os.path.isdir(self._filename)
         self._stat = os.lstat(self._filename)
         self._ext = os.path.splitext(self._filename)[1]
+        self._have_access = os.access(self._filename, os.R_OK)
+
+    @property
+    def have_access(self):
+        return self._have_access
 
     @property
     def filename(self):
