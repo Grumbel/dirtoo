@@ -45,7 +45,6 @@ def find_files(directory, recursive, filter_op, action, topdown, maxdepth):
         for f in files:
             if filter_op.match_file(root, f):
                 action.file(root, f)
-                fullpath = os.path.join(root, f)
 
         if not recursive:
             del dirs[:]
