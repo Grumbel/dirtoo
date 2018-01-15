@@ -40,10 +40,10 @@ class DetailView(QGraphicsView):
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
 
-    def set_file_collection(self, file_collection):
+    def set_fileinfos(self, fileinfos):
         self.scene.clear()
         self.file_items = [DetailFileItem(fileinfo, self.controller)
-                           for fileinfo in file_collection.fileinfos]
+                           for fileinfo in fileinfos]
         for item in self.file_items:
             self.scene.addItem(item)
         self.layout_items()

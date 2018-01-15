@@ -86,6 +86,9 @@ class Actions(QObject):
         self.view_group.addAction(self.view_icon_view)
         self.view_group.addAction(self.view_small_icon_view)
 
+        self.show_hidden = QAction("Show Hidden", self, checkable=True)
+        self.show_hidden.triggered.connect(self.controller.show_hidden)
+
         self.show_abspath = QAction("Show AbsPath", self, checkable=True)
         self.show_abspath.triggered.connect(self.controller.show_abspath)
 
