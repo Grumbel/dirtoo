@@ -19,6 +19,7 @@ from PyQt5.QtCore import Qt, QMimeData, QUrl
 from PyQt5.QtGui import QDrag
 from PyQt5.QtWidgets import (
     QGraphicsItemGroup,
+    QMenu
 )
 
 from dirtools.util import expand_file
@@ -81,6 +82,15 @@ class FileItem(QGraphicsItemGroup):
                     self.controller.on_click(self.fileinfo)
 
             self.dragging = False
+
+    def contextMenuEvent(self, ev):
+        menu = QMenu()
+        menu.addAction("Open with Default",
+                       lambda: self.controller.on_click(self.fileinfo))
+        menu.addAction("Open with Other",
+                       lambda: self.controller.on_click(self.fileinfo))
+        menu.addAction("Properties...")
+        menu.exec(ev.screenPos())
 
     def show_basename(self):
         pass
