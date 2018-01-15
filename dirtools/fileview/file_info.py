@@ -20,13 +20,42 @@ import os
 
 class FileInfo:
 
-    def __init__(self, filename):
-        self.filename = filename
-        self.abspath = os.path.abspath(self.filename)
-        self.dirname = os.path.dirname(self.abspath)
-        self.basename = os.path.basename(self.abspath)
-        self.isdir = os.path.isdir(self.filename)
-        self.stat = os.lstat(self.filename)
+    def __init__(self, filename: str) -> None:
+        self._filename = filename
+        self._abspath = os.path.abspath(self._filename)
+        self._dirname = os.path.dirname(self._abspath)
+        self._basename = os.path.basename(self._abspath)
+        self._isdir = os.path.isdir(self._filename)
+        self._stat = os.lstat(self._filename)
+        self._ext = os.path.splitext(self._filename)[1]
+
+    @property
+    def filename(self):
+        return self._filename
+
+    @property
+    def abspath(self):
+        return self._abspath
+
+    @property
+    def dirname(self):
+        return self._dirname
+
+    @property
+    def basename(self):
+        return self._basename
+
+    @property
+    def isdir(self):
+        return self._isdir
+
+    @property
+    def stat(self):
+        return self._stat
+
+    @property
+    def ext(self):
+        return self._ext
 
 
 # EOF #
