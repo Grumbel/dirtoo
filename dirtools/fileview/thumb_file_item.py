@@ -50,7 +50,6 @@ class ThumbFileItem(FileItem):
         super().__init__(*args)
 
     def paint(self, *args):
-        # print("paint", self.fileinfo)
         if self.pixmap_item is None:
             self.make_thumbnail()
         super().paint(*args)

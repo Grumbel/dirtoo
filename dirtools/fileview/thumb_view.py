@@ -22,7 +22,6 @@ from PyQt5.QtWidgets import (
     QGraphicsScene,
 )
 
-from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.thumb_file_item import ThumbFileItem
 
 
@@ -33,7 +32,6 @@ class ThumbView(QGraphicsView):
         self.setAcceptDrops(True)
 
         self.controller = controller
-        self.files = []
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
 
@@ -63,13 +61,13 @@ class ThumbView(QGraphicsView):
         # [PyQt5.QtCore.QUrl('file:///home/ingo/projects/dirtool/trunk/setup.py')]
         self.controller.add_files([url.path() for url in urls])
 
-    def set_files(self, files):
+    def set_file_collection(self, file_collection):
+        self.file_collection = file_collection
         self.scene.clear()
-        self.files = files
         self.thumbnails = []
 
-        for filename in self.files:
-            thumb = ThumbFileItem(FileInfo(filename), self.controller)
+        for fileinfo in self.file_collection.fileinfos:
+            thumb = ThumbFileItem(fileinfo, self.controller)
             self.scene.addItem(thumb)
             self.thumbnails.append(thumb)
 

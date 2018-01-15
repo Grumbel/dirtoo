@@ -16,6 +16,7 @@
 
 
 import html
+import datetime
 
 from PyQt5.QtGui import QPixmap, QColor
 from PyQt5.QtWidgets import (
@@ -30,23 +31,32 @@ from dirtools.fileview.file_item import FileItem
 class DetailFileItem(FileItem):
 
     def __init__(self, *args):
+        self.date_item = None
+        self.filename_item = None
         super().__init__(*args)
+
+    def make_items(self):
+        date = datetime.datetime.fromtimestamp(self.fileinfo.stat.st_mtime)
+        self.date_item = QGraphicsTextItem(date.strftime("%F %T"))
+        self.date_item.setPos(0, 0)
+        self.addToGroup(self.date_item)
+
+        self.filename_item = QGraphicsTextItem(self.fileinfo.filename)
+        self.filename_item.setPos(200, 0)
+        self.addToGroup(self.filename_item)
+
+        # tooltips don't work for the whole group
+        self.filename_item.setToolTip(self.fileinfo.filename)
 
     def hoverEnterEvent(self, ev):
         self.show_thumbnail()
-        self.text.setDefaultTextColor(QColor(0, 128, 128))
+        self.filename_item.setDefaultTextColor(QColor(0, 128, 128))
         self.controller.show_current_filename(self.fileinfo.filename)
 
     def hoverLeaveEvent(self, ev):
         self.hide_thumbnail()
-        self.text.setDefaultTextColor(QColor(0, 0, 0))
+        self.filename_item.setDefaultTextColor(QColor(0, 0, 0))
         self.controller.show_current_filename("")
-
-    def make_items(self):
-        self.text = QGraphicsTextItem()
-        # tooltips don't work for the whole group
-        self.text.setToolTip(self.fileinfo.filename)
-        self.addToGroup(self.text)
 
     def show_thumbnail(self):
         if self.thumbnail is None:
@@ -76,10 +86,10 @@ class DetailFileItem(FileItem):
                 html.escape(self.fileinfo.dirname),
                 html.escape(self.fileinfo.basename[0:80]))
 
-        self.text.setHtml(html_text)
+        self.filename_item.setHtml(html_text)
 
     def show_basename(self):
-        self.text.setPlainText(self.fileinfo.basename)
+        self.filename_item.setPlainText(self.fileinfo.basename)
 
 
 # EOF #

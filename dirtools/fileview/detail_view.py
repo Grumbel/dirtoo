@@ -16,7 +16,6 @@
 
 
 import os
-import datetime
 
 from PyQt5.QtCore import QRectF
 from PyQt5.QtWidgets import (
@@ -24,7 +23,6 @@ from PyQt5.QtWidgets import (
     QGraphicsView,
 )
 
-from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.detail_file_item import DetailFileItem
 
 
@@ -40,45 +38,31 @@ class DetailView(QGraphicsView):
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
 
-    def set_files(self, files):
-        self.files = files
-        self.layout_files()
-
-    def layout_files(self):
+    def set_file_collection(self, file_collection):
         self.scene.clear()
-        self.file_items = []
+        self.file_items = [DetailFileItem(fileinfo, self.controller)
+                           for fileinfo in file_collection.fileinfos]
+        for item in self.file_items:
+            self.scene.addItem(item)
+        self.layout_items()
 
+    def layout_items(self):
         last_mtime = None
 
-        files = [(os.path.getmtime(f), f) for f in self.files]
-        files = sorted(files)
-
+        self.file_items = sorted(self.file_items,
+                                 key=lambda item: item.fileinfo.stat.st_mtime)
         y = 0
-        for idx, (mtime, filename) in enumerate(files):
+        for item in self.file_items:
+            if self.timespace and last_mtime is not None:
+                # FIXME: add line of varing color to signal distance
+                diff = item.fileinfo.stat.st_mtime - last_mtime
+                y += min(100, diff / 1000)
 
-            if self.timespace:
-                if last_mtime is not None:
-                    diff = mtime - last_mtime
-                    # print(diff)
-                    y += min(100, diff / 1000)
-                    # FIXME: add line of varing color to signal distance
-
-            last_mtime = mtime
-
-            text = self.scene.addText(datetime.datetime.fromtimestamp(mtime).strftime("%F %T"))
-            text.setPos(20, y)
-
-            text = DetailFileItem(FileInfo(filename), self.controller)
-            text.filename = filename
-            self.scene.addItem(text)
-            text.setPos(200, y)
-
-            self.file_items.append(text)
-            # print(dir(text))
-            # text.mousePressEvent.connect(lambda *args, filename=filename: self.on_file_click(filename, *args))
-
+            item.setPos(0, y)
             y += 20
+            last_mtime = item.fileinfo.stat.st_mtime
 
+        # Calculate a bounding rect that places the items in the top/left corner
         bounding_rect = QRectF(0,
                                0,
                                max(self.viewport().size().width(),
@@ -89,11 +73,11 @@ class DetailView(QGraphicsView):
 
     def resizeEvent(self, ev):
         super().resizeEvent(ev)
-        self.layout_files()
+        self.layout_items()
 
     def toggle_timegaps(self):
         self.timespace = not self.timespace
-        self.layout_files()
+        self.layout_items()
 
     # def mousePressEvent(self, ev):
     #     print("View:click")

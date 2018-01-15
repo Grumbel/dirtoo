@@ -23,6 +23,7 @@ class FileCollection(QObject):
 
     sig_file_added = pyqtSignal(FileInfo)
     sig_file_removed = pyqtSignal(FileInfo)
+    sig_files_changed = pyqtSignal(list)  # [FileInfo]
 
     def __init__(self):
         super().__init__()
@@ -30,6 +31,7 @@ class FileCollection(QObject):
 
     def set_files(self, files):
         self.fileinfos = [FileInfo(f) for f in files]
+        self.sig_files_changed.emit(self.fileinfos)
 
     def add_file(self, filename):
         fi = FileInfo(filename)

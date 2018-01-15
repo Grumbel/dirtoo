@@ -22,10 +22,11 @@ class FileInfo:
 
     def __init__(self, filename):
         self.filename = filename
-        self.abspath = os.path.abspath(filename)
+        self.abspath = os.path.abspath(self.filename)
         self.dirname = os.path.dirname(self.abspath)
         self.basename = os.path.basename(self.abspath)
         self.isdir = os.path.isdir(self.filename)
+        self.stat = os.lstat(self.filename)
         # size
         # permissions
         # meta

@@ -85,14 +85,15 @@ class Controller(QObject):
             len(files),
             self.file_collection.size() - len(files),
             self.file_collection.size()))
-        self.window.file_view.set_files([f.filename for f in files])
-        self.window.thumb_view.set_files([f.filename for f in files])
+
+        # FIXME: self.window.file_view.set_files([f.filename for f in files])
+        # FIXME: self.window.thumb_view.set_files([f.filename for f in files])
 
     def set_files(self, files):
         self.file_collection.set_files(files)
         self.window.show_info("{} items".format(len(files)))
-        self.window.file_view.set_files(files)
-        self.window.thumb_view.set_files(files)
+        self.window.file_view.set_file_collection(self.file_collection)
+        self.window.thumb_view.set_file_collection(self.file_collection)
 
     def toggle_timegaps(self):
         self.window.file_view.toggle_timegaps()
