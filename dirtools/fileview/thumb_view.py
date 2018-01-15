@@ -23,7 +23,7 @@ from PyQt5.QtWidgets import (
 )
 
 from dirtools.fileview.file_info import FileInfo
-from dirtools.fileview.file_item import ThumbFileItem
+from dirtools.fileview.thumb_file_item import ThumbFileItem
 
 
 class ThumbView(QGraphicsView):
@@ -134,6 +134,7 @@ class ThumbView(QGraphicsView):
         self.apply_zoom()
 
     def apply_zoom(self):
+        # zoom_levels = ["Tiny", "Small" "Normal", "Large", "Extra Large"]
         self.tn_width = 32 * 2 ** self.zoom_index
         self.tn_height = 32 * 2 ** self.zoom_index
         self.tn_size = min(self.tn_width, self.tn_height)

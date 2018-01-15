@@ -25,7 +25,7 @@ from PyQt5.QtWidgets import (
 )
 
 from dirtools.fileview.file_info import FileInfo
-from dirtools.fileview.file_item import DetailFileItem
+from dirtools.fileview.detail_file_item import DetailFileItem
 
 
 class DetailView(QGraphicsView):
