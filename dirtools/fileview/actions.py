@@ -64,11 +64,13 @@ class Actions(QObject):
         self.back.setShortcut('Alt+Left')
         self.back.setStatusTip('Go back in history')
         self.back.setEnabled(False)
+        self.back.triggered.connect(controller.go_back)
 
         self.forward = QAction(QIcon.fromTheme('forward'), 'Go &forward', self)
         self.forward.setShortcut('Alt+Right')
         self.forward.setStatusTip('Go forward in history')
         self.forward.setEnabled(False)
+        self.forward.triggered.connect(controller.go_forward)
 
         self.reload = QAction(QIcon.fromTheme('reload'), 'Reload', self)
         self.reload.setShortcut('F5')

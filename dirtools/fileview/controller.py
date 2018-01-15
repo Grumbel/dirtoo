@@ -37,6 +37,8 @@ class Controller(QObject):
         self.actions = Actions(self)
         self.window = FileViewWindow(self)
         self.filter = Filter()
+        self.history = []
+        self.history_index = 0
 
     def save_as(self):
         options = QFileDialog.Options()
@@ -89,7 +91,31 @@ class Controller(QObject):
             self.filter.pattern = pattern
         self.refresh()
 
-    def set_location(self, location):
+    def go_forward(self):
+        if self.history != []:
+            self.history_index = min(self.history_index + 1, len(self.history) - 1)
+            self.history[self.history_index]
+            self.set_location(self.history[self.history_index], track_history=False)
+            if self.history_index == len(self.history) - 1:
+                self.actions.forward.setEnabled(False)
+            self.actions.back.setEnabled(True)
+
+    def go_back(self):
+        if self.history != []:
+            self.history_index = max(self.history_index - 1, 0)
+            self.set_location(self.history[self.history_index], track_history=False)
+            if self.history_index == 0:
+                self.actions.back.setEnabled(False)
+            self.actions.forward.setEnabled(True)
+
+    def set_location(self, location, track_history=True):
+        if track_history:
+            self.history = self.history[0:self.history_index + 1]
+            self.history_index = len(self.history)
+            self.history.append(location)
+            self.actions.back.setEnabled(True)
+            self.actions.forward.setEnabled(False)
+
         self.location = os.path.abspath(location)
         self.window.set_location(self.location)
         files = expand_file(self.location, recursive=False)
