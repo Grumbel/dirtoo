@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import os
 import sys
 import argparse
 
@@ -29,7 +30,7 @@ def parse_args(args):
                         help="Space items appart given their mtime")
     parser.add_argument("-0", "--null", action='store_true',
                         help="Read \\0 separated lines")
-    parser.add_argument("-r", "--recursive", action='store_true',
+    parser.add_argument("-r", "--recursive", action='store_true', default=False,
                         help="Be recursive")
     parser.add_argument("-e", "--empty", action='store_true', default=False,
                         help="Start with a empty workbench instead of the current directory")
@@ -53,9 +54,13 @@ def get_file_list(args):
 def main(argv):
     args = parse_args(argv[1:])
     files = get_file_list(args)
-    files = expand_directories(files, args.recursive)
     app = FileViewApplication()
-    app.show_files(files)
+    if len(files) == 1 and os.path.isdir(files[0]):
+        app.show_location(files[0])
+    else:
+        if args.recursive:
+            files = expand_directories(files, args.recursive)
+        app.show_files(files)
     sys.exit(app.run())
 
 
