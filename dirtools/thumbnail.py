@@ -17,7 +17,7 @@
 
 import os
 import hashlib
-import urllib
+import urllib.parse
 import xdg.BaseDirectory
 
 

@@ -33,8 +33,8 @@ class ArchiveInfo:
 
     def __init__(self, entries):
         self.file_count = 0
-        self.file_types = defaultdict(int)
-        self.directories = set()
+        self.file_types: defaultdict = defaultdict(int)
+        self.directories: set = set()
         self.total_size = 0
 
         self.process_entries(entries)

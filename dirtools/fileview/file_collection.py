@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 from PyQt5.QtCore import QObject, pyqtSignal
 from dirtools.fileview.file_info import FileInfo
 
@@ -27,7 +29,7 @@ class FileCollection(QObject):
 
     def __init__(self):
         super().__init__()
-        self.fileinfos = []
+        self.fileinfos: List[FileInfo] = []
 
     def set_files(self, files):
         self.fileinfos = [FileInfo(f) for f in files]

@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 import os
 
 from PyQt5.QtCore import QRectF
@@ -33,7 +35,7 @@ class DetailView(QGraphicsView):
 
         self.controller = controller
         self.timespace = False
-        self.file_items = []
+        self.file_items: List[DetailFileItem] = []
 
         self.scene = QGraphicsScene()
         self.setScene(self.scene)

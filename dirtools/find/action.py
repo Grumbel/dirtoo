@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List, Tuple
+
 import os
 import shlex
 import string
@@ -95,7 +97,7 @@ class MultiAction(Action):
     def __init__(self):
         super().__init__()
 
-        self.actions = []
+        self.actions: List[Action] = []
 
     def add(self, action):
         self.actions.append(action)
@@ -120,7 +122,7 @@ class ExecAction(Action):
 
         self.on_file_cmd = None
         self.on_multi_cmd = None
-        self.all_files = []
+        self.all_files: List[str] = []
 
         cmd = shlex.split(exec_str)
 
@@ -156,7 +158,7 @@ class ExprSorterAction(Action):
         self.find_action = find_action
         self.reverse = reverse
 
-        self.files = []
+        self.files: List[Tuple[str, str]] = []
 
         self.ctx = Context()
         self.global_vars = globals().copy()
@@ -169,8 +171,7 @@ class ExprSorterAction(Action):
         pass
 
     def finish(self):
-        files = []
-
+        files3: List[Tuple[str, str, str]] = []
         if self.expr:
             for root, filename in self.files:
                 fullpath = os.path.join(root, filename)
@@ -181,10 +182,10 @@ class ExprSorterAction(Action):
                 }
                 key = eval(self.expr, self.global_vars, local_vars)  # pylint: disable=W0123
 
-                files.append((key, root, filename))
+                files3.append((key, root, filename))
 
-            files = sorted(files, key=lambda x: x[0], reverse=self.reverse)
-            files = [(b, c) for _, b, c in files]
+            files3 = sorted(files3, key=lambda x: x[0], reverse=self.reverse)
+            files = [(b, c) for _, b, c in files3]
         else:
             if self.reverse:
                 files = list(reversed(self.files))

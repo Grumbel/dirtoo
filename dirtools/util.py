@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 import os
 
 
@@ -30,7 +32,7 @@ def expand_file(f, recursive):
 
 
 def expand_directories(files, recursive):
-    results = []
+    results: List[str] = []
     for f in files:
         results += expand_file(f, recursive)
     return results

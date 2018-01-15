@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 from PyQt5.QtCore import Qt, QRectF
 from PyQt5.QtGui import QBrush
 from PyQt5.QtWidgets import (
@@ -36,7 +38,7 @@ class ThumbView(QGraphicsView):
         self.setScene(self.scene)
 
         self.padding = 16
-        self.thumbnails = []
+        self.thumbnails: List[ThumbFileItem] = []
 
         self.zoom_index = 2
         self.apply_zoom()

@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Dict
+
 import os
 
 from dirtools.find.context import Context
@@ -33,7 +35,7 @@ class ExprFilter:
 
     def __init__(self, expr):
         self.expr = expr
-        self.local_vars = {}
+        self.local_vars: Dict[str, str] = {}
         self.ctx = Context()
         self.global_vars = globals().copy()
         self.global_vars.update(self.ctx.get_hash())

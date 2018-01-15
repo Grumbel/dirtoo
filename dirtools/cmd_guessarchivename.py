@@ -39,13 +39,13 @@ def most_common(lst, threshold):
 
 
 def common_prefix(lst, threshold):
-    m = defaultdict(list)
+    m: defaultdict = defaultdict(list)
     for text in lst:
         for i, c in enumerate(text):
             m[i].append(c)
 
     result = [most_common(m[cs], threshold) for cs in sorted(m)]
-    result = itertools.takewhile(lambda x: x is not None and x != "/", result)
+    result = list(itertools.takewhile(lambda x: x is not None and x != "/", result))
     return "".join(result)
 
 

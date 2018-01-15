@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Union
+
 import argparse
 import os
 import hashlib
@@ -25,7 +27,7 @@ class MoveContext:
     def __init__(self):
         self.verbose = False
         self.dry_run = False
-        self.overwrite = None
+        self.overwrite: Union[None, str] = None
 
     def skip_rename(self, oldpath, newpath):
         if self.verbose:

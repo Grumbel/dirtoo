@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List, Any
+
 import os
 import fnmatch
 
@@ -28,7 +30,7 @@ def name_match(filename, glob):
 
 
 def replace_item(lst, needle, replacements):
-    result = []
+    result: List[Any] = []
     for i in lst:
         if i == needle:
             result += replacements

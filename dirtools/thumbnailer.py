@@ -19,9 +19,11 @@
 # qdbus org.freedesktop.thumbnails.Thumbnailer1 /org/freedesktop/thumbnails/Thumbnailer1
 
 
+from typing import Dict, Tuple
+
 import os
 import hashlib
-import urllib
+import urllib.parse
 import dbus
 import mimetypes
 import xdg.BaseDirectory
@@ -52,7 +54,7 @@ class Thumbnailer:
 
     def __init__(self, bus, listener=ThumbnailerListener()):
         self.bus = bus
-        self.requests = {}
+        self.requests: Dict[str, Tuple[str, str, str]] = {}
         self.thumbnailer = bus.get_object(
             'org.freedesktop.thumbnails.Thumbnailer1',
             '/org/freedesktop/thumbnails/Thumbnailer1')

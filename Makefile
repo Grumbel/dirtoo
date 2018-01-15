@@ -27,7 +27,14 @@ test:
 	python3 -m unittest discover -s tests/
 
 mypy:
-	mypy --ignore-missing-imports $(SOURCES)
+	mypy \
+	--ignore-missing-imports \
+	--check-untyped-defs \
+	--warn-return-any \
+	--warn-unused-ignores \
+	--warn-incomplete-stub \
+	--warn-redundant-casts \
+	$(SOURCES)
 
 flake:
 	flake8 --max-line-length=120 --ignore=N802 $(SOURCES)
