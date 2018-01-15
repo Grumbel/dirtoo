@@ -22,11 +22,6 @@ from PyQt5.QtWidgets import (
     QMenu
 )
 
-from dirtools.util import expand_file
-
-
-windows = []
-
 
 class FileItem(QGraphicsItemGroup):
 
@@ -70,16 +65,7 @@ class FileItem(QGraphicsItemGroup):
             if self.dragging:
                 pass
             else:
-                if self.fileinfo.isdir:
-                    from dirtools.fileview.file_view_window import FileViewWindow
-                    window = FileViewWindow()
-                    files = expand_file(self.fileinfo.filename, recursive=False)
-                    window.file_view.set_files(files)
-                    window.thumb_view.set_files(files)
-                    window.show()
-                    windows.append(window)
-                else:
-                    self.controller.on_click(self.fileinfo)
+                self.controller.on_click(self.fileinfo)
 
             self.dragging = False
 

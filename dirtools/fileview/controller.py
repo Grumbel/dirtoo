@@ -23,6 +23,10 @@ from PyQt5.QtCore import QObject
 from dirtools.fileview.actions import Actions
 from dirtools.fileview.file_collection import FileCollection
 from dirtools.fileview.file_view_window import FileViewWindow
+from dirtools.util import expand_file
+
+
+g_controllers = []
 
 
 class Controller(QObject):
@@ -104,7 +108,14 @@ class Controller(QObject):
         pass
 
     def on_click(self, fileinfo):
-        subprocess.Popen(["xdg-open", fileinfo.filename])
+        if not fileinfo.isdir:
+            subprocess.Popen(["xdg-open", fileinfo.filename])
+        else:
+            controller = Controller(self.thumbnailer)
+            files = expand_file(fileinfo.filename, recursive=False)
+            controller.set_files(files)
+            controller.window.show()
+            g_controllers.append(controller)
 
     def show_current_filename(self, filename):
         self.window.show_current_filename(filename)
