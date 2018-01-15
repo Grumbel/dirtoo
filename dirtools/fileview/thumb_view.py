@@ -144,8 +144,11 @@ class ThumbView(QGraphicsView):
         else:
             self.flavor = "large"
 
+        self.reload()
+
+    def reload(self):
         for thumb in self.thumbnails:
-            thumb.refresh()
+            thumb.reload()
         self.layout_thumbnails()
 
 

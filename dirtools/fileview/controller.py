@@ -118,6 +118,9 @@ class Controller(QObject):
         for f in files:
             self.file_collection.add_file(f)
 
+    def reload(self):
+        self.window.thumb_view.reload()
+
     # Temp Hacks
     @property
     def tn_width(self):

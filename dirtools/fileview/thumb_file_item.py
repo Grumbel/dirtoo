@@ -141,9 +141,9 @@ class ThumbFileItem(FileItem):
     def boundingRect(self):
         return QRectF(0, 0, self.controller.tn_width, self.controller.tn_height)
 
-    def refresh(self):
+    def reload(self):
         for item in self.childItems():
-            self.scene().removeItem(item)
+            self.removeFromGroup(item)
         self.setPos(0, 0)
         self.pixmap_item = None
         self.make_items()

@@ -65,6 +65,11 @@ class Actions(QObject):
         self.forward.setStatusTip('Go forward in history')
         self.forward.setEnabled(False)
 
+        self.reload = QAction(QIcon.fromTheme('reload'), 'Reload', self)
+        self.reload.setShortcut('F5')
+        self.reload.setStatusTip('Reload the View')
+        self.reload.triggered.connect(self.controller.reload)
+
         self.view_detail_view = QAction("Detail View", self, checkable=True)
         self.view_icon_view = QAction("Icon View", self, checkable=True)
         self.view_small_icon_view = QAction("Small Icon View", self, checkable=True)
