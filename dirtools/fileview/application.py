@@ -50,4 +50,11 @@ class FileViewApplication:
         controller.window.show()
         self.controllers.append(controller)
 
+    def show_location(self, path):
+        controller = Controller(self)
+        controller.set_location(path)
+        controller.window.show()
+        self.controllers.append(controller)
+
+
 # EOF #

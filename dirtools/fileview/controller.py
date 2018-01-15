@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import os
 import subprocess
 from fnmatch import fnmatch
 
@@ -90,7 +91,14 @@ class Controller(QObject):
         # self.window.file_view.set_file_collection([f.filename for f in files])
         # self.window.thumb_view.set_file_collection([f.filename for f in files])
 
-    def set_files(self, files):
+    def set_location(self, location):
+        self.location = os.path.abspath(location)
+        self.window.set_location(self.location)
+        files = expand_file(self.location, recursive=False)
+        self.set_files(files, self.location)
+
+    def set_files(self, files, location=None):
+        self.location = location
         self.file_collection.set_files(files)
         self.file_collection.sort(lambda fileinfo:
                                   (not fileinfo.isdir, fileinfo.basename))
@@ -102,14 +110,17 @@ class Controller(QObject):
         self.window.file_view.toggle_timegaps()
 
     def parent_directory(self):
-        pass
+        if self.location is not None:
+            self.set_location(os.path.dirname(os.path.abspath(self.location)))
 
     def on_click(self, fileinfo):
         if not fileinfo.isdir:
             subprocess.Popen(["xdg-open", fileinfo.filename])
         else:
-            files = expand_file(fileinfo.filename, recursive=False)
-            self.app.show_files(files)
+            if self.location is None:
+                self.app.show_location(fileinfo.filename)
+            else:
+                self.set_location(fileinfo.filename)
 
     def show_current_filename(self, filename):
         self.window.show_current_filename(filename)

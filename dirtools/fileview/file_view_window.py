@@ -83,7 +83,7 @@ class FilePathLineEdit(QLineEdit):
 
     def onReturnPressed(self):
         if os.path.exists(self.text()):
-            self.controller.set_directory(self.text())
+            self.controller.set_location(self.text())
 
 
 class FileViewWindow(QMainWindow):
@@ -223,9 +223,8 @@ class FileViewWindow(QMainWindow):
         self.thumb_view.show()
         self.file_view.hide()
 
-    def set_directory(self, path):
-        self.path = path
-        self.file_path.setText(self.path)
+    def set_location(self, path):
+        self.file_path.setText(path)
 
     def show_info(self, text):
         self.info.setText("  " + text)
