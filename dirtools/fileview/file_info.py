@@ -27,8 +27,6 @@ class FileInfo:
         self.basename = os.path.basename(self.abspath)
         self.isdir = os.path.isdir(self.filename)
         self.stat = os.lstat(self.filename)
-        # size
-        # permissions
-        # meta
+
 
 # EOF #

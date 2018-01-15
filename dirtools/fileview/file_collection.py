@@ -53,5 +53,8 @@ class FileCollection(QObject):
                 fout.write(fi.abspath)
                 fout.write("\n")
 
+    def sort(self, key):
+        self.fileinfos = sorted(self.fileinfos, key=key)
+        self.sig_files_changed.emit(self.fileinfos)
 
 # EOF #

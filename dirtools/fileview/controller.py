@@ -91,6 +91,8 @@ class Controller(QObject):
 
     def set_files(self, files):
         self.file_collection.set_files(files)
+        self.file_collection.sort(lambda fileinfo:
+                                  (not fileinfo.isdir, fileinfo.basename))
         self.window.show_info("{} items".format(len(files)))
         self.window.file_view.set_file_collection(self.file_collection)
         self.window.thumb_view.set_file_collection(self.file_collection)
