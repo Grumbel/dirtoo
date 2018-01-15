@@ -108,6 +108,10 @@ class FileViewWindow(QMainWindow):
         shortcut.setContext(Qt.WindowShortcut)
         shortcut.activated.connect(lambda: self.file_filter.setFocus(Qt.ShortcutFocusReason))
 
+        shortcut = QShortcut(QKeySequence(Qt.ALT + Qt.Key_Up), self)
+        shortcut.setContext(Qt.WindowShortcut)
+        shortcut.activated.connect(self.controller.parent_directory)
+
     def make_window(self):
         self.setWindowTitle("dt-fileview")
         self.setWindowIcon(QIcon(resource_filename("dirtools", "fileview/fileview.svg")))
@@ -147,6 +151,7 @@ class FileViewWindow(QMainWindow):
     def make_menubar(self):
         self.menubar = self.menuBar()
         file_menu = self.menubar.addMenu('&File')
+        file_menu.addAction(self.actions.parent_directory)
         file_menu.addAction(self.actions.save_as)
         file_menu.addSeparator()
         file_menu.addAction(self.actions.exit)
@@ -179,9 +184,7 @@ class FileViewWindow(QMainWindow):
 
     def make_toolbar(self):
         self.toolbar = self.addToolBar("FileView")
-        self.toolbar.addAction(self.style().standardIcon(QStyle.SP_FileDialogToParent),
-                               "Parent Directory",
-                               self.controller.parent_directory)
+        self.toolbar.addAction(self.actions.parent_directory)
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.actions.back)
         self.toolbar.addAction(self.actions.forward)

@@ -19,7 +19,8 @@ from PyQt5.QtCore import QObject
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (
     QAction,
-    QActionGroup
+    QActionGroup,
+    QStyle
 )
 
 from dirtools.fileview.about_dialog import AboutDialog
@@ -54,6 +55,10 @@ class Actions(QObject):
         self.zoom_in.triggered.connect(self.controller.zoom_in)
         self.zoom_out = QAction(QIcon.fromTheme('zoom-out'), "Zoom &Out", self)
         self.zoom_out.triggered.connect(self.controller.zoom_out)
+
+        self.parent_directory = QAction(self.controller.app.qapp.style().standardIcon(QStyle.SP_FileDialogToParent),
+                                        "Parent Directory")
+        self.parent_directory.triggered.connect(self.controller.parent_directory)
 
         self.back = QAction(QIcon.fromTheme('back'), 'Go &back', self)
         self.back.setShortcut('Alt+Left')
