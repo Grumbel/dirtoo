@@ -57,4 +57,5 @@ class FileCollection(QObject):
         self.fileinfos = sorted(self.fileinfos, key=key)
         self.sig_files_changed.emit(self.fileinfos)
 
+
 # EOF #

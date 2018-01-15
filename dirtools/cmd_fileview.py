@@ -17,16 +17,9 @@
 
 import sys
 import argparse
-import signal
-import dbus
-
-from PyQt5.QtWidgets import QApplication
-from dbus.mainloop.pyqt5 import DBusQtMainLoop
 
 from dirtools.fileview.application import FileViewApplication
-from dirtools.fileview.controller import Controller
 from dirtools.util import expand_directories
-from dirtools.thumbnailer import Thumbnailer, ThumbnailerListener
 
 
 def parse_args(args):

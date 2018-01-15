@@ -87,8 +87,8 @@ class Controller(QObject):
             self.file_collection.size() - len(files),
             self.file_collection.size()))
 
-        # FIXME: self.window.file_view.set_files([f.filename for f in files])
-        # FIXME: self.window.thumb_view.set_files([f.filename for f in files])
+        # self.window.file_view.set_file_collection([f.filename for f in files])
+        # self.window.thumb_view.set_file_collection([f.filename for f in files])
 
     def set_files(self, files):
         self.file_collection.set_files(files)

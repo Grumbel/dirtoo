@@ -15,8 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import sys
-import argparse
+from typing import List
+
 import signal
 import dbus
 
@@ -24,7 +24,6 @@ from PyQt5.QtWidgets import QApplication
 from dbus.mainloop.pyqt5 import DBusQtMainLoop
 
 from dirtools.fileview.controller import Controller
-from dirtools.util import expand_directories
 from dirtools.thumbnailer import Thumbnailer, ThumbnailerListener
 
 
@@ -40,7 +39,7 @@ class FileViewApplication:
         self.session_bus = dbus.SessionBus()
         self.thumbnailer = Thumbnailer(self.session_bus, listener=ThumbnailerListener())
 
-        self.controllers = []
+        self.controllers: List[Controller] = []
 
     def run(self):
         return self.qapp.exec()
