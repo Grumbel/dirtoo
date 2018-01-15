@@ -26,14 +26,11 @@ from dirtools.fileview.file_view_window import FileViewWindow
 from dirtools.util import expand_file
 
 
-g_controllers = []
-
-
 class Controller(QObject):
 
-    def __init__(self, thumbnailer):
+    def __init__(self, app):
         super().__init__()
-        self.thumbnailer = thumbnailer
+        self.app = app
         self.file_collection = FileCollection()
         self.actions = Actions(self)
         self.window = FileViewWindow(self)
@@ -111,11 +108,8 @@ class Controller(QObject):
         if not fileinfo.isdir:
             subprocess.Popen(["xdg-open", fileinfo.filename])
         else:
-            controller = Controller(self.thumbnailer)
             files = expand_file(fileinfo.filename, recursive=False)
-            controller.set_files(files)
-            controller.window.show()
-            g_controllers.append(controller)
+            self.app.show_files(files)
 
     def show_current_filename(self, filename):
         self.window.show_current_filename(filename)

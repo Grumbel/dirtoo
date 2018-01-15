@@ -23,6 +23,7 @@ import dbus
 from PyQt5.QtWidgets import QApplication
 from dbus.mainloop.pyqt5 import DBusQtMainLoop
 
+from dirtools.fileview.application import FileViewApplication
 from dirtools.fileview.controller import Controller
 from dirtools.util import expand_directories
 from dirtools.thumbnailer import Thumbnailer, ThumbnailerListener
@@ -57,27 +58,12 @@ def get_file_list(args):
 
 
 def main(argv):
-    # Allow Ctrl-C killing of the Qt app, see:
-    # http://stackoverflow.com/questions/4938723/
-    signal.signal(signal.SIGINT, signal.SIG_DFL)
-
     args = parse_args(argv[1:])
     files = get_file_list(args)
-
-    app = QApplication([])
-
-    dbus_loop = DBusQtMainLoop(set_as_default=True)  # noqa: F841
-    session_bus = dbus.SessionBus()
-    thumbnailer = Thumbnailer(session_bus, listener=ThumbnailerListener())
-
-    controller = Controller(thumbnailer)
-
     files = expand_directories(files, args.recursive)
-    controller.set_files(files)
-
-    controller.window.show()
-
-    sys.exit(app.exec_())
+    app = FileViewApplication()
+    app.show_files(files)
+    sys.exit(app.run())
 
 
 def main_entrypoint():
