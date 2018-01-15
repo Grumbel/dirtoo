@@ -96,7 +96,9 @@ class Actions(QObject):
 
         self.about = QAction(QIcon.fromTheme('help-about'), 'About dt-fileview', self)
         self.about.setStatusTip('Show About dialog')
-        self.about.triggered.connect(lambda: AboutDialog().exec_())
+
+        self.about_dialog = AboutDialog()
+        self.about.triggered.connect(self.about_dialog.show)
 
 
 # EOF #
