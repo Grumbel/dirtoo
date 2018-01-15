@@ -101,11 +101,11 @@ class FileViewWindow(QMainWindow):
 
     def make_shortcut(self):
         shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_L), self)
-        shortcut.setContext(Qt.ApplicationShortcut)
+        shortcut.setContext(Qt.WindowShortcut)
         shortcut.activated.connect(lambda: self.file_path.setFocus(Qt.ShortcutFocusReason))
 
         shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_K), self)
-        shortcut.setContext(Qt.ApplicationShortcut)
+        shortcut.setContext(Qt.WindowShortcut)
         shortcut.activated.connect(lambda: self.file_filter.setFocus(Qt.ShortcutFocusReason))
 
     def make_window(self):
