@@ -45,10 +45,12 @@ def pixmap_from_filename(filename, tn_size):
 
 class ThumbFileItem(FileItem):
 
-    def __init__(self, *args):
+    def __init__(self, fileinfo, controller, thumb_view):
+        self.thumb_view = thumb_view
         self.pixmap_item = None
         self.lock_item = None
-        super().__init__(*args)
+
+        super().__init__(fileinfo, controller)
 
     def paint(self, *args):
         if self.pixmap_item is None:
@@ -70,12 +72,12 @@ class ThumbFileItem(FileItem):
         self.controller.show_current_filename("")
 
     def make_items(self):
-        rect = QGraphicsRectItem(-2, -2, self.controller.tn_width + 4, self.controller.tn_height + 4 + 16)
+        rect = QGraphicsRectItem(-2, -2, self.thumb_view.tn_width + 4, self.thumb_view.tn_height + 4 + 16)
         rect.setPen(QPen(Qt.NoPen))
         rect.setBrush(QColor(192 + 32, 192 + 32, 192 + 32))
         self.addToGroup(rect)
 
-        self.select_rect = QGraphicsRectItem(-2, -2, self.controller.tn_width + 4, self.controller.tn_height + 4 + 16)
+        self.select_rect = QGraphicsRectItem(-2, -2, self.thumb_view.tn_width + 4, self.thumb_view.tn_height + 4 + 16)
         self.select_rect.setPen(QPen(Qt.NoPen))
         self.select_rect.setBrush(QColor(192, 192, 192))
         self.select_rect.setVisible(False)
@@ -101,8 +103,8 @@ class ThumbFileItem(FileItem):
         else:
             self.text.setPlainText(tmp + "…")
 
-        self.text.setPos(self.controller.tn_width / 2 - self.text.boundingRect().width() / 2,
-                         self.controller.tn_height - 2)
+        self.text.setPos(self.thumb_view.tn_width / 2 - self.text.boundingRect().width() / 2,
+                         self.thumb_view.tn_height - 2)
 
         # self.text.setVisible(False)
         self.addToGroup(self.text)
@@ -113,43 +115,43 @@ class ThumbFileItem(FileItem):
         # self.make_thumbnail()
 
     def make_thumbnail(self):
-        thumbnail_filename = make_thumbnail_filename(self.fileinfo.filename(), flavor=self.controller.flavor)
+        thumbnail_filename = make_thumbnail_filename(self.fileinfo.filename(), flavor=self.thumb_view.flavor)
 
         if self.fileinfo.isdir():
-            pixmap = QIcon.fromTheme("folder").pixmap(3 * self.controller.tn_size // 4)
+            pixmap = QIcon.fromTheme("folder").pixmap(3 * self.thumb_view.tn_size // 4)
         elif thumbnail_filename:
             pixmap = QPixmap(thumbnail_filename)
 
-            w = pixmap.width() * self.controller.tn_width // pixmap.height()
-            h = pixmap.height() * self.controller.tn_height // pixmap.width()
-            if w <= self.controller.tn_width:
-                pixmap = pixmap.scaledToHeight(self.controller.tn_height,
+            w = pixmap.width() * self.thumb_view.tn_width // pixmap.height()
+            h = pixmap.height() * self.thumb_view.tn_height // pixmap.width()
+            if w <= self.thumb_view.tn_width:
+                pixmap = pixmap.scaledToHeight(self.thumb_view.tn_height,
                                                Qt.SmoothTransformation)
-            elif h <= self.controller.tn_height:
-                pixmap = pixmap.scaledToWidth(self.controller.tn_width,
+            elif h <= self.thumb_view.tn_height:
+                pixmap = pixmap.scaledToWidth(self.thumb_view.tn_width,
                                               Qt.SmoothTransformation)
         else:
-            pixmap = pixmap_from_filename(self.fileinfo.filename(), 3 * self.controller.tn_size // 4)
+            pixmap = pixmap_from_filename(self.fileinfo.filename(), 3 * self.thumb_view.tn_size // 4)
             if pixmap.isNull():
-                pixmap = QIcon.fromTheme("error").pixmap(3 * self.controller.tn_size // 4)
+                pixmap = QIcon.fromTheme("error").pixmap(3 * self.thumb_view.tn_size // 4)
 
         self.pixmap_item = QGraphicsPixmapItem(pixmap)
         self.pixmap_item.setPos(
-            self.pos().x() + self.controller.tn_width / 2 - pixmap.width() / 2,
-            self.pos().y() + self.controller.tn_height / 2 - pixmap.height() / 2)
+            self.pos().x() + self.thumb_view.tn_width / 2 - pixmap.width() / 2,
+            self.pos().y() + self.thumb_view.tn_height / 2 - pixmap.height() / 2)
         self.addToGroup(self.pixmap_item)
 
         if not self.fileinfo.have_access():
-            pixmap = QIcon.fromTheme("locked").pixmap(3 * self.controller.tn_size // 4)
+            pixmap = QIcon.fromTheme("locked").pixmap(3 * self.thumb_view.tn_size // 4)
             self.lock_item = QGraphicsPixmapItem(pixmap)
             self.lock_item.setOpacity(0.5)
             self.lock_item.setPos(
-                self.pos().x() + self.controller.tn_width / 2 - pixmap.width() / 2,
-                self.pos().y() + self.controller.tn_height / 2 - pixmap.height() / 2)
+                self.pos().x() + self.thumb_view.tn_width / 2 - pixmap.width() / 2,
+                self.pos().y() + self.thumb_view.tn_height / 2 - pixmap.height() / 2)
             self.addToGroup(self.lock_item)
 
     def boundingRect(self):
-        return QRectF(0, 0, self.controller.tn_width, self.controller.tn_height)
+        return QRectF(0, 0, self.thumb_view.tn_width, self.thumb_view.tn_height)
 
     def reload(self):
         for item in self.childItems():

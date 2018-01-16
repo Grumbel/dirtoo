@@ -179,22 +179,5 @@ class Controller(QObject):
     def reload(self):
         self.window.thumb_view.reload()
 
-    # Temp Hacks
-    @property
-    def tn_width(self):
-        return self.window.thumb_view.tn_width
-
-    @property
-    def tn_height(self):
-        return self.window.thumb_view.tn_height
-
-    @property
-    def tn_size(self):
-        return self.window.thumb_view.tn_size
-
-    @property
-    def flavor(self):
-        return self.window.thumb_view.flavor
-
 
 # EOF #

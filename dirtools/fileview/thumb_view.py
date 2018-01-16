@@ -81,9 +81,9 @@ class ThumbView(QGraphicsView):
         for fileinfo in fileinfos:
             thumb = None
             if not fileinfo.is_filtered:
-                thumb = ThumbFileItem(fileinfo, self.controller)
+                thumb = ThumbFileItem(fileinfo, self.controller, self)
             elif self.show_filtered:
-                thumb = ThumbFileItem(fileinfo, self.controller)
+                thumb = ThumbFileItem(fileinfo, self.controller, self)
                 thumb.setOpacity(0.5)
 
             if thumb is not None:
