@@ -124,8 +124,13 @@ class Actions(QObject):
 
         self.sort_by_name = QAction("Sort by Name", checkable=True)
         self.sort_by_name.triggered.connect(lambda: self.controller.sorter.set_key_func(FileInfo.filename))
+
         self.sort_by_size = QAction("Sort by Size", checkable=True)
         self.sort_by_size.triggered.connect(lambda: self.controller.sorter.set_key_func(FileInfo.size))
+
+        self.sort_by_ext = QAction("Sort by Extension", checkable=True)
+        self.sort_by_ext.triggered.connect(lambda: self.controller.sorter.set_key_func(FileInfo.ext))
+
         self.sort_by_user = QAction("Sort by User", checkable=True)
         self.sort_by_group = QAction("Sort by Group", checkable=True)
         self.sort_by_permission = QAction("Sort by Permission", checkable=True)
@@ -135,6 +140,7 @@ class Actions(QObject):
         self.sort_group = QActionGroup(self)
         self.sort_group.addAction(self.sort_by_name)
         self.sort_group.addAction(self.sort_by_size)
+        self.sort_group.addAction(self.sort_by_ext)
         self.sort_group.addAction(self.sort_by_user)
         self.sort_group.addAction(self.sort_by_group)
         self.sort_group.addAction(self.sort_by_permission)
