@@ -15,7 +15,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import random
 from dirtools.fileview.file_info import FileInfo
 
 
@@ -42,23 +41,17 @@ class Sorter:
         self.controller.sort()
         self.controller.refresh()
 
-    def sorted(self, fileinfos):
-        return self.sorted_by(fileinfos, self.key_func)
-
-    def sorted_by(self, fileinfos, key_func):
-        if key_func is None:
-            result = fileinfos[:]
-            random.shuffle(result)
-            return result
+    def get_key_func(self):
+        if self.directories_first:
+            return lambda fileinfo: (not fileinfo.isdir(), self.key_func(fileinfo))
         else:
-            if self.directories_first:
-                return sorted(fileinfos,
-                              key=lambda fileinfo: (not fileinfo.isdir(), key_func(fileinfo)),
-                              reverse=self.reverse)
-            else:
-                return sorted(fileinfos,
-                              key=key_func,
-                              reverse=self.reverse)
+            return self.key_func
+
+    def apply(self, file_collection):
+        if self.key_func is None:
+            file_collection.shuffle()
+        else:
+            file_collection.sort(self.get_key_func())
 
 
 # EOF #

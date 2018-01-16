@@ -129,7 +129,7 @@ class Controller(QObject):
         self.refresh()
 
     def sort(self):
-        self.file_collection.fileinfos = self.sorter.sorted(self.file_collection.fileinfos)
+        self.sorter.apply(self.file_collection)
 
     def toggle_timegaps(self):
         self.window.file_view.toggle_timegaps()
