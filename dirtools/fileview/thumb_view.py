@@ -31,6 +31,9 @@ class ThumbView(QGraphicsView):
 
     def __init__(self, controller):
         super().__init__()
+
+        self.show_filtered = False
+
         self.setAcceptDrops(True)
 
         self.controller = controller
@@ -76,8 +79,14 @@ class ThumbView(QGraphicsView):
         self.thumbnails = []
 
         for fileinfo in fileinfos:
+            thumb = None
             if not fileinfo.is_filtered:
                 thumb = ThumbFileItem(fileinfo, self.controller)
+            elif self.show_filtered:
+                thumb = ThumbFileItem(fileinfo, self.controller)
+                thumb.setOpacity(0.5)
+
+            if thumb is not None:
                 self.scene.addItem(thumb)
                 self.thumbnails.append(thumb)
 
