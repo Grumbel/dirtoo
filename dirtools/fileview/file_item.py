@@ -53,7 +53,7 @@ class FileItem(QGraphicsItemGroup):
             self.dragging = True
 
             mime_data = QMimeData()
-            mime_data.setUrls([QUrl("file://" + self.fileinfo.abspath)])
+            mime_data.setUrls([QUrl("file://" + self.fileinfo.abspath())])
             self.drag = QDrag(self.controller.window)
             self.drag.setPixmap(self.pixmap_item.pixmap())
             self.drag.setMimeData(mime_data)

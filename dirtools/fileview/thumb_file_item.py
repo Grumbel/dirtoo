@@ -60,7 +60,7 @@ class ThumbFileItem(FileItem):
         # self.text.setVisible(True)
         # self.text.setDefaultTextColor(QColor(255, 255, 255))
         self.select_rect.setVisible(True)
-        self.controller.show_current_filename(self.fileinfo.filename)
+        self.controller.show_current_filename(self.fileinfo.filename())
 
     def hoverLeaveEvent(self, ev):
         self.setZValue(0)
@@ -82,7 +82,7 @@ class ThumbFileItem(FileItem):
         self.select_rect.setAcceptHoverEvents(False)
         self.addToGroup(self.select_rect)
 
-        text = self.fileinfo.basename
+        text = self.fileinfo.basename()
         self.text = QGraphicsTextItem(text)
         font = self.text.font()
         font.setPixelSize(10)
@@ -109,13 +109,13 @@ class ThumbFileItem(FileItem):
 
         # tooltips don't work for the whole group
         # tooltips break the hover events!
-        # self.text.setToolTip(self.fileinfo.filename)
+        # self.text.setToolTip(self.fileinfo.filename())
         # self.make_thumbnail()
 
     def make_thumbnail(self):
-        thumbnail_filename = make_thumbnail_filename(self.fileinfo.filename, flavor=self.controller.flavor)
+        thumbnail_filename = make_thumbnail_filename(self.fileinfo.filename(), flavor=self.controller.flavor)
 
-        if self.fileinfo.isdir:
+        if self.fileinfo.isdir():
             pixmap = QIcon.fromTheme("folder").pixmap(3 * self.controller.tn_size // 4)
         elif thumbnail_filename:
             pixmap = QPixmap(thumbnail_filename)
@@ -129,7 +129,7 @@ class ThumbFileItem(FileItem):
                 pixmap = pixmap.scaledToWidth(self.controller.tn_width,
                                               Qt.SmoothTransformation)
         else:
-            pixmap = pixmap_from_filename(self.fileinfo.filename, 3 * self.controller.tn_size // 4)
+            pixmap = pixmap_from_filename(self.fileinfo.filename(), 3 * self.controller.tn_size // 4)
             if pixmap.isNull():
                 pixmap = QIcon.fromTheme("error").pixmap(3 * self.controller.tn_size // 4)
 
@@ -139,7 +139,7 @@ class ThumbFileItem(FileItem):
             self.pos().y() + self.controller.tn_height / 2 - pixmap.height() / 2)
         self.addToGroup(self.pixmap_item)
 
-        if not self.fileinfo.have_access:
+        if not self.fileinfo.have_access():
             pixmap = QIcon.fromTheme("locked").pixmap(3 * self.controller.tn_size // 4)
             self.lock_item = QGraphicsPixmapItem(pixmap)
             self.lock_item.setOpacity(0.5)

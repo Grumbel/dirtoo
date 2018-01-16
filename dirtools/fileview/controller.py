@@ -136,13 +136,13 @@ class Controller(QObject):
             self.set_location(os.path.dirname(os.path.abspath(self.location)))
 
     def on_click(self, fileinfo):
-        if not fileinfo.isdir:
-            subprocess.Popen(["xdg-open", fileinfo.filename])
+        if not fileinfo.isdir():
+            subprocess.Popen(["xdg-open", fileinfo.filename()])
         else:
             if self.location is None:
-                self.app.show_location(fileinfo.filename)
+                self.app.show_location(fileinfo.filename())
             else:
-                self.set_location(fileinfo.filename)
+                self.set_location(fileinfo.filename())
 
     def show_current_filename(self, filename):
         self.window.show_current_filename(filename)

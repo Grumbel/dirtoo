@@ -52,17 +52,17 @@ class DetailView(QGraphicsView):
         last_mtime = None
 
         self.file_items = sorted(self.file_items,
-                                 key=lambda item: item.fileinfo.stat.st_mtime)
+                                 key=lambda item: item.fileinfo.stat().st_mtime)
         y = 0
         for item in self.file_items:
             if self.timespace and last_mtime is not None:
                 # FIXME: add line of varing color to signal distance
-                diff = item.fileinfo.stat.st_mtime - last_mtime
+                diff = item.fileinfo.stat().st_mtime - last_mtime
                 y += min(100, diff / 1000)
 
             item.setPos(0, y)
             y += 20
-            last_mtime = item.fileinfo.stat.st_mtime
+            last_mtime = item.fileinfo.stat().st_mtime
 
         # Calculate a bounding rect that places the items in the top/left corner
         bounding_rect = QRectF(0,

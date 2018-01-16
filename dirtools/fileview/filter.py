@@ -27,11 +27,11 @@ class Filter:
 
     def is_filtered(self, fileinfo):
         if not self.show_hidden:
-            if fileinfo.basename.startswith("."):
+            if fileinfo.basename().startswith("."):
                 return True
 
         if self.pattern is not None:
-            if not fnmatch(fileinfo.basename, self.pattern):
+            if not fnmatch(fileinfo.basename(), self.pattern):
                 return True
 
         return False

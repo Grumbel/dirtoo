@@ -30,35 +30,27 @@ class FileInfo:
         self._ext = os.path.splitext(self._filename)[1]
         self._have_access = os.access(self._filename, os.R_OK)
 
-    @property
     def have_access(self):
         return self._have_access
 
-    @property
     def filename(self):
         return self._filename
 
-    @property
     def abspath(self):
         return self._abspath
 
-    @property
     def dirname(self):
         return self._dirname
 
-    @property
     def basename(self):
         return self._basename
 
-    @property
     def isdir(self):
         return self._isdir
 
-    @property
     def stat(self):
         return self._stat
 
-    @property
     def ext(self):
         return self._ext
 
