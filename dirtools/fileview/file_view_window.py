@@ -21,6 +21,8 @@ from pkg_resources import resource_filename
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence, QIcon, QPalette
 from PyQt5.QtWidgets import (
+    QMenu,
+    QToolButton,
     QFormLayout,
     QStyle,
     QWidget,
@@ -148,6 +150,21 @@ class FileViewWindow(QMainWindow):
         vbox_widget.setLayout(self.vbox)
         self.setCentralWidget(vbox_widget)
 
+    def make_sort_menu(self):
+        menu = QMenu("Sort Options")
+        menu.addSeparator().setText("Sort Options")
+        menu.addAction(self.actions.sort_directories_first)
+        menu.addAction(self.actions.sort_reversed)
+        menu.addSeparator().setText("Sort by")
+        menu.addAction(self.actions.sort_by_name)
+        menu.addAction(self.actions.sort_by_size)
+        menu.addAction(self.actions.sort_by_ext)
+        menu.addAction(self.actions.sort_by_user)
+        menu.addAction(self.actions.sort_by_group)
+        menu.addAction(self.actions.sort_by_permission)
+        menu.addAction(self.actions.sort_by_random)
+        return menu
+
     def make_menubar(self):
         self.menubar = self.menuBar()
         file_menu = self.menubar.addMenu('&File')
@@ -175,6 +192,7 @@ class FileViewWindow(QMainWindow):
         view_menu.addAction(self.actions.sort_reversed)
         view_menu.addAction(self.actions.sort_by_name)
         view_menu.addAction(self.actions.sort_by_size)
+        view_menu.addAction(self.actions.sort_by_ext)
         view_menu.addAction(self.actions.sort_by_user)
         view_menu.addAction(self.actions.sort_by_group)
         view_menu.addAction(self.actions.sort_by_permission)
@@ -209,6 +227,14 @@ class FileViewWindow(QMainWindow):
         self.toolbar.addAction(self.actions.show_basename)
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.actions.toggle_timegaps)
+        self.toolbar.addSeparator()
+
+        button = QToolButton();
+        button.setIcon(QIcon.fromTheme("view-sort-ascending"))
+        button.setMenu(self.make_sort_menu())
+        button.setPopupMode(QToolButton.InstantPopup)
+        self.toolbar.addWidget(button)
+
         self.toolbar.addSeparator()
         # self.toolbar.addAction(self.style().standardIcon(QStyle.SP_FileDialogContentsView),
         #                       "List View", self.show_list_view)
