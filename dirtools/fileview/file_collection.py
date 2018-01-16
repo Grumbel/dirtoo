@@ -61,8 +61,10 @@ class FileCollection(QObject):
         for fileinfo in self.fileinfos:
             fileinfo.is_filtered = filter_func(fileinfo)
 
-    def sort(self, key):
+    def sort(self, key, reverse=False):
         self.fileinfos = sorted(self.fileinfos, key=key)
+        if reverse:
+            self.fileinfos = list(reversed(self.fileinfos))
         self.sig_files_reordered.emit()
 
     def shuffle(self):

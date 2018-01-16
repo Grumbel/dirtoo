@@ -51,7 +51,7 @@ class Sorter:
         if self.key_func is None:
             file_collection.shuffle()
         else:
-            file_collection.sort(self.get_key_func())
+            file_collection.sort(self.get_key_func(), reverse=self.reverse)
 
 
 # EOF #
