@@ -33,6 +33,7 @@ class Controller(QObject):
     def __init__(self, app):
         super().__init__()
         self.app = app
+        self.location = None
         self.file_collection = FileCollection()
         self.actions = Actions(self)
         self.window = FileViewWindow(self)
@@ -123,6 +124,8 @@ class Controller(QObject):
         self.set_files(files, self.location)
 
     def set_files(self, files, location=None):
+        if location is None:
+            self.window.set_file_list()
         self.location = location
         self.file_collection.set_files(files)
         self.apply_sort()

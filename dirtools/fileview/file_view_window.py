@@ -81,11 +81,51 @@ class FilePathLineEdit(QLineEdit):
     def __init__(self, controller):
         super().__init__()
         self.controller = controller
-        self.returnPressed.connect(self.onReturnPressed)
+        self.is_unused = True
+        self.returnPressed.connect(self.on_return_pressed)
+        self.textEdited.connect(self.on_text_edited)
 
-    def onReturnPressed(self):
+    def focusInEvent(self, ev):
+        super().focusInEvent(ev)
+
+        if ev.reason() != Qt.ActiveWindowFocusReason and self.is_unused:
+            self.setText("")
+
+        p = self.palette()
+        p.setColor(QPalette.Text, Qt.black)
+        self.setPalette(p)
+
+    def focusOutEvent(self, ev):
+        super().focusOutEvent(ev)
+
+        if ev.reason() != Qt.ActiveWindowFocusReason and self.is_unused:
+            self.set_unused_text()
+
+    def on_text_edited(self, text):
+        p = self.palette()
+        if os.path.exists(self.text()):
+            p.setColor(QPalette.Text, Qt.black)
+        else:
+            p.setColor(QPalette.Text, Qt.red)
+        self.setPalette(p)
+
+    def on_return_pressed(self):
         if os.path.exists(self.text()):
             self.controller.set_location(self.text())
+
+    def set_location(self, text):
+        self.is_unused = False
+        p = self.palette()
+        p.setColor(QPalette.Text, Qt.black)
+        self.setPalette(p)
+        self.setText(text)
+
+    def set_unused_text(self):
+        self.is_unused = True
+        p = self.palette()
+        p.setColor(QPalette.Text, Qt.gray)
+        self.setPalette(p)
+        self.setText("no location selected, file list mode is active")
 
 
 class FileViewWindow(QMainWindow):
@@ -100,6 +140,8 @@ class FileViewWindow(QMainWindow):
         self.make_menubar()
         self.make_toolbar()
         self.make_shortcut()
+
+        self.thumb_view.setFocus()
 
     def make_shortcut(self):
         shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_L), self)
@@ -229,7 +271,7 @@ class FileViewWindow(QMainWindow):
         self.toolbar.addAction(self.actions.toggle_timegaps)
         self.toolbar.addSeparator()
 
-        button = QToolButton();
+        button = QToolButton()
         button.setIcon(QIcon.fromTheme("view-sort-ascending"))
         button.setMenu(self.make_sort_menu())
         button.setPopupMode(QToolButton.InstantPopup)
@@ -266,7 +308,10 @@ class FileViewWindow(QMainWindow):
         self.file_view.hide()
 
     def set_location(self, path):
-        self.file_path.setText(path)
+        self.file_path.set_location(path)
+
+    def set_file_list(self):
+        self.file_path.set_unused_text()
 
     def show_info(self, text):
         self.info.setText("  " + text)
