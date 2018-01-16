@@ -51,8 +51,9 @@ class DetailView(QGraphicsView):
     def layout_items(self):
         last_mtime = None
 
-        self.file_items = sorted(self.file_items,
-                                 key=lambda item: item.fileinfo.stat().st_mtime)
+        if self.timespace:  # FIXME: force time sorting the ugly way
+            self.file_items = sorted(self.file_items,
+                                     key=lambda item: item.fileinfo.stat().st_mtime)
         y = 0
         for item in self.file_items:
             if self.timespace and last_mtime is not None:

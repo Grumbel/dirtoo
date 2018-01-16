@@ -17,7 +17,6 @@
 
 import os
 import subprocess
-from fnmatch import fnmatch
 
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtCore import QObject
@@ -26,6 +25,7 @@ from dirtools.fileview.file_collection import FileCollection
 from dirtools.fileview.file_view_window import FileViewWindow
 from dirtools.util import expand_file
 from dirtools.fileview.filter import Filter
+from dirtools.fileview.sorter import Sorter
 
 
 class Controller(QObject):
@@ -37,6 +37,7 @@ class Controller(QObject):
         self.actions = Actions(self)
         self.window = FileViewWindow(self)
         self.filter = Filter()
+        self.sorter = Sorter(self)
         self.history = []
         self.history_index = 0
 
@@ -124,9 +125,11 @@ class Controller(QObject):
     def set_files(self, files, location=None):
         self.location = location
         self.file_collection.set_files(files)
-        self.file_collection.sort(lambda fileinfo:
-                                  (not fileinfo.isdir, fileinfo.basename))
+        self.sort()
         self.refresh()
+
+    def sort(self):
+        self.file_collection.fileinfos = self.sorter.sorted(self.file_collection.fileinfos)
 
     def toggle_timegaps(self):
         self.window.file_view.toggle_timegaps()

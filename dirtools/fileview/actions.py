@@ -24,6 +24,7 @@ from PyQt5.QtWidgets import (
 )
 
 from dirtools.fileview.about_dialog import AboutDialog
+from dirtools.fileview.file_info import FileInfo
 
 
 class Actions(QObject):
@@ -33,6 +34,9 @@ class Actions(QObject):
 
         self.controller = controller
 
+        self.make_actions()
+
+    def make_actions(self):
         self.save_as = QAction(QIcon.fromTheme('save-as'), 'Save As', self)
         self.save_as.setShortcut('Ctrl+s')
         self.save_as.setStatusTip('Save the current file selection')
@@ -64,13 +68,13 @@ class Actions(QObject):
         self.back.setShortcut('Alt+Left')
         self.back.setStatusTip('Go back in history')
         self.back.setEnabled(False)
-        self.back.triggered.connect(controller.go_back)
+        self.back.triggered.connect(self.controller.go_back)
 
         self.forward = QAction(QIcon.fromTheme('forward'), 'Go &forward', self)
         self.forward.setShortcut('Alt+Right')
         self.forward.setStatusTip('Go forward in history')
         self.forward.setEnabled(False)
-        self.forward.triggered.connect(controller.go_forward)
+        self.forward.triggered.connect(self.controller.go_forward)
 
         self.reload = QAction(QIcon.fromTheme('reload'), 'Reload', self)
         self.reload.setShortcut('F5')
@@ -108,6 +112,33 @@ class Actions(QObject):
 
         self.toggle_timegaps = QAction("Show Time Gaps", self, checkable=True)
         self.toggle_timegaps.triggered.connect(self.controller.toggle_timegaps)
+
+        # Sorting Options
+        self.sort_directories_first = QAction("Directories First", checkable=True)
+        self.sort_directories_first.triggered.connect(
+            lambda: self.controller.sorter.set_directories_first(self.sort_directories_first.isChecked()))
+
+        self.sort_reversed = QAction("Reverse Sort", checkable=True)
+        self.sort_reversed.triggered.connect(
+            lambda: self.controller.sorter.set_sort_reversed(self.sort_reversed.isChecked()))
+
+        self.sort_by_name = QAction("Sort by Name", checkable=True)
+        self.sort_by_name.triggered.connect(lambda: self.controller.sorter.set_key_func(FileInfo.filename))
+        self.sort_by_size = QAction("Sort by Size", checkable=True)
+        self.sort_by_size.triggered.connect(lambda: self.controller.sorter.set_key_func(FileInfo.size))
+        self.sort_by_user = QAction("Sort by User", checkable=True)
+        self.sort_by_group = QAction("Sort by Group", checkable=True)
+        self.sort_by_permission = QAction("Sort by Permission", checkable=True)
+        self.sort_by_random = QAction("Random Shuffle", checkable=True)
+        self.sort_by_random.triggered.connect(lambda: self.controller.sorter.set_key_func(None))
+
+        self.sort_group = QActionGroup(self)
+        self.sort_group.addAction(self.sort_by_name)
+        self.sort_group.addAction(self.sort_by_size)
+        self.sort_group.addAction(self.sort_by_user)
+        self.sort_group.addAction(self.sort_by_group)
+        self.sort_group.addAction(self.sort_by_permission)
+        self.sort_group.addAction(self.sort_by_random)
 
         self.about = QAction(QIcon.fromTheme('help-about'), 'About dt-fileview', self)
         self.about.setStatusTip('Show About dialog')

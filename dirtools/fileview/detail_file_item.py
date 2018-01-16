@@ -43,7 +43,10 @@ class DetailFileItem(FileItem):
         self.date_item.setPos(0, 0)
         self.addToGroup(self.date_item)
 
-        self.size_item = QGraphicsTextItem(bytefmt.humanize(self.fileinfo.stat().st_size))
+        if self.fileinfo.isdir():
+            self.size_item = QGraphicsTextItem("[DIR]")
+        else:
+            self.size_item = QGraphicsTextItem(bytefmt.humanize(self.fileinfo.stat().st_size))
         self.size_item.setPos(225 - self.size_item.boundingRect().width(), 0)
         self.addToGroup(self.size_item)
 

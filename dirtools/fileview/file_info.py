@@ -54,5 +54,8 @@ class FileInfo:
     def ext(self):
         return self._ext
 
+    def size(self):
+        return self._stat.st_size
+
 
 # EOF #
