@@ -36,14 +36,24 @@ class DetailView(QGraphicsView):
         self.controller = controller
         self.timespace = False
         self.file_items: List[DetailFileItem] = []
+        self.file_collection = None
 
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
 
-    def set_fileinfos(self, fileinfos):
+    def set_file_collection(self, file_collection):
+        self.file_collection = file_collection
+        self.file_collection.sig_files_set.connect(self.on_file_collection_set)
+        self.file_collection.sig_files_reordered.connect(self.on_file_collection_set)
+        self.on_file_collection_set()
+
+    def on_file_collection_set(self):
+        fileinfos = self.file_collection.get_fileinfos()
+
         self.scene.clear()
         self.file_items = [DetailFileItem(fileinfo, self.controller)
-                           for fileinfo in fileinfos]
+                           for fileinfo in fileinfos
+                           if not fileinfo.is_filtered]
         for item in self.file_items:
             self.scene.addItem(item)
         self.layout_items()

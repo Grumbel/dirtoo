@@ -125,11 +125,14 @@ class Controller(QObject):
     def set_files(self, files, location=None):
         self.location = location
         self.file_collection.set_files(files)
-        self.sort()
+        self.apply_sort()
         self.refresh()
 
-    def sort(self):
+    def apply_sort(self):
         self.sorter.apply(self.file_collection)
+
+    def apply_filter(self):
+        self.filter.apply(self.file_collection)
 
     def toggle_timegaps(self):
         self.window.file_view.toggle_timegaps()
@@ -155,16 +158,23 @@ class Controller(QObject):
             self.file_collection.add_file(f)
 
     def refresh(self):
-        fileinfos = self.file_collection.fileinfos
-        filtered_fileinfos = self.filter.apply(fileinfos)
+        self.filter.apply(self.file_collection)
+
+        fileinfos = self.file_collection.get_fileinfos()
+        filtered_count = 0
+        for fileinfo in fileinfos:
+            if fileinfo.is_filtered:
+                filtered_count += 1
+
+        total = self.file_collection.size()
 
         self.window.show_info("{} items, {} filtered, {} total".format(
-            len(filtered_fileinfos),
-            len(fileinfos) - len(filtered_fileinfos),
-            len(fileinfos)))
+            filtered_count,
+            total - filtered_count,
+            total))
 
-        self.window.file_view.set_fileinfos(filtered_fileinfos)
-        self.window.thumb_view.set_fileinfos(filtered_fileinfos)
+        self.window.file_view.set_file_collection(self.file_collection)
+        self.window.thumb_view.set_file_collection(self.file_collection)
 
     def reload(self):
         self.window.thumb_view.reload()

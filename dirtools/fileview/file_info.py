@@ -29,6 +29,7 @@ class FileInfo:
         self._stat = os.lstat(self._filename)
         self._ext = os.path.splitext(self._filename)[1]
         self._have_access = os.access(self._filename, os.R_OK)
+        self.is_filtered = False
 
     def have_access(self):
         return self._have_access

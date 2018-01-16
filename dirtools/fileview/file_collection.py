@@ -51,11 +51,15 @@ class FileCollection(QObject):
         self.fileinfoss = [fi for fi in self.files if fi.abspath == filename]
         self.sig_file_removed.emit(filename)
 
-    def get_files(self):
+    def get_fileinfos(self):
         return self.fileinfos
 
-    def size(self):.fileinfos = self.sorter.sorted(self.file_collection.fileinfos)
+    def size(self):
         return len(self.fileinfos)
+
+    def filter(self, filter_func):
+        for fileinfo in self.fileinfos:
+            fileinfo.is_filtered = filter_func(fileinfo)
 
     def sort(self, key):
         self.fileinfos = sorted(self.fileinfos, key=key)

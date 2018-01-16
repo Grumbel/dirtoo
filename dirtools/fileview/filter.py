@@ -36,8 +36,8 @@ class Filter:
 
         return False
 
-    def apply(self, fileinfos):
-        return [fileinfo for fileinfo in fileinfos if not self.is_filtered(fileinfo)]
+    def apply(self, file_collection):
+        file_collection.filter(self.is_filtered)
 
 
 # EOF #
