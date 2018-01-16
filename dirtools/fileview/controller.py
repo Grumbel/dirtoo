@@ -169,8 +169,8 @@ class Controller(QObject):
         total = self.file_collection.size()
 
         self.window.show_info("{} items, {} filtered, {} total".format(
-            filtered_count,
             total - filtered_count,
+            filtered_count,
             total))
 
         self.window.file_view.set_file_collection(self.file_collection)
