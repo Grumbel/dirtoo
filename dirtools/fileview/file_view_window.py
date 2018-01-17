@@ -47,7 +47,14 @@ class FileFilter(QLineEdit):
         self.set_unused_text()
         self.returnPressed.connect(self.on_return_pressed)
 
+    def keyPressEvent(self, ev):
+        super().keyPressEvent(ev)
+        if ev.key() == Qt.Key_Escape:
+            self.setText("")
+            self.controller.window.thumb_view.setFocus()
+
     def on_return_pressed(self):
+        self.is_unused = False
         self.controller.set_filter(self.text())
 
     def focusInEvent(self, ev):
@@ -84,6 +91,11 @@ class FilePathLineEdit(QLineEdit):
         self.is_unused = True
         self.returnPressed.connect(self.on_return_pressed)
         self.textEdited.connect(self.on_text_edited)
+
+    def keyPressEvent(self, ev):
+        super().keyPressEvent(ev)
+        if ev.key() == Qt.Key_Escape:
+            self.controller.window.thumb_view.setFocus()
 
     def focusInEvent(self, ev):
         super().focusInEvent(ev)
