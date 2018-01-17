@@ -29,7 +29,7 @@ import mimetypes
 import xdg.BaseDirectory
 
 
-class ThumbnailerListener:
+class DBusThumbnailerListener:
 
     def __init__(self):
         pass
@@ -50,7 +50,7 @@ class ThumbnailerListener:
         pass
 
 
-class Thumbnailer:
+class DBusThumbnailer:
 
     def __init__(self, bus, listener=None):
         self.bus = bus

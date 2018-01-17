@@ -23,7 +23,7 @@ from enum import Enum
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
-from dirtools.thumbnailer import Thumbnailer, ThumbnailerListener
+from dirtools.dbus_thumbnailer import DBusThumbnailer, DBusThumbnailerListener
 
 
 class ThumbnailStatus(Enum):
@@ -34,7 +34,7 @@ class ThumbnailStatus(Enum):
     OK = 3
 
 
-class ThumbnailCacheListener(ThumbnailerListener):
+class ThumbnailCacheListener(DBusThumbnailerListener):
 
     def __init__(self, thumbnail_cache):
         self.thumbnail_cache = thumbnail_cache
@@ -47,7 +47,7 @@ class ThumbnailCacheListener(ThumbnailerListener):
             filename = urllib.parse.unquote(urllib.parse.urlparse(url).path)
             self.thumbnail_cache.put(filename,
                                      flavor,
-                                     Thumbnailer.thumbnail_from_filename(filename, flavor),
+                                     DBusThumbnailer.thumbnail_from_filename(filename, flavor),
                                      ThumbnailStatus.OK)
 
     def error(self, handle, failed_uris, error_code, message):
@@ -82,7 +82,7 @@ class ThumbnailCache(QObject):
         if result is not None:
             return result
         else:
-            thumbnail_path = Thumbnailer.thumbnail_from_filename(fileinfo.abspath(), flavor)
+            thumbnail_path = DBusThumbnailer.thumbnail_from_filename(fileinfo.abspath(), flavor)
             if os.path.exists(thumbnail_path):
                 self.cache[(fileinfo.abspath(), flavor)] = (thumbnail_path, ThumbnailStatus.OK)
                 return (thumbnail_path, ThumbnailStatus.OK)

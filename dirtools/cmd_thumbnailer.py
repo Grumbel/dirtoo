@@ -29,7 +29,8 @@ import os
 from PyQt5.QtCore import QCoreApplication
 from dbus.mainloop.pyqt5 import DBusQtMainLoop
 
-from dirtools.thumbnailer import Thumbnailer, ThumbnailerListener
+from dirtools.dbus_thumbnailer import DBusThumbnailer, DBusThumbnailerListener
+from dirtools.dbus_thumbnail_cache import DBusThumbnailCache
 
 
 def parse_args(args):
@@ -41,6 +42,10 @@ def parse_args(args):
                         help="Be more verbose")
     parser.add_argument('-r', '--recursive', action='store_true', default=False,
                         help="Recurse into directories")
+    parser.add_argument('-d', '--delete', action='store_true', default=False,
+                        help="Delete the thumbnails for the given files")
+    parser.add_argument('-c', '--cleanup', action='store_true', default=False,
+                        help="Cleanup the thumbnails under the given directories")
     parser.add_argument('-F', '--list-flavors', action='store_true', default=False,
                         help="List supported flavors")
     parser.add_argument('-M', '--list-mime-types', action='store_true', default=False,
@@ -52,7 +57,7 @@ def parse_args(args):
     return parser.parse_args(args)
 
 
-class ThumbnailerProgressListener(ThumbnailerListener):
+class ThumbnailerProgressListener(DBusThumbnailerListener):
 
     def __init__(self, app, verbose):
         self.app = app
@@ -65,7 +70,7 @@ class ThumbnailerProgressListener(ThumbnailerListener):
     def ready(self, handle, urls, flavor):
         if self.verbose:
             for url in urls:
-                print(url, "->", Thumbnailer.thumbnail_from_url(url, flavor))
+                print(url, "->", DBusThumbnailer.thumbnail_from_url(url, flavor))
 
     def error(self, handle, failed_uris, error_code, message):
         for uri in failed_uris:
@@ -79,14 +84,14 @@ class ThumbnailerProgressListener(ThumbnailerListener):
         self.app.quit()
 
 
-def request_thumbnails_recursive(thumber, directory, flavor):
+def request_thumbnails_recursive(thumbnailer, directory, flavor):
     for root, dirs, files in os.walk(directory):
-        thumber.queue([os.path.join(root, f) for f in files], flavor)
+        thumbnailer.queue([os.path.join(root, f) for f in files], flavor)
         for d in dirs:
-            request_thumbnails_recursive(thumber, os.path.join(root, d), flavor)
+            request_thumbnails_recursive(thumbnailer, os.path.join(root, d), flavor)
 
 
-def request_thumbnails(thumber, paths, flavor, recursive):
+def request_thumbnails(thumbnailer, paths, flavor, recursive):
     if recursive:
         files = []
         dirs = []
@@ -95,11 +100,11 @@ def request_thumbnails(thumber, paths, flavor, recursive):
                 dirs.append(p)
             else:
                 files.append(p)
-        thumber.queue(files, flavor)
+        thumbnailer.queue(files, flavor)
         for d in dirs:
-            request_thumbnails_recursive(thumber, d, flavor)
+            request_thumbnails_recursive(thumbnailer, d, flavor)
     else:
-        thumber.queue(paths, flavor)
+        thumbnailer.queue(paths, flavor)
 
 
 def main(argv):
@@ -111,34 +116,40 @@ def main(argv):
     dbus_loop = DBusQtMainLoop(set_as_default=True)  # noqa: F841
     session_bus = dbus.SessionBus()
 
-    thumber = Thumbnailer(session_bus,
-                          ThumbnailerProgressListener(app,
-                                                      verbose=args.verbose))
-
+    thumbnailer = DBusThumbnailer(session_bus,
+                                  ThumbnailerProgressListener(
+                                      app, verbose=args.verbose))
+    thumbnail_cache = DBusThumbnailCache(session_bus)
     rc = 0
 
     if args.list_flavors:
-        for flavor in thumber.get_flavors():
+        for flavor in thumbnailer.get_flavors():
             print(flavor)
     elif args.list_uri_types:
-        uri_types, mime_types = thumber.get_supported()
+        uri_types, mime_types = thumbnailer.get_supported()
 
         for uri_type in sorted(set(uri_types)):
             print(uri_type)
     elif args.list_mime_types:
-        uri_types, mime_types = thumber.get_supported()
+        uri_types, mime_types = thumbnailer.get_supported()
 
         for mime_type in sorted(set(mime_types)):
             print(mime_type)
     elif args.list_schedulers:
-        for scheduler in thumber.get_schedulers():
+        for scheduler in thumbnailer.get_schedulers():
             print(scheduler)
+    elif args.delete:
+        thumbnail_cache.delete(args.FILE)
+        app.quit()
+    elif args.cleanup:
+        thumbnail_cache.cleanup(args.FILE)
+        app.quit()
     elif args.FILE != []:
         if args.flavor == 'all':
-            for flavor in thumber.get_flavors():
-                request_thumbnails(thumber, args.FILE, flavor, args.recursive)
+            for flavor in thumbnailer.get_flavors():
+                request_thumbnails(thumbnailer, args.FILE, flavor, args.recursive)
         else:
-            request_thumbnails(thumber, args.FILE, args.flavor, args.recursive)
+            request_thumbnails(thumbnailer, args.FILE, args.flavor, args.recursive)
 
         rc = app.exec_()
     else:
