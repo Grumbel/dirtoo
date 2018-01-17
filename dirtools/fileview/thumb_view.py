@@ -20,13 +20,26 @@ import logging
 from typing import List, Dict
 
 from PyQt5.QtCore import Qt, QRectF
-from PyQt5.QtGui import QBrush
+from PyQt5.QtGui import QBrush, QIcon
 from PyQt5.QtWidgets import (
     QGraphicsView,
     QGraphicsScene,
 )
 
 from dirtools.fileview.thumb_file_item import ThumbFileItem
+
+
+class SharedPixmaps:
+
+    def __init__(self, tn_size):
+        tn_size = tn_size // 4 * 3
+        self.folder = QIcon.fromTheme("folder").pixmap(tn_size)
+        self.rar = QIcon.fromTheme("rar").pixmap(tn_size)
+        self.zip = QIcon.fromTheme("zip").pixmap(tn_size)
+        self.txt = QIcon.fromTheme("txt").pixmap(tn_size)
+        self.image_loading = QIcon.fromTheme("image-loading").pixmap(tn_size)
+        self.image_missing = QIcon.fromTheme("image-missing").pixmap(tn_size)
+        self.locked = QIcon.fromTheme("locked").pixmap(tn_size)
 
 
 class ThumbView(QGraphicsView):
@@ -46,6 +59,7 @@ class ThumbView(QGraphicsView):
         self.padding = 16
         self.items: List[ThumbFileItem] = []
 
+        self.shared_pixmaps = None
         self.zoom_index = 2
         self.apply_zoom()
 
@@ -168,7 +182,24 @@ class ThumbView(QGraphicsView):
         else:
             self.flavor = "large"
 
+        self.shared_pixmaps = SharedPixmaps(self.tn_size)
         self.reload()
+
+    def pixmap_from_fileinfo(self, fileinfo, tn_size):
+        tn_size = 3 * tn_size // 4
+
+        if fileinfo.isdir():
+            return self.shared_pixmaps.folder
+        else:
+            ext = fileinfo.ext()
+            if ext == ".rar":
+                return self.shared_pixmaps.rar
+            elif ext == ".zip":
+                return self.shared_pixmaps.zip
+            elif ext == ".txt":
+                return self.shared_pixmaps.txt
+            else:
+                return None
 
     def reload(self):
         for thumb in self.items:

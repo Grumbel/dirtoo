@@ -18,7 +18,7 @@
 import logging
 
 from PyQt5.QtCore import Qt, QRectF
-from PyQt5.QtGui import QPixmap, QColor, QPen, QIcon, QFontMetrics
+from PyQt5.QtGui import QPixmap, QColor, QPen, QFontMetrics
 from PyQt5.QtWidgets import (
     QGraphicsTextItem,
     QGraphicsPixmapItem,
@@ -27,23 +27,6 @@ from PyQt5.QtWidgets import (
 
 from dirtools.fileview.file_item import FileItem
 from dirtools.fileview.thumbnail_cache import ThumbnailStatus
-
-
-def pixmap_from_fileinfo(fileinfo, tn_size):
-    tn_size = 3 * tn_size // 4
-
-    if fileinfo.isdir():
-        return QIcon.fromTheme("folder").pixmap(tn_size // 3 * 4)
-    else:
-        ext = fileinfo.ext()
-        if ext == ".rar":
-            return QIcon.fromTheme("rar").pixmap(tn_size)
-        elif ext == ".zip":
-            return QIcon.fromTheme("zip").pixmap(tn_size)
-        elif ext == ".txt":
-            return QIcon.fromTheme("txt").pixmap(tn_size)
-        else:
-            return None
 
 
 class ThumbFileItem(FileItem):
@@ -126,7 +109,7 @@ class ThumbFileItem(FileItem):
         # self.make_thumbnail()
 
     def make_pixmap(self):
-        pixmap = pixmap_from_fileinfo(self.fileinfo, 3 * self.thumb_view.tn_size // 4)
+        pixmap = self.thumb_view.pixmap_from_fileinfo(self.fileinfo, 3 * self.thumb_view.tn_size // 4)
         if pixmap is not None:
             return pixmap
         else:
@@ -153,10 +136,10 @@ class ThumbFileItem(FileItem):
                 return pixmap
 
             elif status == ThumbnailStatus.LOADING:
-                return QIcon.fromTheme("image-loading").pixmap(3 * self.thumb_view.tn_size // 4)
+                return self.thumb_view.shared_pixmaps.image_loading
 
             else:  # if status == ThumbnailStatus.ERROR
-                return QIcon.fromTheme("image-missing").pixmap(3 * self.thumb_view.tn_size // 4)
+                return self.thumb_view.shared_pixmaps.image_missing
 
     def make_thumbnail(self):
         pixmap = self.make_pixmap()
@@ -169,7 +152,7 @@ class ThumbFileItem(FileItem):
         self.addToGroup(self.pixmap_item)
 
         if not self.fileinfo.have_access():
-            pixmap = QIcon.fromTheme("locked").pixmap(3 * self.thumb_view.tn_size // 4)
+            pixmap = self.thumb_view.shared_pixmaps.locked
             self.lock_item = QGraphicsPixmapItem(pixmap)
             self.lock_item.setOpacity(0.5)
             self.lock_item.setPos(
