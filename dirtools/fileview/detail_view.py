@@ -43,8 +43,9 @@ class DetailView(QGraphicsView):
 
     def set_file_collection(self, file_collection):
         self.file_collection = file_collection
-        self.file_collection.sig_files_set.connect(self.on_file_collection_set)
-        self.file_collection.sig_files_reordered.connect(self.on_file_collection_set)
+        # FIXME: need a way to disable all signals when not visible
+        # self.file_collection.sig_files_set.connect(self.on_file_collection_set)
+        # self.file_collection.sig_files_reordered.connect(self.on_file_collection_set)
         self.on_file_collection_set()
 
     def on_file_collection_set(self):

@@ -29,17 +29,14 @@ class Sorter:
     def set_directories_first(self, v):
         self.directories_first = v
         self.controller.apply_sort()
-        self.controller.refresh()
 
     def set_sort_reversed(self, rev):
         self.reverse = rev
         self.controller.apply_sort()
-        self.controller.refresh()
 
     def set_key_func(self, key_func):
         self.key_func = key_func
         self.controller.apply_sort()
-        self.controller.refresh()
 
     def get_key_func(self):
         if self.directories_first:

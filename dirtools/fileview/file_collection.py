@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import logging
 import random
 from typing import List
 
@@ -62,13 +63,17 @@ class FileCollection(QObject):
             fileinfo.is_filtered = filter_func(fileinfo)
 
     def sort(self, key, reverse=False):
+        logging.debug("FileCollection.sort")
         self.fileinfos = sorted(self.fileinfos, key=key)
         if reverse:
             self.fileinfos = list(reversed(self.fileinfos))
+        logging.debug("FileCollection.sort:done")
         self.sig_files_reordered.emit()
 
     def shuffle(self):
+        logging.debug("FileCollection.sort")
         random.shuffle(self.fileinfos)
+        logging.debug("FileCollection.sort:done")
         self.sig_files_reordered.emit()
 
     def save_as(self, filename):

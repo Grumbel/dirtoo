@@ -59,6 +59,7 @@ class ThumbView(QGraphicsView):
         self.padding = 16
         self.items: List[ThumbFileItem] = []
 
+        self.file_collection = None
         self.shared_pixmaps = None
         self.zoom_index = 2
         self.apply_zoom()
@@ -84,12 +85,30 @@ class ThumbView(QGraphicsView):
         self.controller.add_files([url.path() for url in urls])
 
     def set_file_collection(self, file_collection):
+        assert file_collection != self.file_collection
+        logging.debug("ThumbView.set_file_collection")
         self.file_collection = file_collection
         self.file_collection.sig_files_set.connect(self.on_file_collection_set)
-        self.file_collection.sig_files_reordered.connect(self.on_file_collection_set)
+        self.file_collection.sig_files_reordered.connect(self.on_file_collection_reordered)
         self.on_file_collection_set()
 
+    def on_file_collection_reordered(self):
+        logging.debug("ThumbView.on_file_collection_reordered")
+        fi2it = {item.fileinfo.abspath(): item for item in self.items}
+        fileinfos = self.file_collection.get_fileinfos()
+        try:
+            self.items = [fi2it[fileinfo.abspath()] for fileinfo in fileinfos if not fileinfo.is_filtered]
+        except:
+            print("<<<<<<<<<")
+            for k, v in fi2it.items(): print(k)
+            print("--------")
+            for fi in fileinfos: print(fi.abspath())
+            print(">>>>>>>>")
+            raise
+        self.layout_thumbnails()
+
     def on_file_collection_set(self):
+        logging.debug("ThumbView.on_file_collection_set")
         fileinfos = self.file_collection.get_fileinfos()
 
         self.scene.clear()
@@ -113,10 +132,13 @@ class ThumbView(QGraphicsView):
     def resizeEvent(self, ev):
         logging.debug("ThumbView.resizeEvent: %s", ev)
         super().resizeEvent(ev)
-        self.layout_thumbnails()
+        if ev.oldSize().width() != ev.size().width():
+            self.layout_thumbnails()
 
     def layout_thumbnails(self):
         logging.debug("ThumbView.layout_thumbnails: %s", self.scene.itemIndexMethod())
+        self.setUpdatesEnabled(False)
+        old_item_index_method = self.scene.itemIndexMethod()
         self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
         tile_w = self.tn_width
         tile_h = self.tn_height + 16
@@ -157,7 +179,11 @@ class ThumbView(QGraphicsView):
         bounding_rect = QRectF(0, 0, w, h)
         logging.debug("ThumbView.layout_thumbnails:done")
         self.setSceneRect(bounding_rect)
-        self.scene.setItemIndexMethod(QGraphicsScene.BspTreeIndex)
+        logging.debug("ThumbView.layout_thumbnails: rebuilding BSP")
+        self.scene.setItemIndexMethod(old_item_index_method)
+        self.setUpdatesEnabled(True)
+        logging.debug("ThumbView.layout_thumbnails: rebuilding BSP: Done")
+        self.repaint()
 
     def zoom_in(self):
         self.zoom_index += 1

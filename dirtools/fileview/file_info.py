@@ -61,5 +61,7 @@ class FileInfo:
     def size(self):
         return self._stat.st_size
 
+    def __str__(self):
+        return "FileInfo({})".format(self._abspath)
 
 # EOF #
