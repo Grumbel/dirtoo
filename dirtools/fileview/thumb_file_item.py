@@ -15,8 +15,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os
-
 from PyQt5.QtCore import Qt, QRectF
 from PyQt5.QtGui import QPixmap, QColor, QPen, QIcon, QFontMetrics
 from PyQt5.QtWidgets import (
@@ -25,22 +23,25 @@ from PyQt5.QtWidgets import (
     QGraphicsRectItem,
 )
 
-from dirtools.thumbnail import make_thumbnail_filename
 from dirtools.fileview.file_item import FileItem
+from dirtools.fileview.thumbnail_cache import ThumbnailStatus
 
 
-def pixmap_from_filename(filename, tn_size):
+def pixmap_from_fileinfo(fileinfo, tn_size):
     tn_size = 3 * tn_size // 4
 
-    _, ext = os.path.splitext(filename)
-    if ext == ".rar":
-        return QIcon.fromTheme("rar").pixmap(tn_size)
-    elif ext == ".zip":
-        return QIcon.fromTheme("zip").pixmap(tn_size)
-    elif ext == ".txt":
-        return QIcon.fromTheme("txt").pixmap(tn_size)
+    if fileinfo.isdir():
+        return QIcon.fromTheme("folder").pixmap(tn_size // 3 * 4)
     else:
-        return QPixmap()
+        ext = fileinfo.ext()
+        if ext == ".rar":
+            return QIcon.fromTheme("rar").pixmap(tn_size)
+        elif ext == ".zip":
+            return QIcon.fromTheme("zip").pixmap(tn_size)
+        elif ext == ".txt":
+            return QIcon.fromTheme("txt").pixmap(tn_size)
+        else:
+            return None
 
 
 class ThumbFileItem(FileItem):
@@ -49,12 +50,13 @@ class ThumbFileItem(FileItem):
         self.thumb_view = thumb_view
         self.pixmap_item = None
         self.lock_item = None
-
+        self.thumbnail_status = ThumbnailStatus.NONE
         super().__init__(fileinfo, controller)
 
     def paint(self, *args):
         if self.pixmap_item is None:
             self.make_thumbnail()
+
         super().paint(*args)
 
     def hoverEnterEvent(self, ev):
@@ -114,28 +116,41 @@ class ThumbFileItem(FileItem):
         # self.text.setToolTip(self.fileinfo.filename())
         # self.make_thumbnail()
 
-    def make_thumbnail(self):
-        thumbnail_filename = make_thumbnail_filename(self.fileinfo.filename(), flavor=self.thumb_view.flavor)
-
-        if self.fileinfo.isdir():
-            pixmap = QIcon.fromTheme("folder").pixmap(3 * self.thumb_view.tn_size // 4)
-        elif thumbnail_filename:
-            pixmap = QPixmap(thumbnail_filename)
-
-            w = pixmap.width() * self.thumb_view.tn_width // pixmap.height()
-            h = pixmap.height() * self.thumb_view.tn_height // pixmap.width()
-            if w <= self.thumb_view.tn_width:
-                pixmap = pixmap.scaledToHeight(self.thumb_view.tn_height,
-                                               Qt.SmoothTransformation)
-            elif h <= self.thumb_view.tn_height:
-                pixmap = pixmap.scaledToWidth(self.thumb_view.tn_width,
-                                              Qt.SmoothTransformation)
+    def make_pixmap(self):
+        pixmap = pixmap_from_fileinfo(self.fileinfo, 3 * self.thumb_view.tn_size // 4)
+        if pixmap is not None:
+            return pixmap
         else:
-            pixmap = pixmap_from_filename(self.fileinfo.filename(), 3 * self.thumb_view.tn_size // 4)
-            if pixmap.isNull():
-                pixmap = QIcon.fromTheme("error").pixmap(3 * self.thumb_view.tn_size // 4)
+            result = self.controller.request_thumbnail(self.fileinfo,
+                                                       flavor=self.thumb_view.flavor)
+            filename, status = result
+            self.thumbnail_status = status
+
+            if status == ThumbnailStatus.OK:
+                pixmap = QPixmap(filename)
+
+                # Scale it to fit
+                w = pixmap.width() * self.thumb_view.tn_width // pixmap.height()
+                h = pixmap.height() * self.thumb_view.tn_height // pixmap.width()
+                if w <= self.thumb_view.tn_width:
+                    pixmap = pixmap.scaledToHeight(self.thumb_view.tn_height,
+                                                   Qt.SmoothTransformation)
+                elif h <= self.thumb_view.tn_height:
+                    pixmap = pixmap.scaledToWidth(self.thumb_view.tn_width,
+                                                  Qt.SmoothTransformation)
+                return pixmap
+
+            elif status == ThumbnailStatus.LOADING:
+                return QIcon.fromTheme("image-loading").pixmap(3 * self.thumb_view.tn_size // 4)
+
+            else:  # if status == ThumbnailStatus.ERROR
+                return QIcon.fromTheme("image-missing").pixmap(3 * self.thumb_view.tn_size // 4)
+
+    def make_thumbnail(self):
+        pixmap = self.make_pixmap()
 
         self.pixmap_item = QGraphicsPixmapItem(pixmap)
+
         self.pixmap_item.setPos(
             self.pos().x() + self.thumb_view.tn_width / 2 - pixmap.width() / 2,
             self.pos().y() + self.thumb_view.tn_height / 2 - pixmap.height() / 2)
@@ -152,6 +167,13 @@ class ThumbFileItem(FileItem):
 
     def boundingRect(self):
         return QRectF(0, 0, self.thumb_view.tn_width, self.thumb_view.tn_height)
+
+    def reload_pixmap(self):
+        pixmap = self.make_pixmap()
+        self.pixmap_item.setPixmap(pixmap)
+        self.pixmap_item.setPos(
+            self.thumb_view.tn_width / 2 - pixmap.width() / 2,
+            self.thumb_view.tn_height / 2 - pixmap.height() / 2)
 
     def reload(self):
         for item in self.childItems():

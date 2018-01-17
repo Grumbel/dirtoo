@@ -26,7 +26,6 @@ from PyQt5.QtWidgets import (
 
 import bytefmt
 
-from dirtools.thumbnail import make_thumbnail_filename
 from dirtools.fileview.file_item import FileItem
 
 
@@ -69,7 +68,7 @@ class DetailFileItem(FileItem):
 
     def show_thumbnail(self):
         if self.thumbnail is None:
-            thumbnail_filename = make_thumbnail_filename(self.fileinfo.filename())
+            thumbnail_filename = self.controller.request_thumbnail(self.fileinfo, flavor="normal")
             if thumbnail_filename is None:
                 print("no thumbnail for", self.fileinfo.filename())
             else:

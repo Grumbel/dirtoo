@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import List, Dict
 
 from PyQt5.QtCore import Qt, QRectF
 from PyQt5.QtGui import QBrush
@@ -34,6 +34,7 @@ class ThumbView(QGraphicsView):
 
         self.show_filtered = False
 
+        self.abspath2item: Dict[str, ThumbFileItem] = {}
         self.setAcceptDrops(True)
 
         self.controller = controller
@@ -87,6 +88,7 @@ class ThumbView(QGraphicsView):
                 thumb.setOpacity(0.5)
 
             if thumb is not None:
+                self.abspath2item[fileinfo.abspath()] = thumb
                 self.scene.addItem(thumb)
                 self.thumbnails.append(thumb)
 
@@ -167,6 +169,15 @@ class ThumbView(QGraphicsView):
         for thumb in self.thumbnails:
             thumb.reload()
         self.layout_thumbnails()
+
+    def receive_thumbnail(self, filename, flavor, thumbnail_filename, thumbnail_status):
+        item = self.abspath2item.get(filename, None)
+        if item is not None:
+            item.reload_pixmap()
+        else:
+            print("MISSING!!!!!!!", filename)
+            for k, v in self.abspath2item.items():
+                print("->", k)
 
 
 # EOF #

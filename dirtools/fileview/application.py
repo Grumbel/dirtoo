@@ -24,7 +24,8 @@ from PyQt5.QtWidgets import QApplication
 from dbus.mainloop.pyqt5 import DBusQtMainLoop
 
 from dirtools.fileview.controller import Controller
-from dirtools.thumbnailer import Thumbnailer, ThumbnailerListener
+from dirtools.thumbnailer import Thumbnailer
+from dirtools.fileview.thumbnail_cache import ThumbnailCache, ThumbnailCacheListener
 
 
 class FileViewApplication:
@@ -37,7 +38,10 @@ class FileViewApplication:
         self.qapp = QApplication([])
         self.dbus_loop = DBusQtMainLoop(set_as_default=True)
         self.session_bus = dbus.SessionBus()
-        self.thumbnailer = Thumbnailer(self.session_bus, listener=ThumbnailerListener())
+        self.thumbnailer = Thumbnailer(self.session_bus)
+
+        self.thumbnail_cache = ThumbnailCache(self.thumbnailer)
+        self.thumbnailer.listener = ThumbnailCacheListener(self.thumbnail_cache)
 
         self.controllers: List[Controller] = []
 
@@ -46,12 +50,14 @@ class FileViewApplication:
 
     def show_files(self, files):
         controller = Controller(self)
+        self.thumbnail_cache.sig_thumbnail.connect(controller.receive_thumbnail)
         controller.set_files(files)
         controller.window.show()
         self.controllers.append(controller)
 
     def show_location(self, path):
         controller = Controller(self)
+        self.thumbnail_cache.sig_thumbnail.connect(controller.receive_thumbnail)
         controller.set_location(path)
         controller.window.show()
         self.controllers.append(controller)

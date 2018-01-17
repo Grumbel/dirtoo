@@ -52,7 +52,7 @@ class ThumbnailerListener:
 
 class Thumbnailer:
 
-    def __init__(self, bus, listener=ThumbnailerListener()):
+    def __init__(self, bus, listener=None):
         self.bus = bus
         self.requests: Dict[str, Tuple[str, str, str]] = {}
         self.thumbnailer = bus.get_object(

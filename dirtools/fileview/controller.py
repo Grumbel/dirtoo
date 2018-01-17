@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 import os
 import subprocess
 
@@ -39,7 +41,7 @@ class Controller(QObject):
         self.window = FileViewWindow(self)
         self.filter = Filter()
         self.sorter = Sorter(self)
-        self.history = []
+        self.history: List[str] = []
         self.history_index = 0
 
     def save_as(self):
@@ -160,6 +162,9 @@ class Controller(QObject):
         for f in files:
             self.file_collection.add_file(f)
 
+    def request_thumbnail(self, fileinfo, flavor):
+        return self.app.thumbnail_cache.get(fileinfo, flavor)
+
     def refresh(self):
         self.filter.apply(self.file_collection)
 
@@ -181,6 +186,11 @@ class Controller(QObject):
 
     def reload(self):
         self.window.thumb_view.reload()
+
+    def receive_thumbnail(self, filename, flavor, thumbnail_filename, thumbnail_status):
+        # self.window.file_view.set_file_collection(self.file_collection)
+        self.window.thumb_view.receive_thumbnail(filename, flavor,
+                                                 thumbnail_filename, thumbnail_status)
 
 
 # EOF #
