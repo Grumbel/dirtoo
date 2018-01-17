@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import logging
 import os
 import sys
 import argparse
@@ -34,6 +35,8 @@ def parse_args(args):
                         help="Be recursive")
     parser.add_argument("-e", "--empty", action='store_true', default=False,
                         help="Start with a empty workbench instead of the current directory")
+    parser.add_argument("-d", "--debug", action='store_true', default=False,
+                        help="Print lots of debugging output")
     return parser.parse_args(args)
 
 
@@ -53,6 +56,10 @@ def get_file_list(args):
 
 def main(argv):
     args = parse_args(argv[1:])
+
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
+
     files = get_file_list(args)
     app = FileViewApplication()
     if len(files) == 1 and os.path.isdir(files[0]):

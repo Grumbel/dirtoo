@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import logging
+
 from PyQt5.QtCore import Qt, QRectF
 from PyQt5.QtGui import QPixmap, QColor, QPen, QIcon, QFontMetrics
 from PyQt5.QtWidgets import (
@@ -47,6 +49,7 @@ def pixmap_from_fileinfo(fileinfo, tn_size):
 class ThumbFileItem(FileItem):
 
     def __init__(self, fileinfo, controller, thumb_view):
+        logging.debug("ThumbFileItem.__init__: %s", fileinfo.abspath())
         self.thumb_view = thumb_view
         self.pixmap_item = None
         self.lock_item = None
@@ -133,6 +136,7 @@ class ThumbFileItem(FileItem):
             self.thumbnail_status = status
 
             if status == ThumbnailStatus.OK:
+                logging.debug("%s: ThumbFileItem.make_pixmap: loading thumbnail", self)
                 pixmap = QPixmap(filename)
                 if pixmap.isNull():
                     return None

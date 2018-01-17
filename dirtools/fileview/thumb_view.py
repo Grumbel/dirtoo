@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import logging
+
 from typing import List, Dict
 
 from PyQt5.QtCore import Qt, QRectF
@@ -95,10 +97,12 @@ class ThumbView(QGraphicsView):
         self.layout_thumbnails()
 
     def resizeEvent(self, ev):
+        logging.debug("ThumbView.resizeEvent: %s", ev)
         super().resizeEvent(ev)
         self.layout_thumbnails()
 
     def layout_thumbnails(self):
+        logging.debug("ThumbView.layout_thumbnails: %s", self.scene.itemIndexMethod())
         self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
         tile_w = self.tn_width
         tile_h = self.tn_height + 16

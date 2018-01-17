@@ -15,12 +15,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import logging
+
 import os
 
 
 class FileInfo:
 
     def __init__(self, filename: str) -> None:
+        logging.debug("FileInfo.__init__: %s", filename)
         self._filename = filename
         self._abspath = os.path.abspath(self._filename)
         self._dirname = os.path.dirname(self._abspath)
