@@ -128,6 +128,8 @@ class ThumbFileItem(FileItem):
 
             if status == ThumbnailStatus.OK:
                 pixmap = QPixmap(filename)
+                if pixmap.isNull():
+                    return None
 
                 # Scale it to fit
                 w = pixmap.width() * self.thumb_view.tn_width // pixmap.height()
@@ -169,11 +171,13 @@ class ThumbFileItem(FileItem):
         return QRectF(0, 0, self.thumb_view.tn_width, self.thumb_view.tn_height)
 
     def reload_pixmap(self):
-        pixmap = self.make_pixmap()
-        self.pixmap_item.setPixmap(pixmap)
-        self.pixmap_item.setPos(
-            self.thumb_view.tn_width / 2 - pixmap.width() / 2,
-            self.thumb_view.tn_height / 2 - pixmap.height() / 2)
+        if self.pixmap_item is not None:
+            pixmap = self.make_pixmap()
+            if pixmap is not None:
+                self.pixmap_item.setPixmap(pixmap)
+                self.pixmap_item.setPos(
+                    self.thumb_view.tn_width / 2 - pixmap.width() / 2,
+                    self.thumb_view.tn_height / 2 - pixmap.height() / 2)
 
     def reload(self):
         for item in self.childItems():
