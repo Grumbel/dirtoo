@@ -38,7 +38,7 @@ from dirtools.fileview.detail_view import DetailView
 from dirtools.fileview.thumb_view import ThumbView
 
 
-class FileFilter(QLineEdit):
+class FilterLineEdit(QLineEdit):
 
     def __init__(self, controller):
         super().__init__()
@@ -83,7 +83,7 @@ class FileFilter(QLineEdit):
         self.setText("enter a glob search pattern here")
 
 
-class FilePathLineEdit(QLineEdit):
+class LocationLineEdit(QLineEdit):
 
     def __init__(self, controller):
         super().__init__()
@@ -177,8 +177,8 @@ class FileViewWindow(QMainWindow):
         self.file_view = DetailView(self.controller)
         self.file_view.hide()
         self.thumb_view = ThumbView(self.controller)
-        self.file_path = FilePathLineEdit(self.controller)
-        self.file_filter = FileFilter(self.controller)
+        self.file_path = LocationLineEdit(self.controller)
+        self.file_filter = FilterLineEdit(self.controller)
         # self.file_filter.setText("File Pattern Here")
         self.file_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.thumb_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
