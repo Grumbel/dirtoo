@@ -28,6 +28,7 @@ from dirtools.fileview.file_view_window import FileViewWindow
 from dirtools.util import expand_file
 from dirtools.fileview.filter import Filter
 from dirtools.fileview.sorter import Sorter
+from dirtools.fileview.file_info import FileInfo
 
 
 class Controller(QObject):
@@ -191,6 +192,13 @@ class Controller(QObject):
         # self.window.file_view.set_file_collection(self.file_collection)
         self.window.thumb_view.receive_thumbnail(filename, flavor,
                                                  thumbnail_filename, thumbnail_status)
+
+    def reload_thumbnails(self):
+        self.app.thumbnail_cache.clear()
+        self.app.dbus_thumbnail_cache.delete(
+            [f.abspath()
+             for f in self.file_collection.get_fileinfos()])
+        self.window.thumb_view.reload_thumbnails()
 
 
 # EOF #

@@ -74,12 +74,18 @@ class ThumbFileItem(FileItem):
         self.controller.show_current_filename("")
 
     def make_items(self):
-        rect = QGraphicsRectItem(-2, -2, self.thumb_view.tn_width + 4, self.thumb_view.tn_height + 4 + 16)
+        rect = QGraphicsRectItem(self.pos().x() - 2,
+                                 self.pos().y() - 2,
+                                 self.thumb_view.tn_width + 4,
+                                 self.thumb_view.tn_height + 4 + 16)
         rect.setPen(QPen(Qt.NoPen))
         rect.setBrush(QColor(192 + 32, 192 + 32, 192 + 32))
         self.addToGroup(rect)
 
-        self.select_rect = QGraphicsRectItem(-2, -2, self.thumb_view.tn_width + 4, self.thumb_view.tn_height + 4 + 16)
+        self.select_rect = QGraphicsRectItem(self.pos().x() - 2,
+                                             self.pos().y() - 2,
+                                             self.thumb_view.tn_width + 4,
+                                             self.thumb_view.tn_height + 4 + 16)
         self.select_rect.setPen(QPen(Qt.NoPen))
         self.select_rect.setBrush(QColor(192, 192, 192))
         self.select_rect.setVisible(False)
@@ -105,8 +111,8 @@ class ThumbFileItem(FileItem):
         else:
             self.text.setPlainText(tmp + "…")
 
-        self.text.setPos(self.thumb_view.tn_width / 2 - self.text.boundingRect().width() / 2,
-                         self.thumb_view.tn_height - 2)
+        self.text.setPos(self.pos().x() + self.thumb_view.tn_width / 2 - self.text.boundingRect().width() / 2,
+                         self.pos().y() + self.thumb_view.tn_height - 2)
 
         # self.text.setVisible(False)
         self.addToGroup(self.text)
@@ -179,13 +185,16 @@ class ThumbFileItem(FileItem):
                     self.thumb_view.tn_width / 2 - pixmap.width() / 2,
                     self.thumb_view.tn_height / 2 - pixmap.height() / 2)
 
-    def reload(self):
+    def reload(self, x=0, y=0):
         for item in self.childItems():
             self.removeFromGroup(item)
-        self.setPos(0, 0)
+        self.setPos(x, y)
         self.pixmap_item = None
         self.lock_item = None
         self.make_items()
+
+    def reload_thumbnail(self):
+        self.reload(x=self.pos().x(), y=self.pos().y())
 
 
 # EOF #

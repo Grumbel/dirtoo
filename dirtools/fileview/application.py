@@ -25,6 +25,7 @@ from dbus.mainloop.pyqt5 import DBusQtMainLoop
 
 from dirtools.fileview.controller import Controller
 from dirtools.dbus_thumbnailer import DBusThumbnailer
+from dirtools.dbus_thumbnail_cache import DBusThumbnailCache
 from dirtools.fileview.thumbnail_cache import ThumbnailCache, ThumbnailCacheListener
 
 
@@ -38,10 +39,11 @@ class FileViewApplication:
         self.qapp = QApplication([])
         self.dbus_loop = DBusQtMainLoop(set_as_default=True)
         self.session_bus = dbus.SessionBus()
-        self.thumbnailer = DBusThumbnailer(self.session_bus)
+        self.dbus_thumbnailer = DBusThumbnailer(self.session_bus)
+        self.dbus_thumbnail_cache = DBusThumbnailCache(self.session_bus)
 
-        self.thumbnail_cache = ThumbnailCache(self.thumbnailer)
-        self.thumbnailer.listener = ThumbnailCacheListener(self.thumbnail_cache)
+        self.thumbnail_cache = ThumbnailCache(self.dbus_thumbnailer)
+        self.dbus_thumbnailer.listener = ThumbnailCacheListener(self.thumbnail_cache)
 
         self.controllers: List[Controller] = []
 

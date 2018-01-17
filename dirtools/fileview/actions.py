@@ -81,6 +81,11 @@ class Actions(QObject):
         self.reload.setStatusTip('Reload the View')
         self.reload.triggered.connect(self.controller.reload)
 
+        self.reload_thumbnails = QAction(QIcon.fromTheme('edit-delete'), 'Thumbnail Reload', self)
+        self.reload_thumbnails.setShortcut('Shift+F5')
+        self.reload_thumbnails.setStatusTip('Reload Thumbnails')
+        self.reload_thumbnails.triggered.connect(self.controller.reload_thumbnails)
+
         self.view_detail_view = QAction("Detail View", self, checkable=True)
         self.view_icon_view = QAction("Icon View", self, checkable=True)
         self.view_small_icon_view = QAction("Small Icon View", self, checkable=True)

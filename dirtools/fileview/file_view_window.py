@@ -271,6 +271,7 @@ class FileViewWindow(QMainWindow):
         self.toolbar.addAction(self.actions.forward)
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.actions.reload)
+        self.toolbar.addAction(self.actions.reload_thumbnails)
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.actions.undo)
         self.toolbar.addAction(self.actions.redo)

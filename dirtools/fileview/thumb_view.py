@@ -42,7 +42,7 @@ class ThumbView(QGraphicsView):
         self.setScene(self.scene)
 
         self.padding = 16
-        self.thumbnails: List[ThumbFileItem] = []
+        self.items: List[ThumbFileItem] = []
 
         self.zoom_index = 2
         self.apply_zoom()
@@ -77,7 +77,7 @@ class ThumbView(QGraphicsView):
         fileinfos = self.file_collection.get_fileinfos()
 
         self.scene.clear()
-        self.thumbnails = []
+        self.items = []
 
         for fileinfo in fileinfos:
             thumb = None
@@ -90,7 +90,7 @@ class ThumbView(QGraphicsView):
             if thumb is not None:
                 self.abspath2item[fileinfo.abspath()] = thumb
                 self.scene.addItem(thumb)
-                self.thumbnails.append(thumb)
+                self.items.append(thumb)
 
         self.layout_thumbnails()
 
@@ -116,7 +116,7 @@ class ThumbView(QGraphicsView):
         right_x = 0
         bottom_y = 0
 
-        for thumb in self.thumbnails:
+        for thumb in self.items:
             right_x = max(x, right_x)
             bottom_y = y
             thumb.setPos(x, y)
@@ -166,7 +166,7 @@ class ThumbView(QGraphicsView):
         self.reload()
 
     def reload(self):
-        for thumb in self.thumbnails:
+        for thumb in self.items:
             thumb.reload()
         self.layout_thumbnails()
 
@@ -178,6 +178,10 @@ class ThumbView(QGraphicsView):
             print("MISSING!!!!!!!", filename)
             for k, v in self.abspath2item.items():
                 print("->", k)
+
+    def reload_thumbnails(self):
+        for item in self.items:
+            item.reload_thumbnail()
 
 
 # EOF #

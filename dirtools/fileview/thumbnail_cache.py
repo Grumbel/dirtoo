@@ -95,5 +95,8 @@ class ThumbnailCache(QObject):
         self.cache[(filename, flavor)] = (thumbnail_filename, thumbnail_status)
         self.sig_thumbnail.emit(filename, flavor, thumbnail_filename, thumbnail_status)
 
+    def clear(self):
+        self.cache = {}
+
 
 # EOF #
