@@ -99,6 +99,7 @@ class ThumbView(QGraphicsView):
         self.layout_thumbnails()
 
     def layout_thumbnails(self):
+        self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
         tile_w = self.tn_width
         tile_h = self.tn_height + 16
 
@@ -125,20 +126,20 @@ class ThumbView(QGraphicsView):
                 y += y_step
                 x = self.padding
 
-        if True:  # top/left alignment
-            right_x += tile_w + self.padding
-            bottom_y += tile_h + self.padding
+        # top/left alignment
+        right_x += tile_w + self.padding
+        bottom_y += tile_h + self.padding
 
-            if True:  # center alignment
-                w = right_x
-            else:
-                w = max(self.viewport().size().width(), right_x)
-            h = max(self.viewport().size().height(), bottom_y)
+        if True:  # center alignment
+            w = right_x
+        else:
+            w = max(self.viewport().size().width(), right_x)
+        h = max(self.viewport().size().height(), bottom_y)
 
-            bounding_rect = QRectF(0, 0, w, h)
-            self.setSceneRect(bounding_rect)
-        else:  # center alignment
-            self.setSceneRect(self.scene.itemsBoundingRect())
+        bounding_rect = QRectF(0, 0, w, h)
+        logging.debug("ThumbView.layout_thumbnails:done")
+        self.setSceneRect(bounding_rect)
+        self.scene.setItemIndexMethod(QGraphicsScene.BspTreeIndex)
 
     def zoom_in(self):
         self.zoom_index += 1
