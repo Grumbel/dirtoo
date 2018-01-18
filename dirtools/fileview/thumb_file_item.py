@@ -122,18 +122,20 @@ class ThumbFileItem(FileItem):
                 logging.debug("%s: ThumbFileItem.make_pixmap: loading thumbnail", self)
                 pixmap = QPixmap(filename)
                 if pixmap.isNull():
-                    return None
-
-                # Scale it to fit
-                w = pixmap.width() * self.thumb_view.tn_width // pixmap.height()
-                h = pixmap.height() * self.thumb_view.tn_height // pixmap.width()
-                if w <= self.thumb_view.tn_width:
-                    pixmap = pixmap.scaledToHeight(self.thumb_view.tn_height,
-                                                   Qt.SmoothTransformation)
-                elif h <= self.thumb_view.tn_height:
-                    pixmap = pixmap.scaledToWidth(self.thumb_view.tn_width,
-                                                  Qt.SmoothTransformation)
-                return pixmap
+                    logging.error("ThumbFileItem.make_pixmap: failed to load %s based on %s",
+                                  filename, self.fileinfo.abspath())
+                    return self.thumb_view.shared_pixmaps.image_missing
+                else:
+                    # Scale it to fit
+                    w = pixmap.width() * self.thumb_view.tn_width // pixmap.height()
+                    h = pixmap.height() * self.thumb_view.tn_height // pixmap.width()
+                    if w <= self.thumb_view.tn_width:
+                        pixmap = pixmap.scaledToHeight(self.thumb_view.tn_height,
+                                                       Qt.SmoothTransformation)
+                    elif h <= self.thumb_view.tn_height:
+                        pixmap = pixmap.scaledToWidth(self.thumb_view.tn_width,
+                                                      Qt.SmoothTransformation)
+                    return pixmap
 
             elif status == ThumbnailStatus.LOADING:
                 return self.thumb_view.shared_pixmaps.image_loading
@@ -166,11 +168,10 @@ class ThumbFileItem(FileItem):
     def reload_pixmap(self):
         if self.pixmap_item is not None:
             pixmap = self.make_pixmap()
-            if pixmap is not None:
-                self.pixmap_item.setPixmap(pixmap)
-                self.pixmap_item.setPos(
-                    self.thumb_view.tn_width / 2 - pixmap.width() / 2,
-                    self.thumb_view.tn_height / 2 - pixmap.height() / 2)
+            self.pixmap_item.setPixmap(pixmap)
+            self.pixmap_item.setPos(
+                self.thumb_view.tn_width / 2 - pixmap.width() / 2,
+                self.thumb_view.tn_height / 2 - pixmap.height() / 2)
 
     def reload(self, x=0, y=0):
         for item in self.childItems():

@@ -55,7 +55,8 @@ class FileItem(QGraphicsItemGroup):
             mime_data = QMimeData()
             mime_data.setUrls([QUrl("file://" + self.fileinfo.abspath())])
             self.drag = QDrag(self.controller.window)
-            self.drag.setPixmap(self.pixmap_item.pixmap())
+            if self.pixmap_item is not None:
+                self.drag.setPixmap(self.pixmap_item.pixmap())
             self.drag.setMimeData(mime_data)
             # drag.setHotSpot(e.pos() - self.select_rect().topLeft())
             self.dropAction = self.drag.exec_(Qt.CopyAction)
