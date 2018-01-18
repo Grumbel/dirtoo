@@ -56,7 +56,12 @@ class ThumbView(QGraphicsView):
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
 
-        self.padding = 16
+        self.padding_x = 16
+        self.padding_y = 16
+
+        self.spacing_x = 16
+        self.spacing_y = 16
+
         self.items: List[ThumbFileItem] = []
 
         self.file_collection = None
@@ -148,6 +153,36 @@ class ThumbView(QGraphicsView):
         super().resizeEvent(ev)
         self.layout_items()
 
+    def layout_items_as_tiles(self):
+        visible_items = [item for item in self.items if not item.fileinfo.is_filtered]
+
+        tile_w = self.tn_width
+        tile_h = self.tn_height + 16
+
+        columns = ((self.viewport().width() - 2 * self.padding_x + self.spacing_x) //
+                   (tile_w + self.spacing_x))
+
+        right_x = 0
+        bottom_y = 0
+
+        col = 0
+        row = 0
+        for item in visible_items:
+            x = col * (tile_w + self.spacing_x) + self.padding_x
+            y = row * (tile_h + self.spacing_y) + self.padding_y
+
+            right_x = max(right_x, x + tile_w + self.padding_x)
+            bottom_y = y + tile_h + self.padding_y
+
+            item.setPos(x, y)
+
+            col += 1
+            if col == columns:
+                col = 0
+                row += 1
+
+        return right_x, bottom_y
+
     def layout_items(self):
         logging.debug("ThumbView.layout_items: %s", self.scene.itemIndexMethod())
 
@@ -155,36 +190,7 @@ class ThumbView(QGraphicsView):
         old_item_index_method = self.scene.itemIndexMethod()
         self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
 
-        tile_w = self.tn_width
-        tile_h = self.tn_height + 16
-
-        x_spacing = 16
-        y_spacing = 16
-
-        x_step = tile_w + x_spacing
-        y_step = tile_h + y_spacing
-
-        threshold = self.viewport().width() - self.padding
-
-        x = self.padding
-        y = self.padding
-
-        right_x = 0
-        bottom_y = 0
-
-        visible_items = [item for item in self.items if not item.fileinfo.is_filtered]
-        for item in visible_items:
-            right_x = max(x, right_x)
-            bottom_y = y
-            item.setPos(x, y)
-            x += x_step
-            if x + tile_w >= threshold:
-                y += y_step
-                x = self.padding
-
-        # top/left alignment
-        right_x += tile_w + self.padding
-        bottom_y += tile_h + self.padding
+        right_x, bottom_y = self.layout_items_as_tiles()
 
         if True:  # center alignment
             w = right_x
