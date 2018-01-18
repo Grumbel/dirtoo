@@ -17,6 +17,7 @@
 
 from typing import List
 
+import logging
 import os
 import subprocess
 
@@ -149,11 +150,15 @@ class Controller(QObject):
 
     def on_click(self, fileinfo):
         if not fileinfo.isdir():
-            subprocess.Popen(["xdg-open", fileinfo.filename()])
+            argv = ["xdg-open", fileinfo.filename()]
+            logging.info("Controller.on_click: launching: %s", argv)
+            subprocess.Popen(argv)
         else:
             if self.location is None:
+                logging.info("Controller.on_click: app.show_location: %s", fileinfo)
                 self.app.show_location(fileinfo.filename())
             else:
+                logging.info("Controller.on_click: self.set_location: %s", fileinfo)
                 self.set_location(fileinfo.filename())
 
     def show_current_filename(self, filename):
@@ -167,6 +172,7 @@ class Controller(QObject):
         return self.app.thumbnail_cache.get(fileinfo, flavor)
 
     def refresh(self):
+        logging.debug("Controller.refresh")
         self.filter.apply(self.file_collection)
 
         fileinfos = self.file_collection.get_fileinfos()
