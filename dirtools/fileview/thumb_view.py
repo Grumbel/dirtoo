@@ -108,11 +108,18 @@ class ThumbView(QGraphicsView):
                 print(fi.abspath())
             print(">>>>>>>>")
             raise
-        self.layout_thumbnails()
+        self.layout_items()
 
     def on_file_collection_filtered(self):
-        logging.debug("ThumbView.on_file_collection_filtered -- IMPLEMENTME!!!!!!!!!!!")
-        self.on_file_collection_set()
+        logging.debug("ThumbView.on_file_collection_filtered")
+
+        for item in self.items:
+            if not item.fileinfo.is_filtered:
+                item.setVisible(True)
+            else:
+                item.setVisible(False)
+
+        self.layout_items()
 
     def on_file_collection_set(self):
         logging.debug("ThumbView.on_file_collection_set")
@@ -134,19 +141,20 @@ class ThumbView(QGraphicsView):
                 self.scene.addItem(thumb)
                 self.items.append(thumb)
 
-        self.layout_thumbnails()
+        self.layout_items()
 
     def resizeEvent(self, ev):
         logging.debug("ThumbView.resizeEvent: %s", ev)
         super().resizeEvent(ev)
-        if ev.oldSize().width() != ev.size().width():
-            self.layout_thumbnails()
+        self.layout_items()
 
-    def layout_thumbnails(self):
-        logging.debug("ThumbView.layout_thumbnails: %s", self.scene.itemIndexMethod())
+    def layout_items(self):
+        logging.debug("ThumbView.layout_items: %s", self.scene.itemIndexMethod())
+
         self.setUpdatesEnabled(False)
         old_item_index_method = self.scene.itemIndexMethod()
         self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
+
         tile_w = self.tn_width
         tile_h = self.tn_height + 16
 
@@ -164,10 +172,11 @@ class ThumbView(QGraphicsView):
         right_x = 0
         bottom_y = 0
 
-        for thumb in self.items:
+        visible_items = [item for item in self.items if not item.fileinfo.is_filtered]
+        for item in visible_items:
             right_x = max(x, right_x)
             bottom_y = y
-            thumb.setPos(x, y)
+            item.setPos(x, y)
             x += x_step
             if x + tile_w >= threshold:
                 y += y_step
@@ -184,12 +193,14 @@ class ThumbView(QGraphicsView):
         h = max(self.viewport().size().height(), bottom_y)
 
         bounding_rect = QRectF(0, 0, w, h)
-        logging.debug("ThumbView.layout_thumbnails:done")
+        logging.debug("ThumbView.layout_items:done")
         self.setSceneRect(bounding_rect)
-        logging.debug("ThumbView.layout_thumbnails: rebuilding BSP")
+
+        logging.debug("ThumbView.layout_items: rebuilding BSP")
         self.scene.setItemIndexMethod(old_item_index_method)
         self.setUpdatesEnabled(True)
-        logging.debug("ThumbView.layout_thumbnails: rebuilding BSP: Done")
+
+        logging.debug("ThumbView.layout_items: rebuilding BSP: Done")
         self.repaint()
 
     def zoom_in(self):
@@ -235,9 +246,9 @@ class ThumbView(QGraphicsView):
                 return None
 
     def reload(self):
-        for thumb in self.items:
-            thumb.reload()
-        self.layout_thumbnails()
+        for item in self.items:
+            item.reload()
+        self.layout_items()
 
     def receive_thumbnail(self, filename, flavor, thumbnail_filename, thumbnail_status):
         item = self.abspath2item.get(filename, None)
