@@ -32,6 +32,7 @@ from PyQt5.QtWidgets import (
     QSizePolicy,
     QShortcut,
     QVBoxLayout,
+    QToolBar
 )
 
 from dirtools.fileview.detail_view import DetailView
@@ -153,6 +154,7 @@ class FileViewWindow(QMainWindow):
         self.make_toolbar()
         self.addToolBarBreak()
         self.make_location_toolbar()
+        self.make_filter_toolbar()
         self.make_shortcut()
 
         self.thumb_view.setFocus()
@@ -189,16 +191,21 @@ class FileViewWindow(QMainWindow):
         self.vbox.addWidget(self.file_view, Qt.AlignLeft)
         self.vbox.addWidget(self.thumb_view, Qt.AlignLeft)
 
-        QKeySequence("Ctrl+f")
+        vbox_widget = QWidget()
+        vbox_widget.setLayout(self.vbox)
+        self.setCentralWidget(vbox_widget)
+
+    def make_filter_toolbar(self):
+        self.filter_toolbar = QToolBar()
+        widget = QWidget()
         form = QFormLayout()
         label = QLabel("Filter:")
         label.setBuddy(self.file_filter)
         form.addRow(label, self.file_filter)
-        self.vbox.addLayout(form)
-
-        vbox_widget = QWidget()
-        vbox_widget.setLayout(self.vbox)
-        self.setCentralWidget(vbox_widget)
+        form.setContentsMargins(0, 0, 0, 0)
+        widget.setLayout(form)
+        self.filter_toolbar.addWidget(widget)
+        self.addToolBar(Qt.BottomToolBarArea, self.filter_toolbar)
 
     def make_location_toolbar(self):
         self.location_toolbar = self.addToolBar("Location")
