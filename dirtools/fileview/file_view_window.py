@@ -219,6 +219,15 @@ class FileViewWindow(QMainWindow):
         menu.addAction(self.actions.sort_by_random)
         return menu
 
+    def make_view_menu(self):
+        menu = QMenu("View Options")
+        menu.addSeparator().setText("View Options")
+        menu.addAction(self.actions.show_abspath)
+        menu.addAction(self.actions.show_basename)
+        menu.addSeparator()
+        menu.addAction(self.actions.toggle_timegaps)
+        return menu
+
     def make_menubar(self):
         self.menubar = self.menuBar()
         file_menu = self.menubar.addMenu('&File')
@@ -277,12 +286,12 @@ class FileViewWindow(QMainWindow):
         self.toolbar.addAction(self.actions.redo)
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.actions.show_hidden)
-        self.toolbar.addSeparator()
-        self.toolbar.addAction(self.actions.show_abspath)
-        self.toolbar.addAction(self.actions.show_basename)
-        self.toolbar.addSeparator()
-        self.toolbar.addAction(self.actions.toggle_timegaps)
-        self.toolbar.addSeparator()
+
+        button = QToolButton()
+        button.setIcon(QIcon.fromTheme("view-restore"))
+        button.setMenu(self.make_view_menu())
+        button.setPopupMode(QToolButton.InstantPopup)
+        self.toolbar.addWidget(button)
 
         button = QToolButton()
         button.setIcon(QIcon.fromTheme("view-sort-ascending"))
