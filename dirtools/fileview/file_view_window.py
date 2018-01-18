@@ -151,6 +151,8 @@ class FileViewWindow(QMainWindow):
         self.make_window()
         self.make_menubar()
         self.make_toolbar()
+        self.addToolBarBreak()
+        self.make_location_toolbar()
         self.make_shortcut()
 
         self.thumb_view.setFocus()
@@ -184,12 +186,6 @@ class FileViewWindow(QMainWindow):
         self.thumb_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.status_bar = self.statusBar()
 
-        form = QFormLayout()
-        label = QLabel("Location:")
-        label.setBuddy(self.file_path)
-        form.addRow(label, self.file_path)
-        self.vbox.addLayout(form)
-
         self.vbox.addWidget(self.file_view, Qt.AlignLeft)
         self.vbox.addWidget(self.thumb_view, Qt.AlignLeft)
 
@@ -203,6 +199,17 @@ class FileViewWindow(QMainWindow):
         vbox_widget = QWidget()
         vbox_widget.setLayout(self.vbox)
         self.setCentralWidget(vbox_widget)
+
+    def make_location_toolbar(self):
+        self.location_toolbar = self.addToolBar("Location")
+        widget = QWidget()
+        form = QFormLayout()
+        label = QLabel("Location:")
+        label.setBuddy(self.file_path)
+        form.addRow(label, self.file_path)
+        form.setContentsMargins(0, 0, 0, 0)
+        widget.setLayout(form)
+        self.location_toolbar.addWidget(widget)
 
     def make_sort_menu(self):
         menu = QMenu("Sort Options")
