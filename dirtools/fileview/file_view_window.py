@@ -312,6 +312,9 @@ class FileViewWindow(QMainWindow):
         self.toolbar.addAction(self.actions.zoom_in)
         self.toolbar.addAction(self.actions.zoom_out)
         self.toolbar.addSeparator()
+        self.toolbar.addAction(self.actions.lod_in)
+        self.toolbar.addAction(self.actions.lod_out)
+        self.toolbar.addSeparator()
         self.info = QLabel("lots of files selected")
         self.toolbar.addWidget(self.info)
 

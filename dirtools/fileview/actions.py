@@ -62,6 +62,13 @@ class Actions(QObject):
         self.zoom_out.triggered.connect(self.controller.zoom_out)
         self.zoom_out.setShortcut('Ctrl+-')
 
+        self.lod_in = QAction(QIcon.fromTheme('zoom-in'), "Level of Detail &In", self)
+        self.lod_in.triggered.connect(self.controller.more_details)
+        self.lod_in.setShortcut('Alt+=')
+        self.lod_out = QAction(QIcon.fromTheme('zoom-out'), "Level of Detail &Out", self)
+        self.lod_out.triggered.connect(self.controller.less_details)
+        self.lod_out.setShortcut('Alt+-')
+
         self.parent_directory = QAction(self.controller.app.qapp.style().standardIcon(QStyle.SP_FileDialogToParent),
                                         "Parent Directory")
         self.parent_directory.triggered.connect(self.controller.parent_directory)

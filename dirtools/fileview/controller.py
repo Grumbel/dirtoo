@@ -92,6 +92,12 @@ class Controller(QObject):
     def zoom_out(self):
         self.window.thumb_view.zoom_out()
 
+    def less_details(self):
+        self.window.thumb_view.less_details()
+
+    def more_details(self):
+        self.window.thumb_view.more_details()
+
     def set_filter(self, pattern):
         if pattern == "":
             self.filter.pattern = None

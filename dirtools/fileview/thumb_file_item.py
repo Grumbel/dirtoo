@@ -25,6 +25,8 @@ from PyQt5.QtWidgets import (
     QGraphicsRectItem,
 )
 
+import bytefmt
+
 from dirtools.fileview.file_item import FileItem
 from dirtools.fileview.thumbnail_cache import ThumbnailStatus
 
@@ -56,35 +58,16 @@ class ThumbFileItem(FileItem):
         self.setZValue(0)
         self.select_rect.setVisible(False)
         # self.text.setVisible(False)
-        self.text.setDefaultTextColor(QColor(0, 0, 0))
+        # self.text.setDefaultTextColor(QColor(0, 0, 0))
         self.controller.show_current_filename("")
 
-    def make_items(self):
-        rect = QGraphicsRectItem(self.pos().x() - 2,
-                                 self.pos().y() - 2,
-                                 self.thumb_view.tn_width + 4,
-                                 self.thumb_view.tn_height + 4 + 16)
-        rect.setPen(QPen(Qt.NoPen))
-        rect.setBrush(QColor(192 + 32, 192 + 32, 192 + 32))
-        self.addToGroup(rect)
-
-        self.select_rect = QGraphicsRectItem(self.pos().x() - 2,
-                                             self.pos().y() - 2,
-                                             self.thumb_view.tn_width + 4,
-                                             self.thumb_view.tn_height + 4 + 16)
-        self.select_rect.setPen(QPen(Qt.NoPen))
-        self.select_rect.setBrush(QColor(192, 192, 192))
-        self.select_rect.setVisible(False)
-        self.select_rect.setAcceptHoverEvents(False)
-        self.addToGroup(self.select_rect)
-
-        text = self.fileinfo.basename()
-        self.text = QGraphicsTextItem(text)
-        font = self.text.font()
+    def add_text_item(self, row, text):
+        text_item = QGraphicsTextItem(text)
+        font = text_item.font()
         font.setPixelSize(10)
-        self.text.setFont(font)
-        self.text.setDefaultTextColor(QColor(0, 0, 0))
-        self.text.setAcceptHoverEvents(False)
+        text_item.setFont(font)
+        text_item.setDefaultTextColor(QColor(0, 0, 0))
+        text_item.setAcceptHoverEvents(False)
 
         fm = QFontMetrics(font)
         tmp = text
@@ -93,15 +76,43 @@ class ThumbFileItem(FileItem):
                 tmp = tmp[0:-1]
 
         if tmp == text:
-            self.text.setPlainText(tmp)
+            text_item.setPlainText(tmp)
         else:
-            self.text.setPlainText(tmp + "…")
+            text_item.setPlainText(tmp + "…")
 
-        self.text.setPos(self.pos().x() + self.thumb_view.tn_width / 2 - self.text.boundingRect().width() / 2,
-                         self.pos().y() + self.thumb_view.tn_height - 2)
+        text_item.setPos(self.pos().x() + self.thumb_view.tn_width / 2 - text_item.boundingRect().width() / 2,
+                         self.pos().y() + self.thumb_view.tn_height - 2 + 16 * row)
 
-        # self.text.setVisible(False)
-        self.addToGroup(self.text)
+        # text_item.setVisible(False)
+        self.addToGroup(text_item)
+
+    def make_items(self):
+        rect = QGraphicsRectItem(self.pos().x() - 2,
+                                 self.pos().y() - 2,
+                                 self.thumb_view.tn_width + 4,
+                                 self.thumb_view.tn_height + 4 + 16 * self.thumb_view.level_of_detail)
+        rect.setPen(QPen(Qt.NoPen))
+        rect.setBrush(QColor(192 + 32, 192 + 32, 192 + 32))
+        self.addToGroup(rect)
+
+        self.select_rect = QGraphicsRectItem(self.pos().x() - 2,
+                                             self.pos().y() - 2,
+                                             self.thumb_view.tn_width + 4,
+                                             self.thumb_view.tn_height + 4 + 16 * self.thumb_view.level_of_detail)
+        self.select_rect.setPen(QPen(Qt.NoPen))
+        self.select_rect.setBrush(QColor(192, 192, 192))
+        self.select_rect.setVisible(False)
+        self.select_rect.setAcceptHoverEvents(False)
+        self.addToGroup(self.select_rect)
+
+        if self.thumb_view.level_of_detail > 0:
+            self.add_text_item(0, self.fileinfo.basename())
+
+        if self.thumb_view.level_of_detail > 1:
+            self.add_text_item(1, self.fileinfo.ext())
+
+        if self.thumb_view.level_of_detail > 2:
+            self.add_text_item(2, bytefmt.humanize(self.fileinfo.size()))
 
         # tooltips don't work for the whole group
         # tooltips break the hover events!

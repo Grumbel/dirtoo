@@ -61,6 +61,8 @@ class ThumbView(QGraphicsView):
 
         self.items: List[ThumbFileItem] = []
 
+        self.level_of_detail = 1
+
         self.file_collection = None
         self.shared_pixmaps = None
         self.zoom_index = 2
@@ -176,7 +178,7 @@ class ThumbView(QGraphicsView):
         self.tn_height = 32 * 2 ** self.zoom_index
         self.tn_size = min(self.tn_width, self.tn_height)
 
-        self.layouter.set_tile_size(self.tn_width, self.tn_height + 16)
+        self.layouter.set_tile_size(self.tn_width, self.tn_height + 16 * self.level_of_detail)
 
         if self.zoom_index < 3:
             self.flavor = "normal"
@@ -219,6 +221,18 @@ class ThumbView(QGraphicsView):
     def reload_thumbnails(self):
         for item in self.items:
             item.reload_thumbnail()
+
+    def less_details(self):
+        self.level_of_detail -= 1
+        if self.level_of_detail < 0:
+            self.level_of_detail = 0
+        self.apply_zoom()
+
+    def more_details(self):
+        self.level_of_detail += 1
+        if self.level_of_detail > 3:
+            self.level_of_detail = 3
+        self.apply_zoom()
 
 
 # EOF #
