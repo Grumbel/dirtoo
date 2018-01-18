@@ -19,7 +19,7 @@ import logging
 
 from typing import List, Dict
 
-from PyQt5.QtCore import Qt, QRectF
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QBrush, QIcon
 from PyQt5.QtWidgets import (
     QGraphicsView,
@@ -27,6 +27,7 @@ from PyQt5.QtWidgets import (
 )
 
 from dirtools.fileview.thumb_file_item import ThumbFileItem
+from dirtools.fileview.tile_layouter import TileLayouter
 
 
 class SharedPixmaps:
@@ -56,13 +57,7 @@ class ThumbView(QGraphicsView):
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
 
-        self.padding_x = 16
-        self.padding_y = 16
-
-        self.spacing_x = 16
-        self.spacing_y = 16
-
-        self.current_columns = None
+        self.layouter = TileLayouter()
 
         self.items: List[ThumbFileItem] = []
 
@@ -104,17 +99,7 @@ class ThumbView(QGraphicsView):
         logging.debug("ThumbView.on_file_collection_reordered")
         fi2it = {item.fileinfo.abspath(): item for item in self.items}
         fileinfos = self.file_collection.get_fileinfos()
-        try:
-            self.items = [fi2it[fileinfo.abspath()] for fileinfo in fileinfos if not fileinfo.is_filtered]
-        except:
-            print("<<<<<<<<<")
-            for k, v in fi2it.items():
-                print(k)
-            print("--------")
-            for fi in fileinfos:
-                print(fi.abspath())
-            print(">>>>>>>>")
-            raise
+        self.items = [fi2it[fileinfo.abspath()] for fileinfo in fileinfos if fileinfo.abspath() in fi2it]
         self.layout_items()
 
     def on_file_collection_filtered(self):
@@ -153,72 +138,25 @@ class ThumbView(QGraphicsView):
     def resizeEvent(self, ev):
         logging.debug("ThumbView.resizeEvent: %s", ev)
         super().resizeEvent(ev)
+        self.layouter.resize(ev.size().width(), ev.size().height())
         self.layout_items(force=False)
 
-    def layout_items_as_tiles(self, columns):
-        visible_items = [item for item in self.items if not item.fileinfo.is_filtered]
-
-        tile_w = self.tn_width
-        tile_h = self.tn_height + 16
-
-        right_x = 0
-        bottom_y = 0
-
-        col = 0
-        row = 0
-        for item in visible_items:
-            x = col * (tile_w + self.spacing_x) + self.padding_x
-            y = row * (tile_h + self.spacing_y) + self.padding_y
-
-            right_x = max(right_x, x + tile_w + self.padding_x)
-            bottom_y = y + tile_h + self.padding_y
-
-            item.setPos(x, y)
-
-            col += 1
-            if col == columns:
-                col = 0
-                row += 1
-
-        return right_x, bottom_y
-
     def layout_items(self, force=True):
-        logging.debug("ThumbView.layout_items: %s", self.scene.itemIndexMethod())
-
-        tile_w = self.tn_width
-        tile_h = self.tn_height + 16
-
-        columns = ((self.viewport().width() - 2 * self.padding_x + self.spacing_x) //
-                   (tile_w + self.spacing_x))
-
-        if columns == self.current_columns:
-            logging.debug("ThumbView.layout_items: skipping, no relayout required")
-            return
-        else:
-            self.current_columns = columns
+        logging.debug("ThumbView.layout_items")
 
         self.setUpdatesEnabled(False)
         old_item_index_method = self.scene.itemIndexMethod()
         self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
 
-        right_x, bottom_y = self.layout_items_as_tiles(columns)
+        visible_items = [item for item in self.items if not item.fileinfo.is_filtered]
 
-        if True:  # center alignment
-            w = right_x
-        else:
-            w = max(self.viewport().size().width(), right_x)
-        h = max(self.viewport().size().height(), bottom_y)
+        self.layouter.layout(visible_items, force=force)
+        self.setSceneRect(self.layouter.get_bounding_rect())
 
-        bounding_rect = QRectF(0, 0, w, h)
-        logging.debug("ThumbView.layout_items:done")
-        self.setSceneRect(bounding_rect)
-
-        logging.debug("ThumbView.layout_items: rebuilding BSP")
         self.scene.setItemIndexMethod(old_item_index_method)
         self.setUpdatesEnabled(True)
 
-        logging.debug("ThumbView.layout_items: rebuilding BSP: Done")
-        self.repaint()
+        logging.debug("ThumbView.layout_items: done")
 
     def zoom_in(self):
         self.zoom_index += 1
@@ -237,6 +175,8 @@ class ThumbView(QGraphicsView):
         self.tn_width = 32 * 2 ** self.zoom_index
         self.tn_height = 32 * 2 ** self.zoom_index
         self.tn_size = min(self.tn_width, self.tn_height)
+
+        self.layouter.set_tile_size(self.tn_width, self.tn_height + 16)
 
         if self.zoom_index < 3:
             self.flavor = "normal"
