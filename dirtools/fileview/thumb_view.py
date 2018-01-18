@@ -62,6 +62,8 @@ class ThumbView(QGraphicsView):
         self.spacing_x = 16
         self.spacing_y = 16
 
+        self.current_columns = None
+
         self.items: List[ThumbFileItem] = []
 
         self.file_collection = None
@@ -151,16 +153,13 @@ class ThumbView(QGraphicsView):
     def resizeEvent(self, ev):
         logging.debug("ThumbView.resizeEvent: %s", ev)
         super().resizeEvent(ev)
-        self.layout_items()
+        self.layout_items(force=False)
 
-    def layout_items_as_tiles(self):
+    def layout_items_as_tiles(self, columns):
         visible_items = [item for item in self.items if not item.fileinfo.is_filtered]
 
         tile_w = self.tn_width
         tile_h = self.tn_height + 16
-
-        columns = ((self.viewport().width() - 2 * self.padding_x + self.spacing_x) //
-                   (tile_w + self.spacing_x))
 
         right_x = 0
         bottom_y = 0
@@ -183,14 +182,26 @@ class ThumbView(QGraphicsView):
 
         return right_x, bottom_y
 
-    def layout_items(self):
+    def layout_items(self, force=True):
         logging.debug("ThumbView.layout_items: %s", self.scene.itemIndexMethod())
+
+        tile_w = self.tn_width
+        tile_h = self.tn_height + 16
+
+        columns = ((self.viewport().width() - 2 * self.padding_x + self.spacing_x) //
+                   (tile_w + self.spacing_x))
+
+        if columns == self.current_columns:
+            logging.debug("ThumbView.layout_items: skipping, no relayout required")
+            return
+        else:
+            self.current_columns = columns
 
         self.setUpdatesEnabled(False)
         old_item_index_method = self.scene.itemIndexMethod()
         self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
 
-        right_x, bottom_y = self.layout_items_as_tiles()
+        right_x, bottom_y = self.layout_items_as_tiles(columns)
 
         if True:  # center alignment
             w = right_x
