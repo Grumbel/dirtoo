@@ -57,8 +57,10 @@ class Actions(QObject):
 
         self.zoom_in = QAction(QIcon.fromTheme('zoom-in'), "Zoom &In", self)
         self.zoom_in.triggered.connect(self.controller.zoom_in)
+        self.zoom_in.setShortcut('Ctrl+=')
         self.zoom_out = QAction(QIcon.fromTheme('zoom-out'), "Zoom &Out", self)
         self.zoom_out.triggered.connect(self.controller.zoom_out)
+        self.zoom_out.setShortcut('Ctrl+-')
 
         self.parent_directory = QAction(self.controller.app.qapp.style().standardIcon(QStyle.SP_FileDialogToParent),
                                         "Parent Directory")
@@ -104,6 +106,7 @@ class Actions(QObject):
 
         self.show_hidden = QAction("Show Hidden", self, checkable=True)
         self.show_hidden.triggered.connect(self.controller.show_hidden)
+        self.show_hidden.setShortcut('Ctrl+H')
 
         self.show_abspath = QAction("Show AbsPath", self, checkable=True)
         self.show_abspath.triggered.connect(self.controller.show_abspath)
