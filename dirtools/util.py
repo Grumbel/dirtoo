@@ -17,6 +17,7 @@
 
 from typing import List
 
+import re
 import os
 
 
@@ -36,6 +37,17 @@ def expand_directories(files, recursive):
     for f in files:
         results += expand_file(f, recursive)
     return results
+
+
+NUMERIC_SORT_RX = re.compile('(\d+)')
+
+
+def numeric_sorted(lst):
+    def segmenter(text):
+        return tuple(int(sub) if sub.isdigit() else sub
+                     for sub in NUMERIC_SORT_RX.split(text) if sub != "")
+
+    return sorted(lst, key=segmenter)
 
 
 # EOF #
