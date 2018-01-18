@@ -48,6 +48,7 @@ class DBusThumbnailCache:
     def move(self, from_files, to_files):
         from_uris = [url_from_path(f) for f in from_files]
         to_uris = [url_from_path(f) for f in to_files]
+        self.cache.Move(from_uris, to_uris)
 
 
 # EOF #

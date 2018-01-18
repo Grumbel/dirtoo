@@ -29,15 +29,22 @@ class FileCollection(QObject):
     sig_file_added = pyqtSignal(FileInfo)
     sig_file_removed = pyqtSignal(FileInfo)
 
-    # The file list has changed completely and needs a complete reload
+    # The file list has changed completely and needs a reload from scratch
     sig_files_set = pyqtSignal()
 
     # The file list has been reordered, but otherwised stayed the same
     sig_files_reordered = pyqtSignal()
 
-    def __init__(self):
+    # The file list has been filtered, .is_filtered has been
+    # set/unset, but otherwise stayed the same
+    sig_files_filtered = pyqtSignal()
+
+    def __init__(self, files=None):
         super().__init__()
-        self.fileinfos: List[FileInfo] = []
+        if files is None:
+            self.fileinfos: List[FileInfo] = []
+        else:
+            self.fileinfos = [FileInfo(f) for f in files]
 
     def set_files(self, files):
         self.fileinfos = [FileInfo(f) for f in files]
@@ -61,6 +68,7 @@ class FileCollection(QObject):
     def filter(self, filter_func):
         for fileinfo in self.fileinfos:
             fileinfo.is_filtered = filter_func(fileinfo)
+        self.sig_files_filtered.emit()
 
     def sort(self, key, reverse=False):
         logging.debug("FileCollection.sort")

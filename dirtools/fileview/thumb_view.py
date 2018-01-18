@@ -90,6 +90,7 @@ class ThumbView(QGraphicsView):
         self.file_collection = file_collection
         self.file_collection.sig_files_set.connect(self.on_file_collection_set)
         self.file_collection.sig_files_reordered.connect(self.on_file_collection_reordered)
+        self.file_collection.sig_files_filtered.connect(self.on_file_collection_filtered)
         self.on_file_collection_set()
 
     def on_file_collection_reordered(self):
@@ -100,12 +101,18 @@ class ThumbView(QGraphicsView):
             self.items = [fi2it[fileinfo.abspath()] for fileinfo in fileinfos if not fileinfo.is_filtered]
         except:
             print("<<<<<<<<<")
-            for k, v in fi2it.items(): print(k)
+            for k, v in fi2it.items():
+                print(k)
             print("--------")
-            for fi in fileinfos: print(fi.abspath())
+            for fi in fileinfos:
+                print(fi.abspath())
             print(">>>>>>>>")
             raise
         self.layout_thumbnails()
+
+    def on_file_collection_filtered(self):
+        logging.debug("ThumbView.on_file_collection_filtered -- IMPLEMENTME!!!!!!!!!!!")
+        self.on_file_collection_set()
 
     def on_file_collection_set(self):
         logging.debug("ThumbView.on_file_collection_set")

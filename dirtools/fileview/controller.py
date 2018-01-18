@@ -29,7 +29,6 @@ from dirtools.fileview.file_view_window import FileViewWindow
 from dirtools.util import expand_file
 from dirtools.fileview.filter import Filter
 from dirtools.fileview.sorter import Sorter
-from dirtools.fileview.file_info import FileInfo
 
 
 class Controller(QObject):
@@ -45,6 +44,9 @@ class Controller(QObject):
         self.sorter = Sorter(self)
         self.history: List[str] = []
         self.history_index = 0
+
+        self.window.file_view.set_file_collection(self.file_collection)
+        self.window.thumb_view.set_file_collection(self.file_collection)
 
     def save_as(self):
         options = QFileDialog.Options()
@@ -64,7 +66,7 @@ class Controller(QObject):
 
     def show_hidden(self):
         self.filter.show_hidden = not self.filter.show_hidden
-        self.refresh()
+        self.apply_filter()
 
     def show_abspath(self):
         self.window.file_view.show_abspath()
@@ -95,7 +97,7 @@ class Controller(QObject):
             self.filter.pattern = None
         else:
             self.filter.pattern = pattern
-        self.refresh()
+        self.apply_filter()
 
     def go_forward(self):
         if self.history != []:
@@ -133,13 +135,29 @@ class Controller(QObject):
         self.location = location
         self.file_collection.set_files(files)
         self.apply_sort()
-        self.refresh()
+        self.apply_filter()
 
     def apply_sort(self):
+        logging.debug("Controller.apply_sort")
         self.sorter.apply(self.file_collection)
 
     def apply_filter(self):
+        logging.debug("Controller.apply_filter")
         self.filter.apply(self.file_collection)
+
+        fileinfos = self.file_collection.get_fileinfos()
+
+        filtered_count = 0
+        for fileinfo in fileinfos:
+            if fileinfo.is_filtered:
+                filtered_count += 1
+
+        total = self.file_collection.size()
+
+        self.window.show_info("{} items, {} filtered, {} total".format(
+            total - filtered_count,
+            filtered_count,
+            total))
 
     def toggle_timegaps(self):
         self.window.file_view.toggle_timegaps()
@@ -170,26 +188,6 @@ class Controller(QObject):
 
     def request_thumbnail(self, fileinfo, flavor):
         return self.app.thumbnail_cache.get(fileinfo, flavor)
-
-    def refresh(self):
-        logging.debug("Controller.refresh")
-        self.filter.apply(self.file_collection)
-
-        fileinfos = self.file_collection.get_fileinfos()
-        filtered_count = 0
-        for fileinfo in fileinfos:
-            if fileinfo.is_filtered:
-                filtered_count += 1
-
-        total = self.file_collection.size()
-
-        self.window.show_info("{} items, {} filtered, {} total".format(
-            total - filtered_count,
-            filtered_count,
-            total))
-
-        self.window.file_view.set_file_collection(self.file_collection)
-        self.window.thumb_view.set_file_collection(self.file_collection)
 
     def reload(self):
         self.window.thumb_view.reload()
