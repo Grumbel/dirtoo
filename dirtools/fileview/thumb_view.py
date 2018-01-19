@@ -230,8 +230,8 @@ class ThumbView(QGraphicsView):
 
     def more_details(self):
         self.level_of_detail += 1
-        if self.level_of_detail > 3:
-            self.level_of_detail = 3
+        if self.level_of_detail > 4:
+            self.level_of_detail = 4
         self.apply_zoom()
 
 

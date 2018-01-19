@@ -16,6 +16,7 @@
 
 
 import logging
+from datetime import datetime
 
 from PyQt5.QtCore import Qt, QRectF
 from PyQt5.QtGui import QPixmap, QColor, QPen, QFontMetrics
@@ -113,6 +114,10 @@ class ThumbFileItem(FileItem):
 
         if self.thumb_view.level_of_detail > 2:
             self.add_text_item(2, bytefmt.humanize(self.fileinfo.size()))
+
+        if self.thumb_view.level_of_detail > 3:
+            dt = datetime.fromtimestamp(self.fileinfo.mtime())
+            self.add_text_item(3, dt.strftime("%F %T"))
 
         # tooltips don't work for the whole group
         # tooltips break the hover events!
