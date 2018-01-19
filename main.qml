@@ -6,66 +6,54 @@ ScrollView {
     //width: 512
     //height: 512
     //anchors.fill: parent
-    anchors { // to have a real size, items should grow horizontally in their parent
-        left: parent.left;
-        right: parent.right;
-    }
-
-    horizontalScrollBarPolicy: Qt.ScrollBarAlwaysOn
-    verticalScrollBarPolicy: Qt.ScrollBarAlwaysOn
+    anchors.fill: parent
+    //horizontalScrollBarPolicy: Qt.ScrollBarAlwaysOn
+    //verticalScrollBarPolicy: Qt.ScrollBarAlwaysOn
 
     onWidthChanged: console.log("Size:", parent.width)
 
+    GridView {
+        id: mygrid
+        //columns: 10
+        // spacing: 10
+        anchors.fill: parent
+        model: menu2
 
-    Item {
-        width: 10024
-        height: 50024
+        cellWidth: 128 + 16
+        cellHeight: 128 + 16 + 16
 
-        Grid {
-            id: mygrid
-            columns: 10
-            spacing: 10
+        delegate: Rectangle {
+            color: "grey"
+            width: mygrid.cellWidth - 8
+            height: mygrid.cellHeight - 8
 
-            //model: ContactModel {}
-            Repeater {
-                model: 6000
+            Image {
+                source: "/home/ingo/.thumbnails/normal/ffdb804b9c4cd36556a921231182afcc.png"
+                asynchronous: true
+                anchors.verticalCenterOffset: -16
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.verticalCenter: parent.verticalCenter
+            }
 
-                Rectangle {
-                    color: "grey"
-                    x: 0
-                    y: 0
-                    width: 128
-                    height: 128 + 16
-
-                    Image {
-                        source: "/home/ingo/.thumbnails/normal/ffdb804b9c4cd36556a921231182afcc.png"
-                        asynchronous: true
-                        anchors.verticalCenterOffset: -16
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-
-                    Column {
-                        Text {
-                            text: "2222222"
-                        }
-
-                        Text {
-                            text: "XXXXXXX"
-
-                        }
-                        anchors.bottom: parent.bottom
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
-
-                    MouseArea {
-                        hoverEnabled: true
-                        anchors.fill: parent
-                        onClicked: { parent.color = 'blue' }
-                        onEntered: { parent.color = 'red' }
-                        onExited: { parent.color = 'grey' }
-                    }
+            Column {
+                Text {
+                    text: filename
                 }
+
+                Text {
+                    text: mtime
+
+                }
+                anchors.bottom: parent.bottom
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+
+            MouseArea {
+                hoverEnabled: true
+                anchors.fill: parent
+                onClicked: { parent.color = 'blue' }
+                onEntered: { parent.color = 'red'; console.log("Enter", this) }
+                onExited: { parent.color = 'grey' }
             }
         }
     }
