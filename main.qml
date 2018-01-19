@@ -28,7 +28,7 @@ ScrollView {
             height: mygrid.cellHeight - 8
 
             Image {
-                source: "/home/ingo/.thumbnails/normal/ffdb804b9c4cd36556a921231182afcc.png"
+                source: mtime
                 asynchronous: true
                 anchors.verticalCenterOffset: -16
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -40,10 +40,6 @@ ScrollView {
                     text: filename
                 }
 
-                Text {
-                    text: mtime
-
-                }
                 anchors.bottom: parent.bottom
                 anchors.horizontalCenter: parent.horizontalCenter
             }

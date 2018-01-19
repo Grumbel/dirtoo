@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 
+import sys
+import os
 import signal
+import urllib.parse
+import hashlib
+import xdg.BaseDirectory
 
 from PyQt5.QtCore import Qt, QUrl, QByteArray, QVariant, QObject, pyqtProperty
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtQuick import QQuickView, QQuickItem
 from PyQt5.QtQml import QQmlComponent
 
@@ -25,24 +30,20 @@ class Foo(QObject):
         return self._mtime
 
 
-def main():
+def main(argv):
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-    qapp = QApplication([])
+    qapp = QGuiApplication([])
 
     view = QQuickView()
     engine = view.engine()
 
-    dataList = [
-        Foo("/tmp/foo","2018-01-01"),
-        Foo("/tmp/foo","2018-01-01"),
-        Foo("/tmp/foo","2018-01-01"),
-        Foo("/tmp/foo","2018-01-01"),
-        Foo("/tmp/foo","2018-01-01"),
-        Foo("/tmp/foo","2018-01-01"),
-        Foo("/tmp/foo","2018-01-01"),
-        Foo("/tmp/foo","2018-01-01"),
-    ]
+    dataList = []
+    for entry in  os.scandir(argv[1]):
+        url = "file://" + urllib.parse.quote(os.path.abspath(entry.path))
+        digest = hashlib.md5(os.fsencode(url)).hexdigest()
+        result = os.path.join(xdg.BaseDirectory.xdg_cache_home, "thumbnails", "normal", digest + ".png")
+        dataList.append(Foo(entry.name, result))
 
     ctxt = engine.rootContext()
     ctxt.setContextProperty("menu2", QVariant(dataList))
@@ -62,7 +63,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)
 
 
 # EOF #
