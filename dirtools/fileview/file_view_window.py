@@ -227,6 +227,7 @@ class FileViewWindow(QMainWindow):
         menu.addAction(self.actions.sort_by_name)
         menu.addAction(self.actions.sort_by_size)
         menu.addAction(self.actions.sort_by_ext)
+        menu.addAction(self.actions.sort_by_date)
         menu.addAction(self.actions.sort_by_user)
         menu.addAction(self.actions.sort_by_group)
         menu.addAction(self.actions.sort_by_permission)
