@@ -150,6 +150,9 @@ class Actions(QObject):
         self.sort_by_ext = QAction("Sort by Extension", checkable=True)
         self.sort_by_ext.triggered.connect(lambda: self.controller.sorter.set_key_func(FileInfo.ext))
 
+        self.sort_by_ext = QAction("Sort by Date", checkable=True)
+        self.sort_by_ext.triggered.connect(lambda: self.controller.sorter.set_key_func(FileInfo.mtime))
+
         self.sort_by_user = QAction("Sort by User", checkable=True)
         self.sort_by_group = QAction("Sort by Group", checkable=True)
         self.sort_by_permission = QAction("Sort by Permission", checkable=True)
