@@ -147,15 +147,15 @@ class ThumbView(QGraphicsView):
         logging.debug("ThumbView.layout_items")
 
         self.setUpdatesEnabled(False)
-        old_item_index_method = self.scene.itemIndexMethod()
-        self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
+        # old_item_index_method = self.scene.itemIndexMethod()
+        # self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
 
         visible_items = [item for item in self.items if not item.fileinfo.is_filtered]
 
         self.layouter.layout(visible_items, force=force)
         self.setSceneRect(self.layouter.get_bounding_rect())
 
-        self.scene.setItemIndexMethod(old_item_index_method)
+        # self.scene.setItemIndexMethod(old_item_index_method)
         self.setUpdatesEnabled(True)
 
         logging.debug("ThumbView.layout_items: done")
