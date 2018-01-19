@@ -16,7 +16,7 @@ def main():
     view = QQuickView()
     view.setSource(QUrl('main.qml'))
     # view.setResizeMode(QQuickView.SizeRootObjectToView)
-    view.setGeometry(100, 100, 400, 240)
+    view.resize(1024, 768)
     view.show()
 
     engine = view.engine()
