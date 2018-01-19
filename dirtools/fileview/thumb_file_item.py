@@ -44,6 +44,7 @@ class ThumbFileItem(FileItem):
 
     def paint(self, *args):
         if self.pixmap_item is None:
+            self.make_items()
             self.make_thumbnail()
 
         super().paint(*args)
@@ -88,6 +89,7 @@ class ThumbFileItem(FileItem):
         self.addToGroup(text_item)
 
     def make_items(self):
+        logging.debug("ThumbFileItem.make_items: %s", self.fileinfo.abspath())
         rect = QGraphicsRectItem(self.pos().x() - 2,
                                  self.pos().y() - 2,
                                  self.thumb_view.tn_width + 4,
@@ -125,6 +127,7 @@ class ThumbFileItem(FileItem):
         # self.make_thumbnail()
 
     def make_pixmap(self):
+        logging.debug("ThumbFileItem.make_pixmap: %s", self.fileinfo.abspath())
         pixmap = self.thumb_view.pixmap_from_fileinfo(self.fileinfo, 3 * self.thumb_view.tn_size // 4)
         if pixmap is not None:
             return pixmap
@@ -160,6 +163,7 @@ class ThumbFileItem(FileItem):
                 return self.thumb_view.shared_pixmaps.image_missing
 
     def make_thumbnail(self):
+        logging.debug("ThumbFileItem.make_thumbnail: %s", self.fileinfo.abspath())
         pixmap = self.make_pixmap()
 
         self.pixmap_item = QGraphicsPixmapItem(pixmap)

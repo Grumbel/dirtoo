@@ -33,7 +33,7 @@ class FileItem(QGraphicsItemGroup):
         self.setAcceptHoverEvents(True)
 
         self.text = None
-        self.make_items()
+        # self.make_items()
         self.show_abspath()
 
         self.press_pos = None
