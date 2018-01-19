@@ -290,6 +290,8 @@ class FileViewWindow(QMainWindow):
         self.toolbar = self.addToolBar("FileView")
         self.toolbar.addAction(self.actions.parent_directory)
         self.toolbar.addSeparator()
+        self.toolbar.addAction(self.actions.home)
+        self.toolbar.addSeparator()
         self.toolbar.addAction(self.actions.back)
         self.toolbar.addAction(self.actions.forward)
         self.toolbar.addSeparator()

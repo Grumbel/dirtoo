@@ -122,6 +122,10 @@ class Controller(QObject):
                 self.actions.back.setEnabled(False)
             self.actions.forward.setEnabled(True)
 
+    def go_home(self):
+        home = os.path.expanduser("~")
+        self.set_location(home)
+
     def set_location(self, location, track_history=True):
         if track_history:
             self.history = self.history[0:self.history_index + 1]

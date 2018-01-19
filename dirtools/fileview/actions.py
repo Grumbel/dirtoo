@@ -47,6 +47,10 @@ class Actions(QObject):
         self.exit.setStatusTip('Exit application')
         self.exit.triggered.connect(self.controller.close)
 
+        self.home = QAction(QIcon.fromTheme('go-home'), '&Go to Home', self)
+        self.home.setStatusTip('Go to the Home directory')
+        self.home.triggered.connect(self.controller.go_home)
+
         self.undo = QAction(QIcon.fromTheme('undo'), '&Undo', self)
         self.undo.setShortcut('Ctrl+Z')
         self.undo.setStatusTip('Undo the last action')
