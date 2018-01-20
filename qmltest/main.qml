@@ -16,87 +16,176 @@
 
 import QtQuick 2.7
 import QtQuick.Window 2.2
+import QtQuick.Controls 2.2
 import QtQuick.Controls 1.4
+import QtQuick.Layouts 1.3
 
-ScrollView {
-    anchors.fill: parent
+ApplicationWindow {
+    width: 1024
+    height: 768
 
-    function on_resize_event() {
-        mygrid.anchors.leftMargin = (this.viewport.width - (mygrid.cellWidth * Math.floor(this.viewport.width / mygrid.cellWidth))) / 2;
+    title: "dt-fileview - Qml edition"
+
+    menuBar: MenuBar {
+        Menu {
+            title: "File"
+            MenuItem { text: "Parent Directory" }
+            MenuItem { text: "Save As" }
+            MenuSeparator {}
+            MenuItem { text: "Exit" }
+        }
+        Menu {
+            title: "Edit"
+            MenuItem { text: "Undo" }
+            MenuItem { text: "Redo" }
+        }
+
+        Menu {
+            title: "View"
+            MenuItem { text: "Icon View" }
+            MenuItem { text: "Small Icon View" }
+            MenuItem { text: "Detail View" }
+        }
+
+        Menu {
+            title: "History"
+            MenuItem { text: "Go Back" }
+            MenuItem { text: "Go Forward" }
+        }
+
+        Menu {
+            title: "Help"
+            MenuItem { text: "About" }
+        }
     }
 
-    onWidthChanged: on_resize_event();
+    toolBar: ToolBar {
+        ColumnLayout {
+            RowLayout {
+                ToolButton {}
 
-    GridView {
-        id: mygrid
+                ToolButton {
+                    iconSource: "/usr/share/icons/Humanity/actions/24/go-home.svg"
+                }
+
+                ToolSeparator {}
+
+
+                ToolButton {
+                    iconSource: "save-as.png"
+                }
+            }
+
+            RowLayout {
+                Label {
+                    id: text_label
+                    text: "Location:"
+                }
+
+                Rectangle {
+                    anchors.left: text_label.right
+
+                    id: text_rectangle
+                    color: "white"
+                    width: 400
+                    height: 20
+                }
+
+                TextInput {
+                    anchors.fill: text_rectangle
+                    text: "Text"
+                }
+            }
+        }
+    }
+
+    statusBar: StatusBar {
+        RowLayout {
+            anchors.fill: parent
+            Label { text: "Statusbar text" }
+        }
+    }
+
+    ScrollView {
         anchors.fill: parent
-        model: menu2
 
-        cellWidth: 128 + 32
-        cellHeight: 128 + 32 + 16 * 2
+        function on_resize_event() {
+            mygrid.anchors.leftMargin = (this.viewport.width - (mygrid.cellWidth * Math.floor(this.viewport.width / mygrid.cellWidth))) / 2;
+        }
 
-        //anchors.leftMargin: 100
+        onWidthChanged: on_resize_event();
 
-        delegate: Item {
-            width: mygrid.cellWidth
-            height: mygrid.cellHeight
+        GridView {
+            id: mygrid
+            anchors.fill: parent
+            model: menu2
 
-            Rectangle {
-                id: fileItem
-                color: "#e0e0e0"
-                width: mygrid.cellWidth - 16
-                height: mygrid.cellHeight - 16
+            cellWidth: 128 + 32
+            cellHeight: 128 + 32 + 16 * 2
 
-                //anchors.horizontalCenter: parent.horizontalCenter
-                //anchors.verticalCenter: parent.verticalCenter
-                //anchors.leftMargin: 8
-                //anchors.rightMargin: 8
+            //anchors.leftMargin: 100
 
-                anchors.centerIn: parent
+            delegate: Item {
+                width: mygrid.cellWidth
+                height: mygrid.cellHeight
 
-                Image {
-                    id: my_thumbnail
-                    source: thumbnail
-                    asynchronous: true
-                    anchors.verticalCenterOffset: -16
+                Rectangle {
+                    id: fileItem
+                    color: "#e0e0e0"
+                    width: mygrid.cellWidth - 16
+                    height: mygrid.cellHeight - 16
+
+                    //anchors.horizontalCenter: parent.horizontalCenter
+                    //anchors.verticalCenter: parent.verticalCenter
+                    //anchors.leftMargin: 8
+                    //anchors.rightMargin: 8
+
                     anchors.centerIn: parent
 
-                    onStatusChanged: {
-                        console.log("imageStatus:", my_thumbnail.status)
-                        if (my_thumbnail.status == Image.Error) {
-                            //thumbnail = "/usr/share/icons/mate/48x48/status/gtk-dialog-error.png";
-                            my_thumbnail.source = "/usr/share/icons/mate/48x48/status/gtk-dialog-error.png";
+                    Image {
+                        id: my_thumbnail
+                        source: thumbnail
+                        asynchronous: true
+                        anchors.verticalCenterOffset: -16
+                        anchors.centerIn: parent
+
+                        onStatusChanged: {
+                            console.log("imageStatus:", my_thumbnail.status)
+                            if (my_thumbnail.status == Image.Error) {
+                                //thumbnail = "/usr/share/icons/mate/48x48/status/gtk-dialog-error.png";
+                                my_thumbnail.source = "/usr/share/icons/mate/48x48/status/gtk-dialog-error.png";
+                            }
                         }
                     }
-                }
 
-                Column {
-                    width: parent.width
-                    Text {
-                        text: filename
-                        font.pixelSize: 11
-                        elide: Text.ElideRight
+                    Column {
                         width: parent.width
-                        clip:true
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        horizontalAlignment: Text.AlignHCenter
+                        Text {
+                            text: filename
+                            font.pixelSize: 11
+                            elide: Text.ElideRight
+                            width: parent.width
+                            clip:true
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+
+                        Text {
+                            text: mtime
+                            font.pixelSize: 10
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+
+                        anchors.bottom: parent.bottom
                     }
 
-                    Text {
-                        text: mtime
-                        font.pixelSize: 10
-                        anchors.horizontalCenter: parent.horizontalCenter
+                    MouseArea {
+                        hoverEnabled: true
+                        anchors.fill: parent
+                        onClicked: { parent.color = 'blue' }
+                        onEntered: { parent.color = '#c0c0c0'; }
+                        onExited: { parent.color = '#e0e0e0' }
                     }
-
-                    anchors.bottom: parent.bottom
-                }
-
-                MouseArea {
-                    hoverEnabled: true
-                    anchors.fill: parent
-                    onClicked: { parent.color = 'blue' }
-                    onEntered: { parent.color = '#c0c0c0'; }
-                    onExited: { parent.color = '#e0e0e0' }
                 }
             }
         }

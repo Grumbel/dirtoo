@@ -26,7 +26,7 @@ import xdg.BaseDirectory
 from PyQt5.QtCore import Qt, QUrl, QByteArray, QVariant, QObject, pyqtProperty
 from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtQuick import QQuickView, QQuickItem
-from PyQt5.QtQml import QQmlComponent
+from PyQt5.QtQml import QQmlComponent, QQmlApplicationEngine
 
 
 class Foo(QObject):
@@ -56,8 +56,7 @@ def main(argv):
 
     qapp = QGuiApplication([])
 
-    view = QQuickView()
-    engine = view.engine()
+    engine = QQmlApplicationEngine()
 
     dataList = []
     for entry in  os.scandir(argv[1]):
@@ -66,20 +65,16 @@ def main(argv):
         result = os.path.join(xdg.BaseDirectory.xdg_cache_home, "thumbnails", "normal", digest + ".png")
         dataList.append(Foo(entry.name, result, "2018-01-11T19:20"))
 
+
+    engine.load(QUrl('main.qml'))
+
     ctxt = engine.rootContext()
     ctxt.setContextProperty("menu2", QVariant(dataList))
 
-    view.setSource(QUrl('main.qml'))
-    # view.setResizeMode(QQuickView.SizeRootObjectToView)
-    view.resize(1024, 768)
-    view.show()
+    win = engine.rootObjects()[0]
+    win.show()
 
-    # component = QQmlComponent(engine)
-    # component.setData(b"import QtQuick 2.0\nText { text: \"Hello world!\" }", QUrl())
-    # item = component.create()
-    # item.setParentItem(view.rootObject())
-
-    qapp.exec()
+    sys.exit(qapp.exec())
 
 
 
