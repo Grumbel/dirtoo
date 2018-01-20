@@ -27,17 +27,14 @@ class FileItem(QGraphicsItemGroup):
 
     def __init__(self, fileinfo, controller):
         super().__init__()
-        self.fileinfo = fileinfo
-        self.thumbnail = None
-        self.controller = controller
-        self.setAcceptHoverEvents(True)
 
-        self.text = None
-        # self.make_items()
-        self.show_abspath()
+        self.fileinfo = fileinfo
+        self.controller = controller
 
         self.press_pos = None
         self.dragging = False
+
+        self.setAcceptHoverEvents(True)
 
     def mousePressEvent(self, ev):
         # PyQt will route the event to the child items when we don't
