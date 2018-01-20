@@ -82,17 +82,8 @@ ApplicationWindow {
                     text: "Location:"
                 }
 
-                Rectangle {
-                    anchors.left: text_label.right
-
-                    id: text_rectangle
-                    color: "white"
-                    width: 400
-                    height: 20
-                }
-
-                TextInput {
-                    anchors.fill: text_rectangle
+                TextField {
+                    anchors.right: parent.right
                     text: "Text"
                 }
             }
