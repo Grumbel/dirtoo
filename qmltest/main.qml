@@ -21,42 +21,83 @@ import QtQuick.Controls 1.4
 ScrollView {
     anchors.fill: parent
 
+    function on_resize_event() {
+        mygrid.anchors.leftMargin = (this.viewport.width - (mygrid.cellWidth * Math.floor(this.viewport.width / mygrid.cellWidth))) / 2;
+    }
+
+    onWidthChanged: on_resize_event();
+
     GridView {
         id: mygrid
         anchors.fill: parent
         model: menu2
 
-        cellWidth: 128 + 16
-        cellHeight: 128 + 16 + 16
+        cellWidth: 128 + 32
+        cellHeight: 128 + 32 + 16 * 2
 
-        delegate: Rectangle {
-            color: "grey"
-            width: mygrid.cellWidth - 8
-            height: mygrid.cellHeight - 8
+        //anchors.leftMargin: 100
 
-            Image {
-                source: mtime
-                asynchronous: true
-                anchors.verticalCenterOffset: -16
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.verticalCenter: parent.verticalCenter
-            }
+        delegate: Item {
+            width: mygrid.cellWidth
+            height: mygrid.cellHeight
 
-            Column {
-                Text {
-                    text: filename
+            Rectangle {
+                id: fileItem
+                color: "#e0e0e0"
+                width: mygrid.cellWidth - 16
+                height: mygrid.cellHeight - 16
+
+                //anchors.horizontalCenter: parent.horizontalCenter
+                //anchors.verticalCenter: parent.verticalCenter
+                //anchors.leftMargin: 8
+                //anchors.rightMargin: 8
+
+                anchors.centerIn: parent
+
+                Image {
+                    id: my_thumbnail
+                    source: thumbnail
+                    asynchronous: true
+                    anchors.verticalCenterOffset: -16
+                    anchors.centerIn: parent
+
+                    onStatusChanged: {
+                        console.log("imageStatus:", my_thumbnail.status)
+                        if (my_thumbnail.status == Image.Error) {
+                            //thumbnail = "/usr/share/icons/mate/48x48/status/gtk-dialog-error.png";
+                            my_thumbnail.source = "/usr/share/icons/mate/48x48/status/gtk-dialog-error.png";
+                        }
+                    }
                 }
 
-                anchors.bottom: parent.bottom
-                anchors.horizontalCenter: parent.horizontalCenter
-            }
+                Column {
+                    width: parent.width
+                    Text {
+                        text: filename
+                        font.pixelSize: 11
+                        elide: Text.ElideRight
+                        width: parent.width
+                        clip:true
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        horizontalAlignment: Text.AlignHCenter
+                    }
 
-            MouseArea {
-                hoverEnabled: true
-                anchors.fill: parent
-                onClicked: { parent.color = 'blue' }
-                onEntered: { parent.color = 'red'; console.log("Enter", this) }
-                onExited: { parent.color = 'grey' }
+                    Text {
+                        text: mtime
+                        font.pixelSize: 10
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+
+                    anchors.bottom: parent.bottom
+                }
+
+                MouseArea {
+                    hoverEnabled: true
+                    anchors.fill: parent
+                    onClicked: { parent.color = 'blue' }
+                    onEntered: { parent.color = '#c0c0c0'; }
+                    onExited: { parent.color = '#e0e0e0' }
+                }
             }
         }
     }

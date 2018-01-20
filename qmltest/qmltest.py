@@ -31,15 +31,20 @@ from PyQt5.QtQml import QQmlComponent
 
 class Foo(QObject):
 
-    def __init__(self, filename, mtime):
+    def __init__(self, filename, thumbnail, mtime):
         QObject.__init__(self)
 
         self._filename = filename
+        self._thumbnail = thumbnail
         self._mtime = mtime
 
     @pyqtProperty(str, constant=True)
     def filename(self):
         return self._filename
+
+    @pyqtProperty(str, constant=True)
+    def thumbnail(self):
+        return self._thumbnail
 
     @pyqtProperty(str, constant=True)
     def mtime(self):
@@ -59,7 +64,7 @@ def main(argv):
         url = "file://" + urllib.parse.quote(os.path.abspath(entry.path))
         digest = hashlib.md5(os.fsencode(url)).hexdigest()
         result = os.path.join(xdg.BaseDirectory.xdg_cache_home, "thumbnails", "normal", digest + ".png")
-        dataList.append(Foo(entry.name, result))
+        dataList.append(Foo(entry.name, result, "2018-01-11T19:20"))
 
     ctxt = engine.rootContext()
     ctxt.setContextProperty("menu2", QVariant(dataList))
