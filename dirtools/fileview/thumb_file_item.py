@@ -19,12 +19,7 @@ import logging
 from datetime import datetime
 
 from PyQt5.QtCore import Qt, QRectF
-from PyQt5.QtGui import QPixmap, QColor, QPen, QFontMetrics
-from PyQt5.QtWidgets import (
-    QGraphicsTextItem,
-    QGraphicsPixmapItem,
-    QGraphicsRectItem,
-)
+from PyQt5.QtGui import QPixmap, QColor, QPen, QFontMetrics, QFont
 
 import bytefmt
 
@@ -35,126 +30,101 @@ from dirtools.fileview.thumbnail_cache import ThumbnailStatus
 class ThumbFileItem(FileItem):
 
     def __init__(self, fileinfo, controller, thumb_view):
-        logging.debug("ThumbFileItem.__init__: %s", fileinfo.abspath())
-        self.thumb_view = thumb_view
-        self.pixmap_item = None
-        self.lock_item = None
-        self.thumbnail_status = ThumbnailStatus.NONE
         super().__init__(fileinfo, controller)
 
-    def paint(self, *args):
-        if self.pixmap_item is None:
-            self.make_items()
-            self.make_thumbnail()
+        logging.debug("ThumbFileItem.__init__: %s", fileinfo.abspath())
+        self.thumb_view = thumb_view
+        self.pixmap = None
+        self.thumbnail_status = ThumbnailStatus.NONE
+        self.hovering = False
+        # self.make_items()
 
-        super().paint(*args)
+    def paint(self, painter, option, widget):
+        logging.debug("ThumbFileItem.paint_items: %s", self.fileinfo.abspath())
 
-    def hoverEnterEvent(self, ev):
-        self.setZValue(2.0)
-        # self.text.setVisible(True)
-        # self.text.setDefaultTextColor(QColor(255, 255, 255))
-        self.select_rect.setVisible(True)
-        self.controller.show_current_filename(self.fileinfo.filename())
+        # background rectangle
+        painter.fillRect(-2, -2, self.thumb_view.tn_width + 4,
+                         self.thumb_view.tn_height + 4 + 16 * self.thumb_view.level_of_detail,
+                         QColor(192 + 32, 192 + 32, 192 + 32))
 
-    def hoverLeaveEvent(self, ev):
-        self.setZValue(0)
-        self.select_rect.setVisible(False)
-        # self.text.setVisible(False)
-        # self.text.setDefaultTextColor(QColor(0, 0, 0))
-        self.controller.show_current_filename("")
+        # hover rectangle
+        if self.hovering:
+            painter.fillRect(-2,
+                             -2,
+                             self.thumb_view.tn_width + 4,
+                             self.thumb_view.tn_height + 4 + 16 * self.thumb_view.level_of_detail,
+                             QColor(192, 192, 192))
 
-    def add_text_item(self, row, text):
-        text_item = QGraphicsTextItem(text)
-        font = text_item.font()
-        font.setPixelSize(10)
-        text_item.setFont(font)
-        text_item.setDefaultTextColor(QColor(0, 0, 0))
-        text_item.setAcceptHoverEvents(False)
+        self.paint_text_items(painter)
 
+        pixmap = self.pixmap or self.make_pixmap()
+        self.paint_thumbnail(painter, pixmap)
+
+    def paint_text_items(self, painter):
+        # text items
+        if self.thumb_view.level_of_detail > 0:
+            self.paint_text_item(painter, 0, self.fileinfo.basename())
+
+        if self.thumb_view.level_of_detail > 1:
+            self.paint_text_item(painter, 1, self.fileinfo.ext())
+
+        if self.thumb_view.level_of_detail > 2:
+            self.paint_text_item(painter, 2, bytefmt.humanize(self.fileinfo.size()))
+
+        if self.thumb_view.level_of_detail > 3:
+            dt = datetime.fromtimestamp(self.fileinfo.mtime())
+            self.paint_text_item(painter, 3, dt.strftime("%F %T"))
+
+    def paint_text_item(self, painter, row, text):
+        font = QFont("Verdana", 8)
         fm = QFontMetrics(font)
         tmp = text
         if fm.width(tmp) > self.boundingRect().width():
             while fm.width(tmp + "…") > self.boundingRect().width():
                 tmp = tmp[0:-1]
 
-        if tmp == text:
-            text_item.setPlainText(tmp)
-        else:
-            text_item.setPlainText(tmp + "…")
+        if tmp != text:
+            text = tmp + "…"
 
-        text_item.setPos(self.pos().x() + self.thumb_view.tn_width / 2 - text_item.boundingRect().width() / 2,
-                         self.pos().y() + self.thumb_view.tn_height - 2 + 16 * row)
+        painter.setFont(font)
+        painter.drawText(self.thumb_view.tn_width / 2 - fm.width(text) / 2,
+                         self.thumb_view.tn_height - 2 + 16 * row + 14,
+                         text)
 
-        # text_item.setVisible(False)
-        self.addToGroup(text_item)
+    def paint_thumbnail(self, painter, pixmap):
+        logging.debug("ThumbFileItem.make_thumbnail: %s", self.fileinfo.abspath())
 
-    def make_items(self):
-        logging.debug("ThumbFileItem.make_items: %s", self.fileinfo.abspath())
-        rect = QGraphicsRectItem(self.pos().x() - 2,
-                                 self.pos().y() - 2,
-                                 self.thumb_view.tn_width + 4,
-                                 self.thumb_view.tn_height + 4 + 16 * self.thumb_view.level_of_detail)
-        rect.setPen(QPen(Qt.NoPen))
-        rect.setBrush(QColor(192 + 32, 192 + 32, 192 + 32))
-        self.addToGroup(rect)
+        if pixmap is not None:
+            painter.drawPixmap(
+                self.thumb_view.tn_width / 2 - pixmap.width() / 2,
+                self.thumb_view.tn_height / 2 - pixmap.height() / 2,
+                pixmap)
 
-        self.select_rect = QGraphicsRectItem(self.pos().x() - 2,
-                                             self.pos().y() - 2,
-                                             self.thumb_view.tn_width + 4,
-                                             self.thumb_view.tn_height + 4 + 16 * self.thumb_view.level_of_detail)
-        self.select_rect.setPen(QPen(Qt.NoPen))
-        self.select_rect.setBrush(QColor(192, 192, 192))
-        self.select_rect.setVisible(False)
-        self.select_rect.setAcceptHoverEvents(False)
-        self.addToGroup(self.select_rect)
-
-        if self.thumb_view.level_of_detail > 0:
-            self.add_text_item(0, self.fileinfo.basename())
-
-        if self.thumb_view.level_of_detail > 1:
-            self.add_text_item(1, self.fileinfo.ext())
-
-        if self.thumb_view.level_of_detail > 2:
-            self.add_text_item(2, bytefmt.humanize(self.fileinfo.size()))
-
-        if self.thumb_view.level_of_detail > 3:
-            dt = datetime.fromtimestamp(self.fileinfo.mtime())
-            self.add_text_item(3, dt.strftime("%F %T"))
-
-        # tooltips don't work for the whole group
-        # tooltips break the hover events!
-        # self.text.setToolTip(self.fileinfo.filename())
-        # self.make_thumbnail()
+        if not self.fileinfo.have_access():
+            painter.setOpacity(0.5)
+            painter.drawPixmap(
+                self.thumb_view.tn_width / 2 - pixmap.width() / 2,
+                self.thumb_view.tn_height / 2 - pixmap.height() / 2,
+                self.thumb_view.shared_pixmaps.locked)
 
     def make_pixmap(self):
         logging.debug("ThumbFileItem.make_pixmap: %s", self.fileinfo.abspath())
+
+        # try to load shared pixmaps, this is fast
         pixmap = self.thumb_view.pixmap_from_fileinfo(self.fileinfo, 3 * self.thumb_view.tn_size // 4)
         if pixmap is not None:
             return pixmap
         else:
+            # no shared pixmap found, so try to generate a thumbnail
             result = self.controller.request_thumbnail(self.fileinfo,
                                                        flavor=self.thumb_view.flavor)
             filename, status = result
             self.thumbnail_status = status
 
+            # a thumbnail does already exist, just load it
             if status == ThumbnailStatus.OK:
                 logging.debug("%s: ThumbFileItem.make_pixmap: loading thumbnail", self)
-                pixmap = QPixmap(filename)
-                if pixmap.isNull():
-                    logging.error("ThumbFileItem.make_pixmap: failed to load %s based on %s",
-                                  filename, self.fileinfo.abspath())
-                    return self.thumb_view.shared_pixmaps.image_missing
-                else:
-                    # Scale it to fit
-                    w = pixmap.width() * self.thumb_view.tn_width // pixmap.height()
-                    h = pixmap.height() * self.thumb_view.tn_height // pixmap.width()
-                    if w <= self.thumb_view.tn_width:
-                        pixmap = pixmap.scaledToHeight(self.thumb_view.tn_height,
-                                                       Qt.SmoothTransformation)
-                    elif h <= self.thumb_view.tn_height:
-                        pixmap = pixmap.scaledToWidth(self.thumb_view.tn_width,
-                                                      Qt.SmoothTransformation)
-                    return pixmap
+                self.thumb_view.thumbnail_request(self, filename)
 
             elif status == ThumbnailStatus.LOADING:
                 return self.thumb_view.shared_pixmaps.image_loading
@@ -162,44 +132,33 @@ class ThumbFileItem(FileItem):
             else:  # if status == ThumbnailStatus.ERROR
                 return self.thumb_view.shared_pixmaps.image_missing
 
-    def make_thumbnail(self):
-        logging.debug("ThumbFileItem.make_thumbnail: %s", self.fileinfo.abspath())
-        pixmap = self.make_pixmap()
+    def hoverEnterEvent(self, ev):
+        self.hovering = True
+        self.controller.show_current_filename(self.fileinfo.filename())
+        self.update()
 
-        self.pixmap_item = QGraphicsPixmapItem(pixmap)
+    def hoverLeaveEvent(self, ev):
+        self.hovering = False
+        self.controller.show_current_filename("")
+        self.update()
 
-        self.pixmap_item.setPos(
-            self.pos().x() + self.thumb_view.tn_width / 2 - pixmap.width() / 2,
-            self.pos().y() + self.thumb_view.tn_height / 2 - pixmap.height() / 2)
-        self.addToGroup(self.pixmap_item)
-
-        if not self.fileinfo.have_access():
-            pixmap = self.thumb_view.shared_pixmaps.locked
-            self.lock_item = QGraphicsPixmapItem(pixmap)
-            self.lock_item.setOpacity(0.5)
-            self.lock_item.setPos(
-                self.pos().x() + self.thumb_view.tn_width / 2 - pixmap.width() / 2,
-                self.pos().y() + self.thumb_view.tn_height / 2 - pixmap.height() / 2)
-            self.addToGroup(self.lock_item)
+    def set_pixmap(self, pixmap):
+        self.pixmap = pixmap
+        if pixmap is not None:
+            self.update()
 
     def boundingRect(self):
-        return QRectF(0, 0, self.thumb_view.tn_width, self.thumb_view.tn_height)
+        return QRectF(0, 0,
+                      self.thumb_view.tn_width,
+                      self.thumb_view.tn_height + 16 * self.thumb_view.level_of_detail)
 
-    def reload_pixmap(self):
-        if self.pixmap_item is not None:
-            pixmap = self.make_pixmap()
-            self.pixmap_item.setPixmap(pixmap)
-            self.pixmap_item.setPos(
-                self.thumb_view.tn_width / 2 - pixmap.width() / 2,
-                self.thumb_view.tn_height / 2 - pixmap.height() / 2)
+    def reload_pixmap(self, filename):
+        self.thumb_view.thumbnail_request(self, filename)
 
     def reload(self, x=0, y=0):
-        for item in self.childItems():
-            self.removeFromGroup(item)
-        self.setPos(x, y)
-        self.pixmap_item = None
-        self.lock_item = None
-        self.make_items()
+        # self.setPos(x, y)
+        self.pixmap = None
+        self.update()
 
     def reload_thumbnail(self):
         self.reload(x=self.pos().x(), y=self.pos().y())
