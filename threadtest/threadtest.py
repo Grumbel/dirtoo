@@ -17,14 +17,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import types
 import signal
 import sys
-from PyQt5.QtCore import Qt, QCoreApplication, QThread, QObject, pyqtSlot, pyqtSignal
+from PyQt5.QtCore import Qt, QCoreApplication, QThread, QObject, pyqtSlot, pyqtSignal, QTimer
 
 
 class Worker(QObject):
 
-    sig_finished = pyqtSignal()
+    sig_thing_finished = pyqtSignal(str, types.FunctionType)
 
     def __init__(self, name):
         super().__init__()
@@ -34,41 +35,41 @@ class Worker(QObject):
     def __del__(self):
         print("__del__")
 
-    def on_started(self):
-        print("OnStarted")
-        i = 0
-        while not self.quit:
-            QThread.sleep(1)
-            print(self.name, ": Do Work: ",  QThread.currentThread())
-            i += 1
-            if i > 3:
-                break
-        self.sig_finished.emit()
+    def on_thing_requested(self, thing, callback):
+        QThread.sleep(1)
+        self.sig_thing_finished.emit(thing + "-Work", callback)
 
     def on_quit(self):
         self.quit = True
 
 
-threads = []
+class WorkerFacade(QObject):
 
+    sig_thing_requested = pyqtSignal(str, types.FunctionType)
 
-def launch_thread(name):
-    thread = QThread()
-    worker = Worker(name)
-    worker.moveToThread(thread)
-    thread.started.connect(worker.on_started)
-    worker.sig_finished.connect(thread.quit)
+    def __init__(self, name):
+        super().__init__()
+        self.quit = False
+        self.name = name
 
-    # This doesn't seem necessary, worker and threads are owned on the
-    # Python side:
-    #
-    # worker.sig_finished.connect(worker.deleteLater)
-    # thread.finished.connect(thread.deleteLater)
+        self.worker = Worker("worker-" + name)
+        self.thread = QThread()
+        self.worker.moveToThread(self.thread)
 
-    thread.start()
+        self.worker.sig_thing_finished.connect(self.on_thing_finished)
+        self.sig_thing_requested.connect(self.worker.on_thing_requested)
 
-    # keep a reference around so they don't get deleted
-    threads.append((worker, thread))
+        self.thread.start()
+
+    def request_thing(self, thing, callback):
+        self.sig_thing_requested.emit(self.name + "-" + thing, callback)
+
+    def on_thing_finished(self, thing, callback):
+        callback(thing)
+
+    def on_quit(self):
+        self.worker.on_quit()
+        self.thread.quit()
 
 
 def main(argv):
@@ -76,11 +77,31 @@ def main(argv):
 
     app = QCoreApplication(argv)
 
-    launch_thread("1")
-    launch_thread("2")
-    launch_thread("3")
+    fac1 = WorkerFacade("1")
+    fac2 = WorkerFacade("2")
 
-    QThread.sleep(1)
+    for i in range(3):
+        print("Requesting", i)
+        fac1.request_thing("Foo" + str(i), lambda x: print("Got:", x))
+        fac2.request_thing("Foo" + str(i), lambda x: print("Got:", x))
+
+    def quits():
+        print("calling quits")
+        fac1.on_quit()
+        fac2.on_quit()
+
+    def app_quit():
+        print("App quit")
+        app.quit()
+
+    # Calling QThread.quit() will not terminate the thread until all
+    # signals have been processed
+    QTimer.singleShot(1500, quits)
+
+    # QThread must be all destroyed before the application is
+    # quitting, else ugly "Aborted (core dumped)" will result
+    QTimer.singleShot(2000, app_quit)
+
     print("Entering event loop:", QThread.currentThread())
     app.exec()
 
