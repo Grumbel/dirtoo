@@ -17,24 +17,50 @@
 
 import unittest
 
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QApplication
+# from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QApplication, QPushButton
+from PyQt5.QtGui import QIcon
 from dirtools.fileview.thumbnailer import Thumbnailer
 
 
 class FileViewThumbnailerTestCase(unittest.TestCase):
 
     def test_thumbnailer(self):
-        def cb(filename, pixmap):
-            print("Results:", filename, pixmap)
-
         try:
             app = QApplication([])
             thumbnailer = Thumbnailer()
-            thumbnailer.request_thumbnail("/tmp/test.png", cb)
-            QTimer.singleShot(1000, thumbnailer.close)
-            QTimer.singleShot(2000, app.quit)
+
+            button = QPushButton()
+            button.resize(256, 256)
+            button.show()
+
+
+            def quit():
+                thumbnailer.close()
+                app.quit()
+            button.clicked.connect(quit)
+
+            def cb(filename, pixmap):
+                print("Results:", filename, pixmap)
+                print(pixmap.size())
+
+                icon = QIcon(pixmap)
+                button.setIcon(icon)
+                button.setIconSize(pixmap.rect().size())
+
+                button.repaint()
+
+            thumbnailer.request_thumbnail("/tmp/test2.png", "large", cb)
+
+            # QTimer.singleShot(2000, quit)
+
+
             app.exec()
+
+            del button
+            del thumbnailer
+            del app
+
         except Exception as err:
             print(err)
 
