@@ -17,18 +17,23 @@
 
 import unittest
 
-from PyQt5.QtCore import QCoreApplication, QTimer
+from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QApplication
 from dirtools.fileview.thumbnailer import Thumbnailer
 
 
 class FileViewThumbnailerTestCase(unittest.TestCase):
 
     def test_thumbnailer(self):
+        def cb(filename, pixmap):
+            print("Results:", filename, pixmap)
+
         try:
-            app = QCoreApplication([])
+            app = QApplication([])
             thumbnailer = Thumbnailer()
-            QTimer.singleShot(500, thumbnailer.close)
-            QTimer.singleShot(1000, app.quit)
+            thumbnailer.request_thumbnail("/tmp/test.png", cb)
+            QTimer.singleShot(1000, thumbnailer.close)
+            QTimer.singleShot(2000, app.quit)
             app.exec()
         except Exception as err:
             print(err)
