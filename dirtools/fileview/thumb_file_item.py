@@ -19,13 +19,29 @@ from enum import Enum
 import logging
 from datetime import datetime
 
-from PyQt5.QtCore import QRectF
-from PyQt5.QtGui import QColor, QFontMetrics, QFont
+from PyQt5.QtCore import QRectF, QRect
+from PyQt5.QtGui import QColor, QFontMetrics, QFont, QPainter
 from PyQt5.QtWidgets import QGraphicsItem
 
 import bytefmt
 
 from dirtools.fileview.file_item import FileItem
+
+
+def make_scaled_rect(sw, sh, tw, th):
+    tratio = tw / th
+    sratio = sw / sh
+
+    if tratio > sratio:
+        w = sw * th // sh
+        h = th
+    else:
+        w = tw
+        h = sh * tw // sw
+
+    return QRect(tw // 2 - w // 2,
+                 th // 2 - h // 2,
+                 w, h)
 
 
 class ThumbnailStatus(Enum):
@@ -49,10 +65,14 @@ class ThumbFileItem(FileItem):
 
         self.hovering = False
 
-        self.pixmap = self.make_pixmap()
+        self.pixmap = self.make_shared_pixmap()
 
     def paint(self, painter, option, widget):
         logging.debug("ThumbFileItem.paint_items: %s", self.fileinfo.abspath())
+
+        painter.setRenderHint(QPainter.SmoothPixmapTransform)
+        painter.setRenderHint(QPainter.TextAntialiasing)
+        painter.setRenderHint(QPainter.Antialiasing)
 
         # background rectangle
         painter.fillRect(-2, -2, self.thumb_view.tn_width + 4,
@@ -105,10 +125,10 @@ class ThumbFileItem(FileItem):
         logging.debug("ThumbFileItem.make_thumbnail: %s", self.fileinfo.abspath())
 
         if self.pixmap is not None:
-            painter.drawPixmap(
-                self.thumb_view.tn_width / 2 - self.pixmap.width() / 2,
-                self.thumb_view.tn_height / 2 - self.pixmap.height() / 2,
-                self.pixmap)
+            rect = make_scaled_rect(self.pixmap.width(), self.pixmap.height(),
+                                    self.thumb_view.tn_width, self.thumb_view.tn_height)
+            painter.drawPixmap(rect, self.pixmap)
+
 
         if self.thumbnail_status == ThumbnailStatus.NONE:
             self.pixmap = self.thumb_view.shared_pixmaps.image_loading
@@ -123,7 +143,7 @@ class ThumbFileItem(FileItem):
                 self.thumb_view.tn_height / 2 - pixmap.height() / 2,
                 pixmap)
 
-    def make_pixmap(self):
+    def make_shared_pixmap(self):
         logging.debug("ThumbFileItem.make_pixmap: %s", self.fileinfo.abspath())
 
         # try to load shared pixmaps, this is fast
@@ -146,11 +166,12 @@ class ThumbFileItem(FileItem):
 
     def set_thumbnail_pixmap(self, pixmap, flavor):
         self.pixmap = pixmap
+
         if self.pixmap is None:
-            self.pixmap = self.thumb_view.shared_pixmaps.image_loading
+            self.pixmap = self.thumb_view.shared_pixmaps.image_missing
             self.thumbnail_status == ThumbnailStatus.ERROR
-        else:
-            self.update()
+
+        self.update()
 
     def boundingRect(self):
         return QRectF(0, 0,
@@ -159,7 +180,8 @@ class ThumbFileItem(FileItem):
 
     def reload(self, x=0, y=0):
         # self.setPos(x, y)
-        self.pixmap = None
+        self.thumbnail_status = ThumbnailStatus.NONE
+        self.pixmap = self.make_shared_pixmap()
         self.update()
 
     def reload_thumbnail(self):
