@@ -19,7 +19,7 @@
 # qdbus org.freedesktop.thumbnails.Thumbnailer1 /org/freedesktop/thumbnails/Thumbnailer1
 
 
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 
 import os
 import hashlib
@@ -76,15 +76,15 @@ class DBusThumbnailer:
             self.listener.idle()
 
     def _receive_started(self, handle):
-        self.listener.started(handle)
+        self.listener.started(int(handle))
 
     def _receive_ready(self, handle, uris):
         data = self.requests[handle]
-        self.listener.ready(handle, uris, data[2])
+        self.listener.ready(int(handle), uris, data[2])
 
     def _receive_finished(self, handle):
-        self.listener.finished(handle)
-        self._remove_request(handle)
+        self.listener.finished(int(handle))
+        self._remove_request(int(handle))
 
     def _receive_error(self, handle, failed_uris, error_code, message):
         self.listener.error(handle, failed_uris, error_code, message)
@@ -107,7 +107,8 @@ class DBusThumbnailer:
             # <arg type="u" name="handle" direction="out" />
             dbus_interface="org.freedesktop.thumbnails.Thumbnailer1"
         )
-        self._add_request(handle, (urls, mime_types, flavor))
+        self._add_request(int(handle), (urls, mime_types, flavor))
+        return int(handle)
 
     def dequeue(self, handle):
         self.thumbnailer.Dequeue(
