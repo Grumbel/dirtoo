@@ -89,7 +89,7 @@ class DBusThumbnailer:
     def _receive_error(self, handle, failed_uris, error_code, message):
         self.listener.error(handle, failed_uris, error_code, message)
 
-    def queue(self, files, flavor="default"):
+    def queue(self, files: List[str], flavor: str):
         if files == []:
             return
 
