@@ -21,7 +21,7 @@ from typing import List, Callable
 from dbus.mainloop.pyqt5 import DBusQtMainLoop
 import urllib.parse
 
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtCore import (QObject, pyqtSignal, QThread,
                           QAbstractEventDispatcher, QEventLoop)
 
@@ -54,7 +54,7 @@ class ThumbnailerWorker(QObject):
     # Emitted when the worker as been shut down completely
     sig_finished = pyqtSignal()
 
-    sig_thumbnail_ready = pyqtSignal(str, types.FunctionType, QPixmap)
+    sig_thumbnail_ready = pyqtSignal(str, types.FunctionType, QImage)
     sig_thumbnail_error = pyqtSignal(str, types.FunctionType)
 
     def __init__(self):
@@ -88,7 +88,6 @@ class ThumbnailerWorker(QObject):
         del self.dbus_thumbnailer
         del self.session_bus
         del self.dbus_loop
-
         print("---worker Finished--")
         self.sig_finished.emit()
 
@@ -122,9 +121,9 @@ class ThumbnailerWorker(QObject):
 
             # On shutdown this causes:
             # QObject::~QObject: Timers cannot be stopped from another thread
-            pixmap = QPixmap(thumbnail_filename)
+            image = QImage(thumbnail_filename)
 
-            self.sig_thumbnail_ready.emit(filename, callback, pixmap)
+            self.sig_thumbnail_ready.emit(filename, callback, image)
 
     def on_thumbnail_error(self, handle: int, urls: List[str], error_code, message):
         print(QThread.currentThread(), "ThumbnailerWorker.on_thumbnail_error")
@@ -151,8 +150,10 @@ class Thumbnailer(QObject):
 
         # startup and shutdown
         self.thread.started.connect(self.worker.init)
+        self.thread.finished.connect(self.thread.deleteLater)
         self.sig_close_requested.connect(self.worker.deinit)
         self.worker.sig_finished.connect(self.thread.quit)
+        self.worker.sig_finished.connect(self.deleteLater)
 
         # requests to the worker
         self.sig_thumbnail_requested.connect(self.worker.on_thumbnail_requested)
@@ -179,9 +180,6 @@ class Thumbnailer(QObject):
             event_dispatcher.processEvents(QEventLoop.AllEvents)
         print("evdi:done")
 
-        del self.thread
-        del self.worker
-
     def request_thumbnail(self,
                           filename: str,
                           flavor: str,
@@ -192,9 +190,9 @@ class Thumbnailer(QObject):
     def on_thumbnail_ready(self,
                            filename: str,
                            callback: Callable,
-                           pixmap: QPixmap):
+                           image: QImage):
         print(QThread.currentThread(), "Thumbnailer.on_thumbnail_ready")
-        callback(filename, pixmap)
+        callback(filename, QPixmap(image))
 
     def on_thumbnail_error(self,
                            filename: str,

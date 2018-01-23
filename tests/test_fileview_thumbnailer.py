@@ -15,9 +15,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import gc
 import unittest
 
-# from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QApplication, QPushButton
 from PyQt5.QtGui import QIcon
 from dirtools.fileview.thumbnailer import Thumbnailer
@@ -33,7 +33,6 @@ class FileViewThumbnailerTestCase(unittest.TestCase):
             button = QPushButton()
             button.resize(256, 256)
             button.show()
-
 
             def quit():
                 thumbnailer.close()
@@ -52,14 +51,7 @@ class FileViewThumbnailerTestCase(unittest.TestCase):
 
             thumbnailer.request_thumbnail("/tmp/test2.png", "large", cb)
 
-            # QTimer.singleShot(2000, quit)
-
-
             app.exec()
-
-            del button
-            del thumbnailer
-            del app
 
         except Exception as err:
             print(err)
