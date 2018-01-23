@@ -58,7 +58,6 @@ class ThumbnailerWorker(QObject):
     sig_thumbnail_error = pyqtSignal(str, types.FunctionType)
 
     def __init__(self):
-        print(QThread.currentThread(), "ThumbnailerWorker.__init__")
         super().__init__()
         # This function is called from the main thread, leave
         # construction to init() and deinit()
@@ -71,16 +70,12 @@ class ThumbnailerWorker(QObject):
         self.requests = {}
 
     def init(self):
-        print(QThread.currentThread(), "ThumbnailerWorker.init")
-        print("ThumbnailerWorker.init")
         self.dbus_loop = DBusQtMainLoop(set_as_default=False)
         self.session_bus = dbus.SessionBus(mainloop=self.dbus_loop)
         self.dbus_thumbnailer = DBusThumbnailer(self.session_bus,
                                                 WorkerDBusThumbnailerListener(self))
 
     def deinit(self):
-        print(QThread.currentThread(), "ThumbnailerWorker.deinit")
-        print("ThumbnailerWorker.deinit")
         assert self.quit
 
         del self.thumbnailer_cache
@@ -88,15 +83,12 @@ class ThumbnailerWorker(QObject):
         del self.dbus_thumbnailer
         del self.session_bus
         del self.dbus_loop
-        print("---worker Finished--")
+
         self.sig_finished.emit()
 
     def on_thumbnail_requested(self, filename: str, flavor: str,
                                callback: types.FunctionType):
-        print(QThread.currentThread(), "ThumbnailerWorker.on_thumbnail_requested")
-        print("-------------Request started:")
         handle = self.dbus_thumbnailer.queue([filename], flavor)
-        print("-------------Request done:", handle)
 
         if handle not in self.requests:
             self.requests[handle] = []
@@ -104,16 +96,12 @@ class ThumbnailerWorker(QObject):
         self.requests[handle].append((filename, callback))
 
     def on_thumbnail_started(self, handle: int):
-        print(QThread.currentThread(), "ThumbnailerWorker.on_thumbnail_started")
         pass
 
     def on_thumbnail_finished(self, handle: int):
-        print(QThread.currentThread(), "ThumbnailerWorker.on_thumbnail_finished")
-        print("finished: Requests", self.requests.items())
         del self.requests[handle]
 
     def on_thumbnail_ready(self, handle: int, urls: List[str], flavor: str):
-        print(QThread.currentThread(), "ThumbnailerWorker.on_thumbnail_ready")
         for request in self.requests.get(handle, []):
             filename, callback = request
 
@@ -126,8 +114,6 @@ class ThumbnailerWorker(QObject):
             self.sig_thumbnail_ready.emit(filename, callback, image)
 
     def on_thumbnail_error(self, handle: int, urls: List[str], error_code, message):
-        print(QThread.currentThread(), "ThumbnailerWorker.on_thumbnail_error")
-        print(handle, urls, error_code, message)
         for request in self.requests.get(handle, []):
             filename, callback = request
             self.sig_thumbnail_error.emit(filename, callback)
@@ -141,7 +127,6 @@ class Thumbnailer(QObject):
     sig_close_requested = pyqtSignal()
 
     def __init__(self):
-        print(QThread.currentThread(), "Thumbnailer.__init__")
         super().__init__()
 
         self.worker = ThumbnailerWorker()
@@ -165,39 +150,30 @@ class Thumbnailer(QObject):
         self.thread.start()
 
     def close(self):
-        print(QThread.currentThread(), "Thumbnailer.__close__")
 
-        # This signal won't be received until the worker is idle
+        # This signal won't be received until the worker is idle, so
+        # set .quit manually for a fast exit
+        self.worker.quit = True
         self.sig_close_requested.emit()
 
-        # Thus notify worker via sidechannel to stop processing it's jobs
-        self.worker.quit = True
-
-        print("evdi")
         # waiting for the thread to finish
         event_dispatcher = QAbstractEventDispatcher.instance()
         while self.thread.wait(10) == False:
             event_dispatcher.processEvents(QEventLoop.AllEvents)
-        print("evdi:done")
 
     def request_thumbnail(self,
                           filename: str,
                           flavor: str,
-                          callback: Callable):
-        print(QThread.currentThread(), "Thumbnailer.request_thumbnail")
+                          callback: Callable[[str, QPixmap], None]):
         self.sig_thumbnail_requested.emit(filename, flavor, callback)
 
-    def on_thumbnail_ready(self,
-                           filename: str,
-                           callback: Callable,
+    def on_thumbnail_ready(self, filename: str,
+                           callback: Callable[[str, QPixmap], None],
                            image: QImage):
-        print(QThread.currentThread(), "Thumbnailer.on_thumbnail_ready")
         callback(filename, QPixmap(image))
 
-    def on_thumbnail_error(self,
-                           filename: str,
-                           callback: Callable):
-        print(QThread.currentThread(), "Thumbnailer.on_thumbnail_error")
+    def on_thumbnail_error(self, filename: str,
+                           callback: Callable[[str, QPixmap], None]):
         callback(filename, None)
 
 
