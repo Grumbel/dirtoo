@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import os
 import dbus
 import types
 from typing import List, Callable, Dict, Tuple, Union
@@ -94,12 +95,17 @@ class ThumbnailerWorker(QObject):
 
     def on_thumbnail_requested(self, filename: str, flavor: str,
                                callback: Callable):
-        handle = self.dbus_thumbnailer.queue([filename], flavor)
+        thumbnail_filename = DBusThumbnailer.thumbnail_from_filename(filename, flavor)
+        if os.path.exists(thumbnail_filename):
+            image = QImage(thumbnail_filename)
+            self.sig_thumbnail_ready.emit(filename, callback, image)
+        else:
+            handle = self.dbus_thumbnailer.queue([filename], flavor)
 
-        if handle not in self.requests:
-            self.requests[handle] = []
+            if handle not in self.requests:
+                self.requests[handle] = []
 
-        self.requests[handle].append((filename, callback))
+            self.requests[handle].append((filename, callback))
 
     def on_thumbnail_started(self, handle: int):
         pass
