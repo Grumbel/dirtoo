@@ -15,29 +15,41 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from enum import Enum
 import logging
 from datetime import datetime
 
-from PyQt5.QtCore import Qt, QRectF
-from PyQt5.QtGui import QPixmap, QColor, QPen, QFontMetrics, QFont
+from PyQt5.QtCore import QRectF
+from PyQt5.QtGui import QColor, QFontMetrics, QFont
+from PyQt5.QtWidgets import QGraphicsItem
 
 import bytefmt
 
 from dirtools.fileview.file_item import FileItem
-from dirtools.fileview.thumbnail_cache import ThumbnailStatus
+
+
+class ThumbnailStatus(Enum):
+
+    ERROR = -1
+    NONE = 0
+    LOADING = 1
+    READY = 2
 
 
 class ThumbFileItem(FileItem):
 
     def __init__(self, fileinfo, controller, thumb_view):
-        super().__init__(fileinfo, controller)
-
         logging.debug("ThumbFileItem.__init__: %s", fileinfo.abspath())
+        super().__init__(fileinfo, controller)
+        self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
+
         self.thumb_view = thumb_view
-        self.pixmap = None
+
         self.thumbnail_status = ThumbnailStatus.NONE
+
         self.hovering = False
-        # self.make_items()
+
+        self.pixmap = self.make_pixmap()
 
     def paint(self, painter, option, widget):
         logging.debug("ThumbFileItem.paint_items: %s", self.fileinfo.abspath())
@@ -56,9 +68,7 @@ class ThumbFileItem(FileItem):
                              QColor(192, 192, 192))
 
         self.paint_text_items(painter)
-
-        pixmap = self.pixmap or self.make_pixmap()
-        self.paint_thumbnail(painter, pixmap)
+        self.paint_thumbnail(painter)
 
     def paint_text_items(self, painter):
         # text items
@@ -91,21 +101,27 @@ class ThumbFileItem(FileItem):
                          self.thumb_view.tn_height - 2 + 16 * row + 14,
                          text)
 
-    def paint_thumbnail(self, painter, pixmap):
+    def paint_thumbnail(self, painter):
         logging.debug("ThumbFileItem.make_thumbnail: %s", self.fileinfo.abspath())
 
-        if pixmap is not None:
+        if self.pixmap is not None:
             painter.drawPixmap(
-                self.thumb_view.tn_width / 2 - pixmap.width() / 2,
-                self.thumb_view.tn_height / 2 - pixmap.height() / 2,
-                pixmap)
+                self.thumb_view.tn_width / 2 - self.pixmap.width() / 2,
+                self.thumb_view.tn_height / 2 - self.pixmap.height() / 2,
+                self.pixmap)
+
+        if self.thumbnail_status == ThumbnailStatus.NONE:
+            self.pixmap = self.thumb_view.shared_pixmaps.image_loading
+            self.thumbnail_status = ThumbnailStatus.LOADING
+            self.thumb_view.request_thumbnail(self, self.fileinfo, self.thumb_view.flavor)
 
         if not self.fileinfo.have_access():
+            pixmap = self.thumb_view.shared_pixmaps.locked
             painter.setOpacity(0.5)
             painter.drawPixmap(
                 self.thumb_view.tn_width / 2 - pixmap.width() / 2,
                 self.thumb_view.tn_height / 2 - pixmap.height() / 2,
-                self.thumb_view.shared_pixmaps.locked)
+                pixmap)
 
     def make_pixmap(self):
         logging.debug("ThumbFileItem.make_pixmap: %s", self.fileinfo.abspath())
@@ -113,24 +129,10 @@ class ThumbFileItem(FileItem):
         # try to load shared pixmaps, this is fast
         pixmap = self.thumb_view.pixmap_from_fileinfo(self.fileinfo, 3 * self.thumb_view.tn_size // 4)
         if pixmap is not None:
+            self.thumbnail_status = ThumbnailStatus.READY
             return pixmap
         else:
-            # no shared pixmap found, so try to generate a thumbnail
-            result = self.controller.request_thumbnail(self.fileinfo,
-                                                       flavor=self.thumb_view.flavor)
-            filename, status = result
-            self.thumbnail_status = status
-
-            # a thumbnail does already exist, just load it
-            if status == ThumbnailStatus.OK:
-                logging.debug("%s: ThumbFileItem.make_pixmap: loading thumbnail", self)
-                self.thumb_view.thumbnail_request(self, filename)
-
-            elif status == ThumbnailStatus.LOADING:
-                return self.thumb_view.shared_pixmaps.image_loading
-
-            else:  # if status == ThumbnailStatus.ERROR
-                return self.thumb_view.shared_pixmaps.image_missing
+            return self.thumb_view.shared_pixmaps.image_loading
 
     def hoverEnterEvent(self, ev):
         self.hovering = True
@@ -142,18 +144,18 @@ class ThumbFileItem(FileItem):
         self.controller.show_current_filename("")
         self.update()
 
-    def set_pixmap(self, pixmap):
+    def set_thumbnail_pixmap(self, pixmap, flavor):
         self.pixmap = pixmap
-        if pixmap is not None:
+        if self.pixmap is None:
+            self.pixmap = self.thumb_view.shared_pixmaps.image_loading
+            self.thumbnail_status == ThumbnailStatus.ERROR
+        else:
             self.update()
 
     def boundingRect(self):
         return QRectF(0, 0,
                       self.thumb_view.tn_width,
                       self.thumb_view.tn_height + 16 * self.thumb_view.level_of_detail)
-
-    def reload_pixmap(self, filename):
-        self.thumb_view.thumbnail_request(self, filename)
 
     def reload(self, x=0, y=0):
         # self.setPos(x, y)

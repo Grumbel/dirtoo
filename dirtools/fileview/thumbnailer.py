@@ -17,15 +17,23 @@
 
 import dbus
 import types
-from typing import List, Callable
+from typing import List, Callable, Dict, Tuple, Union
 from dbus.mainloop.pyqt5 import DBusQtMainLoop
-import urllib.parse
 
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtCore import (QObject, pyqtSignal, QThread,
                           QAbstractEventDispatcher, QEventLoop)
 
 from dirtools.dbus_thumbnailer import DBusThumbnailer
+
+
+class CallableWrapper:
+
+    def __init__(self, func):
+        self.func = func
+
+    def __call__(self, *args):
+        return self.func(*args)
 
 
 class WorkerDBusThumbnailerListener:
@@ -54,8 +62,8 @@ class ThumbnailerWorker(QObject):
     # Emitted when the worker as been shut down completely
     sig_finished = pyqtSignal()
 
-    sig_thumbnail_ready = pyqtSignal(str, types.FunctionType, QImage)
-    sig_thumbnail_error = pyqtSignal(str, types.FunctionType)
+    sig_thumbnail_ready = pyqtSignal(str, CallableWrapper, QImage)
+    sig_thumbnail_error = pyqtSignal(str, CallableWrapper)
 
     def __init__(self):
         super().__init__()
@@ -65,9 +73,8 @@ class ThumbnailerWorker(QObject):
 
         self.dbus_loop = None
         self.session_bus = None
-        self.dbus_thumbnailer = None
-        self.thumbnailer_cache = None
-        self.requests = {}
+        self.dbus_thumbnailer: Union[DBusThumbnailer, None] = None
+        self.requests: Dict[int, Tuple[str, Callable]] = {}
 
     def init(self):
         self.dbus_loop = DBusQtMainLoop(set_as_default=False)
@@ -78,7 +85,6 @@ class ThumbnailerWorker(QObject):
     def deinit(self):
         assert self.quit
 
-        del self.thumbnailer_cache
         self.session_bus.close()
         del self.dbus_thumbnailer
         del self.session_bus
@@ -87,7 +93,7 @@ class ThumbnailerWorker(QObject):
         self.sig_finished.emit()
 
     def on_thumbnail_requested(self, filename: str, flavor: str,
-                               callback: types.FunctionType):
+                               callback: Callable):
         handle = self.dbus_thumbnailer.queue([filename], flavor)
 
         if handle not in self.requests:
@@ -121,8 +127,8 @@ class ThumbnailerWorker(QObject):
 
 class Thumbnailer(QObject):
 
-    sig_thumbnail_requested = pyqtSignal(str, str, types.FunctionType)
-    sig_thumbnail_error = pyqtSignal(str, types.FunctionType)
+    sig_thumbnail_requested = pyqtSignal(str, str, CallableWrapper)
+    sig_thumbnail_error = pyqtSignal(str, CallableWrapper)
 
     sig_close_requested = pyqtSignal()
 
@@ -158,14 +164,17 @@ class Thumbnailer(QObject):
 
         # waiting for the thread to finish
         event_dispatcher = QAbstractEventDispatcher.instance()
-        while self.thread.wait(10) == False:
+        while not self.thread.wait(10):
             event_dispatcher.processEvents(QEventLoop.AllEvents)
 
     def request_thumbnail(self,
                           filename: str,
                           flavor: str,
                           callback: Callable[[str, QPixmap], None]):
-        self.sig_thumbnail_requested.emit(filename, flavor, callback)
+        self.sig_thumbnail_requested.emit(filename, flavor, CallableWrapper(callback))
+
+    def delete_thumbnails(self, files: List[str]):
+        print("Thumbnailer.delete_thumbnails: not implemented")
 
     def on_thumbnail_ready(self, filename: str,
                            callback: Callable[[str, QPixmap], None],

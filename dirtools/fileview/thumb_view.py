@@ -19,8 +19,8 @@ import logging
 
 from typing import List, Dict
 
-from PyQt5.QtCore import Qt, QThreadPool, QRunnable, QEventLoop, pyqtSignal
-from PyQt5.QtGui import QBrush, QIcon, QPixmap
+from PyQt5.QtCore import Qt, QThreadPool
+from PyQt5.QtGui import QBrush, QIcon
 from PyQt5.QtWidgets import (
     QGraphicsView,
     QGraphicsScene,
@@ -28,36 +28,7 @@ from PyQt5.QtWidgets import (
 
 from dirtools.fileview.thumb_file_item import ThumbFileItem
 from dirtools.fileview.tile_layouter import TileLayouter
-from dirtools.fileview.profiler import Profiler, profile
-
-class ThumbnailLoader(QRunnable):
-
-    def __init__(self, thumb_view, item, filename):
-        super().__init__()
-        self.setAutoDelete(True)
-
-        self.thumb_view = thumb_view
-        self.item = item
-        self.filename = filename
-
-    def run(self):
-        pixmap = QPixmap(self.filename)
-
-        if pixmap.isNull():
-            logging.error("ThumbnailLoader.run: failed to load %s", self.filename)
-            pixmap = self.thumb_view.shared_pixmaps.image_missing
-        else:
-            # Scale it to fit
-            w = pixmap.width() * self.thumb_view.tn_width // pixmap.height()
-            h = pixmap.height() * self.thumb_view.tn_height // pixmap.width()
-            if w <= self.thumb_view.tn_width:
-                pixmap = pixmap.scaledToHeight(self.thumb_view.tn_height,
-                                               Qt.SmoothTransformation)
-            elif h <= self.thumb_view.tn_height:
-                pixmap = pixmap.scaledToWidth(self.thumb_view.tn_width,
-                                              Qt.SmoothTransformation)
-
-        self.thumb_view.sig_thumbnail_ready.emit(self.item, pixmap)
+from dirtools.fileview.profiler import profile
 
 
 class SharedPixmaps:
@@ -74,8 +45,6 @@ class SharedPixmaps:
 
 
 class ThumbView(QGraphicsView):
-
-    sig_thumbnail_ready = pyqtSignal(ThumbFileItem, QPixmap)
 
     def __init__(self, controller):
         super().__init__()
@@ -99,8 +68,6 @@ class ThumbView(QGraphicsView):
         self.shared_pixmaps = None
         self.zoom_index = 2
         self.apply_zoom()
-
-        self.sig_thumbnail_ready.connect(self.thumbnail_ready)
 
         self.thread_pool = QThreadPool()
 
@@ -246,22 +213,18 @@ class ThumbView(QGraphicsView):
             item.reload()
         self.layout_items()
 
-    def receive_thumbnail(self, filename, flavor, thumbnail_filename, thumbnail_status):
+    def receive_thumbnail(self, filename, pixmap): # flavor, thumbnail_status):
         item = self.abspath2item.get(filename, None)
         if item is not None:
-            item.reload_pixmap(thumbnail_filename)
+            item.set_thumbnail_pixmap(pixmap, "normal") # flavor)
         else:
             print("MISSING!!!!!!!", filename)
             for k, v in self.abspath2item.items():
                 print("->", k)
 
-    def thumbnail_ready(self, item, pixmap):
-        # print("thumbnail_ready:", pixmap)
-        item.set_pixmap(pixmap)
-
-    def thumbnail_request(self, item, filename):
-        # print("thumbnail_request:", filename)
-        self.thread_pool.start(ThumbnailLoader(self, item, filename))
+    def request_thumbnail(self, item, fileinfo, flavor):
+        print("thumbnail_request:", fileinfo.filename())
+        self.controller.request_thumbnail(fileinfo, flavor)
 
     def reload_thumbnails(self):
         for item in self.items:

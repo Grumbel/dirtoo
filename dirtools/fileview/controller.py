@@ -197,18 +197,18 @@ class Controller(QObject):
             self.file_collection.add_file(f)
 
     def request_thumbnail(self, fileinfo, flavor):
-        return self.app.thumbnail_cache.get(fileinfo, flavor)
+        self.app.thumbnailer.request_thumbnail(fileinfo.filename(), flavor,
+                                               self.receive_thumbnail)
 
     def reload(self):
         self.window.thumb_view.reload()
 
-    def receive_thumbnail(self, filename, flavor, thumbnail_filename, thumbnail_status):
+    def receive_thumbnail(self, filename, pixmap):
+        print("Controller.receive_thumbnail", filename)
         # self.window.file_view.set_file_collection(self.file_collection)
-        self.window.thumb_view.receive_thumbnail(filename, flavor,
-                                                 thumbnail_filename, thumbnail_status)
+        self.window.thumb_view.receive_thumbnail(filename, pixmap)
 
     def reload_thumbnails(self):
-        self.app.thumbnail_cache.clear()
         self.app.dbus_thumbnail_cache.delete(
             [f.abspath()
              for f in self.file_collection.get_fileinfos()])

@@ -33,6 +33,7 @@ class Worker(QObject):
 
     sig_finished = pyqtSignal()
     sig_thing_finished = pyqtSignal(str, types.FunctionType)
+    sig_thing_requested = pyqtSignal(str, types.FunctionType)
 
     def __init__(self, name):
         super().__init__()
@@ -46,8 +47,7 @@ class Worker(QObject):
         self.session_bus = dbus.SessionBus(mainloop=self.dbus_loop)
         self.dbus_thumbnailer = DBusThumbnailer(self.session_bus)
 
-    def __del__(self):
-        print("__del__")
+        self.sig_thing_requested.connect(self.on_thing_requested)
 
     def deinit(self):
         assert self.quit == True
@@ -60,6 +60,9 @@ class Worker(QObject):
         del self.dbus_loop
 
         self.sig_finished.emit()
+
+    def thing_requested(self, thing, callback):
+        self.sig_thing_requested.emit(thing, callback)
 
     def on_thing_requested(self, thing, callback):
         if self.quit:
@@ -96,7 +99,8 @@ class WorkerFacade(QObject):
         self.thread.start()
 
     def request_thing(self, thing, callback):
-        self.sig_thing_requested.emit(self.name + "-" + thing, callback)
+        self.worker.thing_requested(thing, callback)
+        # self.sig_thing_requested.emit(self.name + "-" + thing, callback)
 
     def on_thing_finished(self, thing, callback):
         callback(thing)

@@ -18,7 +18,6 @@
 from PyQt5.QtCore import Qt, QMimeData, QUrl
 from PyQt5.QtGui import QDrag
 from PyQt5.QtWidgets import (
-    QGraphicsItemGroup,
     QGraphicsItem,
     QMenu
 )
