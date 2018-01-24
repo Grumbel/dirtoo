@@ -67,23 +67,21 @@ class ThumbFileItem(FileItem):
 
         self.pixmap = self.make_shared_pixmap()
 
-        self.init_bounds()
+        self.set_tile_size(self.thumb_view.tn_width, self.thumb_view.tn_height)
 
-    def init_bounds(self):
+    def set_tile_size(self, tile_width, tile_height):
         # the size of the base tile
-        self.tile_rect = QRectF(0, 0,
-                                self.thumb_view.tn_width,
-                                self.thumb_view.tn_height + 16 * self.thumb_view.level_of_detail)
+        self.tile_rect = QRectF(0, 0, tile_width, tile_height)
 
         # the bounding rect for drawing
-        self.bounding_rect = QRectF(self.tile_rect.x() - 30,
-                                    self.tile_rect.y() - 30,
-                                    self.tile_rect.width() + 60,
-                                    self.tile_rect.height() + 60)
+        self.bounding_rect = QRectF(self.tile_rect.x() - 8,
+                                    self.tile_rect.y() - 8,
+                                    self.tile_rect.width() + 16,
+                                    self.tile_rect.height() + 16)
 
         # the path used for collision detection
         self.qpainter_path = QPainterPath()
-        self.qpainter_path.addRect(0, 0, self.thumb_view.tn_width, self.thumb_view.tn_height)
+        self.qpainter_path.addRect(0, 0, tile_width, tile_height)
 
     def paint(self, painter, option, widget):
         logging.debug("ThumbFileItem.paint_items: %s", self.fileinfo.abspath())
@@ -93,16 +91,17 @@ class ThumbFileItem(FileItem):
         painter.setRenderHint(QPainter.Antialiasing)
 
         # background rectangle
-        painter.fillRect(-2, -2, self.thumb_view.tn_width + 4,
-                         self.thumb_view.tn_height + 4 + 16 * self.thumb_view.level_of_detail,
+        painter.fillRect(-2, -2,
+                         self.tile_rect.width() + 4,
+                         self.tile_rect.height() + 4,
                          QColor(192 + 32, 192 + 32, 192 + 32))
 
         # hover rectangle
         if self.hovering:
             painter.fillRect(-4,
                              -4,
-                             self.thumb_view.tn_width + 8,
-                             self.thumb_view.tn_height + 8 + 16 * self.thumb_view.level_of_detail,
+                             self.tile_rect.width() + 8,
+                             self.tile_rect.height() + 8,
                              QColor(192, 192, 192))
 
         self.paint_text_items(painter)
@@ -135,8 +134,8 @@ class ThumbFileItem(FileItem):
             text = tmp + "…"
 
         painter.setFont(font)
-        painter.drawText(self.thumb_view.tn_width / 2 - fm.width(text) / 2,
-                         self.thumb_view.tn_height - 2 + 16 * row + 14,
+        painter.drawText(self.tile_rect.width() / 2 - fm.width(text) / 2,
+                         self.tile_rect.height() - 2 + 16 * row - 16 * self.thumb_view.level_of_detail + 14,
                          text)
 
     def paint_thumbnail(self, painter):
@@ -144,7 +143,7 @@ class ThumbFileItem(FileItem):
 
         if self.pixmap is not None:
             rect = make_scaled_rect(self.pixmap.width(), self.pixmap.height(),
-                                    self.thumb_view.tn_width, self.thumb_view.tn_height)
+                                    self.tile_rect.width(), self.tile_rect.width())
             painter.drawPixmap(rect, self.pixmap)
 
 
@@ -157,8 +156,8 @@ class ThumbFileItem(FileItem):
             pixmap = self.thumb_view.shared_pixmaps.locked
             painter.setOpacity(0.5)
             painter.drawPixmap(
-                self.thumb_view.tn_width / 2 - pixmap.width() / 2,
-                self.thumb_view.tn_height / 2 - pixmap.height() / 2,
+                self.tile_rect.width() / 2 - pixmap.width() / 2,
+                self.tile_rect.height() / 2 - pixmap.height() / 2,
                 pixmap)
 
     def make_shared_pixmap(self):

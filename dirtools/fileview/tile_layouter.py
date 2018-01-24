@@ -93,6 +93,8 @@ class TileLayouter:
         col = 0
         row = 0
         for item in items:
+            item.set_tile_size(self.tile_width, self.tile_height)
+
             x = col * (self.tile_width + self.spacing_x) + self.padding_x
             y = row * (self.tile_height + self.spacing_y) + self.padding_y
 
