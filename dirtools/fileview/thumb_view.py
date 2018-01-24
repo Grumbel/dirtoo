@@ -165,8 +165,8 @@ class ThumbView(QGraphicsView):
 
     def zoom_in(self):
         self.zoom_index += 1
-        if self.zoom_index > 4:
-            self.zoom_index = 4
+        if self.zoom_index > 6:
+            self.zoom_index = 6
         self.apply_zoom()
 
     def zoom_out(self):
