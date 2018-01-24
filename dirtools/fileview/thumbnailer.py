@@ -185,7 +185,11 @@ class Thumbnailer(QObject):
     def on_thumbnail_ready(self, filename: str,
                            callback: Callable[[str, QPixmap], None],
                            image: QImage):
-        callback(filename, QPixmap(image))
+        pixmap = QPixmap(image)
+        if pixmap.isNull():
+            callback(filename, None)
+        else:
+            callback(filename, pixmap)
 
     def on_thumbnail_error(self, filename: str,
                            callback: Callable[[str, QPixmap], None]):
