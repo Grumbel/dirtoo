@@ -20,7 +20,7 @@ import logging
 from datetime import datetime
 
 from PyQt5.QtCore import QRectF, QRect
-from PyQt5.QtGui import QColor, QFontMetrics, QFont, QPainter
+from PyQt5.QtGui import QColor, QFontMetrics, QFont, QPainter, QPainterPath
 from PyQt5.QtWidgets import QGraphicsItem
 
 import bytefmt
@@ -67,6 +67,24 @@ class ThumbFileItem(FileItem):
 
         self.pixmap = self.make_shared_pixmap()
 
+        self.init_bounds()
+
+    def init_bounds(self):
+        # the size of the base tile
+        self.tile_rect = QRectF(0, 0,
+                                self.thumb_view.tn_width,
+                                self.thumb_view.tn_height + 16 * self.thumb_view.level_of_detail)
+
+        # the bounding rect for drawing
+        self.bounding_rect = QRectF(self.tile_rect.x() - 30,
+                                    self.tile_rect.y() - 30,
+                                    self.tile_rect.width() + 60,
+                                    self.tile_rect.height() + 60)
+
+        # the path used for collision detection
+        self.qpainter_path = QPainterPath()
+        self.qpainter_path.addRect(0, 0, self.thumb_view.tn_width, self.thumb_view.tn_height)
+
     def paint(self, painter, option, widget):
         logging.debug("ThumbFileItem.paint_items: %s", self.fileinfo.abspath())
 
@@ -81,10 +99,10 @@ class ThumbFileItem(FileItem):
 
         # hover rectangle
         if self.hovering:
-            painter.fillRect(-2,
-                             -2,
-                             self.thumb_view.tn_width + 4,
-                             self.thumb_view.tn_height + 4 + 16 * self.thumb_view.level_of_detail,
+            painter.fillRect(-4,
+                             -4,
+                             self.thumb_view.tn_width + 8,
+                             self.thumb_view.tn_height + 8 + 16 * self.thumb_view.level_of_detail,
                              QColor(192, 192, 192))
 
         self.paint_text_items(painter)
@@ -109,8 +127,8 @@ class ThumbFileItem(FileItem):
         font = QFont("Verdana", 8)
         fm = QFontMetrics(font)
         tmp = text
-        if fm.width(tmp) > self.boundingRect().width():
-            while fm.width(tmp + "…") > self.boundingRect().width():
+        if fm.width(tmp) > self.tile_rect.width():
+            while fm.width(tmp + "…") > self.tile_rect.width():
                 tmp = tmp[0:-1]
 
         if tmp != text:
@@ -174,9 +192,10 @@ class ThumbFileItem(FileItem):
         self.update()
 
     def boundingRect(self):
-        return QRectF(0, 0,
-                      self.thumb_view.tn_width,
-                      self.thumb_view.tn_height + 16 * self.thumb_view.level_of_detail)
+        return self.bounding_rect
+
+    def shape(self):
+        return self.qpainter_path
 
     def reload(self, x=0, y=0):
         # self.setPos(x, y)
