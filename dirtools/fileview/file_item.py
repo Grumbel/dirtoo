@@ -52,8 +52,7 @@ class FileItem(QGraphicsItem):
             mime_data = QMimeData()
             mime_data.setUrls([QUrl("file://" + self.fileinfo.abspath())])
             self.drag = QDrag(self.controller.window)
-            if self.pixmap_item is not None:
-                self.drag.setPixmap(self.pixmap_item.pixmap())
+            # self.drag.setPixmap(self.pixmap_item.pixmap())
             self.drag.setMimeData(mime_data)
             # drag.setHotSpot(e.pos() - self.select_rect().topLeft())
             self.dropAction = self.drag.exec_(Qt.CopyAction)
@@ -66,6 +65,8 @@ class FileItem(QGraphicsItem):
                 self.controller.on_click(self.fileinfo)
 
             self.dragging = False
+        elif ev.button() == Qt.MiddleButton:
+            self.controller.on_click(self.fileinfo, new_window=True)
 
     def contextMenuEvent(self, ev):
         menu = QMenu()

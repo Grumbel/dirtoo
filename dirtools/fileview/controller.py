@@ -176,13 +176,13 @@ class Controller(QObject):
         if self.location is not None:
             self.set_location(os.path.dirname(os.path.abspath(self.location)))
 
-    def on_click(self, fileinfo):
+    def on_click(self, fileinfo, new_window=False):
         if not fileinfo.isdir():
             argv = ["xdg-open", fileinfo.filename()]
             logging.info("Controller.on_click: launching: %s", argv)
             subprocess.Popen(argv)
         else:
-            if self.location is None:
+            if self.location is None or new_window:
                 logging.info("Controller.on_click: app.show_location: %s", fileinfo)
                 self.app.show_location(fileinfo.filename())
             else:
