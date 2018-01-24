@@ -169,6 +169,8 @@ class Controller(QObject):
             filtered_count,
             total))
 
+        self.window.thumb_view.set_filtered(filtered_count > 0)
+
     def toggle_timegaps(self):
         self.window.file_view.toggle_timegaps()
 

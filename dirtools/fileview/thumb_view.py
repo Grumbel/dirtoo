@@ -20,7 +20,7 @@ import logging
 from typing import List, Dict
 
 from PyQt5.QtCore import Qt, QThreadPool
-from PyQt5.QtGui import QBrush, QIcon
+from PyQt5.QtGui import QBrush, QIcon, QColor
 from PyQt5.QtWidgets import (
     QGraphicsView,
     QGraphicsScene,
@@ -239,6 +239,12 @@ class ThumbView(QGraphicsView):
         if self.level_of_detail > 4:
             self.level_of_detail = 4
         self.apply_zoom()
+
+    def set_filtered(self, filtered):
+        if filtered:
+            self.setBackgroundBrush(QBrush(QColor(220, 220, 255), Qt.SolidPattern))
+        else:
+            self.setBackgroundBrush(QBrush())
 
 
 # EOF #
