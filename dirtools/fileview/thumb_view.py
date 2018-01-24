@@ -80,7 +80,7 @@ class ThumbView(QGraphicsView):
         pass
 
     def dragEnterEvent(self, e):
-        print(e.mimeData().formats())
+        print("dragEnterEvent", e.mimeData().formats())
         if e.mimeData().hasFormat("text/uri-list"):
             e.accept()
         else:
@@ -223,7 +223,6 @@ class ThumbView(QGraphicsView):
                 print("->", k)
 
     def request_thumbnail(self, item, fileinfo, flavor):
-        print("thumbnail_request:", fileinfo.filename())
         self.controller.request_thumbnail(fileinfo, flavor)
 
     def reload_thumbnails(self):

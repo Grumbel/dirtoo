@@ -204,8 +204,6 @@ class Controller(QObject):
         self.window.thumb_view.reload()
 
     def receive_thumbnail(self, filename, pixmap):
-        print("Controller.receive_thumbnail", filename)
-        # self.window.file_view.set_file_collection(self.file_collection)
         self.window.thumb_view.receive_thumbnail(filename, pixmap)
 
     def reload_thumbnails(self):
