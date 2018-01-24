@@ -44,6 +44,12 @@ def make_scaled_rect(sw, sh, tw, th):
                  w, h)
 
 
+def make_unscaled_rect(sw, sh, tw, th):
+    return QRect(tw // 2 - sw // 2,
+                 th // 2 - sh // 2,
+                 sw, sh)
+
+
 class ThumbnailStatus(Enum):
 
     ERROR = -1
@@ -66,6 +72,7 @@ class ThumbFileItem(FileItem):
         self.hovering = False
 
         self.pixmap = self.make_shared_pixmap()
+        self.have_thumbnail = False
 
         self.set_tile_size(self.thumb_view.tn_width, self.thumb_view.tn_height)
 
@@ -151,8 +158,12 @@ class ThumbFileItem(FileItem):
         logging.debug("ThumbFileItem.make_thumbnail: %s", self.fileinfo.abspath())
 
         if self.pixmap is not None:
-            rect = make_scaled_rect(self.pixmap.width(), self.pixmap.height(),
-                                    self.tile_rect.width(), self.tile_rect.width())
+            if self.have_thumbnail:
+                rect = make_scaled_rect(self.pixmap.width(), self.pixmap.height(),
+                                        self.tile_rect.width(), self.tile_rect.width())
+            else:
+                rect = make_unscaled_rect(self.pixmap.width(), self.pixmap.height(),
+                                          self.tile_rect.width(), self.tile_rect.width())
             painter.drawPixmap(rect, self.pixmap)
 
 
@@ -196,6 +207,9 @@ class ThumbFileItem(FileItem):
         if self.pixmap is None:
             self.pixmap = self.thumb_view.shared_pixmaps.image_missing
             self.thumbnail_status == ThumbnailStatus.ERROR
+            self.have_thumbnail = False
+        else:
+            self.have_thumbnail = True
 
         self.update()
 
@@ -205,10 +219,10 @@ class ThumbFileItem(FileItem):
     def shape(self):
         return self.qpainter_path
 
-    def reload(self, x=0, y=0):
-        # self.setPos(x, y)
+    def reload(self):
         self.thumbnail_status = ThumbnailStatus.NONE
         self.pixmap = self.make_shared_pixmap()
+        self.have_thumbnail = False
         self.update()
 
     def reload_thumbnail(self):

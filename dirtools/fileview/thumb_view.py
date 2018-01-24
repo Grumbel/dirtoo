@@ -34,7 +34,6 @@ from dirtools.fileview.profiler import profile
 class SharedPixmaps:
 
     def __init__(self, tn_size):
-        tn_size = tn_size // 4 * 3
         self.folder = QIcon.fromTheme("folder").pixmap(tn_size)
         self.rar = QIcon.fromTheme("rar").pixmap(tn_size)
         self.zip = QIcon.fromTheme("zip").pixmap(tn_size)
@@ -188,7 +187,7 @@ class ThumbView(QGraphicsView):
         else:
             self.flavor = "large"
 
-        self.shared_pixmaps = SharedPixmaps(self.tn_size)
+        self.shared_pixmaps = SharedPixmaps(self.tn_size * 3 // 4)
         self.reload()
 
     def pixmap_from_fileinfo(self, fileinfo, tn_size):
