@@ -52,6 +52,7 @@ class FilterLineEdit(QLineEdit):
         super().keyPressEvent(ev)
         if ev.key() == Qt.Key_Escape:
             self.setText("")
+            self.controller.set_filter("")
             self.controller.window.thumb_view.setFocus()
 
     def on_return_pressed(self):
