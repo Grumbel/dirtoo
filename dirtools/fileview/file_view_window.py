@@ -351,6 +351,7 @@ class FileViewWindow(QMainWindow):
 
     def set_location(self, path):
         self.file_path.set_location(path)
+        self.setWindowTitle("dt-fileview - {}".format(path))
 
     def set_file_list(self):
         self.file_path.set_unused_text()
