@@ -69,6 +69,8 @@ class ThumbFileItem(FileItem):
 
         self.set_tile_size(self.thumb_view.tn_width, self.thumb_view.tn_height)
 
+        self.animation_timer = 0
+
     def set_tile_size(self, tile_width, tile_height):
         # the size of the base tile
         self.tile_rect = QRectF(0, 0, tile_width, tile_height)
@@ -90,14 +92,21 @@ class ThumbFileItem(FileItem):
         painter.setRenderHint(QPainter.TextAntialiasing)
         painter.setRenderHint(QPainter.Antialiasing)
 
+        if self.animation_timer == 0:
+            bg_color = QColor(192 + 32, 192 + 32, 192 + 32)
+        else:
+            bg_color = QColor(192 + 32 - 10 * self.animation_count,
+                              192 + 32 - 10 * self.animation_count,
+                              192 + 32 - 10 * self.animation_count)
+
         # background rectangle
         painter.fillRect(-2, -2,
                          self.tile_rect.width() + 4,
                          self.tile_rect.height() + 4,
-                         QColor(192 + 32, 192 + 32, 192 + 32))
+                         bg_color)
 
         # hover rectangle
-        if self.hovering:
+        if self.hovering and self.animation_timer == 0:
             painter.fillRect(-4,
                              -4,
                              self.tile_rect.width() + 8,
@@ -204,6 +213,20 @@ class ThumbFileItem(FileItem):
 
     def reload_thumbnail(self):
         self.reload(x=self.pos().x(), y=self.pos().y())
+
+    def on_click_animation(self):
+        self.animation_timer = self.startTimer(30)
+        self.animation_count = 10
+        self.update()
+
+    def timerEvent(self, ev):
+        if ev.timerId() == self.animation_timer:
+            self.animation_count -= 1
+            self.update()
+            if self.animation_count > 0:
+                self.animation_timer = self.startTimer(30)
+            else:
+                self.animation_timer = 0
 
 
 # EOF #

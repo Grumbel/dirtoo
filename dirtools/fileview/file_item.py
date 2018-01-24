@@ -19,11 +19,12 @@ from PyQt5.QtCore import Qt, QMimeData, QUrl
 from PyQt5.QtGui import QDrag
 from PyQt5.QtWidgets import (
     QGraphicsItem,
+    QGraphicsObject,
     QMenu
 )
 
 
-class FileItem(QGraphicsItem):
+class FileItem(QGraphicsObject):
 
     def __init__(self, fileinfo, controller):
         super().__init__()
@@ -63,10 +64,15 @@ class FileItem(QGraphicsItem):
                 pass
             else:
                 self.controller.on_click(self.fileinfo)
+                self.on_click_animation()
 
             self.dragging = False
         elif ev.button() == Qt.MiddleButton:
             self.controller.on_click(self.fileinfo, new_window=True)
+            self.on_click_animation()
+
+    def on_click_animation(self):
+        pass
 
     def contextMenuEvent(self, ev):
         menu = QMenu()
