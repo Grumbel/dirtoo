@@ -188,6 +188,9 @@ class FileViewWindow(QMainWindow):
         self.thumb_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.status_bar = self.statusBar()
 
+        self.info = QLabel("lots of files selected")
+        self.status_bar.addPermanentWidget(self.info)
+
         self.vbox.addWidget(self.file_view, Qt.AlignLeft)
         self.vbox.addWidget(self.thumb_view, Qt.AlignLeft)
 
@@ -331,9 +334,6 @@ class FileViewWindow(QMainWindow):
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.actions.lod_in)
         self.toolbar.addAction(self.actions.lod_out)
-        self.toolbar.addSeparator()
-        self.info = QLabel("lots of files selected")
-        self.toolbar.addWidget(self.info)
 
     def zoom_in(self):
         self.thumb_view.zoom_in()
