@@ -47,17 +47,28 @@ class FilterLineEdit(QLineEdit):
         self.is_unused = True
         self.set_unused_text()
         self.returnPressed.connect(self.on_return_pressed)
+        self.history = []
+        self.history_idx = 0
 
     def keyPressEvent(self, ev):
         super().keyPressEvent(ev)
         if ev.key() == Qt.Key_Escape:
             self.setText("")
+            self.history_idx = -1
             self.controller.set_filter("")
             self.controller.window.thumb_view.setFocus()
+        elif ev.key() == Qt.Key_Up:
+            self.history_up()
+        elif ev.key() == Qt.Key_Down:
+            self.history_down()
+        else:
+            self.history_idx = -1
 
     def on_return_pressed(self):
         self.is_unused = False
         self.controller.set_filter(self.text())
+        self.history.append(self.text())
+        self.history_idx = 0
 
     def focusInEvent(self, ev):
         super().focusInEvent(ev)
@@ -83,6 +94,22 @@ class FilterLineEdit(QLineEdit):
         p.setColor(QPalette.Text, Qt.gray)
         self.setPalette(p)
         self.setText("enter a glob search pattern here")
+
+    def history_up(self):
+        if self.history != []:
+            self.history_idx += 1
+            if self.history_idx > len(self.history) - 1:
+                self.history_idx = len(self.history) - 1
+            self.setText(self.history[len(self.history) - self.history_idx - 1])
+
+    def history_down(self):
+        if self.history != []:
+            self.history_idx -= 1
+            if self.history_idx < 0:
+                self.setText("")
+                self.history_idx = 0
+            else:
+                self.setText(self.history[len(self.history) - self.history_idx - 1])
 
 
 class LocationLineEdit(QLineEdit):
