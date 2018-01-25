@@ -219,10 +219,10 @@ class ThumbView(QGraphicsView):
         self.style_items()
         self.layout_items()
 
-    def receive_thumbnail(self, filename, pixmap): # flavor, thumbnail_status):
+    def receive_thumbnail(self, filename, flavor, pixmap):
         item = self.abspath2item.get(filename, None)
         if item is not None:
-            item.set_thumbnail_pixmap(pixmap, "normal") # flavor)
+            item.set_thumbnail_pixmap(pixmap, flavor)
         else:
             print("MISSING!!!!!!!", filename)
             for k, v in self.abspath2item.items():

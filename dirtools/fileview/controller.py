@@ -212,8 +212,8 @@ class Controller(QObject):
     def reload(self):
         self.window.thumb_view.reload()
 
-    def receive_thumbnail(self, filename, pixmap):
-        self.window.thumb_view.receive_thumbnail(filename, pixmap)
+    def receive_thumbnail(self, filename, flavor, pixmap):
+        self.window.thumb_view.receive_thumbnail(filename, flavor, pixmap)
 
     def reload_thumbnails(self):
         self.app.dbus_thumbnail_cache.delete(

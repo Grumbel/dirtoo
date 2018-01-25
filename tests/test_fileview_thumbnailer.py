@@ -39,7 +39,7 @@ class FileViewThumbnailerTestCase(unittest.TestCase):
                 app.quit()
             button.clicked.connect(quit)
 
-            def cb(filename, pixmap):
+            def cb(filename, flavor, pixmap):
                 icon = QIcon(pixmap)
                 button.setIcon(icon)
                 button.setIconSize(pixmap.rect().size())
