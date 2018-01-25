@@ -59,13 +59,13 @@ class FileItem(QGraphicsObject):
             if self.dragging:
                 pass
             else:
-                self.controller.on_click(self.fileinfo)
                 self.on_click_animation()
+                self.controller.on_click(self.fileinfo)
 
             self.dragging = False
         elif ev.button() == Qt.MiddleButton:
-            self.controller.on_click(self.fileinfo, new_window=True)
             self.on_click_animation()
+            self.controller.on_click(self.fileinfo, new_window=True)
 
     def on_click_animation(self):
         pass
