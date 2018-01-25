@@ -153,20 +153,24 @@ class Controller(QObject):
 
     def apply_filter(self):
         logging.debug("Controller.apply_filter")
-        self.filter.apply(self.file_collection)
+        self.file_collection.filter(self.filter)
 
         fileinfos = self.file_collection.get_fileinfos()
 
         filtered_count = 0
+        hidden_count = 0
         for fileinfo in fileinfos:
-            if fileinfo.is_filtered:
+            if fileinfo.is_hidden:
+                hidden_count += 1
+            elif fileinfo.is_filtered:
                 filtered_count += 1
 
         total = self.file_collection.size()
 
-        self.window.show_info("{} items, {} filtered, {} total".format(
-            total - filtered_count,
+        self.window.show_info("{} visible, {} filtered, {} hidden, {} total".format(
+            total - filtered_count - hidden_count,
             filtered_count,
+            hidden_count,
             total))
 
         self.window.thumb_view.set_filtered(filtered_count > 0)

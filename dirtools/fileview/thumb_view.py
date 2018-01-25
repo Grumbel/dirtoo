@@ -108,13 +108,7 @@ class ThumbView(QGraphicsView):
 
     def on_file_collection_filtered(self):
         logging.debug("ThumbView.on_file_collection_filtered")
-
-        for item in self.items:
-            if not item.fileinfo.is_filtered:
-                item.setVisible(True)
-            else:
-                item.setVisible(False)
-
+        self.style_items()
         self.layout_items()
 
     def on_file_collection_set(self):
@@ -125,18 +119,12 @@ class ThumbView(QGraphicsView):
         self.items = []
 
         for fileinfo in fileinfos:
-            thumb = None
-            if not fileinfo.is_filtered:
-                thumb = ThumbFileItem(fileinfo, self.controller, self)
-            elif self.show_filtered:
-                thumb = ThumbFileItem(fileinfo, self.controller, self)
-                thumb.setOpacity(0.5)
+            thumb = ThumbFileItem(fileinfo, self.controller, self)
+            self.abspath2item[fileinfo.abspath()] = thumb
+            self.scene.addItem(thumb)
+            self.items.append(thumb)
 
-            if thumb is not None:
-                self.abspath2item[fileinfo.abspath()] = thumb
-                self.scene.addItem(thumb)
-                self.items.append(thumb)
-
+        self.style_items()
         self.layout_items()
 
     def resizeEvent(self, ev):
@@ -145,6 +133,21 @@ class ThumbView(QGraphicsView):
         self.layouter.resize(ev.size().width(), ev.size().height())
         self.layout_items(force=False)
 
+    def style_items(self):
+        for item in self.items:
+            if self.show_filtered:
+                if item.fileinfo.is_hidden:
+                    item.setVisible(False)
+                elif item.fileinfo.is_filtered:
+                    item.setVisible(True)
+                    item.setOpacity(0.5)
+                else:
+                    item.setVisible(True)
+                    item.setOpacity(1.0)
+            else:
+                item.setVisible(item.fileinfo.is_visible)
+                item.setOpacity(1.0)
+
     def layout_items(self, force=True):
         logging.debug("ThumbView.layout_items")
 
@@ -152,7 +155,10 @@ class ThumbView(QGraphicsView):
         # old_item_index_method = self.scene.itemIndexMethod()
         # self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
 
-        visible_items = [item for item in self.items if not item.fileinfo.is_filtered]
+        if self.show_filtered:
+            visible_items = [item for item in self.items if not item.fileinfo.is_hidden]
+        else:
+            visible_items = [item for item in self.items if item.fileinfo.is_visible]
 
         self.layouter.layout(visible_items, force=force)
         self.setSceneRect(self.layouter.get_bounding_rect())
@@ -210,6 +216,7 @@ class ThumbView(QGraphicsView):
     def reload(self):
         for item in self.items:
             item.reload()
+        self.style_items()
         self.layout_items()
 
     def receive_thumbnail(self, filename, pixmap): # flavor, thumbnail_status):

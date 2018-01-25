@@ -25,19 +25,19 @@ class Filter:
         self.show_inaccessible = True
         self.pattern = None
 
-    def is_filtered(self, fileinfo):
+    def is_hidden(self, fileinfo):
         if not self.show_hidden:
             if fileinfo.basename().startswith("."):
                 return True
 
+        return False
+
+    def is_filtered(self, fileinfo):
         if self.pattern is not None:
             if not fnmatch(fileinfo.basename(), self.pattern):
                 return True
 
         return False
-
-    def apply(self, file_collection):
-        file_collection.filter(self.is_filtered)
 
 
 # EOF #
