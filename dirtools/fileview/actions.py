@@ -119,6 +119,9 @@ class Actions(QObject):
         self.show_hidden.triggered.connect(self.controller.show_hidden)
         self.show_hidden.setShortcut('Ctrl+H')
 
+        self.show_filtered = QAction(QIcon.fromTheme('camera-photo'), "Show Filtered", self, checkable=True)
+        self.show_filtered.triggered.connect(self.controller.show_filtered)
+
         self.show_abspath = QAction("Show AbsPath", self, checkable=True)
         self.show_abspath.triggered.connect(self.controller.show_abspath)
 

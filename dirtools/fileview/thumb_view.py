@@ -247,6 +247,11 @@ class ThumbView(QGraphicsView):
             self.level_of_detail = 4
         self.apply_zoom()
 
+    def set_show_filtered(self, show_filtered):
+        self.show_filtered = show_filtered
+        self.style_items()
+        self.layout_items()
+
     def set_filtered(self, filtered):
         if filtered:
             self.setBackgroundBrush(QBrush(QColor(220, 220, 255), Qt.SolidPattern))

@@ -68,6 +68,9 @@ class Controller(QObject):
         self.filter.show_hidden = not self.filter.show_hidden
         self.apply_filter()
 
+    def show_filtered(self):
+        self.window.thumb_view.set_show_filtered(not self.window.thumb_view.show_filtered)
+
     def show_abspath(self):
         self.window.file_view.show_abspath()
 

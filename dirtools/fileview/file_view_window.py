@@ -293,6 +293,7 @@ class FileViewWindow(QMainWindow):
         view_menu.addAction(self.actions.view_small_icon_view)
         view_menu.addSeparator().setText("Filter")
         view_menu.addAction(self.actions.show_hidden)
+        view_menu.addAction(self.actions.show_filtered)
         view_menu.addSeparator().setText("Path Options")
         view_menu.addAction(self.actions.show_abspath)
         view_menu.addAction(self.actions.show_basename)
