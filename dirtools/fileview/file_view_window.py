@@ -15,11 +15,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os
-
 from pkg_resources import resource_filename
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QKeySequence, QIcon, QPalette
+from PyQt5.QtGui import QKeySequence, QIcon
 from PyQt5.QtWidgets import (
     QMenu,
     QToolButton,
@@ -27,7 +25,6 @@ from PyQt5.QtWidgets import (
     QStyle,
     QWidget,
     QLabel,
-    QLineEdit,
     QMainWindow,
     QSizePolicy,
     QShortcut,
@@ -37,136 +34,8 @@ from PyQt5.QtWidgets import (
 
 from dirtools.fileview.detail_view import DetailView
 from dirtools.fileview.thumb_view import ThumbView
-
-
-class FilterLineEdit(QLineEdit):
-
-    def __init__(self, controller):
-        super().__init__()
-        self.controller = controller
-        self.is_unused = True
-        self.set_unused_text()
-        self.returnPressed.connect(self.on_return_pressed)
-        self.history = []
-        self.history_idx = 0
-
-    def keyPressEvent(self, ev):
-        super().keyPressEvent(ev)
-        if ev.key() == Qt.Key_Escape:
-            self.setText("")
-            self.history_idx = -1
-            self.controller.set_filter("")
-            self.controller.window.thumb_view.setFocus()
-        elif ev.key() == Qt.Key_Up:
-            self.history_up()
-        elif ev.key() == Qt.Key_Down:
-            self.history_down()
-        else:
-            self.history_idx = -1
-
-    def on_return_pressed(self):
-        self.is_unused = False
-        self.controller.set_filter(self.text())
-        self.history.append(self.text())
-        self.history_idx = 0
-
-    def focusInEvent(self, ev):
-        super().focusInEvent(ev)
-
-        if self.is_unused:
-            self.setText("")
-
-        p = self.palette()
-        p.setColor(QPalette.Text, Qt.black)
-        self.setPalette(p)
-
-    def focusOutEvent(self, ev):
-        super().focusOutEvent(ev)
-
-        if self.text() == "":
-            self.is_unused = True
-            self.set_unused_text()
-        else:
-            self.is_unused = False
-
-    def set_unused_text(self):
-        p = self.palette()
-        p.setColor(QPalette.Text, Qt.gray)
-        self.setPalette(p)
-        self.setText("enter a glob search pattern here")
-
-    def history_up(self):
-        if self.history != []:
-            self.history_idx += 1
-            if self.history_idx > len(self.history) - 1:
-                self.history_idx = len(self.history) - 1
-            self.setText(self.history[len(self.history) - self.history_idx - 1])
-
-    def history_down(self):
-        if self.history != []:
-            self.history_idx -= 1
-            if self.history_idx < 0:
-                self.setText("")
-                self.history_idx = 0
-            else:
-                self.setText(self.history[len(self.history) - self.history_idx - 1])
-
-
-class LocationLineEdit(QLineEdit):
-
-    def __init__(self, controller):
-        super().__init__()
-        self.controller = controller
-        self.is_unused = True
-        self.returnPressed.connect(self.on_return_pressed)
-        self.textEdited.connect(self.on_text_edited)
-
-    def keyPressEvent(self, ev):
-        super().keyPressEvent(ev)
-        if ev.key() == Qt.Key_Escape:
-            self.controller.window.thumb_view.setFocus()
-
-    def focusInEvent(self, ev):
-        super().focusInEvent(ev)
-
-        if ev.reason() != Qt.ActiveWindowFocusReason and self.is_unused:
-            self.setText("")
-
-        p = self.palette()
-        p.setColor(QPalette.Text, Qt.black)
-        self.setPalette(p)
-
-    def focusOutEvent(self, ev):
-        super().focusOutEvent(ev)
-
-        if ev.reason() != Qt.ActiveWindowFocusReason and self.is_unused:
-            self.set_unused_text()
-
-    def on_text_edited(self, text):
-        p = self.palette()
-        if os.path.exists(self.text()):
-            p.setColor(QPalette.Text, Qt.black)
-        else:
-            p.setColor(QPalette.Text, Qt.red)
-        self.setPalette(p)
-
-    def on_return_pressed(self):
-        if os.path.exists(self.text()):
-            self.controller.set_location(self.text())
-
-    def set_location(self, text):
-        self.is_unused = False
-        p = self.palette()
-        p.setColor(QPalette.Text, Qt.black)
-        self.setPalette(p)
-        self.setText(text)
-
-    def set_unused_text(self):
-        self.is_unused = True
-        p = self.palette()
-        p.setColor(QPalette.Text, Qt.gray)
-        self.setPalette(p)
-        self.setText("no location selected, file list mode is active")
+from dirtools.fileview.location_line_edit import LocationLineEdit
+from dirtools.fileview.filter_line_edit import FilterLineEdit
 
 
 class FileViewWindow(QMainWindow):
