@@ -166,7 +166,6 @@ class ThumbFileItem(FileItem):
                                           self.tile_rect.width(), self.tile_rect.width())
             painter.drawPixmap(rect, self.pixmap)
 
-
         if self.thumbnail_status == ThumbnailStatus.NONE:
             self.pixmap = self.thumb_view.shared_pixmaps.image_loading
             self.thumbnail_status = ThumbnailStatus.LOADING

@@ -17,7 +17,6 @@
 
 import os
 import dbus
-import types
 from typing import List, Callable, Dict, Tuple, Union
 from dbus.mainloop.pyqt5 import DBusQtMainLoop
 
@@ -75,7 +74,7 @@ class ThumbnailerWorker(QObject):
         self.dbus_loop = None
         self.session_bus = None
         self.dbus_thumbnailer: Union[DBusThumbnailer, None] = None
-        self.requests: Dict[int, Tuple[str, Callable]] = {}
+        self.requests: Dict[int, List[Tuple[str, Callable]]] = {}
 
     def init(self):
         self.dbus_loop = DBusQtMainLoop(set_as_default=False)
