@@ -226,7 +226,7 @@ class ThumbFileItem(FileItem):
         self.update()
 
     def reload_thumbnail(self):
-        self.reload(x=self.pos().x(), y=self.pos().y())
+        self.reload()
 
     def on_click_animation(self):
         self.animation_timer = self.startTimer(30)
