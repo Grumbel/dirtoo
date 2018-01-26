@@ -79,34 +79,37 @@ class TileLayouter:
 
         return QRectF(0, 0, w, h)
 
+    def layout_item(self, item):
+        item.set_tile_size(self.tile_width, self.tile_height)
+
+        x = self.col * (self.tile_width + self.spacing_x) + self.padding_x
+        y = self.row * (self.tile_height + self.spacing_y) + self.padding_y
+
+        self.right_x = max(self.right_x, x + self.tile_width + self.padding_x)
+        self.bottom_y = y + self.tile_height + self.padding_y
+
+        item.setPos(x, y)
+
+        self.col += 1
+        if self.col == self.columns:
+            self.col = 0
+            self.row += 1
+
     def layout(self, items, force):
         if not self.needs_relayout and not force:
             logging.debug("TileLayouter.layout: skipping relayout")
             return
 
         logging.debug("TileLayouter.layout: layouting")
-        columns = self.calc_num_columns()
+        self.columns = self.calc_num_columns()
 
         self.right_x = 0
         self.bottom_y = 0
 
-        col = 0
-        row = 0
+        self.col = 0
+        self.row = 0
         for item in items:
-            item.set_tile_size(self.tile_width, self.tile_height)
-
-            x = col * (self.tile_width + self.spacing_x) + self.padding_x
-            y = row * (self.tile_height + self.spacing_y) + self.padding_y
-
-            self.right_x = max(self.right_x, x + self.tile_width + self.padding_x)
-            self.bottom_y = y + self.tile_height + self.padding_y
-
-            item.setPos(x, y)
-
-            col += 1
-            if col == columns:
-                col = 0
-                row += 1
+            self.layout_item(item)
 
         self.needs_relayout = False
 

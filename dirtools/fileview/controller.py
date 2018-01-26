@@ -174,28 +174,37 @@ class Controller(QObject):
 
 
         # Work in progress
-        if self.directory_watcher_thread is not None:
-            self.directory_watcher.sig_close_requested.emit()
-            # keep the thread around until it's fully dead
-            self._junk = [self.directory_watcher, self.directory_watcher_thread]
+        self.file_collection.clear()
 
-        self.directory_watcher_thread = QThread()
+        if self.directory_watcher_thread is not None:
+            self.directory_watcher._close = True
+            self.directory_watcher.sig_close_requested.emit()
+
+        self.directory_watcher_thread = QThread(self)
         self.directory_watcher = DirectoryWatcher(location)
         self.directory_watcher.moveToThread(self.directory_watcher_thread)
 
-        self.directory_watcher.sig_file_added.connect(lambda x: print("added", x))
-        self.directory_watcher.sig_file_removed.connect(lambda x: print("removed", x))
-        self.directory_watcher.sig_file_changed.connect(lambda x: print("changed", x))
-        self.directory_watcher.sig_finished.connect(self.directory_watcher_thread.quit)
+        if False:
+            self.directory_watcher.sig_file_added.connect(lambda x: print("added", x))
+            self.directory_watcher.sig_file_removed.connect(lambda x: print("removed", x))
+            self.directory_watcher.sig_file_changed.connect(lambda x: print("changed", x))
+            self.directory_watcher.sig_finished.connect(self.directory_watcher_thread.quit)
+
+        self.directory_watcher.sig_file_added.connect(self.file_collection.add_fileinfo)
+        self.directory_watcher.sig_file_removed.connect(self.file_collection.remove_file)
+        # self.directory_watcher.sig_file_changed.connect(lambda x: print("changed", x))
+        self.directory_watcher.sig_scandir_finished.connect(self.apply_sort)
 
         self.directory_watcher_thread.started.connect(self.directory_watcher.process)
+        self.directory_watcher_thread.finished.connect(self.directory_watcher_thread.deleteLater)
         self.directory_watcher_thread.start()
 
 
         self.location = os.path.abspath(location)
         self.window.set_location(self.location)
-        files = expand_file(self.location, recursive=False)
-        self.set_files(files, self.location)
+
+        # files = expand_file(self.location, recursive=False)
+        # self.set_files(files, self.location)
 
     def set_files(self, files, location=None):
         if location is None:

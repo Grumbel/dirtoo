@@ -27,7 +27,7 @@ class FileCollection(QObject):
 
     # A single file entry has been added or removed
     sig_file_added = pyqtSignal(FileInfo)
-    sig_file_removed = pyqtSignal(FileInfo)
+    sig_file_removed = pyqtSignal(str)
 
     # The file list has changed completely and needs a reload from scratch
     sig_files_set = pyqtSignal()
@@ -46,9 +46,17 @@ class FileCollection(QObject):
         else:
             self.fileinfos = [FileInfo(f) for f in files]
 
+    def clear(self):
+        self.fileinfos = []
+        self.sig_files_set.emit()
+
     def set_files(self, files):
         self.fileinfos = [FileInfo(f) for f in files]
         self.sig_files_set.emit()
+
+    def add_fileinfo(self, fi):
+        self.fileinfos.append(fi)
+        self.sig_file_added.emit(fi)
 
     def add_file(self, filename):
         fi = FileInfo(filename)
@@ -56,7 +64,7 @@ class FileCollection(QObject):
         self.sig_file_added.emit(fi)
 
     def remove_file(self, filename):
-        self.fileinfoss = [fi for fi in self.files if fi.abspath == filename]
+        self.fileinfos = [fi for fi in self.fileinfos if fi.abspath == filename]
         self.sig_file_removed.emit(filename)
 
     def get_fileinfos(self):

@@ -97,7 +97,28 @@ class ThumbView(QGraphicsView):
         self.file_collection.sig_files_set.connect(self.on_file_collection_set)
         self.file_collection.sig_files_reordered.connect(self.on_file_collection_reordered)
         self.file_collection.sig_files_filtered.connect(self.on_file_collection_filtered)
+
+        self.file_collection.sig_file_added.connect(self.on_file_added)
+        self.file_collection.sig_file_removed.connect(self.on_file_removed)
+
         self.on_file_collection_set()
+
+    def on_file_added(self, fileinfo):
+        thumb = ThumbFileItem(fileinfo, self.controller, self)
+        self.abspath2item[fileinfo.abspath()] = thumb
+        self.scene.addItem(thumb)
+        self.items.append(thumb)
+
+        self.style_item(thumb)
+        self.layouter.layout_item(thumb)
+        self.setSceneRect(self.layouter.get_bounding_rect())
+
+    def on_file_removed(self, abspath):
+        item = self.abspath2item[abspath]
+        self.scene.removeItem(item)
+        del self.abspath2item[abspath]
+        self.items.remove(item)
+        self.layout_items()
 
     def on_file_collection_reordered(self):
         logging.debug("ThumbView.on_file_collection_reordered")
@@ -133,20 +154,23 @@ class ThumbView(QGraphicsView):
         self.layouter.resize(ev.size().width(), ev.size().height())
         self.layout_items(force=False)
 
+    def style_item(self, item):
+        if self.show_filtered:
+            if item.fileinfo.is_hidden:
+                item.setVisible(False)
+            elif item.fileinfo.is_filtered:
+                item.setVisible(True)
+                item.setOpacity(0.5)
+            else:
+                item.setVisible(True)
+                item.setOpacity(1.0)
+        else:
+            item.setVisible(item.fileinfo.is_visible)
+            item.setOpacity(1.0)
+
     def style_items(self):
         for item in self.items:
-            if self.show_filtered:
-                if item.fileinfo.is_hidden:
-                    item.setVisible(False)
-                elif item.fileinfo.is_filtered:
-                    item.setVisible(True)
-                    item.setOpacity(0.5)
-                else:
-                    item.setVisible(True)
-                    item.setOpacity(1.0)
-            else:
-                item.setVisible(item.fileinfo.is_visible)
-                item.setOpacity(1.0)
+            self.style_item(item)
 
     def layout_items(self, force=True):
         logging.debug("ThumbView.layout_items")

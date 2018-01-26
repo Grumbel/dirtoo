@@ -27,8 +27,8 @@ class INotifyQt(QObject):
 
     sig_event = pyqtSignal(inotify_simple.Event)
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
         self.inotify = INotify()
         self.qnotifier = QSocketNotifier(self.inotify.fd, QSocketNotifier.Read)
@@ -45,7 +45,7 @@ class INotifyQt(QObject):
             self.sig_event.emit(ev)
 
     def close(self):
-        del self.qnotifier
+        # del self.qnotifier
         self.inotify.close()
 
 
@@ -55,6 +55,7 @@ class DirectoryWatcher(QObject):
     sig_file_removed = pyqtSignal(str)
     sig_file_changed = pyqtSignal(FileInfo)
     sig_error = pyqtSignal()
+    sig_scandir_finished = pyqtSignal()
 
     sig_close_requested = pyqtSignal()
     sig_finished = pyqtSignal()
@@ -65,7 +66,7 @@ class DirectoryWatcher(QObject):
         self.path = path
         self._close = False
 
-        self.inotify = INotifyQt()
+        self.inotify = INotifyQt(self)
         self.inotify.add_watch(path)
         self.inotify.sig_event.connect(self.on_inotify_event)
 
@@ -75,7 +76,6 @@ class DirectoryWatcher(QObject):
         self.inotify.close()
 
     def on_close_requested(self):
-        self._close = True
         self.close()
         self.sig_finished.emit()
 
@@ -86,7 +86,9 @@ class DirectoryWatcher(QObject):
             self.sig_file_added.emit(fileinfo)
 
             if self._close:
-                break
+                return
+
+        self.sig_scandir_finished.emit()
 
     def on_inotify_event(self, ev):
         try:
@@ -101,7 +103,7 @@ class DirectoryWatcher(QObject):
             elif ev.mask & inotify_flags.MODIFY or ev.mask & inotify_flags.ATTRIB:
                 self.sig_file_changed.emit(FileInfo(os.path.join(self.path, ev.name)))
             elif ev.mask & inotify_flags.MOVED_FROM:
-                self.sig_file_removed.emit(ev.name)
+                self.sig_file_removed.emit(os.path.join(self.path, ev.name))
             elif ev.mask & inotify_flags.MOVED_TO:
                 self.sig_file_added.emit(FileInfo(os.path.join(self.path, ev.name)))
             else:
