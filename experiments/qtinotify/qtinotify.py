@@ -70,7 +70,7 @@ def main(argv):
         print("    " + ", ".join(evs))
 
     watcher.sig_event.connect(on_event)
-    QTimer.singleShot(1000, watcher.close)
+    # QTimer.singleShot(1000, watcher.close)
 
     sys.exit(app.exec())
 

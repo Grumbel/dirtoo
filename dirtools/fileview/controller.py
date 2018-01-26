@@ -23,13 +23,15 @@ import os
 import subprocess
 
 from PyQt5.QtWidgets import QFileDialog
-from PyQt5.QtCore import QObject
+from PyQt5.QtCore import QObject, QThread
+
 from dirtools.fileview.actions import Actions
 from dirtools.fileview.file_collection import FileCollection
 from dirtools.fileview.file_view_window import FileViewWindow
 from dirtools.util import expand_file
 from dirtools.fileview.filter import Filter
 from dirtools.fileview.sorter import Sorter
+from dirtools.fileview.directory_watcher import DirectoryWatcher
 
 
 VIDEO_EXT = ['wmv', 'mp4', 'mpg', 'mpeg', 'avi', 'flv', 'mkv', 'wmv',
@@ -61,6 +63,9 @@ class Controller(QObject):
         self.sorter = Sorter(self)
         self.history: List[str] = []
         self.history_index = 0
+
+        self.directory_watcher_thread = None
+        self.directory_watcher = None
 
         self.window.file_view.set_file_collection(self.file_collection)
         self.window.thumb_view.set_file_collection(self.file_collection)
@@ -166,6 +171,26 @@ class Controller(QObject):
             self.history.append(location)
             self.actions.back.setEnabled(True)
             self.actions.forward.setEnabled(False)
+
+
+        # Work in progress
+        if self.directory_watcher_thread is not None:
+            self.directory_watcher.sig_close_requested.emit()
+            # keep the thread around until it's fully dead
+            self._junk = [self.directory_watcher, self.directory_watcher_thread]
+
+        self.directory_watcher_thread = QThread()
+        self.directory_watcher = DirectoryWatcher(location)
+        self.directory_watcher.moveToThread(self.directory_watcher_thread)
+
+        self.directory_watcher.sig_file_added.connect(lambda x: print("added", x))
+        self.directory_watcher.sig_file_removed.connect(lambda x: print("removed", x))
+        self.directory_watcher.sig_file_changed.connect(lambda x: print("changed", x))
+        self.directory_watcher.sig_finished.connect(self.directory_watcher_thread.quit)
+
+        self.directory_watcher_thread.started.connect(self.directory_watcher.process)
+        self.directory_watcher_thread.start()
+
 
         self.location = os.path.abspath(location)
         self.window.set_location(self.location)
