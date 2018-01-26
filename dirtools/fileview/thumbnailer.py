@@ -68,8 +68,8 @@ class ThumbnailerWorker(QObject):
     sig_thumbnail_ready = pyqtSignal(str, str, CallableWrapper, QImage)
     sig_thumbnail_error = pyqtSignal(str, str, CallableWrapper)
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
         # This function is called from the main thread, leave
         # construction to init() and deinit()
         self.quit = False
@@ -140,11 +140,11 @@ class Thumbnailer(QObject):
 
     sig_close_requested = pyqtSignal()
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
         self.worker = ThumbnailerWorker()
-        self.thread = QThread()
+        self.thread = QThread(self)
         self.worker.moveToThread(self.thread)
 
         # startup and shutdown
@@ -152,7 +152,8 @@ class Thumbnailer(QObject):
         self.thread.finished.connect(self.thread.deleteLater)
         self.sig_close_requested.connect(self.worker.deinit)
         self.worker.sig_finished.connect(self.thread.quit)
-        self.worker.sig_finished.connect(self.deleteLater)
+        self.worker.sig_finished.connect(self.worker.deleteLater)
+        self.thread.finished.connect(self.thread.deleteLater)
 
         # requests to the worker
         self.sig_thumbnail_requested.connect(self.worker.on_thumbnail_requested)
