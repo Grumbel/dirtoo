@@ -15,7 +15,27 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import re
 from fnmatch import fnmatch
+
+
+class GlobMatchFunc:
+
+    def __init__(self, pattern):
+        self.pattern = pattern
+
+    def __call__(self, fileinfo):
+        return fnmatch(fileinfo.basename(), self.pattern)
+
+
+class RegexMatchFunc:
+
+    def __init__(self, pattern, flags):
+        self.rx = re.compile(pattern, flags)
+
+    def __call__(self, fileinfo):
+        print(fileinfo.basename(), bool(self.rx.search(fileinfo.basename())))
+        return bool(self.rx.search(fileinfo.basename()))
 
 
 class Filter:
@@ -23,7 +43,16 @@ class Filter:
     def __init__(self):
         self.show_hidden = False
         self.show_inaccessible = True
-        self.pattern = None
+        self.match_func = None
+
+    def set_regex_pattern(self, pattern, flags=0):
+            self.match_func = RegexMatchFunc(pattern, flags)
+
+    def set_pattern(self, pattern):
+        if pattern is None:
+            self.match_func = None
+        else:
+            self.match_func = GlobMatchFunc(pattern)
 
     def is_hidden(self, fileinfo):
         if not self.show_hidden:
@@ -33,11 +62,10 @@ class Filter:
         return False
 
     def is_filtered(self, fileinfo):
-        if self.pattern is not None:
-            if not fnmatch(fileinfo.basename(), self.pattern):
-                return True
-
-        return False
+        if self.match_func is None:
+            return False
+        else:
+            return not self.match_func(fileinfo)
 
 
 # EOF #

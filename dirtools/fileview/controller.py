@@ -17,6 +17,7 @@
 
 from typing import List
 
+import re
 import logging
 import os
 import subprocess
@@ -29,6 +30,22 @@ from dirtools.fileview.file_view_window import FileViewWindow
 from dirtools.util import expand_file
 from dirtools.fileview.filter import Filter
 from dirtools.fileview.sorter import Sorter
+
+
+VIDEO_EXT = ['wmv', 'mp4', 'mpg', 'mpeg', 'avi', 'flv', 'mkv', 'wmv',
+             'mov', 'webm', 'f4v', 'flv', 'divx']
+
+VIDEO_REGEX = r"\.({})$".format("|".join(VIDEO_EXT))
+
+
+IMAGE_EXT = ['jpg', 'jpeg', 'gif', 'png', 'tif', 'tiff', 'webp']
+
+IMAGE_REGEX = r"\.({})$".format("|".join(IMAGE_EXT))
+
+
+ARCHIVE_EXT = ['zip', 'rar', 'tar', 'gz', 'xz', 'bz2', 'ar', '7z']
+
+ARCHIVE_REGEX = r"\.({})$".format("|".join(ARCHIVE_EXT))
 
 
 class Controller(QObject):
@@ -103,9 +120,22 @@ class Controller(QObject):
 
     def set_filter(self, pattern):
         if pattern == "":
-            self.filter.pattern = None
+            self.filter.set_pattern(None)
+        elif pattern.startswith("/"):
+            command, *arg = pattern[1:].split("/", 1)
+            if command in ["video", "videos", "vid", "vids"]:
+                self.filter.set_regex_pattern(VIDEO_REGEX, re.IGNORECASE)
+            elif command in ["image", "images", "img", "imgs"]:
+                self.filter.set_regex_pattern(IMAGE_REGEX, re.IGNORECASE)
+            elif command in ["archive", "archives", "arch", "ar"]:
+                self.filter.set_regex_pattern(ARCHIVE_REGEX, re.IGNORECASE)
+            elif command in ["r", "rx", "re", "regex"]:
+                self.filter.set_regex_pattern(arg[0], re.IGNORECASE)
+            else:
+                print("Controller.set_filter: unknown command: {}".format(command))
         else:
-            self.filter.pattern = pattern
+            self.filter.set_pattern(pattern)
+
         self.apply_filter()
 
     def go_forward(self):
