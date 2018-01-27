@@ -223,18 +223,9 @@ class ThumbView(QGraphicsView):
     def pixmap_from_fileinfo(self, fileinfo, tn_size):
         tn_size = 3 * tn_size // 4
 
-        if fileinfo.isdir():
-            return self.shared_pixmaps.folder
-        else:
-            ext = fileinfo.ext()
-            if ext == ".rar":
-                return self.shared_pixmaps.rar
-            elif ext == ".zip":
-                return self.shared_pixmaps.zip
-            elif ext == ".txt":
-                return self.shared_pixmaps.txt
-            else:
-                return None
+        mime_type = self.controller.app.mime_database.get_mime_type(fileinfo.abspath())
+
+        return QIcon.fromTheme(mime_type.iconName()).pixmap(tn_size)
 
     @profile
     def reload(self):

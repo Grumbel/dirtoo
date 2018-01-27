@@ -26,6 +26,7 @@ from dbus.mainloop.pyqt5 import DBusQtMainLoop
 from dirtools.fileview.controller import Controller
 from dirtools.fileview.thumbnailer import Thumbnailer
 from dirtools.dbus_thumbnail_cache import DBusThumbnailCache
+from dirtools.fileview.mime_database import MimeDatabase
 
 
 class FileViewApplication:
@@ -40,6 +41,7 @@ class FileViewApplication:
         self.dbus_loop = DBusQtMainLoop(set_as_default=False)
         self.session_bus = dbus.SessionBus(self.dbus_loop)
         self.dbus_thumbnail_cache = DBusThumbnailCache(self.session_bus)
+        self.mime_database = MimeDatabase()
 
         self.controllers: List[Controller] = []
 
