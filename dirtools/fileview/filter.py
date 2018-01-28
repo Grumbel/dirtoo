@@ -38,6 +38,26 @@ class RegexMatchFunc:
         return bool(self.rx.search(fileinfo.basename()))
 
 
+class TimeMatchFunc:
+
+    def __init__(self, mtime, compare):
+        self.mtime = mtime
+        self.compare = compare
+
+    def __call__(self, fileinfo):
+        return self.compare(fileinfo.mtime(), self.mtime)
+
+
+class SizeMatchFunc:
+
+    def __init__(self, size, compare):
+        self.size = size
+        self.compare = compare
+
+    def __call__(self, fileinfo):
+        return self.compare(fileinfo.size(), self.size)
+
+
 class Filter:
 
     def __init__(self):
@@ -46,13 +66,19 @@ class Filter:
         self.match_func = None
 
     def set_regex_pattern(self, pattern, flags=0):
-            self.match_func = RegexMatchFunc(pattern, flags)
+        self.match_func = RegexMatchFunc(pattern, flags)
 
     def set_pattern(self, pattern):
-        if pattern is None:
-            self.match_func = None
-        else:
-            self.match_func = GlobMatchFunc(pattern)
+        self.match_func = GlobMatchFunc(pattern)
+
+    def set_size(self, size, compare):
+        self.match_func = SizeMatchFunc(size, compare)
+
+    def set_time(self, mtime, compare):
+        self.match_func = TimeMatchFunc(mtime, compare)
+
+    def set_none(self):
+        self.match_func = None
 
     def is_hidden(self, fileinfo):
         if not self.show_hidden:

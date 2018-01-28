@@ -17,6 +17,8 @@
 
 from typing import List
 
+import datetime
+import operator
 import re
 import logging
 import os
@@ -28,10 +30,11 @@ from PyQt5.QtCore import QObject, QThread
 from dirtools.fileview.actions import Actions
 from dirtools.fileview.file_collection import FileCollection
 from dirtools.fileview.file_view_window import FileViewWindow
-from dirtools.util import expand_file
 from dirtools.fileview.filter import Filter
 from dirtools.fileview.sorter import Sorter
 from dirtools.fileview.directory_watcher import DirectoryWatcher
+
+import bytefmt
 
 
 VIDEO_EXT = ['wmv', 'mp4', 'mpg', 'mpeg', 'avi', 'flv', 'mkv', 'wmv',
@@ -125,7 +128,7 @@ class Controller(QObject):
 
     def set_filter(self, pattern):
         if pattern == "":
-            self.filter.set_pattern(None)
+            self.filter.set_none()
         elif pattern.startswith("/"):
             command, *arg = pattern[1:].split("/", 1)
             if command in ["video", "videos", "vid", "vids"]:
@@ -136,6 +139,24 @@ class Controller(QObject):
                 self.filter.set_regex_pattern(ARCHIVE_REGEX, re.IGNORECASE)
             elif command in ["r", "rx", "re", "regex"]:
                 self.filter.set_regex_pattern(arg[0], re.IGNORECASE)
+            elif command == "today":
+                self.filter.set_time(datetime.datetime.combine(
+                    datetime.date.today(), datetime.datetime.min.time()).timestamp(),
+                    operator.ge)
+            elif command.startswith("size"):
+                m = re.match(r"size(<|>|<=|>=|=|==)(\d+.*)", command)
+                if m is None:
+                    self.window.show_info("invalid filter command")
+                else:
+                    text2op = {
+                        "<": operator.lt,
+                        "<=": operator.le,
+                        ">": operator.gt,
+                        ">=": operator.ge,
+                        "==": operator.eq,
+                        "=": operator.eq,
+                    }
+                self.filter.set_size(bytefmt.dehumanize(m.group(2)), text2op[m.group(1)])
             else:
                 print("Controller.set_filter: unknown command: {}".format(command))
         else:
