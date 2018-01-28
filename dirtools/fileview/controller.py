@@ -193,7 +193,7 @@ class Controller(QObject):
         self.directory_watcher.sig_file_added.connect(self.file_collection.add_fileinfo)
         self.directory_watcher.sig_file_removed.connect(self.file_collection.remove_file)
         # self.directory_watcher.sig_file_changed.connect(lambda x: print("changed", x))
-        self.directory_watcher.sig_scandir_finished.connect(self.apply_sort)
+        self.directory_watcher.sig_scandir_finished.connect(self.on_scandir_finished)
 
         self.directory_watcher_thread.started.connect(self.directory_watcher.process)
         self.directory_watcher_thread.finished.connect(self.directory_watcher_thread.deleteLater)
@@ -205,6 +205,11 @@ class Controller(QObject):
 
         # files = expand_file(self.location, recursive=False)
         # self.set_files(files, self.location)
+
+    def on_scandir_finished(self, fileinfos):
+        self.file_collection.set_fileinfos(fileinfos)
+        self.apply_sort()
+        self.apply_filter()
 
     def set_files(self, files, location=None):
         if location is None:

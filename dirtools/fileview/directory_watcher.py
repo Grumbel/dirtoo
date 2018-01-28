@@ -55,7 +55,7 @@ class DirectoryWatcher(QObject):
     sig_file_removed = pyqtSignal(str)
     sig_file_changed = pyqtSignal(FileInfo)
     sig_error = pyqtSignal()
-    sig_scandir_finished = pyqtSignal()
+    sig_scandir_finished = pyqtSignal(list)
 
     sig_close_requested = pyqtSignal()
     sig_finished = pyqtSignal()
@@ -80,15 +80,17 @@ class DirectoryWatcher(QObject):
         self.sig_finished.emit()
 
     def process(self):
+        fileinfos = []
         for entry in os.scandir(self.path):
             abspath = os.path.join(self.path, entry)
             fileinfo = FileInfo(abspath)
-            self.sig_file_added.emit(fileinfo)
+            fileinfos.append(fileinfo)
 
             if self._close:
                 return
 
-        self.sig_scandir_finished.emit()
+        print("emit:sig_scandir_finished")
+        self.sig_scandir_finished.emit(fileinfos)
 
     def on_inotify_event(self, ev):
         try:

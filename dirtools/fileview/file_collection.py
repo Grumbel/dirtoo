@@ -54,6 +54,10 @@ class FileCollection(QObject):
         self.fileinfos = [FileInfo(f) for f in files]
         self.sig_files_set.emit()
 
+    def set_fileinfos(self, fileinfos):
+        self.fileinfos = fileinfos
+        self.sig_files_set.emit()
+
     def add_fileinfo(self, fi):
         self.fileinfos.append(fi)
         self.sig_file_added.emit(fi)
