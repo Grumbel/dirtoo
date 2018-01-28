@@ -174,6 +174,7 @@ class Controller(QObject):
 
 
         # Work in progress
+        self.window.show_info("Loading...")
         self.file_collection.clear()
 
         if self.directory_watcher_thread is not None:
