@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import random
 import re
 from fnmatch import fnmatch
 
@@ -58,6 +59,16 @@ class SizeMatchFunc:
         return self.compare(fileinfo.size(), self.size)
 
 
+class RandomMatchFunc:
+
+    def __init__(self, probability):
+        self.random = random.Random(random.randrange(1024))
+        self.probability = probability
+
+    def __call__(self, fileinfo):
+        return (self.random.random() < self.probability)
+
+
 class Filter:
 
     def __init__(self):
@@ -76,6 +87,9 @@ class Filter:
 
     def set_time(self, mtime, compare):
         self.match_func = TimeMatchFunc(mtime, compare)
+
+    def set_random(self, probability):
+        self.match_func = RandomMatchFunc(probability)
 
     def set_none(self):
         self.match_func = None

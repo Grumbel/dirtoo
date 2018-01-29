@@ -157,6 +157,12 @@ class Controller(QObject):
                         "=": operator.eq,
                     }
                 self.filter.set_size(bytefmt.dehumanize(m.group(2)), text2op[m.group(1)])
+            elif command.startswith("random"):
+                m = re.match(r"random(\d*\.\d+)", command)
+                if m is None:
+                    self.window.show_info("invalid filter command")
+                else:
+                    self.filter.set_random(float(m.group(1)))
             else:
                 print("Controller.set_filter: unknown command: {}".format(command))
         else:
@@ -303,8 +309,8 @@ class Controller(QObject):
     def reload(self):
         self.window.thumb_view.reload()
 
-    def receive_thumbnail(self, filename, flavor, pixmap):
-        self.window.thumb_view.receive_thumbnail(filename, flavor, pixmap)
+    def receive_thumbnail(self, filename, flavor, pixmap, error_code, message):
+        self.window.thumb_view.receive_thumbnail(filename, flavor, pixmap, error_code, message)
 
     def reload_thumbnails(self):
         self.app.dbus_thumbnail_cache.delete(
