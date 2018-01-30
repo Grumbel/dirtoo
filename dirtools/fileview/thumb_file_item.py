@@ -52,47 +52,43 @@ def make_unscaled_rect(sw, sh, tw, th):
 
 class ThumbnailStatus(Enum):
 
-    ERROR = -1
-    NONE = 0
+    INITIAL = 0
     LOADING = 1
-    READY = 2
+    THUMBNAIL_ERROR = 2
+    THUMBNAIL_UNAVAILABLE = 3
+    THUMBNAIL_READY = 4
 
 
 class Thumbnail:
 
-    def __init__(self, thumb_view):
-        self.thumb_view = thumb_view
-        self.icon_pixmap = None
-        self.normal_pixmap = None
-        self.large_pixmap = None
-        self.have_thumbnail = False
-        self.status = ThumbnailStatus.NONE
+    def __init__(self, flavor, parent_item):
+        self.parent_item = parent_item
+        self.pixmap = None
+        self.status = ThumbnailStatus.INITIAL
+        self.flavor = flavor
 
-    def get_pixmap(self, flavor):
-        if not self.have_thumbnail:
-            return self.icon_pixmap
-        elif self.normal_pixmap or self.large_pixmap:
-            if flavor == "large":
-                return self.large_pixmap or self.normal_pixmap
-            else:
-                return self.normal_pixmap or self.large_pixmap
+    def get_pixmap(self):
+        if self.status == ThumbnailStatus.THUMBNAIL_READY:
+            assert self.pixmap is not None
+            return self.pixmap
         else:
-            self.thumb_view.shared_pixmaps.image_missing
+            return None
 
-    def set_icon_pixmap(self, pixmap):
-        self.icon_pixmap = pixmap
-
-    def set_thumbnail_pixmap(self, pixmap, flavor):
-        if flavor == "large":
-            self.large_pixmap = pixmap or self.thumb_view.shared_pixmaps.image_missing
-        else:
-            self.normal_pixmap = pixmap or self.thumb_view.shared_pixmaps.image_missing
-
+    def set_thumbnail_pixmap(self, pixmap):
         if pixmap is None:
-            self.status = ThumbnailStatus.ERROR
-            self.have_thumbnail = False
+            self.status = ThumbnailStatus.THUMBNAIL_UNAVAILABLE
+            self.pixmap = None
         else:
-            self.have_thumbnail = True
+            assert not pixmap.isNull()
+            self.status = ThumbnailStatus.THUMBNAIL_READY
+            self.pixmap = pixmap
+
+    def request(self):
+        assert self.status != ThumbnailStatus.LOADING
+
+        self.status = ThumbnailStatus.LOADING
+        self.parent_item.thumb_view.request_thumbnail(
+            self.parent_item, self.parent_item.fileinfo, self.flavor)
 
 
 class ThumbFileItem(FileItem):
@@ -106,8 +102,9 @@ class ThumbFileItem(FileItem):
 
         self.hovering = False
 
-        self.thumbnail = Thumbnail(thumb_view)
-        self.thumbnail.set_icon_pixmap(self.make_shared_pixmap())
+        self.icon = self.make_icon()
+        self.normal_thumbnail = Thumbnail("normal", self)
+        self.large_thumbnail = Thumbnail("large", self)
 
         self.set_tile_size(self.thumb_view.tn_width, self.thumb_view.tn_height)
 
@@ -115,10 +112,10 @@ class ThumbFileItem(FileItem):
 
     def set_tile_size(self, tile_width, tile_height):
         # the size of the base tile
-        self.tile_rect = QRectF(0, 0, tile_width, tile_height)
+        self.tile_rect = QRect(0, 0, tile_width, tile_height)
 
         # the bounding rect for drawing
-        self.bounding_rect = QRectF(self.tile_rect.x() - 8,
+        self.bounding_rect = QRect(self.tile_rect.x() - 8,
                                     self.tile_rect.y() - 8,
                                     self.tile_rect.width() + 16,
                                     self.tile_rect.height() + 16)
@@ -157,6 +154,7 @@ class ThumbFileItem(FileItem):
 
         self.paint_text_items(painter)
         self.paint_thumbnail(painter)
+        self.paint_overlay(painter)
 
     def paint_text_items(self, painter):
         # text items
@@ -192,21 +190,31 @@ class ThumbFileItem(FileItem):
     def paint_thumbnail(self, painter):
         logging.debug("ThumbFileItem.make_thumbnail: %s", self.fileinfo.abspath())
 
-        pixmap = self.thumbnail.get_pixmap(self.thumb_view.flavor)
-        if pixmap is not None:
-            if self.thumbnail.have_thumbnail:
-                rect = make_scaled_rect(pixmap.width(), pixmap.height(),
-                                        self.tile_rect.width(), self.tile_rect.width())
-            else:
-                rect = make_unscaled_rect(pixmap.width(), pixmap.height(),
-                                          self.tile_rect.width(), self.tile_rect.width())
+        thumbnail = self._get_thumbnail()
+
+        if thumbnail.status == ThumbnailStatus.INITIAL:
+            thumbnail.request()
+            self.paint_icon(painter, self.icon)
+
+        elif thumbnail.status == ThumbnailStatus.LOADING:
+            self.paint_icon(painter, self.icon)
+
+        elif thumbnail.status == ThumbnailStatus.THUMBNAIL_UNAVAILABLE:
+            self.paint_icon(painter, self.icon)
+
+        elif thumbnail.status == ThumbnailStatus.THUMBNAIL_ERROR:
+            self.paint_icon(painter, self.icon)
+
+        elif thumbnail.status == ThumbnailStatus.THUMBNAIL_READY:
+            pixmap = thumbnail.get_pixmap()
+            assert pixmap is not None
+            rect = make_scaled_rect(pixmap.width(), pixmap.height(),
+                                    self.tile_rect.width(), self.tile_rect.width())
             painter.drawPixmap(rect, pixmap)
 
-        if self.thumbnail.status == ThumbnailStatus.NONE:
-            self.thumbnail.set_icon_pixmap(self.thumb_view.shared_pixmaps.image_loading)
-            self.thumbnail.status = ThumbnailStatus.LOADING
-            self.thumb_view.request_thumbnail(self, self.fileinfo, self.thumb_view.flavor)
+            self.paint_tiny_icon(painter, self.icon)
 
+    def paint_overlay(self, painter):
         if not self.fileinfo.have_access():
             pixmap = self.thumb_view.shared_pixmaps.locked
             painter.setOpacity(0.5)
@@ -215,16 +223,25 @@ class ThumbFileItem(FileItem):
                 self.tile_rect.height() / 2 - pixmap.height() / 2,
                 pixmap)
 
-    def make_shared_pixmap(self):
-        logging.debug("ThumbFileItem.make_pixmap: %s", self.fileinfo.abspath())
+        thumbnail = self._get_thumbnail()
+        if thumbnail.status == ThumbnailStatus.LOADING or thumbnail.status == ThumbnailStatus.INITIAL:
+            self.paint_icon(painter, self.thumb_view.shared_pixmaps.image_loading)
+        elif thumbnail.status == ThumbnailStatus.THUMBNAIL_ERROR:
+            self.paint_icon(painter, self.thumb_view.shared_pixmaps.image_error)
 
-        # try to load shared pixmaps, this is fast
-        pixmap = self.thumb_view.pixmap_from_fileinfo(self.fileinfo, 3 * self.thumb_view.tn_size // 4)
-        if pixmap is not None:
-            self.thumbnail.status = ThumbnailStatus.READY
-            return pixmap
-        else:
-            return self.thumb_view.shared_pixmaps.image_loading
+    def paint_tiny_icon(self, painter, icon):
+        painter.setOpacity(0.75)
+        icon.paint(painter, QRect(self.tile_rect.width() - 48, 0, 48, 48))
+
+    def paint_icon(self, painter, icon):
+        rect = make_unscaled_rect(self.tile_rect.width() * 3 // 4, self.tile_rect.width() * 3 // 4,
+                                  self.tile_rect.width(), self.tile_rect.width())
+        icon.paint(painter, rect)
+
+    def make_icon(self):
+        logging.debug("ThumbFileItem.make_pixmap: %s", self.fileinfo.abspath())
+        icon = self.thumb_view.icon_from_fileinfo(self.fileinfo)
+        return icon
 
     def hoverEnterEvent(self, ev):
         self.hovering = True
@@ -237,18 +254,22 @@ class ThumbFileItem(FileItem):
         self.update()
 
     def set_thumbnail_pixmap(self, pixmap, flavor):
-        self.thumbnail.set_thumbnail_pixmap(pixmap, flavor)
+        thumbnail = self._get_thumbnail(flavor)
+        thumbnail.set_thumbnail_pixmap(pixmap)
         self.update()
 
+    def set_icon(self, icon):
+        self.icon = icon
+
     def boundingRect(self):
-        return self.bounding_rect
+        return QRectF(self.bounding_rect)
 
     def shape(self):
         return self.qpainter_path
 
     def reload(self):
-        self.thumbnail = Thumbnail(self.thumb_view)
-        self.thumbnail.set_icon_pixmap(self.make_shared_pixmap())
+        self.normal_thumbnail = Thumbnail("normal", self)
+        self.large_thumbnail = Thumbnail("large", self)
         self.update()
 
     def reload_thumbnail(self):
@@ -267,6 +288,17 @@ class ThumbFileItem(FileItem):
                 self.animation_timer = self.startTimer(30)
             else:
                 self.animation_timer = 0
+
+    def _get_thumbnail(self, flavor=None):
+        if flavor is None:
+            flavor = self.thumb_view.flavor
+
+        if flavor == "normal":
+            return self.normal_thumbnail
+        elif flavor == "large":
+            return self.large_thumbnail
+        else:
+            return self.large_thumbnail
 
 
 # EOF #

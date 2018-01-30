@@ -29,18 +29,19 @@ from PyQt5.QtWidgets import (
 from dirtools.fileview.thumb_file_item import ThumbFileItem
 from dirtools.fileview.tile_layouter import TileLayouter
 from dirtools.fileview.profiler import profile
+from dirtools.dbus_thumbnailer import DBusThumbnailerError
 
 
 class SharedPixmaps:
 
     def __init__(self, tn_size):
-        self.folder = QIcon.fromTheme("folder").pixmap(tn_size)
-        self.rar = QIcon.fromTheme("rar").pixmap(tn_size)
-        self.zip = QIcon.fromTheme("zip").pixmap(tn_size)
-        self.txt = QIcon.fromTheme("txt").pixmap(tn_size)
-        self.image_loading = QIcon.fromTheme("image-loading").pixmap(tn_size)
-        self.image_missing = QIcon.fromTheme("image-missing").pixmap(tn_size)
-        self.locked = QIcon.fromTheme("locked").pixmap(tn_size)
+        self.folder = QIcon.fromTheme("folder")
+        self.rar = QIcon.fromTheme("rar")
+        self.zip = QIcon.fromTheme("zip")
+        self.txt = QIcon.fromTheme("txt")
+        self.image_loading = QIcon.fromTheme("image-loading")
+        self.image_missing = QIcon.fromTheme("image-missing")
+        self.locked = QIcon.fromTheme("locked")
 
 
 class ThumbView(QGraphicsView):
@@ -149,6 +150,7 @@ class ThumbView(QGraphicsView):
         self.layout_items()
 
     def resizeEvent(self, ev):
+        print(ev)
         logging.debug("ThumbView.resizeEvent: %s", ev)
         super().resizeEvent(ev)
         self.layouter.resize(ev.size().width(), ev.size().height())
@@ -220,12 +222,15 @@ class ThumbView(QGraphicsView):
         self.shared_pixmaps = SharedPixmaps(self.tn_size * 3 // 4)
         self.reload()
 
-    def pixmap_from_fileinfo(self, fileinfo, tn_size):
-        tn_size = 3 * tn_size // 4
-
+    def icon_from_fileinfo(self, fileinfo):
         mime_type = self.controller.app.mime_database.get_mime_type(fileinfo.abspath())
-
-        return QIcon.fromTheme(mime_type.iconName()).pixmap(tn_size)
+        icon = QIcon.fromTheme(mime_type.iconName())
+        if icon.isNull():
+            icon = QIcon.fromTheme("application-octet-stream")
+            assert not icon.isNull()
+            return icon
+        else:
+            return icon
 
     @profile
     def reload(self):
@@ -234,14 +239,35 @@ class ThumbView(QGraphicsView):
         self.style_items()
         self.layout_items()
 
-    def receive_thumbnail(self, filename, flavor, pixmap):
+    def receive_thumbnail(self, filename, flavor, pixmap, error_code, message):
         item = self.abspath2item.get(filename, None)
         if item is not None:
+            self.receive_thumbnail_for_item(item, flavor, pixmap, error_code, message)
             item.set_thumbnail_pixmap(pixmap, flavor)
         else:
             print("MISSING!!!!!!!", filename)
             for k, v in self.abspath2item.items():
                 print("->", k)
+
+    def receive_thumbnail_for_item(self, item, flavor, pixmap, error_code, message):
+        if pixmap is not None:
+            item.set_thumbnail_pixmap(pixmap, flavor)
+        else:
+            if error_code is None:
+                # thumbnail was generated, but couldn't be loaded
+                item.set_thumbnail_pixmap(None, flavor)
+            elif error_code == DBusThumbnailerError.UNSUPPORTED_MIMETYPE:
+                pass
+            elif error_code == DBusThumbnailerError.CONNECTION_FAILURE:
+                pass
+            elif error_code == DBusThumbnailerError.INVALID_DATA:
+                pass
+            elif error_code == DBusThumbnailerError.THUMBNAIL_RECURSION:
+                pass
+            elif error_code == DBusThumbnailerError.SAVE_FAILURE:
+                pass
+            elif error_code == DBusThumbnailerError.UNSUPPORTED_FLAVOR:
+                pass
 
     def request_thumbnail(self, item, fileinfo, flavor):
         self.controller.request_thumbnail(fileinfo, flavor)

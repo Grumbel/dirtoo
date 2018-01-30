@@ -66,7 +66,7 @@ class ThumbnailerWorker(QObject):
     sig_finished = pyqtSignal()
 
     sig_thumbnail_ready = pyqtSignal(str, str, CallableWrapper, QImage)
-    sig_thumbnail_error = pyqtSignal(str, str, CallableWrapper)
+    sig_thumbnail_error = pyqtSignal(str, str, CallableWrapper, int, str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -130,7 +130,7 @@ class ThumbnailerWorker(QObject):
     def on_thumbnail_error(self, handle: int, urls: List[str], error_code, message):
         for request in self.requests.get(handle, []):
             filename, flavor, callback = request
-            self.sig_thumbnail_error.emit(filename, flavor, callback)
+            self.sig_thumbnail_error.emit(filename, flavor, callback, error_code, message)
 
 
 class Thumbnailer(QObject):
@@ -188,13 +188,14 @@ class Thumbnailer(QObject):
                            image: QImage):
         pixmap = QPixmap(image)
         if pixmap.isNull():
-            callback(filename, flavor, None)
+            callback(filename, flavor, None, None, None)
         else:
-            callback(filename, flavor, pixmap)
+            callback(filename, flavor, pixmap, None, None)
 
     def on_thumbnail_error(self, filename: str, flavor: str,
-                           callback: ThumbnailCallback):
-        callback(filename, flavor, None)
+                           callback: ThumbnailCallback,
+                           error_code, message):
+        callback(filename, flavor, None, error_code, message)
 
 
 # EOF #
