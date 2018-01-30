@@ -78,10 +78,7 @@ class FileCollection(QObject):
         return len(self.fileinfos)
 
     def filter(self, filter):
-        for fileinfo in self.fileinfos:
-            fileinfo.is_filtered = filter.is_filtered(fileinfo)
-            fileinfo.is_hidden = filter.is_hidden(fileinfo)
-
+        filter.apply(self.fileinfos)
         self.sig_files_filtered.emit()
 
     def sort(self, key, reverse=False):

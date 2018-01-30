@@ -20,53 +20,86 @@ import re
 from fnmatch import fnmatch
 
 
-class GlobMatchFunc:
+class MatchFunc:
+
+    def __call__(self, fileinfo, idx):
+        assert False, "MatchFunc.__call__() not implemented"
+
+    def begin(self, fileinfos):
+        pass
+
+
+class GlobMatchFunc(MatchFunc):
 
     def __init__(self, pattern):
         self.pattern = pattern
 
-    def __call__(self, fileinfo):
+    def __call__(self, fileinfo, idx):
         return fnmatch(fileinfo.basename(), self.pattern)
 
 
-class RegexMatchFunc:
+class RegexMatchFunc(MatchFunc):
 
     def __init__(self, pattern, flags):
         self.rx = re.compile(pattern, flags)
 
-    def __call__(self, fileinfo):
-        print(fileinfo.basename(), bool(self.rx.search(fileinfo.basename())))
+    def __call__(self, fileinfo, idx):
         return bool(self.rx.search(fileinfo.basename()))
 
 
-class TimeMatchFunc:
+class TimeMatchFunc(MatchFunc):
 
     def __init__(self, mtime, compare):
         self.mtime = mtime
         self.compare = compare
 
-    def __call__(self, fileinfo):
+    def __call__(self, fileinfo, idx):
         return self.compare(fileinfo.mtime(), self.mtime)
 
 
-class SizeMatchFunc:
+class SizeMatchFunc(MatchFunc):
 
     def __init__(self, size, compare):
         self.size = size
         self.compare = compare
 
-    def __call__(self, fileinfo):
+    def __call__(self, fileinfo, idx):
         return self.compare(fileinfo.size(), self.size)
 
 
-class RandomMatchFunc:
+class RandomMatchFunc(MatchFunc):
 
     def __init__(self, probability):
         self.random = random.Random(random.randrange(1024))
         self.probability = probability
 
-    def __call__(self, fileinfo):
+    def __call__(self, fileinfo, idx):
         return (self.random.random() < self.probability)
+
+
+class RandomPickMatchFunc(MatchFunc):
+
+    def __init__(self, pick_count):
+        self.pick_count = pick_count
+        self.picked_indices = None
+
+    def __call__(self, fileinfo, idx):
+        return idx in self.picked_indices
+
+    def begin(self, fileinfos):
+        if self.picked_indices is not None:
+            return
+
+        if self.pick_count >= len(fileinfos):
+            self.picked_indices = set(range(len(fileinfos)))
+        else:
+            self.picked_indices = set()
+            while len(self.picked_indices) < self.pick_count:
+                idx = random.randrange(len(fileinfos))
+                if idx not in self.picked_indices:
+                    self.picked_indices.add(idx)
+
+        return self
 
 
 class Filter:
@@ -91,21 +124,31 @@ class Filter:
     def set_random(self, probability):
         self.match_func = RandomMatchFunc(probability)
 
+    def set_random_pick(self, count):
+        self.match_func = RandomPickMatchFunc(count)
+
     def set_none(self):
         self.match_func = None
 
-    def is_hidden(self, fileinfo):
+    def apply(self, fileinfos):
+        if self.match_func is not None:
+            self.match_func.begin(fileinfos)
+        for idx, fileinfo in enumerate(fileinfos):
+            fileinfo.is_filtered = self._is_filtered(fileinfo, idx)
+            fileinfo.is_hidden = self._is_hidden(fileinfo)
+
+    def _is_hidden(self, fileinfo):
         if not self.show_hidden:
             if fileinfo.basename().startswith("."):
                 return True
 
         return False
 
-    def is_filtered(self, fileinfo):
+    def _is_filtered(self, fileinfo, idx):
         if self.match_func is None:
             return False
         else:
-            return not self.match_func(fileinfo)
+            return not self.match_func(fileinfo, idx)
 
 
 # EOF #

@@ -163,6 +163,12 @@ class Controller(QObject):
                     self.window.show_info("invalid filter command")
                 else:
                     self.filter.set_random(float(m.group(1)))
+            elif command.startswith("pick"):
+                m = re.match(r"pick(\d+)", command)
+                if m is None:
+                    self.window.show_info("invalid filter command")
+                else:
+                    self.filter.set_random_pick(int(m.group(1)))
             else:
                 print("Controller.set_filter: unknown command: {}".format(command))
         else:
