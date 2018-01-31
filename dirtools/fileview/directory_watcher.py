@@ -15,7 +15,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import logging
 import os
+
 from PyQt5.QtCore import QObject, QSocketNotifier, pyqtSignal
 from inotify_simple import INotify, flags as inotify_flags, masks as inotify_masks
 import inotify_simple
@@ -81,21 +83,21 @@ class DirectoryWatcher(QObject):
 
     def process(self):
         fileinfos = []
+
+        logging.debug("DirectoryWatcher.process: gather directory content")
         for entry in os.scandir(self.path):
-            abspath = os.path.join(self.path, entry)
-            fileinfo = FileInfo(abspath)
+            fileinfo = FileInfo.from_direntry(entry)
             fileinfos.append(fileinfo)
 
             if self._close:
                 return
 
-        print("emit:sig_scandir_finished")
         self.sig_scandir_finished.emit(fileinfos)
 
     def on_inotify_event(self, ev):
         try:
             if ev.mask & inotify_flags.CREATE:
-                self.sig_file_added.emit(FileInfo(os.path.join(self.path, ev.name)))
+                self.sig_file_added.emit(FileInfo.from_filename(os.path.join(self.path, ev.name)))
             elif ev.mask & inotify_flags.DELETE:
                 self.sig_file_removed.emit(os.path.join(self.path, ev.name))
             elif ev.mask & inotify_flags.DELETE_SELF:
@@ -103,7 +105,7 @@ class DirectoryWatcher(QObject):
             elif ev.mask & inotify_flags.MOVE_SELF:
                 pass  # directory itself has moved
             elif ev.mask & inotify_flags.MODIFY or ev.mask & inotify_flags.ATTRIB:
-                self.sig_file_changed.emit(FileInfo(os.path.join(self.path, ev.name)))
+                self.sig_file_changed.emit(FileInfo.from_filename(os.path.join(self.path, ev.name)))
             elif ev.mask & inotify_flags.MOVED_FROM:
                 self.sig_file_removed.emit(os.path.join(self.path, ev.name))
             elif ev.mask & inotify_flags.MOVED_TO:

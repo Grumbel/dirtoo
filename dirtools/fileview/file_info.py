@@ -15,25 +15,72 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Union
 import logging
 
 import os
+import stat
 
 
 class FileInfo:
 
-    def __init__(self, filename: str) -> None:
-        logging.debug("FileInfo.__init__: %s", filename)
-        self._filename = filename
-        self._abspath = os.path.abspath(self._filename)
-        self._dirname = os.path.dirname(self._abspath)
-        self._basename = os.path.basename(self._abspath)
-        self._isdir = os.path.isdir(self._filename)
+    @staticmethod
+    def from_direntry(direntry):
+        logging.debug("FileInfo.from_direntry: %s/%s", direntry.path, direntry.name)
+
+        fi = FileInfo()
+        fi._filename = direntry.path
+        fi._basename = direntry.name
+        fi._abspath = os.path.abspath(fi._filename)
+        fi._ext = os.path.splitext(fi._filename)[1]
+
+        fi._isdir = direntry.is_dir()
+        fi._isfile = direntry.is_file()
+        fi._issymlink = direntry.is_symlink()
+
+        fi._collect_metadata()
+
+        return fi
+
+    @staticmethod
+    def from_filename(filename):
+        logging.debug("FileInfo.from_filename: %s", filename)
+
+        fi = FileInfo()
+        fi._filename = filename
+        fi._abspath = os.path.abspath(fi._filename)
+        fi._dirname = os.path.dirname(fi._abspath)
+        fi._basename = os.path.basename(fi._abspath)
+        fi._ext = os.path.splitext(fi._filename)[1]
+
+        fi._collect_metadata()
+
+        fi._isdir = os.path.isdir(fi._filename)
+        fi._isfile = stat.S_ISREG(fi._stat.st_mode)
+        fi._issymlink = stat.S_ISLNK(fi._stat.st_mode)
+
+        return fi
+
+    def __init__(self):
+        self._filename: Union[str, None] = None
+        self._abspath: Union[str, None] = None
+        self._dirname: Union[str, None] = None
+        self._basename: Union[str, None] = None
+        self._ext: Union[str, None] = None
+
+        self._isdir: Union[bool, None] = None
+        self._isfile: Union[bool, None] = None
+        self._issymlink: Union[bool, None] = None
+
+        self._stat = None
+        self._have_access: Union[bool, None] = None
+
+        self.is_excluded: bool = False
+        self.is_hidden: bool = False
+
+    def _collect_metadata(self) -> None:
         self._stat = os.lstat(self._filename)
-        self._ext = os.path.splitext(self._filename)[1]
         self._have_access = os.access(self._filename, os.R_OK)
-        self.is_excluded = False
-        self.is_hidden = False
 
     @property
     def is_visible(self):
@@ -64,12 +111,13 @@ class FileInfo:
         return self._ext
 
     def size(self):
-        return self._stat.st_size
+        return self._stat.st_size if self._stat is not None else None
 
     def mtime(self):
-        return self._stat.st_mtime
+        return self._stat.st_mtime if self._stat is not None else None
 
     def __str__(self):
         return "FileInfo({})".format(self._abspath)
+
 
 # EOF #
