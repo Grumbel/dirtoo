@@ -16,6 +16,26 @@
 
 
 import re
+import datetime
+import operator
+
+import bytefmt
+
+
+VIDEO_EXT = ['wmv', 'mp4', 'mpg', 'mpeg', 'avi', 'flv', 'mkv', 'wmv',
+             'mov', 'webm', 'f4v', 'flv', 'divx']
+
+VIDEO_REGEX = r"\.({})$".format("|".join(VIDEO_EXT))
+
+
+IMAGE_EXT = ['jpg', 'jpeg', 'gif', 'png', 'tif', 'tiff', 'webp']
+
+IMAGE_REGEX = r"\.({})$".format("|".join(IMAGE_EXT))
+
+
+ARCHIVE_EXT = ['zip', 'rar', 'tar', 'gz', 'xz', 'bz2', 'ar', '7z']
+
+ARCHIVE_REGEX = r"\.({})$".format("|".join(ARCHIVE_EXT))
 
 
 class FilterParser:
