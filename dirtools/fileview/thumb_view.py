@@ -73,6 +73,8 @@ class ThumbView(QGraphicsView):
 
         self.setBackgroundBrush(QBrush(Qt.white, Qt.SolidPattern))
 
+        self.resize_timer = None
+
     def dragMoveEvent(self, e):
         # the default implementation will check if any item in the
         # scene accept a drop event, we don't want that, so we
@@ -150,11 +152,23 @@ class ThumbView(QGraphicsView):
         self.layout_items()
 
     def resizeEvent(self, ev):
-        print(ev)
         logging.debug("ThumbView.resizeEvent: %s", ev)
         super().resizeEvent(ev)
-        self.layouter.resize(ev.size().width(), ev.size().height())
-        self.layout_items(force=False)
+
+        if self.resize_timer is not None:
+            self.killTimer(self.resize_timer)
+
+        self.resize_timer = self.startTimer(100)
+
+    def timerEvent(self, ev):
+        if ev.timerId() == self.resize_timer:
+            self.killTimer(self.resize_timer)
+            self.resize_timer = None
+
+            self.layouter.resize(self.size().width(), self.size().height())
+            self.layout_items()
+        else:
+            assert False, "timer foobar"
 
     def style_item(self, item):
         if self.show_filtered:
