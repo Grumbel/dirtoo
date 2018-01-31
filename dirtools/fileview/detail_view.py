@@ -54,7 +54,7 @@ class DetailView(QGraphicsView):
         self.scene.clear()
         self.file_items = [DetailFileItem(fileinfo, self.controller)
                            for fileinfo in fileinfos
-                           if not fileinfo.is_filtered]
+                           if not fileinfo.is_excluded]
         for item in self.file_items:
             self.scene.addItem(item)
         self.layout_items()

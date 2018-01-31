@@ -134,7 +134,7 @@ class Filter:
         if self.match_func is not None:
             self.match_func.begin(fileinfos)
         for idx, fileinfo in enumerate(fileinfos):
-            fileinfo.is_filtered = self._is_filtered(fileinfo, idx)
+            fileinfo.is_excluded = self._is_excluded(fileinfo, idx)
             fileinfo.is_hidden = self._is_hidden(fileinfo)
 
     def _is_hidden(self, fileinfo):
@@ -144,7 +144,7 @@ class Filter:
 
         return False
 
-    def _is_filtered(self, fileinfo, idx):
+    def _is_excluded(self, fileinfo, idx):
         if self.match_func is None:
             return False
         else:

@@ -160,7 +160,7 @@ class ThumbView(QGraphicsView):
         if self.show_filtered:
             if item.fileinfo.is_hidden:
                 item.setVisible(False)
-            elif item.fileinfo.is_filtered:
+            elif item.fileinfo.is_excluded:
                 item.setVisible(True)
                 item.setOpacity(0.5)
             else:

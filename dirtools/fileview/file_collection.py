@@ -35,7 +35,7 @@ class FileCollection(QObject):
     # The file list has been reordered, but otherwised stayed the same
     sig_files_reordered = pyqtSignal()
 
-    # The file list has been filtered, .is_filtered has been
+    # The file list has been filtered, .is_excluded has been
     # set/unset, but otherwise stayed the same
     sig_files_filtered = pyqtSignal()
 

@@ -32,12 +32,12 @@ class FileInfo:
         self._stat = os.lstat(self._filename)
         self._ext = os.path.splitext(self._filename)[1]
         self._have_access = os.access(self._filename, os.R_OK)
-        self.is_filtered = False
+        self.is_excluded = False
         self.is_hidden = False
 
     @property
     def is_visible(self):
-        return not self.is_hidden and not self.is_filtered
+        return not self.is_hidden and not self.is_excluded
 
     def have_access(self):
         return self._have_access

@@ -224,7 +224,7 @@ class Controller(QObject):
         for fileinfo in fileinfos:
             if fileinfo.is_hidden:
                 hidden_count += 1
-            elif fileinfo.is_filtered:
+            elif fileinfo.is_excluded:
                 filtered_count += 1
 
         total = self.file_collection.size()
