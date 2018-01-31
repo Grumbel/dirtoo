@@ -108,7 +108,7 @@ class ThumbFileItem(FileItem):
 
         self.set_tile_size(self.thumb_view.tn_width, self.thumb_view.tn_height)
 
-        self.animation_timer = 0
+        self.animation_timer = None
 
     def set_tile_size(self, tile_width, tile_height):
         # the size of the base tile
@@ -131,7 +131,7 @@ class ThumbFileItem(FileItem):
         painter.setRenderHint(QPainter.TextAntialiasing)
         painter.setRenderHint(QPainter.Antialiasing)
 
-        if self.animation_timer == 0:
+        if self.animation_timer is None:
             bg_color = QColor(192 + 32, 192 + 32, 192 + 32)
         else:
             bg_color = QColor(192 + 32 - 10 * self.animation_count,
@@ -145,7 +145,7 @@ class ThumbFileItem(FileItem):
                          bg_color)
 
         # hover rectangle
-        if self.hovering and self.animation_timer == 0:
+        if self.hovering and self.animation_timer is None:
             painter.fillRect(-4,
                              -4,
                              self.tile_rect.width() + 8,
@@ -272,6 +272,9 @@ class ThumbFileItem(FileItem):
         self.reload()
 
     def on_click_animation(self):
+        if self.animation_timer is not None:
+            self.killTimer(self.animation_timer)
+
         self.animation_timer = self.startTimer(30)
         self.animation_count = 10
         self.update()
@@ -280,10 +283,10 @@ class ThumbFileItem(FileItem):
         if ev.timerId() == self.animation_timer:
             self.animation_count -= 1
             self.update()
-            if self.animation_count > 0:
-                self.animation_timer = self.startTimer(30)
-            else:
-                self.animation_timer = 0
+            if self.animation_count <= 0:
+                self.killTimer(self.animation_timer)
+        else:
+            assert False, "timer foobar"
 
     def _get_thumbnail(self, flavor=None):
         if flavor is None:
