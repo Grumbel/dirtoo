@@ -47,8 +47,16 @@ class FileViewApplication:
 
     def run(self):
         ret = self.qapp.exec()
-        self.session_bus.close()
+        self.close()
         return ret
+
+    def close(self):
+        self.session_bus.close()
+        self.thumbnailer.close()
+
+    def close_controller(self, controller):
+        self.controllers.remove(controller)
+        controller.close()
 
     def show_files(self, files):
         controller = Controller(self)

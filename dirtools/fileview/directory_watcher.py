@@ -47,7 +47,7 @@ class INotifyQt(QObject):
             self.sig_event.emit(ev)
 
     def close(self):
-        # del self.qnotifier
+        del self.qnotifier
         self.inotify.close()
 
 
@@ -76,6 +76,7 @@ class DirectoryWatcher(QObject):
 
     def close(self):
         self.inotify.close()
+        del self.inotify
 
     def on_close_requested(self):
         self.close()

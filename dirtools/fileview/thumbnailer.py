@@ -72,7 +72,7 @@ class ThumbnailerWorker(QObject):
         super().__init__(parent)
         # This function is called from the main thread, leave
         # construction to init() and deinit()
-        self.quit = False
+        self._close = False
 
         self.dbus_loop = None
         self.session_bus = None
@@ -85,11 +85,11 @@ class ThumbnailerWorker(QObject):
         self.dbus_thumbnailer = DBusThumbnailer(self.session_bus,
                                                 WorkerDBusThumbnailerListener(self))
 
-    def deinit(self):
-        assert self.quit
+    def close(self):
+        assert self._close
 
-        self.session_bus.close()
         del self.dbus_thumbnailer
+        self.session_bus.close()
         del self.session_bus
         del self.dbus_loop
 
@@ -138,7 +138,7 @@ class Thumbnailer(QObject):
     sig_thumbnail_requested = pyqtSignal(str, str, CallableWrapper)
     sig_thumbnail_error = pyqtSignal(str, str, CallableWrapper)
 
-    sig_close_requested = pyqtSignal()
+    sig_worker_close_requested = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -149,11 +149,8 @@ class Thumbnailer(QObject):
 
         # startup and shutdown
         self.thread.started.connect(self.worker.init)
-        self.thread.finished.connect(self.thread.deleteLater)
-        self.sig_close_requested.connect(self.worker.deinit)
         self.worker.sig_finished.connect(self.thread.quit)
-        self.worker.sig_finished.connect(self.worker.deleteLater)
-        self.thread.finished.connect(self.thread.deleteLater)
+        self.sig_worker_close_requested.connect(self.worker.close)
 
         # requests to the worker
         self.sig_thumbnail_requested.connect(self.worker.on_thumbnail_requested)
@@ -165,13 +162,9 @@ class Thumbnailer(QObject):
         self.thread.start()
 
     def close(self):
+        self.worker._close = True
+        self.sig_worker_close_requested.emit()
 
-        # This signal won't be received until the worker is idle, so
-        # set .quit manually for a fast exit
-        self.worker.quit = True
-        self.sig_close_requested.emit()
-
-        # waiting for the thread to finish
         event_dispatcher = QAbstractEventDispatcher.instance()
         while not self.thread.wait(10):
             event_dispatcher.processEvents(QEventLoop.AllEvents)

@@ -56,6 +56,9 @@ class FileViewWindow(QMainWindow):
 
         self.thumb_view.setFocus()
 
+    def closeEvent(self, ev):
+        self.controller.on_exit()
+
     def make_shortcut(self):
         shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_L), self)
         shortcut.setContext(Qt.WindowShortcut)

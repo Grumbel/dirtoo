@@ -53,6 +53,12 @@ class Controller(QObject):
         self.window.file_view.set_file_collection(self.file_collection)
         self.window.thumb_view.set_file_collection(self.file_collection)
 
+    def close(self):
+        if self.directory_watcher_thread is not None:
+            self.directory_watcher._close = True
+            self.directory_watcher.sig_close_requested.emit()
+            self.directory_watcher_thread.wait()
+
     def save_as(self):
         options = QFileDialog.Options()
         # options |= QFileDialog.DontUseNativeDialog
@@ -66,8 +72,9 @@ class Controller(QObject):
         if filename != "":
             self.file_collection.save_as(filename)
 
-    def close(self):
+    def on_exit(self):
         self.window.close()
+        self.app.close_controller(self)
 
     def show_hidden(self):
         self.filter.show_hidden = not self.filter.show_hidden
@@ -140,8 +147,6 @@ class Controller(QObject):
             self.actions.back.setEnabled(True)
             self.actions.forward.setEnabled(False)
 
-
-        # Work in progress
         self.window.show_info("Loading...")
         self.file_collection.clear()
 
@@ -153,21 +158,15 @@ class Controller(QObject):
         self.directory_watcher = DirectoryWatcher(location)
         self.directory_watcher.moveToThread(self.directory_watcher_thread)
 
-        if False:
-            self.directory_watcher.sig_file_added.connect(lambda x: print("added", x))
-            self.directory_watcher.sig_file_removed.connect(lambda x: print("removed", x))
-            self.directory_watcher.sig_file_changed.connect(lambda x: print("changed", x))
-            self.directory_watcher.sig_finished.connect(self.directory_watcher_thread.quit)
-
         self.directory_watcher.sig_file_added.connect(self.file_collection.add_fileinfo)
         self.directory_watcher.sig_file_removed.connect(self.file_collection.remove_file)
         self.directory_watcher.sig_file_changed.connect(self.file_collection.change_file)
         self.directory_watcher.sig_scandir_finished.connect(self.on_scandir_finished)
 
         self.directory_watcher_thread.started.connect(self.directory_watcher.process)
-        self.directory_watcher_thread.finished.connect(self.directory_watcher_thread.deleteLater)
-        self.directory_watcher_thread.start()
+        self.directory_watcher.sig_finished.connect(self.directory_watcher_thread.quit)
 
+        self.directory_watcher_thread.start()
 
         self.location = os.path.abspath(location)
         self.window.set_location(self.location)
