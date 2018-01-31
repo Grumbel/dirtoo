@@ -215,13 +215,9 @@ class ThumbFileItem(FileItem):
             self.paint_tiny_icon(painter, self.icon)
 
     def paint_overlay(self, painter):
-        if not self.fileinfo.have_access():
-            pixmap = self.thumb_view.shared_pixmaps.locked
+        if self.fileinfo.have_access() == False:
             painter.setOpacity(0.5)
-            painter.drawPixmap(
-                self.tile_rect.width() / 2 - pixmap.width() / 2,
-                self.tile_rect.height() / 2 - pixmap.height() / 2,
-                pixmap)
+            self.paint_icon(painter, self.thumb_view.shared_pixmaps.locked)
 
         thumbnail = self._get_thumbnail()
         if thumbnail.status == ThumbnailStatus.LOADING or thumbnail.status == ThumbnailStatus.INITIAL:
