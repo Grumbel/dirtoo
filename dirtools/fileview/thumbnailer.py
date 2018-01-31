@@ -27,7 +27,7 @@ from PyQt5.QtCore import (QObject, pyqtSignal, QThread,
 from dirtools.dbus_thumbnailer import DBusThumbnailer
 
 
-ThumbnailCallback = Callable[[str, Union[str, None], QPixmap], None]
+ThumbnailCallback = Callable[[str, Union[str, None], QPixmap, int, str], None]
 
 
 class CallableWrapper:
