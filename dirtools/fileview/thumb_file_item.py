@@ -171,7 +171,7 @@ class ThumbFileItem(FileItem):
                               192 + 32 - 10 * self.animation_count)
 
         # background rectangle
-        if not self.thumb_view.column_style:
+        if not self.thumb_view.column_style or self.animation_timer is not None:
             painter.fillRect(-2, -2,
                              self.tile_rect.width() + 4,
                              self.tile_rect.height() + 4,
