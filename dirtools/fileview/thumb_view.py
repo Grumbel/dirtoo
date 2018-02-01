@@ -50,6 +50,7 @@ class SharedPixmaps:
     def __init__(self):
         self.video = QPixmap(resource_filename("dirtools", "fileview/icons/noun_36746_cc.png"))
         self.image = QPixmap(resource_filename("dirtools", "fileview/icons/noun_386758_cc.png"))  # noun_757280_cc.png"))
+        self.loading = QPixmap(resource_filename("dirtools", "fileview/icons/noun_409399_cc.png"))
 
 
 class ThumbView(QGraphicsView):

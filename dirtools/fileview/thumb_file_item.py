@@ -276,7 +276,12 @@ class ThumbFileItem(FileItem):
 
         thumbnail = self._get_thumbnail()
         if thumbnail.status == ThumbnailStatus.LOADING or thumbnail.status == ThumbnailStatus.INITIAL:
-            self.paint_icon(painter, self.thumb_view.shared_icons.image_loading)
+            painter.setOpacity(0.5)
+            painter.drawPixmap(QRect(self.thumbnail_rect.width() - 32,
+                                     2,
+                                     32, 32),
+                               self.thumb_view.shared_pixmaps.loading)
+            painter.setOpacity(1.0)
         elif thumbnail.status == ThumbnailStatus.THUMBNAIL_ERROR:
             self.paint_icon(painter, self.thumb_view.shared_icons.image_error)
 
