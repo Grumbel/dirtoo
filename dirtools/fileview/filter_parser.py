@@ -37,6 +37,19 @@ ARCHIVE_EXT = ['zip', 'rar', 'tar', 'gz', 'xz', 'bz2', 'ar', '7z']
 
 ARCHIVE_REGEX = r"\.({})$".format("|".join(ARCHIVE_EXT))
 
+CMPTEXT2OP = {
+    "<": operator.lt,
+    "<=": operator.le,
+    ">": operator.gt,
+    ">=": operator.ge,
+    "==": operator.eq,
+    "=": operator.eq,
+}
+
+
+def get_compare_operator(text):
+    return CMPTEXT2OP[text]
+
 
 class FilterParser:
 
@@ -60,20 +73,19 @@ class FilterParser:
                 self.filter.set_time(datetime.datetime.combine(
                     datetime.date.today(), datetime.datetime.min.time()).timestamp(),
                     operator.ge)
+            elif command.startswith("len"):
+                m = re.match(r"len(<|>|<=|>=|=|==)(\d+.*)", command)
+                if m is None:
+                    self.window.show_info("invalid filter command")
+                else:
+                    self.filter.set_length(int(m.group(2)), get_compare_operator(m.group(1)))
             elif command.startswith("size"):
                 m = re.match(r"size(<|>|<=|>=|=|==)(\d+.*)", command)
                 if m is None:
                     self.window.show_info("invalid filter command")
                 else:
-                    text2op = {
-                        "<": operator.lt,
-                        "<=": operator.le,
-                        ">": operator.gt,
-                        ">=": operator.ge,
-                        "==": operator.eq,
-                        "=": operator.eq,
-                    }
-                self.filter.set_size(bytefmt.dehumanize(m.group(2)), text2op[m.group(1)])
+                    self.filter.set_size(bytefmt.dehumanize(m.group(2)),
+                                         get_compare_operator(m.group(1)))
             elif command.startswith("random"):
                 m = re.match(r"random(\d*\.\d+)", command)
                 if m is None:

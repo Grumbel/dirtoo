@@ -67,6 +67,16 @@ class SizeMatchFunc(MatchFunc):
         return self.compare(fileinfo.size(), self.size)
 
 
+class LengthMatchFunc(MatchFunc):
+
+    def __init__(self, length, compare):
+        self.length = length
+        self.compare = compare
+
+    def __call__(self, fileinfo, idx):
+        return self.compare(len(fileinfo.basename()), self.length)
+
+
 class RandomMatchFunc(MatchFunc):
 
     def __init__(self, probability):
@@ -117,6 +127,9 @@ class Filter:
 
     def set_size(self, size, compare):
         self.match_func = SizeMatchFunc(size, compare)
+
+    def set_length(self, length, compare):
+        self.match_func = LengthMatchFunc(length, compare)
 
     def set_time(self, mtime, compare):
         self.match_func = TimeMatchFunc(mtime, compare)
