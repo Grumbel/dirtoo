@@ -234,7 +234,7 @@ class ThumbView(QGraphicsView):
 
         self.layouter.set_tile_size(self.tn_width, self.tn_height + 16 * self.level_of_detail)
 
-        if self.zoom_index < 3:
+        if self.zoom_index < 2:
             self.flavor = "normal"
         else:
             self.flavor = "large"
