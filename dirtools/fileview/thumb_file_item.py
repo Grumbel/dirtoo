@@ -320,6 +320,7 @@ class ThumbFileItem(FileItem):
             self.update()
             if self.animation_count <= 0:
                 self.killTimer(self.animation_timer)
+                self.animation_timer = None
         else:
             assert False, "timer foobar"
 
