@@ -58,6 +58,9 @@ class ThumbView(QGraphicsView):
     def __init__(self, controller):
         super().__init__()
 
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        # self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+
         self.show_filtered = False
 
         self.abspath2item: Dict[str, ThumbFileItem] = {}
@@ -183,7 +186,7 @@ class ThumbView(QGraphicsView):
             self.killTimer(self.resize_timer)
             self.resize_timer = None
 
-            self.layouter.resize(self.size().width(), self.size().height())
+            self.layouter.resize(self.viewport().width(), self.viewport().height())
             self.layout_items()
         else:
             assert False, "timer foobar"
