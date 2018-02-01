@@ -111,9 +111,12 @@ class Thumbnail:
     def request(self):
         assert self.status != ThumbnailStatus.LOADING
 
-        self.status = ThumbnailStatus.LOADING
-        self.parent_item.thumb_view.request_thumbnail(
-            self.parent_item, self.parent_item.fileinfo, self.flavor)
+        if not self.parent_item.fileinfo.is_thumbnailable():
+            self.status = ThumbnailStatus.THUMBNAIL_UNAVAILABLE
+        else:
+            self.status = ThumbnailStatus.LOADING
+            self.parent_item.thumb_view.request_thumbnail(
+                self.parent_item, self.parent_item.fileinfo, self.flavor)
 
 
 class ThumbFileItem(FileItem):

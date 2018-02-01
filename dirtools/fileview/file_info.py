@@ -106,6 +106,9 @@ class FileInfo:
     def isdir(self):
         return self._isdir
 
+    def is_thumbnailable(self):
+        return self.is_video() or self.is_image()
+
     def is_video(self):
         return self._ext[1:] in VIDEO_EXT
 
