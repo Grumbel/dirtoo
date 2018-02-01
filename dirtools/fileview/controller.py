@@ -175,7 +175,6 @@ class Controller(QObject):
         # self.set_files(files, self.location)
 
     def on_scandir_finished(self, fileinfos):
-        print("emit:on_scandir_finished")
         self.file_collection.set_fileinfos(fileinfos)
         self.apply_sort()
         self.apply_filter()
