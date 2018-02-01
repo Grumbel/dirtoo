@@ -62,8 +62,8 @@ def make_cropped_rect(sw, sh, tw, th):
         h = th * sw // tw
 
         return QRect(0,
-                     # 0,  # top align
-                     max(0, sh // 3 - h // 2),
+                     0,  # top align
+                     # max(0, sh // 3 - h // 2),
                      # center: sh // 2 - h // 2,
                      w, h)
     else:
