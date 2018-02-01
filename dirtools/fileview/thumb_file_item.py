@@ -171,10 +171,11 @@ class ThumbFileItem(FileItem):
                               192 + 32 - 10 * self.animation_count)
 
         # background rectangle
-        painter.fillRect(-2, -2,
-                         self.tile_rect.width() + 4,
-                         self.tile_rect.height() + 4,
-                         bg_color)
+        if not self.thumb_view.column_style:
+            painter.fillRect(-2, -2,
+                             self.tile_rect.width() + 4,
+                             self.tile_rect.height() + 4,
+                             bg_color)
 
         # hover rectangle
         if self.hovering and self.animation_timer is None:
@@ -207,20 +208,35 @@ class ThumbFileItem(FileItem):
         font = QFont("Verdana", 8)
         fm = QFontMetrics(font)
         tmp = text
-        if fm.width(tmp) > self.tile_rect.width():
-            while fm.width(tmp + "…") > self.tile_rect.width():
+
+        if not self.thumb_view.column_style:
+            target_width = self.tile_rect.width()
+        else:
+            target_width = self.tile_rect.width() - 32 - 4
+
+        if fm.width(tmp) > target_width:
+            while fm.width(tmp + "…") > target_width:
                 tmp = tmp[0:-1]
 
         if tmp != text:
             text = tmp + "…"
 
         painter.setFont(font)
-        painter.drawText(self.tile_rect.width() / 2 - fm.width(text) / 2,
-                         self.tile_rect.height() - 2 + 16 * row - 16 * self.thumb_view.level_of_detail + 14,
-                         text)
+        if not self.thumb_view.column_style:
+            painter.drawText(self.tile_rect.width() / 2 - fm.width(text) / 2,
+                             self.tile_rect.height() - 2 + 16 * row - 16 * self.thumb_view.level_of_detail + 14,
+                             text)
+        else:
+            painter.drawText(self.tile_rect.height() + 4,
+                             self.tile_rect.height() - 2 + 16 * row - 16 * self.thumb_view.level_of_detail + 14,
+                             text)
 
     def paint_thumbnail(self, painter):
         logging.debug("ThumbFileItem.make_thumbnail: %s", self.fileinfo.abspath())
+
+        if self.thumb_view.column_style:
+            self.paint_icon(painter, self.icon)
+            return
 
         thumbnail = self._get_thumbnail()
 
@@ -270,6 +286,9 @@ class ThumbFileItem(FileItem):
             # self.paint_tiny_icon(painter, self.icon)
 
     def paint_overlay(self, painter):
+        if self.thumb_view.column_style:
+            return
+
         if self.fileinfo.have_access() == False:
             painter.setOpacity(0.5)
             self.paint_icon(painter, self.thumb_view.shared_icons.locked)
@@ -290,8 +309,12 @@ class ThumbFileItem(FileItem):
         icon.paint(painter, QRect(self.tile_rect.width() - 48, 0, 48, 48))
 
     def paint_icon(self, painter, icon):
-        rect = make_unscaled_rect(self.tile_rect.width() * 3 // 4, self.tile_rect.width() * 3 // 4,
-                                  self.tile_rect.width(), self.tile_rect.width())
+        if not self.thumb_view.column_style:
+            rect = make_unscaled_rect(self.tile_rect.width() * 3 // 4, self.tile_rect.width() * 3 // 4,
+                                      self.tile_rect.width(), self.tile_rect.width())
+        else:
+            rect = QRect(0, 0, self.tile_rect.height(), self.tile_rect.height())
+
         icon.paint(painter, rect)
 
     def make_icon(self):

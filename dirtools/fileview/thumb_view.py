@@ -28,7 +28,7 @@ from PyQt5.QtWidgets import (
 )
 
 from dirtools.fileview.thumb_file_item import ThumbFileItem
-from dirtools.fileview.tile_layouter import TileLayouter
+from dirtools.fileview.tile_layouter import TileLayouter, LayoutStyle
 from dirtools.fileview.profiler import profile
 from dirtools.dbus_thumbnailer import DBusThumbnailerError
 
@@ -82,7 +82,7 @@ class ThumbView(QGraphicsView):
         self.apply_zoom()
 
         self.crop_thumbnails = False
-
+        self.column_style = False
         self.setBackgroundBrush(QBrush(Qt.white, Qt.SolidPattern))
 
         self.resize_timer = None
@@ -239,12 +239,26 @@ class ThumbView(QGraphicsView):
         self.apply_zoom()
 
     def apply_zoom(self):
-        # zoom_levels = ["Tiny", "Small" "Normal", "Large", "Extra Large"]
-        self.tn_width = 32 * 2 ** self.zoom_index
-        self.tn_height = 32 * 2 ** self.zoom_index
-        self.tn_size = min(self.tn_width, self.tn_height)
+        if self.zoom_index == 0:
+            self.tn_width = 256
+            self.tn_height = 16
+            self.tn_size = min(self.tn_width, self.tn_height)
 
-        self.layouter.set_tile_size(self.tn_width, self.tn_height + 16 * self.level_of_detail)
+            self.column_style = True
+            self.layouter.set_style(LayoutStyle.COLUMNS)
+            self.layouter.set_padding(8, 8)
+            self.layouter.set_spacing(16, 8)
+            self.layouter.set_tile_size(self.tn_width, self.tn_height)
+        else:
+            self.tn_width = 32 * 2 ** self.zoom_index
+            self.tn_height = 32 * 2 ** self.zoom_index
+            self.tn_size = min(self.tn_width, self.tn_height)
+
+            self.column_style = False
+            self.layouter.set_style(LayoutStyle.ROWS)
+            self.layouter.set_padding(16, 16)
+            self.layouter.set_spacing(16, 16)
+            self.layouter.set_tile_size(self.tn_width, self.tn_height + 16 * self.level_of_detail)
 
         if self.zoom_index < 2:
             self.flavor = "normal"

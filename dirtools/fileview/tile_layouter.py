@@ -49,7 +49,7 @@ class TileLayouter:
 
         self.needs_relayout = True
 
-    def set_style(style):
+    def set_style(self, style):
         self.layout_style = style
 
     def set_tile_size(self, tile_w, tile_h):
@@ -89,7 +89,7 @@ class TileLayouter:
             self.needs_relayout = True
 
     def get_bounding_rect(self):
-        if True:  # center alignment
+        if self.layout_style == LayoutStyle.ROWS:  # center alignment
             w = self.right_x
         else:
             w = max(self.viewport_width, self.right_x)
