@@ -21,6 +21,8 @@ import logging
 import os
 import stat
 
+from dirtools.fileview.filter_parser import VIDEO_EXT, IMAGE_EXT
+
 
 class FileInfo:
 
@@ -103,6 +105,12 @@ class FileInfo:
 
     def isdir(self):
         return self._isdir
+
+    def is_video(self):
+        return self._ext[1:] in VIDEO_EXT
+
+    def is_image(self):
+        return self._ext[1:] in IMAGE_EXT
 
     def stat(self):
         return self._stat

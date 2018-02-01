@@ -40,7 +40,8 @@ setup(name='dirtools',
           },
       install_requires=['bytefmt'],
       packages=['dirtools', 'dirtools.fileview'],
-      package_data={'dirtools': ['dirtools/fileview/fileview.svg']}
+      package_data={'dirtools': ['dirtools/fileview/fileview.svg',
+                                 'dirtools/fileview/icons/*.png']}
 )
 
 

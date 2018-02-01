@@ -18,9 +18,10 @@
 import logging
 
 from typing import List, Dict
+from pkg_resources import resource_filename
 
 from PyQt5.QtCore import Qt, QThreadPool
-from PyQt5.QtGui import QBrush, QIcon, QColor
+from PyQt5.QtGui import QBrush, QIcon, QColor, QPixmap
 from PyQt5.QtWidgets import (
     QGraphicsView,
     QGraphicsScene,
@@ -32,9 +33,9 @@ from dirtools.fileview.profiler import profile
 from dirtools.dbus_thumbnailer import DBusThumbnailerError
 
 
-class SharedPixmaps:
+class SharedIcons:
 
-    def __init__(self, tn_size):
+    def __init__(self):
         self.folder = QIcon.fromTheme("folder")
         self.rar = QIcon.fromTheme("rar")
         self.zip = QIcon.fromTheme("zip")
@@ -42,6 +43,13 @@ class SharedPixmaps:
         self.image_loading = QIcon.fromTheme("image-loading")
         self.image_missing = QIcon.fromTheme("image-missing")
         self.locked = QIcon.fromTheme("locked")
+
+
+class SharedPixmaps:
+
+    def __init__(self):
+        self.video = QPixmap(resource_filename("dirtools", "fileview/icons/noun_36746_cc.png"))
+        self.image = QPixmap(resource_filename("dirtools", "fileview/icons/noun_386758_cc.png"))  # noun_757280_cc.png"))
 
 
 class ThumbView(QGraphicsView):
@@ -65,7 +73,10 @@ class ThumbView(QGraphicsView):
         self.level_of_detail = 1
 
         self.file_collection = None
-        self.shared_pixmaps = None
+
+        self.shared_icons = SharedIcons()
+        self.shared_pixmaps = SharedPixmaps()
+
         self.zoom_index = 2
         self.apply_zoom()
 
@@ -239,7 +250,6 @@ class ThumbView(QGraphicsView):
         else:
             self.flavor = "large"
 
-        self.shared_pixmaps = SharedPixmaps(self.tn_size * 3 // 4)
         self.reload()
 
     def icon_from_fileinfo(self, fileinfo):

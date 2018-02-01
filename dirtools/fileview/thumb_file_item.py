@@ -247,21 +247,38 @@ class ThumbFileItem(FileItem):
                                             self.thumbnail_rect.width(), self.thumbnail_rect.width())
                 painter.drawPixmap(self.thumbnail_rect, pixmap, srcrect)
 
-            self.paint_tiny_icon(painter, self.icon)
+            if self.fileinfo.is_video():
+                painter.setOpacity(0.5)
+                # painter.setCompositionMode(QPainter.CompositionMode_Plus)
+                painter.drawPixmap(QRect(self.thumbnail_rect.width() - 24 - 2,
+                                         self.thumbnail_rect.height() - 24 - 2,
+                                         24, 24),
+                                   self.thumb_view.shared_pixmaps.video)
+                painter.setOpacity(1.0)
+            elif self.fileinfo.is_image():
+                painter.setOpacity(0.5)
+                # painter.setCompositionMode(QPainter.CompositionMode_Plus)
+                painter.drawPixmap(QRect(self.thumbnail_rect.width() - 24 - 2,
+                                         self.thumbnail_rect.height() - 24 - 2,
+                                         24, 24),
+                                   self.thumb_view.shared_pixmaps.image)
+                painter.setOpacity(1.0)
+
+            # self.paint_tiny_icon(painter, self.icon)
 
     def paint_overlay(self, painter):
         if self.fileinfo.have_access() == False:
             painter.setOpacity(0.5)
-            self.paint_icon(painter, self.thumb_view.shared_pixmaps.locked)
+            self.paint_icon(painter, self.thumb_view.shared_icons.locked)
 
         thumbnail = self._get_thumbnail()
         if thumbnail.status == ThumbnailStatus.LOADING or thumbnail.status == ThumbnailStatus.INITIAL:
-            self.paint_icon(painter, self.thumb_view.shared_pixmaps.image_loading)
+            self.paint_icon(painter, self.thumb_view.shared_icons.image_loading)
         elif thumbnail.status == ThumbnailStatus.THUMBNAIL_ERROR:
-            self.paint_icon(painter, self.thumb_view.shared_pixmaps.image_error)
+            self.paint_icon(painter, self.thumb_view.shared_icons.image_error)
 
     def paint_tiny_icon(self, painter, icon):
-        painter.setOpacity(0.75)
+        painter.setOpacity(0.5)
         icon.paint(painter, QRect(self.tile_rect.width() - 48, 0, 48, 48))
 
     def paint_icon(self, painter, icon):
