@@ -22,8 +22,9 @@ import operator
 import bytefmt
 
 
-VIDEO_EXT = ['wmv', 'mp4', 'mpg', 'mpeg', 'avi', 'flv', 'mkv', 'wmv',
-             'mov', 'webm', 'f4v', 'flv', 'divx']
+VIDEO_EXT = ['wmv', 'mp4', 'mpg', 'mpeg', 'm2v', 'avi', 'flv', 'mkv', 'wmv',
+             'mov', 'webm', 'f4v', 'flv', 'divx', 'ogv', 'vob', '3gp', '3g2',
+             'qt', 'asf', 'amv', 'm4v']
 
 VIDEO_REGEX = r"\.({})$".format("|".join(VIDEO_EXT))
 
