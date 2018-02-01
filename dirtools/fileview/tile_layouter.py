@@ -16,8 +16,15 @@
 
 
 import logging
+from enum import Enum
 
 from PyQt5.QtCore import QRectF
+
+
+class LayoutStyle(Enum):
+
+    ROWS = 0
+    COLUMNS = 1
 
 
 class TileLayouter:
@@ -38,7 +45,12 @@ class TileLayouter:
         self.right_x = 0
         self.bottom_y = 0
 
+        self.layout_style = LayoutStyle.ROWS
+
         self.needs_relayout = True
+
+    def set_style(style):
+        self.layout_style = style
 
     def set_tile_size(self, tile_w, tile_h):
         self.tile_width = tile_w
@@ -56,8 +68,14 @@ class TileLayouter:
         self.needs_relayout = True
 
     def calc_num_columns(self):
-        return ((self.viewport_width - 2 * self.padding_x + self.spacing_x) //
-                (self.tile_width + self.spacing_x))
+        return max(1,
+                   (self.viewport_width - 2 * self.padding_x + self.spacing_x) //
+                   (self.tile_width + self.spacing_x))
+
+    def calc_num_rows(self):
+        return max(1,
+                   (self.viewport_height - 2 * self.padding_y + self.spacing_y) //
+                   (self.tile_height + self.spacing_y))
 
     def resize(self, w, h):
         old_columns = self.calc_num_columns()
@@ -79,37 +97,49 @@ class TileLayouter:
 
         return QRectF(0, 0, w, h)
 
-    def layout_item(self, item):
+    def layout_item(self, item, col, row):
         item.set_tile_size(self.tile_width, self.tile_height)
 
-        x = self.col * (self.tile_width + self.spacing_x) + self.padding_x
-        y = self.row * (self.tile_height + self.spacing_y) + self.padding_y
+        x = col * (self.tile_width + self.spacing_x) + self.padding_x
+        y = row * (self.tile_height + self.spacing_y) + self.padding_y
 
         self.right_x = max(self.right_x, x + self.tile_width + self.padding_x)
         self.bottom_y = y + self.tile_height + self.padding_y
 
         item.setPos(x, y)
 
-        self.col += 1
-        if self.col == self.columns:
-            self.col = 0
-            self.row += 1
-
     def layout(self, items, force):
         if not self.needs_relayout and not force:
             logging.debug("TileLayouter.layout: skipping relayout")
             return
 
+        if not items:
+            return
+
+        num_items = len(items)
         logging.debug("TileLayouter.layout: layouting")
-        self.columns = self.calc_num_columns()
+        columns = self.calc_num_columns()
+        rows = max((num_items + columns - 1) // columns,
+                   self.calc_num_rows())
 
         self.right_x = 0
         self.bottom_y = 0
 
-        self.col = 0
-        self.row = 0
+        col = 0
+        row = 0
         for item in items:
-            self.layout_item(item)
+            self.layout_item(item, col, row)
+
+            if self.layout_style == LayoutStyle.ROWS:
+                col += 1
+                if col == columns:
+                    col = 0
+                    row += 1
+            else:
+                row += 1
+                if row == rows:
+                    row = 0
+                    col += 1
 
         self.needs_relayout = False
 
