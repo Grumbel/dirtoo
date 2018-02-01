@@ -69,11 +69,16 @@ class ThumbView(QGraphicsView):
         self.zoom_index = 2
         self.apply_zoom()
 
-        self.thread_pool = QThreadPool()
+        self.crop_thumbnails = False
 
         self.setBackgroundBrush(QBrush(Qt.white, Qt.SolidPattern))
 
         self.resize_timer = None
+
+    def set_crop_thumbnails(self, v):
+        self.crop_thumbnails = v
+        for item in self.items:
+            item.update()
 
     def dragMoveEvent(self, e):
         # the default implementation will check if any item in the

@@ -235,6 +235,8 @@ class FileViewWindow(QMainWindow):
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.actions.lod_in)
         self.toolbar.addAction(self.actions.lod_out)
+        self.toolbar.addSeparator()
+        self.toolbar.addAction(self.actions.crop_thumbnails)
 
     def zoom_in(self):
         self.thumb_view.zoom_in()

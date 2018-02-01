@@ -242,6 +242,9 @@ class Controller(QObject):
         for f in files:
             self.file_collection.add_file(f)
 
+    def set_crop_thumbnails(self, v):
+        self.window.thumb_view.set_crop_thumbnails(v)
+
     def request_thumbnail(self, fileinfo, flavor):
         self.app.thumbnailer.request_thumbnail(fileinfo.filename(), flavor,
                                                self.receive_thumbnail)

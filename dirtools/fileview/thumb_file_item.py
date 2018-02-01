@@ -50,6 +50,31 @@ def make_unscaled_rect(sw, sh, tw, th):
                  sw, sh)
 
 
+def make_cropped_rect(sw, sh, tw, th):
+    """Calculate a srcrect that fits into the dstrect and fills it,
+    cropping the src."""
+
+    tratio = tw / th
+    sratio = sw / sh
+
+    if tratio > sratio:
+        w = sw
+        h = th * sw // tw
+
+        return QRect(0,
+                     # 0,  # top align
+                     max(0, sh // 3 - h // 2),
+                     # center: sh // 2 - h // 2,
+                     w, h)
+    else:
+        w = tw * sh // tw
+        h = sh
+
+        return QRect(sw // 2 - w // 2,
+                     0,
+                     w, h)
+
+
 class ThumbnailStatus(Enum):
 
     INITIAL = 0
@@ -114,7 +139,11 @@ class ThumbFileItem(FileItem):
         # the size of the base tile
         self.tile_rect = QRect(0, 0, tile_width, tile_height)
 
-        # the bounding rect for drawing
+        # the size of the base tile
+        self.thumbnail_rect = QRect(0, 0, tile_width, tile_width)
+
+        # the bounding rect for drawing, it's a little bigger to allow
+        # border effects and such
         self.bounding_rect = QRect(self.tile_rect.x() - 8,
                                    self.tile_rect.y() - 8,
                                    self.tile_rect.width() + 16,
@@ -208,9 +237,15 @@ class ThumbFileItem(FileItem):
         elif thumbnail.status == ThumbnailStatus.THUMBNAIL_READY:
             pixmap = thumbnail.get_pixmap()
             assert pixmap is not None
-            rect = make_scaled_rect(pixmap.width(), pixmap.height(),
-                                    self.tile_rect.width(), self.tile_rect.width())
-            painter.drawPixmap(rect, pixmap)
+
+            if not self.thumb_view.crop_thumbnails:
+                rect = make_scaled_rect(pixmap.width(), pixmap.height(),
+                                        self.thumbnail_rect.width(), self.thumbnail_rect.width())
+                painter.drawPixmap(rect, pixmap)
+            else:
+                srcrect = make_cropped_rect(pixmap.width(), pixmap.height(),
+                                            self.thumbnail_rect.width(), self.thumbnail_rect.width())
+                painter.drawPixmap(self.thumbnail_rect, pixmap, srcrect)
 
             self.paint_tiny_icon(painter, self.icon)
 

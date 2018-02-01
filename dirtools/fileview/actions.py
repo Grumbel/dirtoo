@@ -73,6 +73,10 @@ class Actions(QObject):
         self.lod_out.triggered.connect(self.controller.less_details)
         self.lod_out.setShortcut('Alt+-')
 
+        self.crop_thumbnails = QAction(QIcon.fromTheme('zoom-fit-best'), "Crop Thumbnails", self, checkable=True)
+        self.crop_thumbnails.triggered.connect(
+            lambda: self.controller.set_crop_thumbnails(self.crop_thumbnails.isChecked()))
+
         self.parent_directory = QAction(self.controller.app.qapp.style().standardIcon(QStyle.SP_FileDialogToParent),
                                         "Parent Directory")
         self.parent_directory.triggered.connect(self.controller.parent_directory)
