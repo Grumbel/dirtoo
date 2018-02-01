@@ -139,8 +139,9 @@ class ThumbView(QGraphicsView):
         logging.debug("ThumbView.on_file_collection_set")
         fileinfos = self.file_collection.get_fileinfos()
 
+        self.items.clear()
+        self.abspath2item.clear()
         self.scene.clear()
-        self.items = []
 
         for fileinfo in fileinfos:
             thumb = ThumbFileItem(fileinfo, self.controller, self)
@@ -259,9 +260,9 @@ class ThumbView(QGraphicsView):
             self.receive_thumbnail_for_item(item, flavor, pixmap, error_code, message)
             item.set_thumbnail_pixmap(pixmap, flavor)
         else:
-            print("MISSING!!!!!!!", filename)
-            for k, v in self.abspath2item.items():
-                print("->", k)
+            # receiving thumbnail for item that no longer exists, this
+            # is normal when switching directories quickly
+            pass
 
     def receive_thumbnail_for_item(self, item, flavor, pixmap, error_code, message):
         if pixmap is not None:
