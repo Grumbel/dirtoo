@@ -16,13 +16,8 @@
 
 
 import argparse
-from ctypes import c_void_p, c_size_t, c_char_p
-import MediaInfoDLL3
 
-# Monkey patching a bug in MediaInfoDLL3
-MediaInfoDLL3.MediaInfo.MediaInfoA_Get.argtypes = [
-    c_void_p, c_size_t, c_size_t, c_char_p, c_size_t, c_size_t
-]
+from dirtools.mediainfo import MediaInfo
 
 
 def parse_args():
@@ -32,63 +27,15 @@ def parse_args():
     return parser.parse_args()
 
 
-def to_int(text, default):
-    try:
-        return int(text)
-    except ValueError:
-        # mediainfo will sometimes return strings like "234234.0000"
-        try:
-            return int(float(text))
-        except ValueError:
-            return default
-    else:
-        return default
-
-
 def print_mediainfo(filename):
-    milib = MediaInfoDLL3.MediaInfo()
-    ret = milib.Open(filename)
-    if ret != 1:
-        # mediainfo isn't returning a reason for why the Open() call
-        # has failed, so we try to open the file ourselves to produce
-        # a more useful error message
-        try:
-            with open(filename):
-                pass
-            print("Error {}: cannot access {}".format(ret, filename))
-        except OSError as err:
-            print("Error {}: {}: {}".format(ret, filename, err.strerror))
-        return
+    mediainfo = MediaInfo(filename)
 
-    # general_count = milib.Count_Get(MediaInfoDLL3.Stream.General)
-    # video_count = milib.Count_Get(MediaInfoDLL3.Stream.Video)
-    # audio_count = milib.Count_Get(MediaInfoDLL3.Stream.Audio)
-
-    duration = milib.Get(MediaInfoDLL3.Stream.General, 0, "Duration")
-    # bitrate = milib.Get(MediaInfoDLL3.Stream.General, 0, "OverallBitRate")
-    # filesize = milib.Get(MediaInfoDLL3.Stream.General, 0, "FileSize")
-    framerate = milib.Get(MediaInfoDLL3.Stream.General, 0, "FrameRate")
-
-    width = milib.Get(MediaInfoDLL3.Stream.Video, 0, "Width")
-    height = milib.Get(MediaInfoDLL3.Stream.Video, 0, "Height")
-
-    milib.Close()
-
-    framerate = float(framerate) if framerate else 0
-    duration = to_int(duration, 0)
-    width = int(width) if width != "" else 0
-    height = int(height) if height != "" else 0
-
-    hours = duration // 1000 // 60 // 60
-    duration -= 1000 * 60 * 60 * hours
-    minutes = duration // 1000 // 60
-    duration -= 1000 * 60 * minutes
-    seconds = duration // 1000
+    hours, minutes, seconds = mediainfo.duration_tuple()
 
     print("{:02d}h:{:02d}m:{:02d}s  {:>6.2f}fps  {:>9}  {}".format(
         hours, minutes, seconds,
-        framerate,
-        "{}x{}".format(width, height),
+        mediainfo.framerate(),
+        "{}x{}".format(mediainfo.width(), mediainfo.height()),
         filename))
 
 
