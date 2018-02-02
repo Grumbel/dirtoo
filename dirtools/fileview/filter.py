@@ -29,6 +29,15 @@ class MatchFunc:
         pass
 
 
+class FolderMatchFunc(MatchFunc):
+
+    def __init__(self):
+        pass
+
+    def __call__(self, fileinfo, idx):
+        return fileinfo.isdir()
+
+
 class GlobMatchFunc(MatchFunc):
 
     def __init__(self, pattern, case_sensitive=False):
@@ -147,6 +156,9 @@ class Filter:
 
     def set_random_pick(self, count):
         self.match_func = RandomPickMatchFunc(count)
+
+    def set_folder(self):
+        self.match_func = FolderMatchFunc()
 
     def set_none(self):
         self.match_func = None
