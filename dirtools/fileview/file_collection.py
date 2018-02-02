@@ -73,7 +73,7 @@ class FileCollection(QObject):
         self.sig_file_removed.emit(filename)
 
     def change_file(self, fileinfo):
-        self.sig_file_change.emit(fileinfo)
+        self.sig_file_changed.emit(fileinfo)
 
     def get_fileinfos(self):
         return self.fileinfos
