@@ -271,14 +271,8 @@ class ThumbView(QGraphicsView):
         self.reload()
 
     def icon_from_fileinfo(self, fileinfo):
-        mime_type = self.controller.app.mime_database.get_mime_type(fileinfo.abspath())
-        icon = QIcon.fromTheme(mime_type.iconName())
-        if icon.isNull():
-            icon = QIcon.fromTheme("application-octet-stream")
-            assert not icon.isNull()
-            return icon
-        else:
-            return icon
+        mimetype = self.controller.app.mime_database.get_mime_type(fileinfo.abspath())
+        return self.controller.app.mime_database.get_icon_from_mime_type(mimetype)
 
     @profile
     def reload(self):

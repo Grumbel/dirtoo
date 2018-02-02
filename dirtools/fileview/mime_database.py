@@ -16,6 +16,7 @@
 
 
 from PyQt5.QtCore import QMimeDatabase
+from PyQt5.QtGui import QIcon
 
 
 class MimeDatabase:
@@ -25,6 +26,25 @@ class MimeDatabase:
 
     def get_mime_type(self, filename: str):
         return self.mime_db.mimeTypeForFile(filename)
+
+    def get_icon_from_mime_type(self, mimetype):
+        icon_name = mimetype.iconName()
+        icon = QIcon.fromTheme(icon_name)
+        if not icon.isNull():
+            return icon
+
+        for alias in mimetype.aliases():
+            icon_name = alias.replace("/", "-", 1)
+            icon = QIcon.fromTheme(icon_name)
+            if not icon.isNull():
+                return icon
+
+        icon_name = mimetype.genericIconName()
+        icon = QIcon.fromTheme(icon_name)
+        if not icon.isNull():
+            return icon
+
+        return QIcon.fromTheme("application-octet-stream")
 
 
 # EOF #
