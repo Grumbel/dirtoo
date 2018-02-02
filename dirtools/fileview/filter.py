@@ -17,7 +17,7 @@
 
 import random
 import re
-from fnmatch import fnmatch
+from fnmatch import fnmatchcase
 
 
 class MatchFunc:
@@ -31,11 +31,19 @@ class MatchFunc:
 
 class GlobMatchFunc(MatchFunc):
 
-    def __init__(self, pattern):
-        self.pattern = pattern
+    def __init__(self, pattern, case_sensitive=False):
+        self.case_sensitive = case_sensitive
+        if self.case_sensitive:
+            self.pattern = pattern
+        else:
+            self.pattern = pattern.lower()
 
     def __call__(self, fileinfo, idx):
-        return fnmatch(fileinfo.basename(), self.pattern)
+        if self.case_sensitive:
+            return fnmatchcase(fileinfo.basename(), self.pattern)
+        else:
+            filename = fileinfo.basename().lower()
+            return fnmatchcase(filename, self.pattern)
 
 
 class RegexMatchFunc(MatchFunc):
@@ -122,8 +130,8 @@ class Filter:
     def set_regex_pattern(self, pattern, flags=0):
         self.match_func = RegexMatchFunc(pattern, flags)
 
-    def set_pattern(self, pattern):
-        self.match_func = GlobMatchFunc(pattern)
+    def set_pattern(self, pattern, case_sensitive):
+        self.match_func = GlobMatchFunc(pattern, case_sensitive=case_sensitive)
 
     def set_size(self, size, compare):
         self.match_func = SizeMatchFunc(size, compare)
