@@ -16,6 +16,7 @@
 
 
 import argparse
+import bytefmt
 
 from dirtools.mediainfo import MediaInfo
 
@@ -32,8 +33,9 @@ def print_mediainfo(filename):
 
     hours, minutes, seconds = mediainfo.duration_tuple()
 
-    print("{:02d}h:{:02d}m:{:02d}s  {:>6.2f}fps  {:>9}  {}".format(
+    print("{:02d}h:{:02d}m:{:02d}s  {:>9}  {:>6.2f}fps  {:>9}  {}".format(
         hours, minutes, seconds,
+        bytefmt.humanize(mediainfo.filesize(), compact=True),
         mediainfo.framerate(),
         "{}x{}".format(mediainfo.width(), mediainfo.height()),
         filename))

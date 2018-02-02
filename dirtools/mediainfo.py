@@ -28,7 +28,6 @@ MediaInfoDLL3.MediaInfo.MediaInfoA_Get.argtypes = [
 
 
 def _to_float(text: str, default: float=0.0) -> float:
-
     if text == "":
         return default
     else:
@@ -66,17 +65,25 @@ class MediaInfo:
                 pass
             raise Exception("Error {}: cannot access {}".format(ret, filename))
         else:
-            # general_count = minfo.Count_Get(MediaInfoDLL3.Stream.General)
-            # video_count = minfo.Count_Get(MediaInfoDLL3.Stream.Video)
-            # audio_count = minfo.Count_Get(MediaInfoDLL3.Stream.Audio)
+            self._general_count = minfo.Count_Get(MediaInfoDLL3.Stream.General)
+            self._video_count = minfo.Count_Get(MediaInfoDLL3.Stream.Video)
+            self._audio_count = minfo.Count_Get(MediaInfoDLL3.Stream.Audio)
+            self._image_count = minfo.Count_Get(MediaInfoDLL3.Stream.Image)
 
             self._duration = _to_int(minfo.Get(MediaInfoDLL3.Stream.General, 0, "Duration"))
             self._framerate = _to_float(minfo.Get(MediaInfoDLL3.Stream.General, 0, "FrameRate"))
+            self._filesize = _to_int(minfo.Get(MediaInfoDLL3.Stream.General, 0, "FileSize"))
             # self._bitrate = minfo.Get(MediaInfoDLL3.Stream.General, 0, "OverallBitRate")
-            # self._filesize = minfo.Get(MediaInfoDLL3.Stream.General, 0, "FileSize")
 
-            self._width = _to_int(minfo.Get(MediaInfoDLL3.Stream.Video, 0, "Width"))
-            self._height = _to_int(minfo.Get(MediaInfoDLL3.Stream.Video, 0, "Height"))
+            if self._video_count > 0:
+                self._width = _to_int(minfo.Get(MediaInfoDLL3.Stream.Video, 0, "Width"))
+                self._height = _to_int(minfo.Get(MediaInfoDLL3.Stream.Video, 0, "Height"))
+            elif self._image_count > 0:
+                self._width = _to_int(minfo.Get(MediaInfoDLL3.Stream.Image, 0, "Width"))
+                self._height = _to_int(minfo.Get(MediaInfoDLL3.Stream.Image, 0, "Height"))
+            else:
+                self._width = 0
+                self._height = 0
 
             minfo.Close()
 
@@ -101,6 +108,9 @@ class MediaInfo:
 
     def height(self) -> int:
         return self._height
+
+    def filesize(self) -> int:
+        return self._filesize
 
 
 # EOF #
