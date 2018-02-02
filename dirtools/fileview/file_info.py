@@ -74,7 +74,7 @@ class FileInfo:
         self._isfile: Union[bool, None] = None
         self._issymlink: Union[bool, None] = None
 
-        self._stat = None
+        self._stat: Union[os.stat_result, None] = None
         self._have_access: Union[bool, None] = None
 
         self.is_excluded: bool = False

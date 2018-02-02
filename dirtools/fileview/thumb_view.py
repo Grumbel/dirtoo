@@ -20,17 +20,18 @@ import logging
 from typing import List, Dict
 from pkg_resources import resource_filename
 
-from PyQt5.QtCore import Qt, QThreadPool
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QBrush, QIcon, QColor, QPixmap
 from PyQt5.QtWidgets import (
     QGraphicsView,
     QGraphicsScene,
 )
 
+from dirtools.dbus_thumbnailer import DBusThumbnailerError
+from dirtools.fileview.file_info import FileInfo
+from dirtools.fileview.profiler import profile
 from dirtools.fileview.thumb_file_item import ThumbFileItem
 from dirtools.fileview.tile_layouter import TileLayouter, LayoutStyle
-from dirtools.fileview.profiler import profile
-from dirtools.dbus_thumbnailer import DBusThumbnailerError
 
 
 class SharedIcons:
@@ -49,13 +50,13 @@ class SharedPixmaps:
 
     def __init__(self):
         self.video = QPixmap(resource_filename("dirtools", "fileview/icons/noun_36746_cc.png"))
-        self.image = QPixmap(resource_filename("dirtools", "fileview/icons/noun_386758_cc.png"))  # noun_757280_cc.png"))
+        self.image = QPixmap(resource_filename("dirtools", "fileview/icons/noun_386758_cc.png"))  # noun_757280_cc.png
         self.loading = QPixmap(resource_filename("dirtools", "fileview/icons/noun_409399_cc.png"))
 
 
 class ThumbView(QGraphicsView):
 
-    def __init__(self, controller):
+    def __init__(self, controller) -> None:
         super().__init__()
 
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -126,7 +127,7 @@ class ThumbView(QGraphicsView):
 
         self.on_file_collection_set()
 
-    def on_file_added(self, fileinfo):
+    def on_file_added(self, fileinfo: FileInfo):
         thumb = ThumbFileItem(fileinfo, self.controller, self)
         self.abspath2item[fileinfo.abspath()] = thumb
         self.scene.addItem(thumb)

@@ -289,7 +289,7 @@ class ThumbFileItem(FileItem):
         if self.thumb_view.column_style:
             return
 
-        if self.fileinfo.have_access() == False:
+        if self.fileinfo.have_access() is False:
             painter.setOpacity(0.5)
             self.paint_icon(painter, self.thumb_view.shared_icons.locked)
 
