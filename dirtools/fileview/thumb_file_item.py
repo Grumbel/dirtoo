@@ -226,6 +226,11 @@ class ThumbFileItem(FileItem):
                 self.paint_text_item(painter, 5, "{:d}:{:02d}:{:02d}".format(
                     hours, minutes, seconds))
 
+        if self.thumb_view.level_of_detail > 6:
+            metadata = self.fileinfo.metadata()
+            if 'framerate' in metadata:
+                self.paint_text_item(painter, 6, "{}fps".format(metadata['framerate']))
+
     def paint_text_item(self, painter, row, text):
         font = QFont("Verdana", 8)
         fm = QFontMetrics(font)

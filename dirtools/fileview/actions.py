@@ -160,6 +160,13 @@ class Actions(QObject):
         self.sort_by_date = QAction("Sort by Date", checkable=True)
         self.sort_by_date.triggered.connect(lambda: self.controller.sorter.set_key_func(FileInfo.mtime))
 
+        def framerate_key(fileinfo):
+            metadata = fileinfo.metadata()
+            return metadata.get('framerate', 0)
+
+        self.sort_by_framerate = QAction("Sort by Framerate", checkable=True)
+        self.sort_by_framerate.triggered.connect(lambda: self.controller.sorter.set_key_func(framerate_key))
+
         def aspect_ratio_key(fileinfo):
             metadata = fileinfo.metadata()
             if 'width' in metadata and 'height' in metadata and metadata['height'] != 0:
@@ -204,6 +211,7 @@ class Actions(QObject):
         self.sort_group.addAction(self.sort_by_area)
         self.sort_group.addAction(self.sort_by_duration)
         self.sort_group.addAction(self.sort_by_aspect_ratio)
+        self.sort_group.addAction(self.sort_by_framerate)
         self.sort_group.addAction(self.sort_by_user)
         self.sort_group.addAction(self.sort_by_group)
         self.sort_group.addAction(self.sort_by_permission)
