@@ -17,6 +17,8 @@
 
 from typing import Dict, Any
 
+import logging
+
 from PyQt5.QtCore import QObject, pyqtSignal, QThread
 from PyQt5.QtCore import QMimeDatabase
 
@@ -38,7 +40,7 @@ class MetaDataCollectorWorker(QObject):
         if self._close:
             return
 
-        print("MetaDataCollectorWorker.processing: {}".format(filename))
+        logging.debug("MetaDataCollectorWorker.processing: %s", filename)
         mimetype = self.mimedb.mimeTypeForFile(filename)
 
         metadata: Dict[str, Any] = {}

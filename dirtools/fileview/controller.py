@@ -251,10 +251,10 @@ class Controller(QObject):
         self.app.metadata_collector.request_metadata(fileinfo.filename())
 
     def receive_metadata(self, filename: str, metadata: Dict[str, Any]):
-        print("receive_metadata:", filename, metadata)
+        logging.debug("Controller.receive_metadata: %s %s", filename, metadata)
         fileinfo = self.file_collection.get_fileinfo(filename)
         if fileinfo is None:
-            print("error: receive_metadata: not found fileinfo for ", filename)
+            logging.error("Controller.receive_metadata: not found fileinfo for ", filename)
         else:
             fileinfo.metadata().update(metadata)
 
