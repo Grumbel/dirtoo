@@ -80,6 +80,10 @@ class MediaInfo:
             self._audio_count = minfo.Count_Get(MediaInfoDLL3.Stream.Audio)
             self._image_count = minfo.Count_Get(MediaInfoDLL3.Stream.Image)
 
+            # print(repr(minfo.Get(MediaInfoDLL3.Stream.Video, 0, "FrameRate_Mode/String"))) # CFR VFR
+            # print(repr(minfo.Get(MediaInfoDLL3.Stream.Video, 0, "FrameRate_Maximum")))
+            # print(repr(minfo.Get(MediaInfoDLL3.Stream.Video, 0, "FrameRate_Minimum/String")))
+
             self._duration = _to_int(minfo.Get(MediaInfoDLL3.Stream.General, 0, "Duration"))
             self._framerate = _to_float(minfo.Get(MediaInfoDLL3.Stream.General, 0, "FrameRate"))
             self._filesize = _to_int(minfo.Get(MediaInfoDLL3.Stream.General, 0, "FileSize"))
