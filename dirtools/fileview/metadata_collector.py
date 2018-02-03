@@ -18,6 +18,7 @@
 from typing import Dict, Any
 
 import logging
+import os
 
 from PyQt5.QtCore import QObject, pyqtSignal, QThread
 from PyQt5.QtCore import QMimeDatabase
@@ -71,8 +72,14 @@ class MetaDataCollectorWorker(QObject):
             archiveinfo = ArchiveInfo.from_file(filename)
             metadata['type'] = 'archive'
             metadata['file_count'] = archiveinfo.file_count
+        elif mimetype.name() == "inode/directory":
+            metadata['type'] = 'directory'
+            entries = os.listdir(filename)
+            metadata['file_count'] = len(entries)
         else:
-            pass
+            logging.debug("MetaDataCollectorWorker.on_metadata_requested: "
+                          "unhandled mime-type: %s - %s",
+                          filename, mimetype.name())
 
         self.sig_metadata_ready.emit(filename, metadata)
 
