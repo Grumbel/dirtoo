@@ -29,7 +29,6 @@ class FileItem(QGraphicsObject):
         self.controller = controller
 
         self.press_pos = None
-        self.dragging = False
 
         self.setAcceptHoverEvents(True)
 
@@ -42,9 +41,8 @@ class FileItem(QGraphicsObject):
             pass
 
     def mouseMoveEvent(self, ev):
-        if not self.dragging and (ev.pos() - self.press_pos).manhattanLength() > 16:
+        if (ev.pos() - self.press_pos).manhattanLength() > 16:
             print("drag start")
-            self.dragging = True
 
             mime_data = QMimeData()
             mime_data.setUrls([QUrl("file://" + self.fileinfo.abspath())])
@@ -52,17 +50,15 @@ class FileItem(QGraphicsObject):
             # self.drag.setPixmap(self.pixmap_item.pixmap())
             self.drag.setMimeData(mime_data)
             # drag.setHotSpot(e.pos() - self.select_rect().topLeft())
-            self.dropAction = self.drag.exec_(Qt.CopyAction)
+            print("---drag start")
+            self.dropAction = self.drag.exec(Qt.CopyAction)
+            print("---drag done")
+            # this will eat up the mouseReleaseEvent
 
     def mouseReleaseEvent(self, ev):
         if ev.button() == Qt.LeftButton:
-            if self.dragging:
-                pass
-            else:
-                self.on_click_animation()
-                self.controller.on_click(self.fileinfo)
-
-            self.dragging = False
+            self.on_click_animation()
+            self.controller.on_click(self.fileinfo)
         elif ev.button() == Qt.MiddleButton:
             self.on_click_animation()
             self.controller.on_click(self.fileinfo, new_window=True)
