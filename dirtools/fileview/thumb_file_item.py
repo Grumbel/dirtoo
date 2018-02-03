@@ -21,7 +21,7 @@ from enum import Enum
 import logging
 from datetime import datetime
 
-from PyQt5.QtCore import QRectF, QRect
+from PyQt5.QtCore import Qt, QRectF, QRect
 from PyQt5.QtGui import QColor, QFontMetrics, QFont, QPainter, QPainterPath
 from PyQt5.QtWidgets import QGraphicsItem
 
@@ -180,9 +180,9 @@ class ThumbFileItem(FileItem):
 
         # background rectangle
         if not self.thumb_view.column_style or self.animation_timer is not None:
-            painter.fillRect(-2, -2,
-                             self.tile_rect.width() + 4,
-                             self.tile_rect.height() + 4,
+            painter.fillRect(0, 0,
+                             self.tile_rect.width(),
+                             self.tile_rect.height(),
                              bg_color)
 
         # hover rectangle
@@ -310,7 +310,34 @@ class ThumbFileItem(FileItem):
                                    self.thumb_view.shared_pixmaps.image)
                 painter.setOpacity(1.0)
 
-            # self.paint_tiny_icon(painter, self.icon)
+        self.paint_metadata(painter)
+
+    def paint_metadata(self, painter):
+        metadata = self.fileinfo.metadata()
+
+        font = QFont("Verdana", 8)
+        fm = QFontMetrics(font)
+        painter.setFont(font)
+
+        if 'duration' in metadata:
+            hours, minutes, seconds = split_duration(metadata['duration'])
+            text = "{:d}:{:02d}:{:02d}".format(hours, minutes, seconds)
+
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QColor(255, 255, 255, 160))
+            painter.drawRect(0, 0, fm.width(text) + 4, 16)
+            painter.setPen(QColor(0, 0, 0))
+            painter.drawText(2, 12, text)
+
+        if 'width' in metadata and 'height' in metadata:
+            text = "{}x{}".format(metadata['width'], metadata['height'])
+
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QColor(255, 255, 255, 160))
+            painter.drawRect(0, self.thumbnail_rect.height() - 16, fm.width(text) + 4, 16)
+            painter.setPen(QColor(0, 0, 0))
+            painter.drawText(2, self.thumbnail_rect.height() - 4, text)
+
 
     def paint_overlay(self, painter):
         if self.thumb_view.column_style:
