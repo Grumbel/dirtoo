@@ -254,7 +254,7 @@ class Controller(QObject):
         logging.debug("Controller.receive_metadata: %s %s", filename, metadata)
         fileinfo = self.file_collection.get_fileinfo(filename)
         if fileinfo is None:
-            logging.error("Controller.receive_metadata: not found fileinfo for ", filename)
+            logging.error("Controller.receive_metadata: not found fileinfo for %s", filename)
         else:
             fileinfo.metadata().update(metadata)
             self.file_collection.change_file(fileinfo)
