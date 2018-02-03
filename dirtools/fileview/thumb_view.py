@@ -124,6 +124,7 @@ class ThumbView(QGraphicsView):
 
         self.file_collection.sig_file_added.connect(self.on_file_added)
         self.file_collection.sig_file_removed.connect(self.on_file_removed)
+        self.file_collection.sig_file_changed.connect(self.on_file_changed)
 
         self.on_file_collection_set()
 
@@ -143,6 +144,11 @@ class ThumbView(QGraphicsView):
         del self.abspath2item[abspath]
         self.items.remove(item)
         self.layout_items()
+
+    def on_file_changed(self, fileinfo):
+        item = self.abspath2item.get(fileinfo.abspath(), None)
+        if item is not None:
+            item.update()
 
     def on_file_collection_reordered(self):
         logging.debug("ThumbView.on_file_collection_reordered")
