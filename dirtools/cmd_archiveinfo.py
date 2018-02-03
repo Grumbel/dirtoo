@@ -16,73 +16,13 @@
 
 
 import argparse
-import sys
-import os
 import libarchive
+import os
 import shlex
-from collections import defaultdict
+import sys
 
 
-# ['filetype', 'get_blocks', 'isblk', 'ischr', 'isdev', 'isdir',
-#  'isfifo', 'isfile', 'islnk', 'isreg', 'issock', 'issym', 'linkname',
-#  'linkpath', 'mode', 'mtime', 'name', 'path', 'pathname', 'rdevmajor',
-#  'rdevminor', 'size', 'strmode']
-
-
-class ArchiveInfo:
-
-    def __init__(self, entries):
-        self.file_count = 0
-        self.file_types: defaultdict = defaultdict(int)
-        self.directories: set = set()
-        self.total_size = 0
-
-        self.process_entries(entries)
-
-    def process_entries(self, entries):
-        for entry in entries:
-            if entry.isdir:
-                self.process_dir(entry)
-            elif entry.isfile:
-                self.process_file(entry)
-            else:
-                pass  # ignore other file types for now
-
-    def process_file(self, entry):
-        path = str(entry)
-        dirname = os.path.dirname(path)
-        basename = os.path.basename(path)
-        filename, ext = os.path.splitext(basename)
-
-        self.process_dirname(dirname)
-
-        self.file_types[ext.lower()] += 1
-        self.file_count += 1
-        self.total_size += entry.size
-
-    def process_dir(self, entry):
-        self.process_dirname(str(entry))
-
-    def process_dirname(self, path):
-        if path != "":
-            path = os.path.normpath(path)
-            while path != "":
-                self.directories.add(path)
-                path = os.path.dirname(path)
-
-    def print_summary(self):
-        print("  Directories ({}):".format(len(self.directories)))
-        if len(self.directories) == 0:
-            print("    .")
-        else:
-            for d in sorted(self.directories):
-                print("    {}".format(shlex.quote(d)))
-        print("  Files ({}):".format(self.file_count))
-        for ext, count in sorted(self.file_types.items()):
-            print("  {:>5d}  {}".format(count, ext))
-        print("  Size:")
-        print("    Total:   {:>12} Bytes".format(self.total_size))
-        print("    Average: {:>12} Bytes".format(int(self.total_size / self.file_count)))
+from dirtools.archiveinfo import ArchiveInfo
 
 
 def parse_args(argv):
@@ -98,14 +38,15 @@ def main(argv):
     for filename in args.FILE:
         _, ext = os.path.splitext(filename)
         try:
-            with libarchive.file_reader(filename) as archive_entries:
-                archive_info = ArchiveInfo(archive_entries)
-                if args.file_count:
-                    print("{}\t{}".format(archive_info.file_count, filename))
-                else:
-                    print("Archive: {}".format(shlex.quote(filename)))
-                    archive_info.print_summary()
-                    print()
+            archiveinfo = ArchiveInfo.from_file(filename)
+
+            if args.file_count:
+                print("{}\t{}".format(archiveinfo.file_count, filename))
+            else:
+                print("Archive: {}".format(shlex.quote(filename)))
+                archiveinfo.print_summary()
+                print()
+
         except libarchive.exception.ArchiveError as err:
             print("{}: error: couldn't process archive".format(filename))
             continue
