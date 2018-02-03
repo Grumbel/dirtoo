@@ -72,6 +72,16 @@ class FileViewWindow(QMainWindow):
         shortcut.setContext(Qt.WindowShortcut)
         shortcut.activated.connect(self.controller.parent_directory)
 
+        shortcut = QShortcut(Qt.Key_Home, self)
+        shortcut.setContext(Qt.WindowShortcut)
+        shortcut.activated.connect(lambda: self.thumb_view.ensureVisible(0, 0, 1, 1))
+
+        shortcut = QShortcut(Qt.Key_End, self)
+        shortcut.setContext(Qt.WindowShortcut)
+        shortcut.activated.connect(
+            lambda: self.thumb_view.ensureVisible(
+                0, self.thumb_view.layouter.get_bounding_rect().height(), 1, 1))
+
     def make_window(self):
         self.setWindowTitle("dt-fileview")
         self.setWindowIcon(QIcon(resource_filename("dirtools", "fileview/fileview.svg")))
