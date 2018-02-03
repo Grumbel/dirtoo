@@ -160,6 +160,16 @@ class Actions(QObject):
         self.sort_by_date = QAction("Sort by Date", checkable=True)
         self.sort_by_date.triggered.connect(lambda: self.controller.sorter.set_key_func(FileInfo.mtime))
 
+        def aspect_ratio_key(fileinfo):
+            metadata = fileinfo.metadata()
+            if 'width' in metadata and 'height' in metadata and metadata['height'] != 0:
+                return metadata['width'] / metadata['height']
+            else:
+                return 0
+
+        self.sort_by_aspect_ratio = QAction("Sort by Aspect Ratio", checkable=True)
+        self.sort_by_aspect_ratio.triggered.connect(lambda: self.controller.sorter.set_key_func(aspect_ratio_key))
+
         def area_key(fileinfo):
             metadata = fileinfo.metadata()
             if 'width' in metadata and 'height' in metadata:
@@ -193,6 +203,7 @@ class Actions(QObject):
         self.sort_group.addAction(self.sort_by_date)
         self.sort_group.addAction(self.sort_by_area)
         self.sort_group.addAction(self.sort_by_duration)
+        self.sort_group.addAction(self.sort_by_aspect_ratio)
         self.sort_group.addAction(self.sort_by_user)
         self.sort_group.addAction(self.sort_by_group)
         self.sort_group.addAction(self.sort_by_permission)
