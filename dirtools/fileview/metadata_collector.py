@@ -23,6 +23,7 @@ from PyQt5.QtCore import QObject, pyqtSignal, QThread
 from PyQt5.QtCore import QMimeDatabase
 
 from dirtools.mediainfo import MediaInfo
+from PyPDF2 import PdfFileReader
 
 
 class MetaDataCollectorWorker(QObject):
@@ -57,6 +58,11 @@ class MetaDataCollectorWorker(QObject):
             minfo = MediaInfo(filename)
             metadata['width'] = minfo.width()
             metadata['height'] = minfo.height()
+        elif mimetype.name() == 'application/pdf':
+            metadata['type'] = 'pdf'
+            with open(filename,'rb') as fin:
+                pdf = PdfFileReader(fin)
+                metadata['pages'] = pdf.getNumPages()
         else:
             pass
 

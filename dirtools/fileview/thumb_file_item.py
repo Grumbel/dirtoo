@@ -319,15 +319,21 @@ class ThumbFileItem(FileItem):
         fm = QFontMetrics(font)
         painter.setFont(font)
 
+        top_left_text = ""
+
         if 'duration' in metadata:
             hours, minutes, seconds = split_duration(metadata['duration'])
-            text = "{:d}:{:02d}:{:02d}".format(hours, minutes, seconds)
+            top_left_text = "{:d}:{:02d}:{:02d}".format(hours, minutes, seconds)
 
+        if 'pages' in metadata:
+            top_left_text = "{:d} pages".format(metadata['pages'])
+
+        if top_left_text:
             painter.setPen(Qt.NoPen)
             painter.setBrush(QColor(255, 255, 255, 160))
-            painter.drawRect(0, 0, fm.width(text) + 4, 16)
+            painter.drawRect(0, 0, fm.width(top_left_text) + 4, 16)
             painter.setPen(QColor(0, 0, 0))
-            painter.drawText(2, 12, text)
+            painter.drawText(2, 12, top_left_text)
 
         if 'width' in metadata and 'height' in metadata:
             text = "{}x{}".format(metadata['width'], metadata['height'])
