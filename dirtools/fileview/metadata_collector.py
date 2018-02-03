@@ -56,6 +56,11 @@ class MetaDataCollectorWorker(QObject):
             metadata['height'] = minfo.height()
             metadata['duration'] = minfo.duration()
             metadata['framerate'] = minfo.framerate()
+        elif mimetype.name().startswith("audio/"):
+            minfo = MediaInfo(filename)
+            metadata['type'] = 'audio'
+            metadata['duration'] = minfo.duration()
+            # bitrate, samplerate, channels
         elif mimetype.name().startswith("image/"):
             metadata['type'] = 'image'
             minfo = MediaInfo(filename)
