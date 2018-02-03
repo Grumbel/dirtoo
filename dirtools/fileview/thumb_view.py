@@ -139,11 +139,12 @@ class ThumbView(QGraphicsView):
         self.setSceneRect(self.layouter.get_bounding_rect())
 
     def on_file_removed(self, abspath):
-        item = self.abspath2item[abspath]
-        self.scene.removeItem(item)
-        del self.abspath2item[abspath]
-        self.items.remove(item)
-        self.layout_items()
+        item = self.abspath2item.get(abspath, None)
+        if item is not None:
+            self.scene.removeItem(item)
+            del self.abspath2item[abspath]
+            self.items.remove(item)
+            self.layout_items()
 
     def on_file_changed(self, fileinfo):
         item = self.abspath2item.get(fileinfo.abspath(), None)
