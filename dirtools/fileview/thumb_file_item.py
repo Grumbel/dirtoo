@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Union, Dict, Any
+
 from enum import Enum
 import logging
 from datetime import datetime
@@ -26,6 +28,7 @@ from PyQt5.QtWidgets import QGraphicsItem
 import bytefmt
 
 from dirtools.fileview.file_item import FileItem
+from dirtools.mediainfo import split_duration
 
 
 def make_scaled_rect(sw, sh, tw, th):
@@ -128,15 +131,16 @@ class ThumbFileItem(FileItem):
 
         self.thumb_view = thumb_view
 
-        self.hovering = False
+        self.hovering: bool = False
 
         self.icon = self.make_icon()
-        self.normal_thumbnail = Thumbnail("normal", self)
-        self.large_thumbnail = Thumbnail("large", self)
+        self.normal_thumbnail: Thumbnail = Thumbnail("normal", self)
+        self.large_thumbnail: Thumbnail = Thumbnail("large", self)
+        self.metadata: Union[Dict[str, Any], None] = None
 
         self.set_tile_size(self.thumb_view.tn_width, self.thumb_view.tn_height)
 
-        self.animation_timer = None
+        self.animation_timer: Union[int, None] = None
 
     def set_tile_size(self, tile_width, tile_height):
         # the size of the base tile
@@ -158,6 +162,10 @@ class ThumbFileItem(FileItem):
 
     def paint(self, painter, option, widget):
         logging.debug("ThumbFileItem.paint_items: %s", self.fileinfo.abspath())
+
+        if self.metadata is None:
+            self.controller.request_metadata(self.fileinfo)
+            self.metadata = {}
 
         painter.setRenderHint(QPainter.SmoothPixmapTransform)
         painter.setRenderHint(QPainter.TextAntialiasing)
@@ -203,6 +211,20 @@ class ThumbFileItem(FileItem):
         if self.thumb_view.level_of_detail > 3:
             dt = datetime.fromtimestamp(self.fileinfo.mtime())
             self.paint_text_item(painter, 3, dt.strftime("%F %T"))
+
+        if self.thumb_view.level_of_detail > 4:
+            metadata = self.fileinfo.metadata()
+            if 'width' in metadata and 'height' in metadata:
+                self.paint_text_item(painter, 4, "{}x{}".format(
+                    metadata['width'],
+                    metadata['height']))
+
+        if self.thumb_view.level_of_detail > 5:
+            metadata = self.fileinfo.metadata()
+            if 'duration' in metadata:
+                hours, minutes, seconds = split_duration(metadata['duration'])
+                self.paint_text_item(painter, 5, "{:d}:{:02d}:{:02d}".format(
+                    hours, minutes, seconds))
 
     def paint_text_item(self, painter, row, text):
         font = QFont("Verdana", 8)

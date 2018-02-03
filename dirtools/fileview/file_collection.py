@@ -59,16 +59,16 @@ class FileCollection(QObject):
         self.fileinfos = fileinfos
         self.sig_files_set.emit()
 
-    def add_fileinfo(self, fi):
+    def add_fileinfo(self, fi: FileInfo):
         self.fileinfos.append(fi)
         self.sig_file_added.emit(fi)
 
-    def add_file(self, filename):
+    def add_file(self, filename: str):
         fi = FileInfo.from_filename(filename)
         self.fileinfos.append(fi)
         self.sig_file_added.emit(fi)
 
-    def remove_file(self, filename):
+    def remove_file(self, filename: str):
         self.fileinfos = [fi for fi in self.fileinfos if fi.abspath == filename]
         self.sig_file_removed.emit(filename)
 
@@ -77,6 +77,12 @@ class FileCollection(QObject):
 
     def get_fileinfos(self):
         return self.fileinfos
+
+    def get_fileinfo(self, filename: str):
+        for fi in self.fileinfos:
+            if fi.filename() == filename:
+                return fi
+        return None
 
     def size(self):
         return len(self.fileinfos)

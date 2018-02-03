@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Union
+from typing import Union, Dict, Any
 import logging
 
 import os
@@ -40,7 +40,7 @@ class FileInfo:
         fi._isfile = direntry.is_file()
         fi._issymlink = direntry.is_symlink()
 
-        fi._collect_metadata()
+        fi._collect_stat()
 
         return fi
 
@@ -55,7 +55,7 @@ class FileInfo:
         fi._basename = os.path.basename(fi._abspath)
         fi._ext = os.path.splitext(fi._filename)[1]
 
-        fi._collect_metadata()
+        fi._collect_stat()
 
         fi._isdir = os.path.isdir(fi._filename)
         fi._isfile = stat.S_ISREG(fi._stat.st_mode)
@@ -77,10 +77,12 @@ class FileInfo:
         self._stat: Union[os.stat_result, None] = None
         self._have_access: Union[bool, None] = None
 
+        self._metadata: Dict[str, Any] = {}
+
         self.is_excluded: bool = False
         self.is_hidden: bool = False
 
-    def _collect_metadata(self) -> None:
+    def _collect_stat(self) -> None:
         self._stat = os.lstat(self._filename)
         self._have_access = os.access(self._filename, os.R_OK)
 
@@ -126,6 +128,9 @@ class FileInfo:
 
     def mtime(self):
         return self._stat.st_mtime if self._stat is not None else None
+
+    def metadata(self):
+        return self._metadata
 
     def __str__(self):
         return "FileInfo({})".format(self._abspath)

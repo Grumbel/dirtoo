@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import List, Dict, Any
 
 import logging
 import os
@@ -52,6 +52,8 @@ class Controller(QObject):
 
         self.window.file_view.set_file_collection(self.file_collection)
         self.window.thumb_view.set_file_collection(self.file_collection)
+
+        self.app.metadata_collector.sig_metadata_ready.connect(self.receive_metadata)
 
     def close(self):
         if self.directory_watcher_thread is not None:
@@ -244,6 +246,17 @@ class Controller(QObject):
 
     def set_crop_thumbnails(self, v):
         self.window.thumb_view.set_crop_thumbnails(v)
+
+    def request_metadata(self, fileinfo):
+        self.app.metadata_collector.request_metadata(fileinfo.filename())
+
+    def receive_metadata(self, filename: str, metadata: Dict[str, Any]):
+        print("receive_metadata:", filename, metadata)
+        fileinfo = self.file_collection.get_fileinfo(filename)
+        if fileinfo is None:
+            print("error: receive_metadata: not found fileinfo for ", filename)
+        else:
+            fileinfo.metadata().update(metadata)
 
     def request_thumbnail(self, fileinfo, flavor):
         self.app.thumbnailer.request_thumbnail(fileinfo.filename(), flavor,

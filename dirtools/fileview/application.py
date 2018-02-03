@@ -27,6 +27,7 @@ from dirtools.fileview.controller import Controller
 from dirtools.fileview.thumbnailer import Thumbnailer
 from dirtools.dbus_thumbnail_cache import DBusThumbnailCache
 from dirtools.fileview.mime_database import MimeDatabase
+from dirtools.fileview.metadata_collector import MetaDataCollector
 
 
 class FileViewApplication:
@@ -38,6 +39,7 @@ class FileViewApplication:
 
         self.qapp = QApplication([])
         self.thumbnailer = Thumbnailer()
+        self.metadata_collector = MetaDataCollector()
         self.dbus_loop = DBusQtMainLoop(set_as_default=False)
         self.session_bus = dbus.SessionBus(self.dbus_loop)
         self.dbus_thumbnail_cache = DBusThumbnailCache(self.session_bus)
@@ -52,6 +54,7 @@ class FileViewApplication:
 
     def close(self):
         self.session_bus.close()
+        self.metadata_collector.close()
         self.thumbnailer.close()
 
     def close_controller(self, controller):

@@ -20,7 +20,6 @@ from typing import Dict, Any
 from PyQt5.QtCore import QObject, pyqtSignal, QThread
 from PyQt5.QtCore import QMimeDatabase
 
-
 from dirtools.mediainfo import MediaInfo
 
 
@@ -30,11 +29,15 @@ class MetaDataCollectorWorker(QObject):
 
     def __init__(self) -> None:
         super().__init__()
+        self._close = False
 
     def init(self):
         self.mimedb = QMimeDatabase()
 
     def on_metadata_requested(self, filename: str):
+        if self._close:
+            return
+
         print("MetaDataCollectorWorker.processing: {}".format(filename))
         mimetype = self.mimedb.mimeTypeForFile(filename)
 
@@ -77,6 +80,7 @@ class MetaDataCollector(QObject):
         self.thread.start()
 
     def close(self):
+        self.worker._close = True
         self.thread.quit()
         self.thread.wait()
 

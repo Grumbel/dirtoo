@@ -50,6 +50,16 @@ def _to_int(text: str, default: int=0) -> int:
             return default
 
 
+def split_duration(duration: int) -> Tuple[int, int, int]:
+    hours = duration // 1000 // 60 // 60
+    duration -= 1000 * 60 * 60 * hours
+    minutes = duration // 1000 // 60
+    duration -= 1000 * 60 * minutes
+    seconds = duration // 1000
+
+    return (hours, minutes, seconds)
+
+
 class MediaInfo:
 
     def __init__(self, filename: str) -> None:
