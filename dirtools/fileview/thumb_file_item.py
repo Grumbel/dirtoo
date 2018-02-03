@@ -328,6 +328,9 @@ class ThumbFileItem(FileItem):
         if 'pages' in metadata:
             top_left_text = "{:d} pages".format(metadata['pages'])
 
+        if 'file_count' in metadata:
+            top_left_text = "{:d} files".format(metadata['file_count'])
+
         if top_left_text:
             painter.setPen(Qt.NoPen)
             painter.setBrush(QColor(255, 255, 255, 160))
@@ -343,7 +346,6 @@ class ThumbFileItem(FileItem):
             painter.drawRect(0, self.thumbnail_rect.height() - 16, fm.width(text) + 4, 16)
             painter.setPen(QColor(0, 0, 0))
             painter.drawText(2, self.thumbnail_rect.height() - 4, text)
-
 
     def paint_overlay(self, painter):
         if self.thumb_view.column_style:

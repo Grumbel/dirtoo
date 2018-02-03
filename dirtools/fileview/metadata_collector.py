@@ -22,8 +22,10 @@ import logging
 from PyQt5.QtCore import QObject, pyqtSignal, QThread
 from PyQt5.QtCore import QMimeDatabase
 
-from dirtools.mediainfo import MediaInfo
 from PyPDF2 import PdfFileReader
+
+from dirtools.mediainfo import MediaInfo
+from dirtools.archiveinfo import ArchiveInfo
 
 
 class MetaDataCollectorWorker(QObject):
@@ -60,9 +62,15 @@ class MetaDataCollectorWorker(QObject):
             metadata['height'] = minfo.height()
         elif mimetype.name() == 'application/pdf':
             metadata['type'] = 'pdf'
-            with open(filename,'rb') as fin:
+            with open(filename, 'rb') as fin:
                 pdf = PdfFileReader(fin)
                 metadata['pages'] = pdf.getNumPages()
+        elif mimetype.name() in ['application/zip',
+                                 'application/vnd.rar',
+                                 'application/rar']:
+            archiveinfo = ArchiveInfo.from_file(filename)
+            metadata['type'] = 'archive'
+            metadata['file_count'] = archiveinfo.file_count
         else:
             pass
 
