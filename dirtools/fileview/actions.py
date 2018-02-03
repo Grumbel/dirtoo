@@ -160,6 +160,26 @@ class Actions(QObject):
         self.sort_by_date = QAction("Sort by Date", checkable=True)
         self.sort_by_date.triggered.connect(lambda: self.controller.sorter.set_key_func(FileInfo.mtime))
 
+        def area_key(fileinfo):
+            metadata = fileinfo.metadata()
+            if 'width' in metadata and 'height' in metadata:
+                return metadata['width'] * metadata['height']
+            else:
+                return 0
+
+        self.sort_by_area = QAction("Sort by Area", checkable=True)
+        self.sort_by_area.triggered.connect(lambda: self.controller.sorter.set_key_func(area_key))
+
+        def duration_key(fileinfo):
+            metadata = fileinfo.metadata()
+            if 'duration' in metadata:
+                return metadata['duration']
+            else:
+                return 0
+
+        self.sort_by_duration = QAction("Sort by Duration", checkable=True)
+        self.sort_by_duration.triggered.connect(lambda: self.controller.sorter.set_key_func(duration_key))
+
         self.sort_by_user = QAction("Sort by User", checkable=True)
         self.sort_by_group = QAction("Sort by Group", checkable=True)
         self.sort_by_permission = QAction("Sort by Permission", checkable=True)
@@ -171,6 +191,8 @@ class Actions(QObject):
         self.sort_group.addAction(self.sort_by_size)
         self.sort_group.addAction(self.sort_by_ext)
         self.sort_group.addAction(self.sort_by_date)
+        self.sort_group.addAction(self.sort_by_area)
+        self.sort_group.addAction(self.sort_by_duration)
         self.sort_group.addAction(self.sort_by_user)
         self.sort_group.addAction(self.sort_by_group)
         self.sort_group.addAction(self.sort_by_permission)
