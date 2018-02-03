@@ -349,5 +349,12 @@ class ThumbView(QGraphicsView):
         else:
             self.setBackgroundBrush(QBrush())
 
+    def scroll_by(self, x, y):
+        scrollbar = self.verticalScrollBar()
+        scrollbar.setValue(scrollbar.value() + y)
+
+        scrollbar = self.horizontalScrollBar()
+        scrollbar.setValue(scrollbar.value() + x)
+
 
 # EOF #

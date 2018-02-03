@@ -82,6 +82,14 @@ class FileViewWindow(QMainWindow):
             lambda: self.thumb_view.ensureVisible(
                 0, self.thumb_view.layouter.get_bounding_rect().height(), 1, 1))
 
+        shortcut = QShortcut(Qt.Key_PageUp, self)
+        shortcut.setContext(Qt.WindowShortcut)
+        shortcut.activated.connect(lambda: self.thumb_view.scroll_by(0, -self.thumb_view.viewport().height()))
+
+        shortcut = QShortcut(Qt.Key_PageDown, self)
+        shortcut.setContext(Qt.WindowShortcut)
+        shortcut.activated.connect(lambda: self.thumb_view.scroll_by(0, self.thumb_view.viewport().height()))
+
     def make_window(self):
         self.setWindowTitle("dt-fileview")
         self.setWindowIcon(QIcon(resource_filename("dirtools", "fileview/fileview.svg")))
