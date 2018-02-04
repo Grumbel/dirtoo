@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import cast, Union, Dict, Any
+from typing import cast, Dict, Any
 
 import hashlib
 import json

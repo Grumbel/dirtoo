@@ -56,8 +56,8 @@ class MetaDataCollectorWorker(QObject):
                 metadata = self._create_metadata(filename)
             except Exception as err:
                 error_message = "".join(traceback.format_exception(etype=type(err),
-                                                             value=err,
-                                                             tb=err.__traceback__))
+                                                                   value=err,
+                                                                   tb=err.__traceback__))
                 metadata = {
                     'type': "error",
                     'error_message': error_message

@@ -29,7 +29,7 @@ VIDEO_EXT = ['wmv', 'mp4', 'mpg', 'mpeg', 'm2v', 'avi', 'flv', 'mkv', 'wmv',
 VIDEO_REGEX = r"\.({})$".format("|".join(VIDEO_EXT))
 
 
-IMAGE_EXT = ['jpg', 'jpeg', 'gif', 'png', 'tif', 'tiff', 'webp']
+IMAGE_EXT = ['jpg', 'jpeg', 'gif', 'png', 'tif', 'tiff', 'webp', 'bmp', 'xcf']
 
 IMAGE_REGEX = r"\.({})$".format("|".join(IMAGE_EXT))
 
