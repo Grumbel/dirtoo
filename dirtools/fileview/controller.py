@@ -226,16 +226,16 @@ class Controller(QObject):
 
     def on_click(self, fileinfo, new_window=False):
         if not fileinfo.isdir():
-            argv = ["xdg-open", fileinfo.filename()]
+            argv = ["xdg-open", fileinfo.abspath()]
             logging.info("Controller.on_click: launching: %s", argv)
             subprocess.Popen(argv)
         else:
             if self.location is None or new_window:
                 logging.info("Controller.on_click: app.show_location: %s", fileinfo)
-                self.app.show_location(fileinfo.filename())
+                self.app.show_location(fileinfo.abspath())
             else:
                 logging.info("Controller.on_click: self.set_location: %s", fileinfo)
-                self.set_location(fileinfo.filename())
+                self.set_location(fileinfo.abspath())
 
     def show_current_filename(self, filename):
         self.window.show_current_filename(filename)
@@ -248,7 +248,7 @@ class Controller(QObject):
         self.window.thumb_view.set_crop_thumbnails(v)
 
     def request_metadata(self, fileinfo):
-        self.app.metadata_collector.request_metadata(fileinfo.filename())
+        self.app.metadata_collector.request_metadata(fileinfo.abspath())
 
     def receive_metadata(self, filename: str, metadata: Dict[str, Any]):
         logging.debug("Controller.receive_metadata: %s %s", filename, metadata)
@@ -260,7 +260,7 @@ class Controller(QObject):
             self.file_collection.change_file(fileinfo)
 
     def request_thumbnail(self, fileinfo, flavor):
-        self.app.thumbnailer.request_thumbnail(fileinfo.filename(), flavor,
+        self.app.thumbnailer.request_thumbnail(fileinfo.abspath(), flavor,
                                                self.receive_thumbnail)
 
     def reload(self):

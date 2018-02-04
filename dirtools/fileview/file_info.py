@@ -31,10 +31,10 @@ class FileInfo:
         logging.debug("FileInfo.from_direntry: %s/%s", direntry.path, direntry.name)
 
         fi = FileInfo()
-        fi._filename = direntry.path
+        fi._abspath = os.path.abspath(direntry.path)
+        fi._dirname = os.path.dirname(fi._abspath)
         fi._basename = direntry.name
-        fi._abspath = os.path.abspath(fi._filename)
-        fi._ext = os.path.splitext(fi._filename)[1]
+        fi._ext = os.path.splitext(fi._abspath)[1]
 
         fi._isdir = direntry.is_dir()
         fi._isfile = direntry.is_file()
@@ -49,22 +49,20 @@ class FileInfo:
         logging.debug("FileInfo.from_filename: %s", filename)
 
         fi = FileInfo()
-        fi._filename = filename
-        fi._abspath = os.path.abspath(fi._filename)
+        fi._abspath = os.path.abspath(filename)
         fi._dirname = os.path.dirname(fi._abspath)
         fi._basename = os.path.basename(fi._abspath)
-        fi._ext = os.path.splitext(fi._filename)[1]
+        fi._ext = os.path.splitext(fi._abspath)[1]
 
         fi._collect_stat()
 
-        fi._isdir = os.path.isdir(fi._filename)
+        fi._isdir = os.path.isdir(fi._abspath)
         fi._isfile = stat.S_ISREG(fi._stat.st_mode)
         fi._issymlink = stat.S_ISLNK(fi._stat.st_mode)
 
         return fi
 
     def __init__(self):
-        self._filename: Union[str, None] = None
         self._abspath: Union[str, None] = None
         self._dirname: Union[str, None] = None
         self._basename: Union[str, None] = None
@@ -83,8 +81,8 @@ class FileInfo:
         self.is_hidden: bool = False
 
     def _collect_stat(self) -> None:
-        self._stat = os.lstat(self._filename)
-        self._have_access = os.access(self._filename, os.R_OK)
+        self._stat = os.lstat(self._abspath)
+        self._have_access = os.access(self._abspath, os.R_OK)
 
     @property
     def is_visible(self):
@@ -92,9 +90,6 @@ class FileInfo:
 
     def have_access(self):
         return self._have_access
-
-    def filename(self):
-        return self._filename
 
     def abspath(self):
         return self._abspath

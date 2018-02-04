@@ -78,9 +78,9 @@ class FileCollection(QObject):
     def get_fileinfos(self):
         return self.fileinfos
 
-    def get_fileinfo(self, filename: str):
+    def get_fileinfo(self, abspath: str):
         for fi in self.fileinfos:
-            if fi.filename() == filename:
+            if fi.abspath() == abspath:
                 return fi
         return None
 

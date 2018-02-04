@@ -395,7 +395,7 @@ class ThumbFileItem(FileItem):
 
     def hoverEnterEvent(self, ev):
         self.hovering = True
-        self.controller.show_current_filename(self.fileinfo.filename())
+        self.controller.show_current_filename(self.fileinfo.abspath())
         self.update()
 
     def hoverLeaveEvent(self, ev):

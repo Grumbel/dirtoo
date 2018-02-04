@@ -49,17 +49,17 @@ class DetailFileItem(FileItem):
         self.size_item.setPos(225 - self.size_item.boundingRect().width(), 0)
         self.addToGroup(self.size_item)
 
-        self.filename_item = QGraphicsTextItem(self.fileinfo.filename())
+        self.filename_item = QGraphicsTextItem(self.fileinfo.abspath())
         self.filename_item.setPos(250, 0)
         self.addToGroup(self.filename_item)
 
         # tooltips don't work for the whole group
-        self.filename_item.setToolTip(self.fileinfo.filename())
+        self.filename_item.setToolTip(self.fileinfo.abspath())
 
     def hoverEnterEvent(self, ev):
         self.show_thumbnail()
         self.filename_item.setDefaultTextColor(QColor(0, 128, 128))
-        self.controller.show_current_filename(self.fileinfo.filename())
+        self.controller.show_current_filename(self.fileinfo.abspath())
 
     def hoverLeaveEvent(self, ev):
         self.hide_thumbnail()
@@ -70,7 +70,7 @@ class DetailFileItem(FileItem):
         if self.thumbnail is None:
             thumbnail_filename = self.controller.request_thumbnail(self.fileinfo, flavor="normal")
             if thumbnail_filename is None:
-                print("no thumbnail for", self.fileinfo.filename())
+                print("no thumbnail for", self.fileinfo.abspath())
             else:
                 print("showing thumbnail:", thumbnail_filename)
                 self.thumbnail = QGraphicsPixmapItem(QPixmap(thumbnail_filename))
@@ -80,7 +80,7 @@ class DetailFileItem(FileItem):
 
     def hide_thumbnail(self):
         if self.thumbnail is not None:
-            # print("hiding thumbnail", self.fileinfo.filename())
+            # print("hiding thumbnail", self.fileinfo.abspath())
             self.removeFromGroup(self.thumbnail)
             self.thumbnail = None
 
