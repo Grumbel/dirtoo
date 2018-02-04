@@ -17,6 +17,7 @@
 
 from typing import Dict, Any
 
+import traceback
 import logging
 import os
 
@@ -51,7 +52,17 @@ class MetaDataCollectorWorker(QObject):
         if cached_metadata is not None:
             self.sig_metadata_ready.emit(filename, cached_metadata)
         else:
-            metadata = self._create_metadata(filename)
+            try:
+                metadata = self._create_metadata(filename)
+            except Exception as err:
+                error_message = "".join(traceback.format_exception(etype=type(err),
+                                                             value=err,
+                                                             tb=err.__traceback__))
+                metadata = {
+                    'type': "error",
+                    'error_message': error_message
+                }
+
             self.cache.store_metadata(abspath, metadata)
             self.sig_metadata_ready.emit(filename, metadata)
 

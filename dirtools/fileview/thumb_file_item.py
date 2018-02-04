@@ -321,6 +321,13 @@ class ThumbFileItem(FileItem):
 
         top_left_text = ""
 
+        if "type" in self.fileinfo.metadata() and self.fileinfo.metadata()["type"] == "error":
+            painter.setOpacity(0.5)
+            # painter.setCompositionMode(QPainter.CompositionMode_Plus)
+            painter.drawPixmap(QRect(2, 2, 24, 24),
+                               self.thumb_view.shared_pixmaps.error)
+            painter.setOpacity(1.0)
+
         if 'duration' in metadata:
             hours, minutes, seconds = split_duration(metadata['duration'])
             top_left_text = "{:d}:{:02d}:{:02d}".format(hours, minutes, seconds)
