@@ -27,6 +27,7 @@ from PyPDF2 import PdfFileReader
 
 from dirtools.mediainfo import MediaInfo
 from dirtools.archiveinfo import ArchiveInfo
+from dirtools.fileview.metadata_cache import MetaDataCache
 
 
 class MetaDataCollectorWorker(QObject):
@@ -39,12 +40,23 @@ class MetaDataCollectorWorker(QObject):
 
     def init(self):
         self.mimedb = QMimeDatabase()
+        self.cache = MetaDataCache()
 
     def on_metadata_requested(self, filename: str):
         if self._close:
             return
 
-        logging.debug("MetaDataCollectorWorker.processing: %s", filename)
+        abspath = os.path.abspath(filename)
+        cached_metadata = self.cache.retrieve_metadata(abspath)
+        if cached_metadata is not None:
+            self.sig_metadata_ready.emit(filename, cached_metadata)
+        else:
+            metadata = self._create_metadata(filename)
+            self.cache.store_metadata(abspath, metadata)
+            self.sig_metadata_ready.emit(filename, metadata)
+
+    def _create_metadata(self, filename: str):
+        logging.debug("MetaDataCollectorWorker.create_metadata: %s", filename)
         mimetype = self.mimedb.mimeTypeForFile(filename)
 
         metadata: Dict[str, Any] = {}
@@ -86,7 +98,7 @@ class MetaDataCollectorWorker(QObject):
                           "unhandled mime-type: %s - %s",
                           filename, mimetype.name())
 
-        self.sig_metadata_ready.emit(filename, metadata)
+        return metadata
 
 
 class MetaDataCollector(QObject):
