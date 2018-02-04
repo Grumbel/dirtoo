@@ -35,6 +35,7 @@ setup(name='dirtools',
               'dt-archiveinfo = dirtools.cmd_archiveinfo:main_entrypoint',
               'dt-guessarchivename = dirtools.cmd_guessarchivename:main_entrypoint',
               'dt-thumbnailer = dirtools.cmd_thumbnailer:main_entrypoint',
+              'dt-qtthumbnailer = dirtools.cmd_qtthumbnailer:main_entrypoint',
           ],
           'gui_scripts': []
           },
