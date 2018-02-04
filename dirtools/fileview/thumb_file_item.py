@@ -161,7 +161,7 @@ class ThumbFileItem(FileItem):
         self.qpainter_path.addRect(0, 0, tile_width, tile_height)
 
     def paint(self, painter, option, widget):
-        logging.debug("ThumbFileItem.paint_items: %s", self.fileinfo.abspath())
+        logging.debug("ThumbFileItem.paint: %s", self.fileinfo.abspath())
 
         if self.metadata is None:
             self.controller.request_metadata(self.fileinfo)
@@ -251,7 +251,7 @@ class ThumbFileItem(FileItem):
                              text)
 
     def paint_thumbnail(self, painter):
-        logging.debug("ThumbFileItem.make_thumbnail: %s", self.fileinfo.abspath())
+        logging.debug("ThumbFileItem.paint_thumbnail: %s", self.fileinfo.abspath())
 
         if self.thumb_view.column_style:
             self.paint_icon(painter, self.icon)
