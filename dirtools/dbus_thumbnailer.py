@@ -82,15 +82,21 @@ class DBusThumbnailer:
     def __init__(self, bus, listener=None):
         self.bus = bus
         self.requests: Dict[str, Tuple[str, str, str]] = {}
-        self.thumbnailer = bus.get_object(
+        self.thumbnailer_obj = bus.get_object(
             'org.freedesktop.thumbnails.Thumbnailer1',
-            '/org/freedesktop/thumbnails/Thumbnailer1')
+            '/org/freedesktop/thumbnails/Thumbnailer1',
+            follow_name_owner_changes=True)
+
+        self.thumbnailer_if = dbus.Interface(
+            self.thumbnailer_obj,
+            dbus_interface="org.freedesktop.thumbnails.Thumbnailer1")
+
         self.listener = listener
 
-        self.thumbnailer.connect_to_signal("Ready", self._receive_ready)
-        self.thumbnailer.connect_to_signal("Started", self._receive_started)
-        self.thumbnailer.connect_to_signal("Finished", self._receive_finished)
-        self.thumbnailer.connect_to_signal("Error", self._receive_error)
+        self.thumbnailer_if.connect_to_signal("Ready", self._receive_ready)
+        self.thumbnailer_if.connect_to_signal("Started", self._receive_started)
+        self.thumbnailer_if.connect_to_signal("Finished", self._receive_finished)
+        self.thumbnailer_if.connect_to_signal("Error", self._receive_error)
 
     def _add_request(self, handle, data):
         self.requests[handle] = data
@@ -125,37 +131,31 @@ class DBusThumbnailer:
             mimetypes.guess_type(url)[0] or "application/octet-stream"
             for url in urls
         ]
-        handle = self.thumbnailer.Queue(
+        handle = self.thumbnailer_if.Queue(
             urls,  # uris: as
             mime_types,  # mime_types: as
             flavor,  # flavor: s
             "default",  # scheduler: s
             dbus.UInt32(0),  # handle_to_dequeue: u
             # <arg type="u" name="handle" direction="out" />
-            dbus_interface="org.freedesktop.thumbnails.Thumbnailer1"
         )
         self._add_request(int(handle), (urls, mime_types, flavor))
         return int(handle)
 
     def dequeue(self, handle):
-        self.thumbnailer.Dequeue(
-            handle,
-            dbus_interface="org.freedesktop.thumbnails.Thumbnailer1")
+        self.thumbnailer_if.Dequeue(handle)
         del self.requests[handle]
 
     def get_supported(self):
-        uri_schemes, mime_types = self.thumbnailer.GetSupported(
-            dbus_interface="org.freedesktop.thumbnails.Thumbnailer1")
+        uri_schemes, mime_types = self.thumbnailer_if.GetSupported()
         return (uri_schemes, mime_types)
 
     def get_schedulers(self):
-        schedulers = self.thumbnailer.GetSchedulers(
-            dbus_interface="org.freedesktop.thumbnails.Thumbnailer1")
+        schedulers = self.thumbnailer_if.GetSchedulers()
         return schedulers
 
     def get_flavors(self):
-        flavors = self.thumbnailer.GetFlavors(
-            dbus_interface="org.freedesktop.thumbnails.Thumbnailer1")
+        flavors = self.thumbnailer_if.GetFlavors()
         return flavors
 
     @staticmethod
