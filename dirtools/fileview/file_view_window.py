@@ -172,6 +172,7 @@ class FileViewWindow(QMainWindow):
         self.menubar = self.menuBar()
         file_menu = self.menubar.addMenu('&File')
         file_menu.addAction(self.actions.parent_directory)
+        file_menu.addAction(self.actions.debug)
         file_menu.addAction(self.actions.save_as)
         file_menu.addSeparator()
         file_menu.addAction(self.actions.exit)
@@ -263,6 +264,8 @@ class FileViewWindow(QMainWindow):
         self.toolbar.addAction(self.actions.lod_out)
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.actions.crop_thumbnails)
+        self.toolbar.addSeparator()
+        self.toolbar.addAction(self.actions.debug)
 
     def zoom_in(self):
         self.thumb_view.zoom_in()

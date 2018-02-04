@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import logging
+
 from PyQt5.QtCore import QObject
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (
@@ -41,6 +43,18 @@ class Actions(QObject):
         self.save_as.setShortcut('Ctrl+s')
         self.save_as.setStatusTip('Save the current file selection')
         self.save_as.triggered.connect(self.controller.save_as)
+
+        def on_debug(enabled):
+            logger = logging.getLogger()
+            if enabled:
+                logger.setLevel(logging.DEBUG)
+            else:
+                logger.setLevel(logging.ERROR)
+
+        self.debug = QAction(QIcon.fromTheme('media-record'), '&Debug', self, checkable=True)
+        self.debug.setShortcut('Ctrl+Q')
+        self.debug.setStatusTip('Debug application')
+        self.debug.triggered.connect(lambda: on_debug(self.debug.isChecked()))
 
         self.exit = QAction(QIcon.fromTheme('exit'), '&Exit', self)
         self.exit.setShortcut('Ctrl+Q')
