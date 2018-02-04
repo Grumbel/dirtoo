@@ -195,7 +195,17 @@ class ThumbFileItem(FileItem):
 
         self.paint_text_items(painter)
         self.paint_thumbnail(painter)
-        self.paint_overlay(painter)
+
+        if self.hovering and self.animation_timer is None:
+            painter.setCompositionMode(QPainter.CompositionMode_Overlay)
+            painter.setOpacity(0.75)
+            self.paint_thumbnail(painter)
+            painter.setOpacity(1.0)
+            painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
+
+        if self.thumb_view.level_of_detail > 1:
+            self.paint_metadata(painter)
+            self.paint_overlay(painter)
 
     def paint_text_items(self, painter):
         # text items
@@ -291,9 +301,6 @@ class ThumbFileItem(FileItem):
                                          24, 24),
                                    self.thumb_view.shared_pixmaps.image)
                 painter.setOpacity(1.0)
-
-        if self.thumb_view.level_of_detail > 1:
-            self.paint_metadata(painter)
 
     def paint_metadata(self, painter):
         metadata = self.fileinfo.metadata()
