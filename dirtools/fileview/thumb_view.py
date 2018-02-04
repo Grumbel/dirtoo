@@ -76,7 +76,7 @@ class ThumbView(QGraphicsView):
 
         self.items: List[ThumbFileItem] = []
 
-        self.level_of_detail = 1
+        self.level_of_detail = 2
 
         self.file_collection = None
 
@@ -270,7 +270,8 @@ class ThumbView(QGraphicsView):
             self.layouter.set_style(LayoutStyle.ROWS)
             self.layouter.set_padding(16, 16)
             self.layouter.set_spacing(16, 16)
-            self.layouter.set_tile_size(self.tn_width, self.tn_height + 16 * self.level_of_detail)
+            k = [0, 1, 1, 2, 3][self.level_of_detail]
+            self.layouter.set_tile_size(self.tn_width, self.tn_height + 16 * k)
 
         if self.zoom_index < 2:
             self.flavor = "normal"
@@ -335,8 +336,8 @@ class ThumbView(QGraphicsView):
 
     def more_details(self):
         self.level_of_detail += 1
-        if self.level_of_detail > 7:
-            self.level_of_detail = 7
+        if self.level_of_detail > 4:
+            self.level_of_detail = 4
         self.apply_zoom()
 
     def set_show_filtered(self, show_filtered):

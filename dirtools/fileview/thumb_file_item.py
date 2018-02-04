@@ -202,34 +202,14 @@ class ThumbFileItem(FileItem):
         if self.thumb_view.level_of_detail > 0:
             self.paint_text_item(painter, 0, self.fileinfo.basename())
 
-        if self.thumb_view.level_of_detail > 1:
-            self.paint_text_item(painter, 1, self.fileinfo.ext())
-
         if self.thumb_view.level_of_detail > 2:
-            self.paint_text_item(painter, 2, bytefmt.humanize(self.fileinfo.size()))
+            painter.setPen(QColor(96, 96, 96))
+            self.paint_text_item(painter, 1, bytefmt.humanize(self.fileinfo.size()))
 
         if self.thumb_view.level_of_detail > 3:
             dt = datetime.fromtimestamp(self.fileinfo.mtime())
-            self.paint_text_item(painter, 3, dt.strftime("%F %T"))
-
-        if self.thumb_view.level_of_detail > 4:
-            metadata = self.fileinfo.metadata()
-            if 'width' in metadata and 'height' in metadata:
-                self.paint_text_item(painter, 4, "{}x{}".format(
-                    metadata['width'],
-                    metadata['height']))
-
-        if self.thumb_view.level_of_detail > 5:
-            metadata = self.fileinfo.metadata()
-            if 'duration' in metadata:
-                hours, minutes, seconds = split_duration(metadata['duration'])
-                self.paint_text_item(painter, 5, "{:d}:{:02d}:{:02d}".format(
-                    hours, minutes, seconds))
-
-        if self.thumb_view.level_of_detail > 6:
-            metadata = self.fileinfo.metadata()
-            if 'framerate' in metadata:
-                self.paint_text_item(painter, 6, "{}fps".format(metadata['framerate']))
+            painter.setPen(QColor(96, 96, 96))
+            self.paint_text_item(painter, 2, dt.strftime("%F %T"))
 
     def paint_text_item(self, painter, row, text):
         font = QFont("Verdana", 8)
@@ -249,13 +229,15 @@ class ThumbFileItem(FileItem):
             text = tmp + "…"
 
         painter.setFont(font)
+
+        k = [0, 1, 1, 2, 3][self.thumb_view.level_of_detail]
         if not self.thumb_view.column_style:
             painter.drawText(self.tile_rect.width() / 2 - fm.width(text) / 2,
-                             self.tile_rect.height() - 2 + 16 * row - 16 * self.thumb_view.level_of_detail + 14,
+                             self.tile_rect.height() - 2 + 16 * row - 16 * k + 14,
                              text)
         else:
             painter.drawText(self.tile_rect.height() + 4,
-                             self.tile_rect.height() - 2 + 16 * row - 16 * self.thumb_view.level_of_detail + 14,
+                             self.tile_rect.height() - 2 + 16 * row - 16 * k + 14,
                              text)
 
     def paint_thumbnail(self, painter):
@@ -310,7 +292,8 @@ class ThumbFileItem(FileItem):
                                    self.thumb_view.shared_pixmaps.image)
                 painter.setOpacity(1.0)
 
-        self.paint_metadata(painter)
+        if self.thumb_view.level_of_detail > 1:
+            self.paint_metadata(painter)
 
     def paint_metadata(self, painter):
         metadata = self.fileinfo.metadata()
@@ -320,6 +303,7 @@ class ThumbFileItem(FileItem):
         painter.setFont(font)
 
         top_left_text = ""
+        top_right_text = ""
 
         if "type" in self.fileinfo.metadata() and self.fileinfo.metadata()["type"] == "error":
             painter.setOpacity(0.5)
@@ -338,12 +322,23 @@ class ThumbFileItem(FileItem):
         if 'file_count' in metadata:
             top_left_text = "{:d} files".format(metadata['file_count'])
 
+        if 'framerate' in metadata:
+            top_right_text = "{:g}fps".format(metadata['framerate'])
+
         if top_left_text:
             painter.setPen(Qt.NoPen)
             painter.setBrush(QColor(255, 255, 255, 160))
             painter.drawRect(0, 0, fm.width(top_left_text) + 4, 16)
             painter.setPen(QColor(0, 0, 0))
             painter.drawText(2, 12, top_left_text)
+
+        if top_right_text:
+            w = fm.width(top_right_text)
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QColor(255, 255, 255, 160))
+            painter.drawRect(self.thumbnail_rect.width() - w, 0, w + 4, 16)
+            painter.setPen(QColor(0, 0, 0))
+            painter.drawText(self.thumbnail_rect.width() - w, 12, top_right_text)
 
         if 'width' in metadata and 'height' in metadata:
             text = "{}x{}".format(metadata['width'], metadata['height'])
