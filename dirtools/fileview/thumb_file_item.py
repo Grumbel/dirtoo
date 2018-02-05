@@ -311,6 +311,7 @@ class ThumbFileItem(FileItem):
 
         top_left_text = ""
         top_right_text = ""
+        bottom_left_text = ""
 
         if "type" in self.fileinfo.metadata() and self.fileinfo.metadata()["type"] == "error":
             painter.setOpacity(0.5)
@@ -332,10 +333,14 @@ class ThumbFileItem(FileItem):
         if 'framerate' in metadata:
             top_right_text = "{:g}fps".format(metadata['framerate'])
 
+        if 'width' in metadata and 'height' in metadata:
+            bottom_left_text = "{}x{}".format(metadata['width'], metadata['height'])
+
         if top_left_text:
+            w = fm.width(top_left_text)
             painter.setPen(Qt.NoPen)
             painter.setBrush(QColor(255, 255, 255, 160))
-            painter.drawRect(0, 0, fm.width(top_left_text) + 4, 16)
+            painter.drawRect(0, 0, w + 4, 16)
             painter.setPen(QColor(0, 0, 0))
             painter.drawText(2, 12, top_left_text)
 
@@ -343,18 +348,17 @@ class ThumbFileItem(FileItem):
             w = fm.width(top_right_text)
             painter.setPen(Qt.NoPen)
             painter.setBrush(QColor(255, 255, 255, 160))
-            painter.drawRect(self.thumbnail_rect.width() - w, 0, w + 4, 16)
+            painter.drawRect(self.thumbnail_rect.width() - w - 4, 0, w + 4, 16)
             painter.setPen(QColor(0, 0, 0))
-            painter.drawText(self.thumbnail_rect.width() - w, 12, top_right_text)
+            painter.drawText(self.thumbnail_rect.width() - w - 2, 12, top_right_text)
 
-        if 'width' in metadata and 'height' in metadata:
-            text = "{}x{}".format(metadata['width'], metadata['height'])
-
+        if bottom_left_text:
+            w = fm.width(bottom_left_text)
             painter.setPen(Qt.NoPen)
             painter.setBrush(QColor(255, 255, 255, 160))
-            painter.drawRect(0, self.thumbnail_rect.height() - 16, fm.width(text) + 4, 16)
+            painter.drawRect(0, self.thumbnail_rect.height() - 16, w + 4, 16)
             painter.setPen(QColor(0, 0, 0))
-            painter.drawText(2, self.thumbnail_rect.height() - 4, text)
+            painter.drawText(2, self.thumbnail_rect.height() - 4, bottom_left_text)
 
     def paint_overlay(self, painter):
         if self.thumb_view.column_style:
