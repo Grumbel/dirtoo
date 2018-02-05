@@ -62,7 +62,7 @@ class ArchiveInfo:
         self.process_dirname(str(entry))
 
     def process_dirname(self, path):
-        if path != "":
+        if path != "" and path != "/":
             path = os.path.normpath(path)
             while path != "":
                 self.directories.add(path)
