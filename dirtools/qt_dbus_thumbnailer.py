@@ -29,6 +29,20 @@ from PyQt5.QtDBus import QDBusReply, QDBusInterface, QDBusConnection
 from PyQt5.QtCore import QObject, pyqtSlot, QVariant
 
 
+def dbus_as(value):
+    var = QVariant(value)
+    ret = var.convert(QVariant.StringList)
+    assert ret, "QVariant conversion failure: %s".format(value)
+    return var
+
+
+def dbus_uint(value):
+    var = QVariant(value)
+    ret = var.convert(QVariant.UInt)
+    assert ret, "QVariant conversion failure: %s".format(value)
+    return var
+
+
 class DBusThumbnailerListener:
 
     def __init__(self):
@@ -126,27 +140,24 @@ class DBusThumbnailer(QObject):
             for url in urls
         ]
 
-        urls_var = QVariant(urls)
-        urls_var.convert(QVariant.StringList)
-
-        mime_types_var = QVariant(mime_types)
-        mime_types_var.convert(QVariant.StringList)
-
-        reply = QDBusReply(self.thumbnailer.call(
+        msg = self.thumbnailer.call(
             "Queue",
-            urls_var,  # uris: as
-            mime_types_var,  # mime_types: as
+            dbus_as(urls),  # uris: as
+            dbus_as(mime_types),  # mime_types: as
             flavor,  # flavor: s
             "default",  # scheduler: s
-            QVariant(QVariant.UInt),  # handle_to_dequeue: u
+            dbus_uint(0),  # handle_to_dequeue: u
             # <arg type="u" name="handle" direction="out" />
-        ))
+        )
+        reply = QDBusReply(msg)
+
         print("OK", reply.error().message())
         handle = reply.value()
         self._add_request(handle, (urls, mime_types, flavor))
 
     def dequeue(self, handle):
-        reply = QDBusReply(self.thumbnailer.call("Dequeue", handle))
+        msg = self.thumbnailer.call("Dequeue", handle)
+        reply = QDBusReply(msg)
         del self.requests[handle]
 
     def get_supported(self):
