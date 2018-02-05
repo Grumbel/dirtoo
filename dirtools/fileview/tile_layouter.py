@@ -57,38 +57,42 @@ class TileLayouter:
 
     def set_style(self, style):
         self.layout_style = style
+        self._update()
 
     def set_tile_size(self, tile_w, tile_h):
         self.tile_width = tile_w
         self.tile_height = tile_h
-        self.needs_relayout = True
+        self._update()
 
     def set_padding(self, x, y):
         self.padding_x = x
         self.padding_y = y
-        self.needs_relayout = True
+        self._update()
 
     def set_spacing(self, x, y):
         self.spacing_x = x
         self.spacing_y = y
-        self.needs_relayout = True
+        self._update()
 
-    def calc_num_columns(self):
+    def _calc_num_columns(self):
         return max(1,
                    (self.viewport_width - 2 * self.padding_x + self.spacing_x) //
                    (self.tile_width + self.spacing_x))
 
-    def calc_num_rows(self):
+    def _calc_num_rows(self):
         return max(1,
                    (self.viewport_height - 2 * self.padding_y + self.spacing_y) //
                    (self.tile_height + self.spacing_y))
+
+    def _update(self):
+        self.columns = self._calc_num_columns()
+        self.needs_relayout = True
 
     def resize(self, w, h):
         self.viewport_width = w
         self.viewport_height = h
 
-        new_columns = self.calc_num_columns()
-
+        new_columns = self._calc_num_columns()
         if self.columns != new_columns:
             self.columns = new_columns
             self.needs_relayout = True
@@ -137,7 +141,7 @@ class TileLayouter:
         num_items = len(items)
 
         self.rows = max((num_items + self.columns - 1) // self.columns,
-                        self.calc_num_rows())
+                        self._calc_num_rows())
 
         self.right_x = 0
         self.bottom_y = 0
