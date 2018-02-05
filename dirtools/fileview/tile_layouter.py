@@ -42,6 +42,12 @@ class TileLayouter:
         self.viewport_width = 256
         self.viewport_height = 256
 
+        self.col = 0
+        self.row = 0
+
+        self.columns = 1
+        self.rows = 1
+
         self.right_x = 0
         self.bottom_y = 0
 
@@ -78,14 +84,13 @@ class TileLayouter:
                    (self.tile_height + self.spacing_y))
 
     def resize(self, w, h):
-        old_columns = self.calc_num_columns()
-
         self.viewport_width = w
         self.viewport_height = h
 
         new_columns = self.calc_num_columns()
 
-        if old_columns != new_columns:
+        if self.columns != new_columns:
+            self.columns = new_columns
             self.needs_relayout = True
 
     def get_bounding_rect(self):
@@ -97,16 +102,28 @@ class TileLayouter:
 
         return QRectF(0, 0, w, h)
 
-    def layout_item(self, item, col, row):
-        item.set_tile_size(self.tile_width, self.tile_height)
+    def append_item(self, item):
+        # insert new item at the current position
+        x = self.col * (self.tile_width + self.spacing_x) + self.padding_x
+        y = self.row * (self.tile_height + self.spacing_y) + self.padding_y
 
-        x = col * (self.tile_width + self.spacing_x) + self.padding_x
-        y = row * (self.tile_height + self.spacing_y) + self.padding_y
+        item.set_tile_size(self.tile_width, self.tile_height)
+        item.setPos(x, y)
 
         self.right_x = max(self.right_x, x + self.tile_width + self.padding_x)
         self.bottom_y = y + self.tile_height + self.padding_y
 
-        item.setPos(x, y)
+        # calculate next items position
+        if self.layout_style == LayoutStyle.ROWS:
+            self.col += 1
+            if self.col == self.columns:
+                self.col = 0
+                self.row += 1
+        else:
+            self.row += 1
+            if self.row == self.rows:
+                self.row = 0
+                self.col += 1
 
     def layout(self, items, force):
         if not self.needs_relayout and not force:
@@ -116,30 +133,19 @@ class TileLayouter:
         if not items:
             return
 
-        num_items = len(items)
         logging.debug("TileLayouter.layout: layouting")
-        columns = self.calc_num_columns()
-        rows = max((num_items + columns - 1) // columns,
-                   self.calc_num_rows())
+        num_items = len(items)
+
+        self.rows = max((num_items + self.columns - 1) // self.columns,
+                        self.calc_num_rows())
 
         self.right_x = 0
         self.bottom_y = 0
 
-        col = 0
-        row = 0
+        self.col = 0
+        self.row = 0
         for item in items:
-            self.layout_item(item, col, row)
-
-            if self.layout_style == LayoutStyle.ROWS:
-                col += 1
-                if col == columns:
-                    col = 0
-                    row += 1
-            else:
-                row += 1
-                if row == rows:
-                    row = 0
-                    col += 1
+            self.append_item(item)
 
         self.needs_relayout = False
 

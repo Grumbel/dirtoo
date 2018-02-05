@@ -136,7 +136,7 @@ class ThumbView(QGraphicsView):
         self.items.append(thumb)
 
         self.style_item(thumb)
-        self.layouter.layout_item(thumb)
+        self.layouter.append_item(thumb)
         self.setSceneRect(self.layouter.get_bounding_rect())
 
     def on_file_removed(self, abspath):
