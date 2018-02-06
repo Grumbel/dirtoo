@@ -18,7 +18,8 @@
 import logging
 import os
 
-from PyQt5.QtCore import QObject, QSocketNotifier, pyqtSignal
+from PyQt5.QtCore import QObject, QSocketNotifier, QThread, pyqtSignal
+
 from inotify_simple import INotify, flags as inotify_flags, masks as inotify_masks
 import inotify_simple
 
@@ -51,7 +52,7 @@ class INotifyQt(QObject):
         self.inotify.close()
 
 
-class DirectoryWatcher(QObject):
+class DirectoryWatcherWorker(QObject):
 
     sig_file_added = pyqtSignal(FileInfo)
     sig_file_removed = pyqtSignal(str)
@@ -115,6 +116,43 @@ class DirectoryWatcher(QObject):
                 pass  # unhandled event
         except Exception as err:
             print("DirectoryWatcher:", err)
+
+
+class DirectoryWatcher(QObject):
+
+    def __init__(self, path):
+        super().__init__()
+
+        self.worker = DirectoryWatcherWorker(path)
+        self.thread = QThread(self)
+        self.worker.moveToThread(self.thread)
+
+        self.thread.started.connect(self.worker.process)
+        self.worker.sig_finished.connect(self.thread.quit)
+
+    def start(self):
+        self.thread.start()
+
+    def close(self):
+        self.worker._close = True
+        self.worker.sig_close_requested.emit()
+        self.thread.wait()
+
+    @property
+    def sig_file_added(self):
+        return self.worker.sig_file_added
+
+    @property
+    def sig_file_removed(self):
+        return self.worker.sig_file_removed
+
+    @property
+    def sig_file_changed(self):
+        return self.worker.sig_file_changed
+
+    @property
+    def sig_scandir_finished(self):
+        return self.worker.sig_scandir_finished
 
 
 # EOF #

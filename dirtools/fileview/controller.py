@@ -56,10 +56,8 @@ class Controller(QObject):
         self.app.metadata_collector.sig_metadata_ready.connect(self.receive_metadata)
 
     def close(self):
-        if self.directory_watcher_thread is not None:
-            self.directory_watcher._close = True
-            self.directory_watcher.sig_close_requested.emit()
-            self.directory_watcher_thread.wait()
+        if self.directory_watcher is not None:
+            self.directory_watcher.close()
 
     def save_as(self):
         options = QFileDialog.Options()
@@ -152,23 +150,14 @@ class Controller(QObject):
         self.window.show_info("Loading...")
         self.file_collection.clear()
 
-        if self.directory_watcher_thread is not None:
-            self.directory_watcher._close = True
-            self.directory_watcher.sig_close_requested.emit()
-
-        self.directory_watcher_thread = QThread(self)
+        if self.directory_watcher is not None:
+            self.directory_watcher.close()
         self.directory_watcher = DirectoryWatcher(location)
-        self.directory_watcher.moveToThread(self.directory_watcher_thread)
-
         self.directory_watcher.sig_file_added.connect(self.file_collection.add_fileinfo)
         self.directory_watcher.sig_file_removed.connect(self.file_collection.remove_file)
         self.directory_watcher.sig_file_changed.connect(self.file_collection.change_file)
         self.directory_watcher.sig_scandir_finished.connect(self.on_scandir_finished)
-
-        self.directory_watcher_thread.started.connect(self.directory_watcher.process)
-        self.directory_watcher.sig_finished.connect(self.directory_watcher_thread.quit)
-
-        self.directory_watcher_thread.start()
+        self.directory_watcher.start()
 
         self.location = os.path.abspath(location)
         self.window.set_location(self.location)
