@@ -143,13 +143,24 @@ class ThumbView(QGraphicsView):
             item = self.cursor_item
             self.cursor_item = None
             if item is not None: item.update()
+        elif ev.key() == Qt.Key_Space and  ev.modifiers() & Qt.ControlModifier:
+            if self.cursor_item is not None:
+                self.cursor_item.setSelected(not self.cursor_item.isSelected())
         elif ev.key() == Qt.Key_Left:
+            if self.cursor_item is not None and ev.modifiers() & Qt.ShiftModifier:
+                self.cursor_item.setSelected(True)
             self.cursor_move(-1, 0)
         elif ev.key() == Qt.Key_Right:
+            if self.cursor_item is not None and ev.modifiers() & Qt.ShiftModifier:
+                self.cursor_item.setSelected(True)
             self.cursor_move(+1, 0)
         elif ev.key() == Qt.Key_Up:
+            if self.cursor_item is not None and ev.modifiers() & Qt.ShiftModifier:
+                self.cursor_item.setSelected(True)
             self.cursor_move(0, -1)
         elif ev.key() == Qt.Key_Down:
+            if self.cursor_item is not None and ev.modifiers() & Qt.ShiftModifier:
+                self.cursor_item.setSelected(True)
             self.cursor_move(0, +1)
         elif ev.key() == Qt.Key_Return:
             if self.cursor_item is not None:
