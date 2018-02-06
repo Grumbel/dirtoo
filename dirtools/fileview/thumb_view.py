@@ -76,20 +76,19 @@ class ThumbView(QGraphicsView):
 
         self.items: List[ThumbFileItem] = []
 
-        self.level_of_detail = 2
+        self.level_of_detail = 3
+        self.zoom_index = 5
 
         self.file_collection = None
 
         self.shared_icons = SharedIcons()
         self.shared_pixmaps = SharedPixmaps()
 
-        self.zoom_index = 2
         self.apply_zoom()
 
         self.crop_thumbnails = False
         self.column_style = False
         self.setBackgroundBrush(QBrush(Qt.white, Qt.SolidPattern))
-
         self.resize_timer = None
 
     def set_crop_thumbnails(self, v):
@@ -240,8 +239,8 @@ class ThumbView(QGraphicsView):
 
     def zoom_in(self):
         self.zoom_index += 1
-        if self.zoom_index > 6:
-            self.zoom_index = 6
+        if self.zoom_index > 11:
+            self.zoom_index = 11
         self.apply_zoom()
 
     def zoom_out(self):
@@ -262,8 +261,8 @@ class ThumbView(QGraphicsView):
             self.layouter.set_spacing(16, 8)
             self.layouter.set_tile_size(self.tn_width, self.tn_height)
         else:
-            self.tn_width = 32 * 2 ** self.zoom_index
-            self.tn_height = 32 * 2 ** self.zoom_index
+            self.tn_width = [16, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, 1536][self.zoom_index]
+            self.tn_height = self.tn_width
             self.tn_size = min(self.tn_width, self.tn_height)
 
             self.column_style = False
@@ -278,7 +277,10 @@ class ThumbView(QGraphicsView):
         else:
             self.flavor = "large"
 
-        self.reload()
+        self.style_items()
+        self.layout_items()
+        for item in self.items:
+            item.update()
 
     def icon_from_fileinfo(self, fileinfo):
         mimetype = self.controller.app.mime_database.get_mime_type(fileinfo.abspath())

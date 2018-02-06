@@ -285,23 +285,6 @@ class ThumbFileItem(FileItem):
                                             self.thumbnail_rect.width(), self.thumbnail_rect.width())
                 painter.drawPixmap(self.thumbnail_rect, pixmap, srcrect)
 
-            if self.fileinfo.is_video():
-                painter.setOpacity(0.5)
-                # painter.setCompositionMode(QPainter.CompositionMode_Plus)
-                painter.drawPixmap(QRect(self.thumbnail_rect.width() - 24 - 2,
-                                         self.thumbnail_rect.height() - 24 - 2,
-                                         24, 24),
-                                   self.thumb_view.shared_pixmaps.video)
-                painter.setOpacity(1.0)
-            elif self.fileinfo.is_image():
-                painter.setOpacity(0.5)
-                # painter.setCompositionMode(QPainter.CompositionMode_Plus)
-                painter.drawPixmap(QRect(self.thumbnail_rect.width() - 24 - 2,
-                                         self.thumbnail_rect.height() - 24 - 2,
-                                         24, 24),
-                                   self.thumb_view.shared_pixmaps.image)
-                painter.setOpacity(1.0)
-
     def paint_metadata(self, painter):
         metadata = self.fileinfo.metadata()
 
@@ -359,6 +342,23 @@ class ThumbFileItem(FileItem):
             painter.drawRect(0, self.thumbnail_rect.height() - 16, w + 4, 16)
             painter.setPen(QColor(0, 0, 0))
             painter.drawText(2, self.thumbnail_rect.height() - 4, bottom_left_text)
+
+        if self.fileinfo.is_video():
+            painter.setOpacity(0.5)
+            # painter.setCompositionMode(QPainter.CompositionMode_Plus)
+            painter.drawPixmap(QRect(self.thumbnail_rect.width() - 24 - 2,
+                                     self.thumbnail_rect.height() - 24 - 2,
+                                     24, 24),
+                               self.thumb_view.shared_pixmaps.video)
+            painter.setOpacity(1.0)
+        elif self.fileinfo.is_image():
+            painter.setOpacity(0.5)
+            # painter.setCompositionMode(QPainter.CompositionMode_Plus)
+            painter.drawPixmap(QRect(self.thumbnail_rect.width() - 24 - 2,
+                                     self.thumbnail_rect.height() - 24 - 2,
+                                     24, 24),
+                               self.thumb_view.shared_pixmaps.image)
+            painter.setOpacity(1.0)
 
     def paint_overlay(self, painter):
         if self.thumb_view.column_style:
