@@ -17,9 +17,12 @@
 
 from typing import List
 
+import logging
+import os
 import signal
 import dbus
-
+import xdg.BaseDirectory
+from PyQt5.QtCore import QSettings
 from PyQt5.QtWidgets import QApplication
 from dbus.mainloop.pyqt5 import DBusQtMainLoop
 
@@ -37,6 +40,11 @@ class FileViewApplication:
         # http://stackoverflow.com/questions/4938723/
         signal.signal(signal.SIGINT, signal.SIG_DFL)
 
+        self.config_dir = os.path.join(xdg.BaseDirectory.xdg_config_home, "dt-fileview")
+        self.config_file = os.path.join(self.config_dir, "config.ini")
+        if not os.path.isdir(self.config_dir):
+            os.makedirs(self.config_dir)
+
         self.qapp = QApplication([])
         self.thumbnailer = Thumbnailer()
         self.metadata_collector = MetaDataCollector()
@@ -48,11 +56,28 @@ class FileViewApplication:
         self.controllers: List[Controller] = []
 
     def run(self):
+        self.load_settings()
         ret = self.qapp.exec()
         self.close()
         return ret
 
+    def load_settings(self):
+        logging.debug("FileViewApplication.load_settings()")
+        self.settings = QSettings(self.config_file, QSettings.IniFormat)
+
+        self.settings.beginGroup("globals")
+        self.settings.value("thumbnail-style", 30)
+        self.settings.endGroup()
+
+    def save_settings(self):
+        self.settings.beginGroup("globals")
+        self.settings.setValue("thumbnail-style", 30)
+        self.settings.endGroup()
+        self.settings.sync()
+
     def close(self):
+        self.save_settings()
+
         self.session_bus.close()
         self.metadata_collector.close()
         self.thumbnailer.close()
