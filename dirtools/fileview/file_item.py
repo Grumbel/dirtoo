@@ -60,11 +60,14 @@ class FileItem(QGraphicsObject):
 
     def mouseReleaseEvent(self, ev):
         if ev.button() == Qt.LeftButton and self.press_pos is not None:
-            self.on_click_animation()
-            self.controller.on_click(self.fileinfo)
+            self.click_action()
         elif ev.button() == Qt.MiddleButton:
             self.on_click_animation()
             self.controller.on_click(self.fileinfo, new_window=True)
+
+    def click_action(self):
+        self.on_click_animation()
+        self.controller.on_click(self.fileinfo)
 
     def on_click_animation(self):
         pass

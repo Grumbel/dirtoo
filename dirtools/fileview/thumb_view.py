@@ -20,7 +20,7 @@ import logging
 from typing import List, Dict
 from pkg_resources import resource_filename
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QMarginsF, QRect, QRectF, QPoint
 from PyQt5.QtGui import QBrush, QIcon, QColor, QPixmap
 from PyQt5.QtWidgets import (
     QGraphicsView,
@@ -87,7 +87,7 @@ class ThumbView(QGraphicsView):
         self.shared_pixmaps = SharedPixmaps()
 
         self.apply_zoom()
-
+        self.cursor_item = None
         self.crop_thumbnails = False
         self.column_style = False
         self.setBackgroundBrush(QBrush(Qt.white, Qt.SolidPattern))
@@ -96,7 +96,67 @@ class ThumbView(QGraphicsView):
         self.setDragMode(QGraphicsView.RubberBandDrag)
 
     def on_selection_changed(self):
-        print("Selection changed")
+        count = len(self.scene.selectedItems())
+        print("{} files selected".format(count))
+
+    def cursor_move(self, dx: int, dy: int):
+        def best_item(items, rect):
+            """Select the most top/left and fully visible item"""
+            def contains(item):
+                r = QRectF(item.tile_rect)
+                r.moveTo(item.pos())
+                return rect.contains(r)
+
+            items = sorted(items, key=lambda item: (not contains(item),
+                                                    item.pos().x(),
+                                                    item.pos().y()))
+            return items[0]
+
+        if self.cursor_item is None:
+            rect = self.mapToScene(self.rect()).boundingRect()
+            items = self.scene.items(rect)
+            if not items:
+                return
+            else:
+                self.cursor_item = best_item(items, rect)
+                self.ensureVisible(self.cursor_item)
+                self.cursor_item.update()
+                return
+
+        self.cursor_item.update()
+
+        # query a rectengular area next to the current item for items,
+        # use the first one that we find
+        rect = QRectF(self.cursor_item.tile_rect)
+        rect.moveTo(self.cursor_item.pos().x() + (self.cursor_item.tile_rect.width() + 4) * dx,
+                    self.cursor_item.pos().y() + (self.cursor_item.tile_rect.height() + 4) * dy)
+        items = self.scene.items(rect)
+        if items:
+            self.cursor_item = items[0]
+
+        self.cursor_item.update()
+        self.ensureVisible(self.cursor_item)
+
+    def keyPressEvent(self, ev):
+        if ev.key() == Qt.Key_Escape:
+            self.scene.clearSelection()
+            item = self.cursor_item
+            self.cursor_item = None
+            if item is not None: item.update()
+        elif ev.key() == Qt.Key_Left:
+            self.cursor_move(-1, 0)
+        elif ev.key() == Qt.Key_Right:
+            self.cursor_move(+1, 0)
+        elif ev.key() == Qt.Key_Up:
+            self.cursor_move(0, -1)
+        elif ev.key() == Qt.Key_Down:
+            self.cursor_move(0, +1)
+        elif ev.key() == Qt.Key_Return:
+            if self.cursor_item is not None:
+                self.cursor_item.click_action()
+        else:
+            super().keyPressEvent(ev)
+
 
     def set_crop_thumbnails(self, v):
         self.crop_thumbnails = v
@@ -175,6 +235,7 @@ class ThumbView(QGraphicsView):
         fileinfos = self.file_collection.get_fileinfos()
 
         self.items.clear()
+        self.cursor_item = None
         self.abspath2item.clear()
         self.scene.clear()
 

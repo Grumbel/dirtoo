@@ -208,6 +208,7 @@ class ThumbFileItem(FileItem):
             self.paint_overlay(painter)
 
         if self.isSelected():
+            painter.save()
             painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
             painter.setOpacity(0.5)
             painter.fillRect(self.tile_rect, QColor(127, 192, 255))
@@ -215,6 +216,13 @@ class ThumbFileItem(FileItem):
             painter.setOpacity(1.0)
             painter.setPen(QColor(96, 127, 255))
             painter.setBrush(Qt.NoBrush)
+            painter.drawRect(self.tile_rect)
+            painter.restore()
+
+        if self.thumb_view.cursor_item == self:
+            painter.setOpacity(1.0)
+            painter.setPen(QColor(0, 0, 0))
+            painter.setBrush(QColor(255, 255, 255, 96))
             painter.drawRect(self.tile_rect)
 
     def paint_text_items(self, painter):
