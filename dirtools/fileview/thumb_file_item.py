@@ -21,7 +21,7 @@ from enum import Enum
 import logging
 from datetime import datetime
 
-from PyQt5.QtCore import Qt, QRectF, QRect
+from PyQt5.QtCore import Qt, QRectF, QRect, QMargins
 from PyQt5.QtGui import QColor, QFontMetrics, QFont, QPainter, QPainterPath
 from PyQt5.QtWidgets import QGraphicsItem
 
@@ -384,7 +384,10 @@ class ThumbFileItem(FileItem):
 
         if self.fileinfo.have_access() is False:
             painter.setOpacity(0.5)
-            self.paint_icon(painter, self.thumb_view.shared_icons.locked)
+            m = int(self.thumbnail_rect.width() * 0.125)
+            painter.drawPixmap(self.thumbnail_rect.marginsRemoved(QMargins(m, m, m, m)),
+                               self.thumb_view.shared_pixmaps.locked)
+            painter.setOpacity(1.0)
 
         thumbnail = self._get_thumbnail()
         if thumbnail.status == ThumbnailStatus.LOADING or thumbnail.status == ThumbnailStatus.INITIAL:
