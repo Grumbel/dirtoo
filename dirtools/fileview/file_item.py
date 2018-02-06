@@ -17,7 +17,7 @@
 
 from PyQt5.QtCore import Qt, QMimeData, QUrl
 from PyQt5.QtGui import QDrag
-from PyQt5.QtWidgets import QGraphicsObject, QMenu
+from PyQt5.QtWidgets import QGraphicsObject, QGraphicsItem, QMenu
 
 
 class FileItem(QGraphicsObject):
@@ -29,14 +29,17 @@ class FileItem(QGraphicsObject):
         self.controller = controller
 
         self.press_pos = None
-
+        self.setFlags(QGraphicsItem.ItemIsSelectable)
         self.setAcceptHoverEvents(True)
 
     def mousePressEvent(self, ev):
         # PyQt will route the event to the child items when we don't
         # override this
         if ev.button() == Qt.LeftButton:
-            self.press_pos = ev.pos()
+            if ev.modifiers() & Qt.ControlModifier:
+                self.setSelected(not self.isSelected())
+            else:
+                self.press_pos = ev.pos()
         elif ev.button() == Qt.RightButton:
             pass
 
@@ -56,7 +59,7 @@ class FileItem(QGraphicsObject):
             # this will eat up the mouseReleaseEvent
 
     def mouseReleaseEvent(self, ev):
-        if ev.button() == Qt.LeftButton:
+        if ev.button() == Qt.LeftButton and self.press_pos is not None:
             self.on_click_animation()
             self.controller.on_click(self.fileinfo)
         elif ev.button() == Qt.MiddleButton:

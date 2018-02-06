@@ -191,7 +191,7 @@ class ThumbFileItem(FileItem):
                              -4,
                              self.tile_rect.width() + 8,
                              self.tile_rect.height() + 8,
-                             QColor(192, 192, 192))
+                             bg_color if self.isSelected() else QColor(192, 192, 192))
 
         self.paint_text_items(painter)
         self.paint_thumbnail(painter)
@@ -206,6 +206,16 @@ class ThumbFileItem(FileItem):
         if self.thumb_view.level_of_detail > 1:
             self.paint_metadata(painter)
             self.paint_overlay(painter)
+
+        if self.isSelected():
+            painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
+            painter.setOpacity(0.5)
+            painter.fillRect(self.tile_rect, QColor(127, 192, 255))
+            painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
+            painter.setOpacity(1.0)
+            painter.setPen(QColor(96, 127, 255))
+            painter.setBrush(Qt.NoBrush)
+            painter.drawRect(self.tile_rect)
 
     def paint_text_items(self, painter):
         # text items

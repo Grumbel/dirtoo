@@ -32,7 +32,6 @@ from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.profiler import profile
 from dirtools.fileview.thumb_file_item import ThumbFileItem
 from dirtools.fileview.tile_layouter import TileLayouter, LayoutStyle
-from dirtools.fileview.selection_rect import SelectionRect
 
 
 class SharedIcons:
@@ -75,9 +74,6 @@ class ThumbView(QGraphicsView):
 
         self.scene.selectionChanged.connect(self.on_selection_changed)
 
-        self.selection_rect = SelectionRect()
-        self.scene.addItem(self.selection_rect)
-
         self.layouter = TileLayouter()
 
         self.items: List[ThumbFileItem] = []
@@ -96,6 +92,11 @@ class ThumbView(QGraphicsView):
         self.column_style = False
         self.setBackgroundBrush(QBrush(Qt.white, Qt.SolidPattern))
         self.resize_timer = None
+
+        self.setDragMode(QGraphicsView.RubberBandDrag)
+
+    def on_selection_changed(self):
+        print("Selection changed")
 
     def set_crop_thumbnails(self, v):
         self.crop_thumbnails = v
@@ -176,9 +177,6 @@ class ThumbView(QGraphicsView):
         self.items.clear()
         self.abspath2item.clear()
         self.scene.clear()
-
-        self.selection_rect = SelectionRect()
-        self.scene.addItem(self.selection_rect)
 
         for fileinfo in fileinfos:
             thumb = ThumbFileItem(fileinfo, self.controller, self)
@@ -368,25 +366,6 @@ class ThumbView(QGraphicsView):
 
         scrollbar = self.horizontalScrollBar()
         scrollbar.setValue(scrollbar.value() + x)
-
-    # def mouseMoveEvent(self, ev):
-    #     if not self.selection_rect.is_active():
-    #         super().mouseMoveEvent(ev)
-    #     else:
-    #         self.selection_rect.update_end(self.mapToScene(ev.pos()))
-
-    # def mousePressEvent(self, ev):
-    #     item = self.itemAt(ev.pos())
-    #     if item is not None:
-    #         super().mousePressEvent(ev)
-    #     else:
-    #         self.selection_rect.set_start(self.mapToScene(ev.pos()))
-
-    # def mouseReleaseEvent(self, ev):
-    #     if not self.selection_rect.is_active():
-    #         super().mouseReleaseEvent(ev)
-    #     else:
-    #         self.selection_rect.set_end(self.mapToScene(ev.pos()))
 
 
 # EOF #
