@@ -25,6 +25,17 @@ import inotify_simple
 
 from dirtools.fileview.file_info import FileInfo
 
+DEFAULT_FLAGS=(
+    inotify_flags.CREATE |
+    inotify_flags.DELETE |
+    inotify_flags.DELETE_SELF |
+    inotify_flags.MOVE_SELF |
+    inotify_flags.MODIFY |
+    inotify_flags.ATTRIB |
+    inotify_flags.MOVED_FROM |
+    inotify_flags.MOVED_TO
+)
+
 
 class INotifyQt(QObject):
 
@@ -38,7 +49,7 @@ class INotifyQt(QObject):
         self.qnotifier.activated.connect(self._on_activated)
         self.wd = None
 
-    def add_watch(self, path, flags=inotify_masks.ALL_EVENTS):
+    def add_watch(self, path, flags=DEFAULT_FLAGS):
         self.wd = self.inotify.add_watch(path, flags)
 
     def _on_activated(self, fd):
@@ -113,7 +124,10 @@ class DirectoryWatcherWorker(QObject):
             elif ev.mask & inotify_flags.MOVED_TO:
                 self.sig_file_added.emit(FileInfo(os.path.join(self.path, ev.name)))
             else:
-                pass  # unhandled event
+                # unhandled event
+                print("ERROR: Unhandlade flags:")
+                for flag in inotify_flags.from_mask(ev.mask):
+                    print('    ' + str(flag))
         except Exception as err:
             print("DirectoryWatcher:", err)
 
