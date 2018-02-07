@@ -21,8 +21,7 @@ from typing import List, Callable, Dict, Tuple, Union
 from dbus.mainloop.pyqt5 import DBusQtMainLoop
 
 from PyQt5.QtGui import QPixmap, QImage
-from PyQt5.QtCore import (QObject, pyqtSignal, QThread,
-                          QAbstractEventDispatcher, QEventLoop)
+from PyQt5.QtCore import Qt, QObject, pyqtSignal, QThread, QCoreApplication
 
 from dirtools.dbus_thumbnailer import DBusThumbnailer
 
@@ -138,7 +137,7 @@ class Thumbnailer(QObject):
     sig_thumbnail_requested = pyqtSignal(str, str, CallableWrapper)
     sig_thumbnail_error = pyqtSignal(str, str, CallableWrapper)
 
-    sig_worker_close_requested = pyqtSignal()
+    sig_close_requested = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -150,7 +149,8 @@ class Thumbnailer(QObject):
         # startup and shutdown
         self.thread.started.connect(self.worker.init)
         self.worker.sig_finished.connect(self.thread.quit)
-        self.sig_worker_close_requested.connect(self.worker.close)
+
+        self.sig_close_requested.connect(self.worker.close)
 
         # requests to the worker
         self.sig_thumbnail_requested.connect(self.worker.on_thumbnail_requested)
@@ -163,11 +163,10 @@ class Thumbnailer(QObject):
 
     def close(self):
         self.worker._close = True
-        self.sig_worker_close_requested.emit()
+        self.sig_close_requested.emit()
 
-        event_dispatcher = QAbstractEventDispatcher.instance()
         while not self.thread.wait(10):
-            event_dispatcher.processEvents(QEventLoop.AllEvents)
+            QCoreApplication.instance().processEvents()
 
     def request_thumbnail(self, filename: str, flavor: str,
                           callback: ThumbnailCallback):
