@@ -61,9 +61,6 @@ class WorkerDBusThumbnailerListener:
 
 class ThumbnailerWorker(QObject):
 
-    # Emitted when the worker as been shut down completely
-    sig_finished = pyqtSignal()
-
     sig_thumbnail_ready = pyqtSignal(str, str, CallableWrapper, QImage)
     sig_thumbnail_error = pyqtSignal(str, str, CallableWrapper, int, str)
 
@@ -91,8 +88,6 @@ class ThumbnailerWorker(QObject):
         self.session_bus.close()
         del self.session_bus
         del self.dbus_loop
-
-        self.sig_finished.emit()
 
     def on_thumbnail_requested(self, filename: str, flavor: str,
                                callback: ThumbnailCallback):
@@ -148,9 +143,7 @@ class Thumbnailer(QObject):
 
         # startup and shutdown
         self.thread.started.connect(self.worker.init)
-        self.worker.sig_finished.connect(self.thread.quit)
-
-        self.sig_close_requested.connect(self.worker.close)
+        self.sig_close_requested.connect(self.worker.close, type=Qt.BlockingQueuedConnection)
 
         # requests to the worker
         self.sig_thumbnail_requested.connect(self.worker.on_thumbnail_requested)
@@ -164,9 +157,8 @@ class Thumbnailer(QObject):
     def close(self):
         self.worker._close = True
         self.sig_close_requested.emit()
-
-        while not self.thread.wait(10):
-            QCoreApplication.instance().processEvents()
+        self.thread.quit()
+        self.thread.wait()
 
     def request_thumbnail(self, filename: str, flavor: str,
                           callback: ThumbnailCallback):
