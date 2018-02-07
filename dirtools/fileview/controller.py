@@ -208,9 +208,12 @@ class Controller(QObject):
     def toggle_timegaps(self):
         self.window.file_view.toggle_timegaps()
 
-    def parent_directory(self):
+    def parent_directory(self, new_window=False):
         if self.location is not None:
-            self.set_location(os.path.dirname(os.path.abspath(self.location)))
+            if new_window:
+                self.app.show_location(os.path.dirname(os.path.abspath(self.location)))
+            else:
+                self.set_location(os.path.dirname(os.path.abspath(self.location)))
 
     def on_click(self, fileinfo, new_window=False):
         self.window.thumb_view.set_cursor_to_fileinfo(fileinfo)

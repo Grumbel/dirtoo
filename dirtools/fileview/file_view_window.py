@@ -16,7 +16,7 @@
 
 
 from pkg_resources import resource_filename
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QKeySequence, QIcon
 from PyQt5.QtWidgets import (
     QMenu,
@@ -36,6 +36,47 @@ from dirtools.fileview.detail_view import DetailView
 from dirtools.fileview.thumb_view import ThumbView
 from dirtools.fileview.location_line_edit import LocationLineEdit
 from dirtools.fileview.filter_line_edit import FilterLineEdit
+
+
+class ToolButton(QToolButton):
+    """QToolButton with the additional ability to attach a secondary
+    action to the middle mouse button."""
+
+    sig_middle_click = pyqtSignal()
+
+    def __init__(self):
+        super().__init__()
+        self._middle_pressed = False
+
+    def mousePressEvent(self, ev):
+        if ev.button() != Qt.MiddleButton:
+            if self._middle_pressed:
+                ev.ignore()
+            else:
+                super().mousePressEvent(ev)
+        else:
+            self.setDown(True)
+            self._middle_pressed = True
+
+    def mouseReleaseEvent(self, ev):
+        if ev.button() != Qt.MiddleButton:
+            if self._middle_pressed:
+                ev.ignore()
+            else:
+                super().mouseReleaseEvent(ev)
+        else:
+            if self._middle_pressed and self.rect().contains(ev.pos()):
+                self.sig_middle_click.emit()
+
+            self.setDown(False)
+            self._middle_pressed = False
+
+    def mouseMoveEvent(self, ev):
+        if self._middle_pressed:
+            if not self.rect().contains(ev.pos()):
+                self.setDown(False)
+            else:
+                self.setDown(True)
 
 
 class FileViewWindow(QMainWindow):
@@ -220,7 +261,13 @@ class FileViewWindow(QMainWindow):
 
     def make_toolbar(self):
         self.toolbar = self.addToolBar("FileView")
-        self.toolbar.addAction(self.actions.parent_directory)
+
+        button = ToolButton()
+        button.setDefaultAction(self.actions.parent_directory)
+        button.sig_middle_click.connect(lambda: self.controller.parent_directory(new_window=True))
+        button.setIcon(self.actions.parent_directory.icon())
+        self.toolbar.addWidget(button)
+
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.actions.home)
         self.toolbar.addSeparator()
