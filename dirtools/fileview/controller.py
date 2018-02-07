@@ -47,7 +47,6 @@ class Controller(QObject):
         self.history: List[str] = []
         self.history_index = 0
 
-        self.directory_watcher_thread = None
         self.directory_watcher = None
 
         self.window.file_view.set_file_collection(self.file_collection)
