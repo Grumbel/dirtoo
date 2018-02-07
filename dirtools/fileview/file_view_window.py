@@ -17,7 +17,7 @@
 
 from pkg_resources import resource_filename
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QKeySequence, QIcon
+from PyQt5.QtGui import QKeySequence, QIcon, QCursor
 from PyQt5.QtWidgets import (
     QMenu,
     QToolButton,
@@ -96,6 +96,10 @@ class FileViewWindow(QMainWindow):
         self.make_shortcut()
 
         self.thumb_view.setFocus()
+
+        self.resize(1024, 768)
+        self.move(QCursor.pos().x() - self.width() / 2,
+                  QCursor.pos().y() - self.height() / 2)
 
     def closeEvent(self, ev):
         self.controller.on_exit()
