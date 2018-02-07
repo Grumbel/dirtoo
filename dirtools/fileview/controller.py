@@ -22,7 +22,7 @@ import os
 import subprocess
 
 from PyQt5.QtWidgets import QFileDialog
-from PyQt5.QtCore import QObject, QThread
+from PyQt5.QtCore import QObject
 
 from dirtools.fileview.actions import Actions
 from dirtools.fileview.file_collection import FileCollection

@@ -15,18 +15,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import threading
 import logging
 import os
 
 from PyQt5.QtCore import Qt, QObject, QSocketNotifier, QThread, pyqtSignal
 
-from inotify_simple import INotify, flags as inotify_flags, masks as inotify_masks
+from inotify_simple import INotify, flags as inotify_flags
 import inotify_simple
 
 from dirtools.fileview.file_info import FileInfo
 
-DEFAULT_FLAGS=(
+
+DEFAULT_FLAGS = (
     inotify_flags.CREATE |
     inotify_flags.DELETE |
     inotify_flags.DELETE_SELF |

@@ -21,7 +21,7 @@ import sys
 import os
 
 from PyQt5.QtCore import QCoreApplication
-from PyQt5.QtDBus import QDBusReply, QDBusInterface, QDBusConnection
+from PyQt5.QtDBus import QDBusConnection
 
 from dirtools.qt_dbus_thumbnailer import DBusThumbnailer, DBusThumbnailerListener
 from dirtools.qt_dbus_thumbnail_cache import DBusThumbnailCache

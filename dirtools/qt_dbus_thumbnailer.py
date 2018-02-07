@@ -25,7 +25,7 @@ import urllib.parse
 import mimetypes
 import xdg.BaseDirectory
 
-from PyQt5.QtDBus import QDBusReply, QDBusInterface, QDBusConnection
+from PyQt5.QtDBus import QDBusReply, QDBusInterface
 from PyQt5.QtCore import QObject, pyqtSlot, QVariant
 
 
@@ -158,6 +158,9 @@ class DBusThumbnailer(QObject):
     def dequeue(self, handle):
         msg = self.thumbnailer.call("Dequeue", handle)
         reply = QDBusReply(msg)
+        if not reply.isValid():
+            err = reply.error()
+            print("{}: {}".format(err.name(), err.message()))
         del self.requests[handle]
 
     def get_supported(self):

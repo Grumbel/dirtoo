@@ -21,7 +21,7 @@ from typing import List, Callable, Dict, Tuple, Union
 from dbus.mainloop.pyqt5 import DBusQtMainLoop
 
 from PyQt5.QtGui import QPixmap, QImage
-from PyQt5.QtCore import Qt, QObject, pyqtSignal, QThread, QCoreApplication
+from PyQt5.QtCore import Qt, QObject, pyqtSignal, QThread
 
 from dirtools.dbus_thumbnailer import DBusThumbnailer
 

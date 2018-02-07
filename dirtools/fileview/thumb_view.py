@@ -17,10 +17,10 @@
 
 import logging
 
-from typing import List, Dict
+from typing import Union, List, Dict
 from pkg_resources import resource_filename
 
-from PyQt5.QtCore import Qt, QMarginsF, QRect, QRectF, QPoint
+from PyQt5.QtCore import Qt, QRectF
 from PyQt5.QtGui import QBrush, QIcon, QColor, QPixmap
 from PyQt5.QtWidgets import (
     QGraphicsView,
@@ -55,6 +55,7 @@ class SharedPixmaps:
         self.error = QPixmap(resource_filename("dirtools", "fileview/icons/noun_175057_cc.png"))
         self.locked = QPixmap(resource_filename("dirtools", "fileview/icons/noun_236873_cc.png"))
 
+
 class ThumbView(QGraphicsView):
 
     def __init__(self, controller) -> None:
@@ -87,7 +88,7 @@ class ThumbView(QGraphicsView):
         self.shared_pixmaps = SharedPixmaps()
 
         self.apply_zoom()
-        self.cursor_item = None
+        self.cursor_item: Union[ThumbFileItem, None] = None
         self.crop_thumbnails = False
         self.column_style = False
         self.setBackgroundBrush(QBrush(Qt.white, Qt.SolidPattern))
@@ -142,8 +143,9 @@ class ThumbView(QGraphicsView):
             self.scene.clearSelection()
             item = self.cursor_item
             self.cursor_item = None
-            if item is not None: item.update()
-        elif ev.key() == Qt.Key_Space and  ev.modifiers() & Qt.ControlModifier:
+            if item is not None:
+                item.update()
+        elif ev.key() == Qt.Key_Space and ev.modifiers() & Qt.ControlModifier:
             if self.cursor_item is not None:
                 self.cursor_item.setSelected(not self.cursor_item.isSelected())
         elif ev.key() == Qt.Key_Left:
@@ -167,7 +169,6 @@ class ThumbView(QGraphicsView):
                 self.cursor_item.click_action()
         else:
             super().keyPressEvent(ev)
-
 
     def set_crop_thumbnails(self, v):
         self.crop_thumbnails = v

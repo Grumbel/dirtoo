@@ -18,7 +18,7 @@
 import os
 import urllib.parse
 
-from PyQt5.QtDBus import QDBusReply, QDBusInterface, QDBusConnection
+from PyQt5.QtDBus import QDBusInterface
 
 
 def url_from_path(path):
