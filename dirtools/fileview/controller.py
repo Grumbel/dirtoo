@@ -214,6 +214,8 @@ class Controller(QObject):
             self.set_location(os.path.dirname(os.path.abspath(self.location)))
 
     def on_click(self, fileinfo, new_window=False):
+        self.window.thumb_view.set_cursor_to_fileinfo(fileinfo)
+
         if not fileinfo.isdir():
             argv = ["xdg-open", fileinfo.abspath()]
             logging.info("Controller.on_click: launching: %s", argv)

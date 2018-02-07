@@ -439,5 +439,11 @@ class ThumbView(QGraphicsView):
         scrollbar = self.horizontalScrollBar()
         scrollbar.setValue(scrollbar.value() + x)
 
+    def set_cursor_to_fileinfo(self, fileinfo):
+        if self.cursor_item is not None:
+            self.cursor_item.update()
+        self.cursor_item = self.abspath2item.get(fileinfo.abspath(), None)
+        if self.cursor_item is not None:
+            self.cursor_item.update()
 
 # EOF #
