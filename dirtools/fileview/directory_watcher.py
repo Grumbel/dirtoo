@@ -15,10 +15,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import threading
 import logging
 import os
 
-from PyQt5.QtCore import QObject, QSocketNotifier, QThread, pyqtSignal
+from PyQt5.QtCore import Qt, QObject, QSocketNotifier, QThread, pyqtSignal
 
 from inotify_simple import INotify, flags as inotify_flags, masks as inotify_masks
 import inotify_simple
@@ -71,28 +72,23 @@ class DirectoryWatcherWorker(QObject):
     sig_error = pyqtSignal()
     sig_scandir_finished = pyqtSignal(list)
 
-    sig_close_requested = pyqtSignal()
-    sig_finished = pyqtSignal()
-
     def __init__(self, path):
         super().__init__()
 
         self.path = path
         self._close = False
 
+    def init(self):
         self.inotify = INotifyQt(self)
-        self.inotify.add_watch(path)
+        self.inotify.add_watch(self.path)
+
         self.inotify.sig_event.connect(self.on_inotify_event)
 
-        self.sig_close_requested.connect(self.on_close_requested)
+        self.process()
 
     def close(self):
         self.inotify.close()
         del self.inotify
-
-    def on_close_requested(self):
-        self.close()
-        self.sig_finished.emit()
 
     def process(self):
         fileinfos = []
@@ -134,22 +130,29 @@ class DirectoryWatcherWorker(QObject):
 
 class DirectoryWatcher(QObject):
 
+    sig_close_requested = pyqtSignal()
+
     def __init__(self, path):
         super().__init__()
-
         self.worker = DirectoryWatcherWorker(path)
         self.thread = QThread(self)
         self.worker.moveToThread(self.thread)
 
-        self.thread.started.connect(self.worker.process)
-        self.worker.sig_finished.connect(self.thread.quit)
+        self.thread.started.connect(self.worker.init)
+
+        # close() is a blocking connection so the thread is properly
+        # done after the signal was emit'ed and we don't have to fuss
+        # around with sig_finished() and other stuff
+        self.sig_close_requested.connect(self.worker.close, type=Qt.BlockingQueuedConnection)
 
     def start(self):
         self.thread.start()
 
     def close(self):
+        assert self.worker._close is False
         self.worker._close = True
-        self.worker.sig_close_requested.emit()
+        self.sig_close_requested.emit()
+        self.thread.quit()
         self.thread.wait()
 
     @property
