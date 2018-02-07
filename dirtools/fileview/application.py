@@ -46,6 +46,9 @@ class FileViewApplication:
             os.makedirs(self.config_dir)
 
         self.qapp = QApplication([])
+        self.qapp.setQuitOnLastWindowClosed(False)
+        self.qapp.lastWindowClosed.connect(self.on_last_window_closed)
+
         self.thumbnailer = Thumbnailer()
         self.metadata_collector = MetaDataCollector()
         self.dbus_loop = DBusQtMainLoop(set_as_default=False)
@@ -55,11 +58,16 @@ class FileViewApplication:
 
         self.controllers: List[Controller] = []
 
+    def on_last_window_closed(self):
+        self.quit()
+
+    def quit(self):
+        self.close()
+        self.qapp.quit()
+
     def run(self):
         self.load_settings()
-        ret = self.qapp.exec()
-        self.close()
-        return ret
+        return self.qapp.exec()
 
     def load_settings(self):
         logging.debug("FileViewApplication.load_settings()")
