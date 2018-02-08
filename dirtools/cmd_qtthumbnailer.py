@@ -71,7 +71,6 @@ class ThumbnailerProgressListener(DBusThumbnailerListener):
             print("[Error {}] {}: {}".format(error_code, uri, message), file=sys.stderr)
 
     def finished(self, handle):
-        # print("[Finished]", handle)
         pass
 
     def idle(self):

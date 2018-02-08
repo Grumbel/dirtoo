@@ -25,7 +25,7 @@ import urllib.parse
 import mimetypes
 import xdg.BaseDirectory
 
-from PyQt5.QtDBus import QDBusReply, QDBusInterface
+from PyQt5.QtDBus import QDBusReply, QDBusMessage, QDBusInterface
 from PyQt5.QtCore import QObject, pyqtSlot, QVariant
 
 
@@ -70,33 +70,30 @@ class DBusThumbnailer(QObject):
         super().__init__()
 
         self.bus = bus
+
+        self.bus.registerObject('/', self)
         self.requests: Dict[str, Tuple[str, str, str]] = {}
         self.thumbnailer = QDBusInterface(
             'org.freedesktop.thumbnails.Thumbnailer1',
             '/org/freedesktop/thumbnails/Thumbnailer1',
             'org.freedesktop.thumbnails.Thumbnailer1',
-            connection=bus)
+            connection=self.bus)
         self.listener = listener
-        bus.registerObject('/', self)
-        bus.connect('org.freedesktop.thumbnails.Thumbnailer1',
-                    '/org/freedesktop/thumbnails/Thumbnailer1',
-                    'org.freedesktop.thumbnails.Thumbnailer1',
-                    'Ready', self._receive_ready)
 
-        bus.connect('org.freedesktop.thumbnails.Thumbnailer1',
-                    '/org/freedesktop/thumbnails/Thumbnailer1',
-                    'org.freedesktop.thumbnails.Thumbnailer1',
-                    'Started', self._receive_started)
+        self.bus.connect('', '', 'org.freedesktop.thumbnails.Thumbnailer1',
+                         'Ready', self._receive_ready)
 
-        bus.connect('org.freedesktop.thumbnails.Thumbnailer1',
-                    '/org/freedesktop/thumbnails/Thumbnailer1',
-                    'org.freedesktop.thumbnails.Thumbnailer1',
-                    'Finished', self._receive_finished)
+        self.bus.connect('', '', 'org.freedesktop.thumbnails.Thumbnailer1',
+                         'Started', self._receive_started)
 
-        bus.connect('org.freedesktop.thumbnails.Thumbnailer1',
-                    '/org/freedesktop/thumbnails/Thumbnailer1',
-                    'org.freedesktop.thumbnails.Thumbnailer1',
-                    'Error', self._receive_error)
+        self.bus.connect('', '', 'org.freedesktop.thumbnails.Thumbnailer1',
+                         'Finished', self._receive_finished)
+
+        self.bus.connect('', '', 'org.freedesktop.thumbnails.Thumbnailer1',
+                         'Error', self._receive_error)
+
+    def close(self):
+        self.bus.unregisterObject('/')
 
     def _add_request(self, handle, data):
         self.requests[handle] = data
@@ -108,39 +105,49 @@ class DBusThumbnailer(QObject):
         if not self.requests:
             self.listener.idle()
 
-    @pyqtSlot(QVariant, QVariant)
-    def _receive_started(self, handle):
-        print("started")
+    @pyqtSlot(QDBusMessage)
+    def _receive_started(self, msg):
+        handle, = msg.arguments()
         self.listener.started(handle)
 
-    @pyqtSlot(QVariant, QVariant)
-    def _receive_ready(self, handle, uris):
-        print("ready")
+    @pyqtSlot(QDBusMessage)
+    def _receive_ready(self, msg):
+        handle, uris = msg.arguments()
         data = self.requests[handle]
         self.listener.ready(handle, uris, data[2])
 
-    @pyqtSlot(QVariant, QVariant)
-    def _receive_finished(self, handle):
-        print("finished")
+    @pyqtSlot(QDBusMessage)
+    def _receive_finished(self, msg):
+        handle, = msg.arguments()
         self.listener.finished(handle)
         self._remove_request(handle)
 
-    @pyqtSlot(QVariant, QVariant)
-    def _receive_error(self, handle, failed_uris, error_code, message):
-        print("error")
+    @pyqtSlot(QDBusMessage)
+    def _receive_error(self, msg):
+        handle, failed_uris, error_code, message = msg.arguments()
         self.listener.error(handle, failed_uris, error_code, message)
+
+    def _call(self, method, *args):
+        msg = self.thumbnailer.call(method, *args)
+        reply = QDBusReply(msg)
+        if not reply.isValid():
+            raise Exception("Error on method call '{}': {}: {}".format(
+                method,
+                reply.error().name(),
+                reply.error().message()))
+        else:
+            return msg.arguments()
 
     def queue(self, files, flavor="default"):
         if files == []:
             return
-        print("ueue", files)
         urls = ["file://" + urllib.parse.quote(os.path.abspath(f)) for f in files]
         mime_types = [
             mimetypes.guess_type(url)[0] or "application/octet-stream"
             for url in urls
         ]
 
-        msg = self.thumbnailer.call(
+        handle, = self._call(
             "Queue",
             dbus_as(urls),  # uris: as
             dbus_as(mime_types),  # mime_types: as
@@ -149,31 +156,24 @@ class DBusThumbnailer(QObject):
             dbus_uint(0),  # handle_to_dequeue: u
             # <arg type="u" name="handle" direction="out" />
         )
-        reply = QDBusReply(msg)
 
-        print("OK", reply.error().message())
-        handle = reply.value()
         self._add_request(handle, (urls, mime_types, flavor))
+        return handle
 
     def dequeue(self, handle):
-        msg = self.thumbnailer.call("Dequeue", handle)
-        reply = QDBusReply(msg)
-        if not reply.isValid():
-            err = reply.error()
-            print("{}: {}".format(err.name(), err.message()))
+        handle, = self._call("Dequeue", handle)
         del self.requests[handle]
 
     def get_supported(self):
-        reply = self.thumbnailer.call("GetSupported")
-        uri_schemes, mime_types = reply.arguments()
+        uri_schemes, mime_types = self._call("GetSupported")
         return (uri_schemes, mime_types)
 
     def get_schedulers(self):
-        schedulers = QDBusReply(self.thumbnailer.call("GetSchedulers")).value()
+        schedulers, = self._call("GetSchedulers")
         return schedulers
 
     def get_flavors(self):
-        flavors = QDBusReply(self.thumbnailer.call("GetFlavors")).value()
+        flavors, = self._call("GetFlavors")
         return flavors
 
     @staticmethod
