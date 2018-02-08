@@ -20,7 +20,6 @@ from typing import List
 import logging
 import os
 import signal
-import dbus
 import xdg.BaseDirectory
 
 from PyQt5.QtCore import QSettings
@@ -29,7 +28,7 @@ from PyQt5.QtDBus import QDBusConnection
 
 from dirtools.fileview.controller import Controller
 from dirtools.fileview.thumbnailer import Thumbnailer
-from dirtools.qt_dbus_thumbnail_cache import DBusThumbnailCache
+from dirtools.dbus_thumbnail_cache import DBusThumbnailCache
 from dirtools.fileview.mime_database import MimeDatabase
 from dirtools.fileview.metadata_collector import MetaDataCollector
 

@@ -15,19 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-# https://dbus.freedesktop.org/doc/dbus-python/doc/tutorial.html
-# https://wiki.gnome.org/action/show/DraftSpecs/ThumbnailerSpec
-# qdbus org.freedesktop.thumbnails.Thumbnailer1 /org/freedesktop/thumbnails/Thumbnailer1
-
-
 import signal
-import dbus
 import argparse
 import sys
 import os
 
 from PyQt5.QtCore import QCoreApplication
-from dbus.mainloop.pyqt5 import DBusQtMainLoop
+from PyQt5.QtDBus import QDBusConnection
 
 from dirtools.dbus_thumbnailer import DBusThumbnailer, DBusThumbnailerListener
 from dirtools.dbus_thumbnail_cache import DBusThumbnailCache
@@ -77,7 +71,6 @@ class ThumbnailerProgressListener(DBusThumbnailerListener):
             print("[Error {}] {}: {}".format(error_code, uri, message), file=sys.stderr)
 
     def finished(self, handle):
-        # print("[Finished]", handle)
         pass
 
     def idle(self):
@@ -113,9 +106,7 @@ def main(argv):
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     app = QCoreApplication([])
 
-    dbus_loop = DBusQtMainLoop(set_as_default=True)  # noqa: F841
-    session_bus = dbus.SessionBus()
-
+    session_bus = QDBusConnection.sessionBus()
     thumbnailer = DBusThumbnailer(session_bus,
                                   ThumbnailerProgressListener(
                                       app, verbose=args.verbose))
@@ -151,7 +142,7 @@ def main(argv):
         else:
             request_thumbnails(thumbnailer, args.FILE, args.flavor, args.recursive)
 
-        rc = app.exec_()
+        rc = app.exec()
     else:
         pass
 

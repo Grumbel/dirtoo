@@ -16,14 +16,13 @@
 
 
 import os
-import dbus
 from typing import List, Callable, Dict, Tuple, Union
 
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, QThread
 from PyQt5.QtDBus import QDBusConnection
 from PyQt5.QtGui import QPixmap, QImage
 
-from dirtools.qt_dbus_thumbnailer import DBusThumbnailer
+from dirtools.dbus_thumbnailer import DBusThumbnailer
 
 
 ThumbnailCallback = Callable[[str, Union[str, None], QPixmap, int, str], None]
