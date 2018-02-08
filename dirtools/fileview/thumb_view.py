@@ -175,21 +175,24 @@ class ThumbView(QGraphicsView):
         for item in self.items:
             item.update()
 
-    def dragMoveEvent(self, e):
+    def dragMoveEvent(self, ev):
         # the default implementation will check if any item in the
         # scene accept a drop event, we don't want that, so we
         # override the function to do nothing
         pass
 
-    def dragEnterEvent(self, e):
-        print("dragEnterEvent", e.mimeData().formats())
-        if e.mimeData().hasFormat("text/uri-list"):
-            e.accept()
+    def dragEnterEvent(self, ev):
+        print("dragEnterEvent", ev.mimeData().formats())
+        if ev.mimeData().hasFormat("text/uri-list"):
+            ev.accept()
         else:
-            e.ignore()
+            ev.ignore()
 
-    def dropEvent(self, e):
-        urls = e.mimeData().urls()
+    def dragLeaveEvent(self, ev):
+        print("dragLeaveEvent: leave")
+
+    def dropEvent(self, ev):
+        urls = ev.mimeData().urls()
         # [PyQt5.QtCore.QUrl('file:///home/ingo/projects/dirtool/trunk/setup.py')]
         self.controller.add_files([url.path() for url in urls])
 
