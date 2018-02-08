@@ -31,6 +31,7 @@ from dirtools.fileview.filter import Filter
 from dirtools.fileview.sorter import Sorter
 from dirtools.fileview.directory_watcher import DirectoryWatcher
 from dirtools.fileview.filter_parser import FilterParser
+from dirtools.fileview.settings import settings
 
 
 class Controller(QObject):
@@ -54,9 +55,16 @@ class Controller(QObject):
 
         self.app.metadata_collector.sig_metadata_ready.connect(self.receive_metadata)
 
+        self._apply_settings()
+
     def close(self):
         if self.directory_watcher is not None:
             self.directory_watcher.close()
+
+    def _apply_settings(self):
+        v = settings.value("globals/crop_thumbnails", False, bool)
+        self.actions.crop_thumbnails.setChecked(v)
+        self.actions.crop_thumbnails.triggered.emit()
 
     def save_as(self):
         options = QFileDialog.Options()
@@ -238,6 +246,7 @@ class Controller(QObject):
             self.file_collection.add_file(f)
 
     def set_crop_thumbnails(self, v):
+        settings.set_value("globals/crop_thumbnails", v)
         self.window.thumb_view.set_crop_thumbnails(v)
 
     def request_metadata(self, fileinfo):

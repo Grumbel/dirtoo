@@ -22,16 +22,14 @@ from pkg_resources import resource_filename
 
 from PyQt5.QtCore import Qt, QRectF
 from PyQt5.QtGui import QBrush, QIcon, QColor, QPixmap
-from PyQt5.QtWidgets import (
-    QGraphicsView,
-    QGraphicsScene,
-)
+from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
 
 from dirtools.dbus_thumbnailer import DBusThumbnailerError
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.profiler import profile
 from dirtools.fileview.thumb_file_item import ThumbFileItem
 from dirtools.fileview.tile_layouter import TileLayouter, LayoutStyle
+from dirtools.fileview.settings import settings
 
 
 class SharedIcons:
@@ -267,10 +265,13 @@ class ThumbView(QGraphicsView):
         logging.debug("ThumbView.resizeEvent: %s", ev)
         super().resizeEvent(ev)
 
-        if self.resize_timer is not None:
-            self.killTimer(self.resize_timer)
-
-        self.resize_timer = self.startTimer(100)
+        if settings.value("globals/resize_delay", True):
+            if self.resize_timer is not None:
+                self.killTimer(self.resize_timer)
+            self.resize_timer = self.startTimer(100)
+        else:
+            self.layouter.resize(self.viewport().width(), self.viewport().height())
+            self.layout_items()
 
     def timerEvent(self, ev):
         if ev.timerId() == self.resize_timer:

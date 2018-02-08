@@ -17,12 +17,10 @@
 
 from typing import List
 
-import logging
 import os
 import signal
 import xdg.BaseDirectory
 
-from PyQt5.QtCore import QSettings
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtDBus import QDBusConnection
 
@@ -31,6 +29,7 @@ from dirtools.fileview.thumbnailer import Thumbnailer
 from dirtools.dbus_thumbnail_cache import DBusThumbnailCache
 from dirtools.fileview.mime_database import MimeDatabase
 from dirtools.fileview.metadata_collector import MetaDataCollector
+from dirtools.fileview.settings import Settings, settings
 
 
 class FileViewApplication:
@@ -44,6 +43,8 @@ class FileViewApplication:
         self.config_file = os.path.join(self.config_dir, "config.ini")
         if not os.path.isdir(self.config_dir):
             os.makedirs(self.config_dir)
+
+        settings.init(self.config_file)
 
         self.qapp = QApplication([])
         self.qapp.setQuitOnLastWindowClosed(False)
@@ -65,25 +66,10 @@ class FileViewApplication:
         self.qapp.quit()
 
     def run(self):
-        self.load_settings()
         return self.qapp.exec()
 
-    def load_settings(self):
-        logging.debug("FileViewApplication.load_settings()")
-        self.settings = QSettings(self.config_file, QSettings.IniFormat)
-
-        self.settings.beginGroup("globals")
-        self.settings.value("thumbnail-style", 30)
-        self.settings.endGroup()
-
-    def save_settings(self):
-        self.settings.beginGroup("globals")
-        self.settings.setValue("thumbnail-style", 30)
-        self.settings.endGroup()
-        self.settings.sync()
-
     def close(self):
-        self.save_settings()
+        settings.save()
 
         self.metadata_collector.close()
         self.thumbnailer.close()
