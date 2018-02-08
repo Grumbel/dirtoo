@@ -24,9 +24,36 @@ import hashlib
 import urllib.parse
 import mimetypes
 import xdg.BaseDirectory
+from enum import Enum
 
 from PyQt5.QtDBus import QDBusReply, QDBusMessage, QDBusInterface
 from PyQt5.QtCore import QObject, pyqtSlot, QVariant
+
+
+class DBusThumbnailerError(Enum):
+
+    # The URIs in failed_uris have (currently) unsupported URI schemes
+    # or MIME types.
+    UNSUPPORTED_MIMETYPE = 0
+
+    # The connection to a specialized thumbnailer could not be
+    # established properly.
+    CONNECTION_FAILURE = 1
+
+    # The URIs in failed_uris contain invalid image data or data that
+    # does not match the MIME type.
+    INVALID_DATA = 2
+
+    # The URIs in failed_uris are thumbnail files themselves. We
+    # disallow infinite recursion.
+    THUMBNAIL_RECURSION = 3
+
+    # The thumbnails for URIs in failed_uris could not be saved to the
+    # disk.
+    SAVE_FAILURE = 4
+
+    # Unsupported flavor requested
+    UNSUPPORTED_FLAVOR = 5
 
 
 def dbus_as(value):
