@@ -16,7 +16,7 @@
 
 
 from PyQt5.QtCore import Qt, QMimeData, QUrl
-from PyQt5.QtGui import QDrag
+from PyQt5.QtGui import QDrag, QPainter, QPixmap
 from PyQt5.QtWidgets import QGraphicsObject, QGraphicsItem, QMenu
 
 
@@ -50,13 +50,23 @@ class FileItem(QGraphicsObject):
             mime_data = QMimeData()
             mime_data.setUrls([QUrl("file://" + self.fileinfo.abspath())])
             self.drag = QDrag(self.controller.window)
-            # self.drag.setPixmap(self.pixmap_item.pixmap())
+
+            pix = QPixmap(self.tile_rect.width(), self.tile_rect.height())
+            painter = QPainter(pix)
+            self.paint(painter, None, None)
+            self.drag.setPixmap(pix)
+            painter.end()
+
+            self.drag.setHotSpot(ev.pos().toPoint() - self.tile_rect.topLeft())
+
+            self.setVisible(False)
+
             self.drag.setMimeData(mime_data)
-            # drag.setHotSpot(e.pos() - self.select_rect().topLeft())
             print("---drag start")
             self.dropAction = self.drag.exec(Qt.CopyAction)
             print("---drag done")
             # this will eat up the mouseReleaseEvent
+            self.setVisible(True)
 
     def mouseReleaseEvent(self, ev):
         if ev.button() == Qt.LeftButton and self.press_pos is not None:
