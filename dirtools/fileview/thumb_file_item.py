@@ -18,6 +18,7 @@
 from typing import Union, Dict, Any
 
 from enum import Enum
+import os
 import logging
 from datetime import datetime
 
@@ -172,7 +173,12 @@ class ThumbFileItem(FileItem):
         painter.setRenderHint(QPainter.Antialiasing)
 
         if self.animation_timer is None:
-            bg_color = QColor(192 + 32, 192 + 32, 192 + 32)
+            if os.getuid() == self.fileinfo.uid():
+                bg_color = QColor(192 + 32, 192 + 32, 192 + 32)
+            elif self.fileinfo.uid() == 0:
+                bg_color = QColor(192 + 32, 176, 176)
+            else:
+                bg_color = QColor(176, 192 + 32, 176)
         else:
             bg_color = QColor(192 + 32 - 10 * self.animation_count,
                               192 + 32 - 10 * self.animation_count,

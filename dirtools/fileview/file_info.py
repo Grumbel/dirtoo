@@ -115,6 +115,12 @@ class FileInfo:
     def stat(self):
         return self._stat
 
+    def uid(self):
+        return self._stat.st_uid
+
+    def gid(self):
+        return self._stat.st_gid
+
     def ext(self):
         return self._ext
 
