@@ -34,6 +34,8 @@ class LocationLineEdit(QLineEdit):
     def keyPressEvent(self, ev):
         super().keyPressEvent(ev)
         if ev.key() == Qt.Key_Escape:
+            self.setText(self.controller.location)
+            self.on_text_edited(self.controller.location)
             self.controller.window.thumb_view.setFocus()
 
     def focusInEvent(self, ev):
