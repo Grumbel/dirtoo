@@ -42,8 +42,13 @@ setup(name='dirtools',
           },
       install_requires=['bytefmt'],
       packages=['dirtools', 'dirtools.fileview'],
+      include_package_data=True,
       package_data={'dirtools': ['dirtools/fileview/fileview.svg',
-                                 'dirtools/fileview/icons/*.png']}
+                                 'dirtools/fileview/icons/*.png']},
+      data_files=[
+          ('share/icons/hicolor/scalable/apps', ['dirtools/fileview/dt-fileview.svg']),
+          ('share/applications', ['dt-fileview.desktop'])
+      ],
 )
 
 

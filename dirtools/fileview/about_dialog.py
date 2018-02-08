@@ -34,13 +34,13 @@ class AboutDialog(QDialog):
         p.setHorizontalPolicy(QSizePolicy.Expanding)
         p.setVerticalPolicy(QSizePolicy.Minimum)
         label.setSizePolicy(p)
-        label.setPixmap(QPixmap(resource_filename("dirtools", "fileview/fileview.svg")))
+        label.setPixmap(QPixmap(resource_filename("dirtools", "fileview/dt-fileview.svg")))
         self.vbox.addWidget(label)
 
         self.vbox = QVBoxLayout()
 
         label = QLabel()
-        label.setPixmap(QPixmap(resource_filename("dirtools", "fileview/fileview.svg")))
+        label.setPixmap(QPixmap(resource_filename("dirtools", "fileview/dt-fileview.svg")))
         self.vbox.addWidget(label)
 
         label = QLabel("dt-fileview")

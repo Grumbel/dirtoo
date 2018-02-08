@@ -137,7 +137,7 @@ class FileViewWindow(QMainWindow):
 
     def make_window(self):
         self.setWindowTitle("dt-fileview")
-        self.setWindowIcon(QIcon(resource_filename("dirtools", "fileview/fileview.svg")))
+        self.setWindowIcon(QIcon(resource_filename("dirtools", "fileview/dt-fileview.svg")))
         self.vbox = QVBoxLayout()
         self.vbox.setContentsMargins(0, 0, 0, 0)
 
