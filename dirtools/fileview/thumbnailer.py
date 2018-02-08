@@ -18,12 +18,12 @@
 import os
 import dbus
 from typing import List, Callable, Dict, Tuple, Union
-from dbus.mainloop.pyqt5 import DBusQtMainLoop
 
-from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, QThread
+from PyQt5.QtDBus import QDBusConnection
+from PyQt5.QtGui import QPixmap, QImage
 
-from dirtools.dbus_thumbnailer import DBusThumbnailer
+from dirtools.qt_dbus_thumbnailer import DBusThumbnailer
 
 
 ThumbnailCallback = Callable[[str, Union[str, None], QPixmap, int, str], None]
@@ -76,8 +76,7 @@ class ThumbnailerWorker(QObject):
         self.requests: Dict[int, List[Tuple[str, str, ThumbnailCallback]]] = {}
 
     def init(self):
-        self.dbus_loop = DBusQtMainLoop(set_as_default=False)
-        self.session_bus = dbus.SessionBus(mainloop=self.dbus_loop)
+        self.session_bus = QDBusConnection.sessionBus()
         self.dbus_thumbnailer = DBusThumbnailer(self.session_bus,
                                                 WorkerDBusThumbnailerListener(self))
 
@@ -85,9 +84,6 @@ class ThumbnailerWorker(QObject):
         assert self._close
 
         del self.dbus_thumbnailer
-        self.session_bus.close()
-        del self.session_bus
-        del self.dbus_loop
 
     def on_thumbnail_requested(self, filename: str, flavor: str,
                                callback: ThumbnailCallback):

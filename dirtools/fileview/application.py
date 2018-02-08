@@ -22,13 +22,14 @@ import os
 import signal
 import dbus
 import xdg.BaseDirectory
+
 from PyQt5.QtCore import QSettings
 from PyQt5.QtWidgets import QApplication
-from dbus.mainloop.pyqt5 import DBusQtMainLoop
+from PyQt5.QtDBus import QDBusConnection
 
 from dirtools.fileview.controller import Controller
 from dirtools.fileview.thumbnailer import Thumbnailer
-from dirtools.dbus_thumbnail_cache import DBusThumbnailCache
+from dirtools.qt_dbus_thumbnail_cache import DBusThumbnailCache
 from dirtools.fileview.mime_database import MimeDatabase
 from dirtools.fileview.metadata_collector import MetaDataCollector
 
@@ -51,8 +52,7 @@ class FileViewApplication:
 
         self.thumbnailer = Thumbnailer()
         self.metadata_collector = MetaDataCollector()
-        self.dbus_loop = DBusQtMainLoop(set_as_default=False)
-        self.session_bus = dbus.SessionBus(self.dbus_loop)
+        self.session_bus = QDBusConnection.sessionBus()
         self.dbus_thumbnail_cache = DBusThumbnailCache(self.session_bus)
         self.mime_database = MimeDatabase()
 
@@ -86,7 +86,6 @@ class FileViewApplication:
     def close(self):
         self.save_settings()
 
-        self.session_bus.close()
         self.metadata_collector.close()
         self.thumbnailer.close()
 
