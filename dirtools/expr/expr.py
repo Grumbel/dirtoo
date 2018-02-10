@@ -86,7 +86,9 @@ class Context:
 
     def __init__(self):
         self._functions = {
-            'abs': abs
+            'abs': abs,
+            'int': int,
+            'float': float,
         }
 
         self._variables = {
@@ -127,7 +129,7 @@ class Number:
             self.unit = None
 
     def eval(self, ctx):
-        return int(self.value)
+        return self.value
 
     def __repr__(self):
         if self.unit is None:
@@ -282,6 +284,9 @@ def make_grammar():
     expr <<= logical_or_expr
 
     function_expression.setParseAction(Function)
+
+    int_number.setParseAction(lambda s, loc, toks: int(toks[0]))
+    float_number.setParseAction(lambda s, loc, toks: float(toks[0]))
     number.setParseAction(Number)
     string.setParseAction(String)
     ident.setParseAction(Variable)
