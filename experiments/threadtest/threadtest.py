@@ -17,13 +17,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import gc
 import types
 import signal
 import sys
 import dbus
-from PyQt5.QtCore import (Qt, QCoreApplication, QThread, QObject,
-                          pyqtSlot, pyqtSignal, QTimer, QAbstractEventDispatcher, QEventLoop)
+from PyQt5.QtCore import (QCoreApplication, QThread, QObject,
+                          pyqtSignal, QTimer, QAbstractEventDispatcher, QEventLoop)
 from dbus.mainloop.pyqt5 import DBusQtMainLoop
 
 from dirtools.dbus_thumbnailer import DBusThumbnailer
@@ -50,7 +49,7 @@ class Worker(QObject):
         self.sig_thing_requested.connect(self.on_thing_requested)
 
     def deinit(self):
-        assert self.quit == True
+        assert self.quit is True
 
         print(self.name, "Worker.deinit --------------------")
 
@@ -106,7 +105,8 @@ class WorkerFacade(QObject):
         callback(thing)
 
     def on_quit(self):
-        if self.worker.quit: return
+        if self.worker.quit:
+            return
 
         print(self.name, "WorkerFacade.on_quit()")
         # This signal won't be received until all work is done!!!!
@@ -118,7 +118,7 @@ class WorkerFacade(QObject):
         # waiting for the thread to finish
         print(self.name, "evdi waiting")
         evdi = QAbstractEventDispatcher.instance()
-        while self.thread.wait(10) == False:
+        while self.thread.wait(10) is False:
             evdi.processEvents(QEventLoop.AllEvents)
         print(self.name, "evdi waiting: done")
 

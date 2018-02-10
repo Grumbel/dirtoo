@@ -17,16 +17,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import gc
-import types
 import signal
 import sys
-import dbus
-from PyQt5.QtCore import (Qt, QCoreApplication, QThread, QObject,
-                          pyqtSlot, pyqtSignal, QTimer, QAbstractEventDispatcher, QEventLoop)
-from dbus.mainloop.pyqt5 import DBusQtMainLoop
 
-from dirtools.dbus_thumbnailer import DBusThumbnailer
+from PyQt5.QtCore import (QCoreApplication, QObject, pyqtSignal,
+                          QTimer)
 
 
 class CallableWrap:

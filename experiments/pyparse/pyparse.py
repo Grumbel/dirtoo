@@ -17,10 +17,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Dict, Callable
+
 import sys
 import operator
 
 
+# FIXME: these logical and/or operators don't have short circuit
+# semantics, shouldn't matter since we try to stay side effect free,
+# but might still be a worthy optimization
 def logical_and(lhs, rhs):
     return lhs and rhs
 
@@ -29,48 +34,53 @@ def logical_or(lhs, rhs):
     return lhs or rhs
 
 
+NAME2BINOP = {
+    '+': operator.add,
+    '-': operator.sub,
+    '*': operator.mul,
+    '**': operator.pow,
+    '/': operator.truediv,
+    '//': operator.floordiv,
+    '%': operator.mod,
+    '^': operator.xor,
+
+    '<<': operator.lshift,
+    '>>': operator.rshift,
+
+    '&': operator.and_,
+    '|': operator.or_,
+
+    'and': logical_and,
+    'or': logical_or,
+    '&&': logical_and,
+    '||': logical_or,
+
+    '<=': operator.le,
+    '>=': operator.ge,
+    '<': operator.lt,
+    '>': operator.gt,
+
+    '=': operator.eq,
+    '==': operator.eq,
+    '!=': operator.ne,
+}
+
+
+NAME2UNARYOP: Dict[str, Callable[[float], float]] = {
+    '+': lambda x: x,
+    '-': operator.neg,
+    '~': operator.invert,
+    '!': operator.not_,
+    'not': operator.not_,
+}
+
+
 def get_operator_fn(op):
-    return {
-        '+' : operator.add,
-        '-' : operator.sub,
-        '*' : operator.mul,
-        '**' : operator.pow,
-        '/' : operator.truediv,
-        '//' : operator.floordiv,
-        '%' : operator.mod,
-        '^' : operator.xor,
-
-        '<<': operator.lshift,
-        '>>': operator.rshift,
-
-        '&': operator.and_,
-        '|': operator.or_,
-
-        'and': logical_and,
-        'or': logical_or,
-        '&&': logical_and,
-        '||': logical_or,
-
-        '<=': operator.le,
-        '>=': operator.ge,
-        '<': operator.lt,
-        '>': operator.gt,
-
-        '=': operator.eq,
-        '==': operator.eq,
-        '!=': operator.ne,
-
-        }[op]
+    return NAME2BINOP[op]
 
 
 def get_unary_operator_fn(op):
-    return {
-        '+': lambda x: x,
-        '-': operator.neg,
-        '~': operator.invert,
-        '!': operator.not_,
-        'not': operator.not_,
-    }[op]
+    return NAME2UNARYOP[op]
 
 
 class Context:
@@ -100,7 +110,6 @@ class Function:
     def __init__(self, s, loc, toks):
         self.name = toks[0]
         self.args = toks[1:]
-
 
     def eval(self, ctx):
         return ctx.get_function(self.name)(*[arg.eval(ctx) for arg in self.args])
@@ -180,8 +189,8 @@ class UnaryOperator:
 
 
 def make_grammar():
-    from pyparsing import (Literal, Word, Forward, Optional, Group,
-                           QuotedString, Combine, ZeroOrMore, Suppress,
+    from pyparsing import (Literal, Word, Forward, Optional,
+                           QuotedString, Combine, ZeroOrMore,
                            alphas, alphanums, nums)
 
     def test(s, loc, toks):
@@ -241,7 +250,7 @@ def make_grammar():
         if len(toks) == 1:
             return toks[0]
         else:
-            return [Operator(toks[1], toks[0], toks[2])] +  toks[3:]
+            return [Operator(toks[1], toks[0], toks[2])] + toks[3:]
 
     def make_unary(s, loc, toks):
         if len(toks) == 1:
@@ -252,18 +261,19 @@ def make_grammar():
     argument_expression_list = expr + ZeroOrMore(Literal(",").suppress() + expr)
     function_expression = (functionname + lparent + argument_expression_list + rparent)
     postfix_expression = function_expression | primary_expr
-    unary_expr       = postfix_expression | (ZeroOrMore(bitwise_not | logiclal_not | minus | plus) + postfix_expression).setParseAction(make_unary)
+    unary_expr = ZeroOrMore(bitwise_not | logiclal_not | minus | plus) + postfix_expression
+    cast_expresion = postfix_expression | unary_expr
 
-    mult_expr        = unary_expr       + ZeroOrMore(mul_op        + unary_expr)
-    add_expr         = mult_expr        + ZeroOrMore(add_op        + mult_expr)
-    shift_expr       = add_expr         + ZeroOrMore(shift         + add_expr)
-    relational_expr  = shift_expr       + ZeroOrMore(relational_op + shift_expr)
-    equality_expr    = relational_expr  + ZeroOrMore(equal         + relational_expr)
-    bitwise_and_expr = equality_expr    + ZeroOrMore(bitwise_and   + equality_expr)
-    bitwise_xor_expr = bitwise_and_expr + ZeroOrMore(bitwise_xor   + bitwise_and_expr)
-    bitwise_or_expr  = bitwise_xor_expr + ZeroOrMore(bitwise_or    + bitwise_xor_expr)
-    logical_and_expr = bitwise_or_expr  + ZeroOrMore(logical_and   + bitwise_or_expr)
-    logical_or_expr  = logical_and_expr + ZeroOrMore(logical_or    + logical_and_expr)
+    mult_expr        = cast_expresion   + ZeroOrMore(mul_op        + cast_expresion)  # noqa: E221
+    add_expr         = mult_expr        + ZeroOrMore(add_op        + mult_expr)  # noqa: E221
+    shift_expr       = add_expr         + ZeroOrMore(shift         + add_expr)  # noqa: E221
+    relational_expr  = shift_expr       + ZeroOrMore(relational_op + shift_expr)  # noqa: E221
+    equality_expr    = relational_expr  + ZeroOrMore(equal         + relational_expr)  # noqa: E221
+    bitwise_and_expr = equality_expr    + ZeroOrMore(bitwise_and   + equality_expr)  # noqa: E221
+    bitwise_xor_expr = bitwise_and_expr + ZeroOrMore(bitwise_xor   + bitwise_and_expr)  # noqa: E221
+    bitwise_or_expr  = bitwise_xor_expr + ZeroOrMore(bitwise_or    + bitwise_xor_expr)  # noqa: E221
+    logical_and_expr = bitwise_or_expr  + ZeroOrMore(logical_and   + bitwise_or_expr)  # noqa: E221
+    logical_or_expr  = logical_and_expr + ZeroOrMore(logical_or    + logical_and_expr)  # noqa: E221
     expr <<= logical_or_expr
 
     function_expression.setParseAction(Function)
@@ -271,6 +281,7 @@ def make_grammar():
     string.setParseAction(String)
     ident.setParseAction(Variable)
 
+    unary_expr.setParseAction(make_unary)
     mult_expr.setParseAction(make_op)
     add_expr.setParseAction(make_op)
     shift_expr.setParseAction(make_op)

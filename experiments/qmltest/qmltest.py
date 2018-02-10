@@ -23,10 +23,9 @@ import urllib.parse
 import hashlib
 import xdg.BaseDirectory
 
-from PyQt5.QtCore import Qt, QUrl, QByteArray, QVariant, QObject, pyqtProperty
+from PyQt5.QtCore import QUrl, QVariant, QObject, pyqtProperty
 from PyQt5.QtGui import QGuiApplication
-from PyQt5.QtQuick import QQuickView, QQuickItem
-from PyQt5.QtQml import QQmlComponent, QQmlApplicationEngine
+from PyQt5.QtQml import QQmlApplicationEngine
 
 
 class Foo(QObject):
@@ -58,24 +57,22 @@ def main(argv):
 
     engine = QQmlApplicationEngine()
 
-    dataList = []
-    for entry in  os.scandir(argv[1]):
+    data_list = []
+    for entry in os.scandir(argv[1]):
         url = "file://" + urllib.parse.quote(os.path.abspath(entry.path))
         digest = hashlib.md5(os.fsencode(url)).hexdigest()
         result = os.path.join(xdg.BaseDirectory.xdg_cache_home, "thumbnails", "normal", digest + ".png")
-        dataList.append(Foo(entry.name, result, "2018-01-11T19:20"))
-
+        data_list.append(Foo(entry.name, result, "2018-01-11T19:20"))
 
     engine.load(QUrl('main.qml'))
 
     ctxt = engine.rootContext()
-    ctxt.setContextProperty("menu2", QVariant(dataList))
+    ctxt.setContextProperty("menu2", QVariant(data_list))
 
     win = engine.rootObjects()[0]
     win.show()
 
     sys.exit(qapp.exec())
-
 
 
 if __name__ == "__main__":

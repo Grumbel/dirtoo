@@ -19,7 +19,7 @@
 
 import signal
 import sys
-from PyQt5.QtCore import QCoreApplication, QFileSystemWatcher, QMimeDatabase
+from PyQt5.QtCore import QCoreApplication, QMimeDatabase
 
 
 def directory_changed(path):
@@ -33,7 +33,7 @@ def file_changed(path):
 def main(argv):
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-    app = QCoreApplication([])
+    app = QCoreApplication([])  # noqa: F841
     mime_db = QMimeDatabase()
     mt = mime_db.mimeTypeForName("application/x-rar")
     print("name:", mt.name())
@@ -49,4 +49,3 @@ if __name__ == "__main__":
 
 
 # EOF #
-

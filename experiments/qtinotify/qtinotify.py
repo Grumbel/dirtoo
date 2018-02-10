@@ -17,13 +17,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os
 import signal
 import sys
-import sys
 
-from PyQt5.QtCore import (QCoreApplication, QFileSystemWatcher,
-                          QObject, QSocketNotifier, pyqtSignal, QTimer)
+from PyQt5.QtCore import (QCoreApplication, QObject, QSocketNotifier,
+                          pyqtSignal)
 from inotify_simple import INotify, flags as inotify_flags, masks as inotify_masks
 import inotify_simple
 
@@ -62,7 +60,7 @@ def main(argv):
     watcher = INotifyQt()
 
     print("watching /tmp")
-    wd = watcher.add_watch('/tmp')
+    watcher.add_watch('/tmp')
 
     def on_event(ev):
         print(ev)

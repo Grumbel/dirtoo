@@ -18,7 +18,6 @@
 
 
 import sys
-import os
 from inotify_simple import INotify, flags, masks
 
 
@@ -27,7 +26,7 @@ def main(argv):
     watch_flags = masks.ALL_EVENTS
 
     print("watching /tmp")
-    wd = inotify.add_watch('/tmp', watch_flags)
+    inotify.add_watch('/tmp', watch_flags)
 
     while True:
         for event in inotify.read():
