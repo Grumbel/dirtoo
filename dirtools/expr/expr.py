@@ -249,7 +249,13 @@ def make_grammar():
         if len(toks) == 1:
             return toks[0]
         else:
-            return [Operator(toks[1], toks[0], toks[2])] + toks[3:]
+            def loop(lhs, rest):
+                if len(rest) == 0:
+                    return lhs
+                else:
+                    return loop(Operator(rest[0], lhs, rest[1]), rest[2:])
+
+            return loop(Operator(toks[1], toks[0], toks[2]), toks[3:])
 
     def make_unary(s, loc, toks):
         if len(toks) == 1:
