@@ -20,6 +20,9 @@ import re
 from fnmatch import fnmatchcase
 
 
+from dirtools.fuzzy import fuzzy
+
+
 class MatchFunc:
 
     def __call__(self, fileinfo, idx):
@@ -62,6 +65,18 @@ class RegexMatchFunc(MatchFunc):
 
     def __call__(self, fileinfo, idx):
         return bool(self.rx.search(fileinfo.basename()))
+
+
+class FuzzyMatchFunc(MatchFunc):
+
+    def __init__(self, needle, n=3, threshold=0.5):
+        self.needle = needle
+        self.n = n
+        self.threshold = threshold
+
+    def __call__(self, fileinfo, idx):
+        result = fuzzy(self.needle, fileinfo.basename(), self.n)
+        return result > self.threshold
 
 
 class TimeMatchFunc(MatchFunc):
@@ -141,6 +156,9 @@ class Filter:
 
     def set_pattern(self, pattern, case_sensitive):
         self.match_func = GlobMatchFunc(pattern, case_sensitive=case_sensitive)
+
+    def set_fuzzy(self, pattern):
+        self.match_func = FuzzyMatchFunc(pattern)
 
     def set_size(self, size, compare):
         self.match_func = SizeMatchFunc(size, compare)

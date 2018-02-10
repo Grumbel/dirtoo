@@ -61,8 +61,9 @@ class FilterParser:
         if pattern == "":
             self.filter.set_none()
         elif pattern.startswith("/"):
-            command, *arg = pattern[1:].split("/", 1)
+            command, *arg = pattern[1:].split(" ", 1)
             arg = arg[0] if arg else None
+            arg = arg.strip()
 
             if command in ["video", "videos", "vid", "vids"]:
                 self.filter.set_regex_pattern(VIDEO_REGEX, re.IGNORECASE)
@@ -107,6 +108,8 @@ class FilterParser:
                 self.filter.set_pattern(arg, case_sensitive=True)
             elif command == "g":
                 self.filter.set_pattern(arg, case_sensitive=False)
+            elif command in ["f", "fuz", "fuzz", "fuzzy"]:
+                self.filter.set_fuzzy(arg)
             else:
                 print("Controller.set_filter: unknown command: {}".format(command))
         else:
