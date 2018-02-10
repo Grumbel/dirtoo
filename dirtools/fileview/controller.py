@@ -80,7 +80,6 @@ class Controller(QObject):
             self.file_collection.save_as(filename)
 
     def on_exit(self):
-        self.window.close()
         self.app.close_controller(self)
 
     def show_hidden(self):

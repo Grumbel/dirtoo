@@ -59,7 +59,7 @@ class Actions(QObject):
         self.exit = QAction(QIcon.fromTheme('exit'), '&Exit', self)
         self.exit.setShortcut('Ctrl+Q')
         self.exit.setStatusTip('Exit application')
-        self.exit.triggered.connect(self.controller.on_exit)
+        self.exit.triggered.connect(lambda: self.controller.window.close())
 
         self.home = QAction(QIcon.fromTheme('go-home'), '&Go to Home', self)
         self.home.setStatusTip('Go to the Home directory')
