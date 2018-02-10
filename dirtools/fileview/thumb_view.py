@@ -59,6 +59,8 @@ class ThumbView(QGraphicsView):
     def __init__(self, controller) -> None:
         super().__init__()
 
+        self.setCacheMode(QGraphicsView.CacheBackground)
+
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         # self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
 

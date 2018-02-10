@@ -21,6 +21,7 @@ import os
 import signal
 import xdg.BaseDirectory
 
+from PyQt5.QtGui import QPixmapCache
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtDBus import QDBusConnection
 
@@ -45,6 +46,8 @@ class FileViewApplication:
             os.makedirs(self.config_dir)
 
         settings.init(self.config_file)
+
+        QPixmapCache.setCacheLimit(102400)
 
         self.qapp = QApplication([])
         self.qapp.setQuitOnLastWindowClosed(False)
