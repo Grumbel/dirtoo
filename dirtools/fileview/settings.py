@@ -15,9 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import xdg.BaseDirectory
-
-from PyQt5.QtCore import QObject, QSettings, QVariant
+from PyQt5.QtCore import QObject, QSettings
 
 
 class Settings(QObject):
@@ -42,6 +40,7 @@ class Settings(QObject):
 
     def save(self):
         pass
+
 
 settings = Settings()
 

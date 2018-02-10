@@ -29,7 +29,7 @@ from dirtools.fileview.thumbnailer import Thumbnailer
 from dirtools.dbus_thumbnail_cache import DBusThumbnailCache
 from dirtools.fileview.mime_database import MimeDatabase
 from dirtools.fileview.metadata_collector import MetaDataCollector
-from dirtools.fileview.settings import Settings, settings
+from dirtools.fileview.settings import settings
 
 
 class FileViewApplication:
