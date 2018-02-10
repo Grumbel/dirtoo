@@ -26,6 +26,7 @@ setup(name='dirtools',
       entry_points={
           'console_scripts': [
               'dt-move = dirtools.cmd_move:main',
+              'dt-expr = dirtools.cmd_expr:main_entrypoint',
               'dt-find = dirtools.cmd_find:main',
               'dt-fsck = dirtools.cmd_fsck:main',
               'dt-dirtool = dirtools.cmd_dirtool:main_entrypoint',
