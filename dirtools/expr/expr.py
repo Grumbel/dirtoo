@@ -190,9 +190,11 @@ class UnaryOperator:
 
 
 def make_grammar():
-    from pyparsing import (Literal, Word, Forward, Optional,
-                           QuotedString, Combine, ZeroOrMore,
-                           Keyword, alphas, alphanums, nums)
+    from pyparsing import (ParserElement, Literal, Word, Forward,
+                           Optional, QuotedString, Combine,
+                           ZeroOrMore, Keyword, alphas, alphanums,
+                           nums)
+    ParserElement.enablePackrat()
 
     def test(s, loc, toks):
         print()
