@@ -161,12 +161,19 @@ class ThumbFileItem(FileItem):
         self.qpainter_path = QPainterPath()
         self.qpainter_path.addRect(0, 0, tile_width, tile_height)
 
-    def paint(self, painter, option, widget):
-        logging.debug("ThumbFileItem.paint: %s", self.fileinfo.abspath())
-
+    def prepare(self):
         if self.metadata is None:
             self.controller.request_metadata(self.fileinfo)
             self.metadata = {}
+
+        thumbnail = self._get_thumbnail()
+        if thumbnail.status == ThumbnailStatus.INITIAL:
+            thumbnail.request()
+
+    def paint(self, painter, option, widget):
+        logging.debug("ThumbFileItem.paint: %s", self.fileinfo.abspath())
+
+        self.prepare()
 
         painter.setRenderHint(QPainter.SmoothPixmapTransform)
         painter.setRenderHint(QPainter.TextAntialiasing)
@@ -284,7 +291,6 @@ class ThumbFileItem(FileItem):
         thumbnail = self._get_thumbnail()
 
         if thumbnail.status == ThumbnailStatus.INITIAL:
-            thumbnail.request()
             self.paint_icon(painter, self.icon)
 
         elif thumbnail.status == ThumbnailStatus.LOADING:
