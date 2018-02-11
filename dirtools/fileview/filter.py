@@ -15,133 +15,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import random
-import re
-from fnmatch import fnmatchcase
-
-
-from dirtools.fuzzy import fuzzy
-
-
-class MatchFunc:
-
-    def __call__(self, fileinfo, idx):
-        assert False, "MatchFunc.__call__() not implemented"
-
-    def begin(self, fileinfos):
-        pass
-
-
-class FolderMatchFunc(MatchFunc):
-
-    def __init__(self):
-        pass
-
-    def __call__(self, fileinfo, idx):
-        return fileinfo.isdir()
-
-
-class GlobMatchFunc(MatchFunc):
-
-    def __init__(self, pattern, case_sensitive=False):
-        self.case_sensitive = case_sensitive
-        if self.case_sensitive:
-            self.pattern = pattern
-        else:
-            self.pattern = pattern.lower()
-
-    def __call__(self, fileinfo, idx):
-        if self.case_sensitive:
-            return fnmatchcase(fileinfo.basename(), self.pattern)
-        else:
-            filename = fileinfo.basename().lower()
-            return fnmatchcase(filename, self.pattern)
-
-
-class RegexMatchFunc(MatchFunc):
-
-    def __init__(self, pattern, flags):
-        self.rx = re.compile(pattern, flags)
-
-    def __call__(self, fileinfo, idx):
-        return bool(self.rx.search(fileinfo.basename()))
-
-
-class FuzzyMatchFunc(MatchFunc):
-
-    def __init__(self, needle, n=3, threshold=0.5):
-        self.needle = needle
-        self.n = n
-        self.threshold = threshold
-
-    def __call__(self, fileinfo, idx):
-        result = fuzzy(self.needle, fileinfo.basename(), self.n)
-        return result > self.threshold
-
-
-class TimeMatchFunc(MatchFunc):
-
-    def __init__(self, mtime, compare):
-        self.mtime = mtime
-        self.compare = compare
-
-    def __call__(self, fileinfo, idx):
-        return self.compare(fileinfo.mtime(), self.mtime)
-
-
-class SizeMatchFunc(MatchFunc):
-
-    def __init__(self, size, compare):
-        self.size = size
-        self.compare = compare
-
-    def __call__(self, fileinfo, idx):
-        return self.compare(fileinfo.size(), self.size)
-
-
-class LengthMatchFunc(MatchFunc):
-
-    def __init__(self, length, compare):
-        self.length = length
-        self.compare = compare
-
-    def __call__(self, fileinfo, idx):
-        return self.compare(len(fileinfo.basename()), self.length)
-
-
-class RandomMatchFunc(MatchFunc):
-
-    def __init__(self, probability):
-        self.random = random.Random(random.randrange(1024))
-        self.probability = probability
-
-    def __call__(self, fileinfo, idx):
-        return (self.random.random() < self.probability)
-
-
-class RandomPickMatchFunc(MatchFunc):
-
-    def __init__(self, pick_count):
-        self.pick_count = pick_count
-        self.picked_indices = None
-
-    def __call__(self, fileinfo, idx):
-        return idx in self.picked_indices
-
-    def begin(self, fileinfos):
-        if self.picked_indices is not None:
-            return
-
-        if self.pick_count >= len(fileinfos):
-            self.picked_indices = set(range(len(fileinfos)))
-        else:
-            self.picked_indices = set()
-            while len(self.picked_indices) < self.pick_count:
-                idx = random.randrange(len(fileinfos))
-                if idx not in self.picked_indices:
-                    self.picked_indices.add(idx)
-
-        return self
+from dirtools.fileview.match_func import (
+    RegexMatchFunc,
+    GlobMatchFunc,
+    FuzzyMatchFunc,
+    SizeMatchFunc,
+    LengthMatchFunc,
+    TimeMatchFunc,
+    RandomMatchFunc,
+    RandomPickMatchFunc,
+    FolderMatchFunc,
+)
 
 
 class Filter:
@@ -150,6 +34,9 @@ class Filter:
         self.show_hidden = False
         self.show_inaccessible = True
         self.match_func = None
+
+    def set_match_func(self, match_func):
+        self.match_func = match_func
 
     def set_regex_pattern(self, pattern, flags=0):
         self.match_func = RegexMatchFunc(pattern, flags)
