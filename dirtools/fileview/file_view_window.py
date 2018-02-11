@@ -109,9 +109,13 @@ class FileViewWindow(QMainWindow):
         shortcut.setContext(Qt.WindowShortcut)
         shortcut.activated.connect(lambda: self.file_path.setFocus(Qt.ShortcutFocusReason))
 
+        def show_filter():
+            self.file_filter.setFocus(Qt.ShortcutFocusReason)
+            self.filter_toolbar.show()
+
         shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_K), self)
         shortcut.setContext(Qt.WindowShortcut)
-        shortcut.activated.connect(lambda: self.file_filter.setFocus(Qt.ShortcutFocusReason))
+        shortcut.activated.connect(show_filter)
 
         shortcut = QShortcut(QKeySequence(Qt.ALT + Qt.Key_Up), self)
         shortcut.setContext(Qt.WindowShortcut)
@@ -161,6 +165,9 @@ class FileViewWindow(QMainWindow):
         vbox_widget.setLayout(self.vbox)
         self.setCentralWidget(vbox_widget)
 
+    def hide_filter(self):
+        self.filter_toolbar.hide()
+
     def make_filter_toolbar(self):
         self.filter_toolbar = QToolBar()
         widget = QWidget()
@@ -172,6 +179,7 @@ class FileViewWindow(QMainWindow):
         widget.setLayout(form)
         self.filter_toolbar.addWidget(widget)
         self.addToolBar(Qt.BottomToolBarArea, self.filter_toolbar)
+        self.filter_toolbar.hide()
 
     def make_location_toolbar(self):
         self.location_toolbar = self.addToolBar("Location")

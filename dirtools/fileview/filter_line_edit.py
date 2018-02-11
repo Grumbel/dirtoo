@@ -39,6 +39,7 @@ class FilterLineEdit(QLineEdit):
             self.setText("")
             self.history_idx = -1
             self.controller.set_filter("")
+            self.controller.window.hide_filter()
             self.controller.window.thumb_view.setFocus()
         elif ev.key() == Qt.Key_Up:
             self.history_up()
