@@ -20,6 +20,8 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QKeySequence, QIcon, QCursor
 from PyQt5.QtWidgets import (
     QMenu,
+    QHBoxLayout,
+    QPushButton,
     QToolButton,
     QFormLayout,
     QStyle,
@@ -169,14 +171,24 @@ class FileViewWindow(QMainWindow):
         self.filter_toolbar.hide()
 
     def make_filter_toolbar(self):
-        self.filter_toolbar = QToolBar()
-        widget = QWidget()
+        hbox = QHBoxLayout()
+
         form = QFormLayout()
         label = QLabel("Filter:")
         label.setBuddy(self.file_filter)
         form.addRow(label, self.file_filter)
         form.setContentsMargins(0, 0, 0, 0)
-        widget.setLayout(form)
+        hbox.addLayout(form)
+
+        help_button = QPushButton("Help")
+        help_button.clicked.connect(self.controller.show_filter_help)
+        hbox.addWidget(help_button)
+        hbox.setContentsMargins(0, 0, 0, 0)
+
+        widget = QWidget()
+        widget.setLayout(hbox)
+
+        self.filter_toolbar = QToolBar()
         self.filter_toolbar.addWidget(widget)
         self.addToolBar(Qt.BottomToolBarArea, self.filter_toolbar)
         self.filter_toolbar.hide()

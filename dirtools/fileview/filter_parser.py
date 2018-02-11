@@ -18,6 +18,7 @@
 from typing import Dict, Callable, List, Union, Tuple
 
 import re
+import sys
 import datetime
 import operator
 
@@ -155,11 +156,11 @@ class FilterParser:
             ["help", "h"],
             lambda args: self.print_help())
 
-    def print_help(self):
+    def print_help(self, fout=sys.stdout):
         for aliases, func, help in self.reg_commands:
-            print("Command: {}".format(", ".join(aliases)))
-            print("Help:    {}".format(help or ""))
-            print()
+            print("{}".format(", ".join(["/" + x for x in aliases])), file=fout)
+            print("  {}".format(help or ""), file=fout)
+            print(file=fout)
 
     def register_command(self,
                          aliases: Union[str, List[str]],
@@ -169,7 +170,7 @@ class FilterParser:
             for name in aliases:
                 assert name not in self.commands
                 self.commands[name] = (aliases, func, help)
-                self.reg_commands.append((aliases, func, help))
+            self.reg_commands.append((aliases, func, help))
         else:
             self.commands[aliases] = ([aliases], func, help)
             self.reg_commands.append(([aliases], func, help))

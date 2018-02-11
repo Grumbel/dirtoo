@@ -20,8 +20,9 @@ from typing import List, Dict, Any
 import logging
 import os
 import subprocess
+import io
 
-from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QFileDialog, QTextEdit
 from PyQt5.QtCore import QObject
 
 from dirtools.fileview.actions import Actions
@@ -52,6 +53,8 @@ class Controller(QObject):
 
         self.window.file_view.set_file_collection(self.file_collection)
         self.window.thumb_view.set_file_collection(self.file_collection)
+
+        self.filter_help = QTextEdit()
 
         self.app.metadata_collector.sig_metadata_ready.connect(self.receive_metadata)
 
@@ -115,6 +118,16 @@ class Controller(QObject):
 
     def less_details(self):
         self.window.thumb_view.less_details()
+
+    def show_filter_help(self):
+        parser = FilterParser(self.filter)
+
+        fout = io.StringIO()
+        parser.print_help(fout)
+
+        self.filter_help.setText(fout.getvalue())
+        self.filter_help.resize(480, 800)
+        self.filter_help.show()
 
     def more_details(self):
         self.window.thumb_view.more_details()
