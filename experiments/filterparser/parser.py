@@ -19,20 +19,45 @@
 
 import sys
 
-from pyparsing import (QuotedString, ZeroOrMore, Word, CharsNotIn, Suppress, Literal, Combine, OneOrMore,
-                       Forward, Optional, White, LineEnd, StringStart, StringEnd, Regex)
+from pyparsing import (QuotedString, ZeroOrMore, Combine, OneOrMore, Regex)
+
+
+def escape_handler(s, loc, toks):
+    if toks[0] == '\\\\':
+        return "\\"
+    elif toks[0] == '\\\'':
+        return "'"
+    elif toks[0] == '\\"':
+        return '"'
+    elif toks[0] == '\\f':
+        return "\f"
+    elif toks[0] == '\\n':
+        return "\n"
+    elif toks[0] == '\\r':
+        return "\r"
+    elif toks[0] == '\\t':
+        return "\t"
+    elif toks[0] == '\\ ':
+        return " "
+    else:
+        return toks[0][1:]
+
+
+def make_bnf():
+    escape = Combine(Regex(r'\\.')).setParseAction(escape_handler)
+    word = Combine(OneOrMore(escape | Regex(r'[^\s\\]+')))
+    command = ZeroOrMore(QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\') | word)
+    return command
 
 
 def main(argv):
-
-    escape = Suppress(Literal("\\")) + Word(" '\"", exact=1)
-    word = Combine(OneOrMore(escape | Regex(r'[^\s\\]+')))
-    command = ZeroOrMore(QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\') | word)
+    grammar = make_bnf()
 
     for arg in argv[1:]:
-        result = command.parseString(arg, parseAll=True)
-        print(arg)
-        print(result)
+        results = grammar.parseString(arg, parseAll=True)
+        print("Input:", arg)
+        for result in results:
+            print(result)
         print()
 
 
