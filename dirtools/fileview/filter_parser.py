@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Dict, Callable, List, Union, Tuple
+
 import re
 import datetime
 import operator
@@ -56,62 +58,135 @@ class FilterParser:
 
     def __init__(self, filter):
         self.filter = filter
+        self.grammar = self._make_grammar()
+        self.commands: Dict[str, Tuple[List[str], Callable, str]] = {}
+        self.reg_commands: List[Tuple[List[str], Callable, str]] = []
+        self._register_commands()
+
+    def _make_grammar(self):
+        from pyparsing import (QuotedString, ZeroOrMore, Combine, OneOrMore, Regex)
+
+        def escape_handler(s, loc, toks):
+            if toks[0] == '\\\\':
+                return "\\"
+            elif toks[0] == '\\\'':
+                return "'"
+            elif toks[0] == '\\"':
+                return '"'
+            elif toks[0] == '\\f':
+                return "\f"
+            elif toks[0] == '\\n':
+                return "\n"
+            elif toks[0] == '\\r':
+                return "\r"
+            elif toks[0] == '\\t':
+                return "\t"
+            elif toks[0] == '\\ ':
+                return " "
+            else:
+                return toks[0][1:]
+
+        escape = Combine(Regex(r'\\.')).setParseAction(escape_handler)
+        word = Combine(OneOrMore(escape | Regex(r'[^\s\\]+')))
+        arguments = ZeroOrMore(QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\') | word)
+        return arguments
+
+    def _register_commands(self):
+        self.register_command(
+            ["video", "videos", "vid", "vids"],
+            lambda args: self.filter.set_regex_pattern(VIDEO_REGEX, re.IGNORECASE))
+
+        self.register_command(
+            ["image", "images", "img", "imgs"],
+            lambda args: self.filter.set_regex_pattern(IMAGE_REGEX, re.IGNORECASE))
+
+        self.register_command(
+            ["archive", "archives", "arch", "ar"],
+            lambda args: self.filter.set_regex_pattern(ARCHIVE_REGEX, re.IGNORECASE))
+
+        self.register_command(
+            ["r", "rx", "re", "regex"],
+            lambda args: self.filter.set_regex_pattern(args[0], re.IGNORECASE))
+
+        self.register_command(
+            "today",
+            lambda args: self.filter.set_time(
+                datetime.datetime.combine(
+                    datetime.date.today(), datetime.datetime.min.time()).timestamp(),
+                operator.ge))
+
+        self.register_command(
+            "len",
+            lambda args: self.filter.set_length(int(args[1]), get_compare_operator(args[0])))
+
+        self.register_command(
+            "size",
+            lambda args: self.filter.set_size(bytefmt.dehumanize(args[1]),
+                                              get_compare_operator(args[0])))
+
+        self.register_command(
+            "random",
+            lambda args: self.filter.set_random(float(args[0])))
+
+        self.register_command(
+            "pick",
+            lambda args: self.filter.set_random_pick(int(args[0])))
+
+        self.register_command(
+            ["folder", "folders", "dir", "dirs", "directories"],
+            lambda args: self.filter.set_folder())
+
+        self.register_command(
+            ["G", "Glob"],
+            lambda args: self.filter.set_pattern(args[0], case_sensitive=True),
+            help="Case-sensitive glob matching")
+
+        self.register_command(
+            ["g", "glob"],
+            lambda args: self.filter.set_pattern(args[0], case_sensitive=False),
+            help="Case-insensitive glob matching")
+
+        self.register_command(
+            ["f", "fuz", "fuzz", "fuzzy"],
+            lambda args: self.filter.set_fuzzy(args[0]),
+            help="Fuzzy match the filename")
+
+        self.register_command(
+            ["help", "h"],
+            lambda args: self.print_help())
+
+    def print_help(self):
+        for aliases, func, help in self.reg_commands:
+            print("Command: {}".format(", ".join(aliases)))
+            print("Help:    {}".format(help or ""))
+            print()
+
+    def register_command(self,
+                         aliases: Union[str, List[str]],
+                         func: Callable,
+                         help: Union[str, None]=None) -> None:
+        if isinstance(aliases, list):
+            for name in aliases:
+                assert name not in self.commands
+                self.commands[name] = (aliases, func, help)
+                self.reg_commands.append((aliases, func, help))
+        else:
+            self.commands[aliases] = ([aliases], func, help)
+            self.reg_commands.append(([aliases], func, help))
 
     def parse(self, pattern):
         if pattern == "":
             self.filter.set_none()
         elif pattern.startswith("/"):
-            command, *arg = pattern[1:].split(" ", 1)
-            arg = arg[0] if arg else None
-            arg = arg.strip()
-
-            if command in ["video", "videos", "vid", "vids"]:
-                self.filter.set_regex_pattern(VIDEO_REGEX, re.IGNORECASE)
-            elif command in ["image", "images", "img", "imgs"]:
-                self.filter.set_regex_pattern(IMAGE_REGEX, re.IGNORECASE)
-            elif command in ["archive", "archives", "arch", "ar"]:
-                self.filter.set_regex_pattern(ARCHIVE_REGEX, re.IGNORECASE)
-            elif command in ["r", "rx", "re", "regex"]:
-                self.filter.set_regex_pattern(arg, re.IGNORECASE)
-            elif command == "today":
-                self.filter.set_time(datetime.datetime.combine(
-                    datetime.date.today(), datetime.datetime.min.time()).timestamp(),
-                    operator.ge)
-            elif command.startswith("len"):
-                m = re.match(r"len(<|>|<=|>=|=|==)(\d+.*)", command)
-                if m is None:
-                    self.window.show_info("invalid filter command")
-                else:
-                    self.filter.set_length(int(m.group(2)), get_compare_operator(m.group(1)))
-            elif command.startswith("size"):
-                m = re.match(r"size(<|>|<=|>=|=|==)(\d+.*)", command)
-                if m is None:
-                    self.window.show_info("invalid filter command")
-                else:
-                    self.filter.set_size(bytefmt.dehumanize(m.group(2)),
-                                         get_compare_operator(m.group(1)))
-            elif command.startswith("random"):
-                m = re.match(r"random(\d*\.\d+)", command)
-                if m is None:
-                    self.window.show_info("invalid filter command")
-                else:
-                    self.filter.set_random(float(m.group(1)))
-            elif command.startswith("pick"):
-                m = re.match(r"pick(\d+)", command)
-                if m is None:
-                    self.window.show_info("invalid filter command")
-                else:
-                    self.filter.set_random_pick(int(m.group(1)))
-            elif command in ["folder", "folders", "dir", "dirs", "directories"]:
-                self.filter.set_folder()
-            elif command == "G":
-                self.filter.set_pattern(arg, case_sensitive=True)
-            elif command == "g":
-                self.filter.set_pattern(arg, case_sensitive=False)
-            elif command in ["f", "fuz", "fuzz", "fuzzy"]:
-                self.filter.set_fuzzy(arg)
-            else:
+            command, *rest = pattern[1:].split(" ", 1)
+            args = self.grammar.parseString(rest[0], parseAll=True) if rest else []
+            print("Args:", args)
+            cmd = self.commands.get(command, None)
+            if cmd is None:
                 print("Controller.set_filter: unknown command: {}".format(command))
+            else:
+                _, func, _ = cmd
+                func(args)
         else:
             self.filter.set_pattern(pattern, case_sensitive=False)
 
