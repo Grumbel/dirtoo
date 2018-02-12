@@ -330,18 +330,12 @@ class ThumbFileItem(FileItem):
         bottom_left_text = ""
 
         if self.new:
-            painter.setOpacity(0.5)
-            # painter.setCompositionMode(QPainter.CompositionMode_Plus)
             painter.drawPixmap(QRect(2, 2, 24, 24),
                                self.thumb_view.shared_pixmaps.new)
-            painter.setOpacity(1.0)
 
         if "type" in self.fileinfo.metadata() and self.fileinfo.metadata()["type"] == "error":
-            painter.setOpacity(0.5)
-            # painter.setCompositionMode(QPainter.CompositionMode_Plus)
             painter.drawPixmap(QRect(2, 2, 24, 24),
                                self.thumb_view.shared_pixmaps.error)
-            painter.setOpacity(1.0)
 
         if 'duration' in metadata:
             hours, minutes, seconds = split_duration(metadata['duration'])
