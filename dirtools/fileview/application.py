@@ -17,8 +17,11 @@
 
 from typing import List
 
+import traceback
 import os
 import signal
+import logging
+import logging.config
 import xdg.BaseDirectory
 
 from PyQt5.QtGui import QPixmapCache
@@ -44,6 +47,15 @@ class FileViewApplication:
         self.config_file = os.path.join(self.config_dir, "config.ini")
         if not os.path.isdir(self.config_dir):
             os.makedirs(self.config_dir)
+
+        logging_config = os.path.join(self.config_dir, "logging.ini")
+        if os.path.exists(logging_config):
+            print("loading logger config from: {}".format(logging_config))
+            try:
+                logging.config.fileConfig(logging_config,
+                                          defaults=None, disable_existing_loggers=False)
+            except Exception as err:
+                print(traceback.format_exc())
 
         settings.init(self.config_file)
 
