@@ -15,8 +15,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import traceback
 import logging
+logger = logging.getLogger(__name__)
+
+import traceback
 import os
 
 from PyQt5.QtCore import Qt, QObject, QSocketNotifier, QThread, pyqtSignal
@@ -94,7 +96,7 @@ class DirectoryWatcherWorker(QObject):
     def process(self) -> None:
         fileinfos = []
 
-        logging.debug("DirectoryWatcher.process: gather directory content")
+        logger.debug("DirectoryWatcher.process: gather directory content")
         for entry in os.scandir(self.path):
             fileinfo = FileInfo.from_direntry(entry)
             fileinfos.append(fileinfo)
@@ -106,6 +108,11 @@ class DirectoryWatcherWorker(QObject):
 
     def on_inotify_event(self, ev) -> None:
         try:
+            logger.debug("inotify-event: name: '%s'  mask: %s",
+                          ev.name,
+                          ", ".join([str(x)
+                                     for x in inotify_flags.from_mask(ev.mask)]))
+
             if ev.mask & inotify_flags.CREATE:
                 self.sig_file_added.emit(FileInfo.from_filename(os.path.join(self.path, ev.name)))
             elif ev.mask & inotify_flags.DELETE:
