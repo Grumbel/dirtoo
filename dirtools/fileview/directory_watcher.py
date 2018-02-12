@@ -54,13 +54,13 @@ class INotifyQt(QObject):
     def add_watch(self, path, flags=DEFAULT_FLAGS):
         self.wd = self.inotify.add_watch(path, flags)
 
-    def _on_activated(self, fd):
+    def _on_activated(self, fd) -> None:
         assert fd == self.inotify.fd
 
         for ev in self.inotify.read():
             self.sig_event.emit(ev)
 
-    def close(self):
+    def close(self) -> None:
         del self.qnotifier
         self.inotify.close()
 
@@ -73,13 +73,13 @@ class DirectoryWatcherWorker(QObject):
     sig_error = pyqtSignal()
     sig_scandir_finished = pyqtSignal(list)
 
-    def __init__(self, path):
+    def __init__(self, path: str) -> None:
         super().__init__()
 
         self.path = path
         self._close = False
 
-    def init(self):
+    def init(self) -> None:
         self.inotify = INotifyQt(self)
         self.inotify.add_watch(self.path)
 
@@ -87,11 +87,11 @@ class DirectoryWatcherWorker(QObject):
 
         self.process()
 
-    def close(self):
+    def close(self) -> None:
         self.inotify.close()
         del self.inotify
 
-    def process(self):
+    def process(self) -> None:
         fileinfos = []
 
         logging.debug("DirectoryWatcher.process: gather directory content")
@@ -104,7 +104,7 @@ class DirectoryWatcherWorker(QObject):
 
         self.sig_scandir_finished.emit(fileinfos)
 
-    def on_inotify_event(self, ev):
+    def on_inotify_event(self, ev) -> None:
         try:
             if ev.mask & inotify_flags.CREATE:
                 self.sig_file_added.emit(FileInfo.from_filename(os.path.join(self.path, ev.name)))
@@ -147,10 +147,10 @@ class DirectoryWatcher(QObject):
         # around with sig_finished() and other stuff
         self.sig_close_requested.connect(self.worker.close, type=Qt.BlockingQueuedConnection)
 
-    def start(self):
+    def start(self) -> None:
         self.thread.start()
 
-    def close(self):
+    def close(self) -> None:
         assert self.worker._close is False
         self.worker._close = True
         self.sig_close_requested.emit()

@@ -27,7 +27,7 @@ from dirtools.fileview.filter_parser import VIDEO_EXT, IMAGE_EXT
 class FileInfo:
 
     @staticmethod
-    def from_direntry(direntry):
+    def from_direntry(direntry) -> 'FileInfo':
         logging.debug("FileInfo.from_direntry: %s/%s", direntry.path, direntry.name)
 
         fi = FileInfo()
@@ -45,7 +45,7 @@ class FileInfo:
         return fi
 
     @staticmethod
-    def from_filename(filename):
+    def from_filename(filename: str) -> 'FileInfo':
         logging.debug("FileInfo.from_filename: %s", filename)
 
         fi = FileInfo()
@@ -62,7 +62,7 @@ class FileInfo:
 
         return fi
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._abspath: Union[str, None] = None
         self._dirname: Union[str, None] = None
         self._basename: Union[str, None] = None
@@ -85,19 +85,19 @@ class FileInfo:
         self._have_access = os.access(self._abspath, os.R_OK)
 
     @property
-    def is_visible(self):
+    def is_visible(self) -> bool:
         return not self.is_hidden and not self.is_excluded
 
-    def have_access(self):
+    def have_access(self) -> bool:
         return self._have_access
 
-    def abspath(self):
+    def abspath(self) -> str:
         return self._abspath
 
-    def dirname(self):
+    def dirname(self) -> str:
         return self._dirname
 
-    def basename(self):
+    def basename(self) -> str:
         return self._basename
 
     def isdir(self):
@@ -106,10 +106,10 @@ class FileInfo:
     def is_thumbnailable(self):
         return self.is_video() or self.is_image()
 
-    def is_video(self):
+    def is_video(self) -> bool:
         return self._ext[1:] in VIDEO_EXT
 
-    def is_image(self):
+    def is_image(self) -> bool:
         return self._ext[1:] in IMAGE_EXT
 
     def stat(self):
