@@ -23,12 +23,14 @@ import stat
 
 from dirtools.fileview.filter_parser import VIDEO_EXT, IMAGE_EXT
 
+logger = logging.getLogger(__name__)
+
 
 class FileInfo:
 
     @staticmethod
     def from_direntry(direntry) -> 'FileInfo':
-        logging.debug("FileInfo.from_direntry: %s/%s", direntry.path, direntry.name)
+        logger.debug("FileInfo.from_direntry: %s/%s", direntry.path, direntry.name)
 
         fi = FileInfo()
         fi._abspath = os.path.abspath(direntry.path)
@@ -46,7 +48,7 @@ class FileInfo:
 
     @staticmethod
     def from_filename(filename: str) -> 'FileInfo':
-        logging.debug("FileInfo.from_filename: %s", filename)
+        logger.debug("FileInfo.from_filename: %s", filename)
 
         fi = FileInfo()
         fi._abspath = os.path.abspath(filename)
@@ -106,10 +108,10 @@ class FileInfo:
     def is_thumbnailable(self):
         return self.is_video() or self.is_image()
 
-    def is_video(self) -> bool:
+    def is_video(self):
         return self._ext[1:] in VIDEO_EXT
 
-    def is_image(self) -> bool:
+    def is_image(self):
         return self._ext[1:] in IMAGE_EXT
 
     def stat(self):

@@ -15,13 +15,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import logging
 import os
 import sys
 import argparse
 
 from dirtools.fileview.application import FileViewApplication
 from dirtools.util import expand_directories
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def parse_args(args):

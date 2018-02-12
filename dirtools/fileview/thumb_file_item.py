@@ -31,6 +31,8 @@ import bytefmt
 from dirtools.fileview.file_item import FileItem
 from dirtools.mediainfo import split_duration
 
+logger = logging.getLogger(__name__)
+
 
 def make_scaled_rect(sw, sh, tw, th):
     tratio = tw / th
@@ -126,7 +128,7 @@ class Thumbnail:
 class ThumbFileItem(FileItem):
 
     def __init__(self, fileinfo, controller, thumb_view):
-        logging.debug("ThumbFileItem.__init__: %s", fileinfo.abspath())
+        logger.debug("ThumbFileItem.__init__: %s", fileinfo.abspath())
         super().__init__(fileinfo, controller)
         self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
 
@@ -171,7 +173,7 @@ class ThumbFileItem(FileItem):
             thumbnail.request()
 
     def paint(self, painter, option, widget):
-        logging.debug("ThumbFileItem.paint: %s", self.fileinfo.abspath())
+        logger.debug("ThumbFileItem.paint: %s", self.fileinfo.abspath())
 
         self.prepare()
 
@@ -282,7 +284,7 @@ class ThumbFileItem(FileItem):
                              text)
 
     def paint_thumbnail(self, painter):
-        logging.debug("ThumbFileItem.paint_thumbnail: %s", self.fileinfo.abspath())
+        logger.debug("ThumbFileItem.paint_thumbnail: %s", self.fileinfo.abspath())
 
         if self.thumb_view.column_style:
             self.paint_icon(painter, self.icon)
@@ -426,7 +428,7 @@ class ThumbFileItem(FileItem):
         icon.paint(painter, rect)
 
     def make_icon(self):
-        logging.debug("ThumbFileItem.make_pixmap: %s", self.fileinfo.abspath())
+        logger.debug("ThumbFileItem.make_pixmap: %s", self.fileinfo.abspath())
         icon = self.thumb_view.icon_from_fileinfo(self.fileinfo)
         return icon
 

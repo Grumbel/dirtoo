@@ -22,6 +22,8 @@ from typing import List
 from PyQt5.QtCore import QObject, pyqtSignal
 from dirtools.fileview.file_info import FileInfo
 
+logger = logging.getLogger(__name__)
+
 
 class FileCollection(QObject):
 
@@ -92,17 +94,17 @@ class FileCollection(QObject):
         self.sig_files_filtered.emit()
 
     def sort(self, key, reverse=False):
-        logging.debug("FileCollection.sort")
+        logger.debug("FileCollection.sort")
         self.fileinfos = sorted(self.fileinfos, key=key)
         if reverse:
             self.fileinfos = list(reversed(self.fileinfos))
-        logging.debug("FileCollection.sort:done")
+        logger.debug("FileCollection.sort:done")
         self.sig_files_reordered.emit()
 
     def shuffle(self):
-        logging.debug("FileCollection.sort")
+        logger.debug("FileCollection.sort")
         random.shuffle(self.fileinfos)
-        logging.debug("FileCollection.sort:done")
+        logger.debug("FileCollection.sort:done")
         self.sig_files_reordered.emit()
 
     def save_as(self, filename):

@@ -24,12 +24,14 @@ import os
 import urllib.parse
 import xdg.BaseDirectory
 
+logger = logging.getLogger(__name__)
+
 
 class MetaDataCache:
 
     def __init__(self):
         self.directory = os.path.join(xdg.BaseDirectory.xdg_cache_home, "dt-fileview", "metadata")
-        logging.info("MetaDataCache.__init__: %s", self.directory)
+        logger.info("MetaDataCache.__init__: %s", self.directory)
         try:
             os.makedirs(self.directory)
         except FileExistsError:
@@ -42,7 +44,7 @@ class MetaDataCache:
         return filename
 
     def retrieve_metadata(self, abspath: str) -> Any:
-        logging.info("MetaDataCache.retrieve_metadata: %s", abspath)
+        logger.info("MetaDataCache.retrieve_metadata: %s", abspath)
 
         json_filename = self._make_filename(abspath)
 
@@ -57,7 +59,7 @@ class MetaDataCache:
             return None
 
     def store_metadata(self, abspath: str, metadata: Dict) -> None:
-        logging.info("MetaDataCache.store_metadata: %s", abspath)
+        logger.info("MetaDataCache.store_metadata: %s", abspath)
 
         json_filename = self._make_filename(abspath)
 
@@ -65,7 +67,7 @@ class MetaDataCache:
             json.dump(metadata, fout)
 
     def clear_metadata(self, abspath: str):
-        logging.info("MetaDataCache.clear_metadata: %s", abspath)
+        logger.info("MetaDataCache.clear_metadata: %s", abspath)
 
         json_filename = self._make_filename(abspath)
         if os.path.exists(json_filename):

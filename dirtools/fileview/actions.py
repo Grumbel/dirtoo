@@ -28,6 +28,8 @@ from PyQt5.QtWidgets import (
 from dirtools.fileview.about_dialog import AboutDialog
 from dirtools.fileview.file_info import FileInfo
 
+logger = logging.getLogger(__name__)
+
 
 class Actions(QObject):
 

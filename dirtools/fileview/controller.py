@@ -34,6 +34,8 @@ from dirtools.fileview.directory_watcher import DirectoryWatcher
 from dirtools.fileview.filter_parser import FilterParser
 from dirtools.fileview.settings import settings
 
+logger = logging.getLogger(__name__)
+
 
 class Controller(QObject):
 
@@ -198,11 +200,11 @@ class Controller(QObject):
         self.apply_filter()
 
     def apply_sort(self):
-        logging.debug("Controller.apply_sort")
+        logger.debug("Controller.apply_sort")
         self.sorter.apply(self.file_collection)
 
     def apply_filter(self):
-        logging.debug("Controller.apply_filter")
+        logger.debug("Controller.apply_filter")
         self.file_collection.filter(self.filter)
 
         fileinfos = self.file_collection.get_fileinfos()
@@ -240,14 +242,14 @@ class Controller(QObject):
 
         if not fileinfo.isdir():
             argv = ["xdg-open", fileinfo.abspath()]
-            logging.info("Controller.on_click: launching: %s", argv)
+            logger.info("Controller.on_click: launching: %s", argv)
             subprocess.Popen(argv)
         else:
             if self.location is None or new_window:
-                logging.info("Controller.on_click: app.show_location: %s", fileinfo)
+                logger.info("Controller.on_click: app.show_location: %s", fileinfo)
                 self.app.show_location(fileinfo.abspath())
             else:
-                logging.info("Controller.on_click: self.set_location: %s", fileinfo)
+                logger.info("Controller.on_click: self.set_location: %s", fileinfo)
                 self.set_location(fileinfo.abspath())
 
     def show_current_filename(self, filename):
@@ -265,10 +267,10 @@ class Controller(QObject):
         self.app.metadata_collector.request_metadata(fileinfo.abspath())
 
     def receive_metadata(self, filename: str, metadata: Dict[str, Any]):
-        logging.debug("Controller.receive_metadata: %s %s", filename, metadata)
+        logger.debug("Controller.receive_metadata: %s %s", filename, metadata)
         fileinfo = self.file_collection.get_fileinfo(filename)
         if fileinfo is None:
-            logging.error("Controller.receive_metadata: not found fileinfo for %s", filename)
+            logger.error("Controller.receive_metadata: not found fileinfo for %s", filename)
         else:
             fileinfo.metadata().update(metadata)
             self.file_collection.change_file(fileinfo)

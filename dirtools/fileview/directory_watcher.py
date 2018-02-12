@@ -16,8 +16,6 @@
 
 
 import logging
-logger = logging.getLogger(__name__)
-
 import traceback
 import os
 
@@ -27,6 +25,8 @@ from inotify_simple import INotify, flags as inotify_flags
 import inotify_simple
 
 from dirtools.fileview.file_info import FileInfo
+
+logger = logging.getLogger(__name__)
 
 
 DEFAULT_FLAGS = (
@@ -109,9 +109,9 @@ class DirectoryWatcherWorker(QObject):
     def on_inotify_event(self, ev) -> None:
         try:
             logger.debug("inotify-event: name: '%s'  mask: %s",
-                          ev.name,
-                          ", ".join([str(x)
-                                     for x in inotify_flags.from_mask(ev.mask)]))
+                         ev.name,
+                         ", ".join([str(x)
+                                    for x in inotify_flags.from_mask(ev.mask)]))
 
             if ev.mask & inotify_flags.CREATE:
                 self.sig_file_added.emit(FileInfo.from_filename(os.path.join(self.path, ev.name)))

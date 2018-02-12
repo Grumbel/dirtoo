@@ -35,6 +35,8 @@ from dirtools.fileview.mime_database import MimeDatabase
 from dirtools.fileview.metadata_collector import MetaDataCollector
 from dirtools.fileview.settings import settings
 
+logger = logging.getLogger(__name__)
+
 
 class FileViewApplication:
 

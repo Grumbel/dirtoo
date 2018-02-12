@@ -30,6 +30,8 @@ from dirtools.mediainfo import MediaInfo
 from dirtools.archiveinfo import ArchiveInfo
 from dirtools.fileview.metadata_cache import MetaDataCache
 
+logger = logging.getLogger(__name__)
+
 
 class MetaDataCollectorWorker(QObject):
 
@@ -67,7 +69,7 @@ class MetaDataCollectorWorker(QObject):
             self.sig_metadata_ready.emit(filename, metadata)
 
     def _create_metadata(self, filename: str):
-        logging.debug("MetaDataCollectorWorker.create_metadata: %s", filename)
+        logger.debug("MetaDataCollectorWorker.create_metadata: %s", filename)
         mimetype = self.mimedb.mimeTypeForFile(filename)
 
         metadata: Dict[str, Any] = {}
@@ -105,9 +107,9 @@ class MetaDataCollectorWorker(QObject):
             entries = os.listdir(filename)
             metadata['file_count'] = len(entries)
         else:
-            logging.debug("MetaDataCollectorWorker.on_metadata_requested: "
-                          "unhandled mime-type: %s - %s",
-                          filename, mimetype.name())
+            logger.debug("MetaDataCollectorWorker.on_metadata_requested: "
+                         "unhandled mime-type: %s - %s",
+                         filename, mimetype.name())
 
         return metadata
 

@@ -31,6 +31,8 @@ from dirtools.fileview.thumb_file_item import ThumbFileItem
 from dirtools.fileview.tile_layouter import TileLayouter, LayoutStyle
 from dirtools.fileview.settings import settings
 
+logger = logging.getLogger(__name__)
+
 
 class SharedIcons:
 
@@ -198,7 +200,7 @@ class ThumbView(QGraphicsView):
 
     def set_file_collection(self, file_collection):
         assert file_collection != self.file_collection
-        logging.debug("ThumbView.set_file_collection")
+        logger.debug("ThumbView.set_file_collection")
         self.file_collection = file_collection
         self.file_collection.sig_files_set.connect(self.on_file_collection_set)
         self.file_collection.sig_files_reordered.connect(self.on_file_collection_reordered)
@@ -234,19 +236,19 @@ class ThumbView(QGraphicsView):
             item.update()
 
     def on_file_collection_reordered(self):
-        logging.debug("ThumbView.on_file_collection_reordered")
+        logger.debug("ThumbView.on_file_collection_reordered")
         fi2it = {item.fileinfo.abspath(): item for item in self.items}
         fileinfos = self.file_collection.get_fileinfos()
         self.items = [fi2it[fileinfo.abspath()] for fileinfo in fileinfos if fileinfo.abspath() in fi2it]
         self.layout_items()
 
     def on_file_collection_filtered(self):
-        logging.debug("ThumbView.on_file_collection_filtered")
+        logger.debug("ThumbView.on_file_collection_filtered")
         self.style_items()
         self.layout_items()
 
     def on_file_collection_set(self):
-        logging.debug("ThumbView.on_file_collection_set")
+        logger.debug("ThumbView.on_file_collection_set")
         fileinfos = self.file_collection.get_fileinfos()
 
         self.items.clear()
@@ -264,7 +266,7 @@ class ThumbView(QGraphicsView):
         self.layout_items()
 
     def resizeEvent(self, ev):
-        logging.debug("ThumbView.resizeEvent: %s", ev)
+        logger.debug("ThumbView.resizeEvent: %s", ev)
         super().resizeEvent(ev)
 
         if settings.value("globals/resize_delay", True):
@@ -304,7 +306,7 @@ class ThumbView(QGraphicsView):
             self.style_item(item)
 
     def layout_items(self, force=True):
-        logging.debug("ThumbView.layout_items")
+        logger.debug("ThumbView.layout_items")
 
         self.setUpdatesEnabled(False)
         # old_item_index_method = self.scene.itemIndexMethod()
@@ -321,7 +323,7 @@ class ThumbView(QGraphicsView):
         # self.scene.setItemIndexMethod(old_item_index_method)
         self.setUpdatesEnabled(True)
 
-        logging.debug("ThumbView.layout_items: done")
+        logger.debug("ThumbView.layout_items: done")
 
     def zoom_in(self):
         self.zoom_index += 1

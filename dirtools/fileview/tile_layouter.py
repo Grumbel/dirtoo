@@ -20,6 +20,8 @@ from enum import Enum
 
 from PyQt5.QtCore import QRectF
 
+logger = logging.getLogger(__name__)
+
 
 class LayoutStyle(Enum):
 
@@ -131,13 +133,13 @@ class TileLayouter:
 
     def layout(self, items, force):
         if not self.needs_relayout and not force:
-            logging.debug("TileLayouter.layout: skipping relayout")
+            logger.debug("TileLayouter.layout: skipping relayout")
             return
 
         if not items:
             return
 
-        logging.debug("TileLayouter.layout: layouting")
+        logger.debug("TileLayouter.layout: layouting")
         num_items = len(items)
 
         self.rows = max((num_items + self.columns - 1) // self.columns,
