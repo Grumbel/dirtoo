@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 import logging
 import os
@@ -52,6 +52,7 @@ class Controller(QObject):
         self.history_index = 0
 
         self.directory_watcher = None
+        self.file_stream: Optional['FileStream'] = None
 
         self.window.file_view.set_file_collection(self.file_collection)
         self.window.thumb_view.set_file_collection(self.file_collection)
@@ -198,6 +199,16 @@ class Controller(QObject):
         self.file_collection.set_files(files)
         self.apply_sort()
         self.apply_filter()
+
+    def set_file_stream(self, stream: 'FileStream', location: Optional[str]=None):
+        if location is None:
+            self.window.set_file_list()
+        self.location = location
+        self.file_stream = stream
+        self.file_stream.sig_file_added.connect(self.file_collection.add_fileinfo)
+        # FIXME: signal that the stream is done
+        # self.file_stream.sig_end_of_stream.connect()
+        self.file_stream.start()
 
     def apply_sort(self):
         logger.debug("Controller.apply_sort")

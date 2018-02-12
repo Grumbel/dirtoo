@@ -101,6 +101,12 @@ class FileViewApplication:
         controller.window.show()
         self.controllers.append(controller)
 
+    def show_file_stream(self, stream):
+        controller = Controller(self)
+        controller.set_file_stream(stream)
+        controller.window.show()
+        self.controllers.append(controller)
+
     def show_location(self, path):
         controller = Controller(self)
         controller.set_location(path)
