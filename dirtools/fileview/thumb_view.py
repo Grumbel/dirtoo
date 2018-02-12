@@ -54,6 +54,7 @@ class SharedPixmaps:
         self.loading = QPixmap(resource_filename("dirtools", "fileview/icons/noun_409399_cc.png"))
         self.error = QPixmap(resource_filename("dirtools", "fileview/icons/noun_175057_cc.png"))
         self.locked = QPixmap(resource_filename("dirtools", "fileview/icons/noun_236873_cc.png"))
+        self.new = QPixmap(resource_filename("dirtools", "fileview/icons/noun_258297_cc.png"))
 
 
 class ThumbView(QGraphicsView):
@@ -209,20 +210,24 @@ class ThumbView(QGraphicsView):
         self.file_collection.sig_file_added.connect(self.on_file_added)
         self.file_collection.sig_file_removed.connect(self.on_file_removed)
         self.file_collection.sig_file_changed.connect(self.on_file_changed)
+        self.file_collection.sig_file_updated.connect(self.on_file_updated)
 
         self.on_file_collection_set()
 
     def on_file_added(self, fileinfo: FileInfo):
-        thumb = ThumbFileItem(fileinfo, self.controller, self)
-        self.abspath2item[fileinfo.abspath()] = thumb
-        self.scene.addItem(thumb)
-        self.items.append(thumb)
+        logger.debug("ThumbView.on_file_added: %s", fileinfo)
+        item = ThumbFileItem(fileinfo, self.controller, self)
+        item.new = True
+        self.abspath2item[fileinfo.abspath()] = item
+        self.scene.addItem(item)
+        self.items.append(item)
 
-        self.style_item(thumb)
-        self.layouter.append_item(thumb)
+        self.style_item(item)
+        self.layouter.append_item(item)
         self.setSceneRect(self.layouter.get_bounding_rect())
 
     def on_file_removed(self, abspath):
+        logger.debug("ThumbView.on_file_added: %s", abspath)
         item = self.abspath2item.get(abspath, None)
         if item is not None:
             self.scene.removeItem(item)
@@ -265,10 +270,10 @@ class ThumbView(QGraphicsView):
         self.scene.clear()
 
         for fileinfo in fileinfos:
-            thumb = ThumbFileItem(fileinfo, self.controller, self)
-            self.abspath2item[fileinfo.abspath()] = thumb
-            self.scene.addItem(thumb)
-            self.items.append(thumb)
+            item = ThumbFileItem(fileinfo, self.controller, self)
+            self.abspath2item[fileinfo.abspath()] = item
+            self.scene.addItem(item)
+            self.items.append(item)
 
         self.style_items()
         self.layout_items()

@@ -134,6 +134,7 @@ class ThumbFileItem(FileItem):
 
         self.thumb_view = thumb_view
 
+        self.new = False
         self.hovering: bool = False
 
         self.icon = self.make_icon()
@@ -327,6 +328,13 @@ class ThumbFileItem(FileItem):
         top_left_text = ""
         top_right_text = ""
         bottom_left_text = ""
+
+        if self.new:
+            painter.setOpacity(0.5)
+            # painter.setCompositionMode(QPainter.CompositionMode_Plus)
+            painter.drawPixmap(QRect(2, 2, 24, 24),
+                               self.thumb_view.shared_pixmaps.new)
+            painter.setOpacity(1.0)
 
         if "type" in self.fileinfo.metadata() and self.fileinfo.metadata()["type"] == "error":
             painter.setOpacity(0.5)
