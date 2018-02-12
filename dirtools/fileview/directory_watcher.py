@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import traceback
 import logging
 import os
 
@@ -118,13 +119,14 @@ class DirectoryWatcherWorker(QObject):
             elif ev.mask & inotify_flags.MOVED_FROM:
                 self.sig_file_removed.emit(os.path.join(self.path, ev.name))
             elif ev.mask & inotify_flags.MOVED_TO:
-                self.sig_file_added.emit(FileInfo(os.path.join(self.path, ev.name)))
+                self.sig_file_added.emit(FileInfo.from_filename(os.path.join(self.path, ev.name)))
             else:
                 # unhandled event
                 print("ERROR: Unhandlade flags:")
                 for flag in inotify_flags.from_mask(ev.mask):
                     print('    ' + str(flag))
         except Exception as err:
+            print(traceback.format_exc())
             print("DirectoryWatcher:", err)
 
 
