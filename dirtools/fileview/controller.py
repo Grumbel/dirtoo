@@ -273,7 +273,7 @@ class Controller(QObject):
             logger.error("Controller.receive_metadata: not found fileinfo for %s", filename)
         else:
             fileinfo.metadata().update(metadata)
-            self.file_collection.change_file(fileinfo)
+            self.file_collection.update_file(fileinfo)
 
     def request_thumbnail(self, fileinfo, flavor):
         self.app.thumbnailer.request_thumbnail(fileinfo.abspath(), flavor,

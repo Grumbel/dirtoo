@@ -27,10 +27,18 @@ logger = logging.getLogger(__name__)
 
 class FileCollection(QObject):
 
-    # A single file entry has been added or removed
+    # A new file entry has been added
     sig_file_added = pyqtSignal(FileInfo)
+
+    # An existing file entry has been removed
     sig_file_removed = pyqtSignal(str)
+
+    # A file changed on disk
     sig_file_changed = pyqtSignal(FileInfo)
+
+    # New information about a file has becomes available (thumbnail,
+    # metadata, etc.)
+    sig_file_updated = pyqtSignal(FileInfo)
 
     # The file list has changed completely and needs a reload from scratch
     sig_files_set = pyqtSignal()
@@ -50,32 +58,47 @@ class FileCollection(QObject):
             self.fileinfos = [FileInfo.from_filename(f) for f in files]
 
     def clear(self):
+        logger.debug("FileCollection.clear")
         self.fileinfos = []
         self.sig_files_set.emit()
 
     def set_files(self, files):
+        logger.debug("FileCollection.set_files")
         self.fileinfos = [FileInfo.from_filename(f) for f in files]
         self.sig_files_set.emit()
 
     def set_fileinfos(self, fileinfos):
+        logger.debug("FileCollection.set_fileinfos")
         self.fileinfos = fileinfos
         self.sig_files_set.emit()
 
     def add_fileinfo(self, fi: FileInfo):
+        logger.debug("FileCollection.add_fileinfos: %s", fi)
         self.fileinfos.append(fi)
         self.sig_file_added.emit(fi)
 
     def add_file(self, filename: str):
+        logger.debug("FileCollection.add_file: %s", filename)
         fi = FileInfo.from_filename(filename)
         self.fileinfos.append(fi)
         self.sig_file_added.emit(fi)
 
     def remove_file(self, filename: str):
+        logger.debug("FileCollection.remove_file: %s", filename)
         self.fileinfos = [fi for fi in self.fileinfos if fi.abspath == filename]
         self.sig_file_removed.emit(filename)
 
     def change_file(self, fileinfo):
+        logger.debug("FileCollection.change_file: %s", fileinfo)
+        # We assume here that the supplied FileInfo is identical to
+        # one already in our storage
         self.sig_file_changed.emit(fileinfo)
+
+    def update_file(self, fileinfo):
+        logger.debug("FileCollection.change_file: %s", fileinfo)
+        # We assume here that the supplied FileInfo is identical to
+        # one already in our storage
+        self.sig_file_updated.emit(fileinfo)
 
     def get_fileinfos(self):
         return self.fileinfos
