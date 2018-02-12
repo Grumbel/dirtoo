@@ -47,15 +47,15 @@ class Actions(QObject):
         self.save_as.triggered.connect(self.controller.save_as)
 
         def on_debug(enabled):
-            logger = logging.getLogger()
             if enabled:
-                logger.setLevel(logging.DEBUG)
+                logging.getLogger().setLevel(logging.DEBUG)
             else:
-                logger.setLevel(logging.ERROR)
+                logging.getLogger().setLevel(logging.ERROR)
 
         self.debug = QAction(QIcon.fromTheme('media-record'), '&Debug', self, checkable=True)
         self.debug.setShortcut('Ctrl+Q')
         self.debug.setStatusTip('Debug application')
+        self.debug.setChecked(logging.getLogger().getEffectiveLevel() == logging.DEBUG)
         self.debug.triggered.connect(lambda: on_debug(self.debug.isChecked()))
 
         self.exit = QAction(QIcon.fromTheme('exit'), '&Exit', self)
