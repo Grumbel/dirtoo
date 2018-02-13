@@ -44,51 +44,28 @@ def parse_args(args):
     return parser.parse_args(args)
 
 
-def get_file_list(args):
-    if args.null:
-        return filter(bool, sys.stdin.read().split('\0'))
-    elif args.FILE == ["-"]:
-        return sys.stdin.read().splitlines()
-    elif args.FILE == []:
-        if args.empty:
-            return []
-        else:
-            return ["."]
-    else:
-        return args.FILE
-
-
-def get_file_stream(args):
-    if args.FILE == ["-"]:
-        if args.null:
-            return FileStream(sys.stdin, "\0")
-        else:
-            return FileStream(sys.stdin, "\n")
-    else:
-        return None
-
-
 def main(argv):
     args = parse_args(argv[1:])
 
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
 
-    # files = get_file_list(args)
-    stream = get_file_stream(args)
     app = FileViewApplication()
 
-    if stream is None:
+    if args.FILE == []:
+        app.show_location(os.getcwd())
+    elif args.FILE == ["-"]:
+        if args.null:
+            app.show_file_stream(FileStream(sys.stdin, "\0"))
+        else:
+            app.show_file_stream(FileStream(sys.stdin, "\n"))
+    elif len(args.FILE) == 1 and os.path.isdir(args.FILE[0]):
         app.show_location(args.FILE[0])
+    elif args.recursive:
+        files = expand_directories(args.FILE, args.recursive)
+        app.show_files(files)
     else:
-        app.show_file_stream(stream)
-
-    # if len(files) == 1 and os.path.isdir(files[0]):
-    #     app.show_location(files[0])
-    # else:
-    #     if args.recursive:
-    #         files = expand_directories(files, args.recursive)
-    #     app.show_files(files)
+        app.show_files(args.FILE)
 
     sys.exit(app.run())
 
