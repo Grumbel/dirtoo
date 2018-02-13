@@ -33,6 +33,7 @@ from dirtools.fileview.sorter import Sorter
 from dirtools.fileview.directory_watcher import DirectoryWatcher
 from dirtools.fileview.filter_parser import FilterParser
 from dirtools.fileview.settings import settings
+from dirtools.fileview.filelist_stream import FileListStream
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ class Controller(QObject):
     def __init__(self, app):
         super().__init__()
         self.app = app
-        self.location = None
+        self.location: Optional[str] = None
         self.file_collection = FileCollection()
         self.actions = Actions(self)
         self.window = FileViewWindow(self)
@@ -52,7 +53,7 @@ class Controller(QObject):
         self.history_index = 0
 
         self.directory_watcher = None
-        self.file_stream: Optional['FileStream'] = None
+        self.filelist_stream: Optional[FileListStream] = None
 
         self.window.file_view.set_file_collection(self.file_collection)
         self.window.thumb_view.set_file_collection(self.file_collection)
@@ -200,15 +201,15 @@ class Controller(QObject):
         self.apply_sort()
         self.apply_filter()
 
-    def set_file_stream(self, stream: 'FileStream', location: Optional[str]=None):
+    def set_filelist_stream(self, stream: FileListStream, location: Optional[str]=None):
         if location is None:
             self.window.set_file_list()
         self.location = location
-        self.file_stream = stream
-        self.file_stream.sig_file_added.connect(self.file_collection.add_fileinfo)
+        self.filelist_stream = stream
+        self.filelist_stream.sig_file_added.connect(self.file_collection.add_fileinfo)
         # FIXME: signal that the stream is done
-        # self.file_stream.sig_end_of_stream.connect()
-        self.file_stream.start()
+        # self.filelist_stream.sig_end_of_stream.connect()
+        self.filelist_stream.start()
 
     def apply_sort(self):
         logger.debug("Controller.apply_sort")

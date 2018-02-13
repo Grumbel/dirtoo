@@ -54,9 +54,9 @@ def non_blocking_readline(fp, linesep):
                     yield None
 
 
-class FileStream(QObject):
-    """FileStream represents a stream of filenames read from stdin or from
-    other sources that is visualized in the FileView.
+class FileListStream(QObject):
+    """FileListStream represents a stream of filenames read from stdin or
+    from other sources that is visualized in the FileView.
     """
 
     sig_file_added = pyqtSignal(FileInfo)

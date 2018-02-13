@@ -20,7 +20,7 @@ import sys
 import argparse
 
 from dirtools.fileview.application import FileViewApplication
-from dirtools.fileview.file_stream import FileStream
+from dirtools.fileview.filelist_stream import FileListStream
 from dirtools.util import expand_directories
 
 import logging
@@ -56,9 +56,9 @@ def main(argv):
         app.show_location(os.getcwd())
     elif args.FILE == ["-"]:
         if args.null:
-            app.show_file_stream(FileStream(sys.stdin, "\0"))
+            app.show_filelist_stream(FileListStream(sys.stdin, "\0"))
         else:
-            app.show_file_stream(FileStream(sys.stdin, "\n"))
+            app.show_filelist_stream(FileListStream(sys.stdin, "\n"))
     elif len(args.FILE) == 1 and os.path.isdir(args.FILE[0]):
         app.show_location(args.FILE[0])
     elif args.recursive:

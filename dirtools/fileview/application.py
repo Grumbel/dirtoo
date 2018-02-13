@@ -101,9 +101,9 @@ class FileViewApplication:
         controller.window.show()
         self.controllers.append(controller)
 
-    def show_file_stream(self, stream):
+    def show_filelist_stream(self, stream):
         controller = Controller(self)
-        controller.set_file_stream(stream)
+        controller.set_filelist_stream(stream)
         controller.window.show()
         self.controllers.append(controller)
 
