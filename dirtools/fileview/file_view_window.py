@@ -17,7 +17,7 @@
 
 from pkg_resources import resource_filename
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QKeySequence, QIcon, QCursor
+from PyQt5.QtGui import QKeySequence, QIcon, QCursor, QMovie
 from PyQt5.QtWidgets import (
     QMenu,
     QHBoxLayout,
@@ -337,6 +337,28 @@ class FileViewWindow(QMainWindow):
         self.toolbar.addAction(self.actions.crop_thumbnails)
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.actions.debug)
+
+        # Spacer to force right alignment for all following widget
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.toolbar.addWidget(spacer)
+
+        # Loading icon
+        self.loading_movie = QMovie(resource_filename("dirtools", "fileview/icons/gears.gif"))
+        self.loading_label = QLabel()
+        self.toolbar.addWidget(self.loading_label)
+
+    def show_loading(self):
+        self.show_info("Loading...")
+        self.loading_label.setMovie(self.loading_movie)
+        self.loading_movie.start()
+        self.loading_label.show()
+
+    def hide_loading(self):
+        self.show_info("")
+        self.loading_movie.stop()
+        self.loading_label.setMovie(None)
+        self.loading_label.setVisible(False)
 
     def zoom_in(self):
         self.thumb_view.zoom_in()

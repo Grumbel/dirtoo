@@ -170,7 +170,7 @@ class Controller(QObject):
             self.actions.back.setEnabled(True)
             self.actions.forward.setEnabled(False)
 
-        self.window.show_info("Loading...")
+        self.window.show_loading()
         self.file_collection.clear()
 
         if self.directory_watcher is not None:
@@ -189,6 +189,7 @@ class Controller(QObject):
         # self.set_files(files, self.location)
 
     def on_scandir_finished(self, fileinfos):
+        self.window.hide_loading()
         self.file_collection.set_fileinfos(fileinfos)
         self.apply_sort()
         self.apply_filter()
@@ -205,10 +206,12 @@ class Controller(QObject):
         if location is None:
             self.window.set_file_list()
         self.location = location
+
+        self.window.show_loading()
+
         self.filelist_stream = stream
         self.filelist_stream.sig_file_added.connect(self.file_collection.add_fileinfo)
-        # FIXME: signal that the stream is done
-        # self.filelist_stream.sig_end_of_stream.connect()
+        self.filelist_stream.sig_end_of_stream.connect(lambda: self.window.hide_loading())
         self.filelist_stream.start()
 
     def apply_sort(self):
