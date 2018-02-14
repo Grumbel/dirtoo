@@ -100,6 +100,10 @@ class ThumbView(QGraphicsView):
 
         self.setDragMode(QGraphicsView.RubberBandDrag)
 
+    def prepare(self):
+        for item in self.items:
+            item.prepare()
+
     def on_selection_changed(self):
         count = len(self.scene.selectedItems())
         print("{} files selected".format(count))

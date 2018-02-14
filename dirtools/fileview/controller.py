@@ -300,6 +300,9 @@ class Controller(QObject):
         self.app.thumbnailer.request_thumbnail(fileinfo.abspath(), flavor,
                                                self.receive_thumbnail)
 
+    def prepare(self):
+        self.window.thumb_view.prepare()
+
     def reload(self):
         self.set_location(self.location)
 

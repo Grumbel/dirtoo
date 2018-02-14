@@ -119,6 +119,11 @@ class Actions(QObject):
         self.reload_thumbnails.setStatusTip('Reload Thumbnails')
         self.reload_thumbnails.triggered.connect(self.controller.reload_thumbnails)
 
+        self.prepare = QAction(QIcon.fromTheme('media-playback-start'), 'Load Thumbnails', self)
+        self.prepare.setShortcut('F6')
+        self.prepare.setStatusTip('Load Thumbnails')
+        self.prepare.triggered.connect(self.controller.prepare)
+
         self.view_detail_view = QAction("Detail View", self, checkable=True)
         self.view_icon_view = QAction("Icon View", self, checkable=True)
         self.view_small_icon_view = QAction("Small Icon View", self, checkable=True)
