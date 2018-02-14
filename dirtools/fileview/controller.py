@@ -163,6 +163,8 @@ class Controller(QObject):
         self.set_location(home)
 
     def set_location(self, location, track_history=True):
+        self.app.location_history.append(location)
+
         if track_history:
             self.history = self.history[0:self.history_index + 1]
             self.history_index = len(self.history)
@@ -258,6 +260,8 @@ class Controller(QObject):
         self.window.thumb_view.set_cursor_to_fileinfo(fileinfo)
 
         if not fileinfo.isdir():
+            self.app.file_history.append(fileinfo.abspath())
+
             argv = ["xdg-open", fileinfo.abspath()]
             logger.info("Controller.on_click: launching: %s", argv)
             subprocess.Popen(argv)

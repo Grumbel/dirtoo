@@ -33,6 +33,7 @@ from dirtools.fileview.thumbnailer import Thumbnailer
 from dirtools.dbus_thumbnail_cache import DBusThumbnailCache
 from dirtools.fileview.mime_database import MimeDatabase
 from dirtools.fileview.metadata_collector import MetaDataCollector
+from dirtools.fileview.history import History
 from dirtools.fileview.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -60,6 +61,9 @@ class FileViewApplication:
                 print(traceback.format_exc())
 
         settings.init(self.config_file)
+
+        self.file_history = History(os.path.join(self.config_dir, "file.txt"))
+        self.location_history = History(os.path.join(self.config_dir, "locations.txt"))
 
         QPixmapCache.setCacheLimit(102400)
 
@@ -108,6 +112,8 @@ class FileViewApplication:
         self.controllers.append(controller)
 
     def show_location(self, path):
+        self.location_history.append(path)
+
         controller = Controller(self)
         controller.set_location(path)
         controller.window.show()
