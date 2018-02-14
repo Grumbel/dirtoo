@@ -189,7 +189,13 @@ class FilterParser:
                 _, func, _ = cmd
                 func(args)
         else:
-            self.filter.set_pattern(pattern, case_sensitive=False)
+            # If the pattern doesn't contain special characters
+            # perform a basic substring search instead of a glob
+            # pattern search.
+            if re.search(r"[\*\?\[\]]", pattern):
+                self.filter.set_pattern(pattern, case_sensitive=False)
+            else:
+                self.filter.set_pattern("*{}*".format(pattern), case_sensitive=False)
 
 
 # EOF #
