@@ -26,7 +26,6 @@ from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
 
 from dirtools.dbus_thumbnailer import DBusThumbnailerError
 from dirtools.fileview.file_info import FileInfo
-from dirtools.fileview.profiler import profile
 from dirtools.fileview.thumb_file_item import ThumbFileItem
 from dirtools.fileview.tile_layouter import TileLayouter, LayoutStyle
 from dirtools.fileview.settings import settings
@@ -400,13 +399,6 @@ class ThumbView(QGraphicsView):
     def icon_from_fileinfo(self, fileinfo):
         mimetype = self.controller.app.mime_database.get_mime_type(fileinfo.abspath())
         return self.controller.app.mime_database.get_icon_from_mime_type(mimetype)
-
-    @profile
-    def reload(self):
-        for item in self.items:
-            item.reload()
-        self.style_items()
-        self.layout_items()
 
     def receive_thumbnail(self, filename, flavor, pixmap, error_code, message):
         item = self.abspath2item.get(filename, None)

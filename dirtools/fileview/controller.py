@@ -301,7 +301,7 @@ class Controller(QObject):
                                                self.receive_thumbnail)
 
     def reload(self):
-        self.window.thumb_view.reload()
+        self.set_location(self.location)
 
     def receive_thumbnail(self, filename, flavor, pixmap, error_code, message):
         self.window.thumb_view.receive_thumbnail(filename, flavor, pixmap, error_code, message)
