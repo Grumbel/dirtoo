@@ -221,7 +221,9 @@ class Controller(QObject):
     def apply_filter(self):
         logger.debug("Controller.apply_filter")
         self.file_collection.filter(self.filter)
+        self._update_info()
 
+    def _update_info(self):
         fileinfos = self.file_collection.get_fileinfos()
 
         filtered_count = 0

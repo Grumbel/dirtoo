@@ -90,6 +90,8 @@ class ThumbView(QGraphicsView):
         self.shared_icons = SharedIcons()
         self.shared_pixmaps = SharedPixmaps()
 
+        self.needs_layout = True
+
         self.apply_zoom()
         self.cursor_item: Union[ThumbFileItem, None] = None
         self.crop_thumbnails = False
@@ -227,7 +229,7 @@ class ThumbView(QGraphicsView):
         self.setSceneRect(self.layouter.get_bounding_rect())
 
     def on_file_removed(self, abspath):
-        logger.debug("ThumbView.on_file_added: %s", abspath)
+        logger.debug("ThumbView.on_file_removed: %s", abspath)
         item = self.abspath2item.get(abspath, None)
         if item is not None:
             self.scene.removeItem(item)
@@ -318,8 +320,19 @@ class ThumbView(QGraphicsView):
         for item in self.items:
             self.style_item(item)
 
-    def layout_items(self, force=True):
-        logger.debug("ThumbView.layout_items")
+    def paintEvent(self, ev):
+        if self.needs_layout:
+            self._layout_items()
+            self.needs_layout = False
+
+        super().paintEvent(ev)
+
+    def layout_items(self):
+        self.needs_layout = True
+        self.update()
+
+    def _layout_items(self):
+        logger.debug("ThumbView._layout_items")
 
         self.setUpdatesEnabled(False)
         # old_item_index_method = self.scene.itemIndexMethod()
@@ -330,7 +343,8 @@ class ThumbView(QGraphicsView):
         else:
             visible_items = [item for item in self.items if item.fileinfo.is_visible]
 
-        self.layouter.layout(visible_items, force=force)
+        self.layouter.resize(self.viewport().width(), self.viewport().height())
+        self.layouter.layout(visible_items, force=True)
         self.setSceneRect(self.layouter.get_bounding_rect())
 
         # self.scene.setItemIndexMethod(old_item_index_method)
