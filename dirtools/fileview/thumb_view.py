@@ -478,4 +478,10 @@ class ThumbView(QGraphicsView):
         if self.cursor_item is not None:
             self.cursor_item.update()
 
+    def contextMenuEvent(self, ev):
+        super().contextMenuEvent(ev)
+        if not ev.isAccepted():
+            self.controller.on_context_menu(ev)
+
+
 # EOF #

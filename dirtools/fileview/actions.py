@@ -75,6 +75,21 @@ class Actions(QObject):
         self.redo.setShortcut('Ctrl+Y')
         self.redo.setStatusTip('Redo the last action')
 
+        self.edit_copy = QAction(QIcon.fromTheme('edit-copy'), '&Copy', self)
+        self.edit_copy.setShortcut('Ctrl+C')
+        self.edit_copy.setStatusTip('Copy Selected Files')
+
+        self.edit_cut = QAction(QIcon.fromTheme('edit-cut'), 'Cu&t', self)
+        self.edit_cut.setShortcut('Ctrl+X')
+        self.edit_cut.setStatusTip('Cut Selected Files')
+
+        self.edit_paste = QAction(QIcon.fromTheme('edit-paste'), '&Paste', self)
+        self.edit_paste.setShortcut('Ctrl+V')
+        self.edit_paste.setStatusTip('Paste Files')
+
+        self.edit_delete = QAction(QIcon.fromTheme('edit-delete'), '&Delete', self)
+        self.edit_delete.setStatusTip('Delete Selected Files')
+
         self.zoom_in = QAction(QIcon.fromTheme('zoom-in'), "Zoom &In", self)
         self.zoom_in.triggered.connect(self.controller.zoom_in)
         self.zoom_in.setShortcut('Ctrl+=')

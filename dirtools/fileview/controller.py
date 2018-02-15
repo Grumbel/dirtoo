@@ -22,8 +22,9 @@ import os
 import subprocess
 import io
 
-from PyQt5.QtWidgets import QFileDialog, QTextEdit
+from PyQt5.QtWidgets import QFileDialog, QTextEdit, QMenu
 from PyQt5.QtCore import QObject
+from PyQt5.QtGui import QIcon
 
 from dirtools.fileview.actions import Actions
 from dirtools.fileview.file_collection import FileCollection
@@ -272,6 +273,66 @@ class Controller(QObject):
             else:
                 logger.info("Controller.on_click: self.set_location: %s", fileinfo)
                 self.set_location(fileinfo.abspath())
+
+    def clear_selection(self):
+        self.window.thumb_view.scene.clearSelection()
+
+    def on_context_menu(self, ev):
+        menu = QMenu()
+
+        menu.addAction(QIcon.fromTheme('folder-new'), "Create Directory")
+        menu.addAction(QIcon.fromTheme('document-new'), "Create Text File")
+        menu.addSeparator()
+        menu.addAction(self.actions.edit_paste)
+        menu.addSeparator()
+        menu.addAction(QIcon.fromTheme('utilities-terminal'), "Open Terminal Here")
+        menu.addSeparator()
+        menu.addAction(QIcon.fromTheme('document-properties'), "Properties...")
+
+        menu.exec(ev.globalPos())
+
+    def on_item_context_menu(self, ev, item):
+        if item.isSelected():
+            selected_items = self.window.thumb_view.scene.selectedItems()
+        else:
+            self.clear_selection()
+            item.setSelected(True)
+            selected_items = [item]
+
+        menu = QMenu()
+
+        menu.addAction("Open with Default",
+                       lambda: self.on_click(item.fileinfo))
+        menu.addAction("Open with Other",
+                       lambda: self.on_click(item.fileinfo))
+
+        open_with_menu = QMenu("Open with")
+        open_with_menu.addAction("Open With This")
+        open_with_menu.addAction("Open With Taht")
+        open_with_menu.addAction("Open With SomethingElse")
+        menu.addMenu(open_with_menu)
+        menu.addSeparator()
+
+        actions_menu = QMenu("Actions")
+        actions_menu.addAction("Stack Selection...")
+        actions_menu.addAction("Tag Selection...")
+        actions_menu.addSeparator()
+        actions_menu.addAction("Compress...")
+        actions_menu.addAction("New Folder With Selection...")
+        menu.addMenu(actions_menu)
+
+        menu.addSeparator()
+        menu.addAction(self.actions.edit_cut)
+        menu.addAction(self.actions.edit_copy)
+        menu.addSeparator()
+        menu.addAction(self.actions.edit_delete)
+        menu.addAction("Move To Trash")
+        menu.addSeparator()
+        menu.addAction("Rename")
+        menu.addSeparator()
+        menu.addAction("Properties...")
+
+        menu.exec(ev.screenPos())
 
     def show_current_filename(self, filename):
         self.window.show_current_filename(filename)
