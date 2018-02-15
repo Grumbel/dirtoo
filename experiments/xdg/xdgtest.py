@@ -27,8 +27,9 @@ from xdg.IniFile import IniFile
 import os
 import sys
 
+# https://standards.freedesktop.org/desktop-entry-spec/latest/
 # https://specifications.freedesktop.org/mime-apps-spec/mime-apps-spec-1.0.html
-
+# https://specifications.freedesktop.org/menu-spec/menu-spec-0.9.html
 # Spec says to use 'XDG_CURRENT_DESKTOP', but that evaluates to "XFCE", 'XDG_MENU_PREFIX' evaluates to
 
 
@@ -38,7 +39,7 @@ def unique(lst):
 
 def generate_mimeapps_filenames():
     from xdg.BaseDirectory import (xdg_config_home, xdg_config_dirs,
-                                   xdg_data_home, xdg_data_dirs)
+                                   xdg_data_dirs)
 
     prefixes = os.environ.get('XDG_CURRENT_DESKTOP', None)
     prefixes = [""] + [p.lower() + "-" for p in prefixes.split(":") if p]
@@ -52,9 +53,6 @@ def generate_mimeapps_filenames():
         for prefix in prefixes:
             results.append(os.path.join(directory, "applications", "{}mimeapps.list".format(prefix)))
 
-    for prefix in prefixes:
-        results.append(os.path.join(xdg_data_home, "applications", "{}mimeapps.list".format(prefix)))
-
     for directory in xdg_data_dirs:
         for prefix in prefixes:
             results.append(os.path.join(directory, "applications", "{}mimeapps.list".format(prefix)))
@@ -66,18 +64,31 @@ def generate_mimeapps_filenames():
 
 
 def generate_mimeinfo_filenames():
-    from xdg.BaseDirectory import (xdg_config_home, xdg_config_dirs,
-                                   xdg_data_home, xdg_data_dirs)
+    from xdg.BaseDirectory import (xdg_config_dirs, xdg_data_dirs)
 
     results = []
 
-    for directory in [xdg_data_home] + xdg_data_dirs:
+    for directory in xdg_data_dirs:
         results.append(os.path.join(directory, "applications", "mimeinfo.cache"))
 
     results = unique(results)
     results = filter(os.path.exists, results)
 
     return list(results)
+
+
+def get_desktop_file(desktop_file):
+    from xdg.BaseDirectory import xdg_data_dirs
+
+    if not desktop_file:
+        return None
+
+    for directory in xdg_data_dirs:
+        path = os.path.join(directory, "applications", desktop_file)
+        if os.path.exists(path):
+            return path
+
+    return None
 
 
 class MimeDatabase:
@@ -118,7 +129,7 @@ class MimeDatabase:
                     self.add_association(mime, app)
 
             default = ini.content.get("Default Applications", {})
-            for mime, apps in added.items():
+            for mime, apps in default.items():
                 for app in reversed(ini.getList(apps)):
                     self.add_default_app(mime, app)
 
@@ -165,10 +176,17 @@ def main(argv):
 
     mimedb = MimeDatabase.system()
     print(mimedb.get_default_apps("text/plain"))
+    print(mimedb.get_associations("text/plain"))
+
     print(mimedb.get_default_apps("text/html"))
     print(mimedb.get_associations("text/html"))
     print(mimedb.get_default_apps("image/jpeg"))
     print(mimedb.get_default_apps("image/png"))
+
+    print(mimedb.get_default_apps("application/x-rar"))
+    print(mimedb.get_associations("application/x-rar"))
+
+    # print(get_desktop_file(mimedb.get_default_apps("application/x-rar")[0]))
 
     # xdg.BaseDirectory.xdg_config_dirs
 
