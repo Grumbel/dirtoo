@@ -277,6 +277,10 @@ class Controller(QObject):
     def clear_selection(self):
         self.window.thumb_view.scene.clearSelection()
 
+    def select_all(self):
+        for item in self.window.thumb_view.scene.items():
+            item.setSelected(True)
+
     def on_context_menu(self, ev):
         menu = QMenu()
 
@@ -286,6 +290,8 @@ class Controller(QObject):
         menu.addAction(self.actions.edit_paste)
         menu.addSeparator()
         menu.addAction(QIcon.fromTheme('utilities-terminal'), "Open Terminal Here")
+        menu.addSeparator()
+        menu.addAction(self.actions.edit_select_all)
         menu.addSeparator()
         menu.addAction(QIcon.fromTheme('document-properties'), "Properties...")
 

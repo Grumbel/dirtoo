@@ -90,6 +90,11 @@ class Actions(QObject):
         self.edit_delete = QAction(QIcon.fromTheme('edit-delete'), '&Delete', self)
         self.edit_delete.setStatusTip('Delete Selected Files')
 
+        self.edit_select_all = QAction(QIcon.fromTheme('edit-select-all'), '&Select All', self)
+        self.edit_select_all.setShortcut('Ctrl+A')
+        self.edit_select_all.setStatusTip('Select All')
+        self.edit_select_all.triggered.connect(self.controller.select_all)
+
         self.zoom_in = QAction(QIcon.fromTheme('zoom-in'), "Zoom &In", self)
         self.zoom_in.triggered.connect(self.controller.zoom_in)
         self.zoom_in.setShortcut('Ctrl+=')
