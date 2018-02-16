@@ -33,6 +33,21 @@ class FileItem(QGraphicsObject):
         self.setAcceptHoverEvents(True)
 
     def mousePressEvent(self, ev):
+        if not self.shape().contains(ev.scenePos() - self.pos()):
+            # Qt is sending events that are outside the item. This
+            # happens when opening a context menu on an item, moving
+            # the mouse, closing it with another click and than
+            # clicking again. The item on which the context menu was
+            # open gets triggered even when the click is completely
+            # outside the item. This sems to be due to
+            # mouseMoveEvent() getting missing while the menu is open
+            # and Qt triggering on the mouse position before the
+            # context menu was opened. There might be better ways to
+            # fix this, this is just a workaround. Hover status
+            # doesn't get updated either.
+            ev.ignore()
+            return
+
         # PyQt will route the event to the child items when we don't
         # override this
         if ev.button() == Qt.LeftButton:
