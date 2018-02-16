@@ -333,11 +333,45 @@ class Controller(QObject):
         if None in other_apps:
             other_apps.remove(None)
 
+        def expand_multi(exe, files):
+            result = []
+            for x in exe:
+                if x == "%F" or x == "%U":
+                    result += files
+                else:
+                    result.append(x)
+            return result
+
+        def expand_single(exe, filename):
+            result = []
+            for x in exe:
+                if x == "%f" or x == "%u":
+                    result.append(filename)
+                else:
+                    result.append(x)
+            return result
+
+        def launch(exe_str, files):
+            # FIXME: quick&dirty implementation, can't deal with quoting, see spec
+            exe = exe_str.split()
+            if "%F" in exe or "%U" in exe:
+                exe = expand_multi(exe, files)
+                logging.info("Launching: %s", exe)
+                subprocess.Popen(exe)
+            elif "%f" in exe or "%u" in exe:
+                for filename in files:
+                    exe = expand_single(exe, filename)
+                    logging.info("Launching: %s", exe)
+                    subprocess.Popen(exe)
+            else:
+                logging.error("unhandled .desktop Exec: %s", exe_str)
+
         def make_launcher_menu(menu, apps):
             entries = [get_desktop_entry(app) for app in apps]
+            entries = sorted(entries, key=lambda x: x.getName())
             for entry in entries:
                 action = menu.addAction(QIcon.fromTheme(entry.getIcon()), "Open With {}".format(entry.getName()))
-                action.triggered.connect(lambda checked, exe=entry.getExec(), p=item.fileinfo.abspath(): print(exe, p))
+                action.triggered.connect(lambda checked, exe=entry.getExec(), files=files: launch(exe, files))
 
         if not default_apps:
             menu.addAction("No applications available").setEnabled(False)
