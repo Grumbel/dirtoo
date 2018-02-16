@@ -31,6 +31,8 @@ from dirtools.xdg_desktop import get_desktop_file
 def parse_args(args):
     parser = argparse.ArgumentParser(description="Query the systems .desktop files")
     parser.add_argument("DESKTOP", nargs='?')
+    parser.add_argument('-v', '--verbose', action='store_true', default=False,
+                        help="Be verbose")
     return parser.parse_args(args)
 
 
@@ -38,8 +40,18 @@ def main(argv):
     args = parse_args(argv[1:])
 
     if args.DESKTOP is None:
-        for directory in xdg_data_dirs:
-            print(os.path.join(directory, "applications"))
+        if not args.verbose:
+            for directory in xdg_data_dirs:
+                print(os.path.join(directory, "applications"))
+        else:
+            for directory in xdg_data_dirs:
+                path = os.path.join(directory, "applications")
+                try:
+                    for entry in os.listdir(path):
+                        if entry.endswith(".desktop"):
+                            print(os.path.join(path, entry))
+                except FileNotFoundError:
+                    pass
     else:
         filename = get_desktop_file(args.DESKTOP)
         print(filename)
