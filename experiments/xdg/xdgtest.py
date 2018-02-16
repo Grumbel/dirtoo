@@ -19,13 +19,10 @@
 
 from typing import List, Set, Dict
 
-# for parsing .desktop files
-from xdg.DesktopEntry import DesktopEntry
-import xdg.BaseDirectory
-import xdg.Mime
-from xdg.IniFile import IniFile
 import os
 import sys
+
+from xdg.IniFile import IniFile
 
 # https://standards.freedesktop.org/desktop-entry-spec/latest/
 # https://specifications.freedesktop.org/mime-apps-spec/mime-apps-spec-1.0.html
@@ -64,7 +61,7 @@ def generate_mimeapps_filenames():
 
 
 def generate_mimeinfo_filenames():
-    from xdg.BaseDirectory import (xdg_config_dirs, xdg_data_dirs)
+    from xdg.BaseDirectory import xdg_data_dirs
 
     results = []
 
@@ -213,4 +210,3 @@ if __name__ == "__main__":
 
 
 # EOF #
-

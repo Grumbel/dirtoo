@@ -17,14 +17,8 @@
 
 from typing import List, Set, Dict
 
-# for parsing .desktop files
-from xdg.DesktopEntry import DesktopEntry
-import xdg.Mime
-
-import xdg.BaseDirectory
 from xdg.IniFile import IniFile
 import os
-import sys
 import collections
 
 
@@ -63,7 +57,7 @@ def generate_mimeapps_filenames():
 
 
 def generate_mimeinfo_filenames():
-    from xdg.BaseDirectory import (xdg_config_dirs, xdg_data_dirs)
+    from xdg.BaseDirectory import xdg_data_dirs
 
     results = []
 

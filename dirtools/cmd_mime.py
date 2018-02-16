@@ -17,7 +17,6 @@
 
 import argparse
 import sys
-import os
 
 from dirtools.xdg_mime_associations import XdgMimeAssociations
 from dirtools.xdg_desktop import get_desktop_file
