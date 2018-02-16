@@ -15,9 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import logging
+
 from PyQt5.QtCore import Qt, QMimeData, QUrl
 from PyQt5.QtGui import QDrag, QPainter, QPixmap
 from PyQt5.QtWidgets import QGraphicsObject, QGraphicsItem
+
+logger = logging.getLogger(__name__)
 
 
 class FileItem(QGraphicsObject):
@@ -46,6 +50,7 @@ class FileItem(QGraphicsObject):
             # fix this, this is just a workaround. Hover status
             # doesn't get updated either.
             ev.ignore()
+            logger.error("FileItem.mousePressEvent: broken click ignored")
             return
 
         # PyQt will route the event to the child items when we don't
@@ -59,6 +64,7 @@ class FileItem(QGraphicsObject):
             pass
 
     def mouseMoveEvent(self, ev):
+        print("moveEvent", ev)
         if (ev.pos() - self.press_pos).manhattanLength() > 16:
             print("drag start")
 

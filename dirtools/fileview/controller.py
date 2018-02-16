@@ -22,9 +22,9 @@ import os
 import subprocess
 import io
 
-from PyQt5.QtWidgets import QFileDialog, QTextEdit, QMenu
-from PyQt5.QtCore import QObject
-from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QFileDialog, QTextEdit, QMenu, QApplication
+from PyQt5.QtCore import QObject, Qt, QEvent, QPoint
+from PyQt5.QtGui import QIcon, QCursor, QMouseEvent
 
 from dirtools.fileview.actions import Actions
 from dirtools.fileview.file_collection import FileCollection
@@ -297,6 +297,15 @@ class Controller(QObject):
         menu.addAction(QIcon.fromTheme('document-properties'), "Properties...")
 
         menu.exec(ev.globalPos())
+        self.fake_mouse()
+
+    def fake_mouse(self):
+        ev = QMouseEvent(QEvent.MouseMove,
+                         self.window.mapFromGlobal(QCursor.pos()),
+                         Qt.NoButton,
+                         Qt.NoButton,
+                         Qt.NoModifier)
+        self.window.thumb_view.mouseMoveEvent(ev)
 
     def on_item_context_menu(self, ev, item):
         if item.isSelected():
@@ -405,6 +414,7 @@ class Controller(QObject):
         menu.addAction("Properties...")
 
         menu.exec(ev.screenPos())
+        self.fake_mouse()
 
     def show_current_filename(self, filename):
         self.window.show_current_filename(filename)
