@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Set
 
 import logging
 import os
@@ -35,6 +35,7 @@ from dirtools.fileview.directory_watcher import DirectoryWatcher
 from dirtools.fileview.filter_parser import FilterParser
 from dirtools.fileview.settings import settings
 from dirtools.fileview.filelist_stream import FileListStream
+from dirtools.xdg_desktop import get_desktop_entry, get_desktop_file
 
 logger = logging.getLogger(__name__)
 
@@ -307,16 +308,47 @@ class Controller(QObject):
 
         menu = QMenu()
 
-        menu.addAction("Open with Default",
-                       lambda: self.on_click(item.fileinfo))
-        menu.addAction("Open with Other",
-                       lambda: self.on_click(item.fileinfo))
+        files: List[str] = []
+        mimetypes: Set[str] = set()
+        for item in selected_items:
+            filename = item.fileinfo.abspath()
+            files.append(filename)
+            mimetypes.add(self.app.mime_database.get_mime_type(filename).name())
 
-        open_with_menu = QMenu("Open with")
-        open_with_menu.addAction("Open With This")
-        open_with_menu.addAction("Open With Taht")
-        open_with_menu.addAction("Open With SomethingElse")
-        menu.addMenu(open_with_menu)
+        default_apps_sets: List[Set[str]] = []
+        other_apps_sets: List[Set[str]] = []
+        for mimetype in mimetypes:
+            default_apps_sets.append(set(self.app.mime_associations.get_default_apps(mimetype)))
+            other_apps_sets.append(set(self.app.mime_associations.get_associations(mimetype)))
+
+        default_apps = set.intersection(*default_apps_sets)
+        other_apps = set.intersection(*other_apps_sets)
+
+        default_apps = {get_desktop_file(app) for app in default_apps}
+        other_apps = {get_desktop_file(app) for app in other_apps}
+
+        if None in default_apps:
+            default_apps.remove(None)
+
+        if None in other_apps:
+            other_apps.remove(None)
+
+        def make_launcher_menu(menu, apps):
+            entries = [get_desktop_entry(app) for app in apps]
+            for entry in entries:
+                action = menu.addAction(QIcon.fromTheme(entry.getIcon()), "Open With {}".format(entry.getName()))
+                action.triggered.connect(lambda checked, exe=entry.getExec(), p=item.fileinfo.abspath(): print(exe, p))
+
+        if not default_apps:
+            menu.addAction("No applications available").setEnabled(False)
+        else:
+            make_launcher_menu(menu, default_apps)
+
+        if other_apps:
+            open_with_menu = QMenu("Open with...")
+            make_launcher_menu(open_with_menu, other_apps)
+            menu.addMenu(open_with_menu)
+
         menu.addSeparator()
 
         actions_menu = QMenu("Actions")

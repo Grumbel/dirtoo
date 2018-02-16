@@ -17,6 +17,8 @@
 
 import os
 
+from xdg.DesktopEntry import DesktopEntry
+
 
 def get_desktop_file(desktop_file):
     from xdg.BaseDirectory import xdg_data_dirs
@@ -30,6 +32,17 @@ def get_desktop_file(desktop_file):
             return path
 
     return None
+
+
+def get_desktop_entry(desktop_file):
+    if os.path.isabs(desktop_file):
+        return DesktopEntry(desktop_file)
+    else:
+        filename = get_desktop_file(desktop_file)
+        if filename is not None:
+            return DesktopEntry(filename)
+        else:
+            return None
 
 
 # EOF

@@ -19,6 +19,7 @@ from typing import List
 
 import re
 import os
+import collections
 
 
 def expand_file(f, recursive):
@@ -48,6 +49,11 @@ def numeric_sorted(lst):
                      for sub in NUMERIC_SORT_RX.split(text) if sub != "")
 
     return sorted(lst, key=segmenter)
+
+
+def unique(lst):
+    """Remove duplicate elements from a list."""
+    return list(collections.OrderedDict.fromkeys(lst))
 
 
 # EOF #

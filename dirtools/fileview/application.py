@@ -33,6 +33,7 @@ from dirtools.fileview.thumbnailer import Thumbnailer
 from dirtools.dbus_thumbnail_cache import DBusThumbnailCache
 from dirtools.fileview.mime_database import MimeDatabase
 from dirtools.fileview.metadata_collector import MetaDataCollector
+from dirtools.xdg_mime_associations import XdgMimeAssociations
 from dirtools.fileview.history import History
 from dirtools.fileview.settings import settings
 
@@ -76,6 +77,7 @@ class FileViewApplication:
         self.session_bus = QDBusConnection.sessionBus()
         self.dbus_thumbnail_cache = DBusThumbnailCache(self.session_bus)
         self.mime_database = MimeDatabase()
+        self.mime_associations = XdgMimeAssociations.system()
 
         self.controllers: List[Controller] = []
 
