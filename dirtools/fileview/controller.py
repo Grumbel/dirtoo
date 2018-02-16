@@ -282,6 +282,10 @@ class Controller(QObject):
         for item in self.window.thumb_view.scene.items():
             item.setSelected(True)
 
+    def launch(self, args):
+        logging.info("Launching: %s", args)
+        subprocess.Popen(args)
+
     def on_context_menu(self, ev):
         menu = QMenu()
 
@@ -290,8 +294,14 @@ class Controller(QObject):
         menu.addSeparator()
         menu.addAction(self.actions.edit_paste)
         menu.addSeparator()
-        menu.addAction(QIcon.fromTheme('utilities-terminal'), "Open Terminal Here")
-        menu.addSeparator()
+
+        if self.location is not None:
+            menu.addAction(QIcon.fromTheme('utilities-terminal'), "Open Terminal Here",
+                           lambda path=self.location: self.launch(["exo-open",
+                                                                   "--launch", "TerminalEmulator",
+                                                                   "--working-directory", path]))
+            menu.addSeparator()
+
         menu.addAction(self.actions.edit_select_all)
         menu.addSeparator()
         menu.addAction(QIcon.fromTheme('document-properties'), "Properties...")
@@ -370,8 +380,7 @@ class Controller(QObject):
             elif "%f" in exe or "%u" in exe:
                 for filename in files:
                     exe = expand_single(exe, filename)
-                    logging.info("Launching: %s", exe)
-                    subprocess.Popen(exe)
+                    self.launch(exe)
             else:
                 logging.error("unhandled .desktop Exec: %s", exe_str)
 
@@ -401,6 +410,14 @@ class Controller(QObject):
         actions_menu.addAction("Compress...")
         actions_menu.addAction("New Folder With Selection...")
         menu.addMenu(actions_menu)
+        menu.addSeparator()
+
+        if len(selected_items) == 1 and next(iter(mimetypes)) == "inode/directory":
+            menu.addAction(QIcon.fromTheme('utilities-terminal'), "Open Terminal Here",
+                           lambda path=item.fileinfo.abspath(): self.launch(["exo-open",
+                                                                             "--launch", "TerminalEmulator",
+                                                                             "--working-directory", path]))
+            menu.addSeparator()
 
         menu.addSeparator()
         menu.addAction(self.actions.edit_cut)
