@@ -28,6 +28,8 @@ from dirtools.xdg_desktop import get_desktop_file
 def parse_args(args):
     parser = argparse.ArgumentParser(description="Query the systems mime associations")
     parser.add_argument("MIMETYPE", nargs='?')
+    parser.add_argument('-v', '--verbose', action='store_true', default=False,
+                        help="Be verbose")
     return parser.parse_args(args)
 
 
@@ -45,6 +47,16 @@ def main(argv):
         for filename in mimeasc.mimeinfos:
             print("  {}".format(filename))
         print()
+
+        if args.verbose:
+            print("Associations:")
+            for mime, apps in mimeasc.mime2desktop.items():
+                print("  MimeType: {}".format(mime))
+                defaultapps = mimeasc.get_default_apps(mime)
+                for app in apps:
+                    print("    {}{}".format(get_desktop_file(app) or "{} (file not found)".format(app),
+                                            "  (default)" if app in defaultapps else ""))
+                print()
     else:
         mimetype = args.MIMETYPE
 
