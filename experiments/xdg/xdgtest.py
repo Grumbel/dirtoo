@@ -38,8 +38,8 @@ def generate_mimeapps_filenames():
     from xdg.BaseDirectory import (xdg_config_home, xdg_config_dirs,
                                    xdg_data_dirs)
 
-    prefixes = os.environ.get('XDG_CURRENT_DESKTOP', None)
-    prefixes = [""] + [p.lower() + "-" for p in prefixes.split(":") if p]
+    current_desktop = os.environ.get('XDG_CURRENT_DESKTOP', "")
+    prefixes = [""] + [p.lower() + "-" for p in current_desktop.split(":") if p]
 
     results = []
 
