@@ -51,9 +51,9 @@ def generate_mimeapps_filenames():
             results.append(os.path.join(directory, "applications", "{}mimeapps.list".format(prefix)))
 
     results = unique(results)
-    results = filter(os.path.exists, results)
+    results = list(filter(os.path.exists, results))
 
-    return list(results)
+    return results
 
 
 def generate_mimeinfo_filenames():
@@ -65,9 +65,9 @@ def generate_mimeinfo_filenames():
         results.append(os.path.join(directory, "applications", "mimeinfo.cache"))
 
     results = unique(results)
-    results = filter(os.path.exists, results)
+    results = list(filter(os.path.exists, results))
 
-    return list(results)
+    return results
 
 
 class XdgMimeAssociations:
@@ -83,8 +83,8 @@ class XdgMimeAssociations:
     def __init__(self):
         self.default_mime2desktop: Dict[str, List[str]] = {}
         self.mime2desktop: Dict[str, Set[str]] = {}
-        self.mimeinfos = []
-        self.mimeapps = []
+        self.mimeinfos: List[str] = []
+        self.mimeapps: List[str] = []
 
     def _read_mimeinfos(self):
         assert not self.mimeinfos

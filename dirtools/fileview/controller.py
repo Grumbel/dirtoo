@@ -333,8 +333,8 @@ class Controller(QObject):
         if None in other_apps:
             other_apps.remove(None)
 
-        def expand_multi(exe, files):
-            result = []
+        def expand_multi(exe: List[str], files: List[str]) -> List[str]:
+            result: List[str] = []
             for x in exe:
                 if x == "%F" or x == "%U":
                     result += files
@@ -342,8 +342,8 @@ class Controller(QObject):
                     result.append(x)
             return result
 
-        def expand_single(exe, filename):
-            result = []
+        def expand_single(exe: List[str], filename: str) -> List[str]:
+            result: List[str] = []
             for x in exe:
                 if x == "%f" or x == "%u":
                     result.append(filename)
