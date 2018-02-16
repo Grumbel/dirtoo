@@ -103,9 +103,14 @@ class XdgMimeAssociations:
     def __init__(self):
         self.default_mime2desktop: Dict[str, List[str]] = {}
         self.mime2desktop: Dict[str, Set[str]] = {}
+        self.mimeinfos = []
+        self.mimeapps = []
 
     def _read_mimeinfos(self):
-        for filename in generate_mimeinfo_filenames():
+        assert not self.mimeinfos
+        self.mimeinfos = generate_mimeinfo_filenames()
+
+        for filename in self.mimeinfos:
             ini = IniFile(filename)
             group = ini.content.get("MIME Cache")
             for mime, apps in group.items():
@@ -113,8 +118,11 @@ class XdgMimeAssociations:
                     self.add_association(mime, app)
 
     def _read_mimeapps(self):
+        assert not self.mimeapps
+        self.mimeapps = generate_mimeapps_filenames()
+
         # Highest priority is first, so we reverse this
-        for filename in reversed(generate_mimeapps_filenames()):
+        for filename in reversed(self.mimeapps):
             ini = IniFile(filename)
 
             removed = ini.content.get("Removed Associations", {})

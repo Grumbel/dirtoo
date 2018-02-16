@@ -22,9 +22,13 @@ import os
 from dirtools.xdg_mime_associations import XdgMimeAssociations
 from dirtools.xdg_desktop import get_desktop_file
 
+
+# https://specifications.freedesktop.org/mime-apps-spec/mime-apps-spec-1.0.html
+
+
 def parse_args(args):
     parser = argparse.ArgumentParser(description="Query the systems mime associations")
-    parser.add_argument("MIMETYPE", nargs=1)
+    parser.add_argument("MIMETYPE", nargs='?')
     return parser.parse_args(args)
 
 
@@ -32,23 +36,35 @@ def main(argv):
     args = parse_args(argv[1:])
     mimeasc = XdgMimeAssociations.system()
 
-    mimetype = args.MIMETYPE[0]
+    if args.MIMETYPE is None:
+        print("MIME Associations:")
+        for filename in mimeasc.mimeapps:
+            print("  {}".format(filename))
+        print()
 
-    defaults = mimeasc.get_default_apps(mimetype)
-    assocs = mimeasc.get_associations(mimetype)
+        print("MIME Cache:")
+        for filename in mimeasc.mimeinfos:
+            print("  {}".format(filename))
+        print()
+    else:
+        mimetype = args.MIMETYPE
 
-    print("mime-type: {}".format(mimetype))
-    print()
+        defaults = mimeasc.get_default_apps(mimetype)
+        assocs = mimeasc.get_associations(mimetype)
 
-    print("default applications:")
-    for desktop in defaults:
-        print("  {}".format(get_desktop_file(desktop) or "{} (file not found)".format(desktop)))
-    print()
+        print("mime-type: {}".format(mimetype))
+        print()
 
-    print("associated applications:")
-    for desktop in assocs:
-        print("  {}".format(get_desktop_file(desktop) or "{} (file not found)".format(desktop)))
-    print()
+        print("default applications:")
+        for desktop in defaults:
+            print("  {}".format(get_desktop_file(desktop) or "{} (file not found)".format(desktop)))
+        print()
+
+        print("associated applications:")
+        for desktop in assocs:
+            print("  {}".format(get_desktop_file(desktop) or "{} (file not found)".format(desktop)))
+        print()
+
 
 def main_entrypoint():
     exit(main(sys.argv))
