@@ -70,20 +70,6 @@ def generate_mimeinfo_filenames():
     return list(results)
 
 
-def get_desktop_file(desktop_file):
-    from xdg.BaseDirectory import xdg_data_dirs
-
-    if not desktop_file:
-        return None
-
-    for directory in xdg_data_dirs:
-        path = os.path.join(directory, "applications", desktop_file)
-        if os.path.exists(path):
-            return path
-
-    return None
-
-
 class XdgMimeAssociations:
 
     @staticmethod
