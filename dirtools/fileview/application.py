@@ -36,6 +36,7 @@ from dirtools.fileview.metadata_collector import MetaDataCollector
 from dirtools.xdg_mime_associations import XdgMimeAssociations
 from dirtools.fileview.history import History
 from dirtools.fileview.settings import settings
+from dirtools.fileview.executor import Executor
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +73,7 @@ class FileViewApplication:
         self.qapp.setQuitOnLastWindowClosed(False)
         self.qapp.lastWindowClosed.connect(self.on_last_window_closed)
 
+        self.executor = Executor(self)
         self.thumbnailer = Thumbnailer()
         self.metadata_collector = MetaDataCollector()
         self.session_bus = QDBusConnection.sessionBus()

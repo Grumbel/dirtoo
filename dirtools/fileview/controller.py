@@ -19,11 +19,10 @@ from typing import List, Dict, Any, Optional, Set
 
 import logging
 import os
-import subprocess
 import io
 
-from PyQt5.QtWidgets import QFileDialog, QTextEdit, QMenu, QApplication
-from PyQt5.QtCore import QObject, Qt, QEvent, QPoint
+from PyQt5.QtWidgets import QFileDialog, QTextEdit, QMenu
+from PyQt5.QtCore import QObject, Qt, QEvent
 from PyQt5.QtGui import QIcon, QCursor, QMouseEvent
 
 from dirtools.fileview.actions import Actions
@@ -264,9 +263,7 @@ class Controller(QObject):
         if not fileinfo.isdir():
             self.app.file_history.append(fileinfo.abspath())
 
-            argv = ["xdg-open", fileinfo.abspath()]
-            logger.info("Controller.on_click: launching: %s", argv)
-            subprocess.Popen(argv)
+            self.executor.open(fileinfo.abspath())
         else:
             if self.location is None or new_window:
                 logger.info("Controller.on_click: app.show_location: %s", fileinfo)
@@ -282,10 +279,6 @@ class Controller(QObject):
         for item in self.window.thumb_view.scene.items():
             item.setSelected(True)
 
-    def launch(self, args):
-        logging.info("Launching: %s", args)
-        subprocess.Popen(args)
-
     def on_context_menu(self, ev):
         menu = QMenu()
 
@@ -297,9 +290,7 @@ class Controller(QObject):
 
         if self.location is not None:
             menu.addAction(QIcon.fromTheme('utilities-terminal'), "Open Terminal Here",
-                           lambda path=self.location: self.launch(["exo-open",
-                                                                   "--launch", "TerminalEmulator",
-                                                                   "--working-directory", path]))
+                           lambda path=self.location: self.app.executor.launch_terminal(path))
             menu.addSeparator()
 
         menu.addAction(self.actions.edit_select_all)
@@ -372,15 +363,14 @@ class Controller(QObject):
 
         def launch(exe_str, files):
             # FIXME: quick&dirty implementation, can't deal with quoting, see spec
-            exe = exe_str.split()
-            if "%F" in exe or "%U" in exe:
-                exe = expand_multi(exe, files)
-                logging.info("Launching: %s", exe)
-                subprocess.Popen(exe)
-            elif "%f" in exe or "%u" in exe:
+            argv = exe_str.split()
+            if "%F" in argv or "%U" in argv:
+                argv = expand_multi(argv, files)
+                self.app.executor.launch(argv)
+            elif "%f" in argv or "%u" in argv:
                 for filename in files:
-                    exe = expand_single(exe, filename)
-                    self.launch(exe)
+                    argv = expand_single(argv, filename)
+                    self.app.executor.launch(argv)
             else:
                 logging.error("unhandled .desktop Exec: %s", exe_str)
 
@@ -414,9 +404,7 @@ class Controller(QObject):
 
         if len(selected_items) == 1 and next(iter(mimetypes)) == "inode/directory":
             menu.addAction(QIcon.fromTheme('utilities-terminal'), "Open Terminal Here",
-                           lambda path=item.fileinfo.abspath(): self.launch(["exo-open",
-                                                                             "--launch", "TerminalEmulator",
-                                                                             "--working-directory", path]))
+                           lambda path=item.fileinfo.abspath(): self.app.executor.launch_terminal(path))
             menu.addSeparator()
 
         menu.addSeparator()
