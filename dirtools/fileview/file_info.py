@@ -79,8 +79,12 @@ class FileInfo:
 
         self._metadata: Dict[str, Any] = {}
 
+        # filter variables
         self.is_excluded: bool = False
         self.is_hidden: bool = False
+
+        # grouper variables
+        self.group: Any = None
 
     def _collect_stat(self) -> None:
         self._stat = os.lstat(self._abspath)

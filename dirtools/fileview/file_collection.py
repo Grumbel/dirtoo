@@ -17,9 +17,9 @@
 
 import logging
 import random
-from typing import List
 
 from PyQt5.QtCore import QObject, pyqtSignal
+
 from dirtools.fileview.file_info import FileInfo
 
 logger = logging.getLogger(__name__)
@@ -50,12 +50,15 @@ class FileCollection(QObject):
     # set/unset, but otherwise stayed the same
     sig_files_filtered = pyqtSignal()
 
+    # The file list has been grouped, .group has been set
+    sig_files_grouped = pyqtSignal()
+
     def __init__(self, files=None):
         super().__init__()
         if files is None:
-            self.fileinfos: List[FileInfo] = []
-        else:
-            self.fileinfos = [FileInfo.from_filename(f) for f in files]
+            files = []
+
+        self.fileinfos = [FileInfo.from_filename(f) for f in files]
 
     def clear(self):
         logger.debug("FileCollection.clear")
@@ -111,6 +114,10 @@ class FileCollection(QObject):
 
     def size(self):
         return len(self.fileinfos)
+
+    def group(self, grouper):
+        grouper.apply(self.fileinfos)
+        self.sig_files_grouped.emit()
 
     def filter(self, filter):
         filter.apply(self.fileinfos)

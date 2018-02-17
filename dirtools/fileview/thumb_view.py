@@ -15,9 +15,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Hashable, List, Dict, Union
+
 import logging
 
-from typing import Union, List, Dict
 from pkg_resources import resource_filename
 
 from PyQt5.QtCore import Qt, QRectF
@@ -211,6 +212,7 @@ class ThumbView(QGraphicsView):
         self.file_collection.sig_files_set.connect(self.on_file_collection_set)
         self.file_collection.sig_files_reordered.connect(self.on_file_collection_reordered)
         self.file_collection.sig_files_filtered.connect(self.on_file_collection_filtered)
+        self.file_collection.sig_files_grouped.connect(self.on_file_collection_grouped)
 
         self.file_collection.sig_file_added.connect(self.on_file_added)
         self.file_collection.sig_file_removed.connect(self.on_file_removed)
@@ -262,6 +264,11 @@ class ThumbView(QGraphicsView):
 
     def on_file_collection_filtered(self):
         logger.debug("ThumbView.on_file_collection_filtered")
+        self.style_items()
+        self.layout_items()
+
+    def on_file_collection_grouped(self):
+        logger.debug("ThumbView.on_file_collection_grouped")
         self.style_items()
         self.layout_items()
 
@@ -341,14 +348,26 @@ class ThumbView(QGraphicsView):
         # old_item_index_method = self.scene.itemIndexMethod()
         # self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
 
-        if self.show_filtered:
-            visible_items = [item for item in self.items if not item.fileinfo.is_hidden]
-        else:
-            visible_items = [item for item in self.items if item.fileinfo.is_visible]
-
         self.layouter.resize(self.viewport().width(), self.viewport().height())
-        self.layouter.layout(visible_items, force=True)
-        self.setSceneRect(self.layouter.get_bounding_rect())
+
+        # group items by group
+        groups: Dict[Hashable, List[FileInfo]] = {}
+        for item in self.items:
+            if item.fileinfo.group not in groups:
+                groups[item.fileinfo.group] = []
+            groups[item.fileinfo.group].append(item)
+
+        self.layouter.begin()
+        for group, items in groups.items():
+            if self.show_filtered:
+                visible_items = [item for item in items if not item.fileinfo.is_hidden]
+            else:
+                visible_items = [item for item in items if item.fileinfo.is_visible]
+
+            self.layouter.append_items(visible_items)
+            self.layouter.line_break()
+            self.setSceneRect(self.layouter.get_bounding_rect())
+        self.layouter.end()
 
         # self.scene.setItemIndexMethod(old_item_index_method)
         self.setUpdatesEnabled(True)

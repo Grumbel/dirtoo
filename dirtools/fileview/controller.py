@@ -30,6 +30,7 @@ from dirtools.fileview.file_collection import FileCollection
 from dirtools.fileview.file_view_window import FileViewWindow
 from dirtools.fileview.filter import Filter
 from dirtools.fileview.sorter import Sorter
+from dirtools.fileview.grouper import Grouper
 from dirtools.fileview.directory_watcher import DirectoryWatcher
 from dirtools.fileview.filter_parser import FilterParser
 from dirtools.fileview.settings import settings
@@ -48,8 +49,11 @@ class Controller(QObject):
         self.file_collection = FileCollection()
         self.actions = Actions(self)
         self.window = FileViewWindow(self)
+
         self.filter = Filter()
         self.sorter = Sorter(self)
+        self.grouper = Grouper()
+
         self.history: List[str] = []
         self.history_index = 0
 
@@ -196,6 +200,7 @@ class Controller(QObject):
         self.file_collection.set_fileinfos(fileinfos)
         self.apply_sort()
         self.apply_filter()
+        self.apply_grouper()
 
     def set_files(self, files, location=None):
         if location is None:
@@ -204,6 +209,7 @@ class Controller(QObject):
         self.file_collection.set_files(files)
         self.apply_sort()
         self.apply_filter()
+        self.apply_grouper()
 
     def set_filelist_stream(self, stream: FileListStream, location: Optional[str]=None):
         if location is None:
@@ -216,6 +222,10 @@ class Controller(QObject):
         self.filelist_stream.sig_file_added.connect(self.file_collection.add_fileinfo)
         self.filelist_stream.sig_end_of_stream.connect(lambda: self.window.hide_loading())
         self.filelist_stream.start()
+
+    def apply_grouper(self):
+        logger.debug("Controller.apply_grouper")
+        self.file_collection.group(self.grouper)
 
     def apply_sort(self):
         logger.debug("Controller.apply_sort")

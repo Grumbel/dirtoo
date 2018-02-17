@@ -108,6 +108,26 @@ class TileLayouter:
 
         return QRectF(0, 0, w, h)
 
+    def begin(self, force=True):
+        if not self.needs_relayout and not force:
+            logger.debug("TileLayouter.layout: skipping relayout")
+            return
+
+        # if not items:
+        #     return
+
+        print("begin layout")
+
+        self.right_x = 0
+        self.bottom_y = 0
+
+        self.col = 0
+        self.row = 0
+
+    def end(self):
+        print("end layout")
+        self.needs_relayout = False
+
     def append_item(self, item):
         # insert new item at the current position
         x = self.col * (self.tile_width + self.spacing_x) + self.padding_x
@@ -131,29 +151,22 @@ class TileLayouter:
                 self.row = 0
                 self.col += 1
 
-    def layout(self, items, force):
-        if not self.needs_relayout and not force:
-            logger.debug("TileLayouter.layout: skipping relayout")
-            return
-
-        if not items:
-            return
-
-        logger.debug("TileLayouter.layout: layouting")
+    def append_items(self, items):
+        print("append_items")
+        logger.debug("TileLayouter.append_items")
         num_items = len(items)
 
         self.rows = max((num_items + self.columns - 1) // self.columns,
                         self._calc_num_rows())
-
-        self.right_x = 0
-        self.bottom_y = 0
-
-        self.col = 0
-        self.row = 0
         for item in items:
             self.append_item(item)
 
-        self.needs_relayout = False
+    def line_break(self):
+        if self.col == self.columns:
+            self.row += 1
+        else:
+            self.row += 2
+        self.col = 0
 
 
 # EOF #
