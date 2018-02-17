@@ -49,6 +49,8 @@ def main(argv):
 
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.WARNING)
 
     app = FileViewApplication()
 
