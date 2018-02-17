@@ -50,11 +50,11 @@ class Executor:
         else:
             return False
 
-        self.launch_from_exec(entry.getExec(), filename)
+        self.launch_single_from_exec(entry.getExec(), filename)
 
         return True
 
-    def launch_from_exec(self, exec_str: str, filename: str):
+    def launch_single_from_exec(self, exec_str: str, filename: str):
         def replace(lst: List[str], filename):
             result: List[str] = []
             for x in lst:
@@ -67,6 +67,38 @@ class Executor:
         argv = exec_str.split()
         argv = replace(argv, filename)
         self.launch(argv)
+
+    def launch_multi_from_exec(self, exec_str: str, files: List[str]):
+
+        def expand_multi(exe: List[str], files: List[str]) -> List[str]:
+            result: List[str] = []
+            for x in exe:
+                if x == "%F" or x == "%U":
+                    result += files
+                else:
+                    result.append(x)
+            return result
+
+        def expand_single(exe: List[str], filename: str) -> List[str]:
+            result: List[str] = []
+            for x in exe:
+                if x == "%f" or x == "%u":
+                    result.append(filename)
+                else:
+                    result.append(x)
+            return result
+
+        # FIXME: quick&dirty implementation, can't deal with quoting, see spec
+        argv = exec_str.split()
+        if "%F" in argv or "%U" in argv:
+            argv = expand_multi(argv, files)
+            self.launch(argv)
+        elif "%f" in argv or "%u" in argv:
+            for filename in files:
+                argv = expand_single(argv, filename)
+                self.launch(argv)
+        else:
+            logging.error("unhandled .desktop Exec: %s", exec_str)
 
     def launch(self, argv: List[str]) -> None:
         logger.info("Launching: %s", argv)

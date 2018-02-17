@@ -263,7 +263,7 @@ class Controller(QObject):
         if not fileinfo.isdir():
             self.app.file_history.append(fileinfo.abspath())
 
-            self.executor.open(fileinfo.abspath())
+            self.app.executor.open(fileinfo.abspath())
         else:
             if self.location is None or new_window:
                 logger.info("Controller.on_click: app.show_location: %s", fileinfo)
@@ -343,43 +343,13 @@ class Controller(QObject):
         if None in other_apps:
             other_apps.remove(None)
 
-        def expand_multi(exe: List[str], files: List[str]) -> List[str]:
-            result: List[str] = []
-            for x in exe:
-                if x == "%F" or x == "%U":
-                    result += files
-                else:
-                    result.append(x)
-            return result
-
-        def expand_single(exe: List[str], filename: str) -> List[str]:
-            result: List[str] = []
-            for x in exe:
-                if x == "%f" or x == "%u":
-                    result.append(filename)
-                else:
-                    result.append(x)
-            return result
-
-        def launch(exe_str, files):
-            # FIXME: quick&dirty implementation, can't deal with quoting, see spec
-            argv = exe_str.split()
-            if "%F" in argv or "%U" in argv:
-                argv = expand_multi(argv, files)
-                self.app.executor.launch(argv)
-            elif "%f" in argv or "%u" in argv:
-                for filename in files:
-                    argv = expand_single(argv, filename)
-                    self.app.executor.launch(argv)
-            else:
-                logging.error("unhandled .desktop Exec: %s", exe_str)
-
         def make_launcher_menu(menu, apps):
             entries = [get_desktop_entry(app) for app in apps]
             entries = sorted(entries, key=lambda x: x.getName())
             for entry in entries:
                 action = menu.addAction(QIcon.fromTheme(entry.getIcon()), "Open With {}".format(entry.getName()))
-                action.triggered.connect(lambda checked, exe=entry.getExec(), files=files: launch(exe, files))
+                action.triggered.connect(lambda checked, exe=entry.getExec(), files=files:
+                                         self.app.executor.launch_multi_from_exec(exe, files))
 
         if not default_apps:
             menu.addAction("No applications available").setEnabled(False)
