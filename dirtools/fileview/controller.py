@@ -30,7 +30,7 @@ from dirtools.fileview.file_collection import FileCollection
 from dirtools.fileview.file_view_window import FileViewWindow
 from dirtools.fileview.filter import Filter
 from dirtools.fileview.sorter import Sorter
-from dirtools.fileview.grouper import Grouper
+from dirtools.fileview.grouper import Grouper, DayGrouperFunc, DirectoryGrouperFunc
 from dirtools.fileview.directory_watcher import DirectoryWatcher
 from dirtools.fileview.filter_parser import FilterParser
 from dirtools.fileview.settings import settings
@@ -442,6 +442,18 @@ class Controller(QObject):
             [f.abspath()
              for f in self.file_collection.get_fileinfos()])
         self.window.thumb_view.reload_thumbnails()
+
+    def set_grouper_by_none(self):
+        self.grouper.set_func(None)
+        self.apply_grouper()
+
+    def set_grouper_by_directory(self):
+        self.grouper.set_func(DirectoryGrouperFunc())
+        self.apply_grouper()
+
+    def set_grouper_by_day(self):
+        self.grouper.set_func(DayGrouperFunc())
+        self.apply_grouper()
 
 
 # EOF #

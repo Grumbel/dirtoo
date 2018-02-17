@@ -18,12 +18,12 @@
 from datetime import datetime
 
 
-class Grouper:
+class DayGrouperFunc:
 
     def __init__(self):
         pass
 
-    def apply(self, fileinfos):
+    def __call__(self, fileinfos):
         for fileinfo in fileinfos:
             if fileinfo.isdir():
                 fileinfo.group = 0
@@ -31,5 +31,29 @@ class Grouper:
                 date = datetime.fromtimestamp(fileinfo.mtime())
                 fileinfo.group = date.isocalendar()
 
+
+class DirectoryGrouperFunc:
+
+    def __init__(self):
+        pass
+
+    def __call__(self, fileinfos):
+        for fileinfo in fileinfos:
+            fileinfo.group = fileinfo.dirname()
+
+
+class Grouper:
+
+    def __init__(self):
+        self.grouper_func = DirectoryGrouperFunc()
+
+    def set_func(self, func):
+        self.grouper_func = func
+
+    def apply(self, fileinfos):
+        if self.grouper_func is None:
+            return
+        else:
+            self.grouper_func(fileinfos)
 
 # EOF #

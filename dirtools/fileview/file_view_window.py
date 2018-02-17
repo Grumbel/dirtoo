@@ -204,6 +204,13 @@ class FileViewWindow(QMainWindow):
         widget.setLayout(form)
         self.location_toolbar.addWidget(widget)
 
+    def make_group_menu(self):
+        menu = QMenu("Group Options")
+        menu.addAction(self.actions.group_by_none)
+        menu.addAction(self.actions.group_by_day)
+        menu.addAction(self.actions.group_by_directory)
+        return menu
+
     def make_sort_menu(self):
         menu = QMenu("Sort Options")
         menu.addSeparator().setText("Sort Options")
@@ -318,6 +325,12 @@ class FileViewWindow(QMainWindow):
         button = QToolButton()
         button.setIcon(QIcon.fromTheme("view-sort-ascending"))
         button.setMenu(self.make_sort_menu())
+        button.setPopupMode(QToolButton.InstantPopup)
+        self.toolbar.addWidget(button)
+
+        button = QToolButton()
+        button.setIcon(QIcon.fromTheme("view-sort-ascending"))
+        button.setMenu(self.make_group_menu())
         button.setPopupMode(QToolButton.InstantPopup)
         self.toolbar.addWidget(button)
 
