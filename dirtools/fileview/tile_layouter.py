@@ -109,9 +109,9 @@ class TileLayouter:
         return QRectF(0, 0, w, h)
 
     def begin(self, force=True):
-        if not self.needs_relayout and not force:
-            logger.debug("TileLayouter.layout: skipping relayout")
-            return
+        # if not self.needs_relayout and not force:
+        #     logger.debug("TileLayouter.layout: skipping relayout")
+        #     return
 
         # if not items:
         #     return

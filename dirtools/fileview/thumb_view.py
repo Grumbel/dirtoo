@@ -359,6 +359,7 @@ class ThumbView(QGraphicsView):
 
         self.layouter.begin()
         for group, items in groups.items():
+            # self.layouter.begin_group(str(group))
             if self.show_filtered:
                 visible_items = [item for item in items if not item.fileinfo.is_hidden]
             else:
