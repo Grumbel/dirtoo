@@ -30,7 +30,14 @@ from dirtools.xdg_desktop import get_desktop_file
 
 def parse_args(args):
     parser = argparse.ArgumentParser(description="Query the systems .desktop files")
-    parser.add_argument("DESKTOP", nargs='?')
+
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("DESKTOP", nargs='?')
+    group.add_argument('-l', '--list-dirs', action='store_true', default=False,
+                        help="List all directories scanned for .desktop files")
+    group.add_argument('-L', '--list-files', action='store_true', default=False,
+                        help="List all .desktop files")
+
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help="Be verbose")
     return parser.parse_args(args)
@@ -39,19 +46,23 @@ def parse_args(args):
 def main(argv):
     args = parse_args(argv[1:])
 
-    if args.DESKTOP is None:
-        if not args.verbose:
-            for directory in xdg_data_dirs:
-                print(os.path.join(directory, "applications"))
-        else:
-            for directory in xdg_data_dirs:
-                path = os.path.join(directory, "applications")
-                try:
-                    for entry in os.listdir(path):
-                        if entry.endswith(".desktop"):
+    if args.list_dirs:
+        for directory in xdg_data_dirs:
+            print(os.path.join(directory, "applications"))
+    elif args.list_files:
+        for directory in xdg_data_dirs:
+            path = os.path.join(directory, "applications")
+            try:
+                for entry in os.listdir(path):
+                    if entry.endswith(".desktop"):
+                        if args.verbose:
+                            filename = os.path.join(path, entry)
+                            desktop = DesktopEntry(filename)
+                            print("{:70}  {:40}  {:40}".format(filename, desktop.getName(), desktop.getExec()))
+                        else:
                             print(os.path.join(path, entry))
-                except FileNotFoundError:
-                    pass
+            except FileNotFoundError:
+                pass
     else:
         filename = get_desktop_file(args.DESKTOP)
         print(filename)
