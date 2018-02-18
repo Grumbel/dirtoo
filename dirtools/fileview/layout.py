@@ -47,10 +47,18 @@ class Layout:
         return self.height
 
 
+class VSpacer(Layout):
+
+    def __init__(self, height):
+        super().__init__()
+
+        self.height = height
+
+
 class HBoxLayout(Layout):
 
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def __init__(self):
+        super().__init__()
 
         self.children: List[Layout] = []
 

@@ -17,7 +17,9 @@
 
 from typing import Dict, List, Any, Hashable
 
-from dirtools.fileview.layout import HBoxLayout, TileLayout, ItemLayout
+from PyQt5.QtGui import QFont
+
+from dirtools.fileview.layout import HBoxLayout, TileLayout, ItemLayout, VSpacer
 from dirtools.fileview.file_info import FileInfo
 
 
@@ -96,6 +98,10 @@ class Layouter:
 
                 grid = self._build_tile_grid(items)
                 self.root.add(grid)
+
+                spacer = VSpacer(48)
+                print(repr(spacer))
+                self.root.add(spacer)
         else:
             grid = self._build_tile_grid(items)
             self.root.add(grid)
