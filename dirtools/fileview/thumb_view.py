@@ -126,7 +126,7 @@ class ThumbView(QGraphicsView):
 
         if self.cursor_item is None:
             rect = self.mapToScene(self.rect()).boundingRect()
-            items = self.scene.items(rect)
+            items = [item for item in self.scene.items(rect) if isinstance(item, ThumbFileItem)]
             if not items:
                 return
             else:
@@ -142,7 +142,7 @@ class ThumbView(QGraphicsView):
         rect = QRectF(self.cursor_item.tile_rect)
         rect.moveTo(self.cursor_item.pos().x() + (self.cursor_item.tile_rect.width() + 4) * dx,
                     self.cursor_item.pos().y() + (self.cursor_item.tile_rect.height() + 4) * dy)
-        items = self.scene.items(rect)
+        items = [item for item in self.scene.items(rect) if isinstance(item, ThumbFileItem)]
         if items:
             self.cursor_item = items[0]
 
