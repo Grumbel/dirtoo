@@ -26,41 +26,10 @@ from dirtools.fileview.thumb_file_item import ThumbFileItem
 
 class Layouter:
 
-    def __init__(self, scene):
+    def __init__(self, scene, style):
         self.scene = scene
-
-        self.padding_x = 16
-        self.padding_y = 16
-
-        self.spacing_x = 16
-        self.spacing_y = 16
-
-        self.tile_width = 128
-        self.tile_height = 128 + 16
-
+        self.style = style
         self.show_filtered = False
-
-    def set_style(self, style):
-        self.layout_style = style
-        self._update()
-
-    def set_tile_size(self, tile_w, tile_h):
-        self.tile_width = tile_w
-        self.tile_height = tile_h
-        self._update()
-
-    def set_padding(self, x, y):
-        self.padding_x = x
-        self.padding_y = y
-        self._update()
-
-    def set_spacing(self, x, y):
-        self.spacing_x = x
-        self.spacing_y = y
-        self._update()
-
-    def _update(self):
-        pass
 
     def _group_items(self, items):
         groups: Dict[Hashable, List[FileInfo]] = {}
@@ -77,7 +46,7 @@ class Layouter:
         return group_title
 
     def _build_tile_grid(self, items: List[Any]) -> TileLayout:
-        tile_layout = TileLayout()
+        tile_layout = TileLayout(self.style)
         tile_layout.set_items(items)
         return tile_layout
 

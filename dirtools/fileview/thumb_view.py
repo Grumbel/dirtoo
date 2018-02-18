@@ -29,7 +29,7 @@ from dirtools.dbus_thumbnailer import DBusThumbnailerError
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.thumb_file_item import ThumbFileItem
 from dirtools.fileview.layouter import Layouter
-from dirtools.fileview.layout import TileLayout
+from dirtools.fileview.layout import TileStyle
 from dirtools.fileview.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -79,7 +79,8 @@ class ThumbView(QGraphicsView):
 
         self.scene.selectionChanged.connect(self.on_selection_changed)
 
-        self.layouter = Layouter(self.scene)
+        self.tile_style = TileStyle()
+        self.layouter = Layouter(self.scene, self.tile_style)
         self.layout = None
 
         self.items: List[ThumbFileItem] = []
@@ -358,7 +359,7 @@ class ThumbView(QGraphicsView):
         def get_bounding_rect():
             rect = self.layout.get_bounding_rect()
 
-            if True: # self.layout_style == LayoutStyle.ROWS:
+            if True:  # self.layout_style == LayoutStyle.ROWS:
                 # center alignment
                 w = rect.right()
             else:
@@ -394,21 +395,22 @@ class ThumbView(QGraphicsView):
             self.tn_size = min(self.tn_width, self.tn_height)
 
             self.column_style = True
-            self.layouter.set_style(TileLayout.Style.COLUMNS)
-            self.layouter.set_padding(8, 8)
-            self.layouter.set_spacing(16, 8)
-            self.layouter.set_tile_size(self.tn_width, self.tn_height)
+
+            self.tile_style.set_arrangement(TileStyle.Arrangement.COLUMNS)
+            self.tile_style.set_padding(8, 8)
+            self.tile_style.set_spacing(16, 8)
+            self.tile_style.set_tile_size(self.tn_width, self.tn_height)
         else:
             self.tn_width = [16, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, 1536][self.zoom_index]
             self.tn_height = self.tn_width
             self.tn_size = min(self.tn_width, self.tn_height)
 
             self.column_style = False
-            self.layouter.set_style(TileLayout.Style.ROWS)
-            self.layouter.set_padding(16, 16)
-            self.layouter.set_spacing(16, 16)
+            self.tile_style.set_arrangement(TileStyle.Arrangement.ROWS)
+            self.tile_style.set_padding(16, 16)
+            self.tile_style.set_spacing(16, 16)
             k = [0, 1, 1, 2, 3][self.level_of_detail]
-            self.layouter.set_tile_size(self.tn_width, self.tn_height + 16 * k)
+            self.tile_style.set_tile_size(self.tn_width, self.tn_height + 16 * k)
 
         if self.zoom_index < 2:
             self.flavor = "normal"

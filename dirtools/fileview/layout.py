@@ -105,16 +105,14 @@ class ItemLayout(Layout):
             self.item.setPos(x, y)
 
 
-class TileLayout(Layout):
+class TileStyle:
 
-    class Style(Enum):
+    class Arrangement(Enum):
 
         ROWS = 0
         COLUMNS = 1
 
     def __init__(self):
-        super().__init__()
-
         self.padding_x = 16
         self.padding_y = 16
 
@@ -124,8 +122,30 @@ class TileLayout(Layout):
         self.tile_width = 128
         self.tile_height = 128 + 16
 
-        self.layout_style = TileLayout.Style.ROWS
+        self.arrangement = TileStyle.Arrangement.ROWS
 
+    def set_arrangement(self, arrangement):
+        self.arrangement = arrangement
+
+    def set_tile_size(self, tile_w, tile_h):
+        self.tile_width = tile_w
+        self.tile_height = tile_h
+
+    def set_padding(self, x, y):
+        self.padding_x = x
+        self.padding_y = y
+
+    def set_spacing(self, x, y):
+        self.spacing_x = x
+        self.spacing_y = y
+
+
+class TileLayout(Layout):
+
+    def __init__(self, style):
+        super().__init__()
+
+        self.style = style
         self.items: List[FileItem] = []
 
         self.rows = 0
@@ -134,38 +154,15 @@ class TileLayout(Layout):
     def set_items(self, items):
         self.items = items
 
-    def _update(self):
-        self.columns = self._calc_num_columns()
-        self.needs_relayout = True
-
-    def set_style(self, style):
-        self.layout_style = style
-        self._update()
-
-    def set_tile_size(self, tile_w, tile_h):
-        self.tile_width = tile_w
-        self.tile_height = tile_h
-        self._update()
-
-    def set_padding(self, x, y):
-        self.padding_x = x
-        self.padding_y = y
-        self._update()
-
-    def set_spacing(self, x, y):
-        self.spacing_x = x
-        self.spacing_y = y
-        self._update()
-
     def _calc_num_columns(self, viewport_width):
         return max(1,
-                   (viewport_width - 2 * self.padding_x + self.spacing_x) //
-                   (self.tile_width + self.spacing_x))
+                   (viewport_width - 2 * self.style.padding_x + self.style.spacing_x) //
+                   (self.style.tile_width + self.style.spacing_x))
 
     def _calc_num_rows(self, viewport_height):
         return max(1,
-                   (viewport_height - 2 * self.padding_y + self.spacing_y) //
-                   (self.tile_height + self.spacing_y))
+                   (viewport_height - 2 * self.style.padding_y + self.style.spacing_y) //
+                   (self.style.tile_height + self.style.spacing_y))
 
     def set_pos(self, x, y):
         super().set_pos(x, y)
@@ -178,7 +175,7 @@ class TileLayout(Layout):
             self.columns = new_columns
             self.needs_relayout = True
 
-        grid_width = (self.columns * (self.tile_width + self.spacing_x)) - self.spacing_x + 2 * self.padding_x
+        grid_width = (self.columns * (self.style.tile_width + self.style.spacing_x)) - self.style.spacing_x + 2 * self.style.padding_x
         center_x_off = (viewport_width - grid_width) / 2
 
         bottom_y = 0
@@ -187,18 +184,18 @@ class TileLayout(Layout):
         row = 0
         for item in self.items:
             # insert new item at the current position
-            x = col * (self.tile_width + self.spacing_x) + self.padding_x
-            y = row * (self.tile_height + self.spacing_y) + self.padding_y
+            x = col * (self.style.tile_width + self.style.spacing_x) + self.style.padding_x
+            y = row * (self.style.tile_height + self.style.spacing_y) + self.style.padding_y
 
-            item.set_tile_size(self.tile_width, self.tile_height)
+            item.set_tile_size(self.style.tile_width, self.style.tile_height)
             item.setPos(self.x + x + center_x_off,
                         self.y + y)
 
-            right_x = max(right_x, x + self.tile_width + self.padding_x)
-            bottom_y = y + self.tile_height + self.padding_y
+            right_x = max(right_x, x + self.style.tile_width + self.style.padding_x)
+            bottom_y = y + self.style.tile_height + self.style.padding_y
 
             # calculate next items position
-            if self.layout_style == TileLayout.Style.ROWS:
+            if self.style.arrangement == TileStyle.Arrangement.ROWS:
                 col += 1
                 if col == self.columns:
                     col = 0
