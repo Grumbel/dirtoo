@@ -34,9 +34,9 @@ def parse_args(args):
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("DESKTOP", nargs='?')
     group.add_argument('-l', '--list-dirs', action='store_true', default=False,
-                        help="List all directories scanned for .desktop files")
+                       help="List all directories scanned for .desktop files")
     group.add_argument('-L', '--list-files', action='store_true', default=False,
-                        help="List all .desktop files")
+                       help="List all .desktop files")
 
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help="Be verbose")

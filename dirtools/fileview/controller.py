@@ -335,14 +335,14 @@ class Controller(QObject):
             files.append(filename)
             mimetypes.add(self.app.mime_database.get_mime_type(filename).name())
 
-        default_apps_sets: List[Set[str]] = []
-        other_apps_sets: List[Set[str]] = []
+        apps_default_sets: List[Set[str]] = []
+        apps_other_sets: List[Set[str]] = []
         for mimetype in mimetypes:
-            default_apps_sets.append(set(self.app.mime_associations.get_default_apps(mimetype)))
-            other_apps_sets.append(set(self.app.mime_associations.get_associations(mimetype)))
+            apps_default_sets.append(set(self.app.mime_associations.get_default_apps(mimetype)))
+            apps_other_sets.append(set(self.app.mime_associations.get_associations(mimetype)))
 
-        default_apps = set.intersection(*default_apps_sets)
-        other_apps = set.intersection(*other_apps_sets)
+        default_apps = set.intersection(*apps_default_sets)
+        other_apps = set.intersection(*apps_other_sets)
 
         default_apps = {get_desktop_file(app) for app in default_apps}
         other_apps = {get_desktop_file(app) for app in other_apps}
