@@ -24,8 +24,8 @@ from dirtools.fileview.file_item import FileItem
 
 class Layout:
 
-    def __init__(self, parent):
-        self.parent = parent
+    def __init__(self):
+        self.parent = None
 
         self.x = 0
         self.y = 0
@@ -80,11 +80,14 @@ class HBoxLayout(Layout):
     def resize(self, width, height):
         self.layout(width)
 
+    def get_bounding_rect(self):
+        return (self.x, self.y, self.width, self.height)
+
 
 class ItemLayout(Layout):
 
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def __init__(self):
+        super().__init__()
 
         self.item = None
 
@@ -108,8 +111,8 @@ class TileLayout(Layout):
         ROWS = 0
         COLUMNS = 1
 
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def __init__(self):
+        super().__init__()
 
         self.padding_x = 16
         self.padding_y = 16
@@ -164,8 +167,7 @@ class TileLayout(Layout):
                    (self.tile_height + self.spacing_y))
 
     def set_pos(self, x, y):
-        for item in self.items:
-            pass
+        super().set_pos(x, y)
 
     def layout(self, viewport_width):
         super().layout(viewport_width)
@@ -174,6 +176,9 @@ class TileLayout(Layout):
         if self.columns != new_columns:
             self.columns = new_columns
             self.needs_relayout = True
+
+        grid_width = (self.columns * (self.tile_width + self.spacing_x)) - self.spacing_x + 2 * self.padding_x
+        center_x_off = (viewport_width - grid_width) / 2
 
         bottom_y = 0
         right_x = 0
@@ -185,7 +190,8 @@ class TileLayout(Layout):
             y = row * (self.tile_height + self.spacing_y) + self.padding_y
 
             item.set_tile_size(self.tile_width, self.tile_height)
-            item.setPos(x, y)
+            item.setPos(self.x + x + center_x_off,
+                        self.y + y)
 
             right_x = max(right_x, x + self.tile_width + self.padding_x)
             bottom_y = y + self.tile_height + self.padding_y

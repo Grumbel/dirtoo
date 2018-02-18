@@ -71,7 +71,7 @@ class Layouter:
         return groups
 
     def _build_group_title(self, title: str) -> ItemLayout:
-        text_item = self.scene.addText(title)
+        text_item = self.scene.addText(title, QFont("Verdana", 12))
         group_title = ItemLayout()
         group_title.set_item(text_item)
         return group_title
@@ -87,7 +87,7 @@ class Layouter:
         return tile_layout
 
     def build_layout(self, items: List[Any]) -> HBoxLayout:
-        self.root = HBoxLayout(None)
+        self.root = HBoxLayout()
 
         if self.show_grouping:
             groups = self._group_items(items)

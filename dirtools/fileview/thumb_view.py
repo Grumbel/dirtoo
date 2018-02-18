@@ -233,7 +233,6 @@ class ThumbView(QGraphicsView):
 
         self.style_item(item)
         self.layouter.append_item(item)
-        self.setSceneRect(self.layouter.get_bounding_rect())
 
     def on_file_removed(self, abspath):
         logger.debug("ThumbView.on_file_removed: %s", abspath)
@@ -301,7 +300,6 @@ class ThumbView(QGraphicsView):
                 self.killTimer(self.resize_timer)
             self.resize_timer = self.startTimer(100)
         else:
-            self.layout.resize(self.viewport().width(), self.viewport().height())
             self.layout_items()
 
     def timerEvent(self, ev):
@@ -354,7 +352,9 @@ class ThumbView(QGraphicsView):
         if self.layout is None:
             self.layout = self.layouter.build_layout(self.items)
 
+        print("Layout resize:", self.viewport().width(), self.viewport().height())
         self.layout.resize(self.viewport().width(), self.viewport().height())
+        self.setSceneRect(QRectF(*self.layout.get_bounding_rect()))
 
         # self.scene.setItemIndexMethod(old_item_index_method)
         self.setUpdatesEnabled(True)
