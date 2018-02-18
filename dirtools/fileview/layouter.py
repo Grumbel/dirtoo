@@ -21,6 +21,7 @@ from PyQt5.QtGui import QFont
 
 from dirtools.fileview.layout import HBoxLayout, TileLayout, ItemLayout, VSpacer
 from dirtools.fileview.file_info import FileInfo
+from dirtools.fileview.thumb_file_item import ThumbFileItem
 
 
 class Layouter:
@@ -86,7 +87,15 @@ class Layouter:
         tile_layout.set_items(visible_items)
         return tile_layout
 
+    def cleanup(self):
+        # ThumbFileItem's are recycled between layouts
+        for item in self.scene.items():
+            if not isinstance(item, ThumbFileItem):
+                self.scene.removeItem(item)
+
     def build_layout(self, items: List[Any]) -> HBoxLayout:
+        self.cleanup()
+
         self.root = HBoxLayout()
 
         if self.show_grouping:
