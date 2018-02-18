@@ -122,9 +122,10 @@ class Layouter:
                 grid = self._build_tile_grid(items)
                 self.root.add(grid)
 
-                spacer = VSpacer(48)
-                print(repr(spacer))
-                self.root.add(spacer)
+                if idx + 1 != len(sorted_groups):
+                    spacer = VSpacer(48)
+                    print(repr(spacer))
+                    self.root.add(spacer)
         else:
             grid = self._build_tile_grid(items)
             self.root.add(grid)
