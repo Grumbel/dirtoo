@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Hashable, List, Dict, Union
+from typing import List, Dict, Union
 
 import logging
 
@@ -28,7 +28,8 @@ from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
 from dirtools.dbus_thumbnailer import DBusThumbnailerError
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.thumb_file_item import ThumbFileItem
-from dirtools.fileview.tile_layouter import TileLayouter, LayoutStyle
+from dirtools.fileview.layouter import Layouter
+from dirtools.fileview.layout import TileLayout
 from dirtools.fileview.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -78,7 +79,8 @@ class ThumbView(QGraphicsView):
 
         self.scene.selectionChanged.connect(self.on_selection_changed)
 
-        self.layouter = TileLayouter()
+        self.layouter = Layouter(self.scene)
+        self.layout = None
 
         self.items: List[ThumbFileItem] = []
 
@@ -299,7 +301,7 @@ class ThumbView(QGraphicsView):
                 self.killTimer(self.resize_timer)
             self.resize_timer = self.startTimer(100)
         else:
-            self.layouter.resize(self.viewport().width(), self.viewport().height())
+            self.layout.resize(self.viewport().width(), self.viewport().height())
             self.layout_items()
 
     def timerEvent(self, ev):
@@ -307,7 +309,8 @@ class ThumbView(QGraphicsView):
             self.killTimer(self.resize_timer)
             self.resize_timer = None
 
-            self.layouter.resize(self.viewport().width(), self.viewport().height())
+            if self.layout is not None:
+                self.layout.resize(self.viewport().width(), self.viewport().height())
             self.layout_items()
         else:
             assert False, "timer foobar"
@@ -348,27 +351,10 @@ class ThumbView(QGraphicsView):
         # old_item_index_method = self.scene.itemIndexMethod()
         # self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
 
-        self.layouter.resize(self.viewport().width(), self.viewport().height())
+        if self.layout is None:
+            self.layout = self.layouter.build_layout(self.items)
 
-        # group items by group
-        groups: Dict[Hashable, List[FileInfo]] = {}
-        for item in self.items:
-            if item.fileinfo.group not in groups:
-                groups[item.fileinfo.group] = []
-            groups[item.fileinfo.group].append(item)
-
-        self.layouter.begin()
-        for group, items in groups.items():
-            # self.layouter.begin_group(str(group))
-            if self.show_filtered:
-                visible_items = [item for item in items if not item.fileinfo.is_hidden]
-            else:
-                visible_items = [item for item in items if item.fileinfo.is_visible]
-
-            self.layouter.append_items(visible_items)
-            self.layouter.line_break()
-            self.setSceneRect(self.layouter.get_bounding_rect())
-        self.layouter.end()
+        self.layout.resize(self.viewport().width(), self.viewport().height())
 
         # self.scene.setItemIndexMethod(old_item_index_method)
         self.setUpdatesEnabled(True)
@@ -394,7 +380,7 @@ class ThumbView(QGraphicsView):
             self.tn_size = min(self.tn_width, self.tn_height)
 
             self.column_style = True
-            self.layouter.set_style(LayoutStyle.COLUMNS)
+            self.layouter.set_style(TileLayout.Style.COLUMNS)
             self.layouter.set_padding(8, 8)
             self.layouter.set_spacing(16, 8)
             self.layouter.set_tile_size(self.tn_width, self.tn_height)
@@ -404,7 +390,7 @@ class ThumbView(QGraphicsView):
             self.tn_size = min(self.tn_width, self.tn_height)
 
             self.column_style = False
-            self.layouter.set_style(LayoutStyle.ROWS)
+            self.layouter.set_style(TileLayout.Style.ROWS)
             self.layouter.set_padding(16, 16)
             self.layouter.set_spacing(16, 16)
             k = [0, 1, 1, 2, 3][self.level_of_detail]

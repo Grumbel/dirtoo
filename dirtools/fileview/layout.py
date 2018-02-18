@@ -15,6 +15,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
+from enum import Enum
+
+from dirtools.fileview.file_item import FileItem
+
 
 class Layout:
 
@@ -43,29 +49,33 @@ class Layout:
 
 class HBoxLayout(Layout):
 
-    def __init__(self, parent):
+    def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.children = []
+        self.children: List[Layout] = []
 
     def add(self, child):
         self.children.append(child)
+        child.parent = self
 
     def layout(self, width):
         super().layout(width)
 
         y = 0
-        for child in children:
+        for child in self.children:
             child.set_pos(0, self.y + y)
             child.layout(width)
-            y += child.height(width)
+            y += child.height
 
         self.height = y
+
+    def resize(self, width, height):
+        self.layout(width)
 
 
 class ItemLayout(Layout):
 
-    def __init__(self, parent):
+    def __init__(self, parent=None):
         super().__init__(parent)
 
         self.item = None
@@ -75,7 +85,7 @@ class ItemLayout(Layout):
 
     def layout(self, width):
         if self.item is not None:
-            self.height = self.item.height()
+            self.height = self.item.boundingRect().height()
 
     def set_pos(self, x, y):
         super().set_pos(x, y)
@@ -90,7 +100,7 @@ class TileLayout(Layout):
         ROWS = 0
         COLUMNS = 1
 
-    def __init__(self, parent):
+    def __init__(self, parent=None):
         super().__init__(parent)
 
         self.padding_x = 16
@@ -102,9 +112,12 @@ class TileLayout(Layout):
         self.tile_width = 128
         self.tile_height = 128 + 16
 
-        self.layout_style = TileLayoutStyle.ROWS
+        self.layout_style = TileLayout.Style.ROWS
 
-        self.items = []
+        self.items: List[FileItem] = []
+
+        self.rows = 0
+        self.columns = 0
 
     def set_items(self, items):
         self.items = items
@@ -132,45 +145,56 @@ class TileLayout(Layout):
         self.spacing_y = y
         self._update()
 
-    def _calc_num_columns(self):
+    def _calc_num_columns(self, viewport_width):
         return max(1,
-                   (self.viewport_width - 2 * self.padding_x + self.spacing_x) //
+                   (viewport_width - 2 * self.padding_x + self.spacing_x) //
                    (self.tile_width + self.spacing_x))
 
-    def _calc_num_rows(self):
+    def _calc_num_rows(self, viewport_height):
         return max(1,
-                   (self.viewport_height - 2 * self.padding_y + self.spacing_y) //
+                   (viewport_height - 2 * self.padding_y + self.spacing_y) //
                    (self.tile_height + self.spacing_y))
 
-    def layout(self, width):
-        super().layout(width)
+    def set_pos(self, x, y):
+        for item in self.items:
+            pass
 
-        new_columns = self._calc_num_columns()
+    def layout(self, viewport_width):
+        super().layout(viewport_width)
+
+        new_columns = self._calc_num_columns(viewport_width)
         if self.columns != new_columns:
             self.columns = new_columns
             self.needs_relayout = True
 
-        # insert new item at the current position
-        x = self.col * (self.tile_width + self.spacing_x) + self.padding_x
-        y = self.row * (self.tile_height + self.spacing_y) + self.padding_y
+        bottom_y = 0
+        right_x = 0
+        col = 0
+        row = 0
+        for item in self.items:
+            # insert new item at the current position
+            x = col * (self.tile_width + self.spacing_x) + self.padding_x
+            y = row * (self.tile_height + self.spacing_y) + self.padding_y
 
-        item.set_tile_size(self.tile_width, self.tile_height)
-        item.setPos(x, y)
+            item.set_tile_size(self.tile_width, self.tile_height)
+            item.setPos(x, y)
 
-        self.right_x = max(self.right_x, x + self.tile_width + self.padding_x)
-        self.bottom_y = y + self.tile_height + self.padding_y
+            right_x = max(right_x, x + self.tile_width + self.padding_x)
+            bottom_y = y + self.tile_height + self.padding_y
 
-        # calculate next items position
-        if self.layout_style == LayoutStyle.ROWS:
-            self.col += 1
-            if self.col == self.columns:
-                self.col = 0
-                self.row += 1
-        else:
-            self.row += 1
-            if self.row == self.rows:
-                self.row = 0
-                self.col += 1
+            # calculate next items position
+            if self.layout_style == TileLayout.Style.ROWS:
+                col += 1
+                if col == self.columns:
+                    col = 0
+                    row += 1
+            else:
+                row += 1
+                if row == self.rows:
+                    row = 0
+                    col += 1
+
+        self.height = bottom_y
 
 
 # EOF #
