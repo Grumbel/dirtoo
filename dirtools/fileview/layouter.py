@@ -38,7 +38,6 @@ class Layouter:
         self.tile_width = 128
         self.tile_height = 128 + 16
 
-        self.show_grouping = True
         self.show_filtered = False
 
     def set_style(self, style):
@@ -78,13 +77,8 @@ class Layouter:
         return group_title
 
     def _build_tile_grid(self, items: List[Any]) -> TileLayout:
-        if self.show_filtered:
-            visible_items = [item for item in items if not item.fileinfo.is_hidden]
-        else:
-            visible_items = [item for item in items if item.fileinfo.is_visible]
-
         tile_layout = TileLayout()
-        tile_layout.set_items(visible_items)
+        tile_layout.set_items(items)
         return tile_layout
 
     def cleanup(self):
@@ -98,37 +92,41 @@ class Layouter:
 
         self.root = HBoxLayout()
 
-        if self.show_grouping:
-            groups = self._group_items(items)
+        groups = self._group_items(items)
 
-            if None in groups:
-                first_group = (None, groups[None])
-                del groups[None]
-            else:
-                first_group = None
-
-            sorted_groups = sorted(groups.items(),
-                                   key=lambda x: x[0],
-                                   reverse=True)
-
-            if first_group is not None:
-                sorted_groups = [first_group] + sorted_groups
-
-            for idx, (group, items) in enumerate(sorted_groups):
-                if group is not None:
-                    title = self._build_group_title(str(group))
-                    self.root.add(title)
-
-                grid = self._build_tile_grid(items)
-                self.root.add(grid)
-
-                if idx + 1 != len(sorted_groups):
-                    spacer = VSpacer(48)
-                    print(repr(spacer))
-                    self.root.add(spacer)
+        if None in groups:
+            first_group = (None, groups[None])
+            del groups[None]
         else:
-            grid = self._build_tile_grid(items)
+            first_group = None
+
+        sorted_groups = sorted(groups.items(),
+                               key=lambda x: x[0],
+                               reverse=True)
+
+        if first_group is not None:
+            sorted_groups = [first_group] + sorted_groups
+
+        for idx, (group, items) in enumerate(sorted_groups):
+            if self.show_filtered:
+                visible_items = [item for item in items if not item.fileinfo.is_hidden]
+            else:
+                visible_items = [item for item in items if item.fileinfo.is_visible]
+
+            if visible_items == []:
+                continue
+
+            if group is not None:
+                title = self._build_group_title(str(group))
+                self.root.add(title)
+
+            grid = self._build_tile_grid(visible_items)
+
             self.root.add(grid)
+
+            if idx + 1 != len(sorted_groups):
+                spacer = VSpacer(48)
+                self.root.add(spacer)
 
         return self.root
 
