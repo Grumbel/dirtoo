@@ -340,6 +340,7 @@ class ThumbView(QGraphicsView):
 
     def layout_items(self):
         self.needs_layout = True
+        self.invalidateScene()
         self.update()
 
     def _layout_items(self):
