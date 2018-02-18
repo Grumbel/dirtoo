@@ -353,7 +353,6 @@ class ThumbView(QGraphicsView):
 
         self.layout = self.layouter.build_layout(self.items)
 
-        print("Layout resize:", self.viewport().width(), self.viewport().height())
         self.layout.resize(self.viewport().width(), self.viewport().height())
 
         def get_bounding_rect():
