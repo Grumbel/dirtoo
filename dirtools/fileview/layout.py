@@ -18,6 +18,7 @@
 from typing import List
 
 from enum import Enum
+from PyQt5.QtCore import QRectF
 
 from dirtools.fileview.file_item import FileItem
 
@@ -81,7 +82,7 @@ class HBoxLayout(Layout):
         self.layout(width)
 
     def get_bounding_rect(self):
-        return (self.x, self.y, self.width, self.height)
+        return QRectF(self.x, self.y, self.width, self.height)
 
 
 class ItemLayout(Layout):

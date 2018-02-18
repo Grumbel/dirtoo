@@ -281,6 +281,7 @@ class ThumbView(QGraphicsView):
         self.cursor_item = None
         self.abspath2item.clear()
         self.scene.clear()
+        self.layout = None
 
         for fileinfo in fileinfos:
             item = ThumbFileItem(fileinfo, self.controller, self)
@@ -350,12 +351,25 @@ class ThumbView(QGraphicsView):
         # old_item_index_method = self.scene.itemIndexMethod()
         # self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
 
-        if self.layout is None:
-            self.layout = self.layouter.build_layout(self.items)
+        self.layout = self.layouter.build_layout(self.items)
 
         print("Layout resize:", self.viewport().width(), self.viewport().height())
         self.layout.resize(self.viewport().width(), self.viewport().height())
-        self.setSceneRect(QRectF(*self.layout.get_bounding_rect()))
+
+        def get_bounding_rect():
+            rect = self.layout.get_bounding_rect()
+
+            if True: # self.layout_style == LayoutStyle.ROWS:
+                # center alignment
+                w = rect.right()
+            else:
+                # top/center alignment
+                w = max(self.viewport().width(), rect.right())
+            h = max(self.viewport().height(), rect.bottom())
+
+            return QRectF(0, 0, w, h)
+
+        self.setSceneRect(get_bounding_rect())
 
         # self.scene.setItemIndexMethod(old_item_index_method)
         self.setUpdatesEnabled(True)
