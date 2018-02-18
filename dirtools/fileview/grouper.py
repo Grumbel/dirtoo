@@ -18,6 +18,16 @@
 from datetime import datetime
 
 
+class NoGrouperFunc:
+
+    def __init__(self):
+        pass
+
+    def __call__(self, fileinfos):
+        for fileinfo in fileinfos:
+            fileinfo.group = None
+
+
 class DayGrouperFunc:
 
     def __init__(self):
@@ -26,7 +36,7 @@ class DayGrouperFunc:
     def __call__(self, fileinfos):
         for fileinfo in fileinfos:
             if fileinfo.isdir():
-                fileinfo.group = 0
+                fileinfo.group = None
             else:
                 date = datetime.fromtimestamp(fileinfo.mtime())
                 fileinfo.group = date.isocalendar()

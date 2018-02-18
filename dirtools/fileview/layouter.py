@@ -92,9 +92,23 @@ class Layouter:
         if self.show_grouping:
             groups = self._group_items(items)
 
-            for group, items in groups.items():
-                title = self._build_group_title(str(group))
-                self.root.add(title)
+            if None in groups:
+                first_group = (None, groups[None])
+                del groups[None]
+            else:
+                first_group = None
+
+            sorted_groups = sorted(groups.items(),
+                                   key=lambda x: x[0],
+                                   reverse=True)
+
+            if first_group is not None:
+                sorted_groups = [first_group] + sorted_groups
+
+            for idx, (group, items) in enumerate(sorted_groups):
+                if group is not None:
+                    title = self._build_group_title(str(group))
+                    self.root.add(title)
 
                 grid = self._build_tile_grid(items)
                 self.root.add(grid)
