@@ -64,7 +64,6 @@ class FileItem(QGraphicsObject):
             pass
 
     def mouseMoveEvent(self, ev):
-        print("moveEvent", ev)
         if (ev.pos() - self.press_pos).manhattanLength() > 16:
             print("drag start")
 
