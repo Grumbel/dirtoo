@@ -55,7 +55,7 @@ class DirectoryGrouperFunc:
 class Grouper:
 
     def __init__(self):
-        self.grouper_func = DirectoryGrouperFunc()
+        self.grouper_func = NoGrouperFunc()
 
     def set_func(self, func):
         self.grouper_func = func

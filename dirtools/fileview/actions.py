@@ -184,6 +184,7 @@ class Actions(QObject):
         self.sort_directories_first = QAction("Directories First", checkable=True)
         self.sort_directories_first.triggered.connect(
             lambda: self.controller.sorter.set_directories_first(self.sort_directories_first.isChecked()))
+        self.sort_directories_first.setChecked(True)
 
         self.sort_reversed = QAction("Reverse Sort", checkable=True)
         self.sort_reversed.triggered.connect(
@@ -191,6 +192,7 @@ class Actions(QObject):
 
         self.sort_by_name = QAction("Sort by Name", checkable=True)
         self.sort_by_name.triggered.connect(lambda: self.controller.sorter.set_key_func(FileInfo.basename))
+        self.sort_by_name.setChecked(True)
 
         self.sort_by_size = QAction("Sort by Size", checkable=True)
         self.sort_by_size.triggered.connect(lambda: self.controller.sorter.set_key_func(FileInfo.size))
@@ -260,6 +262,7 @@ class Actions(QObject):
 
         self.group_by_none = QAction("Don't Group", checkable=True)
         self.group_by_none.triggered.connect(lambda: self.controller.set_grouper_by_none())
+        self.group_by_none.setChecked(True)
 
         self.group_by_day = QAction("Group by Day", checkable=True)
         self.group_by_day.triggered.connect(lambda: self.controller.set_grouper_by_day())
