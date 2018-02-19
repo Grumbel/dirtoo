@@ -147,4 +147,17 @@ class RandomPickMatchFunc(MatchFunc):
         return self
 
 
+class AsciiMatchFunc(MatchFunc):
+
+    def __init__(self, include):
+        self.rx = re.compile(r'^[0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+                             r'!"#$%&\'()*+,-./:;<=>?@\[\\\]^_`{|}~ \t\n\r\x0b\x0c]*$')
+        self.include = include
+
+    def __call__(self, fileinfo, idx):
+        if self.include:
+            return self.rx.match(fileinfo.basename())
+        else:
+            return not self.rx.match(fileinfo.basename())
+
 # EOF #

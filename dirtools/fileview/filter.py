@@ -25,6 +25,7 @@ from dirtools.fileview.match_func import (
     RandomMatchFunc,
     RandomPickMatchFunc,
     FolderMatchFunc,
+    AsciiMatchFunc,
 )
 
 
@@ -61,6 +62,9 @@ class Filter:
 
     def set_random_pick(self, count):
         self.match_func = RandomPickMatchFunc(count)
+
+    def set_ascii(self, include):
+        self.match_func = AsciiMatchFunc(include)
 
     def set_folder(self):
         self.match_func = FolderMatchFunc()

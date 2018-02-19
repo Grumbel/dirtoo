@@ -153,6 +153,16 @@ class FilterParser:
             help="Fuzzy match the filename")
 
         self.register_command(
+            ["ascii"],
+            lambda args: self.filter.set_ascii(True),
+            help="filenames with only ASCII character")
+
+        self.register_command(
+            ["nonascii"],
+            lambda args: self.filter.set_ascii(False),
+            help="filenames with some non-ASCII character")
+
+        self.register_command(
             ["help", "h"],
             lambda args: self.print_help())
 
