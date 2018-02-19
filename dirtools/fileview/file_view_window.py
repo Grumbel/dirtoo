@@ -401,6 +401,8 @@ class FileViewWindow(QMainWindow):
         self.info.setText("  " + text)
 
     def show_current_filename(self, filename):
+        # FIXME: this causes quite substantial keyboard lag when
+        # scrolling with PageUp/Down
         self.status_bar.showMessage(filename)
 
 

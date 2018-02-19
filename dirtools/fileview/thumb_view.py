@@ -22,7 +22,7 @@ import logging
 from pkg_resources import resource_filename
 
 from PyQt5.QtCore import Qt, QRectF
-from PyQt5.QtGui import QBrush, QIcon, QColor, QPixmap
+from PyQt5.QtGui import QBrush, QIcon, QColor, QPixmap, QPainter, QFontMetrics, QFont
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
 
 from dirtools.dbus_thumbnailer import DBusThumbnailerError
@@ -58,10 +58,19 @@ class SharedPixmaps:
         self.new = QPixmap(resource_filename("dirtools", "fileview/icons/noun_258297_cc.png"))
 
 
+class FileViewStyle:
+
+    def __init__(self):
+        self.font = QFont("Verdana", 8)
+        self.fm = QFontMetrics(self.font)
+
+
 class ThumbView(QGraphicsView):
 
     def __init__(self, controller) -> None:
         super().__init__()
+
+        self.controller = controller
 
         self.setCacheMode(QGraphicsView.CacheBackground)
 
@@ -73,11 +82,12 @@ class ThumbView(QGraphicsView):
         self.abspath2item: Dict[str, ThumbFileItem] = {}
         self.setAcceptDrops(True)
 
-        self.controller = controller
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
 
         self.scene.selectionChanged.connect(self.on_selection_changed)
+
+        self.style = FileViewStyle()
 
         self.tile_style = TileStyle()
         self.layouter = Layouter(self.scene, self.tile_style)
@@ -332,6 +342,12 @@ class ThumbView(QGraphicsView):
     def style_items(self):
         for item in self.items:
             self.style_item(item)
+
+    def initPainter(self, painter):
+        logger.debug("ThumbView.initPainter:")
+        painter.setRenderHint(QPainter.SmoothPixmapTransform)
+        painter.setRenderHint(QPainter.TextAntialiasing)
+        painter.setRenderHint(QPainter.Antialiasing)
 
     def paintEvent(self, ev):
         if self.needs_layout:

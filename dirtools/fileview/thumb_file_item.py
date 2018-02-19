@@ -136,6 +136,7 @@ class ThumbFileItem(FileItem):
 
         self.new = False
         self.hovering: bool = False
+        self.animation_count = 0
 
         self.icon = self.make_icon()
         self.normal_thumbnail: Thumbnail = Thumbnail("normal", self)
@@ -178,12 +179,10 @@ class ThumbFileItem(FileItem):
 
         self.prepare()
 
-        painter.setRenderHint(QPainter.SmoothPixmapTransform)
-        painter.setRenderHint(QPainter.TextAntialiasing)
-        painter.setRenderHint(QPainter.Antialiasing)
-
         if self.animation_timer is None:
-            if os.getuid() == self.fileinfo.uid():
+            # FIXME: calling os.getuid() is slow, so use 1000 as
+            # workaround for now
+            if 1000 == self.fileinfo.uid():
                 bg_color = QColor(192 + 32, 192 + 32, 192 + 32)
             elif self.fileinfo.uid() == 0:
                 bg_color = QColor(192 + 32, 176, 176)
@@ -256,8 +255,9 @@ class ThumbFileItem(FileItem):
             self.paint_text_item(painter, 2, dt.strftime("%F %T"))
 
     def paint_text_item(self, painter, row, text):
-        font = QFont("Verdana", 8)
-        fm = QFontMetrics(font)
+        font = self.thumb_view.style.font
+        fm = self.thumb_view.style.fm
+
         tmp = text
 
         if not self.thumb_view.column_style:
@@ -285,7 +285,6 @@ class ThumbFileItem(FileItem):
                              text)
 
     def paint_thumbnail(self, painter):
-        logger.debug("ThumbFileItem.paint_thumbnail: %s", self.fileinfo.abspath())
 
         if self.thumb_view.column_style:
             self.paint_icon(painter, self.icon)
@@ -321,8 +320,8 @@ class ThumbFileItem(FileItem):
     def paint_metadata(self, painter):
         metadata = self.fileinfo.metadata()
 
-        font = QFont("Verdana", 8)
-        fm = QFontMetrics(font)
+        font = self.thumb_view.style.font
+        fm = self.thumb_view.style.fm
         painter.setFont(font)
 
         top_left_text = ""
@@ -430,16 +429,17 @@ class ThumbFileItem(FileItem):
         icon.paint(painter, rect)
 
     def make_icon(self):
-        logger.debug("ThumbFileItem.make_pixmap: %s", self.fileinfo.abspath())
         icon = self.thumb_view.icon_from_fileinfo(self.fileinfo)
         return icon
 
     def hoverEnterEvent(self, ev):
+        logger.debug("ThumbFileItem.hoverEnterEvent: %s", self.fileinfo.abspath())
         self.hovering = True
         self.controller.show_current_filename(self.fileinfo.abspath())
         self.update()
 
     def hoverLeaveEvent(self, ev):
+        logger.debug("ThumbFileItem.hoverLeaveEvent: %s", self.fileinfo.abspath())
         self.hovering = False
         self.controller.show_current_filename("")
         self.update()
@@ -475,6 +475,7 @@ class ThumbFileItem(FileItem):
         self.update()
 
     def timerEvent(self, ev):
+        logger.debug("ThumbFileItem.timerEvent: %s", self.fileinfo.abspath())
         if ev.timerId() == self.animation_timer:
             self.animation_count -= 1
             self.update()
