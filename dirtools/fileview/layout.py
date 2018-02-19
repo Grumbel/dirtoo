@@ -177,7 +177,8 @@ class TileLayout(Layout):
             self.columns = new_columns
             self.needs_relayout = True
 
-        grid_width = (self.columns * (self.style.tile_width + self.style.spacing_x)) - self.style.spacing_x + 2 * self.style.padding_x
+        grid_width = ((self.columns * (self.style.tile_width + self.style.spacing_x)) -
+                      self.style.spacing_x + 2 * self.style.padding_x)
         center_x_off = (viewport_width - grid_width) / 2
 
         bottom_y = 0

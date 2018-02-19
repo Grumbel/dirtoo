@@ -23,7 +23,7 @@ import sys
 import numpy
 import random
 
-from PyQt5.QtGui import QPixmapCache,QImage, QPixmap
+from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsItem,
                              QGraphicsScene, QGraphicsPixmapItem)
 
@@ -49,7 +49,6 @@ def main(argv):
     for y in range(0, 100000, 150):
         for x in range(0, 2500, 150):
             scene.addRect(x, y, 128, 128)
-
 
             # image = QImage(128, 128, QImage.Format_RGB32)
             if count < len(thumbnails):
