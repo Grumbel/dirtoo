@@ -17,6 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import os
 import signal
 import sys
 import numpy
@@ -27,6 +28,8 @@ from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsItem,
                              QGraphicsScene, QGraphicsPixmapItem)
 
 
+from dirtools.dbus_thumbnailer import DBusThumbnailer
+
 
 def main(argv):
     signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -35,16 +38,26 @@ def main(argv):
     scene = QGraphicsScene()
     view = QGraphicsView()
 
+    thumbnails = []
+    for filename in os.listdir(argv[1]):
+        filename = os.path.join(argv[1], filename)
+        print(filename)
+        thumbnails.append(DBusThumbnailer.thumbnail_from_filename(filename, "large"))
+
     count = 0
     items = []
     for y in range(0, 100000, 150):
         for x in range(0, 2500, 150):
             scene.addRect(x, y, 128, 128)
 
-            arr = numpy.random.randint(0, 2**32, (128, 128), dtype=numpy.uint32)
 
             # image = QImage(128, 128, QImage.Format_RGB32)
-            image = QImage(arr, 128, 128, 128 * 4, QImage.Format_ARGB32)
+            if count < len(thumbnails):
+                print(thumbnails[count])
+                image = QImage(thumbnails[count])
+            else:
+                arr = numpy.random.randint(0, 2**32, (128, 128), dtype=numpy.uint32)
+                image = QImage(arr, 128, 128, 128 * 4, QImage.Format_ARGB32)
             pixmap = QPixmap.fromImage(image)
 
             item = QGraphicsPixmapItem(pixmap)
@@ -61,13 +74,14 @@ def main(argv):
             items.append([item, text])
     print(count)
 
-    random.shuffle(items)
-    i = 0
-    for y in range(0, 100000, 150):
-        for x in range(0, 2500, 150):
-            for item in items[i]:
-                    item.setPos(x, y)
-            i += 1
+    if False:
+        random.shuffle(items)
+        i = 0
+        for y in range(0, 100000, 150):
+            for x in range(0, 2500, 150):
+                for item in items[i]:
+                        item.setPos(x, y)
+                i += 1
 
     view.setScene(scene)
     view.resize(800, 600)
