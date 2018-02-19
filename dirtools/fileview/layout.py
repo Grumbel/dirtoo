@@ -21,6 +21,7 @@ from enum import Enum
 from PyQt5.QtCore import QRectF
 
 from dirtools.fileview.file_item import FileItem
+from dirtools.fileview.profiler import profile
 
 
 class Layout:
@@ -167,6 +168,7 @@ class TileLayout(Layout):
     def set_pos(self, x, y):
         super().set_pos(x, y)
 
+    @profile
     def layout(self, viewport_width):
         super().layout(viewport_width)
 

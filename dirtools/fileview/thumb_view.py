@@ -31,6 +31,7 @@ from dirtools.fileview.thumb_file_item import ThumbFileItem
 from dirtools.fileview.layouter import Layouter
 from dirtools.fileview.layout import TileStyle
 from dirtools.fileview.settings import settings
+from dirtools.fileview.profiler import profile
 
 logger = logging.getLogger(__name__)
 
@@ -349,6 +350,7 @@ class ThumbView(QGraphicsView):
         painter.setRenderHint(QPainter.TextAntialiasing)
         painter.setRenderHint(QPainter.Antialiasing)
 
+    @profile
     def paintEvent(self, ev):
         if self.needs_layout:
             self._layout_items()
@@ -361,6 +363,7 @@ class ThumbView(QGraphicsView):
         self.invalidateScene()
         self.update()
 
+    @profile
     def _layout_items(self):
         logger.debug("ThumbView._layout_items")
 
