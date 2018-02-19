@@ -20,9 +20,10 @@
 import signal
 import sys
 import numpy
+import random
 
 from PyQt5.QtGui import QPixmapCache,QImage, QPixmap
-from PyQt5.QtWidgets import (QApplication, QGraphicsView,
+from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsItem,
                              QGraphicsScene, QGraphicsPixmapItem)
 
 
@@ -35,6 +36,7 @@ def main(argv):
     view = QGraphicsView()
 
     count = 0
+    items = []
     for y in range(0, 100000, 150):
         for x in range(0, 2500, 150):
             scene.addRect(x, y, 128, 128)
@@ -43,7 +45,6 @@ def main(argv):
 
             # image = QImage(128, 128, QImage.Format_RGB32)
             image = QImage(arr, 128, 128, 128 * 4, QImage.Format_ARGB32)
-
             pixmap = QPixmap.fromImage(image)
 
             item = QGraphicsPixmapItem(pixmap)
@@ -53,7 +54,20 @@ def main(argv):
             item.setPos(x, y)
             text.setPos(x, y + 128)
             count += 1
+
+            item.setFlags(QGraphicsItem.ItemIsSelectable)
+            item.setAcceptHoverEvents(True)
+
+            items.append([item, text])
     print(count)
+
+    random.shuffle(items)
+    i = 0
+    for y in range(0, 100000, 150):
+        for x in range(0, 2500, 150):
+            for item in items[i]:
+                    item.setPos(x, y)
+            i += 1
 
     view.setScene(scene)
     view.resize(800, 600)
