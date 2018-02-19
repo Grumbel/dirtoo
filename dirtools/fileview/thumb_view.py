@@ -64,6 +64,8 @@ class FileViewStyle:
     def __init__(self):
         self.font = QFont("Verdana", 8)
         self.fm = QFontMetrics(self.font)
+        self.shared_icons = SharedIcons()
+        self.shared_pixmaps = SharedPixmaps()
 
 
 class ThumbView(QGraphicsView):
@@ -100,9 +102,6 @@ class ThumbView(QGraphicsView):
         self.zoom_index = 5
 
         self.file_collection = None
-
-        self.shared_icons = SharedIcons()
-        self.shared_pixmaps = SharedPixmaps()
 
         self.needs_layout = True
 
