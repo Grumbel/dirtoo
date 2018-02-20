@@ -38,13 +38,17 @@ def sanitize(pathname):
 class ArchiveExtractor(QObject):
 
     sig_entry_extracted = pyqtSignal(str, str)
+    sig_finished = pyqtSignal()
 
     def __init__(self, filename: str) -> None:
         super().__init__()
         self.filename = os.path.abspath(filename)
 
-    def extract(self, outdir) -> None:
+    def _extract(self, outdir: str) -> None:
         with libarchive.file_reader(self.filename) as entries:
+            if not os.path.isdir(outdir):
+                os.makedirs(outdir)
+
             for entry in entries:
                 pathname = sanitize(entry.pathname)
                 if pathname is None:
@@ -74,6 +78,14 @@ class ArchiveExtractor(QObject):
                     self.sig_entry_extracted.emit(entry.pathname, dirname)
                 else:
                     logger.warning("skipping non regular entry: %s", entry.pathname)
+
+    def extract(self, outdir: str) -> None:
+        try:
+            self._extract(outdir)
+        except Exception as err:
+            logger.exception("%s: failure when extracting archive", self.filename)
+
+        self.sig_finished.emit()
 
 
 # EOF #
