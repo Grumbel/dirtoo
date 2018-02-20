@@ -104,8 +104,15 @@ class ArchiveExtractor(QObject):
 
     sig_close_requested = pyqtSignal()
 
-    def __init__(self, filename: str, outdir: str):
+    def __init__(self, filename: str, outdir: str) -> None:
         super().__init__()
+
+        # Creating the directory here so that the directory is ready
+        # and can be watched, otherwise the thread might not create
+        # them in time and a watcher would error out
+        if not os.path.isdir(outdir):
+            os.makedirs(outdir)
+
         self.worker = ArchiveExtractorWorker(filename, outdir)
         self.thread = QThread(self)
         self.worker.moveToThread(self.thread)
