@@ -25,6 +25,7 @@ setup(name='dirtools',
       scripts=[],
       entry_points={
           'console_scripts': [
+              'dt-archive-extractor = dirtools.cmd_archive_extractor:main_entrypoint',
               'dt-move = dirtools.cmd_move:main',
               'dt-expr = dirtools.cmd_expr:main_entrypoint',
               'dt-find = dirtools.cmd_find:main',
