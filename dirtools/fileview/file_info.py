@@ -21,7 +21,7 @@ import logging
 import os
 import stat
 
-from dirtools.fileview.filter_parser import VIDEO_EXT, IMAGE_EXT
+from dirtools.fileview.filter_parser import VIDEO_EXT, IMAGE_EXT, ARCHIVE_EXT
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +117,9 @@ class FileInfo:
 
     def is_image(self):
         return self._ext[1:] in IMAGE_EXT
+
+    def is_archive(self):
+        return self._ext[1:] in ARCHIVE_EXT
 
     def stat(self):
         return self._stat
