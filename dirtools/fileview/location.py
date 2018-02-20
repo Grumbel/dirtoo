@@ -45,10 +45,14 @@ def split_payloads(text):
 class Location:
 
     @staticmethod
-    def from_string(path):
-        m = LOCATION_REGEX.match(path)
+    def from_path(path):
+        return Location.from_url("file://" + path)
+
+    @staticmethod
+    def from_url(url):
+        m = LOCATION_REGEX.match(url)
         if m is None:
-            raise Exception("Location.from_string: failed to decode: {}".format(path))
+            raise Exception("Location.from_string: failed to decode: {}".format(url))
         else:
             protocol = m.group(1)
             abspath = m.group(2)
@@ -59,12 +63,23 @@ class Location:
             else:
                 payloads = []
 
-            return Location(protocol, path, payloads)
+            return Location(protocol, abspath, payloads)
 
     def __init__(self, protocol, path, payloads):
         self.protocol: str = protocol
         self.path: str = path
         self.payloads: List[Tuple[str, str]] = payloads
+
+    def has_payload(self) -> bool:
+        return self.payloads != []
+
+    def as_url(self) -> str:
+        payload_text = "".join(["//{}:{}".format(prot, path)
+                                for prot, path in self.payloads])
+        return "{}://{}{}".format(self.protocol, self.path, payload_text)
+
+    def __str__(self):
+        return self.as_url()
 
 
 # EOF #

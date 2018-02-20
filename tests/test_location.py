@@ -25,15 +25,19 @@ class LocationTestCase(unittest.TestCase):
     def test_location(self):
         ok_texts = ["file:///home/juser/test.rar//rar:file_inside.rar",
                     "file:///home/juser/test.rar",
+                    "file:///home/juser/test.rar//rar",
+                    "file:///tmp/",
                     "file:///home/juser/test.rar//rar:file_inside.rar//rar:file.txt",
                     "file:///test.rar//rar:one//rar:two//rar:three"]
+
         fail_texts = ["/home/juser/test.rar",
                       "file://test.rar",
                       "file:///test.rar//rar:oeu//"
                       "file:///test.rar///rar:foo"]
 
         for text in ok_texts:
-            Location.from_string(text)
+            location = Location.from_url(text)
+            self.assertEqual(location.as_url(), text)
 
         for text in fail_texts:
             with self.assertRaises(Exception) as context:
