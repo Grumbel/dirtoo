@@ -18,9 +18,8 @@
 import logging
 import os
 import libarchive
-import hashlib
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject, QThread, Qt, pyqtSignal
 
 logger = logging.getLogger(__name__)
 
@@ -35,17 +34,36 @@ def sanitize(pathname):
         return normpath
 
 
-class ArchiveExtractor(QObject):
+class ArchiveExtractorWorker(QObject):
 
     sig_entry_extracted = pyqtSignal(str, str)
     sig_finished = pyqtSignal()
 
-    def __init__(self, filename: str) -> None:
+    def __init__(self, filename: str, outdir: str) -> None:
         super().__init__()
         self.filename = os.path.abspath(filename)
+        self.outdir = outdir
+        self._close = False
+
+    def close(self):
+        self._close = True
+
+    def interruption_point(self):
+        if self._close:
+            raise Exception("{}: archive extraction was interrupted".format(self.filename))
+
+    def init(self) -> None:
+        try:
+            self._extract(self.outdir)
+        except Exception as err:
+            logger.exception("{}: failure when extracting archive".format(self.filename))
+
+        self.sig_finished.emit()
 
     def _extract(self, outdir: str) -> None:
         with libarchive.file_reader(self.filename) as entries:
+            self.interruption_point()
+
             if not os.path.isdir(outdir):
                 os.makedirs(outdir)
 
@@ -68,6 +86,7 @@ class ArchiveExtractor(QObject):
                         with open(outfile, "wb") as out:
                             blocks = entry.get_blocks()
                             for block in blocks:
+                                self.interruption_point()
                                 out.write(block)
                         self.sig_entry_extracted.emit(entry.pathname, outfile)
                         break
@@ -79,13 +98,41 @@ class ArchiveExtractor(QObject):
                 else:
                     logger.warning("skipping non regular entry: %s", entry.pathname)
 
-    def extract(self, outdir: str) -> None:
-        try:
-            self._extract(outdir)
-        except Exception as err:
-            logger.exception("%s: failure when extracting archive", self.filename)
 
-        self.sig_finished.emit()
+class ArchiveExtractor(QObject):
+
+    sig_close_requested = pyqtSignal()
+
+    def __init__(self, filename: str, outdir: str):
+        super().__init__()
+        self.worker = ArchiveExtractorWorker(filename, outdir)
+        self.thread = QThread(self)
+        self.worker.moveToThread(self.thread)
+
+        self.thread.started.connect(self.worker.init)
+
+        # close() is a blocking connection so the thread is properly
+        # done after the signal was emit'ed and we don't have to fuss
+        # around with sig_finished() and other stuff
+        self.sig_close_requested.connect(self.worker.close, type=Qt.BlockingQueuedConnection)
+
+    def start(self) -> None:
+        self.thread.start()
+
+    def close(self) -> None:
+        assert self.worker._close is False
+        self.worker._close = True
+        self.sig_close_requested.emit()
+        self.thread.quit()
+        self.thread.wait()
+
+    @property
+    def sig_entry_extracted(self):
+        return self.worker.sig_entry_extracted
+
+    @property
+    def sig_finished(self):
+        return self.worker.sig_finished
 
 
 # EOF #

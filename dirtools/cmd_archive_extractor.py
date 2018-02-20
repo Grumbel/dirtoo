@@ -19,7 +19,7 @@ import signal
 import argparse
 import sys
 
-from PyQt5.QtCore import QCoreApplication, QObject, QTimer
+from PyQt5.QtCore import QCoreApplication, QTimer
 
 from dirtools.archive_extractor import ArchiveExtractor
 
@@ -41,16 +41,20 @@ def main(argv):
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     app = QCoreApplication([])
 
-    extractor = ArchiveExtractor(args.ARCHIVE[0])
+    extractor = ArchiveExtractor(args.ARCHIVE[0], args.outdir)
 
     if args.verbose:
         extractor.sig_entry_extracted.connect(lambda x, y: print(y))
 
     extractor.sig_finished.connect(app.quit)
 
-    QTimer.singleShot(0, lambda: extractor.extract(args.outdir))
+    extractor.start()
 
-    return app.exec()
+    ret = app.exec()
+
+    extractor.close()
+
+    return ret
 
 
 def main_entrypoint():
