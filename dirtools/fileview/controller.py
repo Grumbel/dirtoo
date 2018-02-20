@@ -36,6 +36,8 @@ from dirtools.fileview.filter_parser import FilterParser
 from dirtools.fileview.settings import settings
 from dirtools.fileview.filelist_stream import FileListStream
 from dirtools.xdg_desktop import get_desktop_entry, get_desktop_file
+from dirtools.fileview.location import Location
+from dirtools.archive_extractor import ArchiveExtractor
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +49,7 @@ class Controller(QObject):
         self.app = app
         self.location: Optional[str] = None
         self.file_collection = FileCollection()
+        self.archive_extractor = None
         self.actions = Actions(self)
         self.window = FileViewWindow(self)
 
@@ -72,6 +75,9 @@ class Controller(QObject):
     def close(self):
         if self.directory_watcher is not None:
             self.directory_watcher.close()
+
+        if self.archive_extractor is not None:
+            self.archive_extractor.close()
 
     def _apply_settings(self):
         v = settings.value("globals/crop_thumbnails", False, bool)
@@ -167,7 +173,34 @@ class Controller(QObject):
         home = os.path.expanduser("~")
         self.set_location(home)
 
-    def set_location(self, location, track_history=True):
+    def set_location(self, location_text, track_history=True):
+        location = Location.from_path(location_text)
+        print("LOC", location.as_url(), location.payloads)
+
+        if not location.has_payload():
+            self._set_directory_location(location.path, track_history)
+        else:
+            if self.archive_extractor is not None:
+                self.archive_extractor.close()
+                self.archive_extractor = None
+
+            def make_archive_outdir(location: Location):
+                import hashlib
+                loc_hash = hashlib.md5(location.path.encode()).hexdigest()
+                return os.path.join("/tmp/", loc_hash)
+
+            outdir = make_archive_outdir(location)
+            if os.path.isdir(outdir):
+                print("PLAINSET:", outdir)
+                self._set_directory_location(outdir)
+            else:
+                print("MAKING", outdir)
+                self.archive_extractor = ArchiveExtractor(location.path, outdir)
+                self.archive_extractor.start()
+                self._set_directory_location(outdir)
+
+    def _set_directory_location(self, location, track_history=True):
+        print("DIR:", location)
         self.app.location_history.append(location)
 
         if track_history:
@@ -327,6 +360,11 @@ class Controller(QObject):
             selected_items = [item]
 
         menu = QMenu()
+
+        if item.fileinfo.is_archive():
+            def do_extract(item):
+                self.set_location(item.fileinfo.abspath() + "//rar:")  # FIXME
+            menu.addAction("Extract to /tmp/", lambda item=item: do_extract(item))
 
         files: List[str] = []
         mimetypes: Set[str] = set()
