@@ -152,8 +152,42 @@ class TileLayout(Layout):
         self.rows = 0
         self.columns = 0
 
+        self.next_col = 0
+        self.next_row = 0
+
     def set_items(self, items):
         self.items = items
+
+    def append_item(self, item):
+        self.items.append(item)
+
+        col = self.next_col
+        row = self.next_row
+
+        x = col * (self.style.tile_width + self.style.spacing_x) + self.style.padding_x
+        y = row * (self.style.tile_height + self.style.spacing_y) + self.style.padding_y
+
+        item.set_tile_size(self.style.tile_width, self.style.tile_height)
+        item.setPos(self.x + x + self.center_x_off,
+                    self.y + y)
+
+        bottom_y = y + self.style.tile_height + self.style.padding_y
+
+        # calculate next items position
+        if self.style.arrangement == TileStyle.Arrangement.ROWS:
+            col += 1
+            if col == self.columns:
+                col = 0
+                row += 1
+        else:
+            row += 1
+            if row == self.rows:
+                row = 0
+                col += 1
+
+        self.next_col = col
+        self.next_row = row
+        self.height = bottom_y
 
     def _calc_num_columns(self, viewport_width):
         return max(1,
@@ -179,7 +213,7 @@ class TileLayout(Layout):
 
         grid_width = ((self.columns * (self.style.tile_width + self.style.spacing_x)) -
                       self.style.spacing_x + 2 * self.style.padding_x)
-        center_x_off = (viewport_width - grid_width) / 2
+        self.center_x_off = (viewport_width - grid_width) / 2
 
         bottom_y = 0
         right_x = 0
@@ -191,7 +225,7 @@ class TileLayout(Layout):
             y = row * (self.style.tile_height + self.style.spacing_y) + self.style.padding_y
 
             item.set_tile_size(self.style.tile_width, self.style.tile_height)
-            item.setPos(self.x + x + center_x_off,
+            item.setPos(self.x + x + self.center_x_off,
                         self.y + y)
 
             right_x = max(right_x, x + self.style.tile_width + self.style.padding_x)
@@ -209,6 +243,8 @@ class TileLayout(Layout):
                     row = 0
                     col += 1
 
+        self.next_row = row
+        self.next_col = col
         self.height = bottom_y
 
 

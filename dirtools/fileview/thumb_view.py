@@ -244,6 +244,8 @@ class ThumbView(QGraphicsView):
 
         self.style_item(item)
         self.layouter.append_item(item)
+        self.layouter.resize(self.viewport().width(), self.viewport().height())
+        self.refresh_bounding_rect()
 
     def on_file_removed(self, abspath):
         logger.debug("ThumbView.on_file_removed: %s", abspath)
@@ -369,11 +371,18 @@ class ThumbView(QGraphicsView):
         self.setUpdatesEnabled(False)
         # old_item_index_method = self.scene.itemIndexMethod()
         # self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
-
+        self.layouter.clear_appends()
         self.layout = self.layouter.build_layout(self.items)
 
         self.layout.resize(self.viewport().width(), self.viewport().height())
+        self.refresh_bounding_rect()
 
+        # self.scene.setItemIndexMethod(old_item_index_method)
+        self.setUpdatesEnabled(True)
+
+        logger.debug("ThumbView.layout_items: done")
+
+    def refresh_bounding_rect(self):
         def get_bounding_rect():
             rect = self.layout.get_bounding_rect()
 
@@ -388,11 +397,6 @@ class ThumbView(QGraphicsView):
             return QRectF(0, 0, w, h)
 
         self.setSceneRect(get_bounding_rect())
-
-        # self.scene.setItemIndexMethod(old_item_index_method)
-        self.setUpdatesEnabled(True)
-
-        logger.debug("ThumbView.layout_items: done")
 
     def zoom_in(self):
         self.zoom_index += 1

@@ -31,6 +31,8 @@ class Layouter:
         self.style = style
         self.show_filtered = False
 
+        self.append_layout = TileLayout(self.style)
+
     def _group_items(self, items):
         groups: Dict[Hashable, List[FileInfo]] = {}
         for item in items:
@@ -97,10 +99,21 @@ class Layouter:
                 spacer = VSpacer(48)
                 self.root.add(spacer)
 
+        self.root.add(self._build_group_title("New Files"))
+        # self.append_layout = TileLayout()
+        self.root.add(self.append_layout)
+
         return self.root
 
     def append_item(self, item):
-        print("append_item not implemented")
+        self.append_layout.append_item(item)
+
+    def clear_appends(self):
+        self.append_layout = TileLayout(self.style)
+
+    def resize(self, width, height):
+        if self.root is not None:
+            self.root.resize(width, height)
 
 
 # EOF #
