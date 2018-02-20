@@ -175,7 +175,6 @@ class Controller(QObject):
 
     def set_location(self, location_text, track_history=True):
         location = Location.from_path(location_text)
-        print("LOC", location.as_url(), location.payloads)
 
         if not location.has_payload():
             self._set_directory_location(location.path, track_history)
@@ -191,16 +190,13 @@ class Controller(QObject):
 
             outdir = make_archive_outdir(location)
             if os.path.isdir(outdir):
-                print("PLAINSET:", outdir)
                 self._set_directory_location(outdir)
             else:
-                print("MAKING", outdir)
                 self.archive_extractor = ArchiveExtractor(location.path, outdir)
                 self.archive_extractor.start()
                 self._set_directory_location(outdir)
 
     def _set_directory_location(self, location, track_history=True):
-        print("DIR:", location)
         self.app.location_history.append(location)
 
         if track_history:
@@ -224,9 +220,6 @@ class Controller(QObject):
 
         self.location = os.path.abspath(location)
         self.window.set_location(self.location)
-
-        # files = expand_file(self.location, recursive=False)
-        # self.set_files(files, self.location)
 
     def on_scandir_finished(self, fileinfos):
         self.window.hide_loading()
@@ -363,7 +356,7 @@ class Controller(QObject):
 
         if item.fileinfo.is_archive():
             def do_extract(item):
-                self.set_location(item.fileinfo.abspath() + "//rar:")  # FIXME
+                self.set_location(item.fileinfo.abspath() + "//archive")
             menu.addAction("Extract to /tmp/", lambda item=item: do_extract(item))
 
         files: List[str] = []
