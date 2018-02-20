@@ -21,6 +21,7 @@ import argparse
 
 from dirtools.fileview.application import FileViewApplication
 from dirtools.fileview.filelist_stream import FileListStream
+from dirtools.fileview.profiler import activate_profiler
 from dirtools.util import expand_directories
 
 import logging
@@ -41,6 +42,8 @@ def parse_args(args):
                         help="Start with a empty workbench instead of the current directory")
     parser.add_argument("-d", "--debug", action='store_true', default=False,
                         help="Print lots of debugging output")
+    parser.add_argument("-p", "--profile", action='store_true', default=False,
+                        help="Print profiling information")
     return parser.parse_args(args)
 
 
@@ -51,6 +54,9 @@ def main(argv):
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.WARNING)
+
+    if args.profile:
+        activate_profiler(True)
 
     app = FileViewApplication()
 

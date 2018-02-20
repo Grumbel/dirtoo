@@ -18,43 +18,58 @@
 import time
 
 
-profile_active = False
+_profiler_active = False
 
 
-if profile_active:
-    class Profiler:
+def activate_profiler(active: bool):
+    print("PROFILER", active)
+    global _profiler_active
+    _profiler_active = active
 
-        def __init__(self, name):
-            self.name = name
 
-        def __enter__(self):
-            self.start_time = time.time()
+class RealProfiler:
 
-        def __exit__(self, exc_type, exc_val, exc_tb):
-            self.stop_time = time.time()
-            print("executing {} took {:3.0f}msec".format(
-                self.name, (self.stop_time - self.start_time) * 1000))
+    def __init__(self, name):
+        self.name = name
 
-    def profile(func):
-        def wrap(*args, **kwargs):
-            with Profiler(func.__qualname__):
+    def __enter__(self):
+        self.start_time = time.time()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop_time = time.time()
+        print("executing {} took {:3.0f}msec".format(
+            self.name, (self.stop_time - self.start_time) * 1000))
+
+
+class DummyProfiler:
+    def __init__(self):
+        pass
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+
+def Profiler(name: str):
+    global _profiler_active
+    if _profiler_active:
+        return RealProfiler(name)
+    else:
+        return DummyProfiler()
+
+
+def profile(func):
+    def wrap(*args, **kwargs):
+        if _profiler_active:
+            with RealProfiler(func.__qualname__):
                 result = func(*args, **kwargs)
                 return result
+        else:
+            return func(*args, **kwargs)
 
-        return wrap
-else:
-    class Profiler:
-        def __init__(self, name):
-            pass
-
-        def __enter__(self):
-            pass
-
-        def __exit__(self, exc_type, exc_val, exc_tb):
-            pass
-
-    def profile(func):
-        return func
+    return wrap
 
 
 # EOF #
