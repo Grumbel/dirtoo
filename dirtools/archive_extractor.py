@@ -73,7 +73,13 @@ class ArchiveExtractorWorker(QObject):
                     logger.error("skipping unsanitary entry: %s", entry.pathname)
                     continue
 
-                if entry.isreg:
+                # FIXME: entry.isdir doesn't look reliable, needs more testing
+                if entry.isdir or entry.pathname[-1] == '/':
+                    dirname = os.path.join(outdir, pathname)
+                    if not os.path.isdir(dirname):
+                        os.makedirs(dirname)
+                    self.sig_entry_extracted.emit(entry.pathname, dirname)
+                elif entry.isreg:
                     dirname = os.path.dirname(pathname)
 
                     if dirname:
@@ -90,11 +96,6 @@ class ArchiveExtractorWorker(QObject):
                                 out.write(block)
                         self.sig_entry_extracted.emit(entry.pathname, outfile)
                         break
-                elif entry.isdir:
-                    dirname = os.path.join(outdir, pathname)
-                    if not os.path.isdir(dirname):
-                        os.makedirs(dirname)
-                    self.sig_entry_extracted.emit(entry.pathname, dirname)
                 else:
                     logger.warning("skipping non regular entry: %s", entry.pathname)
 
