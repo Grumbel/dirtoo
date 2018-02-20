@@ -19,7 +19,7 @@ import signal
 import argparse
 import sys
 
-from PyQt5.QtCore import QCoreApplication, QTimer
+from PyQt5.QtCore import QCoreApplication
 
 from dirtools.archive_extractor import ArchiveExtractor
 
