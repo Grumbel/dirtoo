@@ -17,25 +17,11 @@
 
 from typing import List, Tuple
 
+import os
 import re
 
 
-LOCATION_REGEX = re.compile(r'^(file)://((?:(?:/[^/]+)*))(?://(.*)|)$')
-LOCATION_PAYLOAD_REGEX = re.compile(r'^([a-z]+):(.*)')
-
-
-def split_payloads(text):
-    result = []
-
-    payload_texts = text.split("//")
-    for payload_text in payload_texts:
-        m = LOCATION_PAYLOAD_REGEX.match(payload_text)
-        if m is not None:
-            result.append((m.group(1), m.group(2)))
-        else:
-            raise Exception("failed to split payload string: {}".format(text))
-
-    return result
+LOCATION_REGEX = re.compile(r'^([a-z]+)://(.*)$')
 
 
 # URL: {PROTOCOL}://{PAYLOAD}//{PLUGIN}:{PLUGIN_PAYLOAD}
@@ -55,13 +41,18 @@ class Location:
             raise Exception("Location.from_string: failed to decode: {}".format(url))
         else:
             protocol = m.group(1)
-            abspath = m.group(2)
-            payload_text = m.group(3)
+            rest = m.group(2)
+            abspath, *rest = rest.split("//")
 
-            if payload_text is not None:
-                payloads = split_payloads(payload_text)
-            else:
-                payloads = []
+            abspath = os.path.normpath(abspath)
+
+            payloads = []
+            for payload_spec in rest:
+                m = payload_spec.split(":", 1)
+                if len(m) == 1:
+                    payloads.append((m[0], None))
+                else:
+                    payloads.append((m[0], m[1]))
 
             return Location(protocol, abspath, payloads)
 
@@ -74,7 +65,7 @@ class Location:
         return self.payloads != []
 
     def as_url(self) -> str:
-        payload_text = "".join(["//{}:{}".format(prot, path)
+        payload_text = "".join(["//{}{}".format(prot, (":" + path) if path else "")
                                 for prot, path in self.payloads])
         return "{}://{}{}".format(self.protocol, self.path, payload_text)
 

@@ -23,21 +23,38 @@ from dirtools.fileview.location import Location
 class LocationTestCase(unittest.TestCase):
 
     def test_location(self):
-        ok_texts = ["file:///home/juser/test.rar//rar:file_inside.rar",
-                    "file:///home/juser/test.rar",
-                    "file:///home/juser/test.rar//rar",
-                    "file:///tmp/",
-                    "file:///home/juser/test.rar//rar:file_inside.rar//rar:file.txt",
-                    "file:///test.rar//rar:one//rar:two//rar:three"]
+        ok_texts = [
+            ("file:///home/juser/test.rar//rar:file_inside.rar",
+             ("file", "/home/juser/test.rar", [("rar", "file_inside.rar")])),
 
-        fail_texts = ["/home/juser/test.rar",
-                      "file://test.rar",
-                      "file:///test.rar//rar:oeu//"
-                      "file:///test.rar///rar:foo"]
+            ("file:///home/juser/test.rar",
+             ("file", "/home/juser/test.rar", [])),
 
-        for text in ok_texts:
+            ("file:///home/juser/test.rar//rar",
+             ("file", "/home/juser/test.rar", [("rar", None)])),
+
+            ("file:///tmp/",
+             ("file", "/tmp", [])),
+
+            ("file:///home/juser/test.rar//rar:file_inside.rar//rar:file.txt",
+             ("file", "/home/juser/test.rar", [("rar", "file_inside.rar"), ("rar", "file.txt")])),
+
+            ("file:///test.rar//rar:one//rar:two//rar:three",
+             ("file", "/test.rar", [("rar", "one"), ("rar", "two"), ("rar", "three")]))
+        ]
+
+        fail_texts = [
+            "/home/juser/test.rar",
+            "file://test.rar",
+            "file:///test.rar//rar:oeu//"
+            "file:///test.rar///rar:foo"
+        ]
+
+        for text, (protocol, abspath, payloads) in ok_texts:
             location = Location.from_url(text)
-            self.assertEqual(location.as_url(), text)
+            self.assertEqual(location.protocol, protocol)
+            self.assertEqual(location.path, abspath)
+            self.assertEqual(location.payloads, payloads)
 
         for text in fail_texts:
             with self.assertRaises(Exception) as context:
