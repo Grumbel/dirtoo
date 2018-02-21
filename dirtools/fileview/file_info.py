@@ -33,16 +33,20 @@ class FileInfo:
         logger.debug("FileInfo.from_direntry: %s/%s", direntry.path, direntry.name)
 
         fi = FileInfo()
-        fi._abspath = os.path.abspath(direntry.path)
-        fi._dirname = os.path.dirname(fi._abspath)
-        fi._basename = direntry.name
-        fi._ext = os.path.splitext(fi._abspath)[1]
 
-        fi._isdir = direntry.is_dir()
-        fi._isfile = direntry.is_file()
-        fi._issymlink = direntry.is_symlink()
+        try:
+            fi._abspath = os.path.abspath(direntry.path)
+            fi._dirname = os.path.dirname(fi._abspath)
+            fi._basename = direntry.name
+            fi._ext = os.path.splitext(fi._abspath)[1]
 
-        fi._collect_stat()
+            fi._isdir = direntry.is_dir()
+            fi._isfile = direntry.is_file()
+            fi._issymlink = direntry.is_symlink()
+
+            fi._collect_stat()
+        except FileNotFoundError:
+            fi._filenotfound = True
 
         return fi
 
@@ -51,16 +55,20 @@ class FileInfo:
         logger.debug("FileInfo.from_filename: %s", filename)
 
         fi = FileInfo()
-        fi._abspath = os.path.abspath(filename)
-        fi._dirname = os.path.dirname(fi._abspath)
-        fi._basename = os.path.basename(fi._abspath)
-        fi._ext = os.path.splitext(fi._abspath)[1]
 
-        fi._collect_stat()
+        try:
+            fi._abspath = os.path.abspath(filename)
+            fi._dirname = os.path.dirname(fi._abspath)
+            fi._basename = os.path.basename(fi._abspath)
+            fi._ext = os.path.splitext(fi._abspath)[1]
 
-        fi._isdir = os.path.isdir(fi._abspath)
-        fi._isfile = stat.S_ISREG(fi._stat.st_mode)
-        fi._issymlink = stat.S_ISLNK(fi._stat.st_mode)
+            fi._collect_stat()
+
+            fi._isdir = os.path.isdir(fi._abspath)
+            fi._isfile = stat.S_ISREG(fi._stat.st_mode)
+            fi._issymlink = stat.S_ISLNK(fi._stat.st_mode)
+        except FileNotFoundError:
+            fi._filenotfound = True
 
         return fi
 
@@ -76,6 +84,8 @@ class FileInfo:
 
         self._stat: Union[os.stat_result, None] = None
         self._have_access: Union[bool, None] = None
+
+        self._filenotfound = False
 
         self._metadata: Dict[str, Any] = {}
 
@@ -125,19 +135,19 @@ class FileInfo:
         return self._stat
 
     def uid(self):
-        return self._stat.st_uid
+        return self._stat.st_uid if self._stat else 0
 
     def gid(self):
-        return self._stat.st_gid
+        return self._stat.st_gid if self._stat else 0
 
     def ext(self):
         return self._ext
 
     def size(self):
-        return self._stat.st_size if self._stat is not None else None
+        return self._stat.st_size if self._stat is not None else 0
 
     def mtime(self):
-        return self._stat.st_mtime if self._stat is not None else None
+        return self._stat.st_mtime if self._stat is not None else 0
 
     def metadata(self):
         return self._metadata
