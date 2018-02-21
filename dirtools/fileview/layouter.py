@@ -31,7 +31,7 @@ class Layouter:
         self.style = style
         self.show_filtered = False
 
-        self.append_layout = TileLayout(self.style)
+        self.append_layout = None
 
     def _group_items(self, items):
         groups: Dict[Hashable, List[FileInfo]] = {}
@@ -62,6 +62,9 @@ class Layouter:
         self.cleanup()
 
         self.root = HBoxLayout()
+
+        if items == []:
+            return
 
         groups = self._group_items(items)
 
@@ -99,9 +102,12 @@ class Layouter:
                 spacer = VSpacer(48)
                 self.root.add(spacer)
 
-        self.root.add(self._build_group_title("New Files"))
-        # self.append_layout = TileLayout()
-        self.root.add(self.append_layout)
+        if len(sorted_groups) == 1 and self.append_layout.items == []:
+            self.append_layout = grid
+        else:
+            self.root.add(self._build_group_title("Incoming"))
+            self.append_layout = TileLayout(self.style)
+            self.root.add(self.append_layout)
 
         return self.root
 
