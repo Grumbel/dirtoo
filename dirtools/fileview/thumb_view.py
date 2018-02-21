@@ -22,7 +22,8 @@ import logging
 from pkg_resources import resource_filename
 
 from PyQt5.QtCore import Qt, QRectF
-from PyQt5.QtGui import QBrush, QIcon, QColor, QPixmap, QPainter, QFontMetrics, QFont
+from PyQt5.QtGui import (QBrush, QIcon, QColor, QPixmap, QPainter,
+                         QFontMetrics, QFont, QContextMenuEvent)
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
 
 from dirtools.dbus_thumbnailer import DBusThumbnailerError
@@ -523,9 +524,15 @@ class ThumbView(QGraphicsView):
             self.cursor_item.update()
 
     def contextMenuEvent(self, ev):
-        super().contextMenuEvent(ev)
-        if not ev.isAccepted():
-            self.controller.on_context_menu(ev)
+        if ev.reason() == QContextMenuEvent.Keyboard:
+            if self.cursor_item is None:
+                self.controller.on_context_menu(ev)
+            else:
+                self.controller.on_item_context_menu(ev, self.cursor_item)
+        else:
+            super().contextMenuEvent(ev)
+            if not ev.isAccepted():
+                self.controller.on_context_menu(ev)
 
 
 # EOF #

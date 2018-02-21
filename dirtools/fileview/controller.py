@@ -23,7 +23,7 @@ import io
 
 from PyQt5.QtWidgets import QFileDialog, QTextEdit, QMenu
 from PyQt5.QtCore import QObject, Qt, QEvent
-from PyQt5.QtGui import QIcon, QCursor, QMouseEvent
+from PyQt5.QtGui import QIcon, QCursor, QMouseEvent, QContextMenuEvent
 
 from dirtools.fileview.actions import Actions
 from dirtools.fileview.file_collection import FileCollection
@@ -429,7 +429,14 @@ class Controller(QObject):
         menu.addSeparator()
         menu.addAction("Properties...")
 
-        menu.exec(ev.screenPos())
+        if ev.reason() == QContextMenuEvent.Keyboard:
+            pos = self.window.thumb_view.mapToGlobal(
+                self.window.thumb_view.mapFromScene(
+                    item.pos() + item.boundingRect().center()))
+            print(pos, item.boundingRect())
+            menu.exec(pos)
+        else:
+            menu.exec(ev.screenPos())
         self.fake_mouse()
 
     def show_current_filename(self, filename):
