@@ -64,7 +64,7 @@ class Layouter:
         self.root = HBoxLayout()
 
         if items == []:
-            return
+            return self.root
 
         groups = self._group_items(items)
 
@@ -102,7 +102,7 @@ class Layouter:
                 spacer = VSpacer(48)
                 self.root.add(spacer)
 
-        if len(sorted_groups) == 1 and self.append_layout.items == []:
+        if len(sorted_groups) == 1:
             self.append_layout = grid
         else:
             self.root.add(self._build_group_title("Incoming"))
