@@ -285,6 +285,32 @@ class FileViewWindow(QMainWindow):
         view_menu.addAction(self.actions.zoom_out)
         view_menu.addSeparator()
 
+        bookmarks_menu = self.menubar.addMenu('&Bookmarks')
+
+        def create_bookmarks_menu():
+            bookmarks = self.controller.app.bookmarks
+
+            entries = bookmarks.get_entries()
+
+            bookmarks_menu.clear()
+
+            if self.controller.location in entries:
+                bookmarks_menu.addAction(QIcon.fromTheme("edit-delete"), "Remove This Location's Bookmark",
+                                         lambda loc=self.controller.location:
+                                         bookmarks.remove(loc))
+            else:
+                bookmarks_menu.addAction(QIcon.fromTheme("user-bookmarks"), "Bookmark This Location",
+                                         lambda loc=self.controller.location:
+                                         bookmarks.append(loc))
+            bookmarks_menu.addSeparator()
+
+            icon = QIcon.fromTheme("folder")
+            for entry in entries:
+                bookmarks_menu.addAction(icon, entry,
+                                         lambda entry=entry:
+                                         self.controller.set_location(entry))
+        bookmarks_menu.aboutToShow.connect(create_bookmarks_menu)
+
         history_menu = self.menubar.addMenu('&History')
         history_menu.addAction(self.actions.back)
         history_menu.addAction(self.actions.forward)

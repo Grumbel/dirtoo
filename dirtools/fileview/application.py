@@ -35,6 +35,7 @@ from dirtools.fileview.mime_database import MimeDatabase
 from dirtools.fileview.metadata_collector import MetaDataCollector
 from dirtools.xdg_mime_associations import XdgMimeAssociations
 from dirtools.fileview.history import History
+from dirtools.fileview.bookmarks import Bookmarks
 from dirtools.fileview.settings import settings
 from dirtools.fileview.executor import Executor
 
@@ -66,6 +67,7 @@ class FileViewApplication:
 
         self.file_history = History(os.path.join(self.config_dir, "file.txt"))
         self.location_history = History(os.path.join(self.config_dir, "locations.txt"))
+        self.bookmarks = Bookmarks(os.path.join(self.config_dir, "bookmarks.txt"))
 
         QPixmapCache.setCacheLimit(102400)
 
