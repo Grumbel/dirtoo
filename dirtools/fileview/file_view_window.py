@@ -312,8 +312,33 @@ class FileViewWindow(QMainWindow):
         bookmarks_menu.aboutToShow.connect(create_bookmarks_menu)
 
         history_menu = self.menubar.addMenu('&History')
-        history_menu.addAction(self.actions.back)
-        history_menu.addAction(self.actions.forward)
+
+        def create_history_menu():
+            history = self.controller.app.location_history
+
+            history_menu.clear()
+            history_menu.addAction(self.actions.back)
+            history_menu.addAction(self.actions.forward)
+            history_menu.addSeparator()
+
+            def show_file_history():
+                file_history = self.controller.app.file_history
+                entries = file_history.get_entries()
+                self.controller.set_files(entries)
+
+            history_menu.addAction(QIcon.fromTheme("folder"), "View File History",
+                                   show_file_history)
+
+            history_menu.addSection("Location History")
+
+            entries = sorted(history.get_entries()[:20])
+            icon = QIcon.fromTheme("folder")
+            for entry in entries:
+                history_menu.addAction(icon, entry,
+                                       lambda entry=entry:
+                                       self.controller.set_location(entry))
+
+        history_menu.aboutToShow.connect(create_history_menu)
 
         help_menu = self.menubar.addMenu('&Help')
         help_menu.addAction(self.actions.about)
