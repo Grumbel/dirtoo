@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Dict, Union
+from typing import List, Dict, Optional
 
 import logging
 
@@ -107,7 +107,7 @@ class ThumbView(QGraphicsView):
         self.needs_layout = True
 
         self.apply_zoom()
-        self.cursor_item: Union[ThumbFileItem, None] = None
+        self.cursor_item: Optional[ThumbFileItem] = None
         self.crop_thumbnails = False
         self.column_style = False
         self.setBackgroundBrush(QBrush(Qt.white, Qt.SolidPattern))

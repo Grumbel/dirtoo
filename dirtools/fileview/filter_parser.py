@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Dict, Callable, List, Union, Tuple
+from typing import Dict, Callable, List, Union, Tuple, Optional
 
 import re
 import sys
@@ -175,7 +175,7 @@ class FilterParser:
     def register_command(self,
                          aliases: Union[str, List[str]],
                          func: Callable,
-                         help: Union[str, None]=None) -> None:
+                         help: Optional[str]=None) -> None:
         if isinstance(aliases, list):
             for name in aliases:
                 assert name not in self.commands

@@ -16,7 +16,7 @@
 
 
 import os
-from typing import List, Callable, Dict, Tuple, Union
+from typing import List, Callable, Dict, Tuple, Optional
 
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, QThread
 from PyQt5.QtDBus import QDBusConnection
@@ -25,7 +25,7 @@ from PyQt5.QtGui import QPixmap, QImage
 from dirtools.dbus_thumbnailer import DBusThumbnailer
 
 
-ThumbnailCallback = Callable[[str, Union[str, None], QPixmap, int, str], None]
+ThumbnailCallback = Callable[[str, Optional[str], QPixmap, int, str], None]
 
 
 class CallableWrapper:
@@ -71,7 +71,7 @@ class ThumbnailerWorker(QObject):
 
         self.dbus_loop = None
         self.session_bus = None
-        self.dbus_thumbnailer: Union[DBusThumbnailer, None] = None
+        self.dbus_thumbnailer: Optional[DBusThumbnailer] = None
         self.requests: Dict[int, List[Tuple[str, str, ThumbnailCallback]]] = {}
 
     def init(self):

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Union, Dict, Any
+from typing import Dict, Any, Optional
 import logging
 
 import os
@@ -73,17 +73,17 @@ class FileInfo:
         return fi
 
     def __init__(self) -> None:
-        self._abspath: Union[str, None] = None
-        self._dirname: Union[str, None] = None
-        self._basename: Union[str, None] = None
-        self._ext: Union[str, None] = None
+        self._abspath: Optional[str] = None
+        self._dirname: Optional[str] = None
+        self._basename: Optional[str] = None
+        self._ext: Optional[str] = None
 
-        self._isdir: Union[bool, None] = None
-        self._isfile: Union[bool, None] = None
-        self._issymlink: Union[bool, None] = None
+        self._isdir: Optional[bool] = None
+        self._isfile: Optional[bool] = None
+        self._issymlink: Optional[bool] = None
 
-        self._stat: Union[os.stat_result, None] = None
-        self._have_access: Union[bool, None] = None
+        self._stat: Optional[os.stat_result] = None
+        self._have_access: Optional[bool] = None
 
         self._filenotfound = False
 
