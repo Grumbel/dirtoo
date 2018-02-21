@@ -115,6 +115,10 @@ class ThumbView(QGraphicsView):
 
         self.setDragMode(QGraphicsView.RubberBandDrag)
 
+        self.setRenderHints(QPainter.SmoothPixmapTransform |
+                            QPainter.TextAntialiasing |
+                            QPainter.Antialiasing)
+
     def prepare(self):
         for item in self.items:
             item.prepare()
@@ -348,9 +352,6 @@ class ThumbView(QGraphicsView):
 
     def initPainter(self, painter):
         logger.debug("ThumbView.initPainter:")
-        painter.setRenderHint(QPainter.SmoothPixmapTransform)
-        painter.setRenderHint(QPainter.TextAntialiasing)
-        painter.setRenderHint(QPainter.Antialiasing)
 
     @profile
     def paintEvent(self, ev):
