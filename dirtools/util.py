@@ -52,8 +52,19 @@ def numeric_sorted(lst):
 
 
 def unique(lst):
-    """Remove duplicate elements from a list."""
+    """Remove duplicate elements from a list. List can be unsorted."""
     return list(collections.OrderedDict.fromkeys(lst))
+
+
+def remove_duplicates(lst):
+    """Remove duplicate elements from a list if they follow on each
+    other."""
+    result = []
+    for idx, x in enumerate(lst):
+        if idx != 0 and lst[idx - 1] == x:
+            continue
+        result.append(x)
+    return result
 
 
 # EOF #
