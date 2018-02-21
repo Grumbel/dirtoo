@@ -46,7 +46,7 @@ class Location:
 
             abspath = os.path.normpath(abspath)
 
-            payloads = []
+            payloads: List[Tuple[str, str]] = []
             for payload_spec in payload_specs:
                 payload = payload_spec.split(":", 1)
                 if len(payload) == 1:

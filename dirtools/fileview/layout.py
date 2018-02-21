@@ -155,6 +155,8 @@ class TileLayout(Layout):
         self.next_col = 0
         self.next_row = 0
 
+        self.center_x_off = 0
+
     def set_items(self, items):
         self.items = items
 
