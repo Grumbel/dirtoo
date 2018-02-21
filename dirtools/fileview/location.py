@@ -42,17 +42,17 @@ class Location:
         else:
             protocol = m.group(1)
             rest = m.group(2)
-            abspath, *rest = rest.split("//")
+            abspath, *payload_specs = rest.split("//")
 
             abspath = os.path.normpath(abspath)
 
             payloads = []
-            for payload_spec in rest:
-                m = payload_spec.split(":", 1)
-                if len(m) == 1:
-                    payloads.append((m[0], None))
+            for payload_spec in payload_specs:
+                payload = payload_spec.split(":", 1)
+                if len(payload) == 1:
+                    payloads.append((payload[0], None))
                 else:
-                    payloads.append((m[0], m[1]))
+                    payloads.append((payload[0], payload[1]))
 
             return Location(protocol, abspath, payloads)
 
