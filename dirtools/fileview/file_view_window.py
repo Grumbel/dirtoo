@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 from pkg_resources import resource_filename
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QKeySequence, QIcon, QCursor, QMovie
@@ -331,7 +333,13 @@ class FileViewWindow(QMainWindow):
 
             history_menu.addSection("Location History")
 
-            entries = sorted(history.get_entries()[:20])
+            entries: List[str] = []
+            for entry in reversed(history.get_entries()):
+                if entry not in entries:
+                    entries.append(entry)
+                    if len(entries) >= 20:
+                        break
+
             icon = QIcon.fromTheme("folder")
             for entry in entries:
                 history_menu.addAction(icon, entry,
