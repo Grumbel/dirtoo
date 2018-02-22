@@ -387,6 +387,9 @@ class ThumbView(QGraphicsView):
         logger.debug("ThumbView.layout_items: done")
 
     def refresh_bounding_rect(self):
+        if self.layout is None:
+            return
+
         def get_bounding_rect():
             rect = self.layout.get_bounding_rect()
 
