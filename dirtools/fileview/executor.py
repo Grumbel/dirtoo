@@ -31,8 +31,12 @@ class Executor:
     def __init__(self, app) -> None:
         self.app = app
 
-    def launch_terminal(self, working_directory: Optional[str]=None) -> None:
-        self.launch_exo_terminal(working_directory)
+    def launch_terminal(self, working_directory: Optional[Location]=None) -> None:
+        if working_directory is None:
+            self.launch_exo_terminal()
+        else:
+            # FIXME: Ignoring payload here
+            self.launch_exo_terminal(working_directory.path)
 
     def launch_exo_terminal(self, working_directory: Optional[str]) -> None:
         argv = ["exo-open", "--launch", "TerminalEmulator"]
