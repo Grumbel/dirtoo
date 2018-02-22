@@ -97,6 +97,13 @@ class Location:
         assert not self.has_payload()
         return self.path
 
+    def payload_outdir(self):
+        assert self.payloads == [("archive", "")]
+
+        import hashlib
+        loc_hash = hashlib.md5(self.path.encode()).hexdigest()
+        return os.path.join("/tmp/", loc_hash)
+
     def exists(self):
         assert not self.has_payload()
         return os.path.exists(self.path)

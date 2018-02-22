@@ -75,9 +75,11 @@ class Controller(QObject):
     def close(self):
         if self.directory_watcher is not None:
             self.directory_watcher.close()
+            self.directory_watcher = None
 
         if self.archive_extractor is not None:
             self.archive_extractor.close()
+            self.archive_extractor = None
 
     def _apply_settings(self):
         v = settings.value("globals/crop_thumbnails", False, bool)
@@ -174,29 +176,7 @@ class Controller(QObject):
         self.set_location(home)
 
     def set_location(self, location: Location, track_history=True):
-
-        if not location.has_payload():
-            self._set_directory_location(location, track_history)
-        else:
-            if self.archive_extractor is not None:
-                self.archive_extractor.close()
-                self.archive_extractor = None
-
-            def make_archive_outdir(location: Location):
-                import hashlib
-                loc_hash = hashlib.md5(location.path.encode()).hexdigest()
-                return os.path.join("/tmp/", loc_hash)
-
-            outdir = make_archive_outdir(location)
-            if os.path.isdir(outdir):
-                self._set_directory_location(outdir)
-            else:
-                self.archive_extractor = ArchiveExtractor(location.path, outdir)
-                self.archive_extractor.start()
-                self._set_directory_location(Location.from_path(outdir))
-
-    def _set_directory_location(self, location: Location, track_history=True):
-        assert not location.has_payload()
+        self.close()
 
         self.app.location_history.append(location)
 
@@ -208,6 +188,32 @@ class Controller(QObject):
             self.actions.forward.setEnabled(False)
 
         self.window.show_loading()
+
+        if not location.has_payload():
+            self._set_directory_location(location)
+        else:
+            self._set_archive_location(location)
+
+    def _set_archive_location(self, location: Location):
+        assert location.has_payload()
+
+        if self.archive_extractor is not None:
+            self.archive_extractor.close()
+            self.archive_extractor = None
+
+        outdir = location.payload_outdir()
+        if os.path.isdir(outdir):
+            self._set_directory_location(Location.from_path(outdir))
+        else:
+            self.archive_extractor = ArchiveExtractor(location.path, outdir)
+            self.archive_extractor.sig_finished.connect(self.on_archive_extractor_finished)
+            self.archive_extractor.start()
+
+            self._set_directory_location(Location.from_path(outdir))
+
+    def _set_directory_location(self, location: Location):
+        assert not location.has_payload()
+
         self.file_collection.clear()
 
         if self.directory_watcher is not None:
@@ -222,8 +228,14 @@ class Controller(QObject):
         self.location = location
         self.window.set_location(self.location)
 
-    def on_scandir_finished(self, fileinfos):
+    def on_archive_extractor_finished(self):
+        logger.info("Controller.on_archive_extractor_finished")
         self.window.hide_loading()
+
+    def on_scandir_finished(self, fileinfos):
+        logger.info("Controller.on_scandir_extractor_finished")
+        self.window.hide_loading()
+
         self.file_collection.set_fileinfos(fileinfos)
         self.apply_sort()
         self.apply_filter()
