@@ -50,7 +50,7 @@ class Location:
             for payload_spec in payload_specs:
                 payload = payload_spec.split(":", 1)
                 if len(payload) == 1:
-                    payloads.append((payload[0], None))
+                    payloads.append((payload[0], ""))
                 else:
                     payloads.append((payload[0], payload[1]))
 
@@ -64,10 +64,25 @@ class Location:
     def has_payload(self) -> bool:
         return self.payloads != []
 
+    def parent(self) -> 'Location':
+        if self.payloads == []:
+            path = os.path.dirname(self.path)
+            return Location(self.protocol, path, [])
+        else:
+            path = os.path.dirname(self.payloads[-1][1])
+            if path == self.payloads[-1][1]:
+                return Location(self.protocol, self.path, self.payloads[:-1])
+            else:
+                payloads = self.payloads[:-1] + [(self.payloads[-1][0], path)]
+                return Location(self.protocol, self.path, payloads)
+
     def as_url(self) -> str:
         payload_text = "".join(["//{}{}".format(prot, (":" + path) if path else "")
                                 for prot, path in self.payloads])
         return "{}://{}{}".format(self.protocol, self.path, payload_text)
+
+    def __eq__(self, other):
+        return (self.protocol, self.path, self.payloads) == (self.protocol, self.path, self.payloads)
 
     def __str__(self):
         return self.as_url()

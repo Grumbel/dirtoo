@@ -31,7 +31,7 @@ class LocationTestCase(unittest.TestCase):
              ("file", "/home/juser/test.rar", [])),
 
             ("file:///home/juser/test.rar//rar",
-             ("file", "/home/juser/test.rar", [("rar", None)])),
+             ("file", "/home/juser/test.rar", [("rar", "")])),
 
             ("file:///tmp/",
              ("file", "/tmp", [])),
@@ -41,6 +41,26 @@ class LocationTestCase(unittest.TestCase):
 
             ("file:///test.rar//rar:one//rar:two//rar:three",
              ("file", "/test.rar", [("rar", "one"), ("rar", "two"), ("rar", "three")]))
+        ]
+
+        parent_texts = [
+            ("file:///home/juser/test.rar//rar:file_inside.rar",
+             ("file", "/home/juser/test.rar", [("rar", "")])),
+
+            ("file:///home/juser/test.rar",
+             ("file", "/home/juser", [])),
+
+            ("file:///home/juser/test.rar//rar",
+             ("file", "/home/juser/test.rar", [])),
+
+            ("file:///tmp/",
+             ("file", "/", [])),
+
+            ("file:///home/juser/test.rar//rar:file_inside.rar//rar:file.txt",
+             ("file", "/home/juser/test.rar", [("rar", "file_inside.rar"), ("rar", "")])),
+
+            ("file:///test.rar//rar:one//rar:two//rar:three",
+             ("file", "/test.rar", [("rar", "one"), ("rar", "two"), ("rar", "")]))
         ]
 
         fail_texts = [
@@ -55,6 +75,13 @@ class LocationTestCase(unittest.TestCase):
             self.assertEqual(location.protocol, protocol)
             self.assertEqual(location.path, abspath)
             self.assertEqual(location.payloads, payloads)
+
+        for text, (protocol, abspath, payloads) in parent_texts:
+            location = Location.from_url(text)
+            location = location.parent()
+            self.assertEqual(location.protocol, protocol, text)
+            self.assertEqual(location.path, abspath, text)
+            self.assertEqual(location.payloads, payloads, text)
 
         for text in fail_texts:
             with self.assertRaises(Exception) as context:
