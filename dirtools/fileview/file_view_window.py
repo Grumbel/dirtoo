@@ -17,6 +17,8 @@
 
 from typing import List
 
+import os
+
 from pkg_resources import resource_filename
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QKeySequence, QIcon, QCursor, QMovie
@@ -342,9 +344,12 @@ class FileViewWindow(QMainWindow):
 
             icon = QIcon.fromTheme("folder")
             for entry in entries:
-                history_menu.addAction(icon, entry,
-                                       lambda entry=entry:
-                                       self.controller.set_location(entry))
+                action = history_menu.addAction(
+                    icon, entry,
+                    lambda entry=entry:
+                    self.controller.set_location(entry))
+                if not os.path.exists(entry):
+                    action.setEnabled(False)
 
         history_menu.aboutToShow.connect(create_history_menu)
 
