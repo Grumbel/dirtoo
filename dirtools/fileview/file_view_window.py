@@ -17,8 +17,6 @@
 
 from typing import List
 
-import os
-
 from pkg_resources import resource_filename
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QKeySequence, QIcon, QCursor, QMovie
@@ -42,6 +40,7 @@ from dirtools.fileview.detail_view import DetailView
 from dirtools.fileview.thumb_view import ThumbView
 from dirtools.fileview.location_line_edit import LocationLineEdit
 from dirtools.fileview.filter_line_edit import FilterLineEdit
+from dirtools.fileview.location import Location
 
 
 class ToolButton(QToolButton):
@@ -332,12 +331,12 @@ class FileViewWindow(QMainWindow):
             icon = QIcon.fromTheme("folder")
             for entry in entries:
                 action = bookmarks_menu.addAction(
-                    icon, entry,
+                    icon, entry.as_url(),
                     lambda entry=entry:
                     self.controller.set_location(entry)
                     if not bookmarks_menu.middle_is_pressed()
                     else self.controller.app.show_location(entry))
-                if not os.path.exists(entry):
+                if not entry.exists():
                     action.setEnabled(False)
         bookmarks_menu.aboutToShow.connect(create_bookmarks_menu)
 
@@ -365,7 +364,7 @@ class FileViewWindow(QMainWindow):
 
             history_menu.addSection("Location History")
 
-            entries: List[str] = []
+            entries: List[Location] = []
             for entry in reversed(history.get_entries()):
                 if entry not in entries:
                     entries.append(entry)
@@ -375,12 +374,12 @@ class FileViewWindow(QMainWindow):
             icon = QIcon.fromTheme("folder")
             for entry in entries:
                 action = history_menu.addAction(
-                    icon, entry,
+                    icon, entry.as_url(),
                     lambda entry=entry:
                     self.controller.set_location(entry)
                     if not history_menu.middle_is_pressed()
                     else self.controller.app.show_location(entry))
-                if not os.path.exists(entry):
+                if not entry.exists():
                     action.setEnabled(False)
 
         history_menu.aboutToShow.connect(create_history_menu)
@@ -486,9 +485,9 @@ class FileViewWindow(QMainWindow):
         self.thumb_view.show()
         self.file_view.hide()
 
-    def set_location(self, path):
+    def set_location(self, path: Location):
         self.file_path.set_location(path)
-        self.setWindowTitle("dt-fileview - {}".format(path))
+        self.setWindowTitle("{} - dt-fileview".format(path.as_path()))
 
     def set_file_list(self):
         self.file_path.set_unused_text()

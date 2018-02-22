@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import List, Any
 
 import re
 import os
@@ -51,12 +51,12 @@ def numeric_sorted(lst):
     return sorted(lst, key=segmenter)
 
 
-def unique(lst):
+def unique(lst: List[Any]) -> List[Any]:
     """Remove duplicate elements from a list. List can be unsorted."""
     return list(collections.OrderedDict.fromkeys(lst))
 
 
-def remove_duplicates(lst):
+def remove_duplicates(lst: List[Any]) -> List[Any]:
     """Remove duplicate elements from a list if they follow on each
     other."""
     result = []

@@ -28,16 +28,17 @@ from PyQt5.QtGui import QPixmapCache
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtDBus import QDBusConnection
 
-from dirtools.fileview.controller import Controller
-from dirtools.fileview.thumbnailer import Thumbnailer
 from dirtools.dbus_thumbnail_cache import DBusThumbnailCache
-from dirtools.fileview.mime_database import MimeDatabase
-from dirtools.fileview.metadata_collector import MetaDataCollector
-from dirtools.xdg_mime_associations import XdgMimeAssociations
-from dirtools.fileview.history import History
 from dirtools.fileview.bookmarks import Bookmarks
-from dirtools.fileview.settings import settings
+from dirtools.fileview.controller import Controller
 from dirtools.fileview.executor import Executor
+from dirtools.fileview.history import History
+from dirtools.fileview.location import Location
+from dirtools.fileview.metadata_collector import MetaDataCollector
+from dirtools.fileview.mime_database import MimeDatabase
+from dirtools.fileview.settings import settings
+from dirtools.fileview.thumbnailer import Thumbnailer
+from dirtools.xdg_mime_associations import XdgMimeAssociations
 
 logger = logging.getLogger(__name__)
 
@@ -117,11 +118,11 @@ class FileViewApplication:
         controller.window.show()
         self.controllers.append(controller)
 
-    def show_location(self, path):
-        self.location_history.append(path)
+    def show_location(self, location: Location):
+        self.location_history.append(location)
 
         controller = Controller(self)
-        controller.set_location(path)
+        controller.set_location(location)
         controller.window.show()
         self.controllers.append(controller)
 

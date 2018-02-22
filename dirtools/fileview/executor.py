@@ -21,6 +21,7 @@ import logging
 import subprocess
 
 from dirtools.xdg_desktop import get_desktop_entry
+from dirtools.fileview.location import Location
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +40,8 @@ class Executor:
             argv += ["--working-directory", working_directory]
         self.launch(argv)
 
-    def open(self, filename: str) -> bool:
-        mimetype = self.app.mime_database.get_mime_type(filename).name()
+    def open(self, location: Location) -> bool:
+        mimetype = self.app.mime_database.get_mime_type(location).name()
         default_apps = self.app.mime_associations.get_default_apps(mimetype)
 
         for app in default_apps:
@@ -50,11 +51,11 @@ class Executor:
         else:
             return False
 
-        self.launch_single_from_exec(entry.getExec(), filename)
+        self.launch_single_from_exec(entry.getExec(), location.abspath())
 
         return True
 
-    def launch_single_from_exec(self, exec_str: str, filename: str):
+    def launch_single_from_exec(self, exec_str: str, filename: str) -> None:
         def replace(lst: List[str], filename):
             result: List[str] = []
             for x in lst:
@@ -68,7 +69,7 @@ class Executor:
         argv = replace(argv, filename)
         self.launch(argv)
 
-    def launch_multi_from_exec(self, exec_str: str, files: List[str]):
+    def launch_multi_from_exec(self, exec_str: str, files: List[str]) -> None:
 
         def expand_multi(exe: List[str], files: List[str]) -> List[str]:
             result: List[str] = []
@@ -98,7 +99,7 @@ class Executor:
                 argv = expand_single(argv, filename)
                 self.launch(argv)
         else:
-            logging.error("unhandled .desktop Exec: %s", exec_str)
+            logger.error("unhandled .desktop Exec: %s", exec_str)
 
     def launch(self, argv: List[str]) -> None:
         logger.info("Launching: %s", argv)

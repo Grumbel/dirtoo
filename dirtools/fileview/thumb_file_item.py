@@ -126,7 +126,7 @@ class Thumbnail:
 class ThumbFileItem(FileItem):
 
     def __init__(self, fileinfo, controller, thumb_view):
-        logger.debug("ThumbFileItem.__init__: %s", fileinfo.abspath())
+        logger.debug("ThumbFileItem.__init__: %s", fileinfo)
         super().__init__(fileinfo, controller)
         # self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
 
@@ -172,7 +172,7 @@ class ThumbFileItem(FileItem):
             thumbnail.request()
 
     def paint(self, painter, option, widget):
-        logger.debug("ThumbFileItem.paint: %s", self.fileinfo.abspath())
+        # logger.debug("ThumbFileItem.paint: %s", self.fileinfo)
 
         self.prepare()
 
@@ -213,13 +213,13 @@ class ThumbFileItem(FileItem):
         return icon
 
     def hoverEnterEvent(self, ev):
-        logger.debug("ThumbFileItem.hoverEnterEvent: %s", self.fileinfo.abspath())
+        # logger.debug("ThumbFileItem.hoverEnterEvent: %s", self.fileinfo)
         self.hovering = True
         self.controller.show_current_filename(self.fileinfo.abspath())
         self.update()
 
     def hoverLeaveEvent(self, ev):
-        logger.debug("ThumbFileItem.hoverLeaveEvent: %s", self.fileinfo.abspath())
+        # logger.debug("ThumbFileItem.hoverLeaveEvent: %s", self.fileinfo)
         self.hovering = False
         self.controller.show_current_filename("")
         self.update()
@@ -255,7 +255,7 @@ class ThumbFileItem(FileItem):
         self.update()
 
     def timerEvent(self, ev):
-        logger.debug("ThumbFileItem.timerEvent: %s", self.fileinfo.abspath())
+        # logger.debug("ThumbFileItem.timerEvent: %s", self.fileinfo)
         if ev.timerId() == self.animation_timer:
             self.animation_count -= 1
             self.update()

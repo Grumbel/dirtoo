@@ -33,6 +33,7 @@ from dirtools.fileview.layouter import Layouter
 from dirtools.fileview.layout import TileStyle
 from dirtools.fileview.settings import settings
 from dirtools.fileview.profiler import profile
+from dirtools.fileview.location import Location
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +84,7 @@ class ThumbView(QGraphicsView):
 
         self.show_filtered = False
 
-        self.abspath2item: Dict[str, ThumbFileItem] = {}
+        self.location2item: Dict[str, ThumbFileItem] = {}
         self.setAcceptDrops(True)
 
         self.scene = QGraphicsScene()
@@ -243,7 +244,7 @@ class ThumbView(QGraphicsView):
         logger.debug("ThumbView.on_file_added: %s", fileinfo)
         item = ThumbFileItem(fileinfo, self.controller, self)
         item.new = True
-        self.abspath2item[fileinfo.abspath()] = item
+        self.location2item[fileinfo.location()] = item
         self.scene.addItem(item)
         self.items.append(item)
 
@@ -254,31 +255,31 @@ class ThumbView(QGraphicsView):
 
     def on_file_removed(self, abspath):
         logger.debug("ThumbView.on_file_removed: %s", abspath)
-        item = self.abspath2item.get(abspath, None)
+        item = self.location2item.get(abspath, None)
         if item is not None:
             self.scene.removeItem(item)
-            del self.abspath2item[abspath]
+            del self.location2item[abspath]
             self.items.remove(item)
             self.layout_items()
 
     def on_file_changed(self, fileinfo):
         logger.debug("ThumbView.on_file_changed: %s", fileinfo)
-        item = self.abspath2item.get(fileinfo.abspath(), None)
+        item = self.location2item.get(fileinfo.location(), None)
         if item is not None:
             item.new = True
             item.update()
 
     def on_file_updated(self, fileinfo):
         logger.debug("ThumbView.on_file_updated: %s", fileinfo)
-        item = self.abspath2item.get(fileinfo.abspath(), None)
+        item = self.location2item.get(fileinfo.location(), None)
         if item is not None:
             item.update()
 
     def on_file_collection_reordered(self):
         logger.debug("ThumbView.on_file_collection_reordered")
-        fi2it = {item.fileinfo.abspath(): item for item in self.items}
+        fi2it = {item.fileinfo.location(): item for item in self.items}
         fileinfos = self.file_collection.get_fileinfos()
-        self.items = [fi2it[fileinfo.abspath()] for fileinfo in fileinfos if fileinfo.abspath() in fi2it]
+        self.items = [fi2it[fileinfo.location()] for fileinfo in fileinfos if fileinfo.location() in fi2it]
         self.layout_items()
 
     def on_file_collection_filtered(self):
@@ -297,13 +298,13 @@ class ThumbView(QGraphicsView):
 
         self.items.clear()
         self.cursor_item = None
-        self.abspath2item.clear()
+        self.location2item.clear()
         self.scene.clear()
         self.layout = None
 
         for fileinfo in fileinfos:
             item = ThumbFileItem(fileinfo, self.controller, self)
-            self.abspath2item[fileinfo.abspath()] = item
+            self.location2item[fileinfo.location()] = item
             self.scene.addItem(item)
             self.items.append(item)
 
@@ -351,7 +352,8 @@ class ThumbView(QGraphicsView):
             self.style_item(item)
 
     def initPainter(self, painter):
-        logger.debug("ThumbView.initPainter:")
+        # logger.debug("ThumbView.initPainter:")
+        pass
 
     @profile
     def paintEvent(self, ev):
@@ -447,11 +449,11 @@ class ThumbView(QGraphicsView):
             item.update()
 
     def icon_from_fileinfo(self, fileinfo):
-        mimetype = self.controller.app.mime_database.get_mime_type(fileinfo.abspath())
+        mimetype = self.controller.app.mime_database.get_mime_type(fileinfo.location())
         return self.controller.app.mime_database.get_icon_from_mime_type(mimetype)
 
     def receive_thumbnail(self, filename, flavor, pixmap, error_code, message):
-        item = self.abspath2item.get(filename, None)
+        item = self.location2item.get(Location.from_path(filename), None)
         if item is not None:
             self.receive_thumbnail_for_item(item, flavor, pixmap, error_code, message)
             item.set_thumbnail_pixmap(pixmap, flavor)
@@ -520,7 +522,7 @@ class ThumbView(QGraphicsView):
     def set_cursor_to_fileinfo(self, fileinfo):
         if self.cursor_item is not None:
             self.cursor_item.update()
-        self.cursor_item = self.abspath2item.get(fileinfo.abspath(), None)
+        self.cursor_item = self.location2item.get(fileinfo.location(), None)
         if self.cursor_item is not None:
             self.cursor_item.update()
 

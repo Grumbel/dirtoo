@@ -21,6 +21,7 @@ import argparse
 
 from dirtools.fileview.application import FileViewApplication
 from dirtools.fileview.filelist_stream import FileListStream
+from dirtools.fileview.location import Location
 from dirtools.fileview.profiler import activate_profiler
 from dirtools.util import expand_directories
 
@@ -61,14 +62,14 @@ def main(argv):
     app = FileViewApplication()
 
     if args.FILE == []:
-        app.show_location(os.getcwd())
+        app.show_location(Location.from_path(os.getcwd()))
     elif args.FILE == ["-"]:
         if args.null:
             app.show_filelist_stream(FileListStream(sys.stdin, "\0"))
         else:
             app.show_filelist_stream(FileListStream(sys.stdin, "\n"))
     elif len(args.FILE) == 1 and os.path.isdir(args.FILE[0]):
-        app.show_location(args.FILE[0])
+        app.show_location(Location.from_path(args.FILE[0]))
     elif args.recursive:
         files = expand_directories(args.FILE, args.recursive)
         app.show_files(files)

@@ -15,11 +15,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os
+import logging
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPalette
 from PyQt5.QtWidgets import QLineEdit
+
+from dirtools.fileview.location import Location
+
+logger = logging.getLogger(__name__)
 
 
 class LocationLineEdit(QLineEdit):
@@ -56,22 +60,32 @@ class LocationLineEdit(QLineEdit):
 
     def on_text_edited(self, text):
         p = self.palette()
-        if os.path.exists(self.text()):
-            p.setColor(QPalette.Text, Qt.black)
-        else:
+
+        try:
+            location = Location.from_url(text)
+            if location.exists():
+                p.setColor(QPalette.Text, Qt.black)
+            else:
+                p.setColor(QPalette.Text, Qt.red)
+        except Exception:
             p.setColor(QPalette.Text, Qt.red)
+
         self.setPalette(p)
 
     def on_return_pressed(self):
-        if os.path.exists(self.text()):
-            self.controller.set_location(self.text())
+        try:
+            location = Location.from_url(self.text())
+        except Exception:
+            logger.warning("unparsable location entered: %s", self.text())
+        else:
+            self.controller.set_location(location)
 
-    def set_location(self, text):
+    def set_location(self, location: Location):
         self.is_unused = False
         p = self.palette()
         p.setColor(QPalette.Text, Qt.black)
         self.setPalette(p)
-        self.setText(text)
+        self.setText(location.as_url())
 
     def set_unused_text(self):
         self.is_unused = True

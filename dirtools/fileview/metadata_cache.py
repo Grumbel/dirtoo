@@ -55,7 +55,7 @@ class MetaDataCache:
         except FileNotFoundError:
             return None
         except:
-            logging.exception("MetaDataCache: unexpected exception:")
+            logger.exception("MetaDataCache: unexpected exception:")
             return None
 
     def store_metadata(self, abspath: str, metadata: Dict) -> None:

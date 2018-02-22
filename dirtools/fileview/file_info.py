@@ -21,6 +21,7 @@ import logging
 import os
 import stat
 
+from dirtools.fileview.location import Location
 from dirtools.fileview.filter_parser import VIDEO_EXT, IMAGE_EXT, ARCHIVE_EXT
 
 logger = logging.getLogger(__name__)
@@ -36,6 +37,7 @@ class FileInfo:
 
         try:
             fi._abspath = os.path.abspath(direntry.path)
+            fi._location = Location.from_path(fi._abspath)
             fi._dirname = os.path.dirname(fi._abspath)
             fi._basename = direntry.name
             fi._ext = os.path.splitext(fi._abspath)[1]
@@ -51,6 +53,11 @@ class FileInfo:
         return fi
 
     @staticmethod
+    def from_location(location: Location) -> 'FileInfo':
+        assert not location.has_payload()
+        return FileInfo.from_filename(location.path)
+
+    @staticmethod
     def from_filename(filename: str) -> 'FileInfo':
         logger.debug("FileInfo.from_filename: %s", filename)
 
@@ -58,6 +65,7 @@ class FileInfo:
 
         try:
             fi._abspath = os.path.abspath(filename)
+            fi._location = Location.from_path(fi._abspath)
             fi._dirname = os.path.dirname(fi._abspath)
             fi._basename = os.path.basename(fi._abspath)
             fi._ext = os.path.splitext(fi._abspath)[1]
@@ -74,6 +82,7 @@ class FileInfo:
 
     def __init__(self) -> None:
         self._abspath: Optional[str] = None
+        self._location: Optional[Location] = None
         self._dirname: Optional[str] = None
         self._basename: Optional[str] = None
         self._ext: Optional[str] = None
@@ -109,6 +118,9 @@ class FileInfo:
 
     def abspath(self) -> str:
         return self._abspath
+
+    def location(self) -> Location:
+        return self._location
 
     def dirname(self) -> str:
         return self._dirname
@@ -153,7 +165,7 @@ class FileInfo:
         return self._metadata
 
     def __str__(self):
-        return "FileInfo({})".format(self._abspath)
+        return "FileInfo({})".format(self._location)
 
 
 # EOF #

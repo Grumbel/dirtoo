@@ -19,6 +19,7 @@
 
 from typing import Dict, Tuple
 
+import logging
 import os
 import hashlib
 import urllib.parse
@@ -28,6 +29,8 @@ from enum import Enum
 
 from PyQt5.QtDBus import QDBusReply, QDBusMessage, QDBusInterface
 from PyQt5.QtCore import QObject, pyqtSlot, QVariant
+
+logger = logging.getLogger(__name__)
 
 
 class DBusThumbnailerError(Enum):
@@ -166,6 +169,8 @@ class DBusThumbnailer(QObject):
             return msg.arguments()
 
     def queue(self, files, flavor="default"):
+        logger.debug("DBusThumbnailer.queue: %s  %s", files, flavor)
+
         if files == []:
             return
         urls = ["file://" + urllib.parse.quote(os.path.abspath(f)) for f in files]
@@ -188,6 +193,8 @@ class DBusThumbnailer(QObject):
         return handle
 
     def dequeue(self, handle):
+        logger.debug("DBusThumbnailer.dequeue: %s", handle)
+
         handle, = self._call("Dequeue", handle)
         del self.requests[handle]
 

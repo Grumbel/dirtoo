@@ -19,6 +19,7 @@ from typing import List, Tuple
 
 import os
 import re
+from functools import total_ordering
 
 
 LOCATION_REGEX = re.compile(r'^([a-z]+)://(.*)$')
@@ -28,11 +29,13 @@ LOCATION_REGEX = re.compile(r'^([a-z]+)://(.*)$')
 # Example:
 # http://www.example.com/foobar.jpg
 # file:///www.example.com/foobar.rar//rar:Filename.jpg
+
+@total_ordering
 class Location:
 
     @staticmethod
     def from_path(path):
-        return Location.from_url("file://" + path)
+        return Location.from_url("file://" + os.path.abspath(path))
 
     @staticmethod
     def from_url(url):
@@ -57,6 +60,8 @@ class Location:
             return Location(protocol, abspath, payloads)
 
     def __init__(self, protocol, path, payloads):
+        assert os.path.isabs(path)
+
         self.protocol: str = protocol
         self.path: str = path
         self.payloads: List[Tuple[str, str]] = payloads
@@ -81,8 +86,36 @@ class Location:
                                 for prot, path in self.payloads])
         return "{}://{}{}".format(self.protocol, self.path, payload_text)
 
+    def as_path(self) -> str:
+        """Like .as_url() but without the protocol part. Only use this for
+        display purpose, as information is lost."""
+        payload_text = "".join(["//{}{}".format(prot, (":" + path) if path else "")
+                                for prot, path in self.payloads])
+        return "{}://{}{}".format(self.protocol, self.path, payload_text)
+
+    def abspath(self):
+        assert not self.has_payload()
+        return self.path
+
+    def exists(self):
+        assert not self.has_payload()
+        return os.path.exists(self.path)
+
+    def copy(self):
+        return Location(self.protocol, self.path, list(self.payloads))
+
     def __eq__(self, other):
-        return (self.protocol, self.path, self.payloads) == (self.protocol, self.path, self.payloads)
+        return (self.protocol, self.path, self.payloads) == (other.protocol, other.path, other.payloads)
+
+    def __ne__(self, other):
+        return not (self == other)
+
+    def __lt__(self, other):
+        return (self.protocol, self.path, self.payloads) < (other.protocol, other.path, other.payloads)
+
+    def __hash__(self):
+        # FIXME: this could be made faster
+        return hash(self.as_url())
 
     def __str__(self):
         return self.as_url()

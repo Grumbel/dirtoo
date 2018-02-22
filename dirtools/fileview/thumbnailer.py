@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import logging
 import os
 from typing import List, Callable, Dict, Tuple, Optional
 
@@ -23,6 +24,8 @@ from PyQt5.QtDBus import QDBusConnection
 from PyQt5.QtGui import QPixmap, QImage
 
 from dirtools.dbus_thumbnailer import DBusThumbnailer
+
+logger = logging.getLogger(__name__)
 
 
 ThumbnailCallback = Callable[[str, Optional[str], QPixmap, int, str], None]
@@ -157,10 +160,11 @@ class Thumbnailer(QObject):
 
     def request_thumbnail(self, filename: str, flavor: str,
                           callback: ThumbnailCallback):
+        logger.debug("Thumbnailer.request_thumbnail: %s  %s", filename, flavor)
         self.sig_thumbnail_requested.emit(filename, flavor, CallableWrapper(callback))
 
     def delete_thumbnails(self, files: List[str]):
-        print("Thumbnailer.delete_thumbnails: not implemented")
+        logger.warning("Thumbnailer.delete_thumbnail (not implemented): %s", files)
 
     def on_thumbnail_ready(self, filename: str, flavor: str,
                            callback: ThumbnailCallback,

@@ -47,9 +47,9 @@ class Controller(QObject):
     def __init__(self, app):
         super().__init__()
         self.app = app
-        self.location: Optional[str] = None
+        self.location: Optional[Location] = None
         self.file_collection = FileCollection()
-        self.archive_extractor = None
+        self.archive_extractor: Optional[ArchiveExtractor] = None
         self.actions = Actions(self)
         self.window = FileViewWindow(self)
 
@@ -57,10 +57,10 @@ class Controller(QObject):
         self.sorter = Sorter(self)
         self.grouper = Grouper()
 
-        self.history: List[str] = []
+        self.history: List[Location] = []
         self.history_index = 0
 
-        self.directory_watcher = None
+        self.directory_watcher: Optional[DirectoryWatcher] = None
         self.filelist_stream: Optional[FileListStream] = None
 
         self.window.file_view.set_file_collection(self.file_collection)
@@ -173,11 +173,10 @@ class Controller(QObject):
         home = os.path.expanduser("~")
         self.set_location(home)
 
-    def set_location(self, location_text, track_history=True):
-        location = Location.from_path(location_text)
+    def set_location(self, location: Location, track_history=True):
 
         if not location.has_payload():
-            self._set_directory_location(location.path, track_history)
+            self._set_directory_location(location, track_history)
         else:
             if self.archive_extractor is not None:
                 self.archive_extractor.close()
@@ -194,9 +193,11 @@ class Controller(QObject):
             else:
                 self.archive_extractor = ArchiveExtractor(location.path, outdir)
                 self.archive_extractor.start()
-                self._set_directory_location(outdir)
+                self._set_directory_location(Location.from_path(outdir))
 
-    def _set_directory_location(self, location, track_history=True):
+    def _set_directory_location(self, location: Location, track_history=True):
+        assert not location.has_payload()
+
         self.app.location_history.append(location)
 
         if track_history:
@@ -211,14 +212,14 @@ class Controller(QObject):
 
         if self.directory_watcher is not None:
             self.directory_watcher.close()
-        self.directory_watcher = DirectoryWatcher(location)
+        self.directory_watcher = DirectoryWatcher(location.path)
         self.directory_watcher.sig_file_added.connect(self.file_collection.add_fileinfo)
         self.directory_watcher.sig_file_removed.connect(self.file_collection.remove_file)
         self.directory_watcher.sig_file_changed.connect(self.file_collection.change_file)
         self.directory_watcher.sig_scandir_finished.connect(self.on_scandir_finished)
         self.directory_watcher.start()
 
-        self.location = os.path.abspath(location)
+        self.location = location
         self.window.set_location(self.location)
 
     def on_scandir_finished(self, fileinfos):
@@ -289,24 +290,24 @@ class Controller(QObject):
     def parent_directory(self, new_window=False):
         if self.location is not None:
             if new_window:
-                self.app.show_location(os.path.dirname(os.path.abspath(self.location)))
+                self.app.show_location(self.location.parent())
             else:
-                self.set_location(os.path.dirname(os.path.abspath(self.location)))
+                self.set_location(self.location.parent())
 
     def on_click(self, fileinfo, new_window=False):
         self.window.thumb_view.set_cursor_to_fileinfo(fileinfo)
 
         if not fileinfo.isdir():
-            self.app.file_history.append(fileinfo.abspath())
+            self.app.file_history.append(fileinfo.location())
 
-            self.app.executor.open(fileinfo.abspath())
+            self.app.executor.open(fileinfo.location())
         else:
             if self.location is None or new_window:
                 logger.info("Controller.on_click: app.show_location: %s", fileinfo)
-                self.app.show_location(fileinfo.abspath())
+                self.app.show_location(fileinfo.location())
             else:
                 logger.info("Controller.on_click: self.set_location: %s", fileinfo)
-                self.set_location(fileinfo.abspath())
+                self.set_location(fileinfo.location())
 
     def clear_selection(self):
         self.window.thumb_view.scene.clearSelection()
@@ -356,15 +357,17 @@ class Controller(QObject):
 
         if item.fileinfo.is_archive():
             def do_extract(item):
-                self.set_location(item.fileinfo.abspath() + "//archive")
+                location = item.fileinfo.location().copy()
+                location.payloads.append(("archive", ""))
+                self.set_location(location)
             menu.addAction("Extract to /tmp/", lambda item=item: do_extract(item))
 
-        files: List[str] = []
+        files: List[Location] = []
         mimetypes: Set[str] = set()
         for item in selected_items:
-            filename = item.fileinfo.abspath()
-            files.append(filename)
-            mimetypes.add(self.app.mime_database.get_mime_type(filename).name())
+            location = item.fileinfo.location()
+            files.append(location)
+            mimetypes.add(self.app.mime_database.get_mime_type(location).name())
 
         apps_default_sets: List[Set[str]] = []
         apps_other_sets: List[Set[str]] = []
@@ -390,7 +393,7 @@ class Controller(QObject):
             for entry in entries:
                 action = menu.addAction(QIcon.fromTheme(entry.getIcon()), "Open With {}".format(entry.getName()))
                 action.triggered.connect(lambda checked, exe=entry.getExec(), files=files:
-                                         self.app.executor.launch_multi_from_exec(exe, files))
+                                         self.app.executor.launch_multi_from_exec(exe, [f.abspath() for f in files]))
 
         if not default_apps:
             menu.addAction("No applications available").setEnabled(False)
@@ -473,6 +476,7 @@ class Controller(QObject):
         self.set_location(self.location)
 
     def receive_thumbnail(self, filename, flavor, pixmap, error_code, message):
+        logger.debug("Controller.receive_thumbnail: %s %s %s %s %s", filename, flavor, pixmap, error_code, message)
         self.window.thumb_view.receive_thumbnail(filename, flavor, pixmap, error_code, message)
 
     def reload_thumbnails(self):

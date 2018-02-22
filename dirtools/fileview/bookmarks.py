@@ -15,6 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import logging
+
+from dirtools.fileview.location import Location
+
+logger = logging.getLogger(__name__)
+
+
 class Bookmarks:
 
     def __init__(self, filename: str) -> None:
@@ -23,25 +30,34 @@ class Bookmarks:
     def get_entries(self):
         try:
             with open(self.config_filename, "r") as fin:
-                content = fin.read().splitlines()
-                return sorted(content)
+                lines = fin.read().splitlines()
+
+                result = []
+                for line in lines:
+                    try:
+                        result.append(Location.from_url(line))
+                    except Exception as err:
+                        logger.warning("ignoring bookmark entry: %s", line)
+
+                return sorted(result)
+
         except FileNotFoundError:
             return []
 
-    def append(self, filename: str):
+    def append(self, location: Location):
         entries = self.get_entries()
-        if filename in entries:
+        if location in entries:
             return
         else:
             with open(self.config_filename, "a") as fout:
-                print(filename, file=fout)
+                print(location.as_url(), file=fout)
 
-    def remove(self, filename: str):
+    def remove(self, location: Location):
         entries = self.get_entries()
         with open(self.config_filename, "w") as fout:
             for entry in entries:
-                if entry != filename:
-                    print(entry, file=fout)
+                if entry != location:
+                    print(entry.as_url(), file=fout)
 
 
 # EOF #
