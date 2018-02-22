@@ -316,7 +316,7 @@ class Controller(QObject):
         for item in self.window.thumb_view.scene.items():
             item.setSelected(True)
 
-    def on_context_menu(self, ev):
+    def on_context_menu(self, pos):
         menu = QMenu()
 
         menu.addAction(QIcon.fromTheme('folder-new'), "Create Directory")
@@ -327,14 +327,14 @@ class Controller(QObject):
 
         if self.location is not None:
             menu.addAction(QIcon.fromTheme('utilities-terminal'), "Open Terminal Here",
-                           lambda path=self.location: self.app.executor.launch_terminal(path))
+                           lambda location=self.location: self.app.executor.launch_terminal(location))
             menu.addSeparator()
 
         menu.addAction(self.actions.edit_select_all)
         menu.addSeparator()
         menu.addAction(QIcon.fromTheme('document-properties'), "Properties...")
 
-        menu.exec(ev.globalPos())
+        menu.exec(pos)
         self.fake_mouse()
 
     def fake_mouse(self):

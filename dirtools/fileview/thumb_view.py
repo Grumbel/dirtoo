@@ -529,13 +529,13 @@ class ThumbView(QGraphicsView):
     def contextMenuEvent(self, ev):
         if ev.reason() == QContextMenuEvent.Keyboard:
             if self.cursor_item is None:
-                self.controller.on_context_menu(ev)
+                self.controller.on_context_menu(ev.globalPos())
             else:
                 self.controller.on_item_context_menu(ev, self.cursor_item)
         else:
             super().contextMenuEvent(ev)
             if not ev.isAccepted():
-                self.controller.on_context_menu(ev)
+                self.controller.on_context_menu(ev.globalPos())
 
 
 # EOF #

@@ -201,6 +201,13 @@ class FileViewWindow(QMainWindow):
         widget = QWidget()
         form = QFormLayout()
         label = QLabel("Location:")
+
+        def show_location_menu(pos):
+            self.controller.on_context_menu(label.mapToGlobal(pos))
+
+        label.setContextMenuPolicy(Qt.CustomContextMenu)
+        label.customContextMenuRequested.connect(show_location_menu)
+
         label.setBuddy(self.file_path)
         form.addRow(label, self.file_path)
         form.setContentsMargins(0, 0, 0, 0)
