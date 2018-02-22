@@ -289,7 +289,28 @@ class FileViewWindow(QMainWindow):
         view_menu.addAction(self.actions.zoom_out)
         view_menu.addSeparator()
 
-        bookmarks_menu = self.menubar.addMenu('&Bookmarks')
+        class ExtraMenu(QMenu):
+            """Regular QMenu, but with some functionality hacked in to handle
+            middle mouse clicks"""
+
+            def __init__(self, title):
+                super().__init__(title)
+                self._middle_pressed = False
+
+            def mouseReleaseEvent(self, ev):
+                if ev.button() == Qt.MiddleButton:
+                    self._middle_pressed = True
+
+                super().mouseReleaseEvent(ev)
+
+                if ev.button() == Qt.MiddleButton:
+                    self._middle_pressed = False
+
+            def middle_is_pressed(self):
+                return self._middle_pressed
+
+        bookmarks_menu = ExtraMenu('&Bookmarks')
+        self.menubar.addMenu(bookmarks_menu)
 
         def create_bookmarks_menu():
             bookmarks = self.controller.app.bookmarks
@@ -310,12 +331,18 @@ class FileViewWindow(QMainWindow):
 
             icon = QIcon.fromTheme("folder")
             for entry in entries:
-                bookmarks_menu.addAction(icon, entry,
-                                         lambda entry=entry:
-                                         self.controller.set_location(entry))
+                action = bookmarks_menu.addAction(
+                    icon, entry,
+                    lambda entry=entry:
+                    self.controller.set_location(entry)
+                    if not bookmarks_menu.middle_is_pressed()
+                    else self.controller.app.show_location(entry))
+                if not os.path.exists(entry):
+                    action.setEnabled(False)
         bookmarks_menu.aboutToShow.connect(create_bookmarks_menu)
 
-        history_menu = self.menubar.addMenu('&History')
+        history_menu = ExtraMenu('&History')
+        self.menubar.addMenu(history_menu)
 
         def create_history_menu():
             history = self.controller.app.location_history
@@ -328,7 +355,10 @@ class FileViewWindow(QMainWindow):
             def show_file_history():
                 file_history = self.controller.app.file_history
                 entries = file_history.get_entries()
-                self.controller.set_files(entries)
+                if history_menu.middle_is_pressed():
+                    self.controller.app.show_files(entries)
+                else:
+                    self.controller.set_files(entries)
 
             history_menu.addAction(QIcon.fromTheme("folder"), "View File History",
                                    show_file_history)
@@ -347,7 +377,9 @@ class FileViewWindow(QMainWindow):
                 action = history_menu.addAction(
                     icon, entry,
                     lambda entry=entry:
-                    self.controller.set_location(entry))
+                    self.controller.set_location(entry)
+                    if not history_menu.middle_is_pressed()
+                    else self.controller.app.show_location(entry))
                 if not os.path.exists(entry):
                     action.setEnabled(False)
 
