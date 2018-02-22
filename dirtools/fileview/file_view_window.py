@@ -191,7 +191,7 @@ class FileViewWindow(QMainWindow):
         widget = QWidget()
         widget.setLayout(hbox)
 
-        self.filter_toolbar = QToolBar()
+        self.filter_toolbar = QToolBar("Filter")
         self.filter_toolbar.addWidget(widget)
         self.addToolBar(Qt.BottomToolBarArea, self.filter_toolbar)
         self.filter_toolbar.hide()
