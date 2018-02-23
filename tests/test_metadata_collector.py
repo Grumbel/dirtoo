@@ -22,29 +22,36 @@ from PyQt5.QtWidgets import QApplication
 
 from dirtools.fileview.metadata_collector import MetaDataCollector
 from dirtools.fileview.virtual_filesystem import VirtualFilesystem
+from dirtools.fileview.location import Location
 
 
 class MetaDataCollectorTestCase(unittest.TestCase):
 
     def test_collector(self):
         app = QApplication([])
-        vfs = VirtualFilesystem("/tmp")
-        metadata_collector = MetaDataCollector(vfs)
 
-        def on_metadata(filename, metadata):
-            print(filename)
-            print(metadata)
-            print()
+        try:
+            vfs = VirtualFilesystem("/tmp")
+            metadata_collector = MetaDataCollector(vfs)
 
-        metadata_collector.sig_metadata_ready.connect(on_metadata)
+            def on_metadata(filename, metadata):
+                print(filename)
+                print(metadata)
+                print()
 
-        metadata_collector.request_metadata("dirtools/fileview/icons/noun_409399_cc.png")
+            metadata_collector.sig_metadata_ready.connect(on_metadata)
 
-        QTimer.singleShot(500, metadata_collector.close)
-        QTimer.singleShot(1500, app.quit)
+            metadata_collector.request_metadata(Location.from_path("dirtools/fileview/icons/noun_409399_cc.png"))
 
-        app.exec()
-        vfs.close()
+            QTimer.singleShot(500, metadata_collector.close)
+            QTimer.singleShot(1500, app.quit)
+
+            app.exec()
+        except Exception as err:
+            print(err)
+        finally:
+            metadata_collector.close()
+            vfs.close()
 
 
 # EOF #
