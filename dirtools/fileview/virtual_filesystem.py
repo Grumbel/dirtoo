@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import Dict
 
 import os
 import logging
@@ -40,7 +40,7 @@ class VirtualFilesystem:
             os.makedirs(self.extractor_dir)
 
     def close(self) -> None:
-        for extractor in self.extractors:
+        for location, extractor in self.extractors.items():
             extractor.close()
 
     def opendir(self, location: Location) -> DirectoryWatcher:
@@ -73,7 +73,7 @@ class VirtualFilesystem:
         extractor.close()
         self.extractors = {k: v for k, v in self.extractors.items() if v != extractor}
 
-    def get_extractors(self) -> List[ArchiveExtractor]:
+    def get_extractors(self) -> Dict[Location, ArchiveExtractor]:
         return self.extractors
 
 
