@@ -51,7 +51,7 @@ class LocationTestCase(unittest.TestCase):
              ("file", "/home/juser", [])),
 
             ("file:///home/juser/test.rar//rar",
-             ("file", "/home/juser/test.rar", [])),
+             ("file", "/home/juser", [])),
 
             ("file:///tmp/",
              ("file", "/", [])),

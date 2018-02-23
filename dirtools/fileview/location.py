@@ -70,7 +70,7 @@ class Location:
         return self.payloads != []
 
     def parent(self) -> 'Location':
-        if self.payloads == []:
+        if self.payloads == [] or (len(self.payloads) == 1 and self.payloads[0][1] == ""):
             path = os.path.dirname(self.path)
             return Location(self.protocol, path, [])
         else:
