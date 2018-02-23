@@ -24,6 +24,7 @@ import os
 from PyQt5.QtCore import QObject, QSocketNotifier, pyqtSignal
 
 from dirtools.fileview.file_info import FileInfo
+from dirtools.fileview.location import Location
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +92,8 @@ class FileListStream(QObject):
                 return
             else:
                 if filename is not None:
-                    self.sig_file_added.emit(FileInfo.from_filename(filename))
+                    location = Location.from_path(filename)
+                    self.sig_file_added.emit(FileInfo.from_location(location))
                 else:
                     return
 

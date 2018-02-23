@@ -39,6 +39,7 @@ from dirtools.fileview.mime_database import MimeDatabase
 from dirtools.fileview.settings import settings
 from dirtools.fileview.thumbnailer import Thumbnailer
 from dirtools.fileview.virtual_filesystem import VirtualFilesystem
+from dirtools.fileview.filelist_stream import FileListStream
 from dirtools.xdg_mime_associations import XdgMimeAssociations
 
 logger = logging.getLogger(__name__)
@@ -46,7 +47,7 @@ logger = logging.getLogger(__name__)
 
 class FileViewApplication:
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Allow Ctrl-C killing of the Qt app, see:
         # http://stackoverflow.com/questions/4938723/
         signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -89,40 +90,40 @@ class FileViewApplication:
 
         self.controllers: List[Controller] = []
 
-    def on_last_window_closed(self):
+    def on_last_window_closed(self) -> None:
         self.quit()
 
-    def quit(self):
+    def quit(self) -> None:
         self.close()
         self.qapp.quit()
 
     def run(self):
         return self.qapp.exec()
 
-    def close(self):
+    def close(self) -> None:
         settings.save()
 
         self.metadata_collector.close()
         self.thumbnailer.close()
         self.vfs.close()
 
-    def close_controller(self, controller):
+    def close_controller(self, controller: Controller) -> None:
         self.controllers.remove(controller)
         controller.close()
 
-    def show_files(self, files):
+    def show_files(self, files: List[Location]) -> None:
         controller = Controller(self)
         controller.set_files(files)
         controller.window.show()
         self.controllers.append(controller)
 
-    def show_filelist_stream(self, stream):
+    def show_filelist_stream(self, stream: FileListStream) -> None:
         controller = Controller(self)
         controller.set_filelist_stream(stream)
         controller.window.show()
         self.controllers.append(controller)
 
-    def show_location(self, location: Location):
+    def show_location(self, location: Location) -> None:
         self.location_history.append(location)
 
         controller = Controller(self)

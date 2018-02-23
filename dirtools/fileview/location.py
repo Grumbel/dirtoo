@@ -17,9 +17,12 @@
 
 from typing import List, Tuple
 
+import logging
 import os
 import re
 from functools import total_ordering
+
+logger = logging.getLogger(__name__)
 
 
 LOCATION_REGEX = re.compile(r'^([a-z]+)://(.*)$')
@@ -105,8 +108,11 @@ class Location:
         return self.path
 
     def exists(self):
-        assert not self.has_payload()
-        return os.path.exists(self.path)
+        if self.has_payload():
+            logger.error("Location.exists: not implemented for payload")
+            return False
+        else:
+            return os.path.exists(self.path)
 
     def copy(self):
         return Location(self.protocol, self.path, list(self.payloads))

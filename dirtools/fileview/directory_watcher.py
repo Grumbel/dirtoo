@@ -25,6 +25,7 @@ from inotify_simple import INotify, flags as inotify_flags
 import inotify_simple
 
 from dirtools.fileview.file_info import FileInfo
+from dirtools.fileview.location import Location
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +71,7 @@ class INotifyQt(QObject):
 class DirectoryWatcherWorker(QObject):
 
     sig_file_added = pyqtSignal(FileInfo)
-    sig_file_removed = pyqtSignal(str)
+    sig_file_removed = pyqtSignal(Location)
     sig_file_changed = pyqtSignal(FileInfo)
     sig_error = pyqtSignal()
     sig_scandir_finished = pyqtSignal(list)
@@ -113,20 +114,22 @@ class DirectoryWatcherWorker(QObject):
                          ", ".join([str(x)
                                     for x in inotify_flags.from_mask(ev.mask)]))
 
+            location = Location.from_path(os.path.join(self.path, ev.name))
+
             if ev.mask & inotify_flags.CREATE:
-                self.sig_file_added.emit(FileInfo.from_filename(os.path.join(self.path, ev.name)))
+                self.sig_file_added.emit(FileInfo.from_location(location))
             elif ev.mask & inotify_flags.DELETE:
-                self.sig_file_removed.emit(os.path.join(self.path, ev.name))
+                self.sig_file_removed.emit(location)
             elif ev.mask & inotify_flags.DELETE_SELF:
                 pass  # directory itself has disappeared
             elif ev.mask & inotify_flags.MOVE_SELF:
                 pass  # directory itself has moved
             elif ev.mask & inotify_flags.MODIFY or ev.mask & inotify_flags.ATTRIB:
-                self.sig_file_changed.emit(FileInfo.from_filename(os.path.join(self.path, ev.name)))
+                self.sig_file_changed.emit(FileInfo.from_location(location))
             elif ev.mask & inotify_flags.MOVED_FROM:
                 self.sig_file_removed.emit(os.path.join(self.path, ev.name))
             elif ev.mask & inotify_flags.MOVED_TO:
-                self.sig_file_added.emit(FileInfo.from_filename(os.path.join(self.path, ev.name)))
+                self.sig_file_added.emit(FileInfo.from_location(location))
             else:
                 # unhandled event
                 print("ERROR: Unhandlade flags:")

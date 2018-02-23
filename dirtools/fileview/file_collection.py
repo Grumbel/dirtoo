@@ -22,6 +22,7 @@ import random
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
+from dirtools.fileview.location import Location
 from dirtools.fileview.file_info import FileInfo
 
 logger = logging.getLogger(__name__)
@@ -33,7 +34,7 @@ class FileCollection(QObject):
     sig_file_added = pyqtSignal(FileInfo)
 
     # An existing file entry has been removed
-    sig_file_removed = pyqtSignal(str)
+    sig_file_removed = pyqtSignal(Location)
 
     # A file changed on disk
     sig_file_changed = pyqtSignal(FileInfo)
@@ -64,9 +65,9 @@ class FileCollection(QObject):
         self.fileinfos = []
         self.sig_files_set.emit()
 
-    def set_files(self, files):
+    def set_files(self, files: List[Location]):
         logger.debug("FileCollection.set_files")
-        self.fileinfos = [FileInfo.from_filename(f) for f in files]
+        self.fileinfos = [FileInfo.from_location(f) for f in files]
         self.sig_files_set.emit()
 
     def set_fileinfos(self, fileinfos):
@@ -79,16 +80,16 @@ class FileCollection(QObject):
         self.fileinfos.append(fi)
         self.sig_file_added.emit(fi)
 
-    def add_file(self, filename: str):
-        logger.debug("FileCollection.add_file: %s", filename)
-        fi = FileInfo.from_filename(filename)
+    def add_file(self, location: Location):
+        logger.debug("FileCollection.add_file: %s", location)
+        fi = FileInfo.from_location(location)
         self.fileinfos.append(fi)
         self.sig_file_added.emit(fi)
 
-    def remove_file(self, filename: str):
-        logger.debug("FileCollection.remove_file: %s", filename)
-        self.fileinfos = [fi for fi in self.fileinfos if fi.abspath == filename]
-        self.sig_file_removed.emit(filename)
+    def remove_file(self, location: Location):
+        logger.debug("FileCollection.remove_file: %s", location)
+        self.fileinfos = [fi for fi in self.fileinfos if fi.location() == location]
+        self.sig_file_removed.emit(location)
 
     def change_file(self, fileinfo):
         logger.debug("FileCollection.change_file: %s", fileinfo)

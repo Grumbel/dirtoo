@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 import logging
 
 from dirtools.fileview.location import Location
@@ -27,7 +29,7 @@ class Bookmarks:
     def __init__(self, filename: str) -> None:
         self.config_filename = filename
 
-    def get_entries(self):
+    def get_entries(self) -> List[Location]:
         try:
             with open(self.config_filename, "r") as fin:
                 lines = fin.read().splitlines()
@@ -44,7 +46,7 @@ class Bookmarks:
         except FileNotFoundError:
             return []
 
-    def append(self, location: Location):
+    def append(self, location: Location) -> None:
         entries = self.get_entries()
         if location in entries:
             return
@@ -52,7 +54,7 @@ class Bookmarks:
             with open(self.config_filename, "a") as fout:
                 print(location.as_url(), file=fout)
 
-    def remove(self, location: Location):
+    def remove(self, location: Location) -> None:
         entries = self.get_entries()
         with open(self.config_filename, "w") as fout:
             for entry in entries:

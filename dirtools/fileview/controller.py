@@ -429,7 +429,7 @@ class Controller(QObject):
     def show_current_filename(self, filename):
         self.window.show_current_filename(filename)
 
-    def add_files(self, files):
+    def add_files(self, files: List[Location]):
         for f in files:
             self.file_collection.add_file(f)
 
