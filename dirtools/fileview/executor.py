@@ -38,7 +38,7 @@ class Executor:
             # FIXME: Ignoring payload here
             self.launch_exo_terminal(working_directory.path)
 
-    def launch_exo_terminal(self, working_directory: Optional[str]) -> None:
+    def launch_exo_terminal(self, working_directory: Optional[str]=None) -> None:
         argv = ["exo-open", "--launch", "TerminalEmulator"]
         if working_directory is not None:
             argv += ["--working-directory", working_directory]
