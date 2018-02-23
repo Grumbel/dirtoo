@@ -27,13 +27,14 @@ from PyQt5.QtGui import (QBrush, QIcon, QColor, QPixmap, QPainter,
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
 
 from dirtools.dbus_thumbnailer import DBusThumbnailerError
+from dirtools.fileview.file_collection import FileCollection
 from dirtools.fileview.file_info import FileInfo
-from dirtools.fileview.thumb_file_item import ThumbFileItem
-from dirtools.fileview.layouter import Layouter
 from dirtools.fileview.layout import TileStyle
-from dirtools.fileview.settings import settings
-from dirtools.fileview.profiler import profile
+from dirtools.fileview.layouter import Layouter
 from dirtools.fileview.location import Location
+from dirtools.fileview.profiler import profile
+from dirtools.fileview.settings import settings
+from dirtools.fileview.thumb_file_item import ThumbFileItem
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +85,7 @@ class ThumbView(QGraphicsView):
 
         self.show_filtered = False
 
-        self.location2item: Dict[str, ThumbFileItem] = {}
+        self.location2item: Dict[Location, ThumbFileItem] = {}
         self.setAcceptDrops(True)
 
         self.scene = QGraphicsScene()
@@ -103,7 +104,7 @@ class ThumbView(QGraphicsView):
         self.level_of_detail = 3
         self.zoom_index = 5
 
-        self.file_collection = None
+        self.file_collection: Optional[FileCollection] = None
 
         self.needs_layout = True
 
@@ -222,9 +223,9 @@ class ThumbView(QGraphicsView):
     def dropEvent(self, ev):
         urls = ev.mimeData().urls()
         # [PyQt5.QtCore.QUrl('file:///home/ingo/projects/dirtool/trunk/setup.py')]
-        self.controller.add_files([url.path() for url in urls])
+        self.controller.add_files([Location.from_url(url.toString()) for url in urls])
 
-    def set_file_collection(self, file_collection):
+    def set_file_collection(self, file_collection: FileCollection) -> None:
         assert file_collection != self.file_collection
         logger.debug("ThumbView.set_file_collection")
         self.file_collection = file_collection
@@ -240,7 +241,7 @@ class ThumbView(QGraphicsView):
 
         self.on_file_collection_set()
 
-    def on_file_added(self, fileinfo: FileInfo):
+    def on_file_added(self, fileinfo: FileInfo) -> None:
         logger.debug("ThumbView.on_file_added: %s", fileinfo)
         item = ThumbFileItem(fileinfo, self.controller, self)
         item.new = True
@@ -253,36 +254,36 @@ class ThumbView(QGraphicsView):
         self.layouter.resize(self.viewport().width(), self.viewport().height())
         self.refresh_bounding_rect()
 
-    def on_file_removed(self, abspath):
-        logger.debug("ThumbView.on_file_removed: %s", abspath)
-        item = self.location2item.get(abspath, None)
+    def on_file_removed(self, location: Location) -> None:
+        logger.debug("ThumbView.on_file_removed: %s", location)
+        item = self.location2item.get(location, None)
         if item is not None:
             self.scene.removeItem(item)
-            del self.location2item[abspath]
+            del self.location2item[location]
             self.items.remove(item)
             self.layout_items()
 
-    def on_file_changed(self, fileinfo):
+    def on_file_changed(self, fileinfo: FileInfo) -> None:
         logger.debug("ThumbView.on_file_changed: %s", fileinfo)
         item = self.location2item.get(fileinfo.location(), None)
         if item is not None:
             item.new = True
             item.update()
 
-    def on_file_updated(self, fileinfo):
+    def on_file_updated(self, fileinfo: FileInfo) -> None:
         logger.debug("ThumbView.on_file_updated: %s", fileinfo)
         item = self.location2item.get(fileinfo.location(), None)
         if item is not None:
             item.update()
 
-    def on_file_collection_reordered(self):
+    def on_file_collection_reordered(self) -> None:
         logger.debug("ThumbView.on_file_collection_reordered")
         fi2it = {item.fileinfo.location(): item for item in self.items}
         fileinfos = self.file_collection.get_fileinfos()
         self.items = [fi2it[fileinfo.location()] for fileinfo in fileinfos if fileinfo.location() in fi2it]
         self.layout_items()
 
-    def on_file_collection_filtered(self):
+    def on_file_collection_filtered(self) -> None:
         logger.debug("ThumbView.on_file_collection_filtered")
         self.style_items()
         self.layout_items()

@@ -44,7 +44,7 @@ class VirtualFilesystem:
         for location, extractor in self.extractors.items():
             extractor.close()
 
-    def opendir(self, location: Location) -> DirectoryWatcher:
+    def opendir(self, location: Location) -> 'DirectoryWatcher':
         """Create a watcher object for the given directory. The caller is
         responsible for .close()`ing it."""
 
@@ -52,6 +52,8 @@ class VirtualFilesystem:
             directory_watcher = DirectoryWatcher(self, location)
             return directory_watcher
         else:
+            assert len(location.payloads) == 1
+
             outdir = self._make_extractor_outdir(location)
 
             if location not in self.extractors:
@@ -60,8 +62,12 @@ class VirtualFilesystem:
                 extractor.sig_finished.connect(lambda x=extractor: self._on_archive_extractor_finished(x))
                 extractor.start()
 
-            directory_watcher = DirectoryWatcher(self, location, outdir)
-            return directory_watcher
+            if location.payloads[0][1]:
+                directory_watcher = DirectoryWatcher(self, location, os.path.join(outdir, location.payloads[0][1]))
+                return directory_watcher
+            else:
+                directory_watcher = DirectoryWatcher(self, location, outdir)
+                return directory_watcher
 
     def get_fileinfo(self, location: Location):
         if location.has_stdio_name():
@@ -70,7 +76,18 @@ class VirtualFilesystem:
             assert len(location.payloads) == 1
             outdir = self._make_extractor_outdir(location)
             path = os.path.join(outdir, location.payloads[0][1])
-            return FileInfo.from_filename(path)
+            fi = FileInfo.from_filename(path)
+            fi._location = location
+            return fi
+
+    def get_stdio_name(self, location):
+        if location.has_stdio_name():
+            return location.get_stdio_name()
+        else:
+            assert len(location.payloads) == 1
+
+            outdir = self._make_extractor_outdir(location)
+            return os.path.join(outdir, location.payloads[0][1])
 
     def _make_extractor_outdir(self, location: Location) -> str:
         assert location.payloads[0][0] == "archive"

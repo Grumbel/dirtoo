@@ -109,10 +109,6 @@ class Location:
                                 for prot, path in self.payloads])
         return "{}://{}{}".format(self.protocol, self.path, payload_text)
 
-    def abspath(self):
-        assert not self.has_payload()
-        return self.path
-
     def has_stdio_name(self) -> bool:
         return not self.has_payload()
 

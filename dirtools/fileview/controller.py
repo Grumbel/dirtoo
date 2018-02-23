@@ -37,6 +37,7 @@ from dirtools.fileview.settings import settings
 from dirtools.fileview.filelist_stream import FileListStream
 from dirtools.xdg_desktop import get_desktop_entry, get_desktop_file
 from dirtools.fileview.location import Location
+from dirtools.fileview.file_info import FileInfo
 
 logger = logging.getLogger(__name__)
 
@@ -213,10 +214,10 @@ class Controller(QObject):
         self.apply_filter()
         self.apply_grouper()
 
-    def set_files(self, files, location=None):
-        if location is None:
-            self.window.set_file_list()
-        self.location = location
+    def set_files(self, files: List[Location]):
+        self.window.set_file_list()
+
+        self.location = None
         self.file_collection.set_files(files)
         self.apply_sort()
         self.apply_filter()
@@ -377,7 +378,7 @@ class Controller(QObject):
             for entry in entries:
                 action = menu.addAction(QIcon.fromTheme(entry.getIcon()), "Open With {}".format(entry.getName()))
                 action.triggered.connect(lambda checked, exe=entry.getExec(), files=files:
-                                         self.app.executor.launch_multi_from_exec(exe, [f.abspath() for f in files]))
+                                         self.app.executor.launch_multi_from_exec(exe, files))
 
         if not default_apps:
             menu.addAction("No applications available").setEnabled(False)
@@ -402,7 +403,7 @@ class Controller(QObject):
 
         if len(selected_items) == 1 and next(iter(mimetypes)) == "inode/directory":
             menu.addAction(QIcon.fromTheme('utilities-terminal'), "Open Terminal Here",
-                           lambda path=item.fileinfo.abspath(): self.app.executor.launch_terminal(path))
+                           lambda location=item.fileinfo.location(): self.app.executor.launch_terminal(location))
             menu.addSeparator()
 
         menu.addSeparator()
@@ -449,14 +450,14 @@ class Controller(QObject):
             fileinfo.metadata().update(metadata)
             self.file_collection.update_file(fileinfo)
 
-    def request_thumbnail(self, fileinfo, flavor):
+    def request_thumbnail(self, fileinfo: FileInfo, flavor: str) -> None:
         self.app.thumbnailer.request_thumbnail(fileinfo.abspath(), flavor,
                                                self.receive_thumbnail)
 
-    def prepare(self):
+    def prepare(self) -> None:
         self.window.thumb_view.prepare()
 
-    def reload(self):
+    def reload(self) -> None:
         self.set_location(self.location)
 
     def receive_thumbnail(self, filename, flavor, pixmap, error_code, message):

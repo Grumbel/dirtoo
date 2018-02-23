@@ -30,32 +30,11 @@ logger = logging.getLogger(__name__)
 class FileInfo:
 
     @staticmethod
-    def from_direntry(direntry) -> 'FileInfo':
-        logger.debug("FileInfo.from_direntry: %s/%s", direntry.path, direntry.name)
-
-        fi = FileInfo()
-
-        try:
-            fi._abspath = os.path.abspath(direntry.path)
-            fi._location = Location.from_path(fi._abspath)
-            fi._dirname = os.path.dirname(fi._abspath)
-            fi._basename = direntry.name
-            fi._ext = os.path.splitext(fi._abspath)[1]
-
-            fi._isdir = direntry.is_dir()
-            fi._isfile = direntry.is_file()
-            fi._issymlink = direntry.is_symlink()
-
-            fi._collect_stat()
-        except FileNotFoundError:
-            fi._filenotfound = True
-
-        return fi
-
-    @staticmethod
     def from_location(location: Location) -> 'FileInfo':
         assert not location.has_payload()
-        return FileInfo.from_filename(location.path)
+        fi = FileInfo.from_filename(location.path)
+        fi._location = location
+        return fi
 
     @staticmethod
     def from_filename(filename: str) -> 'FileInfo':

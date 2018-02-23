@@ -55,11 +55,13 @@ class Executor:
         else:
             return False
 
-        self.launch_single_from_exec(entry.getExec(), location.abspath())
+        self.launch_single_from_exec(entry.getExec(), location)
 
         return True
 
-    def launch_single_from_exec(self, exec_str: str, filename: str) -> None:
+    def launch_single_from_exec(self, exec_str: str, location: Location) -> None:
+        filename = self.app.vfs.get_stdio_name(location)
+
         def replace(lst: List[str], filename):
             result: List[str] = []
             for x in lst:
@@ -73,7 +75,8 @@ class Executor:
         argv = replace(argv, filename)
         self.launch(argv)
 
-    def launch_multi_from_exec(self, exec_str: str, files: List[str]) -> None:
+    def launch_multi_from_exec(self, exec_str: str, locations: List[Location]) -> None:
+        files = [self.app.vfs.get_stdio_name(location) for location in locations]
 
         def expand_multi(exe: List[str], files: List[str]) -> List[str]:
             result: List[str] = []

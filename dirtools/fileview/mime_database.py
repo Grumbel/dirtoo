@@ -19,15 +19,17 @@ from PyQt5.QtCore import QMimeDatabase
 from PyQt5.QtGui import QIcon
 
 from dirtools.fileview.location import Location
+from dirtools.fileview.virtual_filesystem import VirtualFilesystem
 
 
 class MimeDatabase:
 
-    def __init__(self):
+    def __init__(self, vfs: VirtualFilesystem) -> None:
+        self.vfs = vfs
         self.mime_db = QMimeDatabase()
 
     def get_mime_type(self, location: Location):
-        return self.mime_db.mimeTypeForFile(location.abspath())
+        return self.mime_db.mimeTypeForFile(self.vfs.get_stdio_name(location))
 
     def get_icon_from_mime_type(self, mimetype):
         icon_name = mimetype.iconName()

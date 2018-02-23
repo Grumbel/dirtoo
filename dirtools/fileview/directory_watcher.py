@@ -29,6 +29,7 @@ import inotify_simple
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.location import Location
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -105,8 +106,9 @@ class DirectoryWatcherWorker(QObject):
         fileinfos = []
 
         logger.debug("DirectoryWatcher.process: gather directory content")
-        for entry in os.scandir(self.path):
-            fileinfo = FileInfo.from_direntry(entry)
+        for entry in os.listdir(self.path):
+            location = Location.join(self.location, entry)
+            fileinfo = self.vfs.get_fileinfo(location)
             fileinfos.append(fileinfo)
 
             if self._close:
@@ -151,7 +153,7 @@ class DirectoryWatcher(QObject):
 
     sig_close_requested = pyqtSignal()
 
-    def __init__(self, vfs: 'VirtualFilesystem', location: Location, path: Optional[str]=None):
+    def __init__(self, vfs: 'VirtualFilesystem', location: Location, path: Optional[str]=None) -> None:
         super().__init__()
         self.worker = DirectoryWatcherWorker(vfs, location, path)
         self.thread = QThread(self)

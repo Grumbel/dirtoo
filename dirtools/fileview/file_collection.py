@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import List, Optional
 
 import logging
 import random
@@ -56,21 +56,21 @@ class FileCollection(QObject):
     # The file list has been grouped, .group has been set
     sig_files_grouped = pyqtSignal()
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.fileinfos: List[FileInfo] = []
 
-    def clear(self):
+    def clear(self) -> None:
         logger.debug("FileCollection.clear")
         self.fileinfos = []
         self.sig_files_set.emit()
 
-    def set_files(self, files: List[Location]):
+    def set_files(self, files: List[Location]) -> None:
         logger.debug("FileCollection.set_files")
         self.fileinfos = [FileInfo.from_location(f) for f in files]
         self.sig_files_set.emit()
 
-    def set_fileinfos(self, fileinfos):
+    def set_fileinfos(self, fileinfos: List[FileInfo]) -> None:
         logger.debug("FileCollection.set_fileinfos")
         self.fileinfos = fileinfos
         self.sig_files_set.emit()
@@ -80,39 +80,39 @@ class FileCollection(QObject):
         self.fileinfos.append(fi)
         self.sig_file_added.emit(fi)
 
-    def add_file(self, location: Location):
+    def add_file(self, location: Location) -> None:
         logger.debug("FileCollection.add_file: %s", location)
         fi = FileInfo.from_location(location)
         self.fileinfos.append(fi)
         self.sig_file_added.emit(fi)
 
-    def remove_file(self, location: Location):
+    def remove_file(self, location: Location) -> None:
         logger.debug("FileCollection.remove_file: %s", location)
         self.fileinfos = [fi for fi in self.fileinfos if fi.location() == location]
         self.sig_file_removed.emit(location)
 
-    def change_file(self, fileinfo):
+    def change_file(self, fileinfo: FileInfo) -> None:
         logger.debug("FileCollection.change_file: %s", fileinfo)
         # We assume here that the supplied FileInfo is identical to
         # one already in our storage
         self.sig_file_changed.emit(fileinfo)
 
-    def update_file(self, fileinfo):
+    def update_file(self, fileinfo: FileInfo) -> None:
         logger.debug("FileCollection.change_file: %s", fileinfo)
         # We assume here that the supplied FileInfo is identical to
         # one already in our storage
         self.sig_file_updated.emit(fileinfo)
 
-    def get_fileinfos(self):
+    def get_fileinfos(self) -> List[FileInfo]:
         return self.fileinfos
 
-    def get_fileinfo(self, abspath: str):
+    def get_fileinfo(self, abspath: str) -> Optional[FileInfo]:
         for fi in self.fileinfos:
             if fi.abspath() == abspath:
                 return fi
         return None
 
-    def size(self):
+    def size(self) -> int:
         return len(self.fileinfos)
 
     def group(self, grouper):
@@ -137,7 +137,7 @@ class FileCollection(QObject):
         logger.debug("FileCollection.sort:done")
         self.sig_files_reordered.emit()
 
-    def save_as(self, filename):
+    def save_as(self, filename: str):
         with open(filename, "w") as fout:
             for fi in self.fileinfos:
                 fout.write(fi.abspath)

@@ -85,7 +85,7 @@ class FileViewApplication:
         self.metadata_collector = MetaDataCollector()
         self.session_bus = QDBusConnection.sessionBus()
         self.dbus_thumbnail_cache = DBusThumbnailCache(self.session_bus)
-        self.mime_database = MimeDatabase()
+        self.mime_database = MimeDatabase(self.vfs)
         self.mime_associations = XdgMimeAssociations.system()
 
         self.controllers: List[Controller] = []
