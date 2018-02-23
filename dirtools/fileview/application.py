@@ -38,6 +38,7 @@ from dirtools.fileview.metadata_collector import MetaDataCollector
 from dirtools.fileview.mime_database import MimeDatabase
 from dirtools.fileview.settings import settings
 from dirtools.fileview.thumbnailer import Thumbnailer
+from dirtools.fileview.virtual_filesystem import VirtualFilesystem
 from dirtools.xdg_mime_associations import XdgMimeAssociations
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,7 @@ class FileViewApplication:
         # http://stackoverflow.com/questions/4938723/
         signal.signal(signal.SIGINT, signal.SIG_DFL)
 
+        self.cache_dir = os.path.join(xdg.BaseDirectory.xdg_cache_home, "dt-fileview")
         self.config_dir = os.path.join(xdg.BaseDirectory.xdg_config_home, "dt-fileview")
         self.config_file = os.path.join(self.config_dir, "config.ini")
         if not os.path.isdir(self.config_dir):
@@ -76,6 +78,7 @@ class FileViewApplication:
         self.qapp.setQuitOnLastWindowClosed(False)
         self.qapp.lastWindowClosed.connect(self.on_last_window_closed)
 
+        self.vfs = VirtualFilesystem(self.cache_dir)
         self.executor = Executor(self)
         self.thumbnailer = Thumbnailer()
         self.metadata_collector = MetaDataCollector()
@@ -101,6 +104,7 @@ class FileViewApplication:
 
         self.metadata_collector.close()
         self.thumbnailer.close()
+        self.vfs.close()
 
     def close_controller(self, controller):
         self.controllers.remove(controller)

@@ -97,12 +97,12 @@ class Location:
         assert not self.has_payload()
         return self.path
 
-    def payload_outdir(self):
-        assert self.payloads == [("archive", "")]
+    def has_stdio_name(self) -> bool:
+        return not self.has_payload()
 
-        import hashlib
-        loc_hash = hashlib.md5(self.path.encode()).hexdigest()
-        return os.path.join("/tmp/", loc_hash)
+    def get_stdio_name(self) -> str:
+        assert self.payloads == []
+        return self.path
 
     def exists(self):
         assert not self.has_payload()

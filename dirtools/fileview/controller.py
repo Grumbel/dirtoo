@@ -37,7 +37,6 @@ from dirtools.fileview.settings import settings
 from dirtools.fileview.filelist_stream import FileListStream
 from dirtools.xdg_desktop import get_desktop_entry, get_desktop_file
 from dirtools.fileview.location import Location
-from dirtools.archive_extractor import ArchiveExtractor
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +48,6 @@ class Controller(QObject):
         self.app = app
         self.location: Optional[Location] = None
         self.file_collection = FileCollection()
-        self.archive_extractor: Optional[ArchiveExtractor] = None
         self.actions = Actions(self)
         self.window = FileViewWindow(self)
 
@@ -76,10 +74,6 @@ class Controller(QObject):
         if self.directory_watcher is not None:
             self.directory_watcher.close()
             self.directory_watcher = None
-
-        if self.archive_extractor is not None:
-            self.archive_extractor.close()
-            self.archive_extractor = None
 
     def _apply_settings(self):
         v = settings.value("globals/crop_thumbnails", False, bool)
@@ -189,36 +183,14 @@ class Controller(QObject):
 
         self.window.show_loading()
 
-        if not location.has_payload():
-            self._set_directory_location(location)
-        else:
-            self._set_archive_location(location)
-
-    def _set_archive_location(self, location: Location):
-        assert location.has_payload()
-
-        if self.archive_extractor is not None:
-            self.archive_extractor.close()
-            self.archive_extractor = None
-
-        outdir = location.payload_outdir()
-        if os.path.isdir(outdir):
-            self._set_directory_location(Location.from_path(outdir))
-        else:
-            self.archive_extractor = ArchiveExtractor(location.path, outdir)
-            self.archive_extractor.sig_finished.connect(self.on_archive_extractor_finished)
-            self.archive_extractor.start()
-
-            self._set_directory_location(Location.from_path(outdir))
+        self._set_directory_location(location)
 
     def _set_directory_location(self, location: Location):
-        assert not location.has_payload()
-
         self.file_collection.clear()
 
         if self.directory_watcher is not None:
             self.directory_watcher.close()
-        self.directory_watcher = DirectoryWatcher(location.path)
+        self.directory_watcher = self.app.vfs.opendir(location)
         self.directory_watcher.sig_file_added.connect(self.file_collection.add_fileinfo)
         self.directory_watcher.sig_file_removed.connect(self.file_collection.remove_file)
         self.directory_watcher.sig_file_changed.connect(self.file_collection.change_file)
