@@ -81,6 +81,7 @@ class Layouter:
         if first_group is not None:
             sorted_groups = [first_group] + sorted_groups
 
+        grid = None
         for idx, (group, items) in enumerate(sorted_groups):
             if self.show_filtered:
                 visible_items = [item for item in items if not item.fileinfo.is_hidden]
@@ -103,7 +104,11 @@ class Layouter:
                 self.root.add(spacer)
 
         if len(sorted_groups) == 1:
-            self.append_layout = grid
+            if grid is None:
+                self.append_layout = TileLayout(self.style)
+                self.root.add(self.append_layout)
+            else:
+                self.append_layout = grid
         else:
             self.root.add(self._build_group_title("Incoming"))
             self.append_layout = TileLayout(self.style)
