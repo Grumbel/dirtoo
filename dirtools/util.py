@@ -40,7 +40,7 @@ def expand_directories(files, recursive):
     return results
 
 
-NUMERIC_SORT_RX = re.compile('(\d+)')
+NUMERIC_SORT_RX = re.compile(r'(\d+)')
 
 
 def numeric_sorted(lst):
