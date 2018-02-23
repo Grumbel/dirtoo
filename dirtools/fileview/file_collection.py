@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 import logging
 import random
 
@@ -53,12 +55,9 @@ class FileCollection(QObject):
     # The file list has been grouped, .group has been set
     sig_files_grouped = pyqtSignal()
 
-    def __init__(self, files=None):
+    def __init__(self):
         super().__init__()
-        if files is None:
-            files = []
-
-        self.fileinfos = [FileInfo.from_filename(f) for f in files]
+        self.fileinfos: List[FileInfo] = []
 
     def clear(self):
         logger.debug("FileCollection.clear")
