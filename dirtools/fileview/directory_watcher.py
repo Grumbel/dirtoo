@@ -79,7 +79,7 @@ class DirectoryWatcherWorker(QObject):
     sig_error = pyqtSignal()
     sig_scandir_finished = pyqtSignal(list)
 
-    def __init__(self, vfs: 'VirtualFilesystem', location: Location, path: Optional[str]) -> None:
+    def __init__(self, vfs, location: Location, path: Optional[str]) -> None:
         super().__init__()
 
         self.vfs = vfs
@@ -153,7 +153,7 @@ class DirectoryWatcher(QObject):
 
     sig_close_requested = pyqtSignal()
 
-    def __init__(self, vfs: 'VirtualFilesystem', location: Location, path: Optional[str]=None) -> None:
+    def __init__(self, vfs, location: Location, path: Optional[str]=None) -> None:
         super().__init__()
         self.worker = DirectoryWatcherWorker(vfs, location, path)
         self.thread = QThread(self)

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from PyQt5.QtCore import QMimeDatabase
+from PyQt5.QtCore import QMimeType, QMimeDatabase
 from PyQt5.QtGui import QIcon
 
 from dirtools.fileview.location import Location
@@ -28,10 +28,10 @@ class MimeDatabase:
         self.vfs = vfs
         self.mime_db = QMimeDatabase()
 
-    def get_mime_type(self, location: Location):
+    def get_mime_type(self, location: Location) -> QMimeType:
         return self.mime_db.mimeTypeForFile(self.vfs.get_stdio_name(location))
 
-    def get_icon_from_mime_type(self, mimetype):
+    def get_icon_from_mime_type(self, mimetype: QMimeType) -> QIcon:
         icon_name = mimetype.iconName()
         icon = QIcon.fromTheme(icon_name)
         if not icon.isNull():

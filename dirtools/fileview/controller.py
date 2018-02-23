@@ -460,8 +460,10 @@ class Controller(QObject):
     def reload(self) -> None:
         self.set_location(self.location)
 
-    def receive_thumbnail(self, location: Location, flavor: str, pixmap: 'QPixmap', error_code: int, message: str) -> None:
-        logger.debug("Controller.receive_thumbnail: %s %s %s %s %s", location, flavor, pixmap, error_code, message)
+    def receive_thumbnail(self, location: Location, flavor: str,
+                          pixmap, error_code: int, message: str) -> None:
+        logger.debug("Controller.receive_thumbnail: %s %s %s %s %s",
+                     location, flavor, pixmap, error_code, message)
         self.window.thumb_view.receive_thumbnail(location, flavor, pixmap, error_code, message)
 
     def reload_thumbnails(self) -> None:

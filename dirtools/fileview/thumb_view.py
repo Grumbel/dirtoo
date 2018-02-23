@@ -29,7 +29,7 @@ from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
 from dirtools.dbus_thumbnailer import DBusThumbnailerError
 from dirtools.fileview.file_collection import FileCollection
 from dirtools.fileview.file_info import FileInfo
-from dirtools.fileview.layout import TileStyle
+from dirtools.fileview.layout import Layout, TileStyle
 from dirtools.fileview.layouter import Layouter
 from dirtools.fileview.location import Location
 from dirtools.fileview.profiler import profile
@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 class SharedIcons:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.folder = QIcon.fromTheme("folder")
         self.rar = QIcon.fromTheme("rar")
         self.zip = QIcon.fromTheme("zip")
@@ -53,7 +53,7 @@ class SharedIcons:
 
 class SharedPixmaps:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.video = QPixmap(resource_filename("dirtools", "fileview/icons/noun_36746_cc.png"))
         self.image = QPixmap(resource_filename("dirtools", "fileview/icons/noun_386758_cc.png"))  # noun_757280_cc.png
         self.loading = QPixmap(resource_filename("dirtools", "fileview/icons/noun_409399_cc.png"))
@@ -64,7 +64,7 @@ class SharedPixmaps:
 
 class FileViewStyle:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.font = QFont("Verdana", 8)
         self.fm = QFontMetrics(self.font)
         self.shared_icons = SharedIcons()
@@ -97,7 +97,7 @@ class ThumbView(QGraphicsView):
 
         self.tile_style = TileStyle()
         self.layouter = Layouter(self.scene, self.tile_style)
-        self.layout = None
+        self.layout: Optional[Layout] = None
 
         self.items: List[ThumbFileItem] = []
 
@@ -121,15 +121,15 @@ class ThumbView(QGraphicsView):
                             QPainter.TextAntialiasing |
                             QPainter.Antialiasing)
 
-    def prepare(self):
+    def prepare(self) -> None:
         for item in self.items:
             item.prepare()
 
-    def on_selection_changed(self):
+    def on_selection_changed(self) -> None:
         count = len(self.scene.selectedItems())
         print("{} files selected".format(count))
 
-    def cursor_move(self, dx: int, dy: int):
+    def cursor_move(self, dx: int, dy: int) -> None:
         def best_item(items, rect):
             """Select the most top/left and fully visible item"""
             def contains(item):
@@ -167,7 +167,7 @@ class ThumbView(QGraphicsView):
         self.cursor_item.update()
         self.ensureVisible(self.cursor_item)
 
-    def keyPressEvent(self, ev):
+    def keyPressEvent(self, ev) -> None:
         if ev.key() == Qt.Key_Escape:
             self.scene.clearSelection()
             item = self.cursor_item
@@ -199,25 +199,25 @@ class ThumbView(QGraphicsView):
         else:
             super().keyPressEvent(ev)
 
-    def set_crop_thumbnails(self, v):
+    def set_crop_thumbnails(self, v) -> None:
         self.crop_thumbnails = v
         for item in self.items:
             item.update()
 
-    def dragMoveEvent(self, ev):
+    def dragMoveEvent(self, ev) -> None:
         # the default implementation will check if any item in the
         # scene accept a drop event, we don't want that, so we
         # override the function to do nothing
         pass
 
-    def dragEnterEvent(self, ev):
+    def dragEnterEvent(self, ev) -> None:
         print("dragEnterEvent", ev.mimeData().formats())
         if ev.mimeData().hasFormat("text/uri-list"):
             ev.accept()
         else:
             ev.ignore()
 
-    def dragLeaveEvent(self, ev):
+    def dragLeaveEvent(self, ev) -> None:
         print("dragLeaveEvent: leave")
 
     def dropEvent(self, ev):
@@ -288,20 +288,23 @@ class ThumbView(QGraphicsView):
         self.style_items()
         self.layout_items()
 
-    def on_file_collection_grouped(self):
+    def on_file_collection_grouped(self) -> None:
         logger.debug("ThumbView.on_file_collection_grouped")
         self.style_items()
         self.layout_items()
 
-    def on_file_collection_set(self):
-        logger.debug("ThumbView.on_file_collection_set")
-        fileinfos = self.file_collection.get_fileinfos()
-
+    def clear(self) -> None:
         self.items.clear()
         self.cursor_item = None
         self.location2item.clear()
         self.scene.clear()
         self.layout = None
+
+    def on_file_collection_set(self) -> None:
+        logger.debug("ThumbView.on_file_collection_set")
+        self.clear()
+
+        fileinfos = self.file_collection.get_fileinfos()
 
         for fileinfo in fileinfos:
             item = ThumbFileItem(fileinfo, self.controller, self)
@@ -312,7 +315,7 @@ class ThumbView(QGraphicsView):
         self.style_items()
         self.layout_items()
 
-    def resizeEvent(self, ev):
+    def resizeEvent(self, ev) -> None:
         logger.debug("ThumbView.resizeEvent: %s", ev)
         super().resizeEvent(ev)
 
@@ -323,7 +326,7 @@ class ThumbView(QGraphicsView):
         else:
             self.layout_items()
 
-    def timerEvent(self, ev):
+    def timerEvent(self, ev) -> None:
         if ev.timerId() == self.resize_timer:
             self.killTimer(self.resize_timer)
             self.resize_timer = None
@@ -334,7 +337,7 @@ class ThumbView(QGraphicsView):
         else:
             assert False, "timer foobar"
 
-    def style_item(self, item):
+    def style_item(self, item) -> None:
         if self.show_filtered:
             if item.fileinfo.is_hidden:
                 item.setVisible(False)
@@ -348,7 +351,7 @@ class ThumbView(QGraphicsView):
             item.setVisible(item.fileinfo.is_visible)
             item.setOpacity(1.0)
 
-    def style_items(self):
+    def style_items(self) -> None:
         for item in self.items:
             self.style_item(item)
 
@@ -357,7 +360,7 @@ class ThumbView(QGraphicsView):
         pass
 
     @profile
-    def paintEvent(self, ev):
+    def paintEvent(self, ev) -> None:
         if self.needs_layout:
             self._layout_items()
             self.needs_layout = False
@@ -370,7 +373,7 @@ class ThumbView(QGraphicsView):
         self.update()
 
     @profile
-    def _layout_items(self):
+    def _layout_items(self) -> None:
         logger.debug("ThumbView._layout_items")
 
         self.setUpdatesEnabled(False)
@@ -387,11 +390,11 @@ class ThumbView(QGraphicsView):
 
         logger.debug("ThumbView.layout_items: done")
 
-    def refresh_bounding_rect(self):
+    def refresh_bounding_rect(self) -> None:
         if self.layout is None:
             return
 
-        def get_bounding_rect():
+        def get_bounding_rect() -> QRectF:
             rect = self.layout.get_bounding_rect()
 
             if True:  # self.layout_style == LayoutStyle.ROWS:
@@ -406,19 +409,19 @@ class ThumbView(QGraphicsView):
 
         self.setSceneRect(get_bounding_rect())
 
-    def zoom_in(self):
+    def zoom_in(self) -> None:
         self.zoom_index += 1
         if self.zoom_index > 11:
             self.zoom_index = 11
         self.apply_zoom()
 
-    def zoom_out(self):
+    def zoom_out(self) -> None:
         self.zoom_index -= 1
         if self.zoom_index < 0:
             self.zoom_index = 0
         self.apply_zoom()
 
-    def apply_zoom(self):
+    def apply_zoom(self) -> None:
         if self.zoom_index == 0:
             self.tn_width = 256
             self.tn_height = 16
@@ -452,11 +455,12 @@ class ThumbView(QGraphicsView):
         for item in self.items:
             item.update()
 
-    def icon_from_fileinfo(self, fileinfo):
+    def icon_from_fileinfo(self, fileinfo: FileInfo) -> QIcon:
         mimetype = self.controller.app.mime_database.get_mime_type(fileinfo.location())
         return self.controller.app.mime_database.get_icon_from_mime_type(mimetype)
 
-    def receive_thumbnail(self, location: Location, flavor: str, pixmap: 'QPixmap', error_code: int, message: str):
+    def receive_thumbnail(self, location: Location, flavor: str,
+                          pixmap: 'QPixmap', error_code: int, message: str) -> None:
         item = self.location2item.get(location, None)
         if item is not None:
             self.receive_thumbnail_for_item(item, flavor, pixmap, error_code, message)
@@ -466,7 +470,7 @@ class ThumbView(QGraphicsView):
             # is normal when switching directories quickly
             pass
 
-    def receive_thumbnail_for_item(self, item, flavor, pixmap, error_code, message):
+    def receive_thumbnail_for_item(self, item, flavor: str, pixmap: QPixmap, error_code: int, message: str) -> None:
         if pixmap is not None:
             item.set_thumbnail_pixmap(pixmap, flavor)
         else:
