@@ -37,11 +37,24 @@ LOCATION_REGEX = re.compile(r'^([a-z]+)://(.*)$')
 class Location:
 
     @staticmethod
-    def from_path(path):
+    def join(location: 'Location', path: str) -> 'Location':
+        if len(location.payloads) == 1:
+            result = location.copy()
+            result.payloads[0] = (result.payloads[0][0], os.path.join(result.payloads[0][1], path))
+            return result
+        elif len(location.payloads) == 0:
+            result = location.copy()
+            result.path = os.path.join(result.path, path)
+            return result
+        else:
+            raise Exception("Location.join: not implemented for multiple payloads")
+
+    @staticmethod
+    def from_path(path) -> 'Location':
         return Location.from_url("file://" + os.path.abspath(path))
 
     @staticmethod
-    def from_url(url):
+    def from_url(url) -> 'Location':
         m = LOCATION_REGEX.match(url)
         if m is None:
             raise Exception("Location.from_string: failed to decode: {}".format(url))
@@ -62,7 +75,7 @@ class Location:
 
             return Location(protocol, abspath, payloads)
 
-    def __init__(self, protocol, path, payloads):
+    def __init__(self, protocol: str, path: str, payloads: List[Tuple[str, str]]) -> None:
         assert os.path.isabs(path)
 
         self.protocol: str = protocol
@@ -107,14 +120,17 @@ class Location:
         assert self.payloads == []
         return self.path
 
-    def exists(self):
+    def exists(self) -> bool:
         if self.has_payload():
-            logger.error("Location.exists: not implemented for payload")
-            return False
+            if len(self.payloads) != 1:
+                logger.error("Location.exists: not implemented for multiple payloads")
+                return False
+            else:
+                return os.path.exists(self.path)
         else:
             return os.path.exists(self.path)
 
-    def copy(self):
+    def copy(self) -> 'Location':
         return Location(self.protocol, self.path, list(self.payloads))
 
     def __eq__(self, other):

@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Optional
+
 import logging
 import traceback
 import os
@@ -76,10 +78,15 @@ class DirectoryWatcherWorker(QObject):
     sig_error = pyqtSignal()
     sig_scandir_finished = pyqtSignal(list)
 
-    def __init__(self, path: str) -> None:
+    def __init__(self, vfs: 'VirtualFilesystem', location: Location, path: Optional[str]) -> None:
         super().__init__()
 
-        self.path = path
+        self.vfs = vfs
+        self.location = location
+        if path is None:
+            self.path = location.get_stdio_name()
+        else:
+            self.path = path
         self._close = False
 
     def init(self) -> None:
@@ -114,10 +121,10 @@ class DirectoryWatcherWorker(QObject):
                          ", ".join([str(x)
                                     for x in inotify_flags.from_mask(ev.mask)]))
 
-            location = Location.from_path(os.path.join(self.path, ev.name))
+            location = Location.join(self.location, ev.name)
 
             if ev.mask & inotify_flags.CREATE:
-                self.sig_file_added.emit(FileInfo.from_location(location))
+                self.sig_file_added.emit(self.vfs.get_fileinfo(location))
             elif ev.mask & inotify_flags.DELETE:
                 self.sig_file_removed.emit(location)
             elif ev.mask & inotify_flags.DELETE_SELF:
@@ -125,11 +132,11 @@ class DirectoryWatcherWorker(QObject):
             elif ev.mask & inotify_flags.MOVE_SELF:
                 pass  # directory itself has moved
             elif ev.mask & inotify_flags.MODIFY or ev.mask & inotify_flags.ATTRIB:
-                self.sig_file_changed.emit(FileInfo.from_location(location))
+                self.sig_file_changed.emit(self.vfs.get_fileinfo(location))
             elif ev.mask & inotify_flags.MOVED_FROM:
-                self.sig_file_removed.emit(os.path.join(self.path, ev.name))
+                self.sig_file_removed.emit(location)
             elif ev.mask & inotify_flags.MOVED_TO:
-                self.sig_file_added.emit(FileInfo.from_location(location))
+                self.sig_file_added.emit(self.vfs.get_fileinfo(location))
             else:
                 # unhandled event
                 print("ERROR: Unhandlade flags:")
@@ -144,9 +151,9 @@ class DirectoryWatcher(QObject):
 
     sig_close_requested = pyqtSignal()
 
-    def __init__(self, path):
+    def __init__(self, vfs: 'VirtualFilesystem', location: Location, path: Optional[str]=None):
         super().__init__()
-        self.worker = DirectoryWatcherWorker(path)
+        self.worker = DirectoryWatcherWorker(vfs, location, path)
         self.thread = QThread(self)
         self.worker.moveToThread(self.thread)
 

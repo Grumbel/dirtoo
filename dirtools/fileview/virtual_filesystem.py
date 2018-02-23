@@ -24,6 +24,7 @@ import hashlib
 from dirtools.fileview.location import Location
 from dirtools.fileview.directory_watcher import DirectoryWatcher
 from dirtools.archive_extractor import ArchiveExtractor
+from dirtools.fileview.file_info import FileInfo
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +49,7 @@ class VirtualFilesystem:
         responsible for .close()`ing it."""
 
         if location.has_stdio_name():
-            directory_watcher = DirectoryWatcher(location.get_stdio_name())
+            directory_watcher = DirectoryWatcher(self, location)
             return directory_watcher
         else:
             outdir = self._make_extractor_outdir(location)
@@ -59,11 +60,20 @@ class VirtualFilesystem:
                 extractor.sig_finished.connect(lambda x=extractor: self._on_archive_extractor_finished(x))
                 extractor.start()
 
-            directory_watcher = DirectoryWatcher(outdir)
+            directory_watcher = DirectoryWatcher(self, location, outdir)
             return directory_watcher
 
+    def get_fileinfo(self, location: Location):
+        if location.has_stdio_name():
+            return FileInfo.from_location(location)
+        else:
+            assert len(location.payloads) == 1
+            outdir = self._make_extractor_outdir(location)
+            path = os.path.join(outdir, location.payloads[0][1])
+            return FileInfo.from_filename(path)
+
     def _make_extractor_outdir(self, location: Location) -> str:
-        assert location.payloads == [("archive", "")]
+        assert location.payloads[0][0] == "archive"
 
         loc_hash = hashlib.md5(location.path.encode()).hexdigest()
         return os.path.join(self.extractor_dir, loc_hash)

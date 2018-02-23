@@ -93,7 +93,7 @@ class FileListStream(QObject):
             else:
                 if filename is not None:
                     location = Location.from_path(filename)
-                    self.sig_file_added.emit(FileInfo.from_location(location))
+                    self.sig_file_added.emit(self.vfs.get_fileinfo(location))
                 else:
                     return
 

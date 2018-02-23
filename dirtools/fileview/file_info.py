@@ -55,10 +55,10 @@ class FileInfo:
     @staticmethod
     def from_location(location: Location) -> 'FileInfo':
         assert not location.has_payload()
-        return FileInfo._from_filename(location.path)
+        return FileInfo.from_filename(location.path)
 
     @staticmethod
-    def _from_filename(filename: str) -> 'FileInfo':
+    def from_filename(filename: str) -> 'FileInfo':
         logger.debug("FileInfo.from_filename: %s", filename)
 
         fi = FileInfo()
