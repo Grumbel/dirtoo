@@ -19,6 +19,7 @@ from typing import List, Optional
 
 import logging
 import subprocess
+import shlex
 
 from dirtools.xdg_desktop import get_desktop_entry
 from dirtools.fileview.location import Location
@@ -71,7 +72,8 @@ class Executor:
                     result.append(x)
             return result
 
-        argv = exec_str.split()
+        # FIXME: quick&dirty implementation, that doesn't follow the spec
+        argv = shlex.split(exec_str)
         argv = replace(argv, filename)
         self.launch(argv)
 
@@ -96,8 +98,8 @@ class Executor:
                     result.append(x)
             return result
 
-        # FIXME: quick&dirty implementation, can't deal with quoting, see spec
-        argv = exec_str.split()
+        # FIXME: quick&dirty implementation, that doesn't follow the spec
+        argv = shlex.split(exec_str)
         if "%F" in argv or "%U" in argv:
             argv = expand_multi(argv, files)
             self.launch(argv)
