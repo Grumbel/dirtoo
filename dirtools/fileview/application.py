@@ -81,8 +81,8 @@ class FileViewApplication:
 
         self.vfs = VirtualFilesystem(self.cache_dir)
         self.executor = Executor(self)
-        self.thumbnailer = Thumbnailer()
-        self.metadata_collector = MetaDataCollector()
+        self.thumbnailer = Thumbnailer(self.vfs)
+        self.metadata_collector = MetaDataCollector(self.vfs)
         self.session_bus = QDBusConnection.sessionBus()
         self.dbus_thumbnail_cache = DBusThumbnailCache(self.session_bus)
         self.mime_database = MimeDatabase(self.vfs)

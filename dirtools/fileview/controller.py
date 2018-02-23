@@ -439,19 +439,19 @@ class Controller(QObject):
         self.window.thumb_view.set_crop_thumbnails(v)
 
     def request_metadata(self, fileinfo):
-        self.app.metadata_collector.request_metadata(fileinfo.abspath())
+        self.app.metadata_collector.request_metadata(fileinfo.location())
 
-    def receive_metadata(self, filename: str, metadata: Dict[str, Any]):
-        logger.debug("Controller.receive_metadata: %s %s", filename, metadata)
-        fileinfo = self.file_collection.get_fileinfo(filename)
+    def receive_metadata(self, location: Location, metadata: Dict[str, Any]):
+        logger.debug("Controller.receive_metadata: %s %s", location, metadata)
+        fileinfo = self.file_collection.get_fileinfo(location)
         if fileinfo is None:
-            logger.error("Controller.receive_metadata: not found fileinfo for %s", filename)
+            logger.error("Controller.receive_metadata: not found fileinfo for %s", location)
         else:
             fileinfo.metadata().update(metadata)
             self.file_collection.update_file(fileinfo)
 
     def request_thumbnail(self, fileinfo: FileInfo, flavor: str) -> None:
-        self.app.thumbnailer.request_thumbnail(fileinfo.abspath(), flavor,
+        self.app.thumbnailer.request_thumbnail(fileinfo.location(), flavor,
                                                self.receive_thumbnail)
 
     def prepare(self) -> None:
@@ -460,25 +460,25 @@ class Controller(QObject):
     def reload(self) -> None:
         self.set_location(self.location)
 
-    def receive_thumbnail(self, filename, flavor, pixmap, error_code, message):
-        logger.debug("Controller.receive_thumbnail: %s %s %s %s %s", filename, flavor, pixmap, error_code, message)
-        self.window.thumb_view.receive_thumbnail(filename, flavor, pixmap, error_code, message)
+    def receive_thumbnail(self, location: Location, flavor: str, pixmap: 'QPixmap', error_code: int, message: str) -> None:
+        logger.debug("Controller.receive_thumbnail: %s %s %s %s %s", location, flavor, pixmap, error_code, message)
+        self.window.thumb_view.receive_thumbnail(location, flavor, pixmap, error_code, message)
 
-    def reload_thumbnails(self):
+    def reload_thumbnails(self) -> None:
         self.app.dbus_thumbnail_cache.delete(
             [f.abspath()
              for f in self.file_collection.get_fileinfos()])
         self.window.thumb_view.reload_thumbnails()
 
-    def set_grouper_by_none(self):
+    def set_grouper_by_none(self) -> None:
         self.grouper.set_func(NoGrouperFunc())
         self.apply_grouper()
 
-    def set_grouper_by_directory(self):
+    def set_grouper_by_directory(self) -> None:
         self.grouper.set_func(DirectoryGrouperFunc())
         self.apply_grouper()
 
-    def set_grouper_by_day(self):
+    def set_grouper_by_day(self) -> None:
         self.grouper.set_func(DayGrouperFunc())
         self.apply_grouper()
 

@@ -24,6 +24,7 @@ from PyQt5.QtDBus import QDBusConnection
 from PyQt5.QtGui import QPixmap, QImage
 
 from dirtools.dbus_thumbnailer import DBusThumbnailer
+from dirtools.fileview.location import Location
 
 logger = logging.getLogger(__name__)
 
@@ -63,19 +64,21 @@ class WorkerDBusThumbnailerListener:
 
 class ThumbnailerWorker(QObject):
 
-    sig_thumbnail_ready = pyqtSignal(str, str, CallableWrapper, QImage)
-    sig_thumbnail_error = pyqtSignal(str, str, CallableWrapper, int, str)
+    sig_thumbnail_ready = pyqtSignal(Location, str, CallableWrapper, QImage)
+    sig_thumbnail_error = pyqtSignal(Location, str, CallableWrapper, int, str)
 
-    def __init__(self, parent=None):
+    def __init__(self, vfs, parent=None):
         super().__init__(parent)
         # This function is called from the main thread, leave
         # construction to init() and deinit()
+
+        self.vfs = vfs
         self._close = False
 
         self.dbus_loop = None
         self.session_bus = None
         self.dbus_thumbnailer: Optional[DBusThumbnailer] = None
-        self.requests: Dict[int, List[Tuple[str, str, ThumbnailCallback]]] = {}
+        self.requests: Dict[int, List[Tuple[Location, str, ThumbnailCallback]]] = {}
 
     def init(self):
         self.session_bus = QDBusConnection.sessionBus()
@@ -87,19 +90,20 @@ class ThumbnailerWorker(QObject):
 
         del self.dbus_thumbnailer
 
-    def on_thumbnail_requested(self, filename: str, flavor: str,
+    def on_thumbnail_requested(self, location: Location, flavor: str,
                                callback: ThumbnailCallback):
-        thumbnail_filename = DBusThumbnailer.thumbnail_from_filename(filename, flavor)
+        thumbnail_filename = DBusThumbnailer.thumbnail_from_filename(self.vfs.get_stdio_name(location), flavor)
         if os.path.exists(thumbnail_filename):
             image = QImage(thumbnail_filename)
-            self.sig_thumbnail_ready.emit(filename, flavor, callback, image)
+            self.sig_thumbnail_ready.emit(location, flavor, callback, image)
         else:
+            filename = self.vfs.get_stdio_name(location)
             handle = self.dbus_thumbnailer.queue([filename], flavor)
 
             if handle not in self.requests:
                 self.requests[handle] = []
 
-            self.requests[handle].append((filename, flavor, callback))
+            self.requests[handle].append((location, flavor, callback))
 
     def on_thumbnail_started(self, handle: int):
         pass
@@ -109,33 +113,34 @@ class ThumbnailerWorker(QObject):
 
     def on_thumbnail_ready(self, handle: int, urls: List[str], flavor: str):
         for request in self.requests.get(handle, []):
-            filename, flavor, callback = request
+            location, flavor, callback = request
 
-            thumbnail_filename = DBusThumbnailer.thumbnail_from_filename(filename, flavor)
+            thumbnail_filename = DBusThumbnailer.thumbnail_from_filename(
+                self.vfs.get_stdio_name(location), flavor)
 
             # On shutdown this causes:
             # QObject::~QObject: Timers cannot be stopped from another thread
             image = QImage(thumbnail_filename)
 
-            self.sig_thumbnail_ready.emit(filename, flavor, callback, image)
+            self.sig_thumbnail_ready.emit(location, flavor, callback, image)
 
     def on_thumbnail_error(self, handle: int, urls: List[str], error_code, message):
         for request in self.requests.get(handle, []):
-            filename, flavor, callback = request
-            self.sig_thumbnail_error.emit(filename, flavor, callback, error_code, message)
+            location, flavor, callback = request
+            self.sig_thumbnail_error.emit(location, flavor, callback, error_code, message)
 
 
 class Thumbnailer(QObject):
 
-    sig_thumbnail_requested = pyqtSignal(str, str, CallableWrapper)
-    sig_thumbnail_error = pyqtSignal(str, str, CallableWrapper)
+    sig_thumbnail_requested = pyqtSignal(Location, str, CallableWrapper)
+    sig_thumbnail_error = pyqtSignal(Location, str, CallableWrapper)
 
     sig_close_requested = pyqtSignal()
 
-    def __init__(self, parent=None):
+    def __init__(self, vfs, parent=None):
         super().__init__(parent)
 
-        self.worker = ThumbnailerWorker()
+        self.worker = ThumbnailerWorker(vfs)
         self.thread = QThread(self)
         self.worker.moveToThread(self.thread)
 
@@ -158,27 +163,27 @@ class Thumbnailer(QObject):
         self.thread.quit()
         self.thread.wait()
 
-    def request_thumbnail(self, filename: str, flavor: str,
+    def request_thumbnail(self, location: Location, flavor: str,
                           callback: ThumbnailCallback):
-        logger.debug("Thumbnailer.request_thumbnail: %s  %s", filename, flavor)
-        self.sig_thumbnail_requested.emit(filename, flavor, CallableWrapper(callback))
+        logger.debug("Thumbnailer.request_thumbnail: %s  %s", location, flavor)
+        self.sig_thumbnail_requested.emit(location, flavor, CallableWrapper(callback))
 
     def delete_thumbnails(self, files: List[str]):
         logger.warning("Thumbnailer.delete_thumbnail (not implemented): %s", files)
 
-    def on_thumbnail_ready(self, filename: str, flavor: str,
+    def on_thumbnail_ready(self, location: Location, flavor: str,
                            callback: ThumbnailCallback,
                            image: QImage):
         pixmap = QPixmap(image)
         if pixmap.isNull():
-            callback(filename, flavor, None, None, None)
+            callback(location, flavor, None, None, None)
         else:
-            callback(filename, flavor, pixmap, None, None)
+            callback(location, flavor, pixmap, None, None)
 
-    def on_thumbnail_error(self, filename: str, flavor: str,
+    def on_thumbnail_error(self, location: Location, flavor: str,
                            callback: ThumbnailCallback,
                            error_code, message):
-        callback(filename, flavor, None, error_code, message)
+        callback(location, flavor, None, error_code, message)
 
 
 # EOF #

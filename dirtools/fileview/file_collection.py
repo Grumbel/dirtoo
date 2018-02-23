@@ -106,9 +106,9 @@ class FileCollection(QObject):
     def get_fileinfos(self) -> List[FileInfo]:
         return self.fileinfos
 
-    def get_fileinfo(self, abspath: str) -> Optional[FileInfo]:
+    def get_fileinfo(self, location: Location) -> Optional[FileInfo]:
         for fi in self.fileinfos:
-            if fi.abspath() == abspath:
+            if fi.location() == location:
                 return fi
         return None
 

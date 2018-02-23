@@ -29,33 +29,37 @@ from PyPDF2 import PdfFileReader
 from dirtools.mediainfo import MediaInfo
 from dirtools.archiveinfo import ArchiveInfo
 from dirtools.fileview.metadata_cache import MetaDataCache
+from dirtools.fileview.virtual_filesystem import VirtualFilesystem
+from dirtools.fileview.location import Location
 
 logger = logging.getLogger(__name__)
 
 
 class MetaDataCollectorWorker(QObject):
 
-    sig_metadata_ready = pyqtSignal(str, dict)
+    sig_metadata_ready = pyqtSignal(Location, dict)
 
-    def __init__(self) -> None:
+    def __init__(self, vfs: VirtualFilesystem) -> None:
         super().__init__()
+
+        self.vfs = vfs
         self._close = False
 
     def init(self):
         self.mimedb = QMimeDatabase()
         self.cache = MetaDataCache()
 
-    def on_metadata_requested(self, filename: str):
+    def on_metadata_requested(self, location: Location):
         if self._close:
             return
 
-        abspath = os.path.abspath(filename)
+        abspath = self.vfs.get_stdio_name(location)
         cached_metadata = self.cache.retrieve_metadata(abspath)
         if cached_metadata is not None:
-            self.sig_metadata_ready.emit(filename, cached_metadata)
+            self.sig_metadata_ready.emit(location, cached_metadata)
         else:
             try:
-                metadata = self._create_metadata(filename)
+                metadata = self._create_metadata(abspath)
             except Exception as err:
                 error_message = "".join(traceback.format_exception(etype=type(err),
                                                                    value=err,
@@ -66,63 +70,64 @@ class MetaDataCollectorWorker(QObject):
                 }
 
             self.cache.store_metadata(abspath, metadata)
-            self.sig_metadata_ready.emit(filename, metadata)
+            self.sig_metadata_ready.emit(location, metadata)
 
-    def _create_metadata(self, filename: str):
-        logger.debug("MetaDataCollectorWorker.create_metadata: %s", filename)
-        mimetype = self.mimedb.mimeTypeForFile(filename)
+    def _create_metadata(self, abspath: str):
+        logger.debug("MetaDataCollectorWorker.create_metadata: %s", abspath)
+
+        mimetype = self.mimedb.mimeTypeForFile(abspath)
 
         metadata: Dict[str, Any] = {}
 
         if mimetype.name().startswith("video/"):
-            minfo = MediaInfo(filename)
+            minfo = MediaInfo(abspath)
             metadata['type'] = 'video'
             metadata['width'] = minfo.width()
             metadata['height'] = minfo.height()
             metadata['duration'] = minfo.duration()
             metadata['framerate'] = minfo.framerate()
         elif mimetype.name().startswith("audio/"):
-            minfo = MediaInfo(filename)
+            minfo = MediaInfo(abspath)
             metadata['type'] = 'audio'
             metadata['duration'] = minfo.duration()
             # bitrate, samplerate, channels
         elif mimetype.name().startswith("image/"):
             metadata['type'] = 'image'
-            minfo = MediaInfo(filename)
+            minfo = MediaInfo(abspath)
             metadata['width'] = minfo.width()
             metadata['height'] = minfo.height()
         elif mimetype.name() == 'application/pdf':
             metadata['type'] = 'pdf'
-            with open(filename, 'rb') as fin:
+            with open(abspath, 'rb') as fin:
                 pdf = PdfFileReader(fin)
                 metadata['pages'] = pdf.getNumPages()
         elif mimetype.name() in ['application/zip',
                                  'application/vnd.rar',
                                  'application/rar']:
-            archiveinfo = ArchiveInfo.from_file(filename)
+            archiveinfo = ArchiveInfo.from_file(abspath)
             metadata['type'] = 'archive'
             metadata['file_count'] = archiveinfo.file_count
         elif mimetype.name() == "inode/directory":
             metadata['type'] = 'directory'
-            entries = os.listdir(filename)
+            entries = os.listdir(abspath)
             metadata['file_count'] = len(entries)
         else:
             logger.debug("MetaDataCollectorWorker.on_metadata_requested: "
                          "unhandled mime-type: %s - %s",
-                         filename, mimetype.name())
+                         abspath, mimetype.name())
 
         return metadata
 
 
 class MetaDataCollector(QObject):
 
-    sig_metadata_ready = pyqtSignal(str, dict)
-    sig_request_metadata = pyqtSignal(str)
+    sig_metadata_ready = pyqtSignal(Location, dict)
+    sig_request_metadata = pyqtSignal(Location)
 
-    def __init__(self) -> None:
+    def __init__(self, vfs: VirtualFilesystem) -> None:
         super().__init__()
 
-        self.worker = MetaDataCollectorWorker()
+        self.worker = MetaDataCollectorWorker(vfs)
         self.thread = QThread()
         self.worker.moveToThread(self.thread)
 
@@ -137,11 +142,11 @@ class MetaDataCollector(QObject):
         self.thread.quit()
         self.thread.wait()
 
-    def request_metadata(self, filename: str) -> None:
-        self.sig_request_metadata.emit(filename)
+    def request_metadata(self, location: Location) -> None:
+        self.sig_request_metadata.emit(location)
 
-    def _on_metadata_ready(self, filename, metadata):
-        self.sig_metadata_ready.emit(filename, metadata)
+    def _on_metadata_ready(self, location: Location, metadata: Any):
+        self.sig_metadata_ready.emit(location, metadata)
 
 
 # EOF #

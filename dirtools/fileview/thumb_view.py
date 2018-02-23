@@ -456,8 +456,8 @@ class ThumbView(QGraphicsView):
         mimetype = self.controller.app.mime_database.get_mime_type(fileinfo.location())
         return self.controller.app.mime_database.get_icon_from_mime_type(mimetype)
 
-    def receive_thumbnail(self, filename, flavor, pixmap, error_code, message):
-        item = self.location2item.get(Location.from_path(filename), None)
+    def receive_thumbnail(self, location: Location, flavor: str, pixmap: 'QPixmap', error_code: int, message: str):
+        item = self.location2item.get(location, None)
         if item is not None:
             self.receive_thumbnail_for_item(item, flavor, pixmap, error_code, message)
             item.set_thumbnail_pixmap(pixmap, flavor)
