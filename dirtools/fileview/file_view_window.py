@@ -375,7 +375,7 @@ class FileViewWindow(QMainWindow):
             for entry in reversed(history.get_entries()):
                 if entry not in entries:
                     entries.append(entry)
-                    if len(entries) >= 20:
+                    if len(entries) >= 35:
                         break
 
             icon = QIcon.fromTheme("folder")
