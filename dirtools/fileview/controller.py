@@ -36,7 +36,7 @@ from dirtools.fileview.filter_parser import FilterParser
 from dirtools.fileview.settings import settings
 from dirtools.fileview.filelist_stream import FileListStream
 from dirtools.xdg_desktop import get_desktop_entry, get_desktop_file
-from dirtools.fileview.location import Location
+from dirtools.fileview.location import Location, Payload
 from dirtools.fileview.file_info import FileInfo
 
 logger = logging.getLogger(__name__)
@@ -343,7 +343,7 @@ class Controller(QObject):
         if item.fileinfo.is_archive():
             def do_extract(item):
                 location = item.fileinfo.location().copy()
-                location.payloads.append(("archive", ""))
+                location._payloads.append(Payload("archive", ""))
                 self.set_location(location)
             menu.addAction("Extract to /tmp/", lambda item=item: do_extract(item))
 

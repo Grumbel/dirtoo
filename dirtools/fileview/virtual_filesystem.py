@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Dict
+from typing import Dict, cast
 
 import os
 import logging
@@ -73,7 +73,7 @@ class VirtualFilesystem:
             assert parent.has_payload()
 
             outdir = self._make_extractor_outdir(parent)
-            path = os.path.join(outdir, location.payloads[-1].path)
+            path = os.path.join(outdir, location._payloads[-1].path)
 
             fi = FileInfo.from_filename(path)
             fi._location = location
@@ -81,18 +81,18 @@ class VirtualFilesystem:
 
     def get_stdio_name(self, location: Location) -> str:
         if not location.has_payload():
-            return location.get_path()
+            return cast(str, location.get_path())
         else:
-            if location.payloads[-1].path:
+            if location._payloads[-1].path:
                 parent = location.parent()
                 outdir = self._make_extractor_outdir(parent)
-                return os.path.join(outdir, location.payloads[-1].path)
+                return cast(str, os.path.join(outdir, location._payloads[-1].path))
             else:
                 outdir = self._make_extractor_outdir(location)
                 return outdir
 
     def _make_extractor_outdir(self, location: Location) -> str:
-        assert location.payloads[-1].protocol == "archive"
+        assert location._payloads[-1].protocol == "archive"
 
         loc_hash = hashlib.md5(location.as_url().encode()).hexdigest()
         return os.path.join(self.extractor_dir, loc_hash)

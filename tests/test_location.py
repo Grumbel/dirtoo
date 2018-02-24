@@ -45,9 +45,9 @@ class LocationTestCase(unittest.TestCase):
 
         for text, (protocol, abspath, payloads) in ok_texts:
             location = Location.from_url(text)
-            self.assertEqual(location.protocol, protocol)
-            self.assertEqual(location.path, abspath)
-            self.assertEqual(location.payloads, payloads)
+            self.assertEqual(location._protocol, protocol)
+            self.assertEqual(location._path, abspath)
+            self.assertEqual(location._payloads, payloads)
 
         fail_texts = [
             "/home/juser/test.rar",
@@ -84,9 +84,9 @@ class LocationTestCase(unittest.TestCase):
         for text, (protocol, abspath, payloads) in parent_texts:
             location = Location.from_url(text)
             location = location.parent()
-            self.assertEqual(location.protocol, protocol, text)
-            self.assertEqual(location.path, abspath, text)
-            self.assertEqual(location.payloads, payloads, text)
+            self.assertEqual(location._protocol, protocol, text)
+            self.assertEqual(location._path, abspath, text)
+            self.assertEqual(location._payloads, payloads, text)
 
     def test_location_join(self):
         join_texts = [
@@ -107,9 +107,9 @@ class LocationTestCase(unittest.TestCase):
             base = Location.from_url(base_text)
             result = Location.join(base, join_text)
 
-            self.assertEqual(result.protocol, protocol, base_text)
-            self.assertEqual(result.path, abspath, base_text)
-            self.assertEqual(result.payloads, payloads, base_text)
+            self.assertEqual(result._protocol, protocol, base_text)
+            self.assertEqual(result._path, abspath, base_text)
+            self.assertEqual(result._payloads, payloads, base_text)
 
 
 # EOF #

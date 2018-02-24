@@ -43,14 +43,14 @@ class Location:
 
     @staticmethod
     def join(location: 'Location', path: str) -> 'Location':
-        if len(location.payloads) == 0:
+        if len(location._payloads) == 0:
             result = location.copy()
-            result.path = os.path.join(result.path, path)
+            result._path = os.path.join(result._path, path)
             return result
         else:
             result = location.copy()
-            result.payloads[-1] = Payload(result.payloads[-1].protocol,
-                                          os.path.join(result.payloads[-1].path, path))
+            result._payloads[-1] = Payload(result._payloads[-1].protocol,
+                                           os.path.join(result._payloads[-1].path, path))
             return result
 
     @staticmethod
@@ -82,75 +82,75 @@ class Location:
     def __init__(self, protocol: str, path: str, payloads: List[Payload]) -> None:
         assert os.path.isabs(path)
 
-        self.protocol: str = protocol
-        self.path: str = path
-        self.payloads: List[Payload] = payloads
+        self._protocol: str = protocol
+        self._path: str = path
+        self._payloads: List[Payload] = payloads
 
     def has_payload(self) -> bool:
-        return self.payloads != []
+        return self._payloads != []
 
     def parent(self) -> 'Location':
         """The parent directory. Archives are threated like directories as well."""
 
-        if self.payloads == [] or (len(self.payloads) == 1 and self.payloads[0].path == ""):
-            path = os.path.dirname(self.path)
-            return Location(self.protocol, path, [])
+        if self._payloads == [] or (len(self._payloads) == 1 and self._payloads[0].path == ""):
+            path = os.path.dirname(self._path)
+            return Location(self._protocol, path, [])
         else:
-            path = os.path.dirname(self.payloads[-1].path)
-            if path == self.payloads[-1].path:
-                return Location(self.protocol, self.path, self.payloads[:-1])
+            path = os.path.dirname(self._payloads[-1].path)
+            if path == self._payloads[-1].path:
+                return Location(self._protocol, self._path, self._payloads[:-1])
             else:
-                payloads = self.payloads[:-1] + [Payload(self.payloads[-1].protocol, path)]
-                return Location(self.protocol, self.path, payloads)
+                payloads = self._payloads[:-1] + [Payload(self._payloads[-1].protocol, path)]
+                return Location(self._protocol, self._path, payloads)
 
     def origin(self) -> Optional['Location']:
         """The location that is 'housing' self. For a while inside an archive,
         this would return the location of the archive itself."""
 
-        if self.payloads == []:
+        if self._payloads == []:
             return None
         else:
             location = self.copy()
-            location.payloads.pop()
+            location._payloads.pop()
             return location
 
     def as_url(self) -> str:
         payload_text = "".join(["//{}{}".format(prot, (":" + path) if path else "")
-                                for prot, path in self.payloads])
-        return "{}://{}{}".format(self.protocol, self.path, payload_text)
+                                for prot, path in self._payloads])
+        return "{}://{}{}".format(self._protocol, self._path, payload_text)
 
     def as_path(self) -> str:
         """Like .as_url() but without the protocol part. Only use this for
         display purpose, as information is lost."""
         payload_text = "".join(["//{}{}".format(prot, (":" + path) if path else "")
-                                for prot, path in self.payloads])
-        return "{}://{}{}".format(self.protocol, self.path, payload_text)
+                                for prot, path in self._payloads])
+        return "{}://{}{}".format(self._protocol, self._path, payload_text)
 
     def exists(self) -> bool:
         if self.has_payload():
-            if len(self.payloads) != 1:
+            if len(self._payloads) != 1:
                 logger.error("Location.exists: not implemented for multiple payloads")
                 return False
             else:
-                return os.path.exists(self.path)
+                return os.path.exists(self._path)
         else:
-            return os.path.exists(self.path)
+            return os.path.exists(self._path)
 
     def copy(self) -> 'Location':
-        return Location(self.protocol, self.path, list(self.payloads))
+        return Location(self._protocol, self._path, list(self._payloads))
 
     def get_path(self) -> str:
         assert not self.has_payload()
-        return self.path
+        return self._path
 
     def __eq__(self, other):
-        return (self.protocol, self.path, self.payloads) == (other.protocol, other.path, other.payloads)
+        return (self._protocol, self._path, self._payloads) == (other._protocol, other._path, other._payloads)
 
     def __ne__(self, other):
         return not (self == other)
 
     def __lt__(self, other):
-        return (self.protocol, self.path, self.payloads) < (other.protocol, other.path, other.payloads)
+        return (self._protocol, self._path, self._payloads) < (other._protocol, other._path, other._payloads)
 
     def __hash__(self):
         # FIXME: this could be made faster
