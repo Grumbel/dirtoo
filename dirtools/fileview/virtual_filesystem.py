@@ -71,7 +71,9 @@ class VirtualFilesystem:
 
     def get_fileinfo(self, location: Location):
         if location.has_stdio_name():
-            return FileInfo.from_location(location)
+            fi = FileInfo.from_filename(location.get_stdio_name())
+            fi._location = location
+            return fi
         else:
             assert len(location.payloads) == 1
             outdir = self._make_extractor_outdir(location)

@@ -65,11 +65,6 @@ class FileCollection(QObject):
         self.fileinfos = []
         self.sig_files_set.emit()
 
-    def set_files(self, files: List[Location]) -> None:
-        logger.debug("FileCollection.set_files")
-        self.fileinfos = [FileInfo.from_location(f) for f in files]
-        self.sig_files_set.emit()
-
     def set_fileinfos(self, fileinfos: List[FileInfo]) -> None:
         logger.debug("FileCollection.set_fileinfos")
         self.fileinfos = fileinfos
@@ -77,12 +72,6 @@ class FileCollection(QObject):
 
     def add_fileinfo(self, fi: FileInfo):
         logger.debug("FileCollection.add_fileinfos: %s", fi)
-        self.fileinfos.append(fi)
-        self.sig_file_added.emit(fi)
-
-    def add_file(self, location: Location) -> None:
-        logger.debug("FileCollection.add_file: %s", location)
-        fi = FileInfo.from_location(location)
         self.fileinfos.append(fi)
         self.sig_file_added.emit(fi)
 

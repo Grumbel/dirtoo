@@ -218,7 +218,7 @@ class Controller(QObject):
         self.window.set_file_list()
 
         self.location = None
-        self.file_collection.set_files(files)
+        self.file_collection.set_fileinfos([self.app.vfs.get_fileinfo(f) for f in files])
         self.apply_sort()
         self.apply_filter()
         self.apply_grouper()
@@ -431,8 +431,8 @@ class Controller(QObject):
         self.window.show_current_filename(filename)
 
     def add_files(self, files: List[Location]):
-        for f in files:
-            self.file_collection.add_file(f)
+        for location in files:
+            self.file_collection.add_fileinfo(self.app.vfs.get_fileinfo(location))
 
     def set_crop_thumbnails(self, v):
         settings.set_value("globals/crop_thumbnails", v)

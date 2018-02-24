@@ -30,13 +30,6 @@ logger = logging.getLogger(__name__)
 class FileInfo:
 
     @staticmethod
-    def from_location(location: Location) -> 'FileInfo':
-        assert not location.has_payload()
-        fi = FileInfo.from_filename(location.path)
-        fi._location = location
-        return fi
-
-    @staticmethod
     def from_filename(filename: str) -> 'FileInfo':
         logger.debug("FileInfo.from_filename: %s", filename)
 
