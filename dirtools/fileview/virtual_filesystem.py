@@ -20,6 +20,7 @@ from typing import Dict
 import os
 import logging
 import hashlib
+from collections import namedtuple
 
 from dirtools.fileview.location import Location
 from dirtools.fileview.directory_watcher import DirectoryWatcher
@@ -30,6 +31,8 @@ logger = logging.getLogger(__name__)
 
 
 class VirtualFilesystem:
+
+    Payload = namedtuple('Payload', ['protocol', 'path'])
 
     def __init__(self, cachedir: str) -> None:
         self.cachedir = cachedir
@@ -48,56 +51,56 @@ class VirtualFilesystem:
         """Create a watcher object for the given directory. The caller is
         responsible for .close()`ing it."""
 
-        if location.has_stdio_name():
+        if not location.has_payload():
             directory_watcher = DirectoryWatcher(self, location)
             return directory_watcher
         else:
-            assert len(location.payloads) == 1
-
             outdir = self._make_extractor_outdir(location)
 
-            if location not in self.extractors:
-                extractor = ArchiveExtractor(location.path, outdir)
+            if not os.path.isdir(outdir) and location not in self.extractors:
+                extractor = ArchiveExtractor(self.get_stdio_name(location.origin()), outdir)
                 self.extractors[location] = extractor
                 extractor.sig_finished.connect(lambda x=extractor: self._on_archive_extractor_finished(x))
                 extractor.start()
 
-            if location.payloads[0][1]:
-                directory_watcher = DirectoryWatcher(self, location, os.path.join(outdir, location.payloads[0][1]))
-                return directory_watcher
-            else:
-                directory_watcher = DirectoryWatcher(self, location, outdir)
-                return directory_watcher
+            directory_watcher = DirectoryWatcher(self, location)
+            return directory_watcher
 
-    def get_fileinfo(self, location: Location):
-        if location.has_stdio_name():
-            fi = FileInfo.from_filename(location.get_stdio_name())
+    def get_fileinfo(self, location: Location) -> FileInfo:
+        if not location.has_payload():
+            fi = FileInfo.from_filename(location.path)
             fi._location = location
             return fi
         else:
-            assert len(location.payloads) == 1
-            outdir = self._make_extractor_outdir(location)
-            path = os.path.join(outdir, location.payloads[0][1])
+            parent = location.parent()
+            assert parent.has_payload()
+
+            outdir = self._make_extractor_outdir(parent)
+            path = os.path.join(outdir, location.payloads[-1][1])
+
             fi = FileInfo.from_filename(path)
             fi._location = location
             return fi
 
-    def get_stdio_name(self, location):
-        if location.has_stdio_name():
-            return location.get_stdio_name()
+    def get_stdio_name(self, location: Location) -> str:
+        if not location.has_payload():
+            return location.path
         else:
-            assert len(location.payloads) == 1
-
-            outdir = self._make_extractor_outdir(location)
-            return os.path.join(outdir, location.payloads[0][1])
+            if location.payloads[-1][1]:
+                parent = location.parent()
+                outdir = self._make_extractor_outdir(parent)
+                return os.path.join(outdir, location.payloads[-1][1])
+            else:
+                outdir = self._make_extractor_outdir(location)
+                return outdir
 
     def _make_extractor_outdir(self, location: Location) -> str:
-        assert location.payloads[0][0] == "archive"
+        assert location.payloads[-1][0] == "archive"
 
-        loc_hash = hashlib.md5(location.path.encode()).hexdigest()
+        loc_hash = hashlib.md5(location.as_url().encode()).hexdigest()
         return os.path.join(self.extractor_dir, loc_hash)
 
-    def _on_archive_extractor_finished(self, extractor: ArchiveExtractor):
+    def _on_archive_extractor_finished(self, extractor: ArchiveExtractor) -> None:
         logger.info("VirtualFilesystem.on_archive_extractor_finished")
         extractor.close()
         self.extractors = {k: v for k, v in self.extractors.items() if v != extractor}

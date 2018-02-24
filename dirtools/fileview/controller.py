@@ -464,6 +464,9 @@ class Controller(QObject):
                           pixmap, error_code: int, message: str) -> None:
         logger.debug("Controller.receive_thumbnail: %s %s %s %s %s",
                      location, flavor, pixmap, error_code, message)
+        if pixmap is None:
+            logger.error("Controller.receive_thumbnail: error: %s  %s  %s", location, error_code, message)
+
         self.window.thumb_view.receive_thumbnail(location, flavor, pixmap, error_code, message)
 
     def reload_thumbnails(self) -> None:

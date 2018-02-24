@@ -22,7 +22,7 @@ from dirtools.fileview.location import Location
 
 class LocationTestCase(unittest.TestCase):
 
-    def test_location(self):
+    def test_location_init(self):
         ok_texts = [
             ("file:///home/juser/test.rar//rar:file_inside.rar",
              ("file", "/home/juser/test.rar", [("rar", "file_inside.rar")])),
@@ -43,6 +43,24 @@ class LocationTestCase(unittest.TestCase):
              ("file", "/test.rar", [("rar", "one"), ("rar", "two"), ("rar", "three")]))
         ]
 
+        for text, (protocol, abspath, payloads) in ok_texts:
+            location = Location.from_url(text)
+            self.assertEqual(location.protocol, protocol)
+            self.assertEqual(location.path, abspath)
+            self.assertEqual(location.payloads, payloads)
+
+        fail_texts = [
+            "/home/juser/test.rar",
+            "file://test.rar",
+            "file:///test.rar//rar:oeu//"
+            "file:///test.rar///rar:foo"
+        ]
+
+        for text in fail_texts:
+            with self.assertRaises(Exception) as context:
+                Location.from_string(text)
+
+    def test_location_parent(self):
         parent_texts = [
             ("file:///home/juser/test.rar//rar:file_inside.rar",
              ("file", "/home/juser/test.rar", [("rar", "")])),
@@ -63,19 +81,6 @@ class LocationTestCase(unittest.TestCase):
              ("file", "/test.rar", [("rar", "one"), ("rar", "two"), ("rar", "")]))
         ]
 
-        fail_texts = [
-            "/home/juser/test.rar",
-            "file://test.rar",
-            "file:///test.rar//rar:oeu//"
-            "file:///test.rar///rar:foo"
-        ]
-
-        for text, (protocol, abspath, payloads) in ok_texts:
-            location = Location.from_url(text)
-            self.assertEqual(location.protocol, protocol)
-            self.assertEqual(location.path, abspath)
-            self.assertEqual(location.payloads, payloads)
-
         for text, (protocol, abspath, payloads) in parent_texts:
             location = Location.from_url(text)
             location = location.parent()
@@ -83,9 +88,28 @@ class LocationTestCase(unittest.TestCase):
             self.assertEqual(location.path, abspath, text)
             self.assertEqual(location.payloads, payloads, text)
 
-        for text in fail_texts:
-            with self.assertRaises(Exception) as context:
-                Location.from_string(text)
+    def test_location_join(self):
+        join_texts = [
+            ("file:///home/juser/test.rar//rar",
+             "foobar",
+             ("file", "/home/juser/test.rar", [("rar", "foobar")])),
+
+            ("file:///home/juser/test.rar//rar:foo.rar//rar",
+             "foobar.png",
+             ("file", "/home/juser/test.rar", [("rar", "foo.rar"), ("rar", "foobar.png")])),
+
+            ("file:///home/juser/test.rar//rar:foo.rar//rar:foobar",
+             "bar.png",
+             ("file", "/home/juser/test.rar", [("rar", "foo.rar"), ("rar", "foobar/bar.png")])),
+        ]
+
+        for base_text, join_text, (protocol, abspath, payloads) in join_texts:
+            base = Location.from_url(base_text)
+            result = Location.join(base, join_text)
+
+            self.assertEqual(result.protocol, protocol, base_text)
+            self.assertEqual(result.path, abspath, base_text)
+            self.assertEqual(result.payloads, payloads, base_text)
 
 
 # EOF #

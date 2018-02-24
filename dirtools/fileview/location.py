@@ -38,16 +38,14 @@ class Location:
 
     @staticmethod
     def join(location: 'Location', path: str) -> 'Location':
-        if len(location.payloads) == 1:
-            result = location.copy()
-            result.payloads[0] = (result.payloads[0][0], os.path.join(result.payloads[0][1], path))
-            return result
-        elif len(location.payloads) == 0:
+        if len(location.payloads) == 0:
             result = location.copy()
             result.path = os.path.join(result.path, path)
             return result
         else:
-            raise Exception("Location.join: not implemented for multiple payloads")
+            result = location.copy()
+            result.payloads[-1] = (result.payloads[-1][0], os.path.join(result.payloads[-1][1], path))
+            return result
 
     @staticmethod
     def from_path(path) -> 'Location':
@@ -97,6 +95,11 @@ class Location:
                 payloads = self.payloads[:-1] + [(self.payloads[-1][0], path)]
                 return Location(self.protocol, self.path, payloads)
 
+    def origin(self) -> 'Location':
+        location = self.copy()
+        location.payloads.pop()
+        return location
+
     def as_url(self) -> str:
         payload_text = "".join(["//{}{}".format(prot, (":" + path) if path else "")
                                 for prot, path in self.payloads])
@@ -108,13 +111,6 @@ class Location:
         payload_text = "".join(["//{}{}".format(prot, (":" + path) if path else "")
                                 for prot, path in self.payloads])
         return "{}://{}{}".format(self.protocol, self.path, payload_text)
-
-    def has_stdio_name(self) -> bool:
-        return not self.has_payload()
-
-    def get_stdio_name(self) -> str:
-        assert self.payloads == []
-        return self.path
 
     def exists(self) -> bool:
         if self.has_payload():

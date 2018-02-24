@@ -15,8 +15,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Optional
-
 import logging
 import traceback
 import os
@@ -79,15 +77,12 @@ class DirectoryWatcherWorker(QObject):
     sig_error = pyqtSignal()
     sig_scandir_finished = pyqtSignal(list)
 
-    def __init__(self, vfs, location: Location, path: Optional[str]) -> None:
+    def __init__(self, vfs, location: Location) -> None:
         super().__init__()
 
         self.vfs = vfs
         self.location = location
-        if path is None:
-            self.path = location.get_stdio_name()
-        else:
-            self.path = path
+        self.path = self.vfs.get_stdio_name(location)
         self._close = False
 
     def init(self) -> None:
@@ -153,9 +148,9 @@ class DirectoryWatcher(QObject):
 
     sig_close_requested = pyqtSignal()
 
-    def __init__(self, vfs, location: Location, path: Optional[str]=None) -> None:
+    def __init__(self, vfs, location: Location) -> None:
         super().__init__()
-        self.worker = DirectoryWatcherWorker(vfs, location, path)
+        self.worker = DirectoryWatcherWorker(vfs, location)
         self.thread = QThread(self)
         self.worker.moveToThread(self.thread)
 
