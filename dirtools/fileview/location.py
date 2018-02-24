@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Tuple
+from typing import List, NamedTuple, Optional
 
 import logging
 import os
@@ -33,6 +33,11 @@ LOCATION_REGEX = re.compile(r'^([a-z]+)://(.*)$')
 # http://www.example.com/foobar.jpg
 # file:///www.example.com/foobar.rar//rar:Filename.jpg
 
+class Payload(NamedTuple):
+    protocol: str
+    path: str
+
+
 @total_ordering
 class Location:
 
@@ -44,7 +49,8 @@ class Location:
             return result
         else:
             result = location.copy()
-            result.payloads[-1] = (result.payloads[-1][0], os.path.join(result.payloads[-1][1], path))
+            result.payloads[-1] = Payload(result.payloads[-1].protocol,
+                                          os.path.join(result.payloads[-1].path, path))
             return result
 
     @staticmethod
@@ -63,42 +69,50 @@ class Location:
 
             abspath = os.path.normpath(abspath)
 
-            payloads: List[Tuple[str, str]] = []
+            payloads: List[Payload] = []
             for payload_spec in payload_specs:
                 payload = payload_spec.split(":", 1)
                 if len(payload) == 1:
-                    payloads.append((payload[0], ""))
+                    payloads.append(Payload(payload[0], ""))
                 else:
-                    payloads.append((payload[0], payload[1]))
+                    payloads.append(Payload(payload[0], payload[1]))
 
             return Location(protocol, abspath, payloads)
 
-    def __init__(self, protocol: str, path: str, payloads: List[Tuple[str, str]]) -> None:
+    def __init__(self, protocol: str, path: str, payloads: List[Payload]) -> None:
         assert os.path.isabs(path)
 
         self.protocol: str = protocol
         self.path: str = path
-        self.payloads: List[Tuple[str, str]] = payloads
+        self.payloads: List[Payload] = payloads
 
     def has_payload(self) -> bool:
         return self.payloads != []
 
     def parent(self) -> 'Location':
-        if self.payloads == [] or (len(self.payloads) == 1 and self.payloads[0][1] == ""):
+        """The parent directory. Archives are threated like directories as well."""
+
+        if self.payloads == [] or (len(self.payloads) == 1 and self.payloads[0].path == ""):
             path = os.path.dirname(self.path)
             return Location(self.protocol, path, [])
         else:
-            path = os.path.dirname(self.payloads[-1][1])
-            if path == self.payloads[-1][1]:
+            path = os.path.dirname(self.payloads[-1].path)
+            if path == self.payloads[-1].path:
                 return Location(self.protocol, self.path, self.payloads[:-1])
             else:
-                payloads = self.payloads[:-1] + [(self.payloads[-1][0], path)]
+                payloads = self.payloads[:-1] + [Payload(self.payloads[-1].protocol, path)]
                 return Location(self.protocol, self.path, payloads)
 
-    def origin(self) -> 'Location':
-        location = self.copy()
-        location.payloads.pop()
-        return location
+    def origin(self) -> Optional['Location']:
+        """The location that is 'housing' self. For a while inside an archive,
+        this would return the location of the archive itself."""
+
+        if self.payloads == []:
+            return None
+        else:
+            location = self.copy()
+            location.payloads.pop()
+            return location
 
     def as_url(self) -> str:
         payload_text = "".join(["//{}{}".format(prot, (":" + path) if path else "")
@@ -124,6 +138,10 @@ class Location:
 
     def copy(self) -> 'Location':
         return Location(self.protocol, self.path, list(self.payloads))
+
+    def get_path(self) -> str:
+        assert not self.has_payload()
+        return self.path
 
     def __eq__(self, other):
         return (self.protocol, self.path, self.payloads) == (other.protocol, other.path, other.payloads)

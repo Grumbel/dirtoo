@@ -17,7 +17,7 @@
 
 import unittest
 
-from dirtools.fileview.location import Location
+from dirtools.fileview.location import Location, Payload
 
 
 class LocationTestCase(unittest.TestCase):
@@ -25,22 +25,22 @@ class LocationTestCase(unittest.TestCase):
     def test_location_init(self):
         ok_texts = [
             ("file:///home/juser/test.rar//rar:file_inside.rar",
-             ("file", "/home/juser/test.rar", [("rar", "file_inside.rar")])),
+             ("file", "/home/juser/test.rar", [Payload("rar", "file_inside.rar")])),
 
             ("file:///home/juser/test.rar",
              ("file", "/home/juser/test.rar", [])),
 
             ("file:///home/juser/test.rar//rar",
-             ("file", "/home/juser/test.rar", [("rar", "")])),
+             ("file", "/home/juser/test.rar", [Payload("rar", "")])),
 
             ("file:///tmp/",
              ("file", "/tmp", [])),
 
             ("file:///home/juser/test.rar//rar:file_inside.rar//rar:file.txt",
-             ("file", "/home/juser/test.rar", [("rar", "file_inside.rar"), ("rar", "file.txt")])),
+             ("file", "/home/juser/test.rar", [Payload("rar", "file_inside.rar"), Payload("rar", "file.txt")])),
 
             ("file:///test.rar//rar:one//rar:two//rar:three",
-             ("file", "/test.rar", [("rar", "one"), ("rar", "two"), ("rar", "three")]))
+             ("file", "/test.rar", [Payload("rar", "one"), Payload("rar", "two"), Payload("rar", "three")]))
         ]
 
         for text, (protocol, abspath, payloads) in ok_texts:
@@ -63,7 +63,7 @@ class LocationTestCase(unittest.TestCase):
     def test_location_parent(self):
         parent_texts = [
             ("file:///home/juser/test.rar//rar:file_inside.rar",
-             ("file", "/home/juser/test.rar", [("rar", "")])),
+             ("file", "/home/juser/test.rar", [Payload("rar", "")])),
 
             ("file:///home/juser/test.rar",
              ("file", "/home/juser", [])),
@@ -75,10 +75,10 @@ class LocationTestCase(unittest.TestCase):
              ("file", "/", [])),
 
             ("file:///home/juser/test.rar//rar:file_inside.rar//rar:file.txt",
-             ("file", "/home/juser/test.rar", [("rar", "file_inside.rar"), ("rar", "")])),
+             ("file", "/home/juser/test.rar", [Payload("rar", "file_inside.rar"), Payload("rar", "")])),
 
             ("file:///test.rar//rar:one//rar:two//rar:three",
-             ("file", "/test.rar", [("rar", "one"), ("rar", "two"), ("rar", "")]))
+             ("file", "/test.rar", [Payload("rar", "one"), Payload("rar", "two"), Payload("rar", "")]))
         ]
 
         for text, (protocol, abspath, payloads) in parent_texts:
@@ -92,15 +92,15 @@ class LocationTestCase(unittest.TestCase):
         join_texts = [
             ("file:///home/juser/test.rar//rar",
              "foobar",
-             ("file", "/home/juser/test.rar", [("rar", "foobar")])),
+             ("file", "/home/juser/test.rar", [Payload("rar", "foobar")])),
 
             ("file:///home/juser/test.rar//rar:foo.rar//rar",
              "foobar.png",
-             ("file", "/home/juser/test.rar", [("rar", "foo.rar"), ("rar", "foobar.png")])),
+             ("file", "/home/juser/test.rar", [Payload("rar", "foo.rar"), Payload("rar", "foobar.png")])),
 
             ("file:///home/juser/test.rar//rar:foo.rar//rar:foobar",
              "bar.png",
-             ("file", "/home/juser/test.rar", [("rar", "foo.rar"), ("rar", "foobar/bar.png")])),
+             ("file", "/home/juser/test.rar", [Payload("rar", "foo.rar"), Payload("rar", "foobar/bar.png")])),
         ]
 
         for base_text, join_text, (protocol, abspath, payloads) in join_texts:

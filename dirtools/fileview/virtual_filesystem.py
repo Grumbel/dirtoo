@@ -20,7 +20,6 @@ from typing import Dict
 import os
 import logging
 import hashlib
-from collections import namedtuple
 
 from dirtools.fileview.location import Location
 from dirtools.fileview.directory_watcher import DirectoryWatcher
@@ -31,8 +30,6 @@ logger = logging.getLogger(__name__)
 
 
 class VirtualFilesystem:
-
-    Payload = namedtuple('Payload', ['protocol', 'path'])
 
     def __init__(self, cachedir: str) -> None:
         self.cachedir = cachedir
@@ -68,7 +65,7 @@ class VirtualFilesystem:
 
     def get_fileinfo(self, location: Location) -> FileInfo:
         if not location.has_payload():
-            fi = FileInfo.from_filename(location.path)
+            fi = FileInfo.from_filename(location.get_path())
             fi._location = location
             return fi
         else:
@@ -76,7 +73,7 @@ class VirtualFilesystem:
             assert parent.has_payload()
 
             outdir = self._make_extractor_outdir(parent)
-            path = os.path.join(outdir, location.payloads[-1][1])
+            path = os.path.join(outdir, location.payloads[-1].path)
 
             fi = FileInfo.from_filename(path)
             fi._location = location
@@ -84,18 +81,18 @@ class VirtualFilesystem:
 
     def get_stdio_name(self, location: Location) -> str:
         if not location.has_payload():
-            return location.path
+            return location.get_path()
         else:
-            if location.payloads[-1][1]:
+            if location.payloads[-1].path:
                 parent = location.parent()
                 outdir = self._make_extractor_outdir(parent)
-                return os.path.join(outdir, location.payloads[-1][1])
+                return os.path.join(outdir, location.payloads[-1].path)
             else:
                 outdir = self._make_extractor_outdir(location)
                 return outdir
 
     def _make_extractor_outdir(self, location: Location) -> str:
-        assert location.payloads[-1][0] == "archive"
+        assert location.payloads[-1].protocol == "archive"
 
         loc_hash = hashlib.md5(location.as_url().encode()).hexdigest()
         return os.path.join(self.extractor_dir, loc_hash)
