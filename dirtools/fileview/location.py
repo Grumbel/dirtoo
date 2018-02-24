@@ -153,8 +153,17 @@ class Location:
         return (self._protocol, self._path, self._payloads) < (other._protocol, other._path, other._payloads)
 
     def __hash__(self):
-        # FIXME: this could be made faster
-        return hash(self.as_url())
+        # import timeit
+        # timeit.timeit('hash(a)',
+        #               "from dirtools.fileview.location import Location; "
+        #               "a = Location.from_url('file:///home/foo/foo.rar//archive:bar.jpg');")
+        # as_url: 3.0
+        # tuple (_payloads as list): 0.9
+        # tuple (_payloads as tuple): 0.6
+        # self.path: 0.45
+        return hash((self._protocol, self._path, tuple(self._payloads)))
+        # return hash(self.as_url())
+        # return hash(self._path)
 
     def __str__(self):
         return self.as_url()
