@@ -19,9 +19,13 @@ import argparse
 import os
 import signal
 import sys
+import xdg.BaseDirectory
 
 from PyQt5.QtCore import QCoreApplication
+
 from dirtools.fileview.metadata_collector import MetaDataCollector
+from dirtools.fileview.virtual_filesystem import VirtualFilesystem
+from dirtools.fileview.location import Location
 
 
 def parse_args(args):
@@ -41,7 +45,10 @@ def main(argv):
 
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     app = QCoreApplication([])
-    metadata_collector = MetaDataCollector()
+
+    cache_dir = os.path.join(xdg.BaseDirectory.xdg_cache_home, "dt-fileview")
+    vfs = VirtualFilesystem(cache_dir)
+    metadata_collector = MetaDataCollector(vfs)
 
     num_requests = 0
 
@@ -59,7 +66,7 @@ def main(argv):
 
     def request(filename):
         nonlocal num_requests
-        metadata_collector.request_metadata(filename)
+        metadata_collector.request_metadata(Location.from_path(filename))
         num_requests += 1
 
     for filename in args.FILE:
@@ -75,6 +82,7 @@ def main(argv):
     ret = app.exec()
 
     metadata_collector.close()
+    vfs.close()
 
     return ret
 
