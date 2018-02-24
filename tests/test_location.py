@@ -77,6 +77,9 @@ class LocationTestCase(unittest.TestCase):
             ("file:///home/juser/test.rar//rar:file_inside.rar//rar:file.txt",
              ("file", "/home/juser/test.rar", [Payload("rar", "file_inside.rar"), Payload("rar", "")])),
 
+            ("file:///home/juser/test.rar//rar:file_inside.rar//rar",
+             ("file", "/home/juser/test.rar", [Payload("rar", "")])),
+
             ("file:///test.rar//rar:one//rar:two//rar:three",
              ("file", "/test.rar", [Payload("rar", "one"), Payload("rar", "two"), Payload("rar", "")]))
         ]

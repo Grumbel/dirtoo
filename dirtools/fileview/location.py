@@ -97,8 +97,11 @@ class Location:
             return Location(self._protocol, path, [])
         else:
             path = os.path.dirname(self._payloads[-1].path)
-            if path == self._payloads[-1].path:
-                return Location(self._protocol, self._path, self._payloads[:-1])
+            if path == self._payloads[-1].path:  # path is ""
+                payloads = self._payloads[:-1]
+                payloads[-1] = Payload(payloads[-1].protocol,
+                                       os.path.dirname(payloads[-1].path))
+                return Location(self._protocol, self._path, payloads)
             else:
                 payloads = self._payloads[:-1] + [Payload(self._payloads[-1].protocol, path)]
                 return Location(self._protocol, self._path, payloads)
