@@ -53,7 +53,7 @@ def main(argv):
     num_requests = 0
 
     def on_metadata_ready(filename, metadata):
-        nonlocal num_requests
+        nonlocal num_requests, app
         print(filename)
         for k, v in metadata.items():
             print("    {}: {}".format(k, v))
