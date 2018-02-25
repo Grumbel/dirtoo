@@ -58,6 +58,9 @@ class VSpacer(Layout):
 
 
 class RootLayout(Layout):
+    """Root of the layout tree. Holds one layout that represents the
+    actual root layout and a pointer to the layout that will take newly
+    arriving items."""
 
     def __init__(self):
         super().__init__()
@@ -72,21 +75,18 @@ class RootLayout(Layout):
     def set_append_layout(self, group: 'TileLayout') -> None:
         self.append_layout = group
 
-    def append_item(self, item) -> None:
-        self.append_layout.append_item(item)
-        self.root.layout(self.width)
-
-    def layout(self, width) -> None:
-        super().layout(width)
+    def layout(self, viewport_width) -> None:
+        super().layout(viewport_width)
 
         self.root.set_pos(0, 0)
-        self.root.layout(width)
-
-    def resize(self, width, height):
-        self.root.resize(width, height)
+        self.root.layout(viewport_width)
 
     def get_bounding_rect(self):
         return self.root.get_bounding_rect()
+
+    def append_item(self, item) -> None:
+        self.append_layout.append_item(item)
+        self.root.layout(self.width)
 
 
 class HBoxLayout(Layout):
@@ -100,13 +100,13 @@ class HBoxLayout(Layout):
         self.children.append(child)
         child.parent = self
 
-    def layout(self, width):
-        super().layout(width)
+    def layout(self, viewport_width):
+        super().layout(viewport_width)
 
         y = 0
         for child in self.children:
             child.set_pos(0, self.y + y)
-            child.layout(width)
+            child.layout(viewport_width)
             y += child.height
 
         self.height = y
@@ -119,6 +119,8 @@ class HBoxLayout(Layout):
 
 
 class ItemLayout(Layout):
+    """Layout used to hold a QGraphicsItem, e.g. the text title of a
+    group."""
 
     def __init__(self):
         super().__init__()
@@ -128,7 +130,9 @@ class ItemLayout(Layout):
     def set_item(self, item):
         self.item = item
 
-    def layout(self, width):
+    def layout(self, viewport_width):
+        super().layout(viewport_width)
+
         if self.item is not None:
             self.height = self.item.boundingRect().height()
 

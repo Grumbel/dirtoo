@@ -98,7 +98,7 @@ class LayoutBuilder:
                 spacer = VSpacer(48)
                 hbox.add(spacer)
 
-        if len(sorted_groups) == 1:
+        if len(sorted_groups) <= 1:
             if grid is None:
                 append_layout = TileLayout(self.style)
                 hbox.add(append_layout)

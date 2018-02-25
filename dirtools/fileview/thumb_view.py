@@ -334,7 +334,7 @@ class ThumbView(QGraphicsView):
             self.resize_timer = None
 
             if self.layout is not None:
-                self.layout.resize(self.viewport().width(), self.viewport().height())
+                self.layout.layout(self.viewport().width())
             self.layout_items()
         else:
             assert False, "timer foobar"
@@ -384,7 +384,7 @@ class ThumbView(QGraphicsView):
         if self.layout is None:
             self.layout = self.layout_builder.build_layout(self.items)
 
-        self.layout.resize(self.viewport().width(), self.viewport().height())
+        self.layout.layout(self.viewport().width())
         self.refresh_bounding_rect()
 
         # self.scene.setItemIndexMethod(old_item_index_method)
