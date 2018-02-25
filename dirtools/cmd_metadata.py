@@ -84,6 +84,8 @@ def main(argv):
     metadata_collector.close()
     vfs.close()
 
+    del app
+
     return ret
 
 
