@@ -24,10 +24,12 @@ from PyQt5.QtCore import QCoreApplication, QTimer, QObject, pyqtSignal
 
 # The program crashes when 'main()' is called twice. The cause for the
 # crash seems to be that 'sig_test' is connected to a temporary or
-# local function. If the temporary is replcaded with a function at
-# module scope or is kept alive by assigning it to a variable of a
-# surrounding scope everything seems to work fine.
+# local function that contains a binding to 'app. If the temporary is
+# replaced with a function at module scope or is kept alive by
+# assigning it to a variable of a surrounding scope everything seems
+# to work fine.
 
+# flake8: noqa
 
 # Program received signal SIGSEGV, Segmentation fault.
 # __memmove_ssse3 () at ../sysdeps/x86_64/multiarch/memcpy-ssse3.S:2831
@@ -62,9 +64,6 @@ class Testo(QObject):
     sig_test = pyqtSignal(str)
 
 
-b = lambda: app.quit()
-
-
 def main():
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     app = QCoreApplication([])
@@ -72,7 +71,18 @@ def main():
     testo = Testo()
 
     # This is causing the problem
-    a = lambda: app.quit()
+    def a():
+        # Using 'app' in a local function seems to be what requires
+        # the manual 'del app' call, otherwise the garbage collector
+        # needs to do the cleanup and probably comes to late, as
+        # another QCoreApplication instance might have already been
+        # created.
+        print(app)
+
+    # As long as the function isn't using 'app' everything seems to be
+    # ok.
+    def b():
+        print("nothing")
 
     # If 'b' is used instead of 'a' the problem goes away
     testo.sig_test.connect(a)
@@ -88,8 +98,11 @@ def main():
     # testo.sig_test.disconnect(a)
     # del testo
 
-    # This seems to help:
+    # This solves the crash:
     # del app
+
+    # This however doesn't help:
+    # del a
 
 if __name__ == "__main__":
     main()
