@@ -29,7 +29,7 @@ from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
 from dirtools.dbus_thumbnailer import DBusThumbnailerError
 from dirtools.fileview.file_collection import FileCollection
 from dirtools.fileview.file_info import FileInfo
-from dirtools.fileview.layout import Layout, TileStyle
+from dirtools.fileview.layout import RootLayout, TileStyle
 from dirtools.fileview.layout_builder import LayoutBuilder
 from dirtools.fileview.location import Location
 from dirtools.fileview.profiler import profile
@@ -96,8 +96,9 @@ class ThumbView(QGraphicsView):
         self.style = FileViewStyle()
 
         self.tile_style = TileStyle()
+
+        self.layout: Optional[RootLayout] = None
         self.layout_builder = LayoutBuilder(self.scene, self.tile_style)
-        self.layout: Optional[Layout] = None
 
         self.items: List[ThumbFileItem] = []
 
@@ -250,9 +251,10 @@ class ThumbView(QGraphicsView):
         self.items.append(item)
 
         self.style_item(item)
-        self.layout_builder.append_item(item)
-        self.layout_builder.resize(self.viewport().width(), self.viewport().height())
-        self.refresh_bounding_rect()
+
+        if self.layout is not None:
+            self.layout.append_item(item)
+            self.refresh_bounding_rect()
 
     def on_file_removed(self, location: Location) -> None:
         logger.debug("ThumbView.on_file_removed: %s", location)
@@ -379,7 +381,6 @@ class ThumbView(QGraphicsView):
         self.setUpdatesEnabled(False)
         # old_item_index_method = self.scene.itemIndexMethod()
         # self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
-        self.layout_builder.clear_appends()
         self.layout = self.layout_builder.build_layout(self.items)
 
         self.layout.resize(self.viewport().width(), self.viewport().height())

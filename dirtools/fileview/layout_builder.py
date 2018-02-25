@@ -19,7 +19,7 @@ from typing import Dict, List, Any, Hashable
 
 from PyQt5.QtGui import QFont
 
-from dirtools.fileview.layout import HBoxLayout, TileLayout, ItemLayout, VSpacer
+from dirtools.fileview.layout import RootLayout, HBoxLayout, TileLayout, ItemLayout, VSpacer
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.thumb_file_item import ThumbFileItem
 
@@ -30,8 +30,6 @@ class LayoutBuilder:
         self.scene = scene
         self.style = style
         self.show_filtered = False
-
-        self.append_layout = None
 
     def _group_items(self, items):
         groups: Dict[Hashable, List[FileInfo]] = {}
@@ -58,13 +56,10 @@ class LayoutBuilder:
             if not isinstance(item, ThumbFileItem):
                 self.scene.removeItem(item)
 
-    def build_layout(self, items: List[Any]) -> HBoxLayout:
+    def build_layout(self, items: List[Any]) -> RootLayout:
         self.cleanup()
 
-        self.root = HBoxLayout()
-
-        if items == []:
-            return self.root
+        hbox = HBoxLayout()
 
         groups = self._group_items(items)
 
@@ -93,38 +88,31 @@ class LayoutBuilder:
 
             if group is not None:
                 title = self._build_group_title(str(group))
-                self.root.add(title)
+                hbox.add(title)
 
             grid = self._build_tile_grid(visible_items)
 
-            self.root.add(grid)
+            hbox.add(grid)
 
             if idx + 1 != len(sorted_groups):
                 spacer = VSpacer(48)
-                self.root.add(spacer)
+                hbox.add(spacer)
 
         if len(sorted_groups) == 1:
             if grid is None:
-                self.append_layout = TileLayout(self.style)
-                self.root.add(self.append_layout)
+                append_layout = TileLayout(self.style)
+                hbox.add(append_layout)
             else:
-                self.append_layout = grid
+                append_layout = grid
         else:
-            self.root.add(self._build_group_title("Incoming"))
-            self.append_layout = TileLayout(self.style)
-            self.root.add(self.append_layout)
+            hbox.add(self._build_group_title("Incoming"))
+            append_layout = TileLayout(self.style)
+            hbox.add(append_layout)
 
-        return self.root
-
-    def append_item(self, item):
-        self.append_layout.append_item(item)
-
-    def clear_appends(self):
-        self.append_layout = TileLayout(self.style)
-
-    def resize(self, width, height):
-        if self.root is not None:
-            self.root.resize(width, height)
+        root = RootLayout()
+        root.set_root(hbox)
+        root.set_append_layout(append_layout)
+        return root
 
 
 # EOF #

@@ -57,6 +57,38 @@ class VSpacer(Layout):
         self.height = height
 
 
+class RootLayout(Layout):
+
+    def __init__(self):
+        super().__init__()
+        self.root: Layout = None
+        self.append_layout: TileLayout = None
+
+    def set_root(self, root: Layout) -> None:
+        assert self.root is None
+        self.root = root
+        self.root.parent = self
+
+    def set_append_layout(self, group: 'TileLayout') -> None:
+        self.append_layout = group
+
+    def append_item(self, item) -> None:
+        self.append_layout.append_item(item)
+        self.root.layout(self.width)
+
+    def layout(self, width) -> None:
+        super().layout(width)
+
+        self.root.set_pos(0, 0)
+        self.root.layout(width)
+
+    def resize(self, width, height):
+        self.root.resize(width, height)
+
+    def get_bounding_rect(self):
+        return self.root.get_bounding_rect()
+
+
 class HBoxLayout(Layout):
 
     def __init__(self):
