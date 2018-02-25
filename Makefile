@@ -24,7 +24,7 @@ autopep:
 	autopep8 --max-line=120 --in-place --aggressive $(SOURCES)
 
 test:
-	python3 -m unittest discover -s tests/
+	python3 -m unittest discover -v -s tests/
 
 mypy:
 	mypy \
