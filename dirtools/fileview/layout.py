@@ -205,7 +205,6 @@ class TileLayout(Layout):
         x = col * (self.style.tile_width + self.style.spacing_x) + self.style.padding_x
         y = row * (self.style.tile_height + self.style.spacing_y) + self.style.padding_y
 
-        item.set_tile_size(self.style.tile_width, self.style.tile_height)
         item.setPos(self.x + x + self.center_x_off,
                     self.y + y)
 
@@ -237,6 +236,10 @@ class TileLayout(Layout):
                    (viewport_height - 2 * self.style.padding_y + self.style.spacing_y) //
                    (self.style.tile_height + self.style.spacing_y))
 
+    def _calc_grid_width(self, columns):
+        return ((columns * (self.style.tile_width + self.style.spacing_x)) -
+                self.style.spacing_x + 2 * self.style.padding_x)
+
     def set_pos(self, x, y):
         super().set_pos(x, y)
 
@@ -245,13 +248,10 @@ class TileLayout(Layout):
         super().layout(viewport_width)
 
         new_columns = self._calc_num_columns(viewport_width)
-        if self.columns != new_columns:
-            self.columns = new_columns
-            self.needs_relayout = True
+        grid_width = self._calc_grid_width(new_columns)
 
-        grid_width = ((self.columns * (self.style.tile_width + self.style.spacing_x)) -
-                      self.style.spacing_x + 2 * self.style.padding_x)
         self.center_x_off = (viewport_width - grid_width) / 2
+        self.columns = new_columns
 
         bottom_y = 0
         right_x = 0
@@ -262,7 +262,6 @@ class TileLayout(Layout):
             x = col * (self.style.tile_width + self.style.spacing_x) + self.style.padding_x
             y = row * (self.style.tile_height + self.style.spacing_y) + self.style.padding_y
 
-            item.set_tile_size(self.style.tile_width, self.style.tile_height)
             item.setPos(self.x + x + self.center_x_off,
                         self.y + y)
 

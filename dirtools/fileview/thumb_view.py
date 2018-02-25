@@ -452,8 +452,12 @@ class ThumbView(QGraphicsView):
         else:
             self.flavor = "large"
 
+        for item in self.items:
+            item.set_tile_size(self.tile_style.tile_width, self.tile_style.tile_height)
+
         self.style_items()
         self.layout_items()
+
         for item in self.items:
             item.update()
 

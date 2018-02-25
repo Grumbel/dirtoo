@@ -141,7 +141,7 @@ class ThumbFileItem(FileItem):
         self.large_thumbnail: Thumbnail = Thumbnail("large", self)
         self.metadata: Optional[Dict[str, Any]] = None
 
-        self.set_tile_size(self.thumb_view.tn_width, self.thumb_view.tn_height)
+        self.set_tile_size(self.thumb_view.tile_style.tile_width, self.thumb_view.tile_style.tile_height)
         self.animation_timer: Optional[int] = None
 
     def set_tile_size(self, tile_width, tile_height):
