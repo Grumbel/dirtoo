@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import List, Optional
 
 from enum import Enum
 from PyQt5.QtCore import QRectF
@@ -27,7 +27,7 @@ from dirtools.fileview.profiler import profile
 class Layout:
 
     def __init__(self):
-        self.parent = None
+        self.parent: Optional[Layout] = None
 
         self.x = 0
         self.y = 0
@@ -64,7 +64,7 @@ class RootLayout(Layout):
 
     def __init__(self):
         super().__init__()
-        self.root: Layout = None
+        self.root: Optional[Layout] = None
         self.append_layout: TileLayout = None
 
     def set_root(self, root: Layout) -> None:
