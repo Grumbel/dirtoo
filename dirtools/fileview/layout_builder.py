@@ -24,7 +24,7 @@ from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.thumb_file_item import ThumbFileItem
 
 
-class Layouter:
+class LayoutBuilder:
 
     def __init__(self, scene, style):
         self.scene = scene
