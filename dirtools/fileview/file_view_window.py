@@ -361,12 +361,11 @@ class FileViewWindow(QMainWindow):
             history_menu.addSeparator()
 
             def show_file_history():
-                file_history = self.controller.app.file_history
-                entries = file_history.get_entries()
                 if history_menu.middle_is_pressed():
-                    self.controller.app.show_files(entries)
+                    controller = self.controller.new_controller()
+                    controller.show_file_history()
                 else:
-                    self.controller.set_files(entries)
+                    self.controller.show_file_history()
 
             history_menu.addAction(QIcon.fromTheme("folder"), "View File History",
                                    show_file_history)

@@ -111,6 +111,12 @@ class FileViewApplication:
         self.controllers.remove(controller)
         controller.close()
 
+    def new_controller(self) -> Controller:
+        controller = Controller(self)
+        controller.window.show()
+        self.controllers.append(controller)
+        return controller
+
     def show_files(self, files: List[Location]) -> None:
         controller = Controller(self)
         controller.set_files(files)

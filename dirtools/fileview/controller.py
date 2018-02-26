@@ -235,6 +235,15 @@ class Controller(QObject):
         self.filelist_stream.sig_end_of_stream.connect(lambda: self.window.hide_loading())
         self.filelist_stream.start()
 
+    def new_controller(self) -> 'Controller':
+        controller = self.app.new_controller()
+        return controller
+
+    def show_file_history(self) -> None:
+        file_history = self.app.file_history
+        entries = file_history.get_entries()
+        self.set_files(entries)
+
     def apply_grouper(self) -> None:
         logger.debug("Controller.apply_grouper")
         self.file_collection.group(self.grouper)
