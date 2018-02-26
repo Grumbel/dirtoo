@@ -296,9 +296,18 @@ class Controller(QObject):
         self.window.thumb_view.set_cursor_to_fileinfo(fileinfo)
 
         if not fileinfo.isdir():
-            self.app.file_history.append(fileinfo.location())
+            if fileinfo.is_archive() and settings.value("globals/open_archives", True, bool):
+                location = fileinfo.location().copy()
+                location._payloads.append(Payload("archive", ""))
 
-            self.app.executor.open(fileinfo.location())
+                if new_window:
+                    controller = self.new_controller()
+                    controller.set_location(location)
+                else:
+                    self.set_location(location)
+            else:
+                self.app.file_history.append(fileinfo.location())
+                self.app.executor.open(fileinfo.location())
         else:
             if self.location is None or new_window:
                 logger.info("Controller.on_click: app.show_location: %s", fileinfo)
@@ -357,11 +366,14 @@ class Controller(QObject):
         menu = QMenu()
 
         if item.fileinfo.is_archive():
-            def do_extract(item):
-                location = item.fileinfo.location().copy()
+            def do_extract(archive_location):
+                location = archive_location.copy()
                 location._payloads.append(Payload("archive", ""))
                 self.set_location(location)
-            menu.addAction("Extract to /tmp/", lambda item=item: do_extract(item))
+            menu.addAction(QIcon.fromTheme("package-x-generic"),
+                           "Open Archive",
+                           lambda location=item.fileinfo.location(): do_extract(location))
+            menu.addSeparator()
 
         files: List[Location] = []
         mimetypes: Set[str] = set()
