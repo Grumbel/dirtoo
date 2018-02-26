@@ -18,7 +18,7 @@
 from typing import List
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPalette
+from PyQt5.QtGui import QPalette, QIcon
 from PyQt5.QtWidgets import QLineEdit
 
 
@@ -33,20 +33,30 @@ class FilterLineEdit(QLineEdit):
         self.history: List[str] = []
         self.history_idx = 0
 
+        action = self.addAction(QIcon.fromTheme("edit-delete"), QLineEdit.TrailingPosition)
+        action.triggered.connect(self.on_delete_button)
+        action.setToolTip("Clear the filter and hide it")
+
     def keyPressEvent(self, ev):
         super().keyPressEvent(ev)
         if ev.key() == Qt.Key_Escape:
-            self.setText("")
-            self.history_idx = -1
-            self.controller.set_filter("")
-            self.controller.window.hide_filter()
-            self.controller.window.thumb_view.setFocus()
+            self.reset()
         elif ev.key() == Qt.Key_Up:
             self.history_up()
         elif ev.key() == Qt.Key_Down:
             self.history_down()
         else:
             self.history_idx = -1
+
+    def reset(self):
+        self.clear()
+        self.history_idx = -1
+        self.controller.set_filter("")
+        self.controller.window.hide_filter()
+        self.controller.window.thumb_view.setFocus()
+
+    def on_delete_button(self):
+        self.reset()
 
     def on_return_pressed(self):
         self.is_unused = False
