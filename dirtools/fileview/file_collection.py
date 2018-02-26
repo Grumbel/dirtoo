@@ -24,6 +24,8 @@ from PyQt5.QtCore import QObject, pyqtSignal
 
 from dirtools.fileview.location import Location
 from dirtools.fileview.file_info import FileInfo
+from dirtools.fileview.filter import Filter
+from dirtools.fileview.grouper import Grouper
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +72,7 @@ class FileCollection(QObject):
         self.fileinfos = fileinfos
         self.sig_files_set.emit()
 
-    def add_fileinfo(self, fi: FileInfo):
+    def add_fileinfo(self, fi: FileInfo) -> None:
         logger.debug("FileCollection.add_fileinfos: %s", fi)
         self.fileinfos.append(fi)
         self.sig_file_added.emit(fi)
@@ -104,15 +106,15 @@ class FileCollection(QObject):
     def size(self) -> int:
         return len(self.fileinfos)
 
-    def group(self, grouper):
+    def group(self, grouper: Grouper) -> None:
         grouper.apply(self.fileinfos)
         self.sig_files_grouped.emit()
 
-    def filter(self, filter):
+    def filter(self, filter: Filter) -> None:
         filter.apply(self.fileinfos)
         self.sig_files_filtered.emit()
 
-    def sort(self, key, reverse=False):
+    def sort(self, key, reverse: bool=False) -> None:
         logger.debug("FileCollection.sort")
         self.fileinfos = sorted(self.fileinfos, key=key)
         if reverse:
@@ -120,13 +122,13 @@ class FileCollection(QObject):
         logger.debug("FileCollection.sort:done")
         self.sig_files_reordered.emit()
 
-    def shuffle(self):
+    def shuffle(self) -> None:
         logger.debug("FileCollection.sort")
         random.shuffle(self.fileinfos)
         logger.debug("FileCollection.sort:done")
         self.sig_files_reordered.emit()
 
-    def save_as(self, filename: str):
+    def save_as(self, filename: str) -> None:
         with open(filename, "w") as fout:
             for fi in self.fileinfos:
                 fout.write(fi.abspath)
