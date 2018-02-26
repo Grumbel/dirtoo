@@ -327,7 +327,10 @@ class FileViewWindow(QMainWindow):
 
             bookmarks_menu.clear()
 
-            if self.controller.location in entries:
+            if self.controller.location is None:
+                action = bookmarks_menu.addAction(QIcon.fromTheme("user-bookmarks"), "Can't bookmark file lists")
+                action.setEnabled(False)
+            elif self.controller.location in entries:
                 bookmarks_menu.addAction(QIcon.fromTheme("edit-delete"), "Remove This Location's Bookmark",
                                          lambda loc=self.controller.location:
                                          bookmarks.remove(loc))
