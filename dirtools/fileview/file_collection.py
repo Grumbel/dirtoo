@@ -84,14 +84,10 @@ class FileCollection(QObject):
 
     def change_file(self, fileinfo: FileInfo) -> None:
         logger.debug("FileCollection.change_file: %s", fileinfo)
-        # We assume here that the supplied FileInfo is identical to
-        # one already in our storage
         self.sig_file_changed.emit(fileinfo)
 
     def update_file(self, fileinfo: FileInfo) -> None:
         logger.debug("FileCollection.change_file: %s", fileinfo)
-        # We assume here that the supplied FileInfo is identical to
-        # one already in our storage
         self.sig_file_updated.emit(fileinfo)
 
     def get_fileinfos(self) -> List[FileInfo]:

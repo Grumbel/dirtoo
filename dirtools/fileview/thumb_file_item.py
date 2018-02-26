@@ -27,6 +27,7 @@ from PyQt5.QtGui import QColor, QPainter, QPainterPath, QPixmap
 import bytefmt
 
 from dirtools.fileview.file_item import FileItem
+from dirtools.fileview.file_info import FileInfo
 from dirtools.mediainfo import split_duration
 
 logger = logging.getLogger(__name__)
@@ -125,7 +126,7 @@ class Thumbnail:
 
 class ThumbFileItem(FileItem):
 
-    def __init__(self, fileinfo, controller, thumb_view):
+    def __init__(self, fileinfo: FileInfo, controller, thumb_view) -> None:
         logger.debug("ThumbFileItem.__init__: %s", fileinfo)
         super().__init__(fileinfo, controller)
         # self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
@@ -143,6 +144,9 @@ class ThumbFileItem(FileItem):
 
         self.set_tile_size(self.thumb_view.tile_style.tile_width, self.thumb_view.tile_style.tile_height)
         self.animation_timer: Optional[int] = None
+
+    def set_fileinfo(self, fileinfo: FileInfo):
+        self.fileinfo = fileinfo
 
     def set_tile_size(self, tile_width, tile_height):
         # the size of the base tile

@@ -270,12 +270,14 @@ class ThumbView(QGraphicsView):
         item = self.location2item.get(fileinfo.location(), None)
         if item is not None:
             item.new = True
+            item.set_fileinfo(fileinfo)
             item.update()
 
     def on_file_updated(self, fileinfo: FileInfo) -> None:
         logger.debug("ThumbView.on_file_updated: %s", fileinfo)
         item = self.location2item.get(fileinfo.location(), None)
         if item is not None:
+            item.set_fileinfo(fileinfo)
             item.update()
 
     def on_file_collection_reordered(self) -> None:
