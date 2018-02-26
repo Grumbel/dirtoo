@@ -40,9 +40,12 @@ class LocationLineEdit(QLineEdit):
     def keyPressEvent(self, ev) -> None:
         super().keyPressEvent(ev)
         if ev.key() == Qt.Key_Escape:
-            self.setText(self.controller.location.as_url())
-            self.on_text_edited(self.text())
-            self.controller.window.thumb_view.setFocus()
+            if self.controller.location is None:
+                self.setText("")
+            else:
+                self.setText(self.controller.location.as_url())
+                self.on_text_edited(self.text())
+                self.controller.window.thumb_view.setFocus()
 
     def focusInEvent(self, ev) -> None:
         super().focusInEvent(ev)
