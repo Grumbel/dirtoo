@@ -38,6 +38,7 @@ from dirtools.fileview.filelist_stream import FileListStream
 from dirtools.xdg_desktop import get_desktop_entry, get_desktop_file
 from dirtools.fileview.location import Location, Payload
 from dirtools.fileview.file_info import FileInfo
+from dirtools.fileview.menu import Menu
 
 logger = logging.getLogger(__name__)
 
@@ -301,8 +302,7 @@ class Controller(QObject):
                 location._payloads.append(Payload("archive", ""))
 
                 if new_window:
-                    controller = self.new_controller()
-                    controller.set_location(location)
+                    self.new_controller().set_location(location)
                 else:
                     self.set_location(location)
             else:
@@ -363,23 +363,31 @@ class Controller(QObject):
             item.setSelected(True)
             selected_items = [item]
 
-        menu = QMenu()
+        menu = Menu()
 
         if item.fileinfo.is_archive():
-            def do_extract(archive_location):
+            def make_extract(archive_location):
                 location = archive_location.copy()
                 location._payloads.append(Payload("archive", ""))
-                self.set_location(location)
-            menu.addAction(QIcon.fromTheme("package-x-generic"),
-                           "Open Archive",
-                           lambda location=item.fileinfo.location(): do_extract(location))
+                return location
+
+            menu.addDoubleAction(
+                QIcon.fromTheme("package-x-generic"),
+                "Open Archive",
+                lambda location=item.fileinfo.location():
+                self.set_location(make_extract(location)),
+                lambda location=item.fileinfo.location():
+                self.new_controller().set_location(make_extract(location)))
             menu.addSeparator()
 
         elif item.fileinfo.isdir():
-            menu.addAction(QIcon.fromTheme("folder"),
-                           "Open Folder",
-                           lambda location=item.fileinfo.location():
-                           self.set_location(location))
+            menu.addDoubleAction(
+                QIcon.fromTheme("folder"),
+                "Open Folder",
+                lambda location=item.fileinfo.location():
+                self.set_location(location),
+                lambda location=item.fileinfo.location():
+                self.new_controller().set_location(location))
             menu.addSeparator()
 
         files: List[Location] = []
