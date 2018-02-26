@@ -461,7 +461,18 @@ class Controller(QObject):
         self.window.thumb_view.prepare()
 
     def reload(self) -> None:
-        self.set_location(self.location)
+        if self.location is not None:
+            self.set_location(self.location)
+        else:
+            self.window.set_file_list()
+
+            fileinfos = self.file_collection.get_fileinfos()
+            fileinfos = [self.app.vfs.get_fileinfo(f.location()) for f in fileinfos]
+            self.file_collection.set_fileinfos(fileinfos)
+
+            self.apply_sort()
+            self.apply_filter()
+            self.apply_grouper()
 
     def receive_thumbnail(self, location: Location, flavor: str,
                           pixmap, error_code: int, message: str) -> None:
