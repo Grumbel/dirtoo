@@ -69,12 +69,12 @@ def main(argv):
         else:
             app.show_filelist_stream(FileListStream(sys.stdin, "\n"))
     elif len(args.FILE) == 1 and os.path.isdir(args.FILE[0]):
-        app.show_location(Location.from_path(args.FILE[0]))
+        app.show_location(Location.from_human(args.FILE[0]))
     elif args.recursive:
         files = expand_directories(args.FILE, args.recursive)
         app.show_files([Location.from_path(f) for f in files])
     else:
-        app.show_files([Location.from_path(f) for f in args.FILE])
+        app.show_files([Location.from_human(f) for f in args.FILE])
 
     sys.exit(app.run())
 

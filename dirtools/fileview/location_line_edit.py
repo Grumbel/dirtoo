@@ -67,7 +67,7 @@ class LocationLineEdit(QLineEdit):
         p = self.palette()
 
         try:
-            location = Location.from_url(text)
+            location = Location.from_human(text)
             if location.exists():
                 p.setColor(QPalette.Text, Qt.black)
             else:
@@ -79,7 +79,7 @@ class LocationLineEdit(QLineEdit):
 
     def on_return_pressed(self) -> None:
         try:
-            location = Location.from_url(self.text())
+            location = Location.from_human(self.text())
         except Exception:
             logger.warning("unparsable location entered: %s", self.text())
         else:
