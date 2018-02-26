@@ -76,6 +76,10 @@ class Controller(QObject):
             self.directory_watcher.close()
             self.directory_watcher = None
 
+        if self.filelist_stream is not None:
+            self.filelist_stream.close()
+            self.filelist_stream = None
+
     def _apply_settings(self) -> None:
         v = settings.value("globals/crop_thumbnails", False, bool)
         self.actions.crop_thumbnails.setChecked(v)
