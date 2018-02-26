@@ -30,7 +30,6 @@ from PyQt5.QtDBus import QDBusConnection
 
 from dirtools.dbus_thumbnail_cache import DBusThumbnailCache
 from dirtools.fileview.bookmarks import Bookmarks
-from dirtools.fileview.controller import Controller
 from dirtools.fileview.executor import Executor
 from dirtools.fileview.history import History
 from dirtools.fileview.location import Location
@@ -107,11 +106,11 @@ class FileViewApplication:
         self.thumbnailer.close()
         self.vfs.close()
 
-    def close_controller(self, controller: Controller) -> None:
+    def close_controller(self, controller: 'Controller') -> None:
         self.controllers.remove(controller)
         controller.close()
 
-    def new_controller(self) -> Controller:
+    def new_controller(self) -> 'Controller':
         controller = Controller(self)
         controller.window.show()
         self.controllers.append(controller)
@@ -136,6 +135,9 @@ class FileViewApplication:
         controller.set_location(location)
         controller.window.show()
         self.controllers.append(controller)
+
+
+from dirtools.fileview.controller import Controller  # noqa: E401, E402
 
 
 # EOF #

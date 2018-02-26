@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Dict, Any, Optional, Set
+from typing import List, Dict, Any, Optional, Set, cast
 
 import logging
 import os
@@ -44,9 +44,9 @@ logger = logging.getLogger(__name__)
 
 class Controller(QObject):
 
-    def __init__(self, app) -> None:
+    def __init__(self, app: 'FileViewApplication') -> None:
         super().__init__()
-        self.app = app
+        self.app: 'FileViewApplication' = app
         self.location: Optional[Location] = None
         self.file_collection = FileCollection()
         self.actions = Actions(self)
@@ -237,7 +237,7 @@ class Controller(QObject):
 
     def new_controller(self) -> 'Controller':
         controller = self.app.new_controller()
-        return controller
+        return cast('Controller', controller)
 
     def show_file_history(self) -> None:
         file_history = self.app.file_history
@@ -509,6 +509,9 @@ class Controller(QObject):
     def set_grouper_by_day(self) -> None:
         self.grouper.set_func(DayGrouperFunc())
         self.apply_grouper()
+
+
+from dirtools.fileview.application import FileViewApplication  # noqa: E401, E402
 
 
 # EOF #

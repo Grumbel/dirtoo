@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Optional
+from typing import Optional, IO
 
 import logging
 import fcntl
@@ -25,6 +25,7 @@ from PyQt5.QtCore import QObject, QSocketNotifier, pyqtSignal
 
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.location import Location
+from dirtools.fileview.virtual_filesystem import VirtualFilesystem  # noqa: E401, E402
 
 logger = logging.getLogger(__name__)
 
@@ -64,9 +65,10 @@ class FileListStream(QObject):
     sig_end_of_stream = pyqtSignal()
     sig_error = pyqtSignal()
 
-    def __init__(self, fp, linesep="\n"):
+    def __init__(self, vfs: 'VirtualFilesystem', fp: IO, linesep: str="\n") -> None:
         super().__init__()
 
+        self.vfs = vfs
         self.fp = fp
         self.linesep = linesep
 
@@ -81,7 +83,7 @@ class FileListStream(QObject):
         self.socket_notifier = QSocketNotifier(self.fp.fileno(), QSocketNotifier.Read)
         self.socket_notifier.activated.connect(self._on_activated)
 
-    def _on_activated(self, fd) -> None:
+    def _on_activated(self, fd: int) -> None:
         while True:
             try:
                 filename = next(self.readliner)

@@ -65,9 +65,9 @@ def main(argv):
         app.show_location(Location.from_path(os.getcwd()))
     elif args.FILE == ["-"]:
         if args.null:
-            app.show_filelist_stream(FileListStream(sys.stdin, "\0"))
+            app.show_filelist_stream(FileListStream(app.vfs, sys.stdin, "\0"))
         else:
-            app.show_filelist_stream(FileListStream(sys.stdin, "\n"))
+            app.show_filelist_stream(FileListStream(app.vfs, sys.stdin, "\n"))
     elif len(args.FILE) == 1 and os.path.isdir(args.FILE[0]):
         app.show_location(Location.from_human(args.FILE[0]))
     elif args.recursive:
