@@ -38,8 +38,6 @@ from PyQt5.QtWidgets import (
 
 from dirtools.fileview.detail_view import DetailView
 from dirtools.fileview.thumb_view import ThumbView
-from dirtools.fileview.location_line_edit import LocationLineEdit
-from dirtools.fileview.filter_line_edit import FilterLineEdit
 from dirtools.fileview.location import Location
 
 
@@ -145,6 +143,9 @@ class FileViewWindow(QMainWindow):
         shortcut.activated.connect(lambda: self.thumb_view.scroll_by(0, self.thumb_view.viewport().height()))
 
     def make_window(self):
+        from dirtools.fileview.location_line_edit import LocationLineEdit
+        from dirtools.fileview.filter_line_edit import FilterLineEdit
+
         self.setWindowTitle("dt-fileview")
         self.setWindowIcon(QIcon(resource_filename("dirtools", "fileview/dt-fileview.svg")))
         self.vbox = QVBoxLayout()
@@ -153,6 +154,7 @@ class FileViewWindow(QMainWindow):
         self.file_view = DetailView(self.controller)
         self.file_view.hide()
         self.thumb_view = ThumbView(self.controller)
+
         self.file_path = LocationLineEdit(self.controller)
         self.file_filter = FilterLineEdit(self.controller)
         # self.file_filter.setText("File Pattern Here")

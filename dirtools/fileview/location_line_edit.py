@@ -21,6 +21,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPalette
 from PyQt5.QtWidgets import QLineEdit
 
+from dirtools.fileview.controller import Controller
 from dirtools.fileview.location import Location
 
 logger = logging.getLogger(__name__)
@@ -28,21 +29,22 @@ logger = logging.getLogger(__name__)
 
 class LocationLineEdit(QLineEdit):
 
-    def __init__(self, controller):
+    def __init__(self, controller: Controller) -> None:
         super().__init__()
+
         self.controller = controller
         self.is_unused = True
         self.returnPressed.connect(self.on_return_pressed)
         self.textEdited.connect(self.on_text_edited)
 
-    def keyPressEvent(self, ev):
+    def keyPressEvent(self, ev) -> None:
         super().keyPressEvent(ev)
         if ev.key() == Qt.Key_Escape:
-            self.setText(self.controller.location)
-            self.on_text_edited(self.controller.location)
+            self.setText(self.controller.location.as_url())
+            self.on_text_edited(self.text())
             self.controller.window.thumb_view.setFocus()
 
-    def focusInEvent(self, ev):
+    def focusInEvent(self, ev) -> None:
         super().focusInEvent(ev)
 
         if ev.reason() != Qt.ActiveWindowFocusReason and self.is_unused:
@@ -52,13 +54,13 @@ class LocationLineEdit(QLineEdit):
         p.setColor(QPalette.Text, Qt.black)
         self.setPalette(p)
 
-    def focusOutEvent(self, ev):
+    def focusOutEvent(self, ev) -> None:
         super().focusOutEvent(ev)
 
         if ev.reason() != Qt.ActiveWindowFocusReason and self.is_unused:
             self.set_unused_text()
 
-    def on_text_edited(self, text):
+    def on_text_edited(self, text) -> None:
         p = self.palette()
 
         try:
@@ -72,7 +74,7 @@ class LocationLineEdit(QLineEdit):
 
         self.setPalette(p)
 
-    def on_return_pressed(self):
+    def on_return_pressed(self) -> None:
         try:
             location = Location.from_url(self.text())
         except Exception:
@@ -80,14 +82,14 @@ class LocationLineEdit(QLineEdit):
         else:
             self.controller.set_location(location)
 
-    def set_location(self, location: Location):
+    def set_location(self, location: Location) -> None:
         self.is_unused = False
         p = self.palette()
         p.setColor(QPalette.Text, Qt.black)
         self.setPalette(p)
         self.setText(location.as_url())
 
-    def set_unused_text(self):
+    def set_unused_text(self) -> None:
         self.is_unused = True
         p = self.palette()
         p.setColor(QPalette.Text, Qt.gray)
