@@ -381,8 +381,7 @@ class ThumbView(QGraphicsView):
         self.setUpdatesEnabled(False)
         # old_item_index_method = self.scene.itemIndexMethod()
         # self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
-        if self.layout is None:
-            self.layout = self.layout_builder.build_layout(self.items)
+        self.layout = self.layout_builder.build_layout(self.items)
 
         self.layout.layout(self.viewport().width())
         self.refresh_bounding_rect()
