@@ -1,5 +1,5 @@
 *~
-/.mypy_cache/
+.mypy_cache/
 /.pylint/
 /build/
 /dirtools.egg-info/
