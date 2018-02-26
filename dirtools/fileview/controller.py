@@ -375,6 +375,13 @@ class Controller(QObject):
                            lambda location=item.fileinfo.location(): do_extract(location))
             menu.addSeparator()
 
+        elif item.fileinfo.isdir():
+            menu.addAction(QIcon.fromTheme("folder"),
+                           "Open Folder",
+                           lambda location=item.fileinfo.location():
+                           self.set_location(location))
+            menu.addSeparator()
+
         files: List[Location] = []
         mimetypes: Set[str] = set()
         for item in selected_items:
