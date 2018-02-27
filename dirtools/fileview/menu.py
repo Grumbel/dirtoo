@@ -19,7 +19,7 @@ from typing import Callable, Optional
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QMenu
+from PyQt5.QtWidgets import QMenu, QAction
 
 
 class Menu(QMenu):
@@ -48,7 +48,7 @@ class Menu(QMenu):
 
     def addDoubleAction(self, icon: Optional[QIcon], title: str,
                         left_func: Callable[[], None],
-                        middle_func: Callable[[], None]):
+                        middle_func: Callable[[], None]) -> QAction:
 
         def callback(menu=self):
             if menu.middle_is_pressed():
@@ -56,7 +56,7 @@ class Menu(QMenu):
             else:
                 left_func()
 
-        self.addAction(icon, title, callback)
+        return self.addAction(icon, title, callback)
 
 
 # EOF #
