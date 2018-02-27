@@ -21,7 +21,7 @@ from typing import List, Callable, Dict, Tuple, Optional
 
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, QThread
 from PyQt5.QtDBus import QDBusConnection
-from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtGui import QImage
 
 from dirtools.dbus_thumbnailer import DBusThumbnailer
 from dirtools.fileview.location import Location
@@ -29,7 +29,7 @@ from dirtools.fileview.location import Location
 logger = logging.getLogger(__name__)
 
 
-ThumbnailCallback = Callable[[Location, Optional[str], QPixmap, int, str], None]
+ThumbnailCallback = Callable[[Location, Optional[str], QImage, int, str], None]
 
 
 class CallableWrapper:
@@ -90,10 +90,10 @@ class ThumbnailerWorker(QObject):
 
         del self.dbus_thumbnailer
 
-    def on_thumbnail_requested(self, location: Location, flavor: str,
+    def on_thumbnail_requested(self, location: Location, flavor: str, force: bool,
                                callback: ThumbnailCallback):
         thumbnail_filename = DBusThumbnailer.thumbnail_from_filename(self.vfs.get_stdio_name(location), flavor)
-        if os.path.exists(thumbnail_filename):
+        if os.path.exists(thumbnail_filename) and not force:
             image = QImage(thumbnail_filename)
             self.sig_thumbnail_ready.emit(location, flavor, callback, image)
         else:
@@ -132,7 +132,7 @@ class ThumbnailerWorker(QObject):
 
 class Thumbnailer(QObject):
 
-    sig_thumbnail_requested = pyqtSignal(Location, str, CallableWrapper)
+    sig_thumbnail_requested = pyqtSignal(Location, str, bool, CallableWrapper)
     sig_thumbnail_error = pyqtSignal(Location, str, CallableWrapper)
 
     sig_close_requested = pyqtSignal()
@@ -163,10 +163,10 @@ class Thumbnailer(QObject):
         self._thread.quit()
         self._thread.wait()
 
-    def request_thumbnail(self, location: Location, flavor: str,
+    def request_thumbnail(self, location: Location, flavor: str, force: bool,
                           callback: ThumbnailCallback):
         logger.debug("Thumbnailer.request_thumbnail: %s  %s", location, flavor)
-        self.sig_thumbnail_requested.emit(location, flavor, CallableWrapper(callback))
+        self.sig_thumbnail_requested.emit(location, flavor, force, CallableWrapper(callback))
 
     def delete_thumbnails(self, files: List[str]):
         logger.warning("Thumbnailer.delete_thumbnail (not implemented): %s", files)
@@ -174,11 +174,10 @@ class Thumbnailer(QObject):
     def on_thumbnail_ready(self, location: Location, flavor: str,
                            callback: ThumbnailCallback,
                            image: QImage):
-        pixmap = QPixmap(image)
-        if pixmap.isNull():
+        if image.isNull():
             callback(location, flavor, None, None, None)
         else:
-            callback(location, flavor, pixmap, None, None)
+            callback(location, flavor, image, None, None)
 
     def on_thumbnail_error(self, location: Location, flavor: str,
                            callback: ThumbnailCallback,

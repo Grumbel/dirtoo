@@ -22,8 +22,9 @@ import logging
 from pkg_resources import resource_filename
 
 from PyQt5.QtCore import Qt, QRectF
-from PyQt5.QtGui import (QBrush, QIcon, QColor, QPixmap, QPainter,
-                         QFontMetrics, QFont, QContextMenuEvent)
+from PyQt5.QtGui import (QBrush, QIcon, QColor, QPixmap, QImage,
+                         QPainter, QFontMetrics, QFont,
+                         QContextMenuEvent)
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
 
 from dirtools.dbus_thumbnailer import DBusThumbnailerError
@@ -245,7 +246,7 @@ class ThumbView(QGraphicsView):
 
     def on_file_added(self, fileinfo: FileInfo) -> None:
         logger.debug("ThumbView.on_file_added: %s", fileinfo)
-        item = ThumbFileItem(fileinfo, self.controller, self)
+        item = ThumbFileItem(fileinfo, self.controller, False, self)
         item.new = True
         self.location2item[fileinfo.location()] = item
         self._scene.addItem(item)
@@ -319,7 +320,7 @@ class ThumbView(QGraphicsView):
         fileinfos = self.file_collection.get_fileinfos()
 
         for fileinfo in fileinfos:
-            item = ThumbFileItem(fileinfo, self.controller, self)
+            item = ThumbFileItem(fileinfo, self.controller, True, self)
             self.location2item[fileinfo.location()] = item
             self._scene.addItem(item)
             self.items.append(item)
@@ -475,23 +476,23 @@ class ThumbView(QGraphicsView):
         return self.controller.app.mime_database.get_icon_from_mime_type(mimetype)
 
     def receive_thumbnail(self, location: Location, flavor: str,
-                          pixmap: 'QPixmap', error_code: int, message: str) -> None:
+                          image: QImage, error_code: int, message: str) -> None:
         item = self.location2item.get(location, None)
         if item is not None:
-            self.receive_thumbnail_for_item(item, flavor, pixmap, error_code, message)
-            item.set_thumbnail_pixmap(pixmap, flavor)
+            self.receive_thumbnail_for_item(item, flavor, image, error_code, message)
+            item.set_thumbnail_image(image, flavor)
         else:
             # receiving thumbnail for item that no longer exists, this
             # is normal when switching directories quickly
             pass
 
-    def receive_thumbnail_for_item(self, item, flavor: str, pixmap: QPixmap, error_code: int, message: str) -> None:
-        if pixmap is not None:
-            item.set_thumbnail_pixmap(pixmap, flavor)
+    def receive_thumbnail_for_item(self, item, flavor: str, image: QImage, error_code: int, message: str) -> None:
+        if image is not None:
+            item.set_thumbnail_image(image, flavor)
         else:
             if error_code is None:
                 # thumbnail was generated, but couldn't be loaded
-                item.set_thumbnail_pixmap(None, flavor)
+                item.set_thumbnail_image(None, flavor)
             elif error_code == DBusThumbnailerError.UNSUPPORTED_MIMETYPE:
                 pass
             elif error_code == DBusThumbnailerError.CONNECTION_FAILURE:
@@ -505,8 +506,8 @@ class ThumbView(QGraphicsView):
             elif error_code == DBusThumbnailerError.UNSUPPORTED_FLAVOR:
                 pass
 
-    def request_thumbnail(self, item, fileinfo, flavor):
-        self.controller.request_thumbnail(fileinfo, flavor)
+    def request_thumbnail(self, item, fileinfo: FileInfo, flavor: str, force: bool):
+        self.controller.request_thumbnail(fileinfo, flavor, force)
 
     def reload_thumbnails(self):
         for item in self.items:

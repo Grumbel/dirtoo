@@ -22,7 +22,7 @@ from datetime import datetime
 from enum import Enum
 
 from PyQt5.QtCore import Qt, QRectF, QRect, QMargins
-from PyQt5.QtGui import QColor, QPainter, QPainterPath, QPixmap, QIcon
+from PyQt5.QtGui import QColor, QPainter, QPainterPath, QPixmap, QIcon, QImage
 
 import bytefmt
 
@@ -91,29 +91,46 @@ class ThumbnailStatus(Enum):
 
 class Thumbnail:
 
-    def __init__(self, flavor, parent_item):
+    def __init__(self, flavor: str, parent_item) -> None:
         self.parent_item = parent_item
-        self.pixmap = None
-        self.status = ThumbnailStatus.INITIAL
-        self.flavor = flavor
+        self.pixmap: Optional[QPixmap] = None
+        self.status: ThumbnailStatus = ThumbnailStatus.INITIAL
+        self.flavor: str = flavor
+        self.mtime: float = 0
 
-    def get_pixmap(self):
+    def get_pixmap(self) -> QPixmap:
         if self.status == ThumbnailStatus.THUMBNAIL_READY:
             assert self.pixmap is not None
             return self.pixmap
         else:
             return None
 
-    def set_thumbnail_pixmap(self, pixmap):
-        if pixmap is None:
+    def set_thumbnail_image(self, image: QImage) -> None:
+        if image is None:
             self.status = ThumbnailStatus.THUMBNAIL_UNAVAILABLE
             self.pixmap = None
         else:
-            assert not pixmap.isNull()
+            assert not image.isNull()
             self.status = ThumbnailStatus.THUMBNAIL_READY
-            self.pixmap = pixmap
+            self.pixmap = QPixmap(image)
+            try:
+                mtime_txt = image.text("Thumb::MTime")
+                self.mtime = int(mtime_txt)
 
-    def request(self):
+                if int(self.parent_item.fileinfo.mtime()) != self.mtime:
+                    self.reset()
+            except ValueError as err:
+                logger.error("%s: couldn't read Thumb::MTime tag on thumbnail: %s",
+                             self.parent_item.fileinfo.location(), err)
+
+    def reset(self) -> None:
+        self.pixmap = None
+        self.status = ThumbnailStatus.INITIAL
+        self.mtime = 0
+
+        self.request(force=True)
+
+    def request(self, force=False) -> None:
         assert self.status != ThumbnailStatus.LOADING
 
         if not self.parent_item.fileinfo.is_thumbnailable():
@@ -121,12 +138,12 @@ class Thumbnail:
         else:
             self.status = ThumbnailStatus.LOADING
             self.parent_item.thumb_view.request_thumbnail(
-                self.parent_item, self.parent_item.fileinfo, self.flavor)
+                self.parent_item, self.parent_item.fileinfo, self.flavor, force=force)
 
 
 class ThumbFileItem(FileItem):
 
-    def __init__(self, fileinfo: FileInfo, controller, thumb_view) -> None:
+    def __init__(self, fileinfo: FileInfo, controller, final, thumb_view) -> None:
         logger.debug("ThumbFileItem.__init__: %s", fileinfo)
         super().__init__(fileinfo, controller)
         # self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
@@ -145,11 +162,14 @@ class ThumbFileItem(FileItem):
         self.set_tile_size(self.thumb_view.tile_style.tile_width, self.thumb_view.tile_style.tile_height)
         self.animation_timer: Optional[int] = None
 
-        self._file_is_final = False
+        self._file_is_final = final
 
     def set_fileinfo(self, fileinfo: FileInfo, final=False):
         self.fileinfo = fileinfo
         self._file_is_final = final
+        if final:
+            thumbnail = self._get_thumbnail()
+            thumbnail.reset()
 
     def set_tile_size(self, tile_width: int, tile_height: int) -> None:
         # the size of the base tile
@@ -232,9 +252,9 @@ class ThumbFileItem(FileItem):
         self.controller.show_current_filename("")
         self.update()
 
-    def set_thumbnail_pixmap(self, pixmap, flavor) -> None:
+    def set_thumbnail_image(self, image: QImage, flavor) -> None:
         thumbnail = self._get_thumbnail(flavor)
-        thumbnail.set_thumbnail_pixmap(pixmap)
+        thumbnail.set_thumbnail_image(image)
         self.update()
 
     def set_icon(self, icon) -> None:

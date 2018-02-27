@@ -504,8 +504,8 @@ class Controller(QObject):
             fileinfo.metadata().update(metadata)
             self.file_collection.update_file(fileinfo)
 
-    def request_thumbnail(self, fileinfo: FileInfo, flavor: str) -> None:
-        self.app.thumbnailer.request_thumbnail(fileinfo.location(), flavor,
+    def request_thumbnail(self, fileinfo: FileInfo, flavor: str, force: bool) -> None:
+        self.app.thumbnailer.request_thumbnail(fileinfo.location(), flavor, force,
                                                self.receive_thumbnail)
 
     def prepare(self) -> None:
