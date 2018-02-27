@@ -28,6 +28,7 @@ test:
 
 mypy:
 	mypy \
+        --incremental \
 	--ignore-missing-imports \
 	--follow-imports skip \
 	--warn-return-any \
