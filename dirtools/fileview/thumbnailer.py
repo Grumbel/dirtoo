@@ -140,28 +140,28 @@ class Thumbnailer(QObject):
     def __init__(self, vfs, parent=None):
         super().__init__(parent)
 
-        self.worker = ThumbnailerWorker(vfs)
-        self.thread = QThread(self)
-        self.worker.moveToThread(self.thread)
+        self._worker = ThumbnailerWorker(vfs)
+        self._thread = QThread(self)
+        self._worker.moveToThread(self._thread)
 
         # startup and shutdown
-        self.thread.started.connect(self.worker.init)
-        self.sig_close_requested.connect(self.worker.close, type=Qt.BlockingQueuedConnection)
+        self._thread.started.connect(self._worker.init)
+        self.sig_close_requested.connect(self._worker.close, type=Qt.BlockingQueuedConnection)
 
         # requests to the worker
-        self.sig_thumbnail_requested.connect(self.worker.on_thumbnail_requested)
+        self.sig_thumbnail_requested.connect(self._worker.on_thumbnail_requested)
 
         # replies from the worker
-        self.worker.sig_thumbnail_ready.connect(self.on_thumbnail_ready)
-        self.worker.sig_thumbnail_error.connect(self.on_thumbnail_error)
+        self._worker.sig_thumbnail_ready.connect(self.on_thumbnail_ready)
+        self._worker.sig_thumbnail_error.connect(self.on_thumbnail_error)
 
-        self.thread.start()
+        self._thread.start()
 
     def close(self):
-        self.worker._close = True
+        self._worker._close = True
         self.sig_close_requested.emit()
-        self.thread.quit()
-        self.thread.wait()
+        self._thread.quit()
+        self._thread.wait()
 
     def request_thumbnail(self, location: Location, flavor: str,
                           callback: ThumbnailCallback):

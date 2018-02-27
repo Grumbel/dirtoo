@@ -152,42 +152,42 @@ class DirectoryWatcher(QObject):
 
     def __init__(self, vfs, location: Location) -> None:
         super().__init__()
-        self.worker = DirectoryWatcherWorker(vfs, location)
-        self.thread = QThread(self)
-        self.worker.moveToThread(self.thread)
+        self._worker = DirectoryWatcherWorker(vfs, location)
+        self._thread = QThread(self)
+        self._worker.moveToThread(self._thread)
 
-        self.thread.started.connect(self.worker.init)
+        self._thread.started.connect(self._worker.init)
 
         # close() is a blocking connection so the thread is properly
         # done after the signal was emit'ed and we don't have to fuss
         # around with sig_finished() and other stuff
-        self.sig_close_requested.connect(self.worker.close, type=Qt.BlockingQueuedConnection)
+        self.sig_close_requested.connect(self._worker.close, type=Qt.BlockingQueuedConnection)
 
     def start(self) -> None:
-        self.thread.start()
+        self._thread.start()
 
     def close(self) -> None:
-        assert self.worker._close is False
-        self.worker._close = True
+        assert self._worker._close is False
+        self._worker._close = True
         self.sig_close_requested.emit()
-        self.thread.quit()
-        self.thread.wait()
+        self._thread.quit()
+        self._thread.wait()
 
     @property
     def sig_file_added(self):
-        return self.worker.sig_file_added
+        return self._worker.sig_file_added
 
     @property
     def sig_file_removed(self):
-        return self.worker.sig_file_removed
+        return self._worker.sig_file_removed
 
     @property
     def sig_file_changed(self):
-        return self.worker.sig_file_changed
+        return self._worker.sig_file_changed
 
     @property
     def sig_scandir_finished(self):
-        return self.worker.sig_scandir_finished
+        return self._worker.sig_scandir_finished
 
 
 # EOF #

@@ -127,20 +127,20 @@ class MetaDataCollector(QObject):
     def __init__(self, vfs: VirtualFilesystem) -> None:
         super().__init__()
 
-        self.worker = MetaDataCollectorWorker(vfs)
-        self.thread = QThread()
-        self.worker.moveToThread(self.thread)
+        self._worker = MetaDataCollectorWorker(vfs)
+        self._thread = QThread()
+        self._worker.moveToThread(self._thread)
 
-        self.thread.started.connect(self.worker.init)
-        self.sig_request_metadata.connect(self.worker.on_metadata_requested)
-        self.worker.sig_metadata_ready.connect(self._on_metadata_ready)
+        self._thread.started.connect(self._worker.init)
+        self.sig_request_metadata.connect(self._worker.on_metadata_requested)
+        self._worker.sig_metadata_ready.connect(self._on_metadata_ready)
 
-        self.thread.start()
+        self._thread.start()
 
     def close(self):
-        self.worker._close = True
-        self.thread.quit()
-        self.thread.wait()
+        self._worker._close = True
+        self._thread.quit()
+        self._thread.wait()
 
     def request_metadata(self, location: Location) -> None:
         self.sig_request_metadata.emit(location)
