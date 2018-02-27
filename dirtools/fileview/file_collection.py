@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Optional, Iterable
+from typing import Iterable, Optional, Iterator, cast
 
 import logging
 import random
@@ -26,6 +26,7 @@ from dirtools.fileview.location import Location
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.filter import Filter
 from dirtools.fileview.grouper import Grouper
+from dirtools.list_dict import ListDict
 
 logger = logging.getLogger(__name__)
 
@@ -60,29 +61,16 @@ class FileCollection(QObject):
 
     def __init__(self) -> None:
         super().__init__()
-        self._fileinfos: List[FileInfo] = []
-
-    def _get_fileinfo_index(self, location: Location) -> int:
-        for idx, fi in enumerate(self._fileinfos):
-            if fi.location() == location:
-                return idx
-        return None
-
-    def _replace_fileinfo(self, location: Location, fileinfo: FileInfo) -> None:
-        idx = self._get_fileinfo_index(location)
-        if idx is not None:
-            self._fileinfos[idx] = fileinfo
-        else:
-            logger.error("FileCollection._replace_fileinfo: tried replacing non-existant: %s", location)
+        self._fileinfos: ListDict[Location, FileInfo] = ListDict(lambda fi: fi.location())
 
     def clear(self) -> None:
         logger.debug("FileCollection.clear")
-        self._fileinfos = []
+        self._fileinfos.clear()
         self.sig_files_set.emit()
 
-    def set_fileinfos(self, fileinfos: List[FileInfo]) -> None:
+    def set_fileinfos(self, fileinfos: Iterable[FileInfo]) -> None:
         logger.debug("FileCollection.set_fileinfos")
-        self._fileinfos = fileinfos
+        self._fileinfos = ListDict(lambda fi: fi.location(), fileinfos)
         self.sig_files_set.emit()
 
     def add_fileinfo(self, fi: FileInfo) -> None:
@@ -92,27 +80,24 @@ class FileCollection(QObject):
 
     def remove_file(self, location: Location) -> None:
         logger.debug("FileCollection.remove_file: %s", location)
-        self._fileinfos = [fi for fi in self._fileinfos if fi.location() == location]
+        self._fileinfos.remove(location)
         self.sig_file_removed.emit(location)
 
     def change_file(self, fileinfo: FileInfo) -> None:
         logger.debug("FileCollection.change_file: %s", fileinfo)
-        self._replace_fileinfo(fileinfo.location(), fileinfo)
+        self._fileinfos.replace(fileinfo.location(), fileinfo)
         self.sig_file_changed.emit(fileinfo)
 
     def update_file(self, fileinfo: FileInfo) -> None:
         logger.debug("FileCollection.change_file: %s", fileinfo)
-        self._replace_fileinfo(fileinfo.location(), fileinfo)
+        self._fileinfos.replace(fileinfo.location(), fileinfo)
         self.sig_file_updated.emit(fileinfo)
 
-    def get_fileinfos(self) -> Iterable[FileInfo]:
-        return iter(self._fileinfos)
+    def get_fileinfos(self) -> Iterator[FileInfo]:
+        return cast(Iterator[FileInfo], iter(self._fileinfos))
 
     def get_fileinfo(self, location: Location) -> Optional[FileInfo]:
-        for fi in self._fileinfos:
-            if fi.location() == location:
-                return fi
-        return None
+        return self._fileinfos.get(location)
 
     def size(self) -> int:
         return len(self._fileinfos)
@@ -127,15 +112,19 @@ class FileCollection(QObject):
 
     def sort(self, key, reverse: bool=False) -> None:
         logger.debug("FileCollection.sort")
-        self._fileinfos = sorted(self._fileinfos, key=key)
+        self._fileinfos.sort(key=key)
         if reverse:
-            self._fileinfos = list(reversed(self._fileinfos))
+            self._fileinfos.sort(key=key, reverse=True)
         logger.debug("FileCollection.sort:done")
         self.sig_files_reordered.emit()
 
     def shuffle(self) -> None:
         logger.debug("FileCollection.sort")
-        random.shuffle(self._fileinfos)
+
+        tmp = list(self._fileinfos)
+        random.shuffle(tmp)
+        self._fileinfos = ListDict(lambda fi: fi.location(), tmp)
+
         logger.debug("FileCollection.sort:done")
         self.sig_files_reordered.emit()
 

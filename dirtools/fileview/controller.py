@@ -517,7 +517,7 @@ class Controller(QObject):
             self.window.set_file_list()
 
             fileinfos = self.file_collection.get_fileinfos()
-            fileinfos = [self.app.vfs.get_fileinfo(f.location()) for f in fileinfos]
+            fileinfos = (self.app.vfs.get_fileinfo(f.location()) for f in fileinfos)
             self.file_collection.set_fileinfos(fileinfos)
 
             self.apply_sort()
