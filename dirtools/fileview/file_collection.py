@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Optional
+from typing import List, Optional, Iterable
 
 import logging
 import random
@@ -105,8 +105,8 @@ class FileCollection(QObject):
         self._replace_fileinfo(fileinfo.location(), fileinfo)
         self.sig_file_updated.emit(fileinfo)
 
-    def get_fileinfos(self) -> List[FileInfo]:
-        return self._fileinfos
+    def get_fileinfos(self) -> Iterable[FileInfo]:
+        return iter(self._fileinfos)
 
     def get_fileinfo(self, location: Location) -> Optional[FileInfo]:
         for fi in self._fileinfos:
@@ -118,11 +118,11 @@ class FileCollection(QObject):
         return len(self._fileinfos)
 
     def group(self, grouper: Grouper) -> None:
-        grouper.apply(self._fileinfos)
+        grouper.apply(self.get_fileinfos())
         self.sig_files_grouped.emit()
 
     def filter(self, filter: Filter) -> None:
-        filter.apply(self._fileinfos)
+        filter.apply(self.get_fileinfos())
         self.sig_files_filtered.emit()
 
     def sort(self, key, reverse: bool=False) -> None:
