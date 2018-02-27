@@ -15,7 +15,34 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from functools import total_ordering
 from datetime import datetime
+
+
+@total_ordering
+class Group:
+
+    def __init__(self, label, value):
+        self.label = label
+        self.value = value
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Group):
+            return self.value == other.value
+        else:
+            return False
+
+    def __ne__(self, other: object) -> bool:
+        return not (self == other)
+
+    def __lt__(self, other: 'Group') -> bool:
+        return self.value < other.value
+
+    def __hash__(self):
+        return self.value
+
+    def __str__(self):
+        return self.label
 
 
 class NoGrouperFunc:
@@ -50,6 +77,32 @@ class DirectoryGrouperFunc:
     def __call__(self, fileinfos):
         for fileinfo in fileinfos:
             fileinfo.group = fileinfo.dirname()
+
+
+class DurationGrouperFunc:
+
+    def __init__(self):
+        self._buckets = [
+            (lambda x: x > 60, Group("Very Long >60 minutes", 4)),
+            (lambda x: x > 30, Group("Long (< 60 minutes)", 3)),
+            (lambda x: x > 10, Group("Medium (< 30 minutes)", 2)),
+            (lambda x: x >  5, Group("Short (< 10 minutes)", 1)),
+            (lambda x: True, Group("Very Short (< 5 minutes)", 0)),
+        ]
+
+    def _find_bucket(self, x):
+        for (bucket, group) in self._buckets:
+            if bucket(x):
+                return group
+        return None
+
+    def __call__(self, fileinfos):
+        for fileinfo in fileinfos:
+            metadata = fileinfo.metadata()
+            if "duration" in metadata:
+                fileinfo.group = self._find_bucket(metadata["duration"] / 60000)
+            else:
+                fileinfo.group = None
 
 
 class Grouper:

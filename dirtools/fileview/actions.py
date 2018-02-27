@@ -270,10 +270,14 @@ class Actions(QObject):
         self.group_by_directory = QAction("Group by Directory", checkable=True)
         self.group_by_directory.triggered.connect(lambda: self.controller.set_grouper_by_directory())
 
+        self.group_by_duration = QAction("Group by Duration", checkable=True)
+        self.group_by_duration.triggered.connect(lambda: self.controller.set_grouper_by_duration())
+
         self.group_group = QActionGroup(self)
         self.group_group.addAction(self.group_by_none)
         self.group_group.addAction(self.group_by_day)
         self.group_group.addAction(self.group_by_directory)
+        self.group_group.addAction(self.group_by_duration)
 
         self.about = QAction(QIcon.fromTheme('help-about'), 'About dt-fileview', self)
         self.about.setStatusTip('Show About dialog')

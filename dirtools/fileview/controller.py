@@ -28,7 +28,10 @@ from PyQt5.QtGui import QIcon, QCursor, QMouseEvent, QContextMenuEvent
 from dirtools.fileview.actions import Actions
 from dirtools.fileview.file_collection import FileCollection
 from dirtools.fileview.file_view_window import FileViewWindow
-from dirtools.fileview.grouper import Grouper, DayGrouperFunc, DirectoryGrouperFunc, NoGrouperFunc
+from dirtools.fileview.grouper import (Grouper, DayGrouperFunc,
+                                       DirectoryGrouperFunc,
+                                       NoGrouperFunc,
+                                       DurationGrouperFunc)
 from dirtools.fileview.directory_watcher import DirectoryWatcher
 from dirtools.fileview.filter_parser import FilterParser
 from dirtools.fileview.settings import settings
@@ -546,6 +549,10 @@ class Controller(QObject):
 
     def set_grouper_by_day(self) -> None:
         self.grouper.set_func(DayGrouperFunc())
+        self.apply_grouper()
+
+    def set_grouper_by_duration(self) -> None:
+        self.grouper.set_func(DurationGrouperFunc())
         self.apply_grouper()
 
 

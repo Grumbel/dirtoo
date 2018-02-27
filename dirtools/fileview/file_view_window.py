@@ -222,6 +222,7 @@ class FileViewWindow(QMainWindow):
         menu.addAction(self.actions.group_by_none)
         menu.addAction(self.actions.group_by_day)
         menu.addAction(self.actions.group_by_directory)
+        menu.addAction(self.actions.group_by_duration)
         return menu
 
     def make_sort_menu(self):
