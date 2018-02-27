@@ -70,7 +70,10 @@ class FileCollection(QObject):
 
     def _replace_fileinfo(self, location: Location, fileinfo: FileInfo) -> None:
         idx = self._get_fileinfo_index(location)
-        self._fileinfos[idx] = fileinfo
+        if idx is not None:
+            self._fileinfos[idx] = fileinfo
+        else:
+            logger.error("FileCollection._replace_fileinfo: tried replacing non-existant: %s", location)
 
     def clear(self) -> None:
         logger.debug("FileCollection.clear")
