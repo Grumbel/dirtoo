@@ -47,10 +47,12 @@ class ListDict(Generic[KT, VT], Sized, Iterable):
         return (x for x in self._list if x is not None)
 
     def replace(self, key: KT, value: VT):
-        self._list[self._key2idx[key]] = value
+        idx = self._key2idx[key]
+        self._list[idx] = value
 
     def append(self, value: VT) -> None:
-        self._key2idx[self._key_func(value)] = len(self._list)
+        idx = self._key_func(value)
+        self._key2idx[idx] = len(self._list)
         self._list.append(value)
 
     def get(self, key: KT, default: Any=None) -> VT:
@@ -61,7 +63,8 @@ class ListDict(Generic[KT, VT], Sized, Iterable):
             return None
 
     def remove(self, key: KT) -> None:
-        self._list[self._key2idx[key]] = None
+        idx = self._key2idx[key]
+        self._list[idx] = None
         del self._key2idx[key]
 
     def sort(self, key: Callable[[VT], Any], reverse: bool=False):
