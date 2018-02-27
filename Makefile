@@ -29,12 +29,28 @@ test:
 mypy:
 	mypy \
 	--ignore-missing-imports \
+	--follow-imports skip \
+	--warn-return-any \
+	--warn-unused-ignores \
+	--warn-incomplete-stub \
+	--warn-redundant-casts \
+	$(SOURCES)
+
+mypy-verbose:
+	export MYPYPATH=/usr/lib/python3/dist-packages/; \
+	mypy \
+        --incremental \
+	--ignore-missing-imports \
+	--follow-imports silent \
 	--check-untyped-defs \
 	--warn-return-any \
 	--warn-unused-ignores \
 	--warn-incomplete-stub \
 	--warn-redundant-casts \
 	$(SOURCES)
+
+#	--disallow-any unimported,unannotated,decorated,explicit,generics \
+#	--disallow-any unimported,expr,unannotated,decorated,explicit,generics \
 
 flake:
 	flake8 --max-line-length=120 --ignore=N802 $(SOURCES)
