@@ -100,43 +100,43 @@ class FileInfo:
     def basename(self) -> str:
         return self._basename
 
-    def isdir(self):
+    def isdir(self) -> bool:
         return self._isdir
 
-    def is_thumbnailable(self):
+    def is_thumbnailable(self) -> bool:
         return self.is_video() or self.is_image()
 
-    def is_video(self):
+    def is_video(self) -> bool:
         return self._ext[1:] in VIDEO_EXT
 
-    def is_image(self):
+    def is_image(self) -> bool:
         return self._ext[1:] in IMAGE_EXT
 
-    def is_archive(self):
+    def is_archive(self) -> bool:
         return self._ext[1:] in ARCHIVE_EXT
 
-    def stat(self):
+    def stat(self) -> os.stat_result:
         return self._stat
 
-    def uid(self):
+    def uid(self) -> int:
         return self._stat.st_uid if self._stat else 0
 
-    def gid(self):
+    def gid(self) -> int:
         return self._stat.st_gid if self._stat else 0
 
-    def ext(self):
+    def ext(self) -> str:
         return self._ext
 
-    def size(self):
+    def size(self) -> int:
         return self._stat.st_size if self._stat is not None else 0
 
-    def mtime(self):
+    def mtime(self) -> float:
         return self._stat.st_mtime if self._stat is not None else 0
 
-    def metadata(self):
+    def metadata(self) -> Dict[str, Any]:
         return self._metadata
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "FileInfo({})".format(self._location)
 
 
