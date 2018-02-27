@@ -191,7 +191,7 @@ class Actions(QObject):
             lambda: self.controller.sorter.set_sort_reversed(self.sort_reversed.isChecked()))
 
         self.sort_by_name = QAction("Sort by Name", checkable=True)
-        self.sort_by_name.triggered.connect(lambda: self.controller.sorter.set_key_func(FileInfo.basename))
+        self.sort_by_name.triggered.connect(lambda: self.controller.sorter.set_key_func(lambda x: x.basename().lower()))
         self.sort_by_name.setChecked(True)
 
         self.sort_by_size = QAction("Sort by Size", checkable=True)

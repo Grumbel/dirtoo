@@ -27,7 +27,7 @@ class Sorter:
         self.controller = controller
         self.directories_first = True
         self.reverse = False
-        self.key_func: Callable[[FileInfo], Any] = FileInfo.basename
+        self.key_func: Callable[[FileInfo], Any] = lambda x: x.basename().lower()
 
     def set_directories_first(self, v: bool) -> None:
         self.directories_first = v
