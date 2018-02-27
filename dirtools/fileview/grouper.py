@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Any, cast
+
 from functools import total_ordering
 from datetime import datetime
 
@@ -22,21 +24,21 @@ from datetime import datetime
 @total_ordering
 class Group:
 
-    def __init__(self, label, value):
-        self.label = label
-        self.value = value
+    def __init__(self, label: str, value: Any) -> None:
+        self.label: str = label
+        self.value: Any = value
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, Group):
-            return self.value == other.value
+            return cast(bool, self.value == other.value)
         else:
             return False
 
-    def __ne__(self, other: object) -> bool:
+    def __ne__(self, other: Any) -> bool:
         return not (self == other)
 
     def __lt__(self, other: 'Group') -> bool:
-        return self.value < other.value
+        return cast(bool, self.value < other.value)
 
     def __hash__(self):
         return self.value
@@ -86,7 +88,7 @@ class DurationGrouperFunc:
             (lambda x: x > 60, Group("Very Long >60 minutes", 4)),
             (lambda x: x > 30, Group("Long (< 60 minutes)", 3)),
             (lambda x: x > 10, Group("Medium (< 30 minutes)", 2)),
-            (lambda x: x >  5, Group("Short (< 10 minutes)", 1)),
+            (lambda x: x > 5, Group("Short (< 10 minutes)", 1)),
             (lambda x: True, Group("Very Short (< 5 minutes)", 0)),
         ]
 
