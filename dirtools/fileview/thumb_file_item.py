@@ -292,7 +292,8 @@ class ThumbFileItemRenderer:
         self.column_style = False  # self.thumb_view.column_style
         self.tile_rect = item.tile_rect
         self.thumbnail_rect = QRect(0, 0, item.tile_rect.width(), item.tile_rect.width())
-        self.hovering = False
+        self.hovering = item.hovering
+        self.animation_timer = item.animation_timer
         self.new = False
         self.crop_thumbnails = item.thumb_view.crop_thumbnails
         self.is_selected = item.isSelected()
