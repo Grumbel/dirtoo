@@ -252,7 +252,7 @@ class ThumbView(QGraphicsView):
 
         self.style_item(item)
 
-        if self.layout is not None:
+        if self._layout is not None:
             self._layout.append_item(item)
             self.refresh_bounding_rect()
 
@@ -335,7 +335,7 @@ class ThumbView(QGraphicsView):
             self.killTimer(self.resize_timer)
             self.resize_timer = None
 
-            if self.layout is not None:
+            if self._layout is not None:
                 self._layout.layout(self.viewport().width())
             self.layout_items()
         else:

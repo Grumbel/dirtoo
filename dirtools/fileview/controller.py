@@ -317,10 +317,10 @@ class Controller(QObject):
                 self.set_location(fileinfo.location())
 
     def clear_selection(self) -> None:
-        self.window.thumb_view.scene.clearSelection()
+        self.window.thumb_view._scene.clearSelection()
 
     def select_all(self) -> None:
-        for item in self.window.thumb_view.scene.items():
+        for item in self.window.thumb_view._scene.items():
             item.setSelected(True)
 
     def on_context_menu(self, pos) -> None:
@@ -357,7 +357,7 @@ class Controller(QObject):
 
     def on_item_context_menu(self, ev, item) -> None:
         if item.isSelected():
-            selected_items = self.window.thumb_view.scene.selectedItems()
+            selected_items = self.window.thumb_view._scene.selectedItems()
         else:
             self.clear_selection()
             item.setSelected(True)
