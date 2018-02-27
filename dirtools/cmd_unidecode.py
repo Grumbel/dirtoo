@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 import argparse
 import re
 import sys
@@ -22,7 +24,7 @@ from unidecode import unidecode
 from colorama import Fore, Back, Style
 
 
-def parse_args(args):
+def parse_args(args: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Highlight or transliterate non-ASCII characters")
     parser.add_argument("-c", "--color", action='store_true',
                         help="Highlight non-ASCII characters")

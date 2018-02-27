@@ -17,19 +17,21 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 import argparse
 import sys
 
 from dirtools.expr import Parser, Context
 
 
-def parse_args(args):
+def parse_args(args: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate expressions")
     parser.add_argument("EXPRESSION", nargs='*')
     return parser.parse_args(args)
 
 
-def main(argv):
+def main(argv: List[str]) -> None:
     args = parse_args(argv[1:])
 
     parser = Parser()
@@ -40,7 +42,7 @@ def main(argv):
         print("Result: {}".format(result))
 
 
-def main_entrypoint():
+def main_entrypoint() -> None:
     main(sys.argv)
 
 

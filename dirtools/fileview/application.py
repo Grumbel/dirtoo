@@ -96,7 +96,7 @@ class FileViewApplication:
         self.close()
         self.qapp.quit()
 
-    def run(self):
+    def run(self) -> int:
         return self.qapp.exec()
 
     def close(self) -> None:

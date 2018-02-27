@@ -19,6 +19,7 @@ from typing import List, Optional
 
 from enum import Enum
 from PyQt5.QtCore import QRectF
+from PyQt5.QtWidgets import QGraphicsItem
 
 from dirtools.fileview.file_item import FileItem
 from dirtools.fileview.profiler import profile
@@ -91,16 +92,16 @@ class RootLayout(Layout):
 
 class HBoxLayout(Layout):
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
         self.children: List[Layout] = []
 
-    def add(self, child):
+    def add(self, child: Layout) -> None:
         self.children.append(child)
         child.parent = self
 
-    def layout(self, viewport_width):
+    def layout(self, viewport_width: int):
         super().layout(viewport_width)
 
         y = 0
@@ -122,12 +123,12 @@ class ItemLayout(Layout):
     """Layout used to hold a QGraphicsItem, e.g. the text title of a
     group."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
-        self.item = None
+        self.item: Optional[QGraphicsItem] = None
 
-    def set_item(self, item):
+    def set_item(self, item: QGraphicsItem):
         self.item = item
 
     def layout(self, viewport_width):

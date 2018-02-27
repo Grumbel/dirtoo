@@ -15,16 +15,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 import sys
 import argparse
 
-
-from dirtools.find.action import MultiAction, PrinterAction, ExecAction, ExprSorterAction
+from dirtools.find.action import Action, MultiAction, PrinterAction, ExecAction, ExprSorterAction
 from dirtools.find.filter import ExprFilter, NoFilter
 from dirtools.find.util import find_files
 
 
-def parse_args(args):
+def parse_args(args: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Find files")
 
     parser.add_argument("DIRECTORY", nargs='*')
@@ -66,7 +67,7 @@ def parse_args(args):
     return parser.parse_args(args)
 
 
-def create_action(args):
+def create_action(args: argparse.Namespace) -> Action:
     action = MultiAction()
 
     if args.quiet:
@@ -89,14 +90,14 @@ def create_action(args):
     return action
 
 
-def create_filter(args):
+def create_filter(args: argparse.Namespace):
     if args.filter:
         return ExprFilter(args.filter)
     else:
         return NoFilter()
 
 
-def create_sorter_wrapper(args, find_action):
+def create_sorter_wrapper(args: argparse.Namespace, find_action):
     if args.sort is None and not args.reverse:
         return find_action
     else:

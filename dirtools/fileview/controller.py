@@ -28,8 +28,6 @@ from PyQt5.QtGui import QIcon, QCursor, QMouseEvent, QContextMenuEvent
 from dirtools.fileview.actions import Actions
 from dirtools.fileview.file_collection import FileCollection
 from dirtools.fileview.file_view_window import FileViewWindow
-from dirtools.fileview.filter import Filter
-from dirtools.fileview.sorter import Sorter
 from dirtools.fileview.grouper import Grouper, DayGrouperFunc, DirectoryGrouperFunc, NoGrouperFunc
 from dirtools.fileview.directory_watcher import DirectoryWatcher
 from dirtools.fileview.filter_parser import FilterParser
@@ -47,6 +45,10 @@ class Controller(QObject):
 
     def __init__(self, app: 'FileViewApplication') -> None:
         super().__init__()
+
+        from dirtools.fileview.filter import Filter
+        from dirtools.fileview.sorter import Sorter
+
         self.app: 'FileViewApplication' = app
         self.location: Optional[Location] = None
         self.file_collection = FileCollection()

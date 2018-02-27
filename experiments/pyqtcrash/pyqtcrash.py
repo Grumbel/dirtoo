@@ -64,14 +64,14 @@ class Testo(QObject):
     sig_test = pyqtSignal(str)
 
 
-def main():
+def main() -> None:
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     app = QCoreApplication([])
 
     testo = Testo()
 
     # This is causing the problem
-    def a():
+    def a() -> None:
         # Using 'app' in a local function seems to be what requires
         # the manual 'del app' call, otherwise the garbage collector
         # needs to do the cleanup and probably comes to late, as
@@ -81,7 +81,7 @@ def main():
 
     # As long as the function isn't using 'app' everything seems to be
     # ok.
-    def b():
+    def b() -> None:
         print("nothing")
 
     # If 'b' is used instead of 'a' the problem goes away

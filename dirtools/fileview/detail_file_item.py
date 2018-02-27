@@ -31,7 +31,7 @@ from dirtools.fileview.file_item import FileItem
 
 class DetailFileItem(FileItem):
 
-    def __init__(self, *args):
+    def __init__(self, *args) -> None:
         self.date_item = None
         self.filename_item = None
         super().__init__(*args)

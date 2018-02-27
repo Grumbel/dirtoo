@@ -19,8 +19,6 @@ from typing import List
 
 import logging
 
-from dirtools.fileview.location import Location
-
 logger = logging.getLogger(__name__)
 
 
@@ -29,7 +27,7 @@ class Bookmarks:
     def __init__(self, filename: str) -> None:
         self.config_filename = filename
 
-    def get_entries(self) -> List[Location]:
+    def get_entries(self) -> List['Location']:
         try:
             with open(self.config_filename, "r") as fin:
                 lines = fin.read().splitlines()
@@ -46,7 +44,7 @@ class Bookmarks:
         except FileNotFoundError:
             return []
 
-    def append(self, location: Location) -> None:
+    def append(self, location: 'Location') -> None:
         entries = self.get_entries()
         if location in entries:
             return
@@ -54,12 +52,16 @@ class Bookmarks:
             with open(self.config_filename, "a") as fout:
                 print(location.as_url(), file=fout)
 
-    def remove(self, location: Location) -> None:
+    def remove(self, location: 'Location') -> None:
         entries = self.get_entries()
         with open(self.config_filename, "w") as fout:
             for entry in entries:
                 if entry != location:
                     print(entry.as_url(), file=fout)
+
+
+
+from dirtools.fileview.location import Location   # noqa: E401, E402
 
 
 # EOF #

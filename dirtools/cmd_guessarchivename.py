@@ -23,7 +23,7 @@ import sys
 from collections import defaultdict
 
 
-def rename_safe(src, dst):
+def rename_safe(src: str, dst: str) -> None:
     if os.path.exists(dst):
         raise FileExistsError(dst)
     else:

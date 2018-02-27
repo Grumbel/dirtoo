@@ -15,40 +15,46 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Callable
+
 from dirtools.fileview.file_info import FileInfo
+from dirtools.fileview.file_collection import FileCollection
 
 
 class Sorter:
 
-    def __init__(self, controller):
+    def __init__(self, controller: 'Controller') -> None:
         self.controller = controller
         self.directories_first = True
         self.reverse = False
         self.key_func = FileInfo.basename
 
-    def set_directories_first(self, v):
+    def set_directories_first(self, v: bool) -> None:
         self.directories_first = v
         self.controller.apply_sort()
 
-    def set_sort_reversed(self, rev):
+    def set_sort_reversed(self, rev: bool) -> None:
         self.reverse = rev
         self.controller.apply_sort()
 
-    def set_key_func(self, key_func):
+    def set_key_func(self, key_func: Callable) -> None:
         self.key_func = key_func
         self.controller.apply_sort()
 
-    def get_key_func(self):
+    def get_key_func(self) -> None:
         if self.directories_first:
             return lambda fileinfo: (not fileinfo.isdir(), self.key_func(fileinfo))
         else:
             return self.key_func
 
-    def apply(self, file_collection):
+    def apply(self, file_collection: FileCollection) -> None:
         if self.key_func is None:
             file_collection.shuffle()
         else:
             file_collection.sort(self.get_key_func(), reverse=self.reverse)
+
+
+from dirtools.fileview.controller import Controller   # noqa: E401, E402
 
 
 # EOF #

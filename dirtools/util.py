@@ -22,7 +22,7 @@ import os
 import collections
 
 
-def expand_file(f, recursive):
+def expand_file(f: str, recursive: bool):
     if os.path.isdir(f):
         if recursive:
             lst = [expand_file(os.path.join(f, x), recursive) for x in os.listdir(f)]
@@ -33,7 +33,7 @@ def expand_file(f, recursive):
         return [f]
 
 
-def expand_directories(files, recursive):
+def expand_directories(files: List[str], recursive: bool):
     results: List[str] = []
     for f in files:
         results += expand_file(f, recursive)
@@ -43,7 +43,7 @@ def expand_directories(files, recursive):
 NUMERIC_SORT_RX = re.compile(r'(\d+)')
 
 
-def numeric_sorted(lst):
+def numeric_sorted(lst: List[str]) -> List[str]:
     def segmenter(text):
         return tuple(int(sub) if sub.isdigit() else sub
                      for sub in NUMERIC_SORT_RX.split(text) if sub != "")
@@ -51,7 +51,7 @@ def numeric_sorted(lst):
     return sorted(lst, key=segmenter)
 
 
-def unique(lst: List[Any]) -> List[Any]:
+def unique(lst: List[object]) -> List[object]:
     """Remove duplicate elements from a list. List can be unsorted."""
     return list(collections.OrderedDict.fromkeys(lst))
 

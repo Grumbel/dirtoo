@@ -17,11 +17,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 import sys
 from inotify_simple import INotify, flags, masks
 
 
-def main(argv):
+def main(argv: List[str]) -> None:
     inotify = INotify()
     watch_flags = masks.ALL_EVENTS
 

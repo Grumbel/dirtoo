@@ -24,7 +24,7 @@ from PyQt5.QtWidgets import QLineEdit
 
 class FilterLineEdit(QLineEdit):
 
-    def __init__(self, controller):
+    def __init__(self, controller: 'Controller') -> None:
         super().__init__()
         self.controller = controller
         self.is_unused = True
@@ -48,23 +48,23 @@ class FilterLineEdit(QLineEdit):
         else:
             self.history_idx = -1
 
-    def reset(self):
+    def reset(self) -> None:
         self.clear()
         self.history_idx = -1
         self.controller.set_filter("")
         self.controller.window.hide_filter()
         self.controller.window.thumb_view.setFocus()
 
-    def on_delete_button(self):
+    def on_delete_button(self) -> None:
         self.reset()
 
-    def on_return_pressed(self):
+    def on_return_pressed(self) -> None:
         self.is_unused = False
         self.controller.set_filter(self.text())
         self.history.append(self.text())
         self.history_idx = 0
 
-    def focusInEvent(self, ev):
+    def focusInEvent(self, ev) -> None:
         super().focusInEvent(ev)
 
         if self.is_unused:
@@ -74,7 +74,7 @@ class FilterLineEdit(QLineEdit):
         p.setColor(QPalette.Text, Qt.black)
         self.setPalette(p)
 
-    def focusOutEvent(self, ev):
+    def focusOutEvent(self, ev) -> None:
         super().focusOutEvent(ev)
 
         if self.text() == "":
@@ -83,20 +83,20 @@ class FilterLineEdit(QLineEdit):
         else:
             self.is_unused = False
 
-    def set_unused_text(self):
+    def set_unused_text(self) -> None:
         p = self.palette()
         p.setColor(QPalette.Text, Qt.gray)
         self.setPalette(p)
         self.setText("enter a glob search pattern here")
 
-    def history_up(self):
+    def history_up(self) -> None:
         if self.history != []:
             self.history_idx += 1
             if self.history_idx > len(self.history) - 1:
                 self.history_idx = len(self.history) - 1
             self.setText(self.history[len(self.history) - self.history_idx - 1])
 
-    def history_down(self):
+    def history_down(self) -> None:
         if self.history != []:
             self.history_idx -= 1
             if self.history_idx < 0:
@@ -104,6 +104,9 @@ class FilterLineEdit(QLineEdit):
                 self.history_idx = 0
             else:
                 self.setText(self.history[len(self.history) - self.history_idx - 1])
+
+
+from dirtools.fileview.controller import Controller   # noqa: E401, E402
 
 
 # EOF #

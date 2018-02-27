@@ -54,7 +54,7 @@ class Location:
             return result
 
     @staticmethod
-    def from_path(path) -> 'Location':
+    def from_path(path: str) -> 'Location':
         return Location.from_url("file://" + os.path.abspath(path))
 
     @staticmethod
@@ -65,7 +65,7 @@ class Location:
             return Location.from_path(os.path.abspath(path))
 
     @staticmethod
-    def from_url(url) -> 'Location':
+    def from_url(url: str) -> 'Location':
         m = LOCATION_REGEX.match(url)
         if m is None:
             raise Exception("Location.from_string: failed to decode: {}".format(url))
@@ -153,16 +153,19 @@ class Location:
         assert not self.has_payload()
         return self._path
 
-    def __eq__(self, other):
-        return (self._protocol, self._path, self._payloads) == (other._protocol, other._path, other._payloads)
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Location):
+            return (self._protocol, self._path, self._payloads) == (other._protocol, other._path, other._payloads)
+        else:
+            return False
 
-    def __ne__(self, other):
+    def __ne__(self, other: object) -> bool:
         return not (self == other)
 
-    def __lt__(self, other):
+    def __lt__(self, other: 'Location') -> bool:
         return (self._protocol, self._path, self._payloads) < (other._protocol, other._path, other._payloads)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         # import timeit
         # timeit.timeit('hash(a)',
         #               "from dirtools.fileview.location import Location; "
@@ -175,7 +178,7 @@ class Location:
         # return hash(self.as_url())
         # return hash(self._path)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.as_url()
 
 

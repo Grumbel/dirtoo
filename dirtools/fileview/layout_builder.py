@@ -18,6 +18,7 @@
 from typing import Dict, List, Any, Hashable
 
 from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import QGraphicsItem
 
 from dirtools.fileview.layout import RootLayout, HBoxLayout, TileLayout, ItemLayout, VSpacer
 from dirtools.fileview.file_info import FileInfo
@@ -45,7 +46,7 @@ class LayoutBuilder:
         group_title.set_item(text_item)
         return group_title
 
-    def _build_tile_grid(self, items: List[Any]) -> TileLayout:
+    def _build_tile_grid(self, items: List[QGraphicsItem]) -> TileLayout:
         tile_layout = TileLayout(self.style)
         tile_layout.set_items(items)
         return tile_layout

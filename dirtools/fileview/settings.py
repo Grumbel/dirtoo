@@ -20,25 +20,25 @@ from PyQt5.QtCore import QObject, QSettings
 
 class Settings(QObject):
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
-    def init(self, filename):
+    def init(self, filename: str):
         self.settings = QSettings(filename, QSettings.IniFormat)
 
-    def value(self, name, default=None, type=None):
+    def value(self, name: str, default=None, type=None) -> object:
         if type is None:
             return self.settings.value(name, default)
         else:
             return self.settings.value(name, default, type)
 
-    def set_value(self, name, value):
+    def set_value(self, name: str, value: object) -> object:
         return self.settings.setValue(name, value)
 
-    def load(self):
+    def load(self) -> None:
         pass
 
-    def save(self):
+    def save(self) -> None:
         pass
 
 

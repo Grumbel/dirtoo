@@ -36,7 +36,7 @@ from dirtools.find.util import replace_item, size_in_bytes, name_match
 
 class Context:  # pylint: disable=R0904,R0915
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.current_file = None
 
     def get_hash(self):

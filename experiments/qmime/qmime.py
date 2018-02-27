@@ -17,20 +17,22 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 import signal
 import sys
 from PyQt5.QtCore import QCoreApplication, QMimeDatabase
 
 
-def directory_changed(path):
+def directory_changed(path: str):
     print("directory_changed: {}".format(path))
 
 
-def file_changed(path):
+def file_changed(path: str):
     print("file_changed: {}".format(path))
 
 
-def main(argv):
+def main(argv: List[str]):
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
     app = QCoreApplication([])  # noqa: F841

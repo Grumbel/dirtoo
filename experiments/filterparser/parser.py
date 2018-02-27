@@ -17,12 +17,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 import sys
 
-from pyparsing import (QuotedString, ZeroOrMore, Combine, OneOrMore, Regex)
+from pyparsing import (QuotedString, ZeroOrMore, Combine, OneOrMore, Regex, ParserElement)
 
 
-def escape_handler(s, loc, toks):
+def escape_handler(s: str, loc: int, toks: List[str]) -> str:
     if toks[0] == '\\\\':
         return "\\"
     elif toks[0] == '\\\'':
@@ -43,14 +45,14 @@ def escape_handler(s, loc, toks):
         return toks[0][1:]
 
 
-def make_bnf():
+def make_bnf() -> ParserElement:
     escape = Combine(Regex(r'\\.')).setParseAction(escape_handler)
     word = Combine(OneOrMore(escape | Regex(r'[^\s\\]+')))
     command = ZeroOrMore(QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\') | word)
     return command
 
 
-def main(argv):
+def main(argv: List[str]) -> None:
     grammar = make_bnf()
 
     for arg in argv[1:]:

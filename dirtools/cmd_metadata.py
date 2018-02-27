@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 import argparse
 import os
 import signal
@@ -28,7 +30,7 @@ from dirtools.fileview.virtual_filesystem import VirtualFilesystem
 from dirtools.fileview.location import Location
 
 
-def parse_args(args):
+def parse_args(args: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate and show file metadata")
     parser.add_argument("FILE", nargs='+')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
@@ -40,7 +42,7 @@ def parse_args(args):
     return parser.parse_args(args)
 
 
-def main(argv):
+def main(argv: List[str]) -> int:
     args = parse_args(argv[1:])
 
     signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -89,7 +91,7 @@ def main(argv):
     return ret
 
 
-def main_entrypoint():
+def main_entrypoint() -> None:
     exit(main(sys.argv))
 
 
