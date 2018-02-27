@@ -60,73 +60,85 @@ class FileCollection(QObject):
 
     def __init__(self) -> None:
         super().__init__()
-        self.fileinfos: List[FileInfo] = []
+        self._fileinfos: List[FileInfo] = []
+
+    def _get_fileinfo_index(self, location: Location) -> int:
+        for idx, fi in enumerate(self._fileinfos):
+            if fi.location() == location:
+                return idx
+        return None
+
+    def _replace_fileinfo(self, location: Location, fileinfo: FileInfo) -> None:
+        idx = self._get_fileinfo_index(location)
+        self._fileinfos[idx] = fileinfo
 
     def clear(self) -> None:
         logger.debug("FileCollection.clear")
-        self.fileinfos = []
+        self._fileinfos = []
         self.sig_files_set.emit()
 
     def set_fileinfos(self, fileinfos: List[FileInfo]) -> None:
         logger.debug("FileCollection.set_fileinfos")
-        self.fileinfos = fileinfos
+        self._fileinfos = fileinfos
         self.sig_files_set.emit()
 
     def add_fileinfo(self, fi: FileInfo) -> None:
         logger.debug("FileCollection.add_fileinfos: %s", fi)
-        self.fileinfos.append(fi)
+        self._fileinfos.append(fi)
         self.sig_file_added.emit(fi)
 
     def remove_file(self, location: Location) -> None:
         logger.debug("FileCollection.remove_file: %s", location)
-        self.fileinfos = [fi for fi in self.fileinfos if fi.location() == location]
+        self._fileinfos = [fi for fi in self._fileinfos if fi.location() == location]
         self.sig_file_removed.emit(location)
 
     def change_file(self, fileinfo: FileInfo) -> None:
         logger.debug("FileCollection.change_file: %s", fileinfo)
+        self._replace_fileinfo(fileinfo.location(), fileinfo)
         self.sig_file_changed.emit(fileinfo)
 
     def update_file(self, fileinfo: FileInfo) -> None:
         logger.debug("FileCollection.change_file: %s", fileinfo)
+        self._replace_fileinfo(fileinfo.location(), fileinfo)
         self.sig_file_updated.emit(fileinfo)
 
     def get_fileinfos(self) -> List[FileInfo]:
-        return self.fileinfos
+        return self._fileinfos
 
     def get_fileinfo(self, location: Location) -> Optional[FileInfo]:
-        for fi in self.fileinfos:
+        for fi in self._fileinfos:
             if fi.location() == location:
                 return fi
         return None
 
     def size(self) -> int:
-        return len(self.fileinfos)
+        return len(self._fileinfos)
 
     def group(self, grouper: Grouper) -> None:
-        grouper.apply(self.fileinfos)
+        grouper.apply(self._fileinfos)
         self.sig_files_grouped.emit()
 
     def filter(self, filter: Filter) -> None:
-        filter.apply(self.fileinfos)
+        filter.apply(self._fileinfos)
         self.sig_files_filtered.emit()
 
     def sort(self, key, reverse: bool=False) -> None:
         logger.debug("FileCollection.sort")
-        self.fileinfos = sorted(self.fileinfos, key=key)
+        self._fileinfos = sorted(self._fileinfos, key=key)
         if reverse:
-            self.fileinfos = list(reversed(self.fileinfos))
+            self._fileinfos = list(reversed(self._fileinfos))
         logger.debug("FileCollection.sort:done")
         self.sig_files_reordered.emit()
 
     def shuffle(self) -> None:
         logger.debug("FileCollection.sort")
-        random.shuffle(self.fileinfos)
+        random.shuffle(self._fileinfos)
         logger.debug("FileCollection.sort:done")
         self.sig_files_reordered.emit()
 
     def save_as(self, filename: str) -> None:
         with open(filename, "w") as fout:
-            for fi in self.fileinfos:
+            for fi in self._fileinfos:
                 fout.write(fi.abspath())
                 fout.write("\n")
 
