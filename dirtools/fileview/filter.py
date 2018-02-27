@@ -15,7 +15,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Optional
+
 from dirtools.fileview.match_func import (
+    MatchFunc,
     RegexMatchFunc,
     GlobMatchFunc,
     FuzzyMatchFunc,
@@ -37,7 +40,7 @@ class Filter:
         self.match_func = None
 
     def set_match_func(self, match_func) -> None:
-        self.match_func = match_func
+        self.match_func: Optional[MatchFunc] = match_func
 
     def set_regex_pattern(self, pattern, flags=0) -> None:
         self.match_func = RegexMatchFunc(pattern, flags)

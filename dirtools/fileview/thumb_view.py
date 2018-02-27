@@ -88,17 +88,17 @@ class ThumbView(QGraphicsView):
         self.location2item: Dict[Location, ThumbFileItem] = {}
         self.setAcceptDrops(True)
 
-        self.scene = QGraphicsScene()
-        self.setScene(self.scene)
+        self._scene = QGraphicsScene()
+        self.setScene(self._scene)
 
-        self.scene.selectionChanged.connect(self.on_selection_changed)
+        self._scene.selectionChanged.connect(self.on_selection_changed)
 
-        self.style = FileViewStyle()
+        self._style = FileViewStyle()
 
         self.tile_style = TileStyle()
 
-        self.layout: Optional[RootLayout] = None
-        self.layout_builder = LayoutBuilder(self.scene, self.tile_style)
+        self._layout: Optional[RootLayout] = None
+        self._layout_builder = LayoutBuilder(self._scene, self.tile_style)
 
         self.items: List[ThumbFileItem] = []
 
@@ -127,7 +127,7 @@ class ThumbView(QGraphicsView):
             item.prepare()
 
     def on_selection_changed(self) -> None:
-        count = len(self.scene.selectedItems())
+        count = len(self._scene.selectedItems())
         print("{} files selected".format(count))
 
     def cursor_move(self, dx: int, dy: int) -> None:
@@ -145,7 +145,7 @@ class ThumbView(QGraphicsView):
 
         if self.cursor_item is None:
             rect = self.mapToScene(self.rect()).boundingRect()
-            items = [item for item in self.scene.items(rect) if isinstance(item, ThumbFileItem)]
+            items = [item for item in self._scene.items(rect) if isinstance(item, ThumbFileItem)]
             if not items:
                 return
             else:
@@ -161,7 +161,7 @@ class ThumbView(QGraphicsView):
         rect = QRectF(self.cursor_item.tile_rect)
         rect.moveTo(self.cursor_item.pos().x() + (self.cursor_item.tile_rect.width() + 4) * dx,
                     self.cursor_item.pos().y() + (self.cursor_item.tile_rect.height() + 4) * dy)
-        items = [item for item in self.scene.items(rect) if isinstance(item, ThumbFileItem)]
+        items = [item for item in self._scene.items(rect) if isinstance(item, ThumbFileItem)]
         if items:
             self.cursor_item = items[0]
 
@@ -170,7 +170,7 @@ class ThumbView(QGraphicsView):
 
     def keyPressEvent(self, ev) -> None:
         if ev.key() == Qt.Key_Escape:
-            self.scene.clearSelection()
+            self._scene.clearSelection()
             item = self.cursor_item
             self.cursor_item = None
             if item is not None:
@@ -247,20 +247,20 @@ class ThumbView(QGraphicsView):
         item = ThumbFileItem(fileinfo, self.controller, self)
         item.new = True
         self.location2item[fileinfo.location()] = item
-        self.scene.addItem(item)
+        self._scene.addItem(item)
         self.items.append(item)
 
         self.style_item(item)
 
         if self.layout is not None:
-            self.layout.append_item(item)
+            self._layout.append_item(item)
             self.refresh_bounding_rect()
 
     def on_file_removed(self, location: Location) -> None:
         logger.debug("ThumbView.on_file_removed: %s", location)
         item = self.location2item.get(location, None)
         if item is not None:
-            self.scene.removeItem(item)
+            self._scene.removeItem(item)
             del self.location2item[location]
             self.items.remove(item)
             self.layout_items()
@@ -301,8 +301,8 @@ class ThumbView(QGraphicsView):
         self.items.clear()
         self.cursor_item = None
         self.location2item.clear()
-        self.scene.clear()
-        self.layout = None
+        self._scene.clear()
+        self._layout = None
 
     def on_file_collection_set(self) -> None:
         logger.debug("ThumbView.on_file_collection_set")
@@ -313,7 +313,7 @@ class ThumbView(QGraphicsView):
         for fileinfo in fileinfos:
             item = ThumbFileItem(fileinfo, self.controller, self)
             self.location2item[fileinfo.location()] = item
-            self.scene.addItem(item)
+            self._scene.addItem(item)
             self.items.append(item)
 
         self.style_items()
@@ -336,7 +336,7 @@ class ThumbView(QGraphicsView):
             self.resize_timer = None
 
             if self.layout is not None:
-                self.layout.layout(self.viewport().width())
+                self._layout.layout(self.viewport().width())
             self.layout_items()
         else:
             assert False, "timer foobar"
@@ -381,24 +381,24 @@ class ThumbView(QGraphicsView):
         logger.debug("ThumbView._layout_items")
 
         self.setUpdatesEnabled(False)
-        # old_item_index_method = self.scene.itemIndexMethod()
-        # self.scene.setItemIndexMethod(QGraphicsScene.NoIndex)
-        self.layout = self.layout_builder.build_layout(self.items)
+        # old_item_index_method = self._scene.itemIndexMethod()
+        # self._scene.setItemIndexMethod(QGraphicsScene.NoIndex)
+        self._layout = self._layout_builder.build_layout(self.items)
 
-        self.layout.layout(self.viewport().width())
+        self._layout.layout(self.viewport().width())
         self.refresh_bounding_rect()
 
-        # self.scene.setItemIndexMethod(old_item_index_method)
+        # self._scene.setItemIndexMethod(old_item_index_method)
         self.setUpdatesEnabled(True)
 
         logger.debug("ThumbView.layout_items: done")
 
     def refresh_bounding_rect(self) -> None:
-        if self.layout is None:
+        if self._layout is None:
             return
 
         def get_bounding_rect() -> QRectF:
-            rect = self.layout.get_bounding_rect()
+            rect = self._layout.get_bounding_rect()
 
             if True:  # self.layout_style == LayoutStyle.ROWS:
                 # center alignment

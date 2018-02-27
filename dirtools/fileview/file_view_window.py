@@ -133,7 +133,7 @@ class FileViewWindow(QMainWindow):
         shortcut.setContext(Qt.WindowShortcut)
         shortcut.activated.connect(
             lambda: self.thumb_view.ensureVisible(
-                0, self.thumb_view.layout.get_bounding_rect().height(), 1, 1))
+                0, self.thumb_view._layout.get_bounding_rect().height(), 1, 1))
 
         shortcut = QShortcut(Qt.Key_PageUp, self)
         shortcut.setContext(Qt.WindowShortcut)

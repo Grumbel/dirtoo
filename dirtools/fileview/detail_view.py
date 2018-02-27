@@ -38,8 +38,8 @@ class DetailView(QGraphicsView):
         self.file_items: List[DetailFileItem] = []
         self.file_collection = None
 
-        self.scene = QGraphicsScene()
-        self.setScene(self.scene)
+        self._scene = QGraphicsScene()
+        self.setScene(self._scene)
 
     def set_file_collection(self, file_collection):
         self.file_collection = file_collection
@@ -51,12 +51,12 @@ class DetailView(QGraphicsView):
     def on_file_collection_set(self):
         fileinfos = self.file_collection.get_fileinfos()
 
-        self.scene.clear()
+        self._scene.clear()
         self.file_items = [DetailFileItem(fileinfo, self.controller)
                            for fileinfo in fileinfos
                            if not fileinfo.is_excluded]
         for item in self.file_items:
-            self.scene.addItem(item)
+            self._scene.addItem(item)
         self.layout_items()
 
     def layout_items(self):
@@ -80,9 +80,9 @@ class DetailView(QGraphicsView):
         bounding_rect = QRectF(0,
                                0,
                                max(self.viewport().size().width(),
-                                   self.scene.itemsBoundingRect().width()),
+                                   self._scene.itemsBoundingRect().width()),
                                max(self.viewport().size().height(),
-                                   self.scene.itemsBoundingRect().height()))
+                                   self._scene.itemsBoundingRect().height()))
         self.setSceneRect(bounding_rect)
 
     def resizeEvent(self, ev):

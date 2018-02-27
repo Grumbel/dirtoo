@@ -28,9 +28,9 @@ from dirtools.fileview.thumb_file_item import ThumbFileItem
 class LayoutBuilder:
 
     def __init__(self, scene, style) -> None:
-        self.scene = scene
-        self.style = style
-        self.show_filtered = False
+        self._scene = scene
+        self._style = style
+        self._show_filtered = False
 
     def _group_items(self, items):
         groups: Dict[Hashable, List[FileInfo]] = {}
@@ -41,21 +41,21 @@ class LayoutBuilder:
         return groups
 
     def _build_group_title(self, title: str) -> ItemLayout:
-        text_item = self.scene.addText(title, QFont("Verdana", 12))
+        text_item = self._scene.addText(title, QFont("Verdana", 12))
         group_title = ItemLayout()
         group_title.set_item(text_item)
         return group_title
 
     def _build_tile_grid(self, items: List[QGraphicsItem]) -> TileLayout:
-        tile_layout = TileLayout(self.style)
+        tile_layout = TileLayout(self._style)
         tile_layout.set_items(items)
         return tile_layout
 
     def cleanup(self):
         # ThumbFileItem's are recycled between layouts
-        for item in self.scene.items():
+        for item in self._scene.items():
             if not isinstance(item, ThumbFileItem):
-                self.scene.removeItem(item)
+                self._scene.removeItem(item)
 
     def build_layout(self, items: List[Any]) -> RootLayout:
         self.cleanup()
@@ -79,7 +79,7 @@ class LayoutBuilder:
 
         grid = None
         for idx, (group, items) in enumerate(sorted_groups):
-            if self.show_filtered:
+            if self._show_filtered:
                 visible_items = [item for item in items if not item.fileinfo.is_hidden]
             else:
                 visible_items = [item for item in items if item.fileinfo.is_visible]
@@ -101,13 +101,13 @@ class LayoutBuilder:
 
         if len(sorted_groups) <= 1:
             if grid is None:
-                append_layout = TileLayout(self.style)
+                append_layout = TileLayout(self._style)
                 hbox.add(append_layout)
             else:
                 append_layout = grid
         else:
             hbox.add(self._build_group_title("Incoming"))
-            append_layout = TileLayout(self.style)
+            append_layout = TileLayout(self._style)
             hbox.add(append_layout)
 
         root = RootLayout()

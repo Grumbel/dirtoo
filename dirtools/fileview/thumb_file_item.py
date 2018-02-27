@@ -269,7 +269,7 @@ class ThumbFileItem(FileItem):
         else:
             assert False, "timer foobar"
 
-    def _get_thumbnail(self, flavor: Optional[str]=None) -> None:
+    def _get_thumbnail(self, flavor: Optional[str]=None) -> Thumbnail:
         if flavor is None:
             flavor = self.thumb_view.flavor
 
@@ -288,7 +288,7 @@ class ThumbFileItemRenderer:
         self.icon = item.icon
         self.thumbnail = item._get_thumbnail()
         self.level_of_detail = item.thumb_view.level_of_detail
-        self.style = item.thumb_view.style
+        self.style = item.thumb_view._style
         self.column_style = False  # self.thumb_view.column_style
         self.tile_rect = item.tile_rect
         self.thumbnail_rect = QRect(0, 0, item.tile_rect.width(), item.tile_rect.width())
