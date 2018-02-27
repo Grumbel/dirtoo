@@ -79,19 +79,31 @@ class FileCollection(QObject):
         self.sig_file_added.emit(fi)
 
     def remove_file(self, location: Location) -> None:
-        logger.debug("FileCollection.remove_file: %s", location)
-        self._fileinfos.remove(location)
-        self.sig_file_removed.emit(location)
+        try:
+            self._fileinfos.remove(location)
+        except KeyError:
+            logger.debug("FileCollection.remove_file: %s", location)
+        else:
+            logger.error("FileCollection.remove_file: %s: KeyError", location)
+            self.sig_file_removed.emit(location)
 
     def change_file(self, fileinfo: FileInfo) -> None:
-        logger.debug("FileCollection.change_file: %s", fileinfo)
-        self._fileinfos.replace(fileinfo.location(), fileinfo)
-        self.sig_file_changed.emit(fileinfo)
+        try:
+            self._fileinfos.replace(fileinfo.location(), fileinfo)
+        except KeyError:
+            logger.error("FileCollection.remove_file: %s: KeyError", fileinfo)
+        else:
+            logger.debug("FileCollection.change_file: %s", fileinfo)
+            self.sig_file_changed.emit(fileinfo)
 
     def update_file(self, fileinfo: FileInfo) -> None:
-        logger.debug("FileCollection.change_file: %s", fileinfo)
-        self._fileinfos.replace(fileinfo.location(), fileinfo)
-        self.sig_file_updated.emit(fileinfo)
+        try:
+            self._fileinfos.replace(fileinfo.location(), fileinfo)
+        except KeyError:
+            logger.error("FileCollection.update_file: %s", fileinfo)
+        else:
+            logger.debug("FileCollection.update_file: %s: KeyError", fileinfo)
+            self.sig_file_updated.emit(fileinfo)
 
     def get_fileinfos(self) -> Iterator[FileInfo]:
         return cast(Iterator[FileInfo], iter(self._fileinfos))
