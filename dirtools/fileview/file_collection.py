@@ -127,7 +127,7 @@ class FileCollection(QObject):
     def save_as(self, filename: str) -> None:
         with open(filename, "w") as fout:
             for fi in self.fileinfos:
-                fout.write(fi.abspath)
+                fout.write(fi.abspath())
                 fout.write("\n")
 
 

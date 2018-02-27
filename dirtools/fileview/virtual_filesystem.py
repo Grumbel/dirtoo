@@ -81,12 +81,12 @@ class VirtualFilesystem:
 
     def get_stdio_name(self, location: Location) -> str:
         if not location.has_payload():
-            return cast(str, location.get_path())
+            return location.get_path()
         else:
             if location._payloads[-1].path:
                 parent = location.parent()
                 outdir = self._make_extractor_outdir(parent)
-                return cast(str, os.path.join(outdir, location._payloads[-1].path))
+                return os.path.join(outdir, location._payloads[-1].path)
             else:
                 outdir = self._make_extractor_outdir(location)
                 return outdir

@@ -22,7 +22,7 @@ from datetime import datetime
 from enum import Enum
 
 from PyQt5.QtCore import Qt, QRectF, QRect, QMargins
-from PyQt5.QtGui import QColor, QPainter, QPainterPath, QPixmap
+from PyQt5.QtGui import QColor, QPainter, QPainterPath, QPixmap, QIcon
 
 import bytefmt
 
@@ -148,7 +148,7 @@ class ThumbFileItem(FileItem):
     def set_fileinfo(self, fileinfo: FileInfo):
         self.fileinfo = fileinfo
 
-    def set_tile_size(self, tile_width, tile_height):
+    def set_tile_size(self, tile_width: int, tile_height: int) -> None:
         # the size of the base tile
         self.tile_rect = QRect(0, 0, tile_width, tile_height)
 
@@ -166,7 +166,7 @@ class ThumbFileItem(FileItem):
         self.qpainter_path = QPainterPath()
         self.qpainter_path.addRect(0, 0, tile_width, tile_height)
 
-    def prepare(self):
+    def prepare(self) -> None:
         if self.metadata is None:
             self.controller.request_metadata(self.fileinfo)
             self.metadata = {}
@@ -175,7 +175,7 @@ class ThumbFileItem(FileItem):
         if thumbnail.status == ThumbnailStatus.INITIAL:
             thumbnail.request()
 
-    def paint(self, painter, option, widget):
+    def paint(self, painter, option, widget) -> None:
         # logger.debug("ThumbFileItem.paint: %s", self.fileinfo)
 
         self.prepare()
@@ -228,21 +228,21 @@ class ThumbFileItem(FileItem):
         self.controller.show_current_filename("")
         self.update()
 
-    def set_thumbnail_pixmap(self, pixmap, flavor):
+    def set_thumbnail_pixmap(self, pixmap, flavor) -> None:
         thumbnail = self._get_thumbnail(flavor)
         thumbnail.set_thumbnail_pixmap(pixmap)
         self.update()
 
-    def set_icon(self, icon):
+    def set_icon(self, icon) -> None:
         self.icon = icon
 
-    def boundingRect(self):
+    def boundingRect(self) -> QRectF:
         return QRectF(self.bounding_rect)
 
-    def shape(self):
+    def shape(self) -> QPainterPath:
         return self.qpainter_path
 
-    def reload(self):
+    def reload(self) -> None:
         self.normal_thumbnail = Thumbnail("normal", self)
         self.large_thumbnail = Thumbnail("large", self)
         self.update()
@@ -250,7 +250,7 @@ class ThumbFileItem(FileItem):
     def reload_thumbnail(self):
         self.reload()
 
-    def on_click_animation(self):
+    def on_click_animation(self) -> None:
         if self.animation_timer is not None:
             self.killTimer(self.animation_timer)
 
@@ -258,7 +258,7 @@ class ThumbFileItem(FileItem):
         self.animation_count = 10
         self.update()
 
-    def timerEvent(self, ev):
+    def timerEvent(self, ev) -> None:
         # logger.debug("ThumbFileItem.timerEvent: %s", self.fileinfo)
         if ev.timerId() == self.animation_timer:
             self.animation_count -= 1
@@ -269,7 +269,7 @@ class ThumbFileItem(FileItem):
         else:
             assert False, "timer foobar"
 
-    def _get_thumbnail(self, flavor=None):
+    def _get_thumbnail(self, flavor: Optional[str]=None) -> None:
         if flavor is None:
             flavor = self.thumb_view.flavor
 
@@ -300,7 +300,7 @@ class ThumbFileItemRenderer:
 
         self.cache_pixmap = None
 
-    def render(self, painter):
+    def render(self, painter: QPainter) -> None:
         if True:
             self.paint(painter)
         else:
@@ -314,7 +314,7 @@ class ThumbFileItemRenderer:
             painter.drawPixmap(self.tile_rect.x(), self.tile_rect.y(),
                                self.cache_pixmap)
 
-    def paint(self, painter):
+    def paint(self, painter: QPainter) -> None:
         self.paint_text_items(painter)
         self.paint_thumbnail(painter)
 
@@ -347,7 +347,7 @@ class ThumbFileItemRenderer:
             painter.setBrush(QColor(255, 255, 255, 96))
             painter.drawRect(self.tile_rect)
 
-    def paint_text_items(self, painter):
+    def paint_text_items(self, painter: QPainter) -> None:
         # text items
         if self.level_of_detail > 0:
             self.paint_text_item(painter, 0, self.fileinfo.basename())
@@ -361,7 +361,7 @@ class ThumbFileItemRenderer:
             painter.setPen(QColor(96, 96, 96))
             self.paint_text_item(painter, 2, dt.strftime("%F %T"))
 
-    def paint_text_item(self, painter, row, text):
+    def paint_text_item(self, painter: QPainter, row: int, text: str) -> None:
         font = self.style.font
         fm = self.style.fm
 
@@ -391,7 +391,7 @@ class ThumbFileItemRenderer:
                              self.tile_rect.height() - 2 + 16 * row - 16 * k + 14,
                              text)
 
-    def paint_thumbnail(self, painter):
+    def paint_thumbnail(self, painter: QPainter) -> None:
 
         if self.column_style:
             self.paint_icon(painter, self.icon)
@@ -424,7 +424,7 @@ class ThumbFileItemRenderer:
                                             self.thumbnail_rect.width(), self.thumbnail_rect.width())
                 painter.drawPixmap(self.thumbnail_rect, pixmap, srcrect)
 
-    def paint_metadata(self, painter):
+    def paint_metadata(self, painter: QPainter) -> None:
         metadata = self.fileinfo.metadata()
 
         font = self.style.font
@@ -500,7 +500,7 @@ class ThumbFileItemRenderer:
                                self.style.shared_pixmaps.image)
             painter.setOpacity(1.0)
 
-    def paint_overlay(self, painter):
+    def paint_overlay(self, painter: QPainter) -> None:
         if self.column_style:
             return
 
@@ -522,11 +522,11 @@ class ThumbFileItemRenderer:
         elif thumbnail.status == ThumbnailStatus.THUMBNAIL_ERROR:
             self.paint_icon(painter, self.style.shared_icons.image_error)
 
-    def paint_tiny_icon(self, painter, icon):
+    def paint_tiny_icon(self, painter: QPainter, icon: QIcon) -> None:
         painter.setOpacity(0.5)
         icon.paint(painter, QRect(self.tile_rect.width() - 48, 0, 48, 48))
 
-    def paint_icon(self, painter, icon):
+    def paint_icon(self, painter: QPainter, icon: QIcon) -> None:
         if not self.column_style:
             rect = make_unscaled_rect(self.tile_rect.width() * 3 // 4, self.tile_rect.width() * 3 // 4,
                                       self.tile_rect.width(), self.tile_rect.width())

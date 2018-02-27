@@ -29,16 +29,16 @@ from dirtools.find.util import replace_item
 
 class Action:
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def file(self, root, filename):
+    def file(self, root: str, filename: str) -> None:
         pass
 
-    def directory(self, root, filename):
+    def directory(self, root: str, filename: str) -> None:
         pass
 
-    def finish(self):
+    def finish(self) -> None:
         pass
 
 

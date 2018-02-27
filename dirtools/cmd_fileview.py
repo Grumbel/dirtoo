@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 import os
 import sys
 import argparse
@@ -30,7 +32,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def parse_args(args):
+def parse_args(args: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Display files graphically")
     parser.add_argument("FILE", nargs='*')
     parser.add_argument("-t", "--timespace", action='store_true',
@@ -48,7 +50,7 @@ def parse_args(args):
     return parser.parse_args(args)
 
 
-def main(argv):
+def main(argv: List[str]) -> None:
     args = parse_args(argv[1:])
 
     if args.debug:
@@ -79,7 +81,7 @@ def main(argv):
     sys.exit(app.run())
 
 
-def main_entrypoint():
+def main_entrypoint() -> None:
     main(sys.argv)
 
 

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import Dict, List, cast
 
 import argparse
 import os
@@ -54,7 +54,7 @@ def main(argv: List[str]) -> int:
 
     num_requests = 0
 
-    def on_metadata_ready(filename, metadata):
+    def on_metadata_ready(filename: str, metadata: Dict) -> None:
         nonlocal num_requests, app
         print(filename)
         for k, v in metadata.items():
@@ -66,7 +66,7 @@ def main(argv: List[str]) -> int:
 
     metadata_collector.sig_metadata_ready.connect(on_metadata_ready)
 
-    def request(filename):
+    def request(filename: str) -> None:
         nonlocal num_requests
         metadata_collector.request_metadata(Location.from_path(filename))
         num_requests += 1
@@ -81,7 +81,7 @@ def main(argv: List[str]) -> int:
         else:
             request(filename)
 
-    ret = app.exec()
+    ret = cast(int, app.exec())
 
     metadata_collector.close()
     vfs.close()

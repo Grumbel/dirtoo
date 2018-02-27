@@ -34,7 +34,7 @@ class Menu(QMenu):
 
         self._middle_pressed: bool = False
 
-    def mouseReleaseEvent(self, ev):
+    def mouseReleaseEvent(self, ev) -> None:
         if ev.button() == Qt.MiddleButton:
             self._middle_pressed = True
 
@@ -50,7 +50,7 @@ class Menu(QMenu):
                         left_func: Callable[[], None],
                         middle_func: Callable[[], None]) -> QAction:
 
-        def callback(menu=self):
+        def callback(menu=self) -> None:
             if menu.middle_is_pressed():
                 middle_func()
             else:

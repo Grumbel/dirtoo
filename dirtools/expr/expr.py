@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Dict, Callable
+from typing import Dict, List, Callable
 
 import operator
 
@@ -108,11 +108,11 @@ class Context:
 
 class Function:
 
-    def __init__(self, s, loc, toks):
+    def __init__(self, s: str, loc: int, toks: List[str]) -> None:
         self.name = toks[0]
         self.args = toks[1:]
 
-    def eval(self, ctx):
+    def eval(self, ctx: Context) -> None:
         return ctx.get_function(self.name)(*[arg.eval(ctx) for arg in self.args])
 
     def __repr__(self):

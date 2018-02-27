@@ -37,11 +37,11 @@ class Sorter:
         self.reverse = rev
         self.controller.apply_sort()
 
-    def set_key_func(self, key_func: Callable) -> None:
+    def set_key_func(self, key_func: Callable[[FileInfo], object]) -> None:
         self.key_func = key_func
         self.controller.apply_sort()
 
-    def get_key_func(self) -> None:
+    def get_key_func(self) -> Callable[[FileInfo], object]:
         if self.directories_first:
             return lambda fileinfo: (not fileinfo.isdir(), self.key_func(fileinfo))
         else:

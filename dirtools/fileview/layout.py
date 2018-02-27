@@ -21,41 +21,40 @@ from enum import Enum
 from PyQt5.QtCore import QRectF
 from PyQt5.QtWidgets import QGraphicsItem
 
-from dirtools.fileview.file_item import FileItem
 from dirtools.fileview.profiler import profile
 
 
 class Layout:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.parent: Optional[Layout] = None
 
-        self.x = 0
-        self.y = 0
+        self.x: int = 0
+        self.y: int = 0
 
-        self.width = 0
-        self.height = 0
+        self.width: int = 0
+        self.height: int = 0
 
-    def layout(self, width):
+    def layout(self, width: int):
         self.width = width
 
-    def set_pos(self, x, y):
+    def set_pos(self, x: int, y: int):
         self.x = x
         self.y = y
 
-    def get_width(self):
+    def get_width(self) -> int:
         return self.width
 
-    def get_height(self):
+    def get_height(self) -> int:
         return self.height
 
 
 class VSpacer(Layout):
 
-    def __init__(self, height):
+    def __init__(self, height: int):
         super().__init__()
 
-        self.height = height
+        self.height: int = height
 
 
 class RootLayout(Layout):
@@ -63,7 +62,7 @@ class RootLayout(Layout):
     actual root layout and a pointer to the layout that will take newly
     arriving items."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.root: Optional[Layout] = None
         self.append_layout: TileLayout = None
@@ -76,13 +75,13 @@ class RootLayout(Layout):
     def set_append_layout(self, group: 'TileLayout') -> None:
         self.append_layout = group
 
-    def layout(self, viewport_width) -> None:
+    def layout(self, viewport_width: int) -> None:
         super().layout(viewport_width)
 
         self.root.set_pos(0, 0)
         self.root.layout(viewport_width)
 
-    def get_bounding_rect(self):
+    def get_bounding_rect(self) -> QRectF:
         return self.root.get_bounding_rect()
 
     def append_item(self, item) -> None:
@@ -101,7 +100,7 @@ class HBoxLayout(Layout):
         self.children.append(child)
         child.parent = self
 
-    def layout(self, viewport_width: int):
+    def layout(self, viewport_width: int) -> None:
         super().layout(viewport_width)
 
         y = 0
@@ -112,10 +111,10 @@ class HBoxLayout(Layout):
 
         self.height = y
 
-    def resize(self, width, height):
+    def resize(self, width: int, height: int) -> None:
         self.layout(width)
 
-    def get_bounding_rect(self):
+    def get_bounding_rect(self) -> QRectF:
         return QRectF(self.x, self.y, self.width, self.height)
 
 
@@ -128,16 +127,16 @@ class ItemLayout(Layout):
 
         self.item: Optional[QGraphicsItem] = None
 
-    def set_item(self, item: QGraphicsItem):
+    def set_item(self, item: QGraphicsItem) -> None:
         self.item = item
 
-    def layout(self, viewport_width):
+    def layout(self, viewport_width: int) -> None:
         super().layout(viewport_width)
 
         if self.item is not None:
             self.height = self.item.boundingRect().height()
 
-    def set_pos(self, x, y):
+    def set_pos(self, x: int, y: int) -> None:
         super().set_pos(x, y)
         if self.item is not None:
             self.item.setPos(x, y)
@@ -150,7 +149,7 @@ class TileStyle:
         ROWS = 0
         COLUMNS = 1
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.padding_x = 16
         self.padding_y = 16
 
@@ -162,29 +161,29 @@ class TileStyle:
 
         self.arrangement = TileStyle.Arrangement.ROWS
 
-    def set_arrangement(self, arrangement):
+    def set_arrangement(self, arrangement) -> None:
         self.arrangement = arrangement
 
-    def set_tile_size(self, tile_w, tile_h):
+    def set_tile_size(self, tile_w: int, tile_h: int) -> None:
         self.tile_width = tile_w
         self.tile_height = tile_h
 
-    def set_padding(self, x, y):
+    def set_padding(self, x: int, y: int) -> None:
         self.padding_x = x
         self.padding_y = y
 
-    def set_spacing(self, x, y):
+    def set_spacing(self, x: int, y: int) -> None:
         self.spacing_x = x
         self.spacing_y = y
 
 
 class TileLayout(Layout):
 
-    def __init__(self, style):
+    def __init__(self, style: TileStyle) -> None:
         super().__init__()
 
         self.style = style
-        self.items: List[FileItem] = []
+        self.items: List[QGraphicsItem] = []
 
         self.rows = 0
         self.columns = 0
@@ -194,10 +193,10 @@ class TileLayout(Layout):
 
         self.center_x_off = 0
 
-    def set_items(self, items):
+    def set_items(self, items: List[QGraphicsItem]) -> None:
         self.items = items
 
-    def append_item(self, item):
+    def append_item(self, item: QGraphicsItem) -> None:
         self.items.append(item)
 
         col = self.next_col
@@ -227,25 +226,25 @@ class TileLayout(Layout):
         self.next_row = row
         self.height = bottom_y
 
-    def _calc_num_columns(self, viewport_width):
+    def _calc_num_columns(self, viewport_width: int) -> int:
         return max(1,
                    (viewport_width - 2 * self.style.padding_x + self.style.spacing_x) //
                    (self.style.tile_width + self.style.spacing_x))
 
-    def _calc_num_rows(self, viewport_height):
+    def _calc_num_rows(self, viewport_height: int) -> int:
         return max(1,
                    (viewport_height - 2 * self.style.padding_y + self.style.spacing_y) //
                    (self.style.tile_height + self.style.spacing_y))
 
-    def _calc_grid_width(self, columns):
+    def _calc_grid_width(self, columns: int) -> int:
         return ((columns * (self.style.tile_width + self.style.spacing_x)) -
                 self.style.spacing_x + 2 * self.style.padding_x)
 
-    def set_pos(self, x, y):
+    def set_pos(self, x: int, y: int) -> None:
         super().set_pos(x, y)
 
     @profile
-    def layout(self, viewport_width):
+    def layout(self, viewport_width: int) -> None:
         super().layout(viewport_width)
 
         new_columns = self._calc_num_columns(viewport_width)

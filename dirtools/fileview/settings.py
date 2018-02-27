@@ -23,7 +23,7 @@ class Settings(QObject):
     def __init__(self) -> None:
         super().__init__()
 
-    def init(self, filename: str):
+    def init(self, filename: str) -> None:
         self.settings = QSettings(filename, QSettings.IniFormat)
 
     def value(self, name: str, default=None, type=None) -> object:

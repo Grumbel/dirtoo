@@ -17,6 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Callable
+
 import signal
 import sys
 
@@ -26,7 +28,7 @@ from PyQt5.QtCore import (QCoreApplication, QObject, pyqtSignal,
 
 class CallableWrap:
 
-    def __init__(self, func):
+    def __init__(self, func: Callable):
         self.func = func
 
     def __call__(self, *args):

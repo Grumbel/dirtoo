@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 import signal
 import argparse
 import sys
@@ -27,7 +29,7 @@ from dirtools.dbus_thumbnailer import DBusThumbnailer, DBusThumbnailerListener
 from dirtools.dbus_thumbnail_cache import DBusThumbnailCache
 
 
-def parse_args(args):
+def parse_args(args: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Make thumbnails for files")
     parser.add_argument("FILE", nargs='*')
     parser.add_argument('-f', '--flavor', metavar="FLAVOR", type=str, default="all",
@@ -53,27 +55,27 @@ def parse_args(args):
 
 class ThumbnailerProgressListener(DBusThumbnailerListener):
 
-    def __init__(self, app, verbose):
+    def __init__(self, app, verbose: bool) -> None:
         self.app = app
         self.verbose = verbose
 
-    def started(self, handle):
+    def started(self, handle) -> None:
         # print("[Started]", handle)
         pass
 
-    def ready(self, handle, urls, flavor):
+    def ready(self, handle, urls, flavor) -> None:
         if self.verbose:
             for url in urls:
                 print(url, "->", DBusThumbnailer.thumbnail_from_url(url, flavor))
 
-    def error(self, handle, failed_uris, error_code, message):
+    def error(self, handle, failed_uris, error_code, message) -> None:
         for uri in failed_uris:
             print("[Error {}] {}: {}".format(error_code, uri, message), file=sys.stderr)
 
-    def finished(self, handle):
+    def finished(self, handle) -> None:
         pass
 
-    def idle(self):
+    def idle(self) -> None:
         self.app.quit()
 
 

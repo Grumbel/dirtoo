@@ -24,15 +24,15 @@ import sys
 from PyQt5.QtCore import QCoreApplication, QMimeDatabase
 
 
-def directory_changed(path: str):
+def directory_changed(path: str) -> None:
     print("directory_changed: {}".format(path))
 
 
-def file_changed(path: str):
+def file_changed(path: str) -> None:
     print("file_changed: {}".format(path))
 
 
-def main(argv: List[str]):
+def main(argv: List[str]) -> None:
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
     app = QCoreApplication([])  # noqa: F841

@@ -27,7 +27,7 @@ from dirtools.fileview.thumb_file_item import ThumbFileItem
 
 class LayoutBuilder:
 
-    def __init__(self, scene, style):
+    def __init__(self, scene, style) -> None:
         self.scene = scene
         self.style = style
         self.show_filtered = False

@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Optional
+
 import logging
 import traceback
 import os
@@ -47,7 +49,7 @@ class INotifyQt(QObject):
 
     sig_event = pyqtSignal(inotify_simple.Event)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QObject]=None) -> None:
         super().__init__(parent)
 
         self.inotify = INotify()
@@ -55,10 +57,10 @@ class INotifyQt(QObject):
         self.qnotifier.activated.connect(self._on_activated)
         self.wd = None
 
-    def add_watch(self, path, flags=DEFAULT_FLAGS):
+    def add_watch(self, path: str, flags=DEFAULT_FLAGS) -> None:
         self.wd = self.inotify.add_watch(path, flags)
 
-    def _on_activated(self, fd) -> None:
+    def _on_activated(self, fd: int) -> None:
         assert fd == self.inotify.fd
 
         for ev in self.inotify.read():

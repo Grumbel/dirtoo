@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Dict, Any, Optional, Set, cast
+from typing import List, Dict, Optional, Set, cast
 
 import logging
 import os
@@ -486,7 +486,7 @@ class Controller(QObject):
     def request_metadata(self, fileinfo: FileInfo) -> None:
         self.app.metadata_collector.request_metadata(fileinfo.location())
 
-    def receive_metadata(self, location: Location, metadata: Dict[str, Any]) -> None:
+    def receive_metadata(self, location: Location, metadata: Dict[str, object]) -> None:
         logger.debug("Controller.receive_metadata: %s %s", location, metadata)
         fileinfo = self.file_collection.get_fileinfo(location)
         if fileinfo is None:
