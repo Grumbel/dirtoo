@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Callable
+from typing import Callable, Any
 
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.file_collection import FileCollection
@@ -27,7 +27,7 @@ class Sorter:
         self.controller = controller
         self.directories_first = True
         self.reverse = False
-        self.key_func = FileInfo.basename
+        self.key_func: Callable[[FileInfo], Any] = FileInfo.basename
 
     def set_directories_first(self, v: bool) -> None:
         self.directories_first = v
@@ -37,11 +37,11 @@ class Sorter:
         self.reverse = rev
         self.controller.apply_sort()
 
-    def set_key_func(self, key_func: Callable[[FileInfo], object]) -> None:
+    def set_key_func(self, key_func: Callable[[FileInfo], Any]) -> None:
         self.key_func = key_func
         self.controller.apply_sort()
 
-    def get_key_func(self) -> Callable[[FileInfo], object]:
+    def get_key_func(self) -> Callable[[FileInfo], Any]:
         if self.directories_first:
             return lambda fileinfo: (not fileinfo.isdir(), self.key_func(fileinfo))
         else:

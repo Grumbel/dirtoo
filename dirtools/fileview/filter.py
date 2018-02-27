@@ -37,10 +37,10 @@ class Filter:
     def __init__(self) -> None:
         self.show_hidden = False
         self.show_inaccessible = True
-        self.match_func = None
+        self.match_func: Optional[MatchFunc] = None
 
-    def set_match_func(self, match_func) -> None:
-        self.match_func: Optional[MatchFunc] = match_func
+    def set_match_func(self, match_func: Optional[MatchFunc]) -> None:
+        self.match_func = match_func
 
     def set_regex_pattern(self, pattern, flags=0) -> None:
         self.match_func = RegexMatchFunc(pattern, flags)

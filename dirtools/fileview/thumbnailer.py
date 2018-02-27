@@ -29,7 +29,7 @@ from dirtools.fileview.location import Location
 logger = logging.getLogger(__name__)
 
 
-ThumbnailCallback = Callable[[str, Optional[str], QPixmap, int, str], None]
+ThumbnailCallback = Callable[[Location, Optional[str], QPixmap, int, str], None]
 
 
 class CallableWrapper:

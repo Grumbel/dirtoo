@@ -36,8 +36,7 @@ class Executor:
         if working_directory is None:
             self.launch_exo_terminal()
         else:
-            # FIXME: Ignoring payload here
-            self.launch_exo_terminal(working_directory.path)
+            self.launch_exo_terminal(self.app.vfs.get_stdio_name(working_directory))
 
     def launch_exo_terminal(self, working_directory: Optional[str]=None) -> None:
         argv = ["exo-open", "--launch", "TerminalEmulator"]

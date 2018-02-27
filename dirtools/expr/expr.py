@@ -17,9 +17,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Dict, List, Callable
+from typing import Dict, List, Callable, Any
 
 import operator
+from abc import ABC, abstractmethod
 
 
 # FIXME: these logical and/or operators don't have short circuit
@@ -106,20 +107,29 @@ class Context:
         return self._variables[name]
 
 
-class Function:
+class Expr(ABC):
 
-    def __init__(self, s: str, loc: int, toks: List[str]) -> None:
+    @abstractmethod
+    def eval(self, ctx: Context) -> Any:
+        pass
+
+
+class Function(Expr):
+
+    def __init__(self, s: str, loc: int, toks: List[Expr]) -> None:
         self.name = toks[0]
         self.args = toks[1:]
 
-    def eval(self, ctx: Context) -> None:
-        return ctx.get_function(self.name)(*[arg.eval(ctx) for arg in self.args])
+    def eval(self, ctx: Context) -> Any:
+        func = ctx.get_function(self.name)
+        args = [arg.eval(ctx) for arg in self.args]
+        return func(*args)
 
     def __repr__(self):
         return "Function({}, {})".format(self.name, ", ".join([repr(x) for x in self.args]))
 
 
-class Number:
+class Number(Expr):
 
     def __init__(self, s, loc, toks):
         self.value = toks[0]
@@ -138,7 +148,7 @@ class Number:
             return "{}[{}]".format(self.value, self.unit)
 
 
-class String:
+class String(Expr):
 
     def __init__(self, s, loc, toks):
         self.value = toks[0]
@@ -150,7 +160,7 @@ class String:
         return repr(self.value)
 
 
-class Variable:
+class Variable(Expr):
 
     def __init__(self, s, loc, toks):
         self.name = toks[0]
@@ -162,7 +172,7 @@ class Variable:
         return "Variable({})".format(self.name)
 
 
-class Operator:
+class Operator(Expr):
 
     def __init__(self, op, lhs, rhs):
         self.op = op
@@ -176,7 +186,7 @@ class Operator:
         return "Operator({}, {}, {})".format(self.op, self.lhs, self.rhs)
 
 
-class UnaryOperator:
+class UnaryOperator(Expr):
 
     def __init__(self, op, lhs):
         self.op = op

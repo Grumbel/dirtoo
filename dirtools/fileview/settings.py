@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Any
+
 from PyQt5.QtCore import QObject, QSettings
 
 
@@ -26,14 +28,14 @@ class Settings(QObject):
     def init(self, filename: str) -> None:
         self.settings = QSettings(filename, QSettings.IniFormat)
 
-    def value(self, name: str, default=None, type=None) -> object:
+    def value(self, name: str, default=None, type=None) -> Any:
         if type is None:
             return self.settings.value(name, default)
         else:
             return self.settings.value(name, default, type)
 
-    def set_value(self, name: str, value: object) -> object:
-        return self.settings.setValue(name, value)
+    def set_value(self, name: str, value: object) -> None:
+        self.settings.setValue(name, value)
 
     def load(self) -> None:
         pass

@@ -175,7 +175,7 @@ class Controller(QObject):
 
     def go_home(self) -> None:
         home = os.path.expanduser("~")
-        self.set_location(home)
+        self.set_location(Location.from_path(home))
 
     def set_location(self, location: Location, track_history=True) -> None:
         self.close()
@@ -230,10 +230,8 @@ class Controller(QObject):
         self.apply_filter()
         self.apply_grouper()
 
-    def set_filelist_stream(self, stream: FileListStream, location: Optional[str]=None) -> None:
-        if location is None:
-            self.window.set_file_list()
-        self.location = location
+    def set_filelist_stream(self, stream: FileListStream) -> None:
+        self.window.set_file_list()
 
         self.window.show_loading()
 
@@ -373,23 +371,30 @@ class Controller(QObject):
                 location._payloads.append(Payload("archive", ""))
                 return location
 
+            def left_func(location=item.fileinfo.location()):
+                self.set_location(make_extract(location))
+
+            def middle_func(location=item.fileinfo.location()):
+                self.new_controller().set_location(make_extract(location))
+
             menu.addDoubleAction(
                 QIcon.fromTheme("package-x-generic"),
                 "Open Archive",
-                lambda location=item.fileinfo.location():
-                self.set_location(make_extract(location)),
-                lambda location=item.fileinfo.location():
-                self.new_controller().set_location(make_extract(location)))
+                left_func, middle_func)
             menu.addSeparator()
 
         elif item.fileinfo.isdir():
+
+            def left_func(location=item.fileinfo.location()):
+                self.set_location(location)
+
+            def middle_func(location=item.fileinfo.location()):
+                self.new_controller().set_location(location)
+
             menu.addDoubleAction(
                 QIcon.fromTheme("folder"),
                 "Open Folder",
-                lambda location=item.fileinfo.location():
-                self.set_location(location),
-                lambda location=item.fileinfo.location():
-                self.new_controller().set_location(location))
+                left_func, middle_func)
             menu.addSeparator()
 
         files: List[Location] = []

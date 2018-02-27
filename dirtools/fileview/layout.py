@@ -48,10 +48,13 @@ class Layout:
     def get_height(self) -> int:
         return self.height
 
+    def get_bounding_rect(self) -> QRectF:
+        return QRectF(self.x, self.y, self.width, self.height)
+
 
 class VSpacer(Layout):
 
-    def __init__(self, height: int):
+    def __init__(self, height: int) -> None:
         super().__init__()
 
         self.height: int = height
@@ -113,9 +116,6 @@ class HBoxLayout(Layout):
 
     def resize(self, width: int, height: int) -> None:
         self.layout(width)
-
-    def get_bounding_rect(self) -> QRectF:
-        return QRectF(self.x, self.y, self.width, self.height)
 
 
 class ItemLayout(Layout):
@@ -250,7 +250,7 @@ class TileLayout(Layout):
         new_columns = self._calc_num_columns(viewport_width)
         grid_width = self._calc_grid_width(new_columns)
 
-        self.center_x_off = (viewport_width - grid_width) / 2
+        self.center_x_off = (viewport_width - grid_width) // 2
         self.columns = new_columns
 
         bottom_y = 0

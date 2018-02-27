@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import List, cast
 
 import traceback
 import os
@@ -97,7 +97,7 @@ class FileViewApplication:
         self.qapp.quit()
 
     def run(self) -> int:
-        return self.qapp.exec()
+        return cast(int, self.qapp.exec())
 
     def close(self) -> None:
         settings.save()
