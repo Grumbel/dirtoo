@@ -145,8 +145,11 @@ class ThumbFileItem(FileItem):
         self.set_tile_size(self.thumb_view.tile_style.tile_width, self.thumb_view.tile_style.tile_height)
         self.animation_timer: Optional[int] = None
 
-    def set_fileinfo(self, fileinfo: FileInfo):
+        self._file_is_final = False
+
+    def set_fileinfo(self, fileinfo: FileInfo, final=False):
         self.fileinfo = fileinfo
+        self._file_is_final = final
 
     def set_tile_size(self, tile_width: int, tile_height: int) -> None:
         # the size of the base tile
@@ -167,13 +170,14 @@ class ThumbFileItem(FileItem):
         self.qpainter_path.addRect(0, 0, tile_width, tile_height)
 
     def prepare(self) -> None:
-        if self.metadata is None:
-            self.controller.request_metadata(self.fileinfo)
-            self.metadata = {}
+        if self._file_is_final:
+            if self.metadata is None:
+                self.controller.request_metadata(self.fileinfo)
+                self.metadata = {}
 
-        thumbnail = self._get_thumbnail()
-        if thumbnail.status == ThumbnailStatus.INITIAL:
-            thumbnail.request()
+            thumbnail = self._get_thumbnail()
+            if thumbnail.status == ThumbnailStatus.INITIAL:
+                thumbnail.request()
 
     def paint(self, painter, option, widget) -> None:
         # logger.debug("ThumbFileItem.paint: %s", self.fileinfo)

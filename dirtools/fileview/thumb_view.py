@@ -239,6 +239,7 @@ class ThumbView(QGraphicsView):
         self.file_collection.sig_file_removed.connect(self.on_file_removed)
         self.file_collection.sig_file_changed.connect(self.on_file_changed)
         self.file_collection.sig_file_updated.connect(self.on_file_updated)
+        self.file_collection.sig_file_closed.connect(self.on_file_closed)
 
         self.on_file_collection_set()
 
@@ -278,6 +279,13 @@ class ThumbView(QGraphicsView):
         item = self.location2item.get(fileinfo.location(), None)
         if item is not None:
             item.set_fileinfo(fileinfo)
+            item.update()
+
+    def on_file_closed(self, fileinfo: FileInfo) -> None:
+        logger.debug("ThumbView.on_file_closed: %s", fileinfo)
+        item = self.location2item.get(fileinfo.location(), None)
+        if item is not None:
+            item.set_fileinfo(fileinfo, final=True)
             item.update()
 
     def on_file_collection_reordered(self) -> None:

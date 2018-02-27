@@ -205,6 +205,7 @@ class Controller(QObject):
         self.directory_watcher.sig_file_added.connect(self.file_collection.add_fileinfo)
         self.directory_watcher.sig_file_removed.connect(self.file_collection.remove_file)
         self.directory_watcher.sig_file_changed.connect(self.file_collection.change_file)
+        self.directory_watcher.sig_file_closed.connect(self.file_collection.close_file)
         self.directory_watcher.sig_scandir_finished.connect(self.on_scandir_finished)
         self.directory_watcher.start()
 

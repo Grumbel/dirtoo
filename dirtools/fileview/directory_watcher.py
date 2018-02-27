@@ -41,7 +41,8 @@ DEFAULT_FLAGS = (
     inotify_flags.MODIFY |
     inotify_flags.ATTRIB |
     inotify_flags.MOVED_FROM |
-    inotify_flags.MOVED_TO
+    inotify_flags.MOVED_TO |
+    inotify_flags.CLOSE_WRITE
 )
 
 
@@ -76,6 +77,7 @@ class DirectoryWatcherWorker(QObject):
     sig_file_added = pyqtSignal(FileInfo)
     sig_file_removed = pyqtSignal(Location)
     sig_file_changed = pyqtSignal(FileInfo)
+    sig_file_closed = pyqtSignal(FileInfo)
     sig_error = pyqtSignal()
     sig_scandir_finished = pyqtSignal(list)
 
@@ -136,6 +138,8 @@ class DirectoryWatcherWorker(QObject):
                 self.sig_file_removed.emit(location)
             elif ev.mask & inotify_flags.MOVED_TO:
                 self.sig_file_added.emit(self.vfs.get_fileinfo(location))
+            elif ev.mask & inotify_flags.CLOSE_WRITE:
+                self.sig_file_closed.emit(self.vfs.get_fileinfo(location))
             else:
                 # unhandled event
                 print("ERROR: Unhandlade flags:")
@@ -184,6 +188,10 @@ class DirectoryWatcher(QObject):
     @property
     def sig_file_changed(self):
         return self._worker.sig_file_changed
+
+    @property
+    def sig_file_closed(self):
+        return self._worker.sig_file_closed
 
     @property
     def sig_scandir_finished(self):
