@@ -259,6 +259,7 @@ class FileViewWindow(QMainWindow):
     def make_menubar(self):
         self.menubar = self.menuBar()
         file_menu = self.menubar.addMenu('&File')
+        file_menu.addAction(self.actions.new_window)
         file_menu.addAction(self.actions.parent_directory)
         file_menu.addAction(self.actions.debug)
         file_menu.addAction(self.actions.save_as)

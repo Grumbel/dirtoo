@@ -113,6 +113,10 @@ class Actions(QObject):
         self.crop_thumbnails.triggered.connect(
             lambda: self.controller.set_crop_thumbnails(self.crop_thumbnails.isChecked()))
 
+        self.new_window = QAction(QIcon.fromTheme('window-new'), "New Window", self)
+        self.new_window.triggered.connect(lambda x: self.controller.new_controller(clone=True))
+        self.new_window.setShortcut('Ctrl+N')
+
         self.parent_directory = QAction(self.controller.app.qapp.style().standardIcon(QStyle.SP_FileDialogToParent),
                                         "Parent Directory")
         self.parent_directory.triggered.connect(self.controller.parent_directory)

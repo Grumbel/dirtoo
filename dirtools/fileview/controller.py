@@ -247,8 +247,10 @@ class Controller(QObject):
         self.filelist_stream.sig_end_of_stream.connect(lambda: self.window.hide_loading())
         self.filelist_stream.start()
 
-    def new_controller(self) -> 'Controller':
+    def new_controller(self, clone: bool=False) -> 'Controller':
         controller = self.app.new_controller()
+        if clone and self.location is not None:
+            controller.set_location(self.location)
         return cast('Controller', controller)
 
     def show_file_history(self) -> None:
