@@ -105,6 +105,8 @@ class FileViewWindow(QMainWindow):
         self.move(QCursor.pos().x() - self.width() / 2,
                   QCursor.pos().y() - self.height() / 2)
 
+        self.addAction(self.actions.rename)
+
     def closeEvent(self, ev):
         self.controller.on_exit()
 

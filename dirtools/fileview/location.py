@@ -153,6 +153,14 @@ class Location:
         assert not self.has_payload()
         return self._path
 
+    def get_basename(self) -> str:
+        assert not self.has_payload()
+        return os.path.basename(self._path)
+
+    def get_dirname(self) -> str:
+        assert not self.has_payload()
+        return os.path.dirname(self._path)
+
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Location):
             return (self._protocol, self._path, self._payloads) == (other._protocol, other._path, other._payloads)

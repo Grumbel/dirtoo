@@ -17,12 +17,14 @@
 
 from typing import List, Dict, Optional, Set, cast
 
+import html
+import io
 import logging
 import os
-import io
+import traceback
 
-from PyQt5.QtWidgets import QFileDialog, QTextEdit, QMenu
-from PyQt5.QtCore import QObject, Qt, QEvent
+from PyQt5.QtWidgets import QFileDialog, QTextEdit, QMenu, QMessageBox, QDialog
+from PyQt5.QtCore import QObject, Qt, QEvent, QSize
 from PyQt5.QtGui import QIcon, QCursor, QMouseEvent, QContextMenuEvent
 
 from dirtools.fileview.actions import Actions
@@ -40,6 +42,7 @@ from dirtools.xdg_desktop import get_desktop_entry, get_desktop_file
 from dirtools.fileview.location import Location, Payload
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.menu import Menu
+from dirtools.fileview.rename_dialog import RenameDialog
 
 logger = logging.getLogger(__name__)
 
@@ -555,6 +558,58 @@ class Controller(QObject):
     def set_grouper_by_duration(self) -> None:
         self.grouper.set_func(DurationGrouperFunc())
         self.apply_grouper()
+
+    def show_rename_dialog(self, location: Optional[Location]=None) -> None:
+        if location is None:
+            item = self.window.thumb_view.cursor_item
+            if item is None:
+                logger.error("no file selected for renaming")
+                return
+
+            location = item.fileinfo.location()
+
+        if location.has_payload():
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Warning)
+            msg.setWindowTitle("Rename Error")
+            msg.setText("Files inside an archive can't be renamed")
+            msg.setStandardButtons(QMessageBox.Ok)
+            msg.exec()
+        else:
+            dialog = RenameDialog(self.window)
+            dialog.set_basename(location.get_basename())
+            dialog.exec()
+            if dialog.result() == QDialog.Accepted:
+                oldpath = location.get_path()
+                newpath = os.path.join(location.get_dirname(), dialog.get_new_basename())
+                if not os.path.exists(newpath):
+                    logger.info("Controller.show_rename_dialog: renaming \"%s\" to \"%s\"",
+                                oldpath, newpath)
+                    try:
+                        os.rename(oldpath, newpath)
+                    except OSError as err:
+                        msg = QMessageBox()
+                        msg.setBaseSize(QSize(600, 120))
+                        msg.setIcon(QMessageBox.Critical)
+                        msg.setWindowTitle("Rename Error")
+                        msg.setTextFormat(Qt.RichText)
+                        msg.setText(
+                            "<b>Failed to rename \"<tt>{}</tt>\".</b>"
+                            .format(html.escape(location.get_basename())))
+                        msg.setInformativeText(
+                            "A failure occured while trying to rename the file.\n\n{}\n\n{}  →\n{}"
+                            .format(err.strerror, err.filename, err.filename2))
+                        msg.setDetailedText(traceback.format_exc())
+                        msg.setStandardButtons(QMessageBox.Ok)
+                        msg.exec()
+                else:
+                    msg = QMessageBox()
+                    msg.setIcon(QMessageBox.Critical)
+                    msg.setWindowTitle("Rename Error")
+                    msg.setText("Failed to rename \"{}\".".format(location.get_basename()))
+                    msg.setInformativeText("Can't rename file, filenname already exists.")
+                    msg.setStandardButtons(QMessageBox.Ok)
+                    msg.exec()
 
 
 from dirtools.fileview.application import FileViewApplication  # noqa: E401, E402

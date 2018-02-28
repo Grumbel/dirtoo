@@ -134,6 +134,11 @@ class Actions(QObject):
         self.reload.setStatusTip('Reload the View')
         self.reload.triggered.connect(self.controller.reload)
 
+        self.rename = QAction(QIcon.fromTheme('rename'), 'Rename', self)
+        self.rename.setShortcut('F2')
+        self.rename.setStatusTip('Rename the current file')
+        self.rename.triggered.connect(lambda checked: self.controller.show_rename_dialog())
+
         self.reload_thumbnails = QAction(QIcon.fromTheme('edit-delete'), 'Thumbnail Reload', self)
         self.reload_thumbnails.setShortcut('Shift+F5')
         self.reload_thumbnails.setStatusTip('Reload Thumbnails')
