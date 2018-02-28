@@ -31,6 +31,8 @@ from PyQt5.QtDBus import QDBusConnection
 from dirtools.dbus_thumbnail_cache import DBusThumbnailCache
 from dirtools.fileview.bookmarks import Bookmarks
 from dirtools.fileview.executor import Executor
+from dirtools.fileview.filelist_stream import FileListStream
+from dirtools.fileview.filesystem_operations import FilesystemOperations
 from dirtools.fileview.history import History
 from dirtools.fileview.location import Location
 from dirtools.fileview.metadata_collector import MetaDataCollector
@@ -38,7 +40,6 @@ from dirtools.fileview.mime_database import MimeDatabase
 from dirtools.fileview.settings import settings
 from dirtools.fileview.thumbnailer import Thumbnailer
 from dirtools.fileview.virtual_filesystem import VirtualFilesystem
-from dirtools.fileview.filelist_stream import FileListStream
 from dirtools.xdg_mime_associations import XdgMimeAssociations
 
 logger = logging.getLogger(__name__)
@@ -86,6 +87,7 @@ class FileViewApplication:
         self.dbus_thumbnail_cache = DBusThumbnailCache(self.session_bus)
         self.mime_database = MimeDatabase(self.vfs)
         self.mime_associations = XdgMimeAssociations.system()
+        self.fs_operations = FilesystemOperations()
 
         self.controllers: List[Controller] = []
 
