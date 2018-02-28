@@ -117,6 +117,10 @@ class Thumbnail:
                 mtime_txt = image.text("Thumb::MTime")
                 self.mtime = int(mtime_txt)
 
+                # Thumb::MTime only has 1 second resolution, thus it
+                # is quite possible for an thumbnail to be out of date
+                # when the file was modified while the thumbnail was
+                # extracting (e.g. looking at an extracting archive).
                 if int(self.parent_item.fileinfo.mtime()) != self.mtime:
                     self.reset()
             except ValueError as err:
@@ -143,7 +147,7 @@ class Thumbnail:
 
 class ThumbFileItem(FileItem):
 
-    def __init__(self, fileinfo: FileInfo, controller, final, thumb_view) -> None:
+    def __init__(self, fileinfo: FileInfo, controller, thumb_view) -> None:
         logger.debug("ThumbFileItem.__init__: %s", fileinfo)
         super().__init__(fileinfo, controller)
         # self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
@@ -162,7 +166,7 @@ class ThumbFileItem(FileItem):
         self.set_tile_size(self.thumb_view._tile_style.tile_width, self.thumb_view._tile_style.tile_height)
         self.animation_timer: Optional[int] = None
 
-        self._file_is_final = final
+        self._file_is_final = True
 
     def set_fileinfo(self, fileinfo: FileInfo, final=False):
         self.fileinfo = fileinfo
