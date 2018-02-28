@@ -37,7 +37,7 @@ mypy:
 	--warn-redundant-casts \
 	$(SOURCES)
 
-mypy-verbose:
+mypyverbose:
 	export MYPYPATH=/usr/lib/python3/dist-packages/; \
 	mypy \
         --incremental \
@@ -48,7 +48,7 @@ mypy-verbose:
 	--warn-unused-ignores \
 	--warn-incomplete-stub \
 	--warn-redundant-casts \
-	$(SOURCES)
+	$(SOURCES) | grep -v ^/usr
 
 #	--disallow-any unimported,unannotated,decorated,explicit,generics \
 #	--disallow-any unimported,expr,unannotated,decorated,explicit,generics \
