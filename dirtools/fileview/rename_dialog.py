@@ -17,6 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import cast
+
 import os
 
 from PyQt5.QtCore import Qt
@@ -86,7 +88,7 @@ class RenameDialog(QDialog):
         return self._basename
 
     def get_new_basename(self) -> str:
-        return self.name_edit.text()
+        return cast(str, self.name_edit.text())
 
     def set_basename(self, basename: str) -> None:
         self._basename = basename

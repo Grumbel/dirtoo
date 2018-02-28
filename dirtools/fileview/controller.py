@@ -608,7 +608,7 @@ class Controller(QObject):
                             .format(html.escape(location.get_basename())))
                         msg.setInformativeText(
                             "A failure occured while trying to rename the file.\n\n{}\n\n{}  →\n{}"
-                            .format(err.strerror, err.filename, err.filename2))
+                            .format(err.strerror, err.filename, err.filename2))  # type: ignore
                         msg.setDetailedText(traceback.format_exc())
                         msg.setStandardButtons(QMessageBox.Ok)
                         msg.exec()
