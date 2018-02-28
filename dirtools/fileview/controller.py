@@ -470,7 +470,15 @@ class Controller(QObject):
         menu.addAction(self.actions.edit_delete)
         menu.addAction("Move To Trash")
         menu.addSeparator()
-        menu.addAction("Rename")
+
+        rename = menu.addAction(
+            QIcon.fromTheme('rename'), 'Rename',
+            lambda location=item.fileinfo.location():
+            self.show_rename_dialog(location))
+        rename.setShortcut('F2')
+        rename.setStatusTip('Rename the current file')
+        menu.addAction(rename)
+
         menu.addSeparator()
         menu.addAction("Properties...")
 
