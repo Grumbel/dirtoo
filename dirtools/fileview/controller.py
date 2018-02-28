@@ -405,8 +405,8 @@ class Controller(QObject):
 
         files: List[Location] = []
         mimetypes: Set[str] = set()
-        for item in selected_items:
-            location = item.fileinfo.location()
+        for sit in selected_items:
+            location = sit.fileinfo.location()
             files.append(location)
             mimetypes.add(self.app.mime_database.get_mime_type(location).name())
 
