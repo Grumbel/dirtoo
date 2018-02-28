@@ -92,11 +92,23 @@ class ThumbnailerWorker(QObject):
 
     def on_thumbnail_requested(self, location: Location, flavor: str, force: bool,
                                callback: ThumbnailCallback):
-        thumbnail_filename = DBusThumbnailer.thumbnail_from_filename(self.vfs.get_stdio_name(location), flavor)
-        if os.path.exists(thumbnail_filename) and not force:
+        stdio_filename = self.vfs.get_stdio_name(location)
+        thumbnail_filename = DBusThumbnailer.thumbnail_from_filename(stdio_filename, flavor)
+        exists = os.path.exists(thumbnail_filename)
+        if exists and not force:
             image = QImage(thumbnail_filename)
             self.sig_thumbnail_ready.emit(location, flavor, callback, image)
         else:
+            if exists and force:
+                # DBusThumbnailCache.delete doesn't seem to be able to
+                # get the file deleted fast enough. The request thus
+                # isn't guranteed to regenerate the thumbnail. So
+                # employ brute force to get rid of the thumbnail
+                # quickly.
+                #
+                # self.dbus_thumbnail_cache.delete(stdio_filename)
+                os.unlink(thumbnail_filename)
+
             filename = self.vfs.get_stdio_name(location)
             handle = self.dbus_thumbnailer.queue([filename], flavor)
 
