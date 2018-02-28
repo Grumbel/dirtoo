@@ -154,7 +154,7 @@ class ThumbFileItem(FileItem):
 
         self.thumb_view = thumb_view
 
-        self.new = False
+        self._new = False
         self.hovering: bool = False
         self.animation_count = 0
 
@@ -168,9 +168,11 @@ class ThumbFileItem(FileItem):
 
         self._file_is_final = True
 
-    def set_fileinfo(self, fileinfo: FileInfo, final=False):
+    def set_fileinfo(self, fileinfo: FileInfo, final=False, update=False):
         self.fileinfo = fileinfo
         self._file_is_final = final
+        if not update:
+            self._new = True
         if final:
             thumbnail = self._get_thumbnail()
             thumbnail.reset()
@@ -322,7 +324,7 @@ class ThumbFileItemRenderer:
         self.thumbnail_rect = QRect(0, 0, item.tile_rect.width(), item.tile_rect.width())
         self.hovering = item.hovering
         self.animation_timer = item.animation_timer
-        self.new = False
+        self.new = item._new
         self.crop_thumbnails = item.thumb_view._crop_thumbnails
         self.is_selected = item.isSelected()
         self.is_cursor = item.thumb_view._cursor_item == item

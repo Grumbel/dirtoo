@@ -247,7 +247,7 @@ class ThumbView(QGraphicsView):
     def on_file_added(self, fileinfo: FileInfo) -> None:
         logger.debug("ThumbView.on_file_added: %s", fileinfo)
         item = ThumbFileItem(fileinfo, self._controller, self)
-        item.new = True
+        item._new = True
         self._location2item[fileinfo.location()] = item
         self._scene.addItem(item)
         self._items.append(item)
@@ -271,7 +271,6 @@ class ThumbView(QGraphicsView):
         logger.debug("ThumbView.on_file_changed: %s", fileinfo)
         item = self._location2item.get(fileinfo.location(), None)
         if item is not None:
-            item.new = True
             item.set_fileinfo(fileinfo)
             item.update()
 
@@ -279,7 +278,7 @@ class ThumbView(QGraphicsView):
         logger.debug("ThumbView.on_file_updated: %s", fileinfo)
         item = self._location2item.get(fileinfo.location(), None)
         if item is not None:
-            item.set_fileinfo(fileinfo)
+            item.set_fileinfo(fileinfo, update=True)
             item.update()
 
     def on_file_closed(self, fileinfo: FileInfo) -> None:
