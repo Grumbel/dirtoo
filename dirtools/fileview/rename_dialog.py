@@ -23,20 +23,20 @@ import os
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import (QDialog, QPushButton, QLineEdit,
+from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLineEdit,
                              QVBoxLayout, QDialogButtonBox, QLabel)
 
 
 class RenameDialog(QDialog):
 
-    def __init__(self, parent):
+    def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
 
         self._basename: str = ""
 
         self.build_gui()
 
-    def build_gui(self):
+    def build_gui(self) -> None:
         # gui elements
         self.resize(600, 100)
         self.setWindowTitle("RenameDialog")
@@ -73,13 +73,13 @@ class RenameDialog(QDialog):
         self.btn_cancel.clicked.connect(self._on_cancel_clicked)
         self.name_reload.triggered.connect(self._on_name_reload)
 
-    def _on_rename_clicked(self):
+    def _on_rename_clicked(self) -> None:
         self.accept()
 
-    def _on_cancel_clicked(self):
+    def _on_cancel_clicked(self) -> None:
         self.reject()
 
-    def _on_name_reload(self):
+    def _on_name_reload(self) -> None:
         self.name_edit.setText(self._basename)
         root, ext = os.path.splitext(self._basename)
         self.name_edit.setSelection(0, len(root))
