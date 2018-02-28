@@ -39,6 +39,8 @@ class FilesystemOperations:
         self._logfile = logfile
 
     def _rename(self, oldpath: str, newpath: str) -> None:
+        logger.info("FilesystemOperations._rename: \"%s\" to \"%s\"",
+                    oldpath, newpath)
         os.rename(oldpath, newpath)
 
     def _show_rename_error_has_payload(self, location: Location, parent: Optional[QWidget]):
@@ -92,11 +94,9 @@ class FilesystemOperations:
                 if oldpath == newpath:
                     logger.debug("FilesystemOperations.rename_location: source and destination are the same, "
                                  "skipping: \"%s\" to \"%s\"", oldpath, newpath)
-                elif  os.path.exists(newpath):
+                elif os.path.exists(newpath):
                     self._show_rename_error_file_exists(location, parent)
                 else:
-                    logger.info("FilesystemOperations.rename_location: renaming \"%s\" to \"%s\"",
-                                oldpath, newpath)
                     try:
                         self._rename(oldpath, newpath)
                     except OSError as err:
