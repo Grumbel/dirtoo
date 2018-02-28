@@ -21,7 +21,7 @@ import os
 import logging
 import hashlib
 
-from dirtools.fileview.location import Location
+from dirtools.fileview.location import Location, Payload
 from dirtools.fileview.directory_watcher import DirectoryWatcher
 from dirtools.archive_extractor import ArchiveExtractor
 from dirtools.fileview.file_info import FileInfo
@@ -94,8 +94,13 @@ class VirtualFilesystem:
     def _make_extractor_outdir(self, location: Location) -> str:
         assert location._payloads[-1].protocol == "archive"
 
-        loc_hash = hashlib.md5(location.as_url().encode()).hexdigest()
-        return os.path.join(self.extractor_dir, loc_hash)
+        origin = location.origin()
+        origin._payloads.append(Payload("archive", ""))
+
+        loc_hash = hashlib.md5(origin.as_url().encode()).hexdigest()
+        outdir = os.path.join(self.extractor_dir, loc_hash)
+        print(origin, outdir)
+        return outdir
 
     def _on_archive_extractor_finished(self, extractor: ArchiveExtractor) -> None:
         logger.info("VirtualFilesystem.on_archive_extractor_finished")
