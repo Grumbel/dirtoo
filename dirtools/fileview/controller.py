@@ -571,7 +571,7 @@ class Controller(QObject):
 
     def show_rename_dialog(self, location: Optional[Location]=None) -> None:
         if location is None:
-            item = self.window.thumb_view.cursor_item
+            item = self.window.thumb_view._cursor_item
             if item is None:
                 logger.error("no file selected for renaming")
                 return

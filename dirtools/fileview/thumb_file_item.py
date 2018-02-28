@@ -159,7 +159,7 @@ class ThumbFileItem(FileItem):
         self.large_thumbnail: Thumbnail = Thumbnail("large", self)
         self.metadata: Optional[Dict[str, Any]] = None
 
-        self.set_tile_size(self.thumb_view.tile_style.tile_width, self.thumb_view.tile_style.tile_height)
+        self.set_tile_size(self.thumb_view._tile_style.tile_width, self.thumb_view._tile_style.tile_height)
         self.animation_timer: Optional[int] = None
 
         self._file_is_final = final
@@ -219,7 +219,7 @@ class ThumbFileItem(FileItem):
                               192 + 32 - 10 * self.animation_count)
 
         # background rectangle
-        if not self.thumb_view.column_style or self.animation_timer is not None:
+        if not self.thumb_view._column_style or self.animation_timer is not None:
             painter.fillRect(0, 0,
                              self.tile_rect.width(),
                              self.tile_rect.height(),
@@ -311,7 +311,7 @@ class ThumbFileItemRenderer:
         self.fileinfo = item.fileinfo
         self.icon = item.icon
         self.thumbnail = item._get_thumbnail()
-        self.level_of_detail = item.thumb_view.level_of_detail
+        self.level_of_detail = item.thumb_view._level_of_detail
         self.style = item.thumb_view._style
         self.column_style = False  # self.thumb_view.column_style
         self.tile_rect = item.tile_rect
@@ -319,9 +319,9 @@ class ThumbFileItemRenderer:
         self.hovering = item.hovering
         self.animation_timer = item.animation_timer
         self.new = False
-        self.crop_thumbnails = item.thumb_view.crop_thumbnails
+        self.crop_thumbnails = item.thumb_view._crop_thumbnails
         self.is_selected = item.isSelected()
-        self.is_cursor = item.thumb_view.cursor_item == item
+        self.is_cursor = item.thumb_view._cursor_item == item
 
         self.cache_pixmap = None
 
