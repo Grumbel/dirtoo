@@ -73,4 +73,6 @@ install:
 
 .PHONY: autopep test flake pylint clean all default run
 
+.NOTPARALLEL: all
+
 # EOF #
