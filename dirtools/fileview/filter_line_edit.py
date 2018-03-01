@@ -33,7 +33,7 @@ class FilterLineEdit(QLineEdit):
         self.history: List[str] = []
         self.history_idx = 0
 
-        action = self.addAction(QIcon.fromTheme("edit-delete"), QLineEdit.TrailingPosition)
+        action = self.addAction(QIcon.fromTheme("window-close"), QLineEdit.TrailingPosition)
         action.triggered.connect(self.on_delete_button)
         action.setToolTip("Clear the filter and hide it")
 
