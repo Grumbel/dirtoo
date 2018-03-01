@@ -26,6 +26,11 @@ from PyQt5.QtCore import QObject, QProcess, pyqtSignal
 logger = logging.getLogger(__name__)
 
 
+# FIXME: This won't work with spaces at the end of filenames
+DIR_RX = re.compile("^Creating    ([^\x08]+)[\x080-9% ]*  OK$")
+FILE_RX = re.compile("^Extracting  ([^\x08]+)[\x080-9% ]*  OK $")
+
+
 class RarExtractorWorker(QObject):
 
     sig_entry_extracted = pyqtSignal(str, str)
@@ -53,20 +58,17 @@ class RarExtractorWorker(QObject):
             self._start_extract(self.outdir)
         except Exception as err:
             logger.exception("{}: failure when extracting archive".format(self.filename))
-            print("FINISH")
             self.sig_finished.emit()
 
     def _start_extract(self, outdir: str) -> None:
         # The directory is already created in ArchiveExtractor
         # os.mkdir(outdir)
-        assert os.path.isdir(outdir)
+        # assert os.path.isdir(outdir)
 
         program = "rar"
         argv = ["x", "-p-", "-c-", self.filename]
         # "-w" + outdir has no effect
 
-        print()
-        print(program, " ".join(argv))
         logger.debug("RarExtractorWorker: launching %s %s", program, argv)
         self.process = QProcess()
         self.process.setProgram(program)
@@ -92,18 +94,20 @@ class RarExtractorWorker(QObject):
         self.sig_finished.emit()
 
     def _on_ready_read_stdout(self) -> None:
-
         while self.process.canReadLine():
             buf = self.process.readLine()
             line = os.fsdecode(buf.data()).rstrip("\n")
             # print("stdout:", repr(line))
 
-            # FIXME: This won't work with spaces at the end of filenames
-            rx = re.compile("Extracting  ([^\x08]+)[\x080-9% ]*  OK ")
-            m = rx.match(line)
+            m = FILE_RX.match(line)
             if m:
                 entry = m.group(1).rstrip()
                 self.sig_entry_extracted.emit(entry, os.path.join(self.outdir, entry))
+            else:
+                m = DIR_RX.match(line)
+                if m:
+                    entry = m.group(1).rstrip()
+                    self.sig_entry_extracted.emit(entry, os.path.join(self.outdir, entry))
 
     def _on_ready_read_stderr(self) -> None:
         while self.process.canReadLine():
@@ -113,7 +117,7 @@ class RarExtractorWorker(QObject):
             self.errors.append(line)
 
     def _on_error_occured(self, error) -> None:
-        print("ERROR", error)
+        logger.error("RarExtractorWorker: an error occured: %s", error)
         self.sig_finished.emit()
 
 

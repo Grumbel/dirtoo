@@ -15,28 +15,55 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import os
+import tempfile
 import signal
 import unittest
 import pyparsing
 
 from dirtools.sevenzip_extractor_worker import SevenZipExtractorWorker
 
-from PyQt5.QtCore import QCoreApplication
+from PyQt5.QtCore import QCoreApplication, QTimer
+
+
+DATADIR = os.path.dirname(__file__)
+
 
 class SevenZipExtractorWorkerTestCase(unittest.TestCase):
 
     def test_sevenzip(self):
         signal.signal(signal.SIGINT, signal.SIG_DFL)
-        app = QCoreApplication([])
-        worker = SevenZipExtractorWorker("/tmp/a.zip", "/tmp/tmp/")
-        worker.sig_entry_extracted.connect(lambda lhs, rhs: print(lhs, rhs))
-        worker.sig_finished.connect(lambda: app.quit())
-        worker.init()
 
+        archive_file = os.path.join(DATADIR, "test.7z")
+        outdir = tempfile.mkdtemp()
+
+        app = QCoreApplication([])
+        worker = SevenZipExtractorWorker(archive_file, outdir)
+
+        results = []
+
+        worker.sig_entry_extracted.connect(lambda lhs, rhs: results.append(lhs))
+        worker.sig_finished.connect(lambda: app.quit())
+
+        QTimer.singleShot(0, lambda: worker.init())
         app.exec()
 
         worker.close()
         del app
+
+        expected = [
+            'folder',
+            '1.txt',
+            '2.txt',
+            '3.txt',
+            '4.txt',
+            'folder/1.txt',
+            'folder/2.txt',
+            'folder/3.txt',
+            'folder/4.txt'
+        ]
+
+        self.assertEqual(sorted(results), sorted(expected))
 
 
 
