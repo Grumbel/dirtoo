@@ -21,7 +21,7 @@ import io
 import logging
 import os
 
-from PyQt5.QtWidgets import QFileDialog, QTextEdit, QMenu
+from PyQt5.QtWidgets import QFileDialog, QTextEdit, QMenu, QMessageBox
 from PyQt5.QtCore import QObject, Qt, QEvent, pyqtSignal
 from PyQt5.QtGui import QIcon, QCursor, QMouseEvent, QContextMenuEvent
 
@@ -212,10 +212,21 @@ class Controller(QObject):
         self.directory_watcher.sig_file_changed.connect(self.file_collection.change_file)
         self.directory_watcher.sig_file_closed.connect(self.file_collection.close_file)
         self.directory_watcher.sig_scandir_finished.connect(self.on_scandir_finished)
+        self.directory_watcher.sig_message.connect(self._on_directory_watcher_message)
         self.directory_watcher.start()
 
         self.location = location
         self.window.set_location(self.location)
+
+    def _on_directory_watcher_message(self, message):
+        msg = QMessageBox(self.window)
+        msg.setIcon(QMessageBox.Warning)
+        msg.setWindowTitle("Extraction Error")
+        msg.setTextFormat(Qt.RichText)
+        msg.setText("<b>An Error occured while extracting the archive.</b>")
+        msg.setInformativeText(message)
+        msg.setStandardButtons(QMessageBox.Ok)
+        msg.exec()
 
     def on_archive_extractor_finished(self) -> None:
         logger.info("Controller.on_archive_extractor_finished")

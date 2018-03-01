@@ -54,14 +54,15 @@ class VirtualFilesystem:
         else:
             outdir = self._make_extractor_outdir(location)
 
+            directory_watcher = DirectoryWatcher(self, location)
+
             if not os.path.isdir(outdir) and location not in self.extractors:
                 extractor = ArchiveExtractor(self.get_stdio_name(location.origin()), outdir)
                 self.extractors[location] = extractor
-                extractor.sig_finished.connect(lambda result, x=extractor:
-                                               self._on_archive_extractor_finished(x, result))
+                extractor.sig_finished.connect(lambda result=None, x=extractor, d=directory_watcher:
+                                               self._on_archive_extractor_finished(x, d, result))
                 extractor.start()
 
-            directory_watcher = DirectoryWatcher(self, location)
             return directory_watcher
 
     def get_fileinfo(self, location: Location) -> FileInfo:
@@ -102,10 +103,15 @@ class VirtualFilesystem:
         outdir = os.path.join(self.extractor_dir, loc_hash)
         return outdir
 
-    def _on_archive_extractor_finished(self, extractor: ArchiveExtractor, result=None) -> None:
+    def _on_archive_extractor_finished(self, extractor: ArchiveExtractor,
+                                       directory_watcher: DirectoryWatcher,
+                                       result=None) -> None:
         logger.info("VirtualFilesystem.on_archive_extractor_finished")
         extractor.close()
         self.extractors = {k: v for k, v in self.extractors.items() if v != extractor}
+
+        if result is not None and result.status != 0:
+            directory_watcher.sig_message.emit(result.message)
 
     def get_extractors(self) -> Dict[Location, ArchiveExtractor]:
         return self.extractors

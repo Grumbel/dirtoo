@@ -80,6 +80,7 @@ class DirectoryWatcherWorker(QObject):
     sig_file_closed = pyqtSignal(FileInfo)
     sig_error = pyqtSignal()
     sig_scandir_finished = pyqtSignal(list)
+    sig_message = pyqtSignal(str)
 
     def __init__(self, vfs, location: Location) -> None:
         super().__init__()
@@ -196,6 +197,10 @@ class DirectoryWatcher(QObject):
     @property
     def sig_scandir_finished(self):
         return self._worker.sig_scandir_finished
+
+    @property
+    def sig_message(self):
+        return self._worker.sig_message
 
 
 # EOF #
