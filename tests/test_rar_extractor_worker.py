@@ -34,21 +34,25 @@ class RarExtractorWorkerTestCase(unittest.TestCase):
     def test_rar(self):
         signal.signal(signal.SIGINT, signal.SIG_DFL)
 
+        app = QCoreApplication([])
+
         archive_file = os.path.join(DATADIR, "test.rar")
         outdir = tempfile.mkdtemp()
 
-        app = QCoreApplication([])
-        worker = RarExtractorWorker(archive_file, outdir)
+        archive_file_inc = os.path.join(DATADIR, "test_incomplete.rar")
+        outdir_inc = tempfile.mkdtemp()
+
+        counter = 2
+        def do_quit(x):
+            nonlocal counter
+            counter -= 1
+            if counter == 0:
+                app.quit()
 
         results = []
+        worker = RarExtractorWorker(archive_file, outdir)
         worker.sig_entry_extracted.connect(lambda lhs, rhs: results.append(lhs))
-        worker.sig_finished.connect(app.quit)
-
-        QTimer.singleShot(0, lambda: worker.init())
-        app.exec()
-
-        worker.close()
-        del app
+        worker.sig_finished.connect(lambda x: do_quit(x))
 
         expected = [
             'folder',
@@ -62,7 +66,31 @@ class RarExtractorWorkerTestCase(unittest.TestCase):
             'folder/4.txt'
         ]
 
+        results_inc = []
+        worker_inc = RarExtractorWorker(archive_file_inc, outdir_inc)
+        worker_inc.sig_entry_extracted.connect(lambda lhs, rhs: results_inc.append(lhs))
+        worker_inc.sig_finished.connect(lambda x: do_quit(x))
+
+        expected_inc = [
+            'folder',
+            '1.txt',
+            '2.txt',
+            '3.txt',
+            '4.txt',
+            'folder/1.txt',
+            'folder/2.txt',
+            'folder/3.txt'
+        ]
+
+        QTimer.singleShot(0, lambda: worker.init())
+        QTimer.singleShot(0, lambda: worker_inc.init())
+        app.exec()
+
+        worker.close()
+        del app
+
         self.assertEqual(sorted(results), sorted(expected))
+        self.assertEqual(sorted(results_inc), sorted(expected_inc))
 
 
 # EOF #

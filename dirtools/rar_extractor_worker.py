@@ -17,6 +17,7 @@
 
 from typing import List, Optional
 
+from enum import Enum
 import logging
 import os
 import re
@@ -27,98 +28,159 @@ logger = logging.getLogger(__name__)
 
 
 # FIXME: This won't work with spaces at the end of filenames
+BEGIN_RX = re.compile("^Extracting from.*$")
 DIR_RX = re.compile("^Creating    ([^\x08]+)[\x080-9% ]*  OK$")
 FILE_RX = re.compile("^Extracting  ([^\x08]+)[\x080-9% ]*  OK $")
+
+
+class ExtractorResult:
+
+    SUCCESS = 0
+    FAILURE = 1
+
+    @staticmethod
+    def success(message):
+        return ExtractorResult(ExtractorResult.SUCCESS, message)
+
+    @staticmethod
+    def failure(message):
+        return ExtractorResult(ExtractorResult.FAILURE, message)
+
+    def __init__(self, status, message=""):
+        self.status = status
+        self.message = message
+
+    def __str__(self):
+        return "ExtractorResult({}, \"{}\")".format(self.status, self.message)
+
+
+class State(Enum):
+
+    HEADER = 0
+    FILELIST = 1
+    RESULT = 2
 
 
 class RarExtractorWorker(QObject):
 
     sig_entry_extracted = pyqtSignal(str, str)
-    sig_finished = pyqtSignal()
+    sig_finished = pyqtSignal(ExtractorResult)
 
     def __init__(self, filename: str, outdir: str) -> None:
         super().__init__()
 
         self._close = False
-        self.filename = os.path.abspath(filename)
-        self.outdir = outdir
+        self._filename = os.path.abspath(filename)
+        self._outdir = outdir
 
-        self.process: Optional[QProcess] = None
-        self.errors: List[str] = []
+        self._process: Optional[QProcess] = None
+        self._errors: List[str] = []
+
+        self._output_state = State.HEADER
 
     def close(self):
         self._close = True
 
-        if self.process is not None:
-            self.process.terminate()
-            # self.process.kill()
+        if self._process is not None:
+            self._process.terminate()
+            # self._process.kill()
 
     def init(self) -> None:
         try:
-            self._start_extract(self.outdir)
+            self._start_extract(self._outdir)
         except Exception as err:
-            logger.exception("{}: failure when extracting archive".format(self.filename))
-            self.sig_finished.emit()
+            message = "{}: failure when extracting archive".format(self._filename)
+            logger.exception(message)
+            self.sig_finished.emit(ExtractorResult.failure(message))
 
     def _start_extract(self, outdir: str) -> None:
         # The directory is already created in ArchiveExtractor
         # os.mkdir(outdir)
-        # assert os.path.isdir(outdir)
+        assert os.path.isdir(outdir)
 
         program = "rar"
-        argv = ["x", "-p-", "-c-", self.filename]
+        argv = ["x", "-p-", "-c-", self._filename]
         # "-w" + outdir has no effect
 
         logger.debug("RarExtractorWorker: launching %s %s", program, argv)
-        self.process = QProcess()
-        self.process.setProgram(program)
-        self.process.setArguments(argv)
-        self.process.setWorkingDirectory(outdir)
-        self.process.start()
-        self.process.closeWriteChannel()
+        self._process = QProcess()
+        self._process.setProgram(program)
+        self._process.setArguments(argv)
+        self._process.setWorkingDirectory(outdir)
+        self._process.start()
+        self._process.closeWriteChannel()
 
-        self.process.readyReadStandardOutput.connect(self._on_ready_read_stdout)
-        self.process.readyReadStandardError.connect(self._on_ready_read_stderr)
-        self.process.errorOccurred.connect(self._on_error_occured)
-        self.process.finished.connect(self._on_finished)
+        self._process.readyReadStandardOutput.connect(self._on_ready_read_stdout)
+        self._process.readyReadStandardError.connect(self._on_ready_read_stderr)
+        self._process.errorOccurred.connect(self._on_error_occured)
+        self._process.finished.connect(self._on_finished)
 
     def _on_finished(self, exit_code, exit_status):
-        if exit_status != QProcess.NormalExit:
+        self._process.setCurrentReadChannel(QProcess.StandardOutput)
+        for line in os.fsdecode(self._process.readAll().data()).splitlines():
+            self._process_stdout(line)
+
+        self._process.setCurrentReadChannel(QProcess.StandardError)
+        for line in os.fsdecode(self._process.readAll().data()).splitlines():
+            self._process_stderr(line)
+
+        message = "\n".join(self._errors)
+
+        if exit_status != QProcess.NormalExit or exit_code != 0:
             logger.error("RarExtractorWorker: something went wrong: %s  %s", exit_code, exit_status)
+            self.sig_finished.emit(ExtractorResult.failure(message))
         else:
             logger.debug("RarExtractorWorker: finished successfully: %s  %s", exit_code, exit_status)
-
-        if self.errors != []:
-            logger.error("RarExtractorWorker: errors: %s  %s", "\n".join(self.errors))
-
-        self.sig_finished.emit()
-
-    def _on_ready_read_stdout(self) -> None:
-        while self.process.canReadLine():
-            buf = self.process.readLine()
-            line = os.fsdecode(buf.data()).rstrip("\n")
-            # print("stdout:", repr(line))
-
-            m = FILE_RX.match(line)
-            if m:
-                entry = m.group(1).rstrip()
-                self.sig_entry_extracted.emit(entry, os.path.join(self.outdir, entry))
-            else:
-                m = DIR_RX.match(line)
-                if m:
-                    entry = m.group(1).rstrip()
-                    self.sig_entry_extracted.emit(entry, os.path.join(self.outdir, entry))
-
-    def _on_ready_read_stderr(self) -> None:
-        while self.process.canReadLine():
-            # print("stderr:", repr(line))
-            buf = self.process.readLine()
-            line = os.fsdecode(buf.data()).rstrip("\n")
-            self.errors.append(line)
+            self.sig_finished.emit(ExtractorResult.success(message))
 
     def _on_error_occured(self, error) -> None:
         logger.error("RarExtractorWorker: an error occured: %s", error)
-        self.sig_finished.emit()
+        self.sig_finished.emit(ExtractorResult.failure("RarExtractorWorker: an error occured: {}".format(error)))
+
+    def _process_stdout(self, line):
+        # print("stdout:", repr(line))
+
+        if self._output_state == State.HEADER:
+            if BEGIN_RX.match(line):
+                self._output_state = State.FILELIST
+        elif self._output_state == State.FILELIST:
+            m = FILE_RX.match(line)
+            if m:
+                entry = m.group(1).rstrip(" ")
+                self.sig_entry_extracted.emit(entry, os.path.join(self._outdir, entry))
+            else:
+                m = DIR_RX.match(line)
+                if m:
+                    entry = m.group(1).rstrip(" ")
+                    self.sig_entry_extracted.emit(entry, os.path.join(self._outdir, entry))
+                elif line == "":
+                    pass  # ignore empty line at the start
+                else:
+                    self._errors.append(line)
+                    self._output_state = State.RESULT
+        else:
+            self._errors.append(line)
+
+    def _process_stderr(self, line):
+        # print("stderr:", repr(line))
+        if line:
+            self._errors.append(line)
+
+    def _on_ready_read_stdout(self) -> None:
+        self._process.setCurrentReadChannel(QProcess.StandardOutput)
+        while self._process.canReadLine():
+            line = self._process.readLine()
+            line = os.fsdecode(line.data())
+            line = line.rstrip("\n")
+            self._process_stdout(line)
+
+    def _on_ready_read_stderr(self) -> None:
+        self._process.setCurrentReadChannel(QProcess.StandardError)
+        while self._process.canReadLine():
+            line = self._process.readLine()
+            line = os.fsdecode(line.data())
+            line = line.rstrip("\n")
+            self._process_stderr(line)
 
 
 # EOF #
