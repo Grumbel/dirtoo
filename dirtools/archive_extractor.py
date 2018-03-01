@@ -20,6 +20,7 @@ import os
 
 from PyQt5.QtCore import QObject, QThread, Qt, pyqtSignal
 
+from dirtools.rar_extractor_worker import RarExtractorWorker
 from dirtools.sevenzip_extractor_worker import SevenZipExtractorWorker
 from dirtools.libarchive_extractor_worker import LibArchiveExtractorWorker
 
@@ -39,11 +40,12 @@ class ArchiveExtractor(QObject):
         if not os.path.isdir(outdir):
             os.makedirs(outdir)
 
-        if False:
-            self._worker = LibArchiveExtractorWorker(filename, outdir)
-        else:
-            print("------")
+        if filename.lower().endswith(".rar"):
+            self._worker = RarExtractorWorker(filename, outdir)
+        elif True:
             self._worker = SevenZipExtractorWorker(filename, outdir)
+        else:
+            self._worker = LibArchiveExtractorWorker(filename, outdir)
 
         self._thread = QThread(self)
         self._worker.moveToThread(self._thread)
