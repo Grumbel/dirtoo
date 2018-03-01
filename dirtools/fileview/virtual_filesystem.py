@@ -99,7 +99,6 @@ class VirtualFilesystem:
 
         loc_hash = hashlib.md5(origin.as_url().encode()).hexdigest()
         outdir = os.path.join(self.extractor_dir, loc_hash)
-        print(origin, outdir)
         return outdir
 
     def _on_archive_extractor_finished(self, extractor: ArchiveExtractor) -> None:
