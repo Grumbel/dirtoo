@@ -60,8 +60,7 @@ class Bookmarks:
                     print(entry.as_url(), file=fout)
 
 
-
-from dirtools.fileview.location import Location   # noqa: E401, E402
+from dirtools.fileview.location import Location   # noqa: F401
 
 
 # EOF #

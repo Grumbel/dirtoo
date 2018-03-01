@@ -54,7 +54,7 @@ class MetaDataCache:
                 return js
         except FileNotFoundError:
             return None
-        except:
+        except Exception as err:
             logger.exception("MetaDataCache: unexpected exception:")
             return None
 

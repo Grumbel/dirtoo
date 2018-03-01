@@ -106,7 +106,7 @@ class FilterLineEdit(QLineEdit):
                 self.setText(self.history[len(self.history) - self.history_idx - 1])
 
 
-from dirtools.fileview.controller import Controller   # noqa: E401, E402
+from dirtools.fileview.controller import Controller   # noqa: F401
 
 
 # EOF #

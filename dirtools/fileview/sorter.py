@@ -54,7 +54,7 @@ class Sorter:
             file_collection.sort(self.get_key_func(), reverse=self.reverse)
 
 
-from dirtools.fileview.controller import Controller   # noqa: E401, E402
+from dirtools.fileview.controller import Controller   # noqa: F401
 
 
 # EOF #
