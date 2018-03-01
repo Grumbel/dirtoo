@@ -26,16 +26,15 @@ from PyQt5.QtCore import QCoreApplication
 class SevenZipExtractorWorkerTestCase(unittest.TestCase):
 
     def test_sevenzip(self):
-        return
         signal.signal(signal.SIGINT, signal.SIG_DFL)
         app = QCoreApplication([])
         worker = SevenZipExtractorWorker("/tmp/a.zip", "/tmp/tmp/")
         worker.sig_entry_extracted.connect(lambda lhs, rhs: print(lhs, rhs))
-        worker.sig_finished.connect(lambda: (print("DONE"), app.quit()))
+        worker.sig_finished.connect(lambda: app.quit())
         worker.init()
-        print("MAINLOOP")
+
         app.exec()
-        print("CLOSE")
+
         worker.close()
         del app
 

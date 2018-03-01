@@ -15,14 +15,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Optional, Iterator
+from typing import List, Optional
 
 import logging
-import subprocess
-import fcntl
 import os
 
-from PyQt5.QtCore import QObject, QSocketNotifier, pyqtSignal
+from PyQt5.QtCore import QObject, QProcess, pyqtSignal
 
 logger = logging.getLogger(__name__)
 
@@ -47,32 +45,6 @@ logger = logging.getLogger(__name__)
 # 7zr x -o outdir ${archive}
 
 
-def non_blocking_readline(fp, linesep):
-    flag = fcntl.fcntl(fp, fcntl.F_GETFL)
-    fcntl.fcntl(fp.fileno(), fcntl.F_SETFL, flag | os.O_NONBLOCK)
-
-    rest = ""
-    while True:
-        try:
-            # The buffer size is chosen to be artificially tiny to not
-            # make the GUI unresponsive.
-            data = fp.read(16)
-        except BlockingIOError:
-            yield None
-        else:
-            if data == "":
-                return
-            else:
-                data = rest + data
-                idx = data.find(linesep)
-                if idx != -1:
-                    rest = data[idx + 1:]
-                    yield data[0:idx]
-                else:
-                    rest = data
-                    yield None
-
-
 class SevenZipExtractorWorker(QObject):
 
     sig_entry_extracted = pyqtSignal(str, str)
@@ -85,20 +57,15 @@ class SevenZipExtractorWorker(QObject):
         self.filename = os.path.abspath(filename)
         self.outdir = outdir
 
-        self.stdout_notifier: Optional[QSocketNotifier] = None
-        self.stderr_notifier: Optional[QSocketNotifier] = None
-
-        self.stdout_readliner: Optional[Iterator] = None
-        self.stderr_readliner: Optional[Iterator] = None
-
+        self.process: Optional[QProcess] = None
         self.errors: List[str] = []
 
     def close(self):
         self._close = True
 
-    def interruption_point(self):
-        if self._close:
-            raise Exception("{}: archive extraction was interrupted".format(self.filename))
+        if self.process is not None:
+            self.process.terminate()
+            # self.process.kill()
 
     def init(self) -> None:
         try:
@@ -109,46 +76,47 @@ class SevenZipExtractorWorker(QObject):
         self.sig_finished.emit()
 
     def _extract(self, outdir: str) -> None:
-        proc = subprocess.Popen(
-            ["7z", "x", "-ba", "-bb1", "-bd", "-aos",
-             "-o" + outdir, self.filename],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
+        program = "7z"
+        argv = ["x", "-ba", "-bb1", "-bd", "-aos", "-o" + outdir, self.filename]
 
-        print(proc.stdout)
-        print(proc.stderr)
+        logger.debug("SevenZipExtractorWorker: launching %s %s", program, argv)
+        self.process = QProcess()
+        self.process.setProgram(program)
+        self.process.setArguments(argv)
+        self.process.start()
 
-        self.stdout_notifier = QSocketNotifier(proc.stdout.fd, QSocketNotifier.Read)
-        self.stderr_notifier = QSocketNotifier(proc.stderr.fd, QSocketNotifier.Read)
+        self.process.readyReadStandardOutput.connect(self._on_ready_read_stdout)
+        self.process.readyReadStandardError.connect(self._on_ready_read_stderr)
 
-        self.stdout_readliner = non_blocking_readline(proc.stdout.fd, "\n")
-        self.stderr_readliner = non_blocking_readline(proc.stderr.fd, "\n")
+        self.process.finished.connect(self._on_finished)
 
-        self.stdout_notifier.activated.connect(self._on_stdout_activated)
-        self.stderr_notifier.activated.connect(self._on_stderr_activated)
-
-        retval = proc.wait()
-        if retval != 0:
-            logger.error("SevenZipExtractorWorker: something went wrong: %s", self.errors)
-
-        self.sig_finished()
-
-    def _on_stdout_activated(self, fd: int) -> None:
-        try:
-            line: str = next(self.stdout_readliner)
-        except StopIteration:
-            return
+    def _on_finished(self, exit_code, exit_status):
+        if exit_status != QProcess.NormalExit:
+            logger.error("SevenZipExtractorWorker: something went wrong: %s  %s", exit_code, exit_status)
         else:
+            logger.debug("SevenZipExtractorWorker: finished successfully: %s  %s", exit_code, exit_status)
+
+        if self.errors != []:
+            logger.error("SevenZipExtractorWorker: errors: %s  %s", "\n".join(self.errors))
+
+        self.sig_finished.emit()
+
+    def _on_ready_read_stdout(self) -> None:
+        while self.process.canReadLine():
+            buf = self.process.readLine()
+            line = os.fsdecode(buf.data()).rstrip("\n")
+            # print("stdout:", repr(line))
+
             if line.startswith("- "):
                 entry = line[2:]
-                self.sig_entry_extracted(entry, os.path.join(self.outdir, entry))
+                self.sig_entry_extracted.emit(entry, os.path.join(self.outdir, entry))
 
-    def _on_stderr_activated(self, fd: int) -> None:
-        try:
-            line: str = next(self.stderr_readliner)
+    def _on_ready_read_stderr(self) -> None:
+        while self.process.canReadLine():
+            # print("stderr:", repr(line))
+            buf = self.process.readLine()
+            line = os.fsdecode(buf.data()).rstrip("\n")
             self.errors.append(line)
-        except StopIteration:
-            return
 
 
 # EOF #
