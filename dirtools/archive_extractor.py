@@ -34,7 +34,7 @@ def sanitize(pathname):
         return normpath
 
 
-class ArchiveExtractorWorker(QObject):
+class LibArchiveExtractorWorker(QObject):
 
     sig_entry_extracted = pyqtSignal(str, str)
     sig_finished = pyqtSignal()
@@ -113,7 +113,7 @@ class ArchiveExtractor(QObject):
         if not os.path.isdir(outdir):
             os.makedirs(outdir)
 
-        self._worker = ArchiveExtractorWorker(filename, outdir)
+        self._worker = LibArchiveExtractorWorker(filename, outdir)
         self._thread = QThread(self)
         self._worker.moveToThread(self._thread)
 
