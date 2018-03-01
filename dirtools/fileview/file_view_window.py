@@ -320,7 +320,7 @@ class FileViewWindow(QMainWindow):
                                          lambda loc=self.controller.location:
                                          bookmarks.remove(loc))
             else:
-                bookmarks_menu.addAction(QIcon.fromTheme("user-bookmarks"), "Bookmark This Location",
+                bookmarks_menu.addAction(QIcon.fromTheme("bookmark-new"), "Bookmark This Location",
                                          lambda loc=self.controller.location:
                                          bookmarks.append(loc))
             bookmarks_menu.addSeparator()

@@ -22,7 +22,7 @@ import logging
 import os
 
 from PyQt5.QtWidgets import QFileDialog, QTextEdit, QMenu
-from PyQt5.QtCore import QObject, Qt, QEvent
+from PyQt5.QtCore import QObject, Qt, QEvent, pyqtSignal
 from PyQt5.QtGui import QIcon, QCursor, QMouseEvent, QContextMenuEvent
 
 from dirtools.fileview.actions import Actions
@@ -45,6 +45,9 @@ logger = logging.getLogger(__name__)
 
 
 class Controller(QObject):
+
+    sig_location_changed = pyqtSignal(Location)
+    sig_location_changed_to_none = pyqtSignal()
 
     def __init__(self, app: 'FileViewApplication') -> None:
         super().__init__()
@@ -196,6 +199,8 @@ class Controller(QObject):
 
         self._set_directory_location(location)
 
+        self.sig_location_changed.emit(location)
+
     def _set_directory_location(self, location: Location) -> None:
         self.file_collection.clear()
 
@@ -234,6 +239,8 @@ class Controller(QObject):
         self.apply_filter()
         self.apply_grouper()
 
+        self.sig_location_changed_to_none.emit()
+
     def set_filelist_stream(self, stream: FileListStream) -> None:
         self.window.set_file_list()
 
@@ -243,6 +250,8 @@ class Controller(QObject):
         self.filelist_stream.sig_file_added.connect(self.file_collection.add_fileinfo)
         self.filelist_stream.sig_end_of_stream.connect(lambda: self.window.hide_loading())
         self.filelist_stream.start()
+
+        self.sig_location_changed_to_none.emit()
 
     def new_controller(self, clone: bool=False) -> 'Controller':
         controller = self.app.new_controller()
@@ -577,8 +586,26 @@ class Controller(QObject):
 
         self.app.fs_operations.rename_location(location, parent=self.window)
 
+    def toggle_bookmark(self) -> bool:
+        """Returns true if a bookmark was set, false otherwise"""
 
-from dirtools.fileview.application import FileViewApplication  # noqa: E401, E402
+        if self.location is not None:
+            if self.has_bookmark():
+                self.app.bookmarks.remove(self.location)
+                return False
+            else:
+                self.app.bookmarks.append(self.location)
+                return True
+            True
+        else:
+            return False
+
+    def has_bookmark(self) -> bool:
+        entries = self.app.bookmarks.get_entries()
+        return bool(self.location in entries)
+
+
+from dirtools.fileview.application import FileViewApplication  # noqa: F401
 
 
 # EOF #

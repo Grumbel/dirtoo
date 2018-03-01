@@ -18,7 +18,7 @@
 import logging
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPalette
+from PyQt5.QtGui import QPalette, QIcon
 from PyQt5.QtWidgets import QLineEdit
 
 from dirtools.fileview.controller import Controller
@@ -36,6 +36,31 @@ class LocationLineEdit(QLineEdit):
         self.is_unused = True
         self.returnPressed.connect(self.on_return_pressed)
         self.textEdited.connect(self.on_text_edited)
+
+        self.bookmark_act = self.addAction(QIcon.fromTheme("user-bookmarks"), QLineEdit.TrailingPosition)
+        self.bookmark_act.setCheckable(True)
+        self.bookmark_act.triggered.connect(self._on_bookmark_triggered)
+        self.bookmark_act.setToolTip("Toggle bookmark for this location")
+
+        self.controller.sig_location_changed.connect(self._on_location_changed)
+        self.controller.sig_location_changed_to_none.connect(lambda: self._on_location_changed(None))
+
+    def _on_location_changed(self, location: Location):
+        if location is not None:
+            self.bookmark_act.setEnabled(True)
+            if self.controller.has_bookmark():
+                self.bookmark_act.setIcon(QIcon.fromTheme("user-bookmarks"))
+            else:
+                self.bookmark_act.setIcon(QIcon.fromTheme("bookmark-missing"))
+        else:
+            self.bookmark_act.setEnabled(False)
+            self.bookmark_act.setIcon(QIcon())
+
+    def _on_bookmark_triggered(self, checked):
+        if self.controller.toggle_bookmark():
+            self.bookmark_act.setIcon(QIcon.fromTheme("user-bookmarks"))
+        else:
+            self.bookmark_act.setIcon(QIcon.fromTheme("bookmark-missing"))
 
     def keyPressEvent(self, ev) -> None:
         super().keyPressEvent(ev)
