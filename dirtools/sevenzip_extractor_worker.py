@@ -69,13 +69,12 @@ class SevenZipExtractorWorker(QObject):
 
     def init(self) -> None:
         try:
-            self._extract(self.outdir)
+            self._start_extract(self.outdir)
         except Exception as err:
             logger.exception("{}: failure when extracting archive".format(self.filename))
+            self.sig_finished.emit()
 
-        self.sig_finished.emit()
-
-    def _extract(self, outdir: str) -> None:
+    def _start_extract(self, outdir: str) -> None:
         program = "7z"
         argv = ["x", "-ba", "-bb1", "-bd", "-aos", "-o" + outdir, self.filename]
 
