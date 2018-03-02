@@ -24,6 +24,8 @@ import re
 
 from PyQt5.QtCore import QObject, QProcess, QByteArray, pyqtSignal
 
+from dirtools.extractor_worker import ExtractorResult
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,27 +33,6 @@ logger = logging.getLogger(__name__)
 BEGIN_RX = re.compile("^Extracting from.*$")
 DIR_RX = re.compile("^Creating    ([^\x08]+)[\x080-9% ]*  OK$")
 FILE_RX = re.compile("^Extracting  ([^\x08]+)[\x080-9% ]*  OK $")
-
-
-class ExtractorResult:
-
-    SUCCESS = 0
-    FAILURE = 1
-
-    @staticmethod
-    def success(message):
-        return ExtractorResult(ExtractorResult.SUCCESS, message)
-
-    @staticmethod
-    def failure(message):
-        return ExtractorResult(ExtractorResult.FAILURE, message)
-
-    def __init__(self, status, message=""):
-        self.status = status
-        self.message = message
-
-    def __str__(self):
-        return "ExtractorResult({}, \"{}\")".format(self.status, self.message)
 
 
 class State(Enum):
