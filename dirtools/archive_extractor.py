@@ -15,6 +15,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List, Tuple
+
+import json
 import logging
 import os
 
@@ -23,6 +26,7 @@ from PyQt5.QtCore import QObject, QThread, Qt, pyqtSignal
 from dirtools.rar_extractor_worker import RarExtractorWorker
 from dirtools.sevenzip_extractor_worker import SevenZipExtractorWorker
 from dirtools.libarchive_extractor_worker import LibArchiveExtractorWorker
+from dirtools.extractor_worker import ExtractorResult
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +35,14 @@ class ArchiveExtractor(QObject):
 
     sig_close_requested = pyqtSignal()
 
-    def __init__(self, filename: str, outdir: str) -> None:
+    def __init__(self, archive_path: str, outdir: str) -> None:
         super().__init__()
+
+        self._archive_path = archive_path
+        self._outdir = outdir
+        self._extracted_entries: List[Tuple[str, str]] = []
+
+        contentdir = os.path.join(outdir, "contents")
 
         # Creating the directory here so that the directory is ready
         # and can be watched, otherwise the thread might not create
@@ -40,24 +50,56 @@ class ArchiveExtractor(QObject):
         if not os.path.isdir(outdir):
             os.makedirs(outdir)
 
-        if filename.lower().endswith(".rar"):
-            self._worker = RarExtractorWorker(filename, outdir)
+        if not os.path.isdir(contentdir):
+            os.makedirs(contentdir)
+
+        if archive_path.lower().endswith(".rar"):
+            self._worker = RarExtractorWorker(archive_path, contentdir)
         elif True:
-            self._worker = SevenZipExtractorWorker(filename, outdir)
+            self._worker = SevenZipExtractorWorker(archive_path, contentdir)
         else:
-            self._worker = LibArchiveExtractorWorker(filename, outdir)
+            self._worker = LibArchiveExtractorWorker(archive_path, contentdir)
 
         self._thread = QThread(self)
         self._worker.moveToThread(self._thread)
 
         self._thread.started.connect(self._worker.init)
 
+        self._worker.sig_entry_extracted.connect(self._on_entry_extracted)
+        self._worker.sig_finished.connect(self._on_finished)
+
         # close() is a blocking connection so the thread is properly
         # done after the signal was emit'ed and we don't have to fuss
         # around with sig_finished() and other stuff
         self.sig_close_requested.connect(self._worker.close, type=Qt.BlockingQueuedConnection)
 
+    def _on_started(self):
+        js = {
+            "status": ExtractorResult.WORKING,
+            "message": "Extraction in progress",
+            "entries": []
+        }
+        status_path = os.path.join(self._outdir, "status.json")
+        with open(status_path, "w") as fout:
+            json.dump(js, fout)
+            fout.write("\n")
+
+    def _on_finished(self, result: ExtractorResult):
+        js = {
+            "status": result.status,
+            "message": result.message,
+            "entries": self._extracted_entries,
+        }
+        status_path = os.path.join(self._outdir, "status.json")
+        with open(status_path, "w") as fout:
+            json.dump(js, fout)
+            fout.write("\n")
+
+    def _on_entry_extracted(self, entry: str, outfile: str):
+        self._extracted_entries.append((entry, outfile))
+
     def start(self) -> None:
+        self._on_started()
         self._thread.start()
 
     def close(self) -> None:

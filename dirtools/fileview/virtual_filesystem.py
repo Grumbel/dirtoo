@@ -74,7 +74,7 @@ class VirtualFilesystem:
             parent = location.parent()
             assert parent.has_payload()
 
-            outdir = self._make_extractor_outdir(parent)
+            outdir = os.path.join(self._make_extractor_outdir(parent), "contents")
             path = os.path.join(outdir, location._payloads[-1].path)
 
             fi = FileInfo.from_filename(path)
@@ -87,10 +87,10 @@ class VirtualFilesystem:
         else:
             if location._payloads[-1].path:
                 parent = location.parent()
-                outdir = self._make_extractor_outdir(parent)
+                outdir = os.path.join(self._make_extractor_outdir(parent), "contents")
                 return os.path.join(outdir, location._payloads[-1].path)
             else:
-                outdir = self._make_extractor_outdir(location)
+                outdir = os.path.join(self._make_extractor_outdir(location), "contents")
                 return outdir
 
     def _make_extractor_outdir(self, location: Location) -> str:

@@ -19,6 +19,7 @@ class ExtractorResult:
 
     SUCCESS = 0
     FAILURE = 1
+    WORKING = 2
 
     @staticmethod
     def success(message=""):
