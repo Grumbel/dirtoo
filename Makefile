@@ -48,7 +48,11 @@ mypyverbose:
 	--warn-unused-ignores \
 	--warn-incomplete-stub \
 	--warn-redundant-casts \
-	$(SOURCES) | grep -v ^/usr
+	$(SOURCES) | \
+        grep -v ^/usr | \
+	fgrep -v '"pyqtSignal" has no attribute' | \
+	grep -v 'Callable.*has no attribute "connect' | \
+	fgrep -v 'No overload variant of "QAction" matches argument types'
 
 #	--disallow-any unimported,unannotated,decorated,explicit,generics \
 #	--disallow-any unimported,expr,unannotated,decorated,explicit,generics \
