@@ -17,10 +17,14 @@
 
 from typing import Dict
 
+import json
 import os
 import logging
 import hashlib
 
+from PyQt5.QtCore import QTimer
+
+from dirtools.extractor_worker import ExtractorResult
 from dirtools.fileview.location import Location, Payload
 from dirtools.fileview.directory_watcher import DirectoryWatcher
 from dirtools.archive_extractor import ArchiveExtractor
@@ -62,6 +66,26 @@ class VirtualFilesystem:
                 extractor.sig_finished.connect(lambda result=None, x=extractor, d=directory_watcher:
                                                self._on_archive_extractor_finished(x, d, result))
                 extractor.start()
+            else:
+                status_file = os.path.join(outdir, "status.json")
+                with open(status_file, "r") as fin:
+                    js = json.load(fin)
+                if "status" in js and \
+                   js["status"] in [ExtractorResult.SUCCESS, ExtractorResult.WORKING]:
+                    pass  # everything ok
+                else:
+                    if "message" in js:
+                        message = js["message"]
+                    else:
+                        message = "<no message>"
+
+                    def send_message(dw=directory_watcher, message=message):
+                        dw.sig_message.emit(message)
+
+                    # FIXME: this is a bit of a crude hack to
+                    # communicate the message to the user
+                    QTimer.singleShot(0, send_message)
+                    logging.error("{}: archive exist, but is broken: {}".format(location, message))
 
             return directory_watcher
 
