@@ -22,7 +22,7 @@ import logging
 import os
 import re
 
-from PyQt5.QtCore import QObject, QProcess, pyqtSignal
+from PyQt5.QtCore import QObject, QProcess, QByteArray, pyqtSignal
 
 logger = logging.getLogger(__name__)
 
@@ -169,16 +169,16 @@ class RarExtractorWorker(QObject):
     def _on_ready_read_stdout(self) -> None:
         self._process.setCurrentReadChannel(QProcess.StandardOutput)
         while self._process.canReadLine():
-            line = self._process.readLine()
-            line = os.fsdecode(line.data())
+            buf: QByteArray = self._process.readLine()
+            line = os.fsdecode(buf.data())
             line = line.rstrip("\n")
             self._process_stdout(line)
 
     def _on_ready_read_stderr(self) -> None:
         self._process.setCurrentReadChannel(QProcess.StandardError)
         while self._process.canReadLine():
-            line = self._process.readLine()
-            line = os.fsdecode(line.data())
+            buf: QByteArray = self._process.readLine()
+            line = os.fsdecode(buf.data())
             line = line.rstrip("\n")
             self._process_stderr(line)
 

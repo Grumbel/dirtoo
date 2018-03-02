@@ -20,7 +20,7 @@ from typing import List, Optional
 import logging
 import os
 
-from PyQt5.QtCore import QObject, QProcess, pyqtSignal
+from PyQt5.QtCore import QObject, QProcess, QByteArray, pyqtSignal
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +102,7 @@ class SevenZipExtractorWorker(QObject):
 
     def _on_ready_read_stdout(self) -> None:
         while self.process.canReadLine():
-            buf = self.process.readLine()
+            buf: QByteArray = self.process.readLine()
             line = os.fsdecode(buf.data()).rstrip("\n")
             # print("stdout:", repr(line))
 

@@ -115,7 +115,7 @@ class ThumbView(QGraphicsView):
         self._crop_thumbnails = False
         self._column_style = False
         self.setBackgroundBrush(QBrush(Qt.white, Qt.SolidPattern))
-        self._resize_timer = None
+        self._resize_timer: Optional[int] = None
 
         self.setDragMode(QGraphicsView.RubberBandDrag)
 
