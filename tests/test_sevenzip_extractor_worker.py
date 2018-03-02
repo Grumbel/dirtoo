@@ -66,5 +66,4 @@ class SevenZipExtractorWorkerTestCase(unittest.TestCase):
         self.assertEqual(sorted(results), sorted(expected))
 
 
-
 # EOF #

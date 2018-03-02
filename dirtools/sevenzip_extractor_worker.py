@@ -19,8 +19,11 @@ from typing import List, Optional
 
 import logging
 import os
+import traceback
 
 from PyQt5.QtCore import QObject, QProcess, QByteArray, pyqtSignal
+
+from dirtools.extractor_worker import ExtractorResult
 
 logger = logging.getLogger(__name__)
 
@@ -48,74 +51,93 @@ logger = logging.getLogger(__name__)
 class SevenZipExtractorWorker(QObject):
 
     sig_entry_extracted = pyqtSignal(str, str)
-    sig_finished = pyqtSignal()
+    sig_finished = pyqtSignal(ExtractorResult)
 
     def __init__(self, filename: str, outdir: str) -> None:
         super().__init__()
 
         self._close = False
-        self.filename = os.path.abspath(filename)
-        self.outdir = outdir
+        self._filename = os.path.abspath(filename)
+        self._outdir = outdir
 
-        self.process: Optional[QProcess] = None
-        self.errors: List[str] = []
+        self._process: Optional[QProcess] = None
+        self._errors: List[str] = []
 
     def close(self):
         self._close = True
 
-        if self.process is not None:
-            self.process.terminate()
-            # self.process.kill()
+        if self._process is not None:
+            self._process.terminate()
+            # self._process.kill()
 
     def init(self) -> None:
         try:
-            self._start_extract(self.outdir)
+            self._start_extract(self._outdir)
         except Exception as err:
-            logger.exception("{}: failure when extracting archive".format(self.filename))
-            self.sig_finished.emit()
+            message = "{}: failure when extracting archive".format(self._filename)
+            logger.exception(message)
+            message += "\n\n" + traceback.format_exc()
+            self.sig_finished.emit(ExtractorResult.failure(message))
 
     def _start_extract(self, outdir: str) -> None:
         program = "7z"
-        argv = ["x", "-ba", "-bb1", "-bd", "-aos", "-o" + outdir, self.filename]
+        argv = ["x", "-ba", "-bb1", "-bd", "-aos", "-o" + outdir, self._filename]
 
         logger.debug("SevenZipExtractorWorker: launching %s %s", program, argv)
-        self.process = QProcess()
-        self.process.setProgram(program)
-        self.process.setArguments(argv)
-        self.process.start()
+        self._process = QProcess()
+        self._process.setProgram(program)
+        self._process.setArguments(argv)
 
-        self.process.readyReadStandardOutput.connect(self._on_ready_read_stdout)
-        self.process.readyReadStandardError.connect(self._on_ready_read_stderr)
+        self._process.readyReadStandardOutput.connect(self._on_ready_read_stdout)
+        self._process.readyReadStandardError.connect(self._on_ready_read_stderr)
+        self._process.finished.connect(self._on_finished)
 
-        self.process.finished.connect(self._on_finished)
+        self._process.start()
+        self._process.closeWriteChannel()
 
     def _on_finished(self, exit_code, exit_status):
-        if exit_status != QProcess.NormalExit:
+        self._process.setCurrentReadChannel(QProcess.StandardOutput)
+        for line in os.fsdecode(self._process.readAll().data()).splitlines():
+            self._process_stdout(line)
+
+        self._process.setCurrentReadChannel(QProcess.StandardError)
+        for line in os.fsdecode(self._process.readAll().data()).splitlines():
+            self._process_stderr(line)
+
+        message = "\n".join(self._errors)
+
+        if message:
+            logger.error("SevenZipExtractorWorker: errors: %s", message)
+
+        if exit_status != QProcess.NormalExit or exit_code != 0:
             logger.error("SevenZipExtractorWorker: something went wrong: %s  %s", exit_code, exit_status)
+            self.sig_finished.emit(ExtractorResult.failure(message))
         else:
             logger.debug("SevenZipExtractorWorker: finished successfully: %s  %s", exit_code, exit_status)
+            self.sig_finished.emit(ExtractorResult.success())
 
-        if self.errors != []:
-            logger.error("SevenZipExtractorWorker: errors: %s  %s", "\n".join(self.errors))
+    def _process_stdout(self, line):
+        if line.startswith("- "):
+            entry = line[2:]
+            self.sig_entry_extracted.emit(entry, os.path.join(self._outdir, entry))
 
-        self.sig_finished.emit()
+    def _process_stderr(self, line):
+        if line:
+            self._errors.append(line)
 
     def _on_ready_read_stdout(self) -> None:
-        while self.process.canReadLine():
-            buf: QByteArray = self.process.readLine()
+        while self._process.canReadLine():
+            buf: QByteArray = self._process.readLine()
             line = os.fsdecode(buf.data()).rstrip("\n")
             # print("stdout:", repr(line))
-
-            if line.startswith("- "):
-                entry = line[2:]
-                self.sig_entry_extracted.emit(entry, os.path.join(self.outdir, entry))
+            self._process_stdout(line)
 
     def _on_ready_read_stderr(self) -> None:
-        while self.process.canReadLine():
+        while self._process.canReadLine():
             # print("stderr:", repr(line))
-            buf = self.process.readLine()
+            buf = self._process.readLine()
             line = os.fsdecode(buf.data()).rstrip("\n")
-            self.errors.append(line)
+            self._process_stderr(line)
 
 
 # EOF #
