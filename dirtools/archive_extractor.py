@@ -42,6 +42,9 @@ class ArchiveExtractor(QObject):
         self._outdir = outdir
         self._extracted_entries: List[Tuple[str, str]] = []
 
+        stat = os.stat(self._archive_path)
+        self._mtime = stat.st_mtime
+
         contentdir = os.path.join(outdir, "contents")
 
         # Creating the directory here so that the directory is ready
@@ -75,6 +78,8 @@ class ArchiveExtractor(QObject):
 
     def _on_started(self):
         js = {
+            "path": self._archive_path,
+            "mtime": self._mtime,
             "status": ExtractorResult.WORKING,
             "message": "Extraction in progress",
             "entries": []
@@ -86,6 +91,8 @@ class ArchiveExtractor(QObject):
 
     def _on_finished(self, result: ExtractorResult):
         js = {
+            "path": self._archive_path,
+            "mtime": self._mtime,
             "status": result.status,
             "message": result.message,
             "entries": self._extracted_entries,
