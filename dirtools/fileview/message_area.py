@@ -70,9 +70,6 @@ class MessageArea(QWidget):
         self._hbox.addWidget(self._close_btn, 0, Qt.AlignTop)
 
         self.setLayout(self._hbox)
-        self.show()
-
-        self.show_info("Everything Ok")
 
     def _on_close_btn_triggerd(self):
         self.hide()
