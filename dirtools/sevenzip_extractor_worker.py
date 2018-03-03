@@ -131,7 +131,8 @@ class SevenZipExtractorWorker(QObject):
             self._error_summary = True
         else:
             if self._error_summary:
-                self._errors.append(line)
+                if line != "":
+                    self._errors.append(line)
 
     def _on_ready_read_stdout(self) -> None:
         while self._process.canReadLine():
