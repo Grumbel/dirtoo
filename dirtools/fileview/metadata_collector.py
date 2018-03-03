@@ -58,7 +58,8 @@ class MetaDataCollectorWorker(QObject):
 
         stat = os.lstat(abspath)
 
-        if cached_metadata is not None and stat.st_mtime == cached_metadata["mtime"]:
+        if cached_metadata is not None and \
+           (("mtime" in cached_metadata) and (stat.st_mtime == cached_metadata["mtime"])):
             self.sig_metadata_ready.emit(location, cached_metadata)
         else:
             try:
@@ -70,6 +71,9 @@ class MetaDataCollectorWorker(QObject):
                                                                    value=err,
                                                                    tb=err.__traceback__))
                 metadata = {
+                    'location': location.as_url(),
+                    'path': abspath,
+                    'mtime': stat.st_mtime,
                     'type': "error",
                     'error_message': error_message
                 }
