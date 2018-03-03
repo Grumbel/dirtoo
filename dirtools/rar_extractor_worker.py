@@ -105,7 +105,10 @@ class RarExtractorWorker(QObject):
         for line in os.fsdecode(self._process.readAll().data()).splitlines():
             self._process_stderr(line)
 
-        message = "RAR: " + "\n".join(self._errors)
+        if self._errors != []:
+            message = "RAR: " + "\n".join(self._errors)
+        else:
+            message = ""
 
         if exit_status != QProcess.NormalExit or exit_code != 0:
             logger.error("RarExtractorWorker: something went wrong: %s  %s", exit_code, exit_status)

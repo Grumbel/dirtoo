@@ -106,7 +106,10 @@ class SevenZipExtractorWorker(QObject):
         for line in os.fsdecode(self._process.readAll().data()).splitlines():
             self._process_stderr(line)
 
-        message = "7-Zip: " + "\n".join(self._errors)
+        if self._errors != []:
+            message = "7-Zip: " + "\n".join(self._errors)
+        else:
+            message = ""
 
         if message:
             logger.error("SevenZipExtractorWorker: errors: %s", message)
