@@ -55,11 +55,16 @@ class MetaDataCollectorWorker(QObject):
 
         abspath = self.vfs.get_stdio_name(location)
         cached_metadata = self.cache.retrieve_metadata(abspath)
-        if cached_metadata is not None:
+
+        stat = os.lstat(abspath)
+
+        if cached_metadata is not None and stat.st_mtime == cached_metadata["mtime"]:
             self.sig_metadata_ready.emit(location, cached_metadata)
         else:
             try:
-                metadata = self._create_metadata(abspath)
+                metadata: Dict[str, Any] = {}
+                metadata.update(self._create_generic_metadata(location, abspath))
+                metadata.update(self._create_type_specific_metadata(location, abspath))
             except Exception as err:
                 error_message = "".join(traceback.format_exception(etype=type(err),
                                                                    value=err,
@@ -72,12 +77,25 @@ class MetaDataCollectorWorker(QObject):
             self.cache.store_metadata(abspath, metadata)
             self.sig_metadata_ready.emit(location, metadata)
 
-    def _create_metadata(self, abspath: str):
+    def _create_generic_metadata(self, location: Location, abspath: str) -> Dict[str, Any]:
+        metadata: Dict[str, Any] = {}
+
+        metadata['location'] = location.as_url()
+        metadata['path'] = abspath
+
+        stat = os.lstat(abspath)
+        metadata['mtime'] = stat.st_mtime
+
+        return metadata
+
+    def _create_type_specific_metadata(self, location: Location, abspath: str) -> Dict[str, Any]:
         logger.debug("MetaDataCollectorWorker.create_metadata: %s", abspath)
 
         mimetype = self.mimedb.mimeTypeForFile(abspath)
 
         metadata: Dict[str, Any] = {}
+
+        metadata['mime-type'] = mimetype.name()
 
         if mimetype.name().startswith("video/"):
             minfo = MediaInfo(abspath)
