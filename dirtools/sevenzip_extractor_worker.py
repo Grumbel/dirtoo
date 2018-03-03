@@ -63,6 +63,8 @@ class SevenZipExtractorWorker(QObject):
         self._process: Optional[QProcess] = None
         self._errors: List[str] = []
 
+        self._error_summary = False
+
     def close(self):
         self._close = True
 
@@ -104,7 +106,7 @@ class SevenZipExtractorWorker(QObject):
         for line in os.fsdecode(self._process.readAll().data()).splitlines():
             self._process_stderr(line)
 
-        message = "\n".join(self._errors)
+        message = "7-Zip: " + "\n".join(self._errors)
 
         if message:
             logger.error("SevenZipExtractorWorker: errors: %s", message)
@@ -122,8 +124,11 @@ class SevenZipExtractorWorker(QObject):
             self.sig_entry_extracted.emit(entry, os.path.join(self._outdir, entry))
 
     def _process_stderr(self, line):
-        if line:
-            self._errors.append(line)
+        if line == "ERRORS:":
+            self._error_summary = True
+        else:
+            if self._error_summary:
+                self._errors.append(line)
 
     def _on_ready_read_stdout(self) -> None:
         while self._process.canReadLine():
