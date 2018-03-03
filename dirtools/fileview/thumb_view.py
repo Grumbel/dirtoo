@@ -197,7 +197,7 @@ class ThumbView(QGraphicsView):
             self.cursor_move(0, +1)
         elif ev.key() == Qt.Key_Return:
             if self._cursor_item is not None:
-                self._cursor_item.click_action()
+                self._cursor_item.click_action(new_window=ev.modifiers() & Qt.ShiftModifier)
         else:
             super().keyPressEvent(ev)
 
