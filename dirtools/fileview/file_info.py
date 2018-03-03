@@ -107,13 +107,13 @@ class FileInfo:
         return self.is_video() or self.is_image()
 
     def is_video(self) -> bool:
-        return self._ext[1:] in VIDEO_EXT
+        return self._ext[1:].lower() in VIDEO_EXT
 
     def is_image(self) -> bool:
-        return self._ext[1:] in IMAGE_EXT
+        return self._ext[1:].lower() in IMAGE_EXT
 
     def is_archive(self) -> bool:
-        return self._ext[1:] in ARCHIVE_EXT
+        return self._ext[1:].lower() in ARCHIVE_EXT
 
     def stat(self) -> os.stat_result:
         return self._stat
