@@ -89,6 +89,8 @@ class Controller(QObject):
             self.filelist_stream.close()
             self.filelist_stream = None
 
+        self.window._message_area.hide()
+
     def _apply_settings(self) -> None:
         v = settings.value("globals/crop_thumbnails", False, bool)
         self.actions.crop_thumbnails.setChecked(v)
@@ -219,14 +221,16 @@ class Controller(QObject):
         self.window.set_location(self.location)
 
     def _on_directory_watcher_message(self, message):
-        msg = QMessageBox(self.window)
-        msg.setIcon(QMessageBox.Warning)
-        msg.setWindowTitle("Extraction Error")
-        msg.setTextFormat(Qt.RichText)
-        msg.setText("<b>An Error occured while extracting the archive.</b>")
-        msg.setInformativeText(message)
-        msg.setStandardButtons(QMessageBox.Ok)
-        msg.exec()
+        self.window._message_area.show_error(message)
+
+        # msg = QMessageBox(self.window)
+        # msg.setIcon(QMessageBox.Warning)
+        # msg.setWindowTitle("Extraction Error")
+        # msg.setTextFormat(Qt.RichText)
+        # msg.setText("<b>An Error occured while extracting the archive.</b>")
+        # msg.setInformativeText(message)
+        # msg.setStandardButtons(QMessageBox.Ok)
+        # msg.exec()
 
     def on_archive_extractor_finished(self) -> None:
         logger.info("Controller.on_archive_extractor_finished")

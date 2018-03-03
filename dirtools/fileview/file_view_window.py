@@ -33,7 +33,8 @@ from PyQt5.QtWidgets import (
     QSizePolicy,
     QShortcut,
     QVBoxLayout,
-    QToolBar
+    QToolBar,
+    QDockWidget
 )
 
 from dirtools.fileview.detail_view import DetailView
@@ -41,12 +42,15 @@ from dirtools.fileview.thumb_view import ThumbView
 from dirtools.fileview.location import Location
 from dirtools.fileview.menu import Menu
 from dirtools.fileview.tool_button import ToolButton
+from dirtools.fileview.message_area import MessageArea
 
 
 class FileViewWindow(QMainWindow):
 
     def __init__(self, controller):
         super().__init__()
+
+        self._message_area: Optional[MessageArea] = None
 
         self.controller = controller
         self.actions = self.controller.actions
@@ -130,6 +134,9 @@ class FileViewWindow(QMainWindow):
 
         self.vbox.addWidget(self.file_view, Qt.AlignLeft)
         self.vbox.addWidget(self.thumb_view, Qt.AlignLeft)
+
+        self._message_area = MessageArea()
+        self.vbox.addWidget(self._message_area)
 
         vbox_widget = QWidget()
         vbox_widget.setLayout(self.vbox)
