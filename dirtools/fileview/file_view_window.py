@@ -18,7 +18,7 @@
 from typing import List
 
 from pkg_resources import resource_filename
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence, QIcon, QCursor, QMovie
 from PyQt5.QtWidgets import (
     QMenu,
@@ -40,47 +40,7 @@ from dirtools.fileview.detail_view import DetailView
 from dirtools.fileview.thumb_view import ThumbView
 from dirtools.fileview.location import Location
 from dirtools.fileview.menu import Menu
-
-
-class ToolButton(QToolButton):
-    """QToolButton with the additional ability to attach a secondary
-    action to the middle mouse button."""
-
-    sig_middle_click = pyqtSignal()
-
-    def __init__(self):
-        super().__init__()
-        self._middle_pressed = False
-
-    def mousePressEvent(self, ev):
-        if ev.button() != Qt.MiddleButton:
-            if self._middle_pressed:
-                ev.ignore()
-            else:
-                super().mousePressEvent(ev)
-        else:
-            self.setDown(True)
-            self._middle_pressed = True
-
-    def mouseReleaseEvent(self, ev):
-        if ev.button() != Qt.MiddleButton:
-            if self._middle_pressed:
-                ev.ignore()
-            else:
-                super().mouseReleaseEvent(ev)
-        else:
-            if self._middle_pressed and self.rect().contains(ev.pos()):
-                self.sig_middle_click.emit()
-
-            self.setDown(False)
-            self._middle_pressed = False
-
-    def mouseMoveEvent(self, ev):
-        if self._middle_pressed:
-            if not self.rect().contains(ev.pos()):
-                self.setDown(False)
-            else:
-                self.setDown(True)
+from dirtools.fileview.tool_button import ToolButton
 
 
 class FileViewWindow(QMainWindow):
