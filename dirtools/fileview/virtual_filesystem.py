@@ -21,6 +21,7 @@ import json
 import os
 import logging
 import hashlib
+import urllib
 
 from PyQt5.QtCore import QTimer
 
@@ -104,6 +105,9 @@ class VirtualFilesystem:
             fi = FileInfo.from_filename(path)
             fi._location = location
             return fi
+
+    def get_stdio_url(self, location: Location) -> str:
+        return "file://{}".format(urllib.parse.quote(self.get_stdio_name(location)))
 
     def get_stdio_name(self, location: Location) -> str:
         if not location.has_payload():
