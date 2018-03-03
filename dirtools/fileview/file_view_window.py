@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import List, Optional
 
 from pkg_resources import resource_filename
 from PyQt5.QtCore import Qt
@@ -33,8 +33,7 @@ from PyQt5.QtWidgets import (
     QSizePolicy,
     QShortcut,
     QVBoxLayout,
-    QToolBar,
-    QDockWidget
+    QToolBar
 )
 
 from dirtools.fileview.detail_view import DetailView

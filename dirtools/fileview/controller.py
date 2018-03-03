@@ -21,7 +21,7 @@ import io
 import logging
 import os
 
-from PyQt5.QtWidgets import QFileDialog, QTextEdit, QMenu, QMessageBox
+from PyQt5.QtWidgets import QFileDialog, QTextEdit, QMenu
 from PyQt5.QtCore import QObject, Qt, QEvent, pyqtSignal
 from PyQt5.QtGui import QIcon, QCursor, QMouseEvent, QContextMenuEvent
 
