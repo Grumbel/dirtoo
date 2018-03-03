@@ -184,7 +184,7 @@ class DBusThumbnailer(QObject):
             dbus_as(urls),  # uris: as
             dbus_as(mime_types),  # mime_types: as
             flavor,  # flavor: s
-            "default",  # scheduler: s
+            "foreground",  # scheduler: s
             dbus_uint(0),  # handle_to_dequeue: u
             # <arg type="u" name="handle" direction="out" />
         )
