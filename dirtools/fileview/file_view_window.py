@@ -135,6 +135,7 @@ class FileViewWindow(QMainWindow):
         self.vbox.addWidget(self.thumb_view, Qt.AlignLeft)
 
         self._message_area = MessageArea()
+        self._message_area.hide()
         self.vbox.addWidget(self._message_area)
 
         vbox_widget = QWidget()
