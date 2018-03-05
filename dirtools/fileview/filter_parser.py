@@ -254,7 +254,7 @@ class FilterParser:
                     logger.error("unknown type: %s", child)
                     return FalseMatchFunc()
             elif child.command == "fuzzy":
-                return FuzzyMatchFunc()
+                return FuzzyMatchFunc(child.arg)
             elif child.command == "charset" or child.command == "encoding":
                 if child.arg == "ascii":
                     return AsciiMatchFunc()
