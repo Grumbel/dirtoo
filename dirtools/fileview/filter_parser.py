@@ -27,7 +27,6 @@ import shlex
 import bytefmt
 
 from dirtools.fileview.match_func import (
-    MatchFunc,
     FalseMatchFunc,
     ExcludeMatchFunc,
     AndMatchFunc,
@@ -75,6 +74,14 @@ CMPTEXT2OP = {
 
 def get_compare_operator(text):
     return CMPTEXT2OP[text]
+
+
+def parse_op(text):
+    m = re.match(r"^(<|<=|>|>=|==|=)(.*)$", text)
+    if m:
+        return get_compare_operator(m.group(1)), m.group(2)
+    else:
+        return operator.eq, text
 
 
 class IncludeExpr:
@@ -232,6 +239,50 @@ class FilterParser:
                 return GlobMatchFunc(child.arg, case_sensitive=False)
             elif child.command == "Glob":
                 return GlobMatchFunc(child.arg, case_sensitive=True)
+            elif child.command in ["t", "type"]:
+                if child.arg == "video":
+                    return RegexMatchFunc(VIDEO_REGEX, re.IGNORECASE)
+                elif child.arg == "image":
+                    return RegexMatchFunc(IMAGE_REGEX, re.IGNORECASE)
+                elif child.arg == "archive":
+                    return RegexMatchFunc(ARCHIVE_REGEX, re.IGNORECASE)
+                elif child.arg in ["folder", "dir", "directory"]:
+                    return FolderMatchFunc()
+                elif child.arg in ["file"]:
+                    return ExcludeMatchFunc(FolderMatchFunc())
+                else:
+                    logger.error("unknown type: %s", child)
+                    return FalseMatchFunc()
+            elif child.command == "fuzzy":
+                return FuzzyMatchFunc()
+            elif child.command == "charset" or child.command == "encoding":
+                if child.arg == "ascii":
+                    return AsciiMatchFunc()
+                else:
+                    logger.error("unknown charset in command: %s", child)
+                    return FalseMatchFunc()
+            elif child.command in ["r", "rx", "re", "regex"]:
+                return RegexMatchFunc(child.arg, re.IGNORECASE)
+            elif child.command in ["R", "Rx", "Re", "Regex"]:
+                return RegexMatchFunc(child.arg, 0)
+            elif child.command in ["len", "length"]:
+                op, rest = parse_op(child.arg)
+                return LengthMatchFunc(int(rest), op)
+            elif child.command in ["size"]:
+                op, rest = parse_op(child.arg)
+                return SizeMatchFunc(bytefmt.dehumanize(rest), op)
+            elif child.command in ["date", "time", "mtime"]:
+                if child.arg == "today":
+                    return TimeMatchFunc(
+                        datetime.datetime.combine(
+                            datetime.date.today(), datetime.datetime.min.time()).timestamp(),
+                        operator.ge)
+                else:
+                    assert False, "unknown time string: {}".format(child)
+            elif child.command == "random":
+                return RandomMatchFunc(float(child.arg))
+            elif child.command == "pick":
+                return RandomPickMatchFunc(int(child.arg))
             else:
                 logger.error("unknown filter command: %s", child)
                 return FalseMatchFunc()
@@ -305,6 +356,7 @@ class FilterParser:
 
         self.register_command(
             ["f", "fuz", "fuzz", "fuzzy"],
+
             lambda args: self._filter.set_fuzzy(args[0]),
             help="Fuzzy match the filename")
 

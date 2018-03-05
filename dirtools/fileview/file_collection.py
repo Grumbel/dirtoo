@@ -131,7 +131,7 @@ class FileCollection(QObject):
         self.sig_files_grouped.emit()
 
     def filter(self, filter: Filter) -> None:
-        filter.apply(self.get_fileinfos())
+        filter.apply(list(self.get_fileinfos()))
         self.sig_files_filtered.emit()
 
     def sort(self, key, reverse: bool=False) -> None:

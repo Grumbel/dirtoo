@@ -46,6 +46,10 @@ class OrMatchFunc(MatchFunc):
     def __init__(self, funcs):
         self._funcs = funcs
 
+    def begin(self, fileinfos):
+        for func in self._funcs:
+            func.begin(fileinfos)
+
     def __call__(self, fileinfo, idx):
         for func in self._funcs:
             if func(fileinfo, idx):
@@ -58,6 +62,10 @@ class AndMatchFunc(MatchFunc):
     def __init__(self, funcs):
         self._funcs = funcs
 
+    def begin(self, fileinfos):
+        for func in self._funcs:
+            func.begin(fileinfos)
+
     def __call__(self, fileinfo, idx):
         for func in self._funcs:
             if not func(fileinfo, idx):
@@ -69,6 +77,9 @@ class ExcludeMatchFunc(MatchFunc):
 
     def __init__(self, func):
         self._func = func
+
+    def begin(self, fileinfos):
+        self._func.begin(fileinfos)
 
     def __call__(self, fileinfo, idx):
         return not self._func(fileinfo, idx)
@@ -188,7 +199,7 @@ class RandomPickMatchFunc(MatchFunc):
 
 class AsciiMatchFunc(MatchFunc):
 
-    def __init__(self, include):
+    def __init__(self, include=True):
         self.rx = re.compile(r'^[0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
                              r'!"#$%&\'()*+,-./:;<=>?@\[\\\]^_`{|}~ \t\n\r\x0b\x0c]*$')
         self.include = include
