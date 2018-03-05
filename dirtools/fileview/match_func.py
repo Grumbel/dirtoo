@@ -15,12 +15,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import logging
 import random
 import re
 from fnmatch import fnmatchcase
 
-
 from dirtools.fuzzy import fuzzy
+
+logger = logging.getLogger(__name__)
 
 
 class MatchFunc:
@@ -150,6 +152,26 @@ class SizeMatchFunc(MatchFunc):
 
     def __call__(self, fileinfo, idx):
         return self.compare(fileinfo.size(), self.size)
+
+
+class MetadataMatchFunc(MatchFunc):
+
+    def __init__(self, field, type, value, compare):
+        self._field = field
+        self._type = type
+        self._value = value
+        self._compare = compare
+
+    def __call__(self, fileinfo, idx):
+        metadata = fileinfo.metadata()
+        if self._field in metadata:
+            try:
+                return self._compare(self._type(metadata[self._field]), self._value)
+            except Exception as err:
+                logger.exception("metadata comparism failed")
+                return False
+        else:
+            return False
 
 
 class LengthMatchFunc(MatchFunc):

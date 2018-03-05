@@ -41,6 +41,7 @@ from dirtools.fileview.match_func import (
     RandomPickMatchFunc,
     FolderMatchFunc,
     AsciiMatchFunc,
+    MetadataMatchFunc,
 )
 
 logger = logging.getLogger(__name__)
@@ -283,6 +284,24 @@ class FilterParser:
                 return RandomMatchFunc(float(child.arg))
             elif child.command == "pick":
                 return RandomPickMatchFunc(int(child.arg))
+            elif child.command == "duration":
+                op, rest = parse_op(child.arg)
+                return MetadataMatchFunc("duration", float, float(rest), op)
+            elif child.command == "width":
+                op, rest = parse_op(child.arg)
+                return MetadataMatchFunc("width", float, float(rest), op)
+            elif child.command == "height":
+                op, rest = parse_op(child.arg)
+                return MetadataMatchFunc("height", float, float(rest), op)
+            elif child.command == "framerate":
+                op, rest = parse_op(child.arg)
+                return MetadataMatchFunc("framerate", float, float(rest), op)
+            elif child.command == "pages":
+                op, rest = parse_op(child.arg)
+                return MetadataMatchFunc("pages", int, int(rest), op)
+            elif child.command == "filecount":
+                op, rest = parse_op(child.arg)
+                return MetadataMatchFunc("file_count", int, int(rest), op)
             else:
                 logger.error("unknown filter command: %s", child)
                 return FalseMatchFunc()
