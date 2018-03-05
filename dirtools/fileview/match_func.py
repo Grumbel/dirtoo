@@ -35,6 +35,45 @@ class MatchFunc:
         pass
 
 
+class FalseMatchFunc(MatchFunc):
+
+    def __call__(self, fileinfo, idx):
+        return False
+
+
+class OrMatchFunc(MatchFunc):
+
+    def __init__(self, funcs):
+        self._funcs = funcs
+
+    def __call__(self, fileinfo, idx):
+        for func in self._funcs:
+            if func(fileinfo, idx):
+                return True
+        return False
+
+
+class AndMatchFunc(MatchFunc):
+
+    def __init__(self, funcs):
+        self._funcs = funcs
+
+    def __call__(self, fileinfo, idx):
+        for func in self._funcs:
+            if not func(fileinfo, idx):
+                return False
+        return True
+
+
+class ExcludeMatchFunc(MatchFunc):
+
+    def __init__(self, func):
+        self._func = func
+
+    def __call__(self, fileinfo, idx):
+        return not self._func(fileinfo, idx)
+
+
 class FolderMatchFunc(MatchFunc):
 
     def __init__(self):

@@ -17,12 +17,34 @@
 
 from typing import Dict, Callable, List, Union, Tuple, Optional
 
+import logging
 import re
 import sys
 import datetime
 import operator
+import shlex
 
 import bytefmt
+
+from dirtools.fileview.match_func import (
+    MatchFunc,
+    FalseMatchFunc,
+    ExcludeMatchFunc,
+    AndMatchFunc,
+    OrMatchFunc,
+    RegexMatchFunc,
+    GlobMatchFunc,
+    FuzzyMatchFunc,
+    SizeMatchFunc,
+    LengthMatchFunc,
+    TimeMatchFunc,
+    RandomMatchFunc,
+    RandomPickMatchFunc,
+    FolderMatchFunc,
+    AsciiMatchFunc,
+)
+
+logger = logging.getLogger(__name__)
 
 
 VIDEO_EXT = ['wmv', 'mp4', 'mpg', 'mpeg', 'm2v', 'avi', 'flv', 'mkv', 'wmv',
@@ -55,6 +77,52 @@ def get_compare_operator(text):
     return CMPTEXT2OP[text]
 
 
+class IncludeExpr:
+
+    def __init__(self, s, loc, toks):
+        self.child = toks[0]
+
+    def __repr__(self):
+        return f"Include({self.child})"
+
+
+class ExcludeExpr:
+
+    def __init__(self, s, loc, toks):
+        self.child = toks[0]
+
+    def __repr__(self):
+        return f"Exclude({self.child})"
+
+
+class CommandExpr:
+
+    def __init__(self, s, loc, toks):
+        self.command = toks[0]
+        self.arg = toks[1]
+
+    def __repr__(self):
+        return f"Command({self.command}:{self.arg})"
+
+
+class OrKeywordExpr:
+
+    def __init__(self, s, loc, toks):
+        self.keyword = toks[0].upper()
+
+    def __repr__(self):
+        return f"OR"
+
+
+class AndKeywordExpr:
+
+    def __init__(self, s, loc, toks):
+        self.keyword = toks[0].upper()
+
+    def __repr__(self):
+        return f"AND"
+
+
 class FilterParser:
 
     def __init__(self, filter):
@@ -64,7 +132,9 @@ class FilterParser:
         self._register_commands()
 
     def _make_grammar(self):
-        from pyparsing import (QuotedString, ZeroOrMore, Combine, OneOrMore, Regex)
+        from pyparsing import (QuotedString, ZeroOrMore, Combine,
+                               Word, Literal, Optional, OneOrMore,
+                               Regex, alphas, CaselessKeyword)
 
         def escape_handler(s, loc, toks):
             if toks[0] == '\\\\':
@@ -88,8 +158,95 @@ class FilterParser:
 
         escape = Combine(Regex(r'\\.')).setParseAction(escape_handler)
         word = Combine(OneOrMore(escape | Regex(r'[^\s\\]+')))
-        arguments = ZeroOrMore(QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\') | word)
-        return arguments
+        whitespace = Regex(r'\s+').suppress()
+        quotedstring = Combine(OneOrMore(QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\')))
+        command = Word(alphas) + Literal(":").suppress() + (quotedstring | word)
+        include = quotedstring | command | word
+        exclude = Literal("-").suppress() + (quotedstring | command | word)
+        or_keyword = CaselessKeyword("or")
+        and_keyword = CaselessKeyword("and")
+        keyword = or_keyword | and_keyword
+
+        argument = (keyword | exclude | include)
+        expr = ZeroOrMore(Optional(whitespace) + argument)
+
+        # arguments.leaveWhitespace()
+
+        command.setParseAction(CommandExpr)
+        include.setParseAction(IncludeExpr)
+        exclude.setParseAction(ExcludeExpr)
+        or_keyword.setParseAction(OrKeywordExpr)
+        and_keyword.setParseAction(AndKeywordExpr)
+
+        # or_expr.setParseAction(lambda s, loc, toks: OrOperator(toks[0], toks[2]))
+        # and_expr.setParseAction(lambda s, loc, toks: AndOperator(toks[0], toks[2]))
+        # no_expr.setParseAction(lambda s, loc, toks: AndOperator(toks[0], toks[1]))
+        # expr.setParseAction(Operator)
+
+        return expr
+
+    def _parse_tokens(self, tokens):
+        result = [[]]
+
+        for token in tokens:
+            if isinstance(token, AndKeywordExpr):
+                pass  # ignore
+            elif isinstance(token, OrKeywordExpr):
+                result.append([])
+            elif (isinstance(token, IncludeExpr) or
+                  isinstance(token, ExcludeExpr) or
+                  isinstance(token, CommandExpr)):
+                result[-1].append(token)
+            else:
+                assert False, "unknown token: {}".format(token)
+
+        # Remove empty lists that result from unterminated OR keywords
+        result = list(filter(bool, result))
+
+        return result
+
+    def parse2(self, text):
+        tokens = self._grammar.parseString(text, parseAll=True)
+        parsed_tokens = self._parse_tokens(tokens)
+
+        or_funcs = []
+        for tokens in parsed_tokens:
+            and_funcs = []
+            for token in tokens:
+                and_funcs.append(self._make_func(token))
+            or_funcs.append(AndMatchFunc(and_funcs))
+
+        return OrMatchFunc(or_funcs)
+
+    def _make_child_func(self, child):
+        if isinstance(child, str):
+            # If the pattern doesn't contain special characters
+            # perform a basic substring search instead of a glob
+            # pattern search.
+            if re.search(r"[\*\?\[\]]", child):
+                return GlobMatchFunc(child, case_sensitive=False)
+            else:
+                return GlobMatchFunc(f"*{child}*", case_sensitive=False)
+        elif isinstance(child, CommandExpr):
+            if child.command == "glob":
+                return GlobMatchFunc(child.arg, case_sensitive=False)
+            elif child.command == "Glob":
+                return GlobMatchFunc(child.arg, case_sensitive=True)
+            else:
+                logger.error("unknown filter command: %s", child)
+                return FalseMatchFunc()
+        else:
+            assert False, "unknown child: {}".format(child)
+
+    def _make_func(self, token):
+        if isinstance(token, IncludeExpr):
+            return self._make_child_func(token.child)
+        elif isinstance(token, ExcludeExpr):
+            return ExcludeMatchFunc(self._make_child_func(token.child))
+        elif isinstance(token, CommandExpr):
+            return self._make_child_func(token)
+        else:
+            assert False, "unknown token: {}".format(token)
 
     def _register_commands(self):
         self.register_command(
@@ -196,13 +353,8 @@ class FilterParser:
                 _, func, _ = cmd
                 func(args)
         else:
-            # If the pattern doesn't contain special characters
-            # perform a basic substring search instead of a glob
-            # pattern search.
-            if re.search(r"[\*\?\[\]]", pattern):
-                self._filter.set_pattern(pattern, case_sensitive=False)
-            else:
-                self._filter.set_pattern("*{}*".format(pattern), case_sensitive=False)
+            func = self.parse2(pattern)
+            self._filter.set_match_func(func)
 
 
 # EOF #
