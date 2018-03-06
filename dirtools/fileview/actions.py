@@ -133,6 +133,11 @@ class Actions(QObject):
         self.forward.setEnabled(False)
         self.forward.triggered.connect(self.controller.go_forward)
 
+        self.search = QAction(QIcon.fromTheme('system-search'), 'Search', self)
+        self.search.setShortcut('F3')
+        self.search.setStatusTip('Search for files')
+        self.search.triggered.connect(self.controller.search)
+
         self.reload = QAction(QIcon.fromTheme('reload'), 'Reload', self)
         self.reload.setShortcut('F5')
         self.reload.setStatusTip('Reload the View')

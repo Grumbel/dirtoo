@@ -39,6 +39,7 @@ from dirtools.fileview.filelist_stream import FileListStream
 from dirtools.xdg_desktop import get_desktop_entry, get_desktop_file
 from dirtools.fileview.location import Location, Payload
 from dirtools.fileview.file_info import FileInfo
+from dirtools.fileview.find_stream import FindStream
 from dirtools.fileview.menu import Menu
 
 logger = logging.getLogger(__name__)
@@ -70,6 +71,7 @@ class Controller(QObject):
 
         self.directory_watcher: Optional[DirectoryWatcher] = None
         self.filelist_stream: Optional[FileListStream] = None
+        self.find_stream: Optional[FindStream] = None
 
         self.window.file_view.set_file_collection(self.file_collection)
         self.window.thumb_view.set_file_collection(self.file_collection)
@@ -88,6 +90,10 @@ class Controller(QObject):
         if self.filelist_stream is not None:
             self.filelist_stream.close()
             self.filelist_stream = None
+
+        if self.find_stream is not None:
+            self.find_stream.close()
+            self.find_stream = None
 
         self.window._message_area.hide()
 
@@ -147,6 +153,16 @@ class Controller(QObject):
         self.window.thumb_view.less_details()
 
     def show_filter_help(self) -> None:
+        parser = FilterParser(self.filter)
+
+        fout = io.StringIO()
+        parser.print_help(fout)
+
+        self.filter_help.setText(fout.getvalue())
+        self.filter_help.resize(480, 800)
+        self.filter_help.show()
+
+    def show_search_help(self) -> None:
         parser = FilterParser(self.filter)
 
         fout = io.StringIO()
@@ -618,6 +634,32 @@ class Controller(QObject):
     def has_bookmark(self) -> bool:
         entries = self.app.bookmarks.get_entries()
         return bool(self.location in entries)
+
+    def search(self) -> None:
+        self.window.search_toolbar.show()
+        self.window.location_toolbar.hide()
+        self.window.search_lineedit.setFocus()
+
+    def show_location_toolbar(self) -> None:
+        self.window.search_toolbar.hide()
+        self.window.location_toolbar.show()
+        self.window.file_path.setFocus(Qt.ShortcutFocusReason)
+
+    def start_search(self, query):
+        self.close()
+
+        print("Search:", query)
+
+        if self.location is None:
+            abspath = "/tmp"
+        else:
+            abspath = self.app.vfs.get_stdio_name(self.location)
+
+        self.file_collection.clear()
+        self.find_stream = FindStream(abspath, query)
+        self.find_stream.sig_file_added.connect(self.file_collection.add_fileinfo)
+        self.find_stream.sig_end_of_stream.connect(lambda: self.window.hide_loading())
+        self.find_stream.start()
 
 
 from dirtools.fileview.application import FileViewApplication  # noqa: F401

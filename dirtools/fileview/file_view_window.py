@@ -60,6 +60,7 @@ class FileViewWindow(QMainWindow):
         self.addToolBarBreak()
         self.make_location_toolbar()
         self.make_filter_toolbar()
+        self.make_search_toolbar()
         self.make_shortcut()
 
         self.thumb_view.setFocus()
@@ -76,7 +77,7 @@ class FileViewWindow(QMainWindow):
     def make_shortcut(self):
         shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_L), self)
         shortcut.setContext(Qt.WindowShortcut)
-        shortcut.activated.connect(lambda: self.file_path.setFocus(Qt.ShortcutFocusReason))
+        shortcut.activated.connect(self.controller.show_location_toolbar)
 
         def show_filter():
             self.file_filter.setFocus(Qt.ShortcutFocusReason)
@@ -85,6 +86,10 @@ class FileViewWindow(QMainWindow):
         shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_K), self)
         shortcut.setContext(Qt.WindowShortcut)
         shortcut.activated.connect(show_filter)
+
+        shortcut = QShortcut(QKeySequence(Qt.Key_F3), self)
+        shortcut.setContext(Qt.WindowShortcut)
+        shortcut.activated.connect(self.controller.search)
 
         shortcut = QShortcut(QKeySequence(Qt.ALT + Qt.Key_Up), self)
         shortcut.setContext(Qt.WindowShortcut)
@@ -111,6 +116,7 @@ class FileViewWindow(QMainWindow):
     def make_window(self):
         from dirtools.fileview.location_line_edit import LocationLineEdit
         from dirtools.fileview.filter_line_edit import FilterLineEdit
+        from dirtools.fileview.search_line_edit import SearchLineEdit
 
         self.setWindowTitle("dt-fileview")
         self.setWindowIcon(QIcon(resource_filename("dirtools", "fileview/dt-fileview.svg")))
@@ -121,6 +127,7 @@ class FileViewWindow(QMainWindow):
         self.file_view.hide()
         self.thumb_view = ThumbView(self.controller)
 
+        self.search_lineedit = SearchLineEdit(self.controller)
         self.file_path = LocationLineEdit(self.controller)
         self.file_filter = FilterLineEdit(self.controller)
         # self.file_filter.setText("File Pattern Here")
@@ -167,6 +174,29 @@ class FileViewWindow(QMainWindow):
         self.filter_toolbar.addWidget(widget)
         self.addToolBar(Qt.BottomToolBarArea, self.filter_toolbar)
         self.filter_toolbar.hide()
+
+    def make_search_toolbar(self):
+        hbox = QHBoxLayout()
+
+        form = QFormLayout()
+        label = QLabel("Search:")
+        label.setBuddy(self.search_lineedit)
+        form.addRow(label, self.search_lineedit)
+        form.setContentsMargins(0, 0, 0, 0)
+        hbox.addLayout(form)
+
+        help_button = QPushButton("Help")
+        help_button.clicked.connect(self.controller.show_search_help)
+        hbox.addWidget(help_button)
+        hbox.setContentsMargins(0, 0, 0, 0)
+
+        widget = QWidget()
+        widget.setLayout(hbox)
+
+        self.search_toolbar = QToolBar("Search")
+        self.search_toolbar.addWidget(widget)
+        self.addToolBar(Qt.TopToolBarArea, self.search_toolbar)
+        self.search_toolbar.hide()
 
     def make_location_toolbar(self):
         self.location_toolbar = self.addToolBar("Location")
