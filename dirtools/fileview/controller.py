@@ -637,7 +637,6 @@ class Controller(QObject):
 
     def search(self) -> None:
         self.window.search_toolbar.show()
-        self.window.location_toolbar.hide()
         self.window.search_lineedit.setFocus()
 
     def show_location_toolbar(self) -> None:

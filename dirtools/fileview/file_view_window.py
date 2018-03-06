@@ -216,6 +216,8 @@ class FileViewWindow(QMainWindow):
         widget.setLayout(form)
         self.location_toolbar.addWidget(widget)
 
+        self.addToolBarBreak(Qt.TopToolBarArea)
+
     def make_group_menu(self):
         menu = QMenu("Group Options")
         menu.addAction(self.actions.group_by_none)
