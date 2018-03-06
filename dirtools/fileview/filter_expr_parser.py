@@ -166,7 +166,7 @@ class FilterExprParser:
         quotedstring = Combine(OneOrMore(QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\')))
         command = Word(alphas) + Literal(":").suppress() + (quotedstring | word)
         include = quotedstring | command | word
-        exclude = Literal("-").suppress() + (quotedstring | command | word)
+        exclude = (Literal("-") | Literal("^")).suppress() + (quotedstring | command | word)
         or_keyword = CaselessKeyword("or")
         and_keyword = CaselessKeyword("and")
         keyword = or_keyword | and_keyword
