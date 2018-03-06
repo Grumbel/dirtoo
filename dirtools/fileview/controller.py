@@ -648,8 +648,6 @@ class Controller(QObject):
     def start_search(self, query):
         self.close()
 
-        print("Search:", query)
-
         if self.location is None:
             abspath = "/tmp"
         else:

@@ -23,7 +23,6 @@ import os
 from PyQt5.QtCore import QObject, pyqtSignal, QThread, Qt
 
 from dirtools.fileview.file_info import FileInfo
-from dirtools.find.util import find_files
 from dirtools.find.action import Action
 from dirtools.find.filter import SimpleFilter
 
@@ -46,21 +45,33 @@ class FindStreamWorker(QObject):
         self._filter: Optional[SimpleFilter] = None
 
     def close(self):
-        print("FindStream.close")
         pass
 
     def init(self) -> None:
-        print("INIT")
         self._action = FindStreamAction(self)
         self._filter = SimpleFilter.from_string(self._pattern)
 
-        find_files(self._abspath, True,
-                   filter_op=self._filter,
-                   action=self._action,
-                   topdown=False, maxdepth=None)
+        self._find_files(self._abspath, True,
+                         filter_op=self._filter,
+                         action=self._action,
+                         topdown=False, maxdepth=None)
 
         self.sig_end_of_stream.emit()
-        print("end of stream")
+
+    def _find_files(self, directory, recursive, filter_op, action, topdown, maxdepth):
+        assert topdown is False, "not implemented"
+        assert maxdepth is None, "not implemented"
+
+        for root, dirs, files in os.walk(directory):
+            for f in files:
+                if filter_op.match_file(root, f):
+                    action.file(root, f)
+
+                if self._close:
+                    return
+
+            if not recursive:
+                del dirs[:]
 
 
 class FindStreamAction(Action):
@@ -72,13 +83,11 @@ class FindStreamAction(Action):
         fullpath = os.path.join(root, filename)
         fileinfo = FileInfo.from_filename(fullpath)
         self._worker.sig_file_added.emit(fileinfo)
-        print("FILE", root, fileinfo)
 
     def directory(self, root: str, filename: str) -> None:
         fullpath = os.path.join(root, filename)
         fileinfo = FileInfo.from_filename(fullpath)
         self._worker.sig_file_added.emit(fileinfo)
-        print("DIR", root, fileinfo)
 
     def finish(self) -> None:
         pass
