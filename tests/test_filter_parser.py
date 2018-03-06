@@ -17,13 +17,13 @@
 
 import unittest
 
-from dirtools.fileview.filter_parser import FilterParser
+from dirtools.fileview.filter_expr_parser import FilterExprParser
 
 
 class UtilTestCase(unittest.TestCase):
 
     def test_filter_parser(self):
-        grammar = FilterParser._make_grammar(None)
+        grammar = FilterExprParser._make_grammar(None)
         grammar.leaveWhitespace()
 
         test_strings = [
@@ -40,9 +40,9 @@ class UtilTestCase(unittest.TestCase):
         ]
 
         print()
-        parser = FilterParser(None)
+        parser = FilterExprParser()
         for string in test_strings:
             # print(grammar.parseString(string, parseAll=True))
-            parser.parse2(string)
+            parser.parse(string)
 
 # EOF #
