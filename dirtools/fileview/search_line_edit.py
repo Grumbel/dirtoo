@@ -18,8 +18,8 @@
 from typing import List
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPalette, QIcon
-from PyQt5.QtWidgets import QLineEdit
+from PyQt5.QtGui import QPalette, QIcon, QKeySequence
+from PyQt5.QtWidgets import QLineEdit, QShortcut
 
 
 class SearchLineEdit(QLineEdit):
@@ -34,8 +34,12 @@ class SearchLineEdit(QLineEdit):
         self.history_idx = 0
 
         action = self.addAction(QIcon.fromTheme("window-close"), QLineEdit.TrailingPosition)
-        action.triggered.connect(self.controller.show_location_toolbar)
+        action.triggered.connect(self.controller.hide_search_toolbar)
         action.setToolTip("Close the Search")
+
+        shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_G), self)
+        shortcut.setContext(Qt.WidgetShortcut)
+        shortcut.activated.connect(self.controller.hide_search_toolbar)
 
     def keyPressEvent(self, ev):
         super().keyPressEvent(ev)

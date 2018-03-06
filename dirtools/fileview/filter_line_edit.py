@@ -18,8 +18,8 @@
 from typing import List
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPalette, QIcon
-from PyQt5.QtWidgets import QLineEdit
+from PyQt5.QtGui import QPalette, QIcon, QKeySequence
+from PyQt5.QtWidgets import QLineEdit, QShortcut
 
 
 class FilterLineEdit(QLineEdit):
@@ -37,16 +37,26 @@ class FilterLineEdit(QLineEdit):
         action.triggered.connect(self.on_delete_button)
         action.setToolTip("Clear the filter and hide it")
 
+        shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_G), self)
+        shortcut.setContext(Qt.WidgetShortcut)
+        shortcut.activated.connect(self.reset)
+
+        shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_Escape), self)
+        shortcut.setContext(Qt.WidgetShortcut)
+        shortcut.activated.connect(self.reset)
+
+        shortcut = QShortcut(QKeySequence(Qt.Key_Up), self)
+        shortcut.setContext(Qt.WidgetShortcut)
+        shortcut.activated.connect(self.history_up)
+
+        shortcut = QShortcut(QKeySequence(Qt.Key_Down), self)
+        shortcut.setContext(Qt.WidgetShortcut)
+        shortcut.activated.connect(self.history_down)
+
     def keyPressEvent(self, ev):
         super().keyPressEvent(ev)
-        if ev.key() == Qt.Key_Escape:
-            self.reset()
-        elif ev.key() == Qt.Key_Up:
-            self.history_up()
-        elif ev.key() == Qt.Key_Down:
-            self.history_down()
-        else:
-            self.history_idx = -1
+        # else:
+        #   self.history_idx = -1
 
     def reset(self) -> None:
         self.clear()
