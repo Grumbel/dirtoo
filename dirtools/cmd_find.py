@@ -15,24 +15,29 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import List, Optional
 
 import sys
 import argparse
 
 from dirtools.find.action import Action, MultiAction, PrinterAction, ExecAction, ExprSorterAction
-from dirtools.find.filter import ExprFilter, NoFilter
+from dirtools.find.filter import ExprFilter, SimpleFilter, NoFilter
 from dirtools.find.util import find_files
 
 
-def parse_args(args: List[str]) -> argparse.Namespace:
+def parse_args(args: List[str], simple) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Find files")
 
-    parser.add_argument("DIRECTORY", nargs='*')
+    if simple:
+        parser.add_argument("QUERY", nargs='*')
+    else:
+        parser.add_argument("DIRECTORY", nargs='*')
 
     trav_grp = parser.add_argument_group("Traversial Options")
+
     trav_grp.add_argument("-r", "--recursive", action='store_true',
                           help="Recursize into the directory tree")
+
     trav_grp.add_argument("-D", "--maxdepth", metavar="INT", type=int, default=None,
                           help="Maximum recursion depth")
     trav_grp.add_argument("-d", "--depth", action='store_true', default=False,
@@ -75,7 +80,7 @@ def create_action(args: argparse.Namespace) -> Action:
     elif args.null:
         action.add(PrinterAction("{fullpath()}\0"))
     elif args.list:
-        action.add(PrinterAction("{modehr()}  {owner()}  {group()}  {sizehr():>8}  {iso()} {time()}  {fullpath()}\n",
+        action.add(PrinterAction("{modehr()}  {owner()}  {group()}  {sizehr():>9}  {iso()} {time()}  {fullpath()}\n",
                                  finisher=True))
     elif args.println:
         action.add(PrinterAction(args.println + "\n"))
@@ -90,9 +95,16 @@ def create_action(args: argparse.Namespace) -> Action:
     return action
 
 
-def create_filter(args: argparse.Namespace):
-    if args.filter:
-        return ExprFilter(args.filter)
+def create_filter(filter_text: Optional[str]):
+    if filter_text:
+        return ExprFilter(filter_text)
+    else:
+        return NoFilter()
+
+
+def create_simple_filter(filter_text: Optional[str]):
+    if filter_text:
+        return ExprFilter(filter_text)
     else:
         return NoFilter()
 
@@ -104,20 +116,31 @@ def create_sorter_wrapper(args: argparse.Namespace, find_action):
         return ExprSorterAction(args.sort, args.reverse, find_action)
 
 
-def main():
-    args = parse_args(sys.argv[1:])
-
-    directories = args.DIRECTORY or ['.']
+def main(argv, simple):
+    args = parse_args(argv[1:], simple)
 
     find_action = create_action(args)
-    find_filter = create_filter(args)
-
     find_action = create_sorter_wrapper(args, find_action)
+
+    if simple:
+        find_filter = SimpleFilter.from_string(" ".join(args.QUERY))
+        directories = ["."]
+    else:
+        find_filter = create_filter(args.filter)
+        directories = args.DIRECTORY or ['.']
 
     for d in directories:
         find_files(d, args.recursive, find_filter, find_action, topdown=args.depth, maxdepth=args.maxdepth)
 
     find_action.finish()
+
+
+def search_entrypoint():
+    main(sys.argv, simple=True)
+
+
+def find_entrypoint():
+    main(sys.argv, simple=False)
 
 
 # EOF #

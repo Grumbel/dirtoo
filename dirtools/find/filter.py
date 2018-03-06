@@ -20,6 +20,8 @@ from typing import Dict
 import os
 
 from dirtools.find.context import Context
+from dirtools.fileview.filter_expr_parser import FilterExprParser
+from dirtools.fileview.file_info import FileInfo
 
 
 class NoFilter:
@@ -50,6 +52,24 @@ class ExprFilter:
         }
         result = eval(self.expr, self.global_vars, local_vars)  # pylint: disable=W0123
         return result
+
+
+class SimpleFilter:
+
+    @staticmethod
+    def from_string(text: str):
+        parser = FilterExprParser()
+        filter_expr = parser.parse(text)
+        return SimpleFilter(filter_expr)
+
+    def __init__(self, expr):
+        self._expr = expr
+
+    def match_file(self, root, filename):
+        path = os.path.join(root, filename)
+
+        fileinfo = FileInfo.from_filename(path)
+        return self._expr(fileinfo, 0)
 
 
 # EOF #
