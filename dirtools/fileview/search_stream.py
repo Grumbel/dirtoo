@@ -30,7 +30,7 @@ from dirtools.find.walk import walk
 logger = logging.getLogger(__name__)
 
 
-class FindStreamWorker(QObject):
+class SearchStreamWorker(QObject):
 
     sig_file_added = pyqtSignal(FileInfo)
     sig_end_of_stream = pyqtSignal()
@@ -42,14 +42,14 @@ class FindStreamWorker(QObject):
         self._pattern = pattern
         self._close = False
 
-        self._action: Optional[FindStreamAction] = None
+        self._action: Optional[SearchStreamAction] = None
         self._filter: Optional[SimpleFilter] = None
 
     def close(self):
         pass
 
     def init(self) -> None:
-        self._action = FindStreamAction(self)
+        self._action = SearchStreamAction(self)
         self._filter = SimpleFilter.from_string(self._pattern)
 
         self._find_files(self._abspath, True,
@@ -72,9 +72,9 @@ class FindStreamWorker(QObject):
                 del dirs[:]
 
 
-class FindStreamAction(Action):
+class SearchStreamAction(Action):
 
-    def __init__(self, worker: FindStreamWorker) -> None:
+    def __init__(self, worker: SearchStreamWorker) -> None:
         self._worker = worker
 
     def file(self, root: str, filename: str) -> None:
@@ -91,13 +91,13 @@ class FindStreamAction(Action):
         pass
 
 
-class FindStream(QObject):
+class SearchStream(QObject):
 
     sig_close_requested = pyqtSignal()
 
     def __init__(self, abspath: str, pattern: str) -> None:
         super().__init__()
-        self._worker = FindStreamWorker(abspath, pattern)
+        self._worker = SearchStreamWorker(abspath, pattern)
         self._thread = QThread(self)
         self._worker.moveToThread(self._thread)
 

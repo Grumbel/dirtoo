@@ -39,7 +39,7 @@ from dirtools.fileview.filelist_stream import FileListStream
 from dirtools.xdg_desktop import get_desktop_entry, get_desktop_file
 from dirtools.fileview.location import Location, Payload
 from dirtools.fileview.file_info import FileInfo
-from dirtools.fileview.find_stream import FindStream
+from dirtools.fileview.search_stream import SearchStream
 from dirtools.fileview.menu import Menu
 
 logger = logging.getLogger(__name__)
@@ -62,16 +62,16 @@ class Controller(QObject):
         self.actions = Actions(self)
         self.window = FileViewWindow(self)
 
-        self.filter = Filter()
-        self.sorter = Sorter(self)
-        self.grouper = Grouper()
+        self._filter = Filter()
+        self._sorter = Sorter(self)
+        self._grouper = Grouper()
 
-        self.history: List[Location] = []
-        self.history_index = 0
+        self._location_history: List[Location] = []
+        self._location_history_index = 0
 
-        self.directory_watcher: Optional[DirectoryWatcher] = None
-        self.filelist_stream: Optional[FileListStream] = None
-        self.find_stream: Optional[FindStream] = None
+        self._directory_watcher: Optional[DirectoryWatcher] = None
+        self._filelist_stream: Optional[FileListStream] = None
+        self._search_stream: Optional[SearchStream] = None
 
         self.window.file_view.set_file_collection(self.file_collection)
         self.window.thumb_view.set_file_collection(self.file_collection)
@@ -83,17 +83,17 @@ class Controller(QObject):
         self._apply_settings()
 
     def close(self) -> None:
-        if self.directory_watcher is not None:
-            self.directory_watcher.close()
-            self.directory_watcher = None
+        if self._directory_watcher is not None:
+            self._directory_watcher.close()
+            self._directory_watcher = None
 
-        if self.filelist_stream is not None:
-            self.filelist_stream.close()
-            self.filelist_stream = None
+        if self._filelist_stream is not None:
+            self._filelist_stream.close()
+            self._filelist_stream = None
 
-        if self.find_stream is not None:
-            self.find_stream.close()
-            self.find_stream = None
+        if self._search_stream is not None:
+            self._search_stream.close()
+            self._search_stream = None
 
         self.window._message_area.hide()
 
@@ -119,7 +119,7 @@ class Controller(QObject):
         self.app.close_controller(self)
 
     def show_hidden(self) -> None:
-        self.filter.show_hidden = not self.filter.show_hidden
+        self._filter.show_hidden = not self._filter.show_hidden
         self.apply_filter()
 
     def show_filtered(self) -> None:
@@ -153,7 +153,7 @@ class Controller(QObject):
         self.window.thumb_view.less_details()
 
     def show_filter_help(self) -> None:
-        parser = FilterParser(self.filter)
+        parser = FilterParser(self._filter)
 
         fout = io.StringIO()
         parser.print_help(fout)
@@ -163,7 +163,7 @@ class Controller(QObject):
         self.filter_help.show()
 
     def show_search_help(self) -> None:
-        parser = FilterParser(self.filter)
+        parser = FilterParser(self._filter)
 
         fout = io.StringIO()
         parser.print_help(fout)
@@ -176,24 +176,24 @@ class Controller(QObject):
         self.window.thumb_view.more_details()
 
     def set_filter(self, pattern):
-        parser = FilterParser(self.filter)
+        parser = FilterParser(self._filter)
         parser.parse(pattern)
         self.apply_filter()
 
     def go_forward(self) -> None:
-        if self.history != []:
-            self.history_index = min(self.history_index + 1, len(self.history) - 1)
-            self.history[self.history_index]
-            self.set_location(self.history[self.history_index], track_history=False)
-            if self.history_index == len(self.history) - 1:
+        if self._location_history != []:
+            self._location_history_index = min(self._location_history_index + 1, len(self._location_history) - 1)
+            self._location_history[self._location_history_index]
+            self.set_location(self._location_history[self._location_history_index], track_history=False)
+            if self._location_history_index == len(self._location_history) - 1:
                 self.actions.forward.setEnabled(False)
             self.actions.back.setEnabled(True)
 
     def go_back(self) -> None:
-        if self.history != []:
-            self.history_index = max(self.history_index - 1, 0)
-            self.set_location(self.history[self.history_index], track_history=False)
-            if self.history_index == 0:
+        if self._location_history != []:
+            self._location_history_index = max(self._location_history_index - 1, 0)
+            self.set_location(self._location_history[self._location_history_index], track_history=False)
+            if self._location_history_index == 0:
                 self.actions.back.setEnabled(False)
             self.actions.forward.setEnabled(True)
 
@@ -209,9 +209,9 @@ class Controller(QObject):
         self.app.location_history.append(location)
 
         if track_history:
-            self.history = self.history[0:self.history_index + 1]
-            self.history_index = len(self.history)
-            self.history.append(location)
+            self._location_history = self._location_history[0:self._location_history_index + 1]
+            self._location_history_index = len(self._location_history)
+            self._location_history.append(location)
             self.actions.back.setEnabled(True)
             self.actions.forward.setEnabled(False)
 
@@ -224,16 +224,16 @@ class Controller(QObject):
     def _set_directory_location(self, location: Location) -> None:
         self.file_collection.clear()
 
-        if self.directory_watcher is not None:
-            self.directory_watcher.close()
-        self.directory_watcher = self.app.vfs.opendir(location)
-        self.directory_watcher.sig_file_added.connect(self.file_collection.add_fileinfo)
-        self.directory_watcher.sig_file_removed.connect(self.file_collection.remove_file)
-        self.directory_watcher.sig_file_changed.connect(self.file_collection.change_file)
-        self.directory_watcher.sig_file_closed.connect(self.file_collection.close_file)
-        self.directory_watcher.sig_scandir_finished.connect(self.on_scandir_finished)
-        self.directory_watcher.sig_message.connect(self._on_directory_watcher_message)
-        self.directory_watcher.start()
+        if self._directory_watcher is not None:
+            self._directory_watcher.close()
+        self._directory_watcher = self.app.vfs.opendir(location)
+        self._directory_watcher.sig_file_added.connect(self.file_collection.add_fileinfo)
+        self._directory_watcher.sig_file_removed.connect(self.file_collection.remove_file)
+        self._directory_watcher.sig_file_changed.connect(self.file_collection.change_file)
+        self._directory_watcher.sig_file_closed.connect(self.file_collection.close_file)
+        self._directory_watcher.sig_scandir_finished.connect(self.on_scandir_finished)
+        self._directory_watcher.sig_message.connect(self._on_directory_watcher_message)
+        self._directory_watcher.start()
 
         self.location = location
         self.window.set_location(self.location)
@@ -279,10 +279,10 @@ class Controller(QObject):
 
         self.window.show_loading()
 
-        self.filelist_stream = stream
-        self.filelist_stream.sig_file_added.connect(self.file_collection.add_fileinfo)
-        self.filelist_stream.sig_end_of_stream.connect(lambda: self.window.hide_loading())
-        self.filelist_stream.start()
+        self._filelist_stream = stream
+        self._filelist_stream.sig_file_added.connect(self.file_collection.add_fileinfo)
+        self._filelist_stream.sig_end_of_stream.connect(lambda: self.window.hide_loading())
+        self._filelist_stream.start()
 
         self.sig_location_changed_to_none.emit()
 
@@ -299,15 +299,15 @@ class Controller(QObject):
 
     def apply_grouper(self) -> None:
         logger.debug("Controller.apply_grouper")
-        self.file_collection.group(self.grouper)
+        self.file_collection.group(self._grouper)
 
     def apply_sort(self) -> None:
         logger.debug("Controller.apply_sort")
-        self.sorter.apply(self.file_collection)
+        self._sorter.apply(self.file_collection)
 
     def apply_filter(self) -> None:
         logger.debug("Controller.apply_filter")
-        self.file_collection.filter(self.filter)
+        self.file_collection.filter(self._filter)
         self._update_info()
 
     def _update_info(self) -> None:
@@ -593,19 +593,19 @@ class Controller(QObject):
         self.window.thumb_view.reload_thumbnails()
 
     def set_grouper_by_none(self) -> None:
-        self.grouper.set_func(NoGrouperFunc())
+        self._grouper.set_func(NoGrouperFunc())
         self.apply_grouper()
 
     def set_grouper_by_directory(self) -> None:
-        self.grouper.set_func(DirectoryGrouperFunc())
+        self._grouper.set_func(DirectoryGrouperFunc())
         self.apply_grouper()
 
     def set_grouper_by_day(self) -> None:
-        self.grouper.set_func(DayGrouperFunc())
+        self._grouper.set_func(DayGrouperFunc())
         self.apply_grouper()
 
     def set_grouper_by_duration(self) -> None:
-        self.grouper.set_func(DurationGrouperFunc())
+        self._grouper.set_func(DurationGrouperFunc())
         self.apply_grouper()
 
     def show_rename_dialog(self, location: Optional[Location]=None) -> None:
@@ -664,10 +664,10 @@ class Controller(QObject):
             abspath = self.app.vfs.get_stdio_name(self.location)
 
         self.file_collection.clear()
-        self.find_stream = FindStream(abspath, query)
-        self.find_stream.sig_file_added.connect(self.file_collection.add_fileinfo)
-        self.find_stream.sig_end_of_stream.connect(lambda: self.window.hide_loading())
-        self.find_stream.start()
+        self._search_stream = SearchStream(abspath, query)
+        self._search_stream.sig_file_added.connect(self.file_collection.add_fileinfo)
+        self._search_stream.sig_end_of_stream.connect(lambda: self.window.hide_loading())
+        self._search_stream.start()
 
         self.window.thumb_view.setFocus()
 
