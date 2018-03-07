@@ -60,9 +60,7 @@ class FindStreamWorker(QObject):
         self.sig_end_of_stream.emit()
 
     def _find_files(self, directory, recursive, filter_op, action, topdown, maxdepth):
-        assert maxdepth is None, "not implemented"
-
-        for root, dirs, files in walk(directory, topdown=topdown):
+        for root, dirs, files in walk(directory, topdown=topdown, maxdepth=maxdepth):
             for f in files:
                 if filter_op.match_file(root, f):
                     action.file(root, f)

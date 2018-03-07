@@ -37,11 +37,10 @@ def parse_args(args: List[str], simple) -> argparse.Namespace:
 
     trav_grp.add_argument("-r", "--recursive", action='store_true',
                           help="Recursize into the directory tree")
-
-    trav_grp.add_argument("-D", "--maxdepth", metavar="INT", type=int, default=None,
-                          help="Maximum recursion depth")
     trav_grp.add_argument("-d", "--depth", action='store_true', default=False,
                           help="Process directory content before the directory itself")
+    trav_grp.add_argument("-D", "--maxdepth", metavar="INT", type=int, default=None,
+                          help="Maximum recursion depth")
 
     print_grp = parser.add_argument_group("Print Options")
     print_grp.add_argument("-0", "--null", action="store_true",

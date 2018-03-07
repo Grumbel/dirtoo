@@ -42,9 +42,7 @@ def replace_item(lst, needle, replacements):
 
 
 def find_files(directory, recursive, filter_op, action, topdown, maxdepth):
-    assert maxdepth is None, "not implemented"
-
-    for root, dirs, files in walk(directory, topdown=topdown):
+    for root, dirs, files in walk(directory, topdown=topdown, maxdepth=maxdepth):
         for f in files:
             if filter_op.match_file(root, f):
                 action.file(root, f)

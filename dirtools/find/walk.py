@@ -2,14 +2,20 @@
 
 # See https://docs.python.org/3/license.html for license information
 
+import sys
 
 from os import scandir, path, name, stat, st, listdir
 
 
+def walk(top, topdown=True, onerror=None, followlinks=False, maxdepth=None):
+    if maxdepth is None:
+        maxdepth = sys.maxsize
+    return _walk(top, topdown, onerror, followlinks, maxdepth, depth=1)
+
 # This is the os.walk() function from Python-3.5.2, modified such that
 # it returns symlinks to directories in the 'nodirs' portion of the
 # result tuple instead of the 'dirs' one.
-def walk(top, topdown=True, onerror=None, followlinks=False):
+def _walk(top, topdown, onerror, followlinks, maxdepth, depth):
     """Directory tree generator.
 
     For each directory in the directory tree rooted at top (including top
@@ -119,7 +125,8 @@ def walk(top, topdown=True, onerror=None, followlinks=False):
                 walk_into = not is_symlink
 
             if walk_into:
-                yield from walk(entry.path, topdown, onerror, followlinks)
+                if depth < maxdepth:
+                    yield from _walk(entry.path, topdown, onerror, followlinks, maxdepth, depth + 1)
 
     # Yield before recursion if going top down
     if topdown:
@@ -134,7 +141,8 @@ def walk(top, topdown=True, onerror=None, followlinks=False):
             # the caller can replace the directory entry during the "yield"
             # above.
             if followlinks or not islink(new_path):
-                yield from walk(new_path, topdown, onerror, followlinks)
+                if depth < maxdepth:
+                    yield from _walk(new_path, topdown, onerror, followlinks, maxdepth, depth + 1)
     else:
         # Yield after recursion if going bottom up
         yield top, dirs, nondirs
