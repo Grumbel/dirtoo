@@ -49,6 +49,7 @@ setup(name='dirtools',
       packages=['dirtools', 'dirtools.fileview'],
       include_package_data=True,
       package_data={'dirtools': ['dirtools/fileview/fileview.svg',
+                                 'dirtools/fileview/icons/*.gif',
                                  'dirtools/fileview/icons/*.png']},
       data_files=[
           ('share/icons/hicolor/scalable/apps', ['dirtools/fileview/dt-fileview.svg']),
