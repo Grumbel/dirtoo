@@ -39,11 +39,11 @@ class FilterLineEdit(QLineEdit):
 
         shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_G), self)
         shortcut.setContext(Qt.WidgetShortcut)
-        shortcut.activated.connect(self.reset)
+        shortcut.activated.connect(self._on_reset)
 
-        shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_Escape), self)
+        shortcut = QShortcut(QKeySequence(Qt.Key_Escape), self)
         shortcut.setContext(Qt.WidgetShortcut)
-        shortcut.activated.connect(self.reset)
+        shortcut.activated.connect(self._on_reset)
 
         shortcut = QShortcut(QKeySequence(Qt.Key_Up), self)
         shortcut.setContext(Qt.WidgetShortcut)
@@ -53,12 +53,7 @@ class FilterLineEdit(QLineEdit):
         shortcut.setContext(Qt.WidgetShortcut)
         shortcut.activated.connect(self.history_down)
 
-    def keyPressEvent(self, ev):
-        super().keyPressEvent(ev)
-        # else:
-        #   self.history_idx = -1
-
-    def reset(self) -> None:
+    def _on_reset(self) -> None:
         self.clear()
         self.history_idx = -1
         self.controller.set_filter("")
@@ -66,7 +61,7 @@ class FilterLineEdit(QLineEdit):
         self.controller.window.thumb_view.setFocus()
 
     def on_delete_button(self) -> None:
-        self.reset()
+        self._on_reset()
 
     def on_return_pressed(self) -> None:
         self.is_unused = False

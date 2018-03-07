@@ -89,7 +89,15 @@ class FileViewWindow(QMainWindow):
 
         shortcut = QShortcut(QKeySequence(Qt.Key_F3), self)
         shortcut.setContext(Qt.WindowShortcut)
-        shortcut.activated.connect(self.controller.search)
+        shortcut.activated.connect(self.controller.show_search)
+
+        shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_F), self)
+        shortcut.setContext(Qt.WindowShortcut)
+        shortcut.activated.connect(self.controller.show_search)
+
+        shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_W), self)
+        shortcut.setContext(Qt.WindowShortcut)
+        shortcut.activated.connect(self.controller.close_window)
 
         shortcut = QShortcut(QKeySequence(Qt.ALT + Qt.Key_Up), self)
         shortcut.setContext(Qt.WindowShortcut)

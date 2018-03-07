@@ -34,32 +34,33 @@ class SearchLineEdit(QLineEdit):
         self.history_idx = 0
 
         action = self.addAction(QIcon.fromTheme("window-close"), QLineEdit.TrailingPosition)
-        action.triggered.connect(self.controller.hide_search_toolbar)
+        action.triggered.connect(self._on_reset)
         action.setToolTip("Close the Search")
 
         shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_G), self)
         shortcut.setContext(Qt.WidgetShortcut)
-        shortcut.activated.connect(self.controller.hide_search_toolbar)
+        shortcut.activated.connect(self._on_reset)
 
-    def keyPressEvent(self, ev):
-        super().keyPressEvent(ev)
-        if ev.key() == Qt.Key_Escape:
-            self.reset()
-        elif ev.key() == Qt.Key_Up:
-            self.history_up()
-        elif ev.key() == Qt.Key_Down:
-            self.history_down()
-        else:
-            self.history_idx = -1
+        shortcut = QShortcut(QKeySequence(Qt.Key_Escape), self)
+        shortcut.setContext(Qt.WidgetShortcut)
+        shortcut.activated.connect(self._on_reset)
 
-    def reset(self) -> None:
+        shortcut = QShortcut(QKeySequence(Qt.Key_Up), self)
+        shortcut.setContext(Qt.WidgetShortcut)
+        shortcut.activated.connect(self.history_up)
+
+        shortcut = QShortcut(QKeySequence(Qt.Key_Down), self)
+        shortcut.setContext(Qt.WidgetShortcut)
+        shortcut.activated.connect(self.history_down)
+
+    def _on_reset(self) -> None:
         self.clear()
         self.history_idx = -1
-        self.controller.window.hide_filter()
+        self.controller.window.search_toolbar.hide()
         self.controller.window.thumb_view.setFocus()
 
     def on_delete_button(self) -> None:
-        self.reset()
+        self._on_reset()
 
     def on_return_pressed(self) -> None:
         self.is_unused = False

@@ -636,7 +636,7 @@ class Controller(QObject):
         entries = self.app.bookmarks.get_entries()
         return bool(self.location in entries)
 
-    def search(self) -> None:
+    def show_search(self) -> None:
         self.window.search_toolbar.show()
         self.window.search_lineedit.setFocus()
 
@@ -646,9 +646,13 @@ class Controller(QObject):
         self.set_location(self.location)
 
     def show_location_toolbar(self) -> None:
-        self.window.search_toolbar.hide()
-        self.window.location_toolbar.show()
+        # self.window.search_toolbar.hide()
+        # self.window.location_toolbar.show()
         self.window.file_path.setFocus(Qt.ShortcutFocusReason)
+
+    def hide_all(self):
+        self.window.search_toolbar.hide()
+        self.window.filter_toolbar.hide()
 
     def start_search(self, query):
         self.close()
@@ -663,6 +667,11 @@ class Controller(QObject):
         self.find_stream.sig_file_added.connect(self.file_collection.add_fileinfo)
         self.find_stream.sig_end_of_stream.connect(lambda: self.window.hide_loading())
         self.find_stream.start()
+
+        self.window.thumb_view.setFocus()
+
+    def close_window(self):
+        self.window.close()
 
 
 from dirtools.fileview.application import FileViewApplication  # noqa: F401

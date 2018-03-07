@@ -23,9 +23,9 @@ from pkg_resources import resource_filename
 
 from PyQt5.QtCore import Qt, QRectF
 from PyQt5.QtGui import (QBrush, QIcon, QColor, QPixmap, QImage,
-                         QPainter, QFontMetrics, QFont,
+                         QPainter, QFontMetrics, QFont, QKeySequence,
                          QContextMenuEvent)
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
+from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QShortcut
 
 from dirtools.dbus_thumbnailer import DBusThumbnailerError
 from dirtools.fileview.file_collection import FileCollection
@@ -122,6 +122,13 @@ class ThumbView(QGraphicsView):
         self.setRenderHints(QPainter.SmoothPixmapTransform |
                             QPainter.TextAntialiasing |
                             QPainter.Antialiasing)
+
+        shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_G), self)
+        shortcut.setContext(Qt.WidgetShortcut)
+        shortcut.activated.connect(self._on_reset)
+
+    def _on_reset(self):
+        self._controller.hide_all()
 
     def prepare(self) -> None:
         for item in self._items:

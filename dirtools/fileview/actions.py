@@ -41,7 +41,7 @@ class Actions(QObject):
         self.make_actions()
 
     def make_actions(self):
-        self.save_as = QAction(QIcon.fromTheme('save-as'), 'Save As', self)
+        self.save_as = QAction(QIcon.fromTheme('save-as'), 'Save Filelist As', self)
         self.save_as.setShortcut('Ctrl+s')
         self.save_as.setStatusTip('Save the current file selection')
         self.save_as.triggered.connect(self.controller.save_as)
@@ -53,15 +53,14 @@ class Actions(QObject):
                 logging.getLogger().setLevel(logging.ERROR)
 
         self.debug = QAction(QIcon.fromTheme('media-record'), '&Debug', self, checkable=True)
-        self.debug.setShortcut('Ctrl+Q')
         self.debug.setStatusTip('Debug application')
         self.debug.setChecked(logging.getLogger().getEffectiveLevel() == logging.DEBUG)
         self.debug.triggered.connect(lambda: on_debug(self.debug.isChecked()))
 
-        self.exit = QAction(QIcon.fromTheme('exit'), '&Exit', self)
-        self.exit.setShortcut('Ctrl+Q')
-        self.exit.setStatusTip('Exit application')
-        self.exit.triggered.connect(lambda: self.controller.window.close())
+        self.exit = QAction(QIcon.fromTheme('window-close'), '&Exit', self)
+        self.exit.setShortcut('Ctrl+W')
+        self.exit.setStatusTip('Close Window')
+        self.exit.triggered.connect(self.controller.close_window)
 
         self.home = QAction(QIcon.fromTheme('go-home'), '&Go to Home', self)
         self.home.setStatusTip('Go to the Home directory')
@@ -136,7 +135,7 @@ class Actions(QObject):
         self.search = QAction(QIcon.fromTheme('system-search'), 'Search', self)
         self.search.setShortcut('F3')
         self.search.setStatusTip('Search for files')
-        self.search.triggered.connect(self.controller.search)
+        self.search.triggered.connect(self.controller.show_search)
 
         self.reload = QAction(QIcon.fromTheme('reload'), 'Reload', self)
         self.reload.setShortcut('F5')

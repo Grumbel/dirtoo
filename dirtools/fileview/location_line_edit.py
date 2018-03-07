@@ -18,8 +18,8 @@
 import logging
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPalette, QIcon
-from PyQt5.QtWidgets import QLineEdit
+from PyQt5.QtGui import QPalette, QIcon, QKeySequence
+from PyQt5.QtWidgets import QLineEdit, QShortcut
 
 from dirtools.fileview.controller import Controller
 from dirtools.fileview.location import Location
@@ -45,6 +45,14 @@ class LocationLineEdit(QLineEdit):
         self.controller.sig_location_changed.connect(self._on_location_changed)
         self.controller.sig_location_changed_to_none.connect(lambda: self._on_location_changed(None))
 
+        shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_G), self)
+        shortcut.setContext(Qt.WidgetShortcut)
+        shortcut.activated.connect(self._on_reset)
+
+        shortcut = QShortcut(QKeySequence(Qt.Key_Escape), self)
+        shortcut.setContext(Qt.WidgetShortcut)
+        shortcut.activated.connect(self._on_reset)
+
     def _on_location_changed(self, location: Location):
         if location is not None:
             self.bookmark_act.setEnabled(True)
@@ -62,9 +70,7 @@ class LocationLineEdit(QLineEdit):
         else:
             self.bookmark_act.setIcon(QIcon.fromTheme("bookmark-missing"))
 
-    def keyPressEvent(self, ev) -> None:
-        super().keyPressEvent(ev)
-        if ev.key() == Qt.Key_Escape:
+    def _on_reset(self):
             if self.controller.location is None:
                 self.setText("")
             else:
