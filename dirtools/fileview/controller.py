@@ -204,6 +204,7 @@ class Controller(QObject):
     def set_location(self, location: Location, track_history=True) -> None:
         self.close()
         self.window.search_toolbar.hide()
+        self.window.thumb_view.setFocus()
 
         self.app.location_history.append(location)
 
