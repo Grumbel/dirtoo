@@ -41,14 +41,11 @@ def replace_item(lst, needle, replacements):
     return result
 
 
-def find_files(directory, recursive, filter_op, action, topdown, maxdepth):
+def find_files(directory, filter_op, action, topdown, maxdepth):
     for root, dirs, files in walk(directory, topdown=topdown, maxdepth=maxdepth):
         for f in files:
             if filter_op.match_file(root, f):
                 action.file(root, f)
-
-        if not recursive:
-            del dirs[:]
 
 
 # EOF #

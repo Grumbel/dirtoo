@@ -35,8 +35,6 @@ def parse_args(args: List[str], simple) -> argparse.Namespace:
 
     trav_grp = parser.add_argument_group("Traversial Options")
 
-    trav_grp.add_argument("-r", "--recursive", action='store_true',
-                          help="Recursize into the directory tree")
     trav_grp.add_argument("-d", "--depth", action='store_true', default=False,
                           help="Process directory content before the directory itself")
     trav_grp.add_argument("-D", "--maxdepth", metavar="INT", type=int, default=None,
@@ -129,7 +127,7 @@ def main(argv, simple):
         directories = args.DIRECTORY or ['.']
 
     for d in directories:
-        find_files(d, args.recursive, find_filter, find_action, topdown=not args.depth, maxdepth=args.maxdepth)
+        find_files(d, find_filter, find_action, topdown=not args.depth, maxdepth=args.maxdepth)
 
     find_action.finish()
 
