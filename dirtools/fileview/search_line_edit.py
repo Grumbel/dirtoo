@@ -91,7 +91,7 @@ class SearchLineEdit(QLineEdit):
         p = self.palette()
         p.setColor(QPalette.Text, Qt.gray)
         self.setPalette(p)
-        self.setText("enter a glob search pattern here")
+        self.setText("enter a search pattern here")
 
     def history_up(self) -> None:
         if self.history != []:
