@@ -201,6 +201,22 @@ class Controller(QObject):
         home = os.path.expanduser("~")
         self.set_location(Location.from_path(home))
 
+    def _on_archive_extractor_finished(self) -> None:
+        logger.info("Controller._on_archive_extractor_finished")
+        self.window.hide_loading()
+
+    def _on_scandir_finished(self, fileinfos) -> None:
+        logger.info("Controller._on_scandir_extractor_finished")
+        self.window.hide_loading()
+
+        self.file_collection.set_fileinfos(fileinfos)
+        self.apply_sort()
+        self.apply_filter()
+        self.apply_grouper()
+
+    def _on_directory_watcher_message(self, message):
+        self.window._message_area.show_error(message)
+
     def set_location(self, location: Location, track_history=True) -> None:
         self.close()
         self.window.search_toolbar.hide()
@@ -231,37 +247,12 @@ class Controller(QObject):
         self._directory_watcher.sig_file_removed.connect(self.file_collection.remove_file)
         self._directory_watcher.sig_file_changed.connect(self.file_collection.change_file)
         self._directory_watcher.sig_file_closed.connect(self.file_collection.close_file)
-        self._directory_watcher.sig_scandir_finished.connect(self.on_scandir_finished)
+        self._directory_watcher.sig_scandir_finished.connect(self._on_scandir_finished)
         self._directory_watcher.sig_message.connect(self._on_directory_watcher_message)
         self._directory_watcher.start()
 
         self.location = location
         self.window.set_location(self.location)
-
-    def _on_directory_watcher_message(self, message):
-        self.window._message_area.show_error(message)
-
-        # msg = QMessageBox(self.window)
-        # msg.setIcon(QMessageBox.Warning)
-        # msg.setWindowTitle("Extraction Error")
-        # msg.setTextFormat(Qt.RichText)
-        # msg.setText("<b>An Error occured while extracting the archive.</b>")
-        # msg.setInformativeText(message)
-        # msg.setStandardButtons(QMessageBox.Ok)
-        # msg.exec()
-
-    def on_archive_extractor_finished(self) -> None:
-        logger.info("Controller.on_archive_extractor_finished")
-        self.window.hide_loading()
-
-    def on_scandir_finished(self, fileinfos) -> None:
-        logger.info("Controller.on_scandir_extractor_finished")
-        self.window.hide_loading()
-
-        self.file_collection.set_fileinfos(fileinfos)
-        self.apply_sort()
-        self.apply_filter()
-        self.apply_grouper()
 
     def set_files(self, files: List[Location]) -> None:
         self.window.set_file_list()
