@@ -41,6 +41,7 @@ from dirtools.fileview.match_func import (
     FolderMatchFunc,
     AsciiMatchFunc,
     MetadataMatchFunc,
+    ContainsMatchFunc
 )
 
 logger = logging.getLogger(__name__)
@@ -258,6 +259,10 @@ class FilterExprParser:
                 else:
                     logger.error("unknown charset in command: %s", child)
                     return FalseMatchFunc()
+            elif child.command == "contains":
+                return ContainsMatchFunc(child.arg, case_sensitive=False)
+            elif child.command == "Contains":
+                return ContainsMatchFunc(child.arg, case_sensitive=True)
             elif child.command in ["r", "rx", "re", "regex"]:
                 return RegexMatchFunc(child.arg, re.IGNORECASE)
             elif child.command in ["R", "Rx", "Re", "Regex"]:

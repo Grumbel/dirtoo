@@ -103,6 +103,9 @@ class FileInfo:
     def isdir(self) -> bool:
         return self._isdir
 
+    def isfile(self) -> bool:
+        return self._isfile
+
     def is_thumbnailable(self) -> bool:
         return self.is_video() or self.is_image()
 

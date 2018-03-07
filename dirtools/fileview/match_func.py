@@ -232,4 +232,29 @@ class AsciiMatchFunc(MatchFunc):
         else:
             return not self.rx.match(fileinfo.basename())
 
+
+class ContainsMatchFunc(MatchFunc):
+
+    def __init__(self, text, case_sensitive):
+        self._text = text
+        self._case_sensitive = case_sensitive
+
+        if not self._case_sensitive:
+            self._text = self._text.lower()
+
+    def __call__(self, fileinfo, idx):
+        location = fileinfo.location()
+        if not location.has_payload():
+            with open(location.get_path(), "r", encoding="utf-8", errors="replace") as fin:
+                for line in fin:
+                    if self._case_sensitive:
+                        if self._text in line:
+                            return True
+                    else:
+                        if self._text in line.lower():
+                            return True
+
+        return False
+
+
 # EOF #
