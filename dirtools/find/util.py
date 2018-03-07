@@ -20,6 +20,8 @@ from typing import List, Any
 import os
 import fnmatch
 
+from dirtools.find.walk import walk
+
 
 def size_in_bytes(filename):
     return os.lstat(filename).st_size
@@ -40,10 +42,9 @@ def replace_item(lst, needle, replacements):
 
 
 def find_files(directory, recursive, filter_op, action, topdown, maxdepth):
-    assert topdown is False, "not implemented"
     assert maxdepth is None, "not implemented"
 
-    for root, dirs, files in os.walk(directory):
+    for root, dirs, files in walk(directory, topdown=topdown):
         for f in files:
             if filter_op.match_file(root, f):
                 action.file(root, f)

@@ -130,7 +130,7 @@ def main(argv, simple):
         directories = args.DIRECTORY or ['.']
 
     for d in directories:
-        find_files(d, args.recursive, find_filter, find_action, topdown=args.depth, maxdepth=args.maxdepth)
+        find_files(d, args.recursive, find_filter, find_action, topdown=not args.depth, maxdepth=args.maxdepth)
 
     find_action.finish()
 

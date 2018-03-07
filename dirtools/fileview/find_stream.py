@@ -25,6 +25,7 @@ from PyQt5.QtCore import QObject, pyqtSignal, QThread, Qt
 from dirtools.fileview.file_info import FileInfo
 from dirtools.find.action import Action
 from dirtools.find.filter import SimpleFilter
+from dirtools.find.walk import walk
 
 logger = logging.getLogger(__name__)
 
@@ -59,10 +60,9 @@ class FindStreamWorker(QObject):
         self.sig_end_of_stream.emit()
 
     def _find_files(self, directory, recursive, filter_op, action, topdown, maxdepth):
-        assert topdown is False, "not implemented"
         assert maxdepth is None, "not implemented"
 
-        for root, dirs, files in os.walk(directory):
+        for root, dirs, files in walk(directory, topdown=topdown):
             for f in files:
                 if filter_op.match_file(root, f):
                     action.file(root, f)
