@@ -127,6 +127,10 @@ class ThumbView(QGraphicsView):
         shortcut.setContext(Qt.WidgetShortcut)
         shortcut.activated.connect(self._on_reset)
 
+        shortcut = QShortcut(QKeySequence(Qt.Key_Slash), self)
+        shortcut.setContext(Qt.WidgetShortcut)
+        shortcut.activated.connect(lambda: self._controller.show_location_toolbar(False))
+
     def _on_reset(self):
         self._controller.hide_all()
 

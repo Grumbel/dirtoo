@@ -637,10 +637,12 @@ class Controller(QObject):
         self.window.thumb_view.setFocus()
         self.set_location(self.location)
 
-    def show_location_toolbar(self) -> None:
+    def show_location_toolbar(self, selectall=True) -> None:
         # self.window.search_toolbar.hide()
         # self.window.location_toolbar.show()
-        self.window.file_path.setFocus(Qt.ShortcutFocusReason)
+        self.window.location_lineedit.setFocus(Qt.ShortcutFocusReason)
+        if selectall is False:
+            self.window.location_lineedit.set_cursor_to_end()
 
     def hide_all(self):
         self.window.search_toolbar.hide()

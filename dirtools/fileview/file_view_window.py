@@ -134,9 +134,9 @@ class FileViewWindow(QMainWindow):
         self.file_view = DetailView(self.controller)
         self.file_view.hide()
         self.thumb_view = ThumbView(self.controller)
-
+ 
         self.search_lineedit = SearchLineEdit(self.controller)
-        self.file_path = LocationLineEdit(self.controller)
+        self.location_lineedit = LocationLineEdit(self.controller)
         self.file_filter = FilterLineEdit(self.controller)
         # self.file_filter.setText("File Pattern Here")
         self.file_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -218,8 +218,8 @@ class FileViewWindow(QMainWindow):
         label.setContextMenuPolicy(Qt.CustomContextMenu)
         label.customContextMenuRequested.connect(show_location_menu)
 
-        label.setBuddy(self.file_path)
-        form.addRow(label, self.file_path)
+        label.setBuddy(self.location_lineedit)
+        form.addRow(label, self.location_lineedit)
         form.setContentsMargins(0, 0, 0, 0)
         widget.setLayout(form)
         self.location_toolbar.addWidget(widget)
@@ -481,11 +481,11 @@ class FileViewWindow(QMainWindow):
         self.file_view.hide()
 
     def set_location(self, path: Location):
-        self.file_path.set_location(path)
+        self.location_lineedit.set_location(path)
         self.setWindowTitle("{} - dt-fileview".format(path.as_path()))
 
     def set_file_list(self):
-        self.file_path.set_unused_text()
+        self.location_lineedit.set_unused_text()
 
     def show_info(self, text):
         self.info.setText("  " + text)

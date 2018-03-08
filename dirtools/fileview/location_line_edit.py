@@ -108,6 +108,10 @@ class LocationLineEdit(QLineEdit):
 
         self.setPalette(p)
 
+    def set_cursor_to_end(self):
+        length = len(self.text())
+        self.setCursorPosition(length)
+
     def on_return_pressed(self) -> None:
         try:
             location = Location.from_human(self.text())
