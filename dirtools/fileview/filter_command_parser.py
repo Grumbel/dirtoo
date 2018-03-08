@@ -19,7 +19,6 @@ from typing import Any, Dict, Callable, List, Union, Tuple, Optional
 
 import logging
 import re
-import datetime
 import operator
 import shlex
 
@@ -104,13 +103,6 @@ class FilterCommandParser:
         self.register_command(
             ["r", "rx", "re", "regex"],
             lambda args: self._filter.set_regex_pattern(args[0], re.IGNORECASE))
-
-        self.register_command(
-            "today",
-            lambda args: self._filter.set_time(
-                datetime.datetime.combine(
-                    datetime.date.today(), datetime.datetime.min.time()).timestamp(),
-                operator.ge))
 
         self.register_command(
             "len",

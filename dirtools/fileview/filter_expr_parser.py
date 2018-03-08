@@ -35,7 +35,6 @@ from dirtools.fileview.match_func import (
     FuzzyMatchFunc,
     SizeMatchFunc,
     LengthMatchFunc,
-    TimeMatchFunc,
     RandomMatchFunc,
     RandomPickMatchFunc,
     FolderMatchFunc,
@@ -43,7 +42,9 @@ from dirtools.fileview.match_func import (
     MetadataMatchFunc,
     ContainsMatchFunc,
     DateMatchFunc,
-    TimeMatchFunc
+    TimeMatchFunc,
+    DateOpMatchFunc,
+    TimeOpMatchFunc,
 )
 
 logger = logging.getLogger(__name__)
@@ -256,9 +257,21 @@ class FilterExprParser:
             elif child.command in ["f", "fuz", "fuzz", "fuzzy"]:
                 return FuzzyMatchFunc(child.arg)
             elif child.command == "date":
-                return DateMatchFunc(child.arg)
+                if child.arg == "today":
+                    return TimeOpMatchFunc(datetime.date.today().strftime("%Y-%m-%d"),
+                                           operator.ge)
+                else:
+                    op, rest = parse_op(child.arg)
+                    if op == operator.eq:
+                        return DateMatchFunc(rest)
+                    else:
+                        return DateOpMatchFunc(rest, op)
             elif child.command == "time":
-                return TimeMatchFunc(child.arg)
+                op, rest = parse_op(child.arg)
+                if op == operator.eq:
+                    return TimeMatchFunc(rest)
+                else:
+                    return TimeOpMatchFunc(rest, op)
             elif child.command == "charset" or child.command == "encoding":
                 if child.arg == "ascii":
                     return AsciiMatchFunc()
@@ -279,14 +292,6 @@ class FilterExprParser:
             elif child.command in ["size"]:
                 op, rest = parse_op(child.arg)
                 return SizeMatchFunc(bytefmt.dehumanize(rest), op)
-            elif child.command in ["date", "time", "mtime"]:
-                if child.arg == "today":
-                    return TimeMatchFunc(
-                        datetime.datetime.combine(
-                            datetime.date.today(), datetime.datetime.min.time()).timestamp(),
-                        operator.ge)
-                else:
-                    assert False, "unknown time string: {}".format(child)
             elif child.command == "random":
                 return RandomMatchFunc(float(child.arg))
             elif child.command == "pick":

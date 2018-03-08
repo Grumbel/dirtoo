@@ -24,7 +24,6 @@ from dirtools.fileview.match_func import (
     FuzzyMatchFunc,
     SizeMatchFunc,
     LengthMatchFunc,
-    TimeMatchFunc,
     RandomMatchFunc,
     RandomPickMatchFunc,
     FolderMatchFunc,
@@ -56,9 +55,6 @@ class Filter:
 
     def set_length(self, length, compare) -> None:
         self.match_func = LengthMatchFunc(length, compare)
-
-    def set_time(self, mtime, compare) -> None:
-        self.match_func = TimeMatchFunc(mtime, compare)
 
     def set_random(self, probability) -> None:
         self.match_func = RandomMatchFunc(probability)

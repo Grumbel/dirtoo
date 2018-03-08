@@ -135,16 +135,6 @@ class FuzzyMatchFunc(MatchFunc):
         return result > self.threshold
 
 
-class TimeMatchFunc(MatchFunc):
-
-    def __init__(self, mtime, compare):
-        self.mtime = mtime
-        self.compare = compare
-
-    def __call__(self, fileinfo, idx):
-        return self.compare(fileinfo.mtime(), self.mtime)
-
-
 class SizeMatchFunc(MatchFunc):
 
     def __init__(self, size, compare):
@@ -256,6 +246,40 @@ class TimeMatchFunc(MatchFunc):
         dt = datetime.fromtimestamp(mtime)
         dtstr = dt.strftime("%H:%M:%S")
         return fnmatchcase(dtstr, self._pattern)
+
+
+class TimeOpMatchFunc(MatchFunc):
+
+    def __init__(self, text, compare):
+        self._compare = compare
+        try:
+            self._time = datetime.strptime(text, "%H:%M").time()
+        except ValueError:
+            self._time = datetime.strptime(text, "%H:%M:%S").time()
+
+    def __call__(self, fileinfo, idx):
+        mtime = fileinfo.mtime()
+        dt = datetime.fromtimestamp(mtime)
+        return self._compare(dt.time(), self._time)
+
+
+class DateOpMatchFunc(MatchFunc):
+
+    def __init__(self, text, compare):
+        self._compare = compare
+        for fmt in ["%Y-%m-%d", "%Y-%m", "%Y"]:
+            try:
+                self._date = datetime.strptime(text, fmt).date()
+                break
+            except ValueError:
+                pass
+        else:
+            raise Exception("DateOpMatchFunc: couldn't parse text: {}".format(text))
+
+    def __call__(self, fileinfo, idx):
+        mtime = fileinfo.mtime()
+        dt = datetime.fromtimestamp(mtime)
+        return self._compare(dt.date(), self._date)
 
 
 class ContainsMatchFunc(MatchFunc):
