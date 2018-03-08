@@ -79,7 +79,7 @@ def get_compare_operator(text: str) -> Callable[[Any, Any], bool]:
 
 
 def parse_op(text: str) -> Tuple[Callable[[Any, Any], bool], str]:
-    m = re.match(r"^(<|<=|>|>=|==|=)(.*)$", text)
+    m = re.match(r"^(<=|<|>=|>|==|=)(.*)$", text)
     if m:
         return get_compare_operator(m.group(1)), m.group(2)
     else:
