@@ -67,4 +67,11 @@ def remove_duplicates(lst: List[Any]) -> List[Any]:
     return result
 
 
+GLOB_PATTERN_RX = re.compile(r"[\*\?\[\]]")
+
+
+def is_glob_pattern(text):
+    return bool(GLOB_PATTERN_RX.search(text))
+
+
 # EOF #

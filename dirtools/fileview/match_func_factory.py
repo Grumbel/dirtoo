@@ -24,6 +24,7 @@ import operator
 import logging
 import re
 
+from dirtools.util import is_glob_pattern
 from dirtools.fileview.match_func import (
     FalseMatchFunc,
     ExcludeMatchFunc,
@@ -103,7 +104,7 @@ class MatchFuncFactory:
             # If the pattern doesn't contain special characters
             # perform a basic substring search instead of a glob
             # pattern search.
-            if re.search(r"[\*\?\[\]]", child):
+            if is_glob_pattern(child):
                 return GlobMatchFunc(child, case_sensitive=False)
             else:
                 return GlobMatchFunc(f"*{child}*", case_sensitive=False)
@@ -139,6 +140,7 @@ class MatchFuncFactory:
         self.register_function(["charset", "encoding"], self.make_charset)
         self.register_function(["f", "fuz", "fuzz", "fuzzy"], self.make_fuzzy)
         self.register_function(["date"], self.make_date)
+        self.register_function(["time"], self.make_time)
 
     def make_glob(self, argument):
         return GlobMatchFunc(argument, case_sensitive=False)
@@ -158,7 +160,7 @@ class MatchFuncFactory:
         elif argument in ["file"]:
             return ExcludeMatchFunc(FolderMatchFunc())
         else:
-            logger.error("unknown type: %s", child)
+            logger.error("unknown type: %s", argument)
             return FalseMatchFunc()
 
     def make_fuzzy(self, argument):
@@ -169,24 +171,24 @@ class MatchFuncFactory:
             return DateOpMatchFunc(datetime.date.today().strftime("%Y-%m-%d"),
                                    operator.ge)
         else:
-            op, rest = parse_op(argument)
-            if op == operator.eq:
-                return DateMatchFunc(rest)
+            if is_glob_pattern(argument):
+                return DateMatchFunc(argument)
             else:
+                op, rest = parse_op(argument)
                 return DateOpMatchFunc(rest, op)
 
     def make_time(self, argument):
-        op, rest = parse_op(argument)
-        if op == operator.eq:
-            return TimeMatchFunc(rest)
+        if is_glob_pattern(argument):
+            return TimeMatchFunc(argument)
         else:
+            op, rest = parse_op(argument)
             return TimeOpMatchFunc(rest, op)
 
     def make_charset(self, argument):
         if argument == "ascii":
             return AsciiMatchFunc()
         else:
-            logger.error("unknown charset in command: %s", child)
+            logger.error("unknown charset in command: %s", argument)
             return FalseMatchFunc()
 
     def make_contains(self, argument):
