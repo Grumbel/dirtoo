@@ -160,8 +160,10 @@ class FilterExprParser:
             and_funcs = []
             for token in tokens:
                 and_funcs.append(self._make_func(token))
+            and_funcs = sorted(and_funcs, key=lambda x: x.cost())
             or_funcs.append(AndMatchFunc(and_funcs))
 
+        or_funcs = sorted(or_funcs, key=lambda x: x.cost())
         return OrMatchFunc(or_funcs)
 
     def _make_func(self, token):

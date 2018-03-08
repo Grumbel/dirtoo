@@ -37,6 +37,9 @@ class MatchFunc:
         the global state (e.g. random pick filter)"""
         pass
 
+    def cost(self):
+        return 1
+
 
 class FalseMatchFunc(MatchFunc):
 
@@ -163,6 +166,9 @@ class MetadataMatchFunc(MatchFunc):
                 return False
         else:
             return False
+
+    def cost(self):
+        return 50
 
 
 class LengthMatchFunc(MatchFunc):
@@ -304,6 +310,9 @@ class ContainsMatchFunc(MatchFunc):
                             return True
 
         return False
+
+    def cost(self):
+        return 100
 
 
 # EOF #
