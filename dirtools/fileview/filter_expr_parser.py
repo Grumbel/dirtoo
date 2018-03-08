@@ -15,77 +15,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Any, List, Tuple, Callable
+from typing import Any, List
 
 import logging
-import re
-import datetime
-import operator
 
-import bytefmt
-
-from dirtools.fileview.match_func import (
-    MatchFunc,
-    FalseMatchFunc,
-    ExcludeMatchFunc,
-    AndMatchFunc,
-    OrMatchFunc,
-    RegexMatchFunc,
-    GlobMatchFunc,
-    FuzzyMatchFunc,
-    SizeMatchFunc,
-    LengthMatchFunc,
-    RandomMatchFunc,
-    RandomPickMatchFunc,
-    FolderMatchFunc,
-    AsciiMatchFunc,
-    MetadataMatchFunc,
-    ContainsMatchFunc,
-    DateMatchFunc,
-    TimeMatchFunc,
-    DateOpMatchFunc,
-    TimeOpMatchFunc,
-)
+from dirtools.fileview.match_func import MatchFunc, AndMatchFunc, OrMatchFunc, ExcludeMatchFunc
+from dirtools.fileview.match_func_factory import MatchFuncFactory
 
 logger = logging.getLogger(__name__)
-
-
-VIDEO_EXT = ['wmv', 'mp4', 'mpg', 'mpeg', 'm2v', 'avi', 'flv', 'mkv', 'wmv',
-             'mov', 'webm', 'f4v', 'flv', 'divx', 'ogv', 'vob', '3gp', '3g2',
-             'qt', 'asf', 'amv', 'm4v']
-
-VIDEO_REGEX = r"\.({})$".format("|".join(VIDEO_EXT))
-
-
-IMAGE_EXT = ['jpg', 'jpeg', 'gif', 'png', 'tif', 'tiff', 'webp', 'bmp', 'xcf']
-
-IMAGE_REGEX = r"\.({})$".format("|".join(IMAGE_EXT))
-
-
-ARCHIVE_EXT = ['zip', 'rar', 'tar', 'gz', 'xz', 'bz2', 'ar', '7z']
-
-ARCHIVE_REGEX = r"\.({})$".format("|".join(ARCHIVE_EXT))
-
-CMPTEXT2OP = {
-    "<": operator.lt,
-    "<=": operator.le,
-    ">": operator.gt,
-    ">=": operator.ge,
-    "==": operator.eq,
-    "=": operator.eq,
-}
-
-
-def get_compare_operator(text: str) -> Callable[[Any, Any], bool]:
-    return CMPTEXT2OP[text]
-
-
-def parse_op(text: str) -> Tuple[Callable[[Any, Any], bool], str]:
-    m = re.match(r"^(<|<=|>|>=|==|=)(.*)$", text)
-    if m:
-        return get_compare_operator(m.group(1)), m.group(2)
-    else:
-        return operator.eq, text
 
 
 class IncludeExpr:
@@ -138,6 +75,7 @@ class FilterExprParser:
 
     def __init__(self):
         self._grammar = self._make_grammar()
+        self._func_factory = MatchFuncFactory()
 
     def _make_grammar(self):
         from pyparsing import (QuotedString, ZeroOrMore, Combine,
@@ -226,107 +164,13 @@ class FilterExprParser:
 
         return OrMatchFunc(or_funcs)
 
-    def _make_child_func(self, child):
-        if isinstance(child, str):
-            # If the pattern doesn't contain special characters
-            # perform a basic substring search instead of a glob
-            # pattern search.
-            if re.search(r"[\*\?\[\]]", child):
-                return GlobMatchFunc(child, case_sensitive=False)
-            else:
-                return GlobMatchFunc(f"*{child}*", case_sensitive=False)
-        elif isinstance(child, CommandExpr):
-            if child.command in ["g", "glob"]:
-                return GlobMatchFunc(child.arg, case_sensitive=False)
-            elif child.command in ["G", "Glob"]:
-                return GlobMatchFunc(child.arg, case_sensitive=True)
-            elif child.command in ["t", "type"]:
-                if child.arg == "video":
-                    return RegexMatchFunc(VIDEO_REGEX, re.IGNORECASE)
-                elif child.arg == "image":
-                    return RegexMatchFunc(IMAGE_REGEX, re.IGNORECASE)
-                elif child.arg == "archive":
-                    return RegexMatchFunc(ARCHIVE_REGEX, re.IGNORECASE)
-                elif child.arg in ["folder", "dir", "directory"]:
-                    return FolderMatchFunc()
-                elif child.arg in ["file"]:
-                    return ExcludeMatchFunc(FolderMatchFunc())
-                else:
-                    logger.error("unknown type: %s", child)
-                    return FalseMatchFunc()
-            elif child.command in ["f", "fuz", "fuzz", "fuzzy"]:
-                return FuzzyMatchFunc(child.arg)
-            elif child.command == "date":
-                if child.arg == "today":
-                    return TimeOpMatchFunc(datetime.date.today().strftime("%Y-%m-%d"),
-                                           operator.ge)
-                else:
-                    op, rest = parse_op(child.arg)
-                    if op == operator.eq:
-                        return DateMatchFunc(rest)
-                    else:
-                        return DateOpMatchFunc(rest, op)
-            elif child.command == "time":
-                op, rest = parse_op(child.arg)
-                if op == operator.eq:
-                    return TimeMatchFunc(rest)
-                else:
-                    return TimeOpMatchFunc(rest, op)
-            elif child.command == "charset" or child.command == "encoding":
-                if child.arg == "ascii":
-                    return AsciiMatchFunc()
-                else:
-                    logger.error("unknown charset in command: %s", child)
-                    return FalseMatchFunc()
-            elif child.command == "contains":
-                return ContainsMatchFunc(child.arg, case_sensitive=False)
-            elif child.command == "Contains":
-                return ContainsMatchFunc(child.arg, case_sensitive=True)
-            elif child.command in ["r", "rx", "re", "regex"]:
-                return RegexMatchFunc(child.arg, re.IGNORECASE)
-            elif child.command in ["R", "Rx", "Re", "Regex"]:
-                return RegexMatchFunc(child.arg, 0)
-            elif child.command in ["len", "length"]:
-                op, rest = parse_op(child.arg)
-                return LengthMatchFunc(int(rest), op)
-            elif child.command in ["size"]:
-                op, rest = parse_op(child.arg)
-                return SizeMatchFunc(bytefmt.dehumanize(rest), op)
-            elif child.command == "random":
-                return RandomMatchFunc(float(child.arg))
-            elif child.command == "pick":
-                return RandomPickMatchFunc(int(child.arg))
-            elif child.command == "duration":
-                op, rest = parse_op(child.arg)
-                return MetadataMatchFunc("duration", float, float(rest), op)
-            elif child.command == "width":
-                op, rest = parse_op(child.arg)
-                return MetadataMatchFunc("width", float, float(rest), op)
-            elif child.command == "height":
-                op, rest = parse_op(child.arg)
-                return MetadataMatchFunc("height", float, float(rest), op)
-            elif child.command == "framerate":
-                op, rest = parse_op(child.arg)
-                return MetadataMatchFunc("framerate", float, float(rest), op)
-            elif child.command == "pages":
-                op, rest = parse_op(child.arg)
-                return MetadataMatchFunc("pages", int, int(rest), op)
-            elif child.command == "filecount":
-                op, rest = parse_op(child.arg)
-                return MetadataMatchFunc("file_count", int, int(rest), op)
-            else:
-                logger.error("unknown filter command: %s", child)
-                return FalseMatchFunc()
-        else:
-            assert False, "unknown child: {}".format(child)
-
     def _make_func(self, token):
         if isinstance(token, IncludeExpr):
-            return self._make_child_func(token.child)
+            return self._func_factory.make_match_func(token.child)
         elif isinstance(token, ExcludeExpr):
-            return ExcludeMatchFunc(self._make_child_func(token.child))
+            return ExcludeMatchFunc(self._func_factory.make_match_func(token.child))
         elif isinstance(token, CommandExpr):
-            return self._make_child_func(token)
+            return self._func_factory.make_match_func(token)
         else:
             assert False, "unknown token: {}".format(token)
 

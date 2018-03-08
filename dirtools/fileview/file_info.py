@@ -22,7 +22,7 @@ import os
 import stat
 
 from dirtools.fileview.location import Location
-from dirtools.fileview.filter_expr_parser import VIDEO_EXT, IMAGE_EXT, ARCHIVE_EXT
+from dirtools.fileview.match_func_factory import VIDEO_EXT, IMAGE_EXT, ARCHIVE_EXT
 
 logger = logging.getLogger(__name__)
 
