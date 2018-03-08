@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Callable
+
 import logging
 import random
 import re
@@ -256,36 +258,62 @@ class TimeMatchFunc(MatchFunc):
 
 class TimeOpMatchFunc(MatchFunc):
 
-    def __init__(self, text, compare):
+    def __init__(self, text: str, compare: Callable):
         self._compare = compare
-        try:
-            self._time = datetime.strptime(text, "%H:%M").time()
-        except ValueError:
-            self._time = datetime.strptime(text, "%H:%M:%S").time()
+        for idx, fmt in enumerate(["%H:%M:%S", "%H:%M", "%H"]):
+            try:
+                self._time = datetime.strptime(text, fmt).time()
+                self._snip = idx
+                break
+            except ValueError:
+                pass
+        else:
+            raise Exception("TimeOpMatchFunc: couldn't parse text: {}".format(text))
+
+    def _snip_it(self, time):
+        if self._snip == 0:
+            return time
+        elif self._snip == 1:
+            return (time.hour, time.minute)
+        elif self._snip == 2:
+            return time.hour
+        else:
+            assert False
 
     def __call__(self, fileinfo, idx):
         mtime = fileinfo.mtime()
         dt = datetime.fromtimestamp(mtime)
-        return self._compare(dt.time(), self._time)
+        return self._compare(self._snip_it(dt.time()), self._snip_it(self._time))
 
 
 class DateOpMatchFunc(MatchFunc):
 
-    def __init__(self, text, compare):
+    def __init__(self, text: str, compare: Callable):
         self._compare = compare
-        for fmt in ["%Y-%m-%d", "%Y-%m", "%Y"]:
+        for idx, fmt in enumerate(["%Y-%m-%d", "%Y-%m", "%Y"]):
             try:
                 self._date = datetime.strptime(text, fmt).date()
+                self._snip = idx
                 break
             except ValueError:
                 pass
         else:
             raise Exception("DateOpMatchFunc: couldn't parse text: {}".format(text))
 
+    def _snip_it(self, date):
+        if self._snip == 0:
+            return date
+        elif self._snip == 1:
+            return (date.year, date.month)
+        elif self._snip == 2:
+            return date.year
+        else:
+            assert False
+
     def __call__(self, fileinfo, idx):
         mtime = fileinfo.mtime()
         dt = datetime.fromtimestamp(mtime)
-        return self._compare(dt.date(), self._date)
+        return self._compare(self._snip_it(dt.date()), self._snip_it(self._date))
 
 
 class ContainsMatchFunc(MatchFunc):
