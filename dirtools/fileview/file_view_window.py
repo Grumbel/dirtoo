@@ -134,7 +134,7 @@ class FileViewWindow(QMainWindow):
         self.file_view = DetailView(self.controller)
         self.file_view.hide()
         self.thumb_view = ThumbView(self.controller)
- 
+
         self.search_lineedit = SearchLineEdit(self.controller)
         self.location_lineedit = LocationLineEdit(self.controller)
         self.file_filter = FilterLineEdit(self.controller)

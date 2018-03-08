@@ -12,6 +12,7 @@ def walk(top, topdown=True, onerror=None, followlinks=False, maxdepth=None):
         maxdepth = sys.maxsize
     return _walk(top, topdown, onerror, followlinks, maxdepth, depth=1)
 
+
 # This is the os.walk() function from Python-3.5.2, modified such that
 # it returns symlinks to directories in the 'nodirs' portion of the
 # result tuple instead of the 'dirs' one.

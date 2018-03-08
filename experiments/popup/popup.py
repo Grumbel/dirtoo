@@ -20,8 +20,8 @@ import sys
 import signal
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (QComboBox, QLineEdit, QApplication,
-                             QWidget, QVBoxLayout, QListWidget)
+from PyQt5.QtWidgets import (QLineEdit, QApplication, QWidget,
+                             QVBoxLayout, QListWidget)
 
 
 class PopupThing(QWidget):
@@ -72,6 +72,7 @@ class LineThing(QLineEdit):
 
     def show(self):
         super().show()
+
 
 def main(argv):
     signal.signal(signal.SIGINT, signal.SIG_DFL)
