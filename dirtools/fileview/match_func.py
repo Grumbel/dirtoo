@@ -19,6 +19,7 @@ import logging
 import random
 import re
 from fnmatch import fnmatchcase
+from datetime import datetime
 
 from dirtools.fuzzy import fuzzy
 
@@ -231,6 +232,18 @@ class AsciiMatchFunc(MatchFunc):
             return self.rx.match(fileinfo.basename())
         else:
             return not self.rx.match(fileinfo.basename())
+
+
+class DateMatchFunc(MatchFunc):
+
+    def __init__(self, pattern):
+        self._pattern = pattern
+
+    def __call__(self, fileinfo, idx):
+        mtime = fileinfo.mtime()
+        dt = datetime.fromtimestamp(mtime)
+        dtstr = dt.strftime("%Y-%m-%d")
+        return fnmatchcase(dtstr, self._pattern)
 
 
 class ContainsMatchFunc(MatchFunc):
