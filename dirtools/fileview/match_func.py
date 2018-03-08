@@ -246,6 +246,18 @@ class DateMatchFunc(MatchFunc):
         return fnmatchcase(dtstr, self._pattern)
 
 
+class TimeMatchFunc(MatchFunc):
+
+    def __init__(self, pattern):
+        self._pattern = pattern
+
+    def __call__(self, fileinfo, idx):
+        mtime = fileinfo.mtime()
+        dt = datetime.fromtimestamp(mtime)
+        dtstr = dt.strftime("%H:%M:%S")
+        return fnmatchcase(dtstr, self._pattern)
+
+
 class ContainsMatchFunc(MatchFunc):
 
     def __init__(self, text, case_sensitive):

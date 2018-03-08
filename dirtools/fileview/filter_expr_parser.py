@@ -42,7 +42,8 @@ from dirtools.fileview.match_func import (
     AsciiMatchFunc,
     MetadataMatchFunc,
     ContainsMatchFunc,
-    DateMatchFunc
+    DateMatchFunc,
+    TimeMatchFunc
 )
 
 logger = logging.getLogger(__name__)
@@ -256,6 +257,8 @@ class FilterExprParser:
                 return FuzzyMatchFunc(child.arg)
             elif child.command == "date":
                 return DateMatchFunc(child.arg)
+            elif child.command == "time":
+                return TimeMatchFunc(child.arg)
             elif child.command == "charset" or child.command == "encoding":
                 if child.arg == "ascii":
                     return AsciiMatchFunc()
