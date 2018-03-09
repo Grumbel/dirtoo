@@ -24,6 +24,7 @@ import operator
 import logging
 import re
 
+from dirtools.duration import dehumanize as dehumanize_duration
 from dirtools.util import is_glob_pattern
 from dirtools.fileview.match_func import (
     FalseMatchFunc,
@@ -380,7 +381,13 @@ class MatchFuncFactory:
 
     def make_duration(self, argument):
         op, rest = parse_op(argument)
-        return MetadataMatchFunc("duration", float, float(rest), op)
+        seconds = dehumanize_duration(rest)
+
+        if seconds is None:
+            logger.error("can't parse duration: %s", argument)
+            return FalseMatchFunc()
+        else:
+            return MetadataMatchFunc("duration", float, 1000 * seconds, op)
 
     def make_width(self, argument):
         op, rest = parse_op(argument)
