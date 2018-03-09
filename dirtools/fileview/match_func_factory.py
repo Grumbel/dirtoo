@@ -131,7 +131,8 @@ class MatchFuncFactory:
 
     def _register_defaults(self):
         self.register_function(["charset", "encoding"], self.make_charset,
-                               """{CHARSET}
+                               """\
+                               {CHARSET}
 
                                True if the filename is only made of of characters contained in CHARSET.
 
@@ -139,7 +140,8 @@ class MatchFuncFactory:
                                """)
 
         self.register_function(["contains"], self.make_contains,
-                               """{TEXT}
+                               """\
+                               {TEXT}
 
                                True if the file contains the string TEXT, case-insensitive.
 
@@ -147,7 +149,8 @@ class MatchFuncFactory:
                                """)
 
         self.register_function(["Contains"], self.make_Contains,
-                               """{TEXT}
+                               """\
+                               {TEXT}
 
                                True if the file contains the string TEXT, case-sensitive.
 
@@ -155,19 +158,22 @@ class MatchFuncFactory:
                                """)
 
         self.register_function(["date"], self.make_date,
-                               """{DATEPATTERN}, {CMP}{DATE}
+                               """\
+                               {DATEPATTERN}, {CMP}{DATE}
 
                                Example: 'date:>2017-12', 'date:*-12-24'
                                """)
 
         self.register_function(["duration"], self.make_duration,
-                               """{CMP}{DURATION}
+                               """\
+                               {CMP}{DURATION}
 
                                Example: 'duration:>100'
                                """)
 
         self.register_function(["filecount"], self.make_filecount,
-                               """{CMP}{COUNT}
+                               """\
+                               {CMP}{COUNT}
 
                                Compares the number files in an archive
                                or directory againt COUNT.
@@ -176,13 +182,15 @@ class MatchFuncFactory:
                                """)
 
         self.register_function(["framerate"], self.make_framerate,
-                               """{CMP}{FRAMERATE}
+                               """\
+                               {CMP}{FRAMERATE}
 
                                Example: 'framerate:>30'
                                """)
 
         self.register_function(["fuzzy", "f", "fuz", "fuzz"], self.make_fuzzy,
-                               """{TEXT}
+                               """\
+                               {TEXT}
 
                                Searches for TEXT in the filename using
                                an n-gram fuzzy algorithm that will
@@ -193,7 +201,8 @@ class MatchFuncFactory:
                                """)
 
         self.register_function(["glob", "g"], self.make_glob,
-                               """{PATTERN}
+                               """\
+                               {PATTERN}
 
                                True if the given glob pattern matches
                                the filename, case-insensitive.
@@ -202,7 +211,8 @@ class MatchFuncFactory:
                                """)
 
         self.register_function(["Glob", "G"], self.make_Glob,
-                               """{PATTERN}
+                               """\
+                               {PATTERN}
 
                                True if the given glob pattern matches
                                the filename, case-sensitive.
@@ -211,14 +221,16 @@ class MatchFuncFactory:
                                """)
 
         self.register_function(["height"], self.make_height,
-                               """{CMP}{WIDTH}
+                               """\
+                               {CMP}{WIDTH}
                                Matches the height of a video or image.
 
                                Example: 'height:=480'
                                """)
 
         self.register_function(["length", "len"], self.make_length,
-                               """{CMP}{COUNT}
+                               """\
+                               {CMP}{COUNT}
 
                                Matches the number of characters againt
                                COUNT.
@@ -227,14 +239,16 @@ class MatchFuncFactory:
                                """)
 
         self.register_function(["pages"], self.make_pages,
-                               """{CMP}{PAGECOUNT}
+                               """\
+                               {CMP}{PAGECOUNT}
                                Matches the number of pages in a .pdf document.
 
                                Example: 'pages:>100'
                                """)
 
         self.register_function(["pick"], self.make_pick,
-                               """{COUNT}
+                               """\
+                               {COUNT}
 
                                Randomly picks COUNT number of items.
 
@@ -242,7 +256,8 @@ class MatchFuncFactory:
                                """)
 
         self.register_function(["random"], self.make_random,
-                               """{PROBABILITY}
+                               """\
+                               {PROBABILITY}
 
                                Randomly picks an item with
                                PROBABILITY.
@@ -251,7 +266,8 @@ class MatchFuncFactory:
                                """)
 
         self.register_function(["regex", "r", "rx", "re"], self.make_regex,
-                               """{REGEX}
+                               """\
+                               {REGEX}
 
                                Matches filename against the given
                                REGEX, case-insensitive.
@@ -260,7 +276,8 @@ class MatchFuncFactory:
                                """)
 
         self.register_function(["Regex", "R", "Rx", "Re"], self.make_Regex,
-                               """{REGEX}
+                               """\
+                               {REGEX}
 
                                Matches filename against the given
                                REGEX, case-sensitive.
@@ -269,7 +286,8 @@ class MatchFuncFactory:
                                """)
 
         self.register_function(["size"], self.make_size,
-                               """{CMP}{BYTE}{UNIT}
+                               """\
+                               {CMP}{BYTE}{UNIT}
 
                                Matches the byte size of the file
                                against the given value. Units are
@@ -279,7 +297,8 @@ class MatchFuncFactory:
                                """)
 
         self.register_function(["time"], self.make_time,
-                               """{TIMEPATTERN}, {CMP}{TIME}
+                               """\
+                               {TIMEPATTERN}, {CMP}{TIME}
 
                                Matches the files mtime against the
                                given time
@@ -288,7 +307,8 @@ class MatchFuncFactory:
                                """)
 
         self.register_function(["type", "t"], self.make_type,
-                               """{TYPE}
+                               """\
+                               {TYPE}
 
                                Matches the type of the file, valid
                                types are 'image', 'video', 'archive'
@@ -298,7 +318,8 @@ class MatchFuncFactory:
                                """)
 
         self.register_function(["width"], self.make_width,
-                               """{CMP}{WIDTH}
+                               """\
+                               {CMP}{WIDTH}
                                Matches the width of a video or image.
 
                                Example: 'width:=640'

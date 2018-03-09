@@ -17,6 +17,7 @@
 
 import logging
 import sys
+import textwrap
 
 from dirtools.fileview.filter_command_parser import FilterCommandParser
 from dirtools.fileview.filter_expr_parser import FilterExprParser
@@ -32,9 +33,12 @@ class FilterParser:
         self._expr_parser = FilterExprParser()
 
     def print_help(self, fout=sys.stdout):
-        for aliases, func, help in self._commands.values():
-            print("{}".format(", ".join(["/" + x for x in aliases])), file=fout)
-            print("  {}".format(help or ""), file=fout)
+        for aliases, doc in self._expr_parser._func_factory.get_docs():
+            fout.write("{}:{}".format(aliases[0],
+                                      textwrap.dedent(doc or "")))
+            if len(aliases) > 1:
+                print("Aliases: {}".format(", ".join(aliases[1:])), file=fout)
+            print(file=fout)
             print(file=fout)
 
     def parse(self, pattern: str) -> None:
