@@ -258,7 +258,7 @@ class TimeMatchFunc(MatchFunc):
 
 class TimeOpMatchFunc(MatchFunc):
 
-    def __init__(self, text: str, compare: Callable):
+    def __init__(self, text: str, compare: Callable) -> None:
         self._compare = compare
         for idx, fmt in enumerate(["%H:%M:%S", "%H:%M", "%H"]):
             try:
@@ -288,7 +288,7 @@ class TimeOpMatchFunc(MatchFunc):
 
 class DateOpMatchFunc(MatchFunc):
 
-    def __init__(self, text: str, compare: Callable):
+    def __init__(self, text: str, compare: Callable) -> None:
         self._compare = compare
         for idx, fmt in enumerate(["%Y-%m-%d", "%Y-%m", "%Y"]):
             try:

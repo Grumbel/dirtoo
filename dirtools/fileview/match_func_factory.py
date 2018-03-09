@@ -91,10 +91,20 @@ class MatchFuncFactory:
 
     def __init__(self):
         self._functions = {}
+        self._docs = []
         self._register_defaults()
 
-    def register_function(self, aliases: List[str], func: Callable, doc=Optional[str]):
+    def get_docs(self):
+        return self._docs
+
+    def register_function(self, aliases: List[str], func: Callable,
+                          doc=Optional[str]):
+        self._docs.append((aliases, doc))
+
         for alias in aliases:
+            if alias in self._functions:
+                logger.error("function name '%s' already in use, overriding", alias)
+
             self._functions[alias] = func
 
     def make_match_func(self, child):
@@ -119,28 +129,179 @@ class MatchFuncFactory:
             assert False, "unknown child: {}".format(child)
 
     def _register_defaults(self):
-        self.register_function(["g", "glob"], self.make_glob)
-        self.register_function(["G", "Glob"], self.make_Glob)
-        self.register_function(["contains"], self.make_contains)
-        self.register_function(["Contains"], self.make_Contains)
-        self.register_function(["t", "type"], self.make_type)
-        self.register_function(["f", "fuz", "fuzz", "fuzzy"], self.make_fuzzy)
-        self.register_function(["duration"], self.make_duration)
-        self.register_function(["framerate"], self.make_framerate)
-        self.register_function(["filecount"], self.make_filecount)
-        self.register_function(["pages"], self.make_pages)
-        self.register_function(["width"], self.make_width)
-        self.register_function(["height"], self.make_height)
-        self.register_function(["pick"], self.make_pick)
-        self.register_function(["random"], self.make_random)
-        self.register_function(["size"], self.make_size)
-        self.register_function(["len", "length"], self.make_length)
-        self.register_function(["r", "rx", "re", "regex"], self.make_regex)
-        self.register_function(["R", "Rx", "Re", "Regex"], self.make_Regex)
-        self.register_function(["charset", "encoding"], self.make_charset)
-        self.register_function(["f", "fuz", "fuzz", "fuzzy"], self.make_fuzzy)
-        self.register_function(["date"], self.make_date)
-        self.register_function(["time"], self.make_time)
+        self.register_function(["charset", "encoding"], self.make_charset,
+                               """{CHARSET}
+
+                               True if the filename is only made of of characters contained in CHARSET.
+
+                               Example: 'charset:ascii'
+                               """)
+
+        self.register_function(["contains"], self.make_contains,
+                               """{TEXT}
+
+                               True if the file contains the string TEXT, case-insensitive.
+
+                               Example: 'contains:main()'
+                               """)
+
+        self.register_function(["Contains"], self.make_Contains,
+                               """{TEXT}
+
+                               True if the file contains the string TEXT, case-sensitive.
+
+                               Example: 'contains:QApplication()'
+                               """)
+
+        self.register_function(["date"], self.make_date,
+                               """{DATEPATTERN}, {CMP}{DATE}
+
+                               Example: 'date:>2017-12', 'date:*-12-24'
+                               """)
+
+        self.register_function(["duration"], self.make_duration,
+                               """{CMP}{DURATION}
+
+                               Example: 'duration:>100'
+                               """)
+
+        self.register_function(["filecount"], self.make_filecount,
+                               """{CMP}{COUNT}
+
+                               Compares the number files in an archive
+                               or directory againt COUNT.
+
+                               Example: 'filecount:>100'
+                               """)
+
+        self.register_function(["framerate"], self.make_framerate,
+                               """{CMP}{FRAMERATE}
+
+                               Example: 'framerate:>30'
+                               """)
+
+        self.register_function(["fuzzy", "f", "fuz", "fuzz"], self.make_fuzzy,
+                               """{TEXT}
+
+                               Searches for TEXT in the filename using
+                               an n-gram fuzzy algorithm that will
+                               match similar strings, not just
+                               identical ones.
+
+                               Example: 'fuzzy:SpelingMistake'
+                               """)
+
+        self.register_function(["glob", "g"], self.make_glob,
+                               """{PATTERN}
+
+                               True if the given glob pattern matches
+                               the filename, case-insensitive.
+
+                               Example: 'glob:*.png'
+                               """)
+
+        self.register_function(["Glob", "G"], self.make_Glob,
+                               """{PATTERN}
+
+                               True if the given glob pattern matches
+                               the filename, case-sensitive.
+
+                               Example: 'glob:*.png'
+                               """)
+
+        self.register_function(["height"], self.make_height,
+                               """{CMP}{WIDTH}
+                               Matches the height of a video or image.
+
+                               Example: 'height:=480'
+                               """)
+
+        self.register_function(["length", "len"], self.make_length,
+                               """{CMP}{COUNT}
+
+                               Matches the number of characters againt
+                               COUNT.
+
+                               Example: 'length:>100'
+                               """)
+
+        self.register_function(["pages"], self.make_pages,
+                               """{CMP}{PAGECOUNT}
+                               Matches the number of pages in a .pdf document.
+
+                               Example: 'pages:>100'
+                               """)
+
+        self.register_function(["pick"], self.make_pick,
+                               """{COUNT}
+
+                               Randomly picks COUNT number of items.
+
+                               Example: pick:10
+                               """)
+
+        self.register_function(["random"], self.make_random,
+                               """{PROBABILITY}
+
+                               Randomly picks an item with
+                               PROBABILITY.
+
+                               Example: random:0.5
+                               """)
+
+        self.register_function(["regex", "r", "rx", "re"], self.make_regex,
+                               """{REGEX}
+
+                               Matches filename against the given
+                               REGEX, case-insensitive.
+
+                               Example: 'regex:^foo.*\\.jpg$'
+                               """)
+
+        self.register_function(["Regex", "R", "Rx", "Re"], self.make_Regex,
+                               """{REGEX}
+
+                               Matches filename against the given
+                               REGEX, case-sensitive.
+
+                               Example: 'regex:^Foo.*\\.jpg$'
+                               """)
+
+        self.register_function(["size"], self.make_size,
+                               """{CMP}{BYTE}{UNIT}
+
+                               Matches the byte size of the file
+                               against the given value. Units are
+                               supported.
+
+                               Example: 'size:>5MB'
+                               """)
+
+        self.register_function(["time"], self.make_time,
+                               """{TIMEPATTERN}, {CMP}{TIME}
+
+                               Matches the files mtime against the
+                               given time
+
+                               Example: 'date:>15:00', 'time:*:30'
+                               """)
+
+        self.register_function(["type", "t"], self.make_type,
+                               """{TYPE}
+
+                               Matches the type of the file, valid
+                               types are 'image', 'video', 'archive'
+                               and 'directory'.
+
+                               Example: 'type:video'
+                               """)
+
+        self.register_function(["width"], self.make_width,
+                               """{CMP}{WIDTH}
+                               Matches the width of a video or image.
+
+                               Example: 'width:=640'
+                               """)
 
     def make_glob(self, argument):
         return GlobMatchFunc(argument, case_sensitive=False)
