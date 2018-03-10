@@ -20,7 +20,7 @@ from typing import Tuple
 import re
 
 
-def split(duration_sec: int) -> Tuple[int, int, int]:
+def split_duration(duration_sec: int) -> Tuple[int, int, int]:
     hours = duration_sec // 1000 // 60 // 60
     duration_sec -= 1000 * 60 * 60 * hours
     minutes = duration_sec // 1000 // 60
@@ -30,7 +30,7 @@ def split(duration_sec: int) -> Tuple[int, int, int]:
     return (hours, minutes, seconds)
 
 
-def total_seconds(hours, minutes, seconds):
+def total_seconds(hours: int, minutes: int, seconds: int) -> int:
     return 60 * 60 * hours + 60 * minutes + seconds
 
 
