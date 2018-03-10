@@ -25,7 +25,6 @@ from PyQt5.QtWidgets import QFileDialog, QTextEdit, QMenu
 from PyQt5.QtCore import QObject, Qt, QEvent, pyqtSignal
 from PyQt5.QtGui import QIcon, QCursor, QMouseEvent, QContextMenuEvent
 
-from dirtools.fileview.actions import Actions
 from dirtools.fileview.file_collection import FileCollection
 from dirtools.fileview.file_view_window import FileViewWindow
 from dirtools.fileview.grouper import (Grouper, DayGrouperFunc,
@@ -55,6 +54,7 @@ class Controller(QObject):
 
         from dirtools.fileview.filter import Filter
         from dirtools.fileview.sorter import Sorter
+        from dirtools.fileview.actions import Actions
 
         self.app: 'FileViewApplication' = app
         self.location: Optional[Location] = None
