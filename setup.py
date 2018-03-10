@@ -46,7 +46,7 @@ setup(name='dirtools',
           'gui_scripts': []
           },
       install_requires=['bytefmt'],
-      packages=['dirtools', 'dirtools.fileview'],
+      packages=['dirtools', 'dirtools.fileview', 'dirtools.find'],
       include_package_data=True,
       package_data={'dirtools': ['dirtools/fileview/fileview.svg',
                                  'dirtools/fileview/icons/*.gif',
