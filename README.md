@@ -1,6 +1,20 @@
 dirtools
 ========
 
+Dependencies
+------------
+
+apt-get install \
+  python3-libarchive-c \
+  python3-mediainfodll \
+  python3-pypdf2 \
+  python3-pyqt5
+
+pip3 install bytefmt
+pip3 install inotify-simple
+pip3 install ngram
+
+
 dt-fsck
 -------
 
