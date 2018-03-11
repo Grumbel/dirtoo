@@ -35,7 +35,11 @@ def parse_args(args: List[str], simple) -> argparse.Namespace:
 
     trav_grp = parser.add_argument_group("Traversial Options")
 
-    trav_grp.add_argument("-d", "--depth", action='store_true', default=False,
+    if simple:
+        trav_grp.add_argument("-d", "--directory", metavar="DIR", type=str, action='append',
+                              help="Directories to search")
+
+    trav_grp.add_argument("--depth", action='store_true', default=False,
                           help="Process directory content before the directory itself")
     trav_grp.add_argument("-D", "--maxdepth", metavar="INT", type=int, default=None,
                           help="Maximum recursion depth")
@@ -121,7 +125,7 @@ def main(argv, simple):
 
     if simple:
         find_filter = SimpleFilter.from_string(" ".join(args.QUERY))
-        directories = ["."]
+        directories = args.directory or ["."]
     else:
         find_filter = create_filter(args.filter)
         directories = args.DIRECTORY or ['.']
