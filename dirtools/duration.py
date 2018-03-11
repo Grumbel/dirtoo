@@ -20,7 +20,7 @@ from typing import Tuple
 import re
 
 
-def split_duration(duration_sec: int) -> Tuple[int, int, int]:
+def split(duration_sec: int) -> Tuple[int, int, int]:
     hours = duration_sec // 1000 // 60 // 60
     duration_sec -= 1000 * 60 * 60 * hours
     minutes = duration_sec // 1000 // 60
@@ -35,7 +35,7 @@ def total_seconds(hours: int, minutes: int, seconds: int) -> int:
 
 
 def humanize(duration_sec: int) -> str:
-    hours, minutes, seconds = split_duration(duration_sec)
+    hours, minutes, seconds = split(duration_sec)
     return "{:d}:{:02d}:{:02d}".format(hours, minutes, seconds)
 
 
