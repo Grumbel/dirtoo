@@ -220,6 +220,9 @@ class Controller(QObject):
     def set_location(self, location: Location, track_history=True) -> None:
         self.close()
         self.window.search_toolbar.hide()
+        if not self.actions.filter_pin.isChecked():
+            self.set_filter("")
+            self.window.filter_toolbar.hide()
         self.window.thumb_view.setFocus()
 
         self.app.location_history.append(location)
@@ -666,6 +669,10 @@ class Controller(QObject):
 
     def close_window(self):
         self.window.close()
+
+    def set_filter_pin(self, value):
+        # logic is handled in Controller.set_location()
+        pass
 
 
 from dirtools.fileview.application import FileViewApplication  # noqa: F401

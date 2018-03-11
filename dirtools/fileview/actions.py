@@ -300,6 +300,19 @@ class Actions(QObject):
         self.about_dialog = AboutDialog()
         self.about.triggered.connect(self.about_dialog.show)
 
+        def on_filter_pin(checked) -> None:
+            # FIXME: Could use icon state for this
+            if checked:
+                self.filter_pin.setIcon(QIcon.fromTheme("remmina-pin-down"))
+            else:
+                self.filter_pin.setIcon(QIcon.fromTheme("remmina-pin-up"))
+
+        self.filter_pin = QAction(QIcon.fromTheme("remmina-pin-up"), "Pin the filter", checkable=True)
+        self.filter_pin.triggered.connect(self.controller.set_filter_pin)
+        # self.filter_pin.setToolTip("Pin the filter")
+
+        self.filter_pin.triggered.connect(on_filter_pin)
+
 
 from dirtools.fileview.controller import Controller  # noqa: F401
 

@@ -37,6 +37,12 @@ class FilterLineEdit(QLineEdit):
         action.triggered.connect(self.on_delete_button)
         action.setToolTip("Clear the filter and hide it")
 
+        self.addAction(self.controller.actions.filter_pin, QLineEdit.TrailingPosition)
+
+        shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_P), self)
+        shortcut.setContext(Qt.WindowShortcut)
+        shortcut.activated.connect(self.controller.actions.filter_pin.trigger)
+
         shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_G), self)
         shortcut.setContext(Qt.WidgetShortcut)
         shortcut.activated.connect(self._on_reset)
