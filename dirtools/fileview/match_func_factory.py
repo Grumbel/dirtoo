@@ -157,6 +157,26 @@ class MatchFuncFactory:
                                Example: 'contains:QApplication()'
                                """)
 
+        self.register_function(["containsre", "containsrx", "containsregex"],
+                               self.make_contains_regex,
+                               """\
+                               {REGEX}
+
+                               True if the file contains the regex REGEX, case-insensitive.
+
+                               Example: 'contains:main(.*)'
+                               """)
+
+        self.register_function(["Containsre", "Containsrx", "ContainsRe", "ContainsRx", "ContainsRegex"],
+                               self.make_Contains_Regex,
+                               """\
+                               {REGEX}
+
+                               True if the file contains the regex REGEX, case-sensitive.
+
+                               Example: 'contains:QApplication(.*)'
+                               """)
+
         self.register_function(["date"], self.make_date,
                                """\
                                {DATEPATTERN}, {CMP}{DATE}
@@ -375,10 +395,36 @@ class MatchFuncFactory:
             return FalseMatchFunc()
 
     def make_contains(self, argument):
-        return ContainsMatchFunc(argument, case_sensitive=False)
+        needle = argument.lower()
+
+        def line_match_func(line, needle=needle):
+            return needle in line.lower()
+
+        return ContainsMatchFunc(line_match_func)
 
     def make_Contains(self, argument):
-        return ContainsMatchFunc(argument, case_sensitive=True)
+        needle = argument
+
+        def line_match_func(line, needle=needle):
+            return needle in line
+
+        return ContainsMatchFunc(line_match_func)
+
+    def make_contains_regex(self, argument):
+        rx = re.compile(argument, re.IGNORECASE)
+
+        def line_match_func(line, rx=rx):
+            return bool(rx.search(line))
+
+        return ContainsMatchFunc(line_match_func)
+
+    def make_Contains_Regex(self, argument):
+        rx = re.compile(argument)
+
+        def line_match_func(line, rx=rx):
+            return bool(rx.search(line))
+
+        return ContainsMatchFunc(line_match_func)
 
     def make_regex(self, argument):
         return RegexMatchFunc(argument, re.IGNORECASE)
