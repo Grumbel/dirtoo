@@ -319,7 +319,7 @@ class ThumbFileItemRenderer:
         self.thumbnail = item._get_thumbnail()
         self.level_of_detail = item.thumb_view._level_of_detail
         self.style = item.thumb_view._style
-        self.column_style = False  # self.thumb_view.column_style
+        self.column_style = item.thumb_view._column_style
         self.tile_rect = item.tile_rect
         self.thumbnail_rect = QRect(0, 0, item.tile_rect.width(), item.tile_rect.width())
         self.hovering = item.hovering
@@ -329,21 +329,8 @@ class ThumbFileItemRenderer:
         self.is_selected = item.isSelected()
         self.is_cursor = item.thumb_view._cursor_item == item
 
-        self.cache_pixmap = None
-
     def render(self, painter: QPainter) -> None:
-        if True:
-            self.paint(painter)
-        else:
-            if self.cache_pixmap is None:
-                self.cache_pixmap = QPixmap(self.tile_rect.width(), self.tile_rect.height())
-                self.cache_pixmap.fill()
-                pixmap_painter = QPainter(self.cache_pixmap)
-                self.paint(pixmap_painter)
-                pixmap_painter.end()
-
-            painter.drawPixmap(self.tile_rect.x(), self.tile_rect.y(),
-                               self.cache_pixmap)
+        self.paint(painter)
 
     def paint(self, painter: QPainter) -> None:
         self.paint_text_items(painter)
@@ -356,7 +343,7 @@ class ThumbFileItemRenderer:
             painter.setOpacity(1.0)
             painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
 
-        if self.level_of_detail > 1:
+        if self.level_of_detail > 1 and not self.column_style:
             self.paint_metadata(painter)
             self.paint_overlay(painter)
 

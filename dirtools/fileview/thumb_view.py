@@ -445,27 +445,21 @@ class ThumbView(QGraphicsView):
 
     def apply_zoom(self) -> None:
         if self._zoom_index == 0:
-            self.tn_width = 256
-            self.tn_height = 16
-            self.tn_size = min(self.tn_width, self.tn_height)
-
             self._column_style = True
-
             self._tile_style.set_arrangement(TileStyle.Arrangement.COLUMNS)
             self._tile_style.set_padding(8, 8)
             self._tile_style.set_spacing(16, 8)
-            self._tile_style.set_tile_size(self.tn_width, self.tn_height)
+            self._tile_style.set_tile_size(256, 16)
         else:
-            self.tn_width = [16, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, 1536][self._zoom_index]
-            self.tn_height = self.tn_width
-            self.tn_size = min(self.tn_width, self.tn_height)
-
             self._column_style = False
             self._tile_style.set_arrangement(TileStyle.Arrangement.ROWS)
             self._tile_style.set_padding(16, 16)
             self._tile_style.set_spacing(16, 16)
+
             k = [0, 1, 1, 2, 3][self._level_of_detail]
-            self._tile_style.set_tile_size(self.tn_width, self.tn_height + 16 * k)
+            tn_width = [16, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, 1536][self._zoom_index]
+            tn_height = tn_width
+            self._tile_style.set_tile_size(tn_width, tn_height + 16 * k)
 
         if self._zoom_index < 2:
             self.flavor = "normal"
