@@ -38,7 +38,7 @@ from dirtools.fileview.match_func import (
     RandomMatchFunc,
     RandomPickMatchFunc,
     FolderMatchFunc,
-    AsciiMatchFunc,
+    CharsetMatchFunc,
     MetadataMatchFunc,
     ContainsMatchFunc,
     DateMatchFunc,
@@ -389,10 +389,11 @@ class MatchFuncFactory:
             return TimeOpMatchFunc(rest, op)
 
     def make_charset(self, argument):
-        if argument == "ascii":
-            return AsciiMatchFunc()
-        else:
-            logger.error("unknown charset in command: %s", argument)
+        try:
+            "".encode(argument)  # test if argument is a valid charset
+            return CharsetMatchFunc(argument)
+        except LookupError as err:
+            logger.error("unknown charset in command: %s: %s", argument, err)
             return FalseMatchFunc()
 
     def make_contains(self, argument):

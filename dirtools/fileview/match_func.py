@@ -218,18 +218,18 @@ class RandomPickMatchFunc(MatchFunc):
         return self
 
 
-class AsciiMatchFunc(MatchFunc):
+class CharsetMatchFunc(MatchFunc):
 
-    def __init__(self, include=True):
-        self.rx = re.compile(r'^[0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-                             r'!"#$%&\'()*+,-./:;<=>?@\[\\\]^_`{|}~ \t\n\r\x0b\x0c]*$')
-        self.include = include
+    def __init__(self, charset):
+        self._charset = charset
 
     def __call__(self, fileinfo, idx):
-        if self.include:
-            return self.rx.match(fileinfo.basename())
+        try:
+            fileinfo.basename().encode(self._charset)
+        except UnicodeEncodeError:
+            return False
         else:
-            return not self.rx.match(fileinfo.basename())
+            return True
 
 
 class DateMatchFunc(MatchFunc):
