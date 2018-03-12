@@ -4,7 +4,8 @@
 
 import sys
 
-from os import scandir, path, name, stat, st, listdir
+import os
+from os import scandir, path, name, stat, listdir
 
 
 def walk(top, topdown=True, onerror=None, followlinks=False, maxdepth=None):
@@ -183,14 +184,14 @@ class _DummyDirEntry:
         if self._lstat is not None and not self.is_symlink():
             # use the cache lstat
             stat = self.stat(follow_symlinks=False)
-            return st.S_ISDIR(stat.st_mode)
+            return os.st.S_ISDIR(stat.st_mode)
 
         stat = self.stat()
-        return st.S_ISDIR(stat.st_mode)
+        return os.st.S_ISDIR(stat.st_mode)
 
     def is_symlink(self):
         stat = self.stat(follow_symlinks=False)
-        return st.S_ISLNK(stat.st_mode)
+        return os.st.S_ISLNK(stat.st_mode)
 
 
 def _dummy_scandir(dir):
