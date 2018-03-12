@@ -480,10 +480,10 @@ class ThumbView(QGraphicsView):
             self._tile_style.set_tile_size(tn_width, tn_height + 16 * k)
 
         elif self._style.item_style == FileItemStyle.DETAIL:
-            self._tile_style.set_arrangement(TileStyle.Arrangement.COLUMNS)
+            self._tile_style.set_arrangement(TileStyle.Arrangement.ROWS)
             self._tile_style.set_padding(8, 8)
             self._tile_style.set_spacing(16, 8)
-            self._tile_style.set_tile_size(256, 16)
+            self._tile_style.set_tile_size(self.viewport().width() - 16, 24)
 
         else:
             assert False, "unknown style"

@@ -40,15 +40,15 @@ def make_scaled_rect(sw, sh, tw, th):
         w = tw
         h = sh * tw // sw
 
-    return QRect(tw // 2 - w // 2,
-                 th // 2 - h // 2,
-                 w, h)
+    return QRectF(tw // 2 - w // 2,
+                  th // 2 - h // 2,
+                  w, h)
 
 
 def make_unscaled_rect(sw, sh, tw, th):
-    return QRect(tw // 2 - sw // 2,
-                 th // 2 - sh // 2,
-                 sw, sh)
+    return QRectF(tw // 2 - sw // 2,
+                  th // 2 - sh // 2,
+                  sw, sh)
 
 
 def make_cropped_rect(sw, sh, tw, th):
@@ -62,18 +62,18 @@ def make_cropped_rect(sw, sh, tw, th):
         w = sw
         h = th * sw // tw
 
-        return QRect(0,
-                     0,  # top align
-                     # max(0, sh // 3 - h // 2),
-                     # center: sh // 2 - h // 2,
-                     w, h)
+        return QRectF(0,
+                      0,  # top align
+                      # max(0, sh // 3 - h // 2),
+                      # center: sh // 2 - h // 2,
+                      w, h)
     else:
         w = tw * sh // tw
         h = sh
 
-        return QRect(sw // 2 - w // 2,
-                     0,
-                     w, h)
+        return QRectF(sw // 2 - w // 2,
+                      0,
+                      w, h)
 
 
 class ThumbFileItemRenderer:
@@ -86,13 +86,14 @@ class ThumbFileItemRenderer:
         self.style = item.thumb_view._style
         self.zoom_index = item.thumb_view._zoom_index
         self.tile_rect = item.tile_rect
-        self.thumbnail_rect = QRect(0, 0, item.tile_rect.width(), item.tile_rect.width())
         self.hovering = item.hovering
         self.animation_timer = item.animation_timer
         self.new = item._new
         self.crop_thumbnails = item.thumb_view._crop_thumbnails
         self.is_selected = item.isSelected()
         self.is_cursor = item.thumb_view._cursor_item == item
+
+        self.thumbnail_rect = QRectF(0, 0, item.tile_rect.width(), item.tile_rect.width())
 
     def render(self, painter: QPainter) -> None:
         from dirtools.fileview.thumb_view import FileItemStyle
@@ -123,6 +124,8 @@ class ThumbFileItemRenderer:
             painter.drawRect(self.tile_rect)
 
     def paint_smallicon_view(self, painter: QPainter) -> None:
+        self.thumbnail_rect = QRectF(0, 0, self.tile_rect.height(), self.tile_rect.height())
+
         font = self.style.font
         fm = self.style.fm
 
@@ -224,15 +227,31 @@ class ThumbFileItemRenderer:
             painter.setPen(QColor(96, 96, 96))
             painter.drawText(text_rect, text, text_option)
 
-
     def paint_detail_view(self, painter: QPainter) -> None:
-        rect = QRect(0, 0,
-                     self.tile_rect.height(),
-                     self.tile_rect.height())
-        self.icon.paint(painter, rect)
-        painter.drawText(self.tile_rect.height() + 4,
-                         self.tile_rect.height() - 4,
-                         self.fileinfo.basename())
+        self.thumbnail_rect = QRectF(0, 0, self.tile_rect.height(), self.tile_rect.height())
+
+        self.paint_thumbnail(painter)
+
+        lst = ([self.fileinfo.basename(), bytefmt.humanize(self.fileinfo.size())] +
+               list(self.make_text()))
+
+        text_option = QTextOption(Qt.AlignLeft | Qt.AlignVCenter)
+        text_option.setWrapMode(QTextOption.NoWrap)
+
+        total_width = self.tile_rect.width() - self.thumbnail_rect.width() - 8
+
+        widths = [60, 10, 10, 10, 10, 10]
+        x = self.thumbnail_rect.width() + 4
+        for idx, text in enumerate(lst[:-1]):
+            if idx != 0:
+                text_option.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+
+            width = total_width * (widths[idx] / 100)
+            painter.drawText(QRectF(x, 0,
+                                    width, self.tile_rect.height()),
+                             text,
+                             text_option)
+            x += width
 
     def paint(self, painter: QPainter) -> None:
         self.paint_text_items(painter)
@@ -307,11 +326,11 @@ class ThumbFileItemRenderer:
             if not self.crop_thumbnails:
                 rect = make_scaled_rect(pixmap.width(), pixmap.height(),
                                         self.thumbnail_rect.width(), self.thumbnail_rect.width())
-                painter.drawPixmap(rect, pixmap)
+                painter.drawPixmap(rect.toRect(), pixmap)
             else:
                 srcrect = make_cropped_rect(pixmap.width(), pixmap.height(),
                                             self.thumbnail_rect.width(), self.thumbnail_rect.width())
-                painter.drawPixmap(self.thumbnail_rect, pixmap, srcrect)
+                painter.drawPixmap(self.thumbnail_rect.toRect(), pixmap, srcrect.toRect())
 
     def make_text(self):
         metadata = self.fileinfo.metadata()
@@ -421,9 +440,11 @@ class ThumbFileItemRenderer:
         icon.paint(painter, QRect(self.tile_rect.width() - 48, 0, 48, 48))
 
     def paint_icon(self, painter: QPainter, icon: QIcon) -> None:
-        rect = make_unscaled_rect(self.tile_rect.width() * 3 // 4, self.tile_rect.width() * 3 // 4,
-                                  self.tile_rect.width(), self.tile_rect.width())
-        icon.paint(painter, rect)
+        # rect = make_unscaled_rect(self.tile_rect.width() * 3 // 4, self.tile_rect.width() * 3 // 4,
+        #                           self.tile_rect.width(), self.tile_rect.width())
+        rect = make_unscaled_rect(self.thumbnail_rect.width() * 3 // 4, self.thumbnail_rect.height() * 3 // 4,
+                                  self.thumbnail_rect.width(), self.thumbnail_rect.height())
+        icon.paint(painter, rect.toRect())
 
 
 # EOF #
