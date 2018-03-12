@@ -58,8 +58,10 @@ class VSpacer(Layout):
 
     def __init__(self, height: int) -> None:
         super().__init__()
-
         self.height: int = height
+
+    def layout(self, width: int, height: int) -> None:
+        self.width = width
 
 
 class RootLayout(Layout):
