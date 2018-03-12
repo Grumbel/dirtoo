@@ -169,45 +169,56 @@ class ThumbFileItemRenderer:
         else:
             top_left_text, top_right_text, bottom_left_text, bottom_right = self.make_text()
 
-            text_rect = QRectF(QPointF(self.tile_rect.height() + 8,
-                                       0),
-                               QPointF(self.tile_rect.width() - 80,
-                                       self.tile_rect.height()))
+            row1_rect = QRectF(QPointF(self.tile_rect.left() + self.tile_rect.height() + 8,
+                                       self.tile_rect.top()),
+                               QPointF(self.tile_rect.right() - 8,
+                                       self.tile_rect.top() + self.tile_rect.height() / 2))
+            row2_rect = QRectF(QPointF(self.tile_rect.left() + self.tile_rect.height() + 8,
+                                       self.tile_rect.top() + self.tile_rect.height() / 2),
+                               QPointF(self.tile_rect.right() - 8,
+                                       self.tile_rect.bottom()))
+
+            # row 1
+            text_rect = QRectF(QPointF(row1_rect.left(),
+                                       row1_rect.top()),
+                               QPointF(row1_rect.right() - 80,
+                                       row1_rect.bottom()))
             text = self.fileinfo.basename()
             text = fm.elidedText(text, Qt.ElideRight, text_rect.width())
-            text_option = QTextOption(Qt.AlignLeft | Qt.AlignTop)
+            text_option = QTextOption(Qt.AlignLeft | Qt.AlignVCenter)
             text_option.setWrapMode(QTextOption.NoWrap)
             painter.drawText(text_rect, text, text_option)
 
-            text_rect = QRectF(QPointF(self.tile_rect.width() - 80,
-                                       0),
-                               QPointF(self.tile_rect.width(),
-                                       self.tile_rect.height()))
+            text_rect = QRectF(QPointF(row1_rect.left() - 80,
+                                       row1_rect.top()),
+                               QPointF(row1_rect.right(),
+                                       row1_rect.bottom()))
             text = bytefmt.humanize(self.fileinfo.size())
             text = fm.elidedText(text, Qt.ElideRight, text_rect.width())
-            text_option = QTextOption(Qt.AlignRight | Qt.AlignTop)
+            text_option = QTextOption(Qt.AlignRight | Qt.AlignVCenter)
 
             text_option.setWrapMode(QTextOption.NoWrap)
             painter.setPen(QColor(96, 96, 96))
             painter.drawText(text_rect, text, text_option)
 
-            text_rect = QRectF(QPointF(self.tile_rect.height() + 8,
-                                       0),
-                               QPointF(self.tile_rect.width() - 80,
-                                       self.tile_rect.height()))
+            # row 2
+            text_rect = QRectF(QPointF(row2_rect.left(),
+                                       row2_rect.top()),
+                               QPointF(row2_rect.right() - 80,
+                                       row2_rect.bottom()))
             text = bottom_left_text
             text = fm.elidedText(text, Qt.ElideRight, text_rect.width())
-            text_option = QTextOption(Qt.AlignLeft | Qt.AlignBottom)
+            text_option = QTextOption(Qt.AlignLeft | Qt.AlignVCenter)
             text_option.setWrapMode(QTextOption.NoWrap)
             painter.drawText(text_rect, text, text_option)
 
-            text_rect = QRectF(QPointF(self.tile_rect.width() - 80,
-                                       0),
-                               QPointF(self.tile_rect.width(),
-                                       self.tile_rect.height()))
+            text_rect = QRectF(QPointF(row2_rect.left() - 80,
+                                       row2_rect.top()),
+                               QPointF(row2_rect.right(),
+                                       row2_rect.bottom()))
             text = top_left_text
             text = fm.elidedText(text, Qt.ElideRight, text_rect.width())
-            text_option = QTextOption(Qt.AlignRight | Qt.AlignBottom)
+            text_option = QTextOption(Qt.AlignRight | Qt.AlignVCenter)
 
             text_option.setWrapMode(QTextOption.NoWrap)
             painter.setPen(QColor(96, 96, 96))

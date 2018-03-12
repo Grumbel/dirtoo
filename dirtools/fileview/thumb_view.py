@@ -476,9 +476,13 @@ class ThumbView(QGraphicsView):
             elif self._zoom_index in [1, 2]:
                 self._tile_style.set_tile_size(column_width, 24)
             elif self._zoom_index in [3]:
-                self._tile_style.set_tile_size(column_width, 40)
-            else:
+                self._tile_style.set_tile_size(column_width, 32)
+            elif self._zoom_index in [4]:
                 self._tile_style.set_tile_size(column_width, 48)
+            elif self._zoom_index in [5]:
+                self._tile_style.set_tile_size(column_width, 64)
+            else:
+                self._tile_style.set_tile_size(column_width, 128)
 
         elif self._style.item_style == FileItemStyle.ICON:
             self._tile_style.set_arrangement(TileStyle.Arrangement.ROWS)
