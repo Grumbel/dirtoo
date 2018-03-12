@@ -18,7 +18,7 @@
 import logging
 from datetime import datetime
 
-from PyQt5.QtCore import Qt, QRect, QRectF, QPointF, QMargins
+from PyQt5.QtCore import Qt, QRect, QRectF, QPointF, QMarginsF
 from PyQt5.QtGui import QColor, QPainter, QIcon, QTextOption
 
 import bytefmt
@@ -415,7 +415,7 @@ class ThumbFileItemRenderer:
         if self.fileinfo.have_access() is False:
             painter.setOpacity(0.5)
             m = int(self.thumbnail_rect.width() * 0.125)
-            painter.drawPixmap(self.thumbnail_rect.marginsRemoved(QMargins(m, m, m, m)),
+            painter.drawPixmap(self.thumbnail_rect.marginsRemoved(QMarginsF(m, m, m, m)).toRect(),
                                self.style.shared_pixmaps.locked)
             painter.setOpacity(1.0)
 
