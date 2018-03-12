@@ -183,10 +183,12 @@ class TileStyle:
 
 class TileLayout(Layout):
 
-    def __init__(self, style: TileStyle) -> None:
+    def __init__(self, style: TileStyle, group: bool) -> None:
         super().__init__()
 
         self.style = style
+        self.group = group
+
         self.items: List[QGraphicsItem] = []
 
         self.rows = 0
@@ -258,7 +260,7 @@ class TileLayout(Layout):
         self.columns = new_columns
         self.rows = self._calc_num_rows(viewport_height)
 
-        if len(self.items) > (self.columns * self.rows):
+        if len(self.items) > (self.columns * self.rows) or self.group:
             self.rows = math.ceil(len(self.items) / self.columns)
 
         bottom_y = 0
@@ -274,7 +276,7 @@ class TileLayout(Layout):
                         self.y + y)
 
             right_x = max(right_x, x + self.style.tile_width + self.style.padding_x)
-            bottom_y = y + self.style.tile_height + self.style.padding_y
+            bottom_y = max(bottom_y, y + self.style.tile_height + self.style.padding_y)
 
             # calculate next items position
             if self.style.arrangement == TileStyle.Arrangement.ROWS:

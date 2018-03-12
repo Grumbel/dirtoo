@@ -46,8 +46,8 @@ class LayoutBuilder:
         group_title.set_item(text_item)
         return group_title
 
-    def _build_tile_grid(self, items: List[QGraphicsItem]) -> TileLayout:
-        tile_layout = TileLayout(self._style)
+    def _build_tile_grid(self, items: List[QGraphicsItem], group) -> TileLayout:
+        tile_layout = TileLayout(self._style, group=group)
         tile_layout.set_items(items)
         return tile_layout
 
@@ -91,7 +91,7 @@ class LayoutBuilder:
                 title = self._build_group_title(str(group))
                 hbox.add(title)
 
-            grid = self._build_tile_grid(visible_items)
+            grid = self._build_tile_grid(visible_items, len(sorted_groups) > 1)
 
             hbox.add(grid)
 
@@ -101,13 +101,13 @@ class LayoutBuilder:
 
         if len(sorted_groups) <= 1:
             if grid is None:
-                append_layout = TileLayout(self._style)
+                append_layout = TileLayout(self._style, group=False)
                 hbox.add(append_layout)
             else:
                 append_layout = grid
         else:
             hbox.add(self._build_group_title("Incoming"))
-            append_layout = TileLayout(self._style)
+            append_layout = TileLayout(self._style, group=True)
             hbox.add(append_layout)
 
         root = RootLayout()
