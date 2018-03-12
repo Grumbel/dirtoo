@@ -127,9 +127,21 @@ class ThumbFileItemRenderer:
         fm = self.style.fm
 
         painter.setFont(font)
-        self.icon.paint(painter, QRect(0, 0,
-                                       self.tile_rect.height(),
-                                       self.tile_rect.height()))
+        pixmap = self.thumbnail.get_pixmap()
+        if pixmap is None:
+            self.icon.paint(painter, QRect(0, 0,
+                                           self.tile_rect.height(),
+                                           self.tile_rect.height()))
+        else:
+            if not self.crop_thumbnails:
+                srcrect = make_scaled_rect(pixmap.width(), pixmap.height(),
+                                           self.tile_rect.height(), self.tile_rect.height())
+                painter.drawPixmap(srcrect, pixmap)
+            else:
+                srcrect = make_cropped_rect(pixmap.width(), pixmap.height(),
+                                            self.tile_rect.height(), self.tile_rect.height())
+                painter.drawPixmap(QRectF(0, 0, self.tile_rect.height(), self.tile_rect.height()),
+                                   pixmap, QRectF(srcrect))
 
         if self.zoom_index in [0, 1]:
             text_option = QTextOption(Qt.AlignLeft | Qt.AlignVCenter)
