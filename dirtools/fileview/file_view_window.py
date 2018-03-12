@@ -26,7 +26,6 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QToolButton,
     QFormLayout,
-    QStyle,
     QWidget,
     QLabel,
     QMainWindow,

@@ -18,7 +18,7 @@
 import logging
 from datetime import datetime
 
-from PyQt5.QtCore import Qt, QRect, QRectF, QPointF, QSizeF, QMargins
+from PyQt5.QtCore import Qt, QRect, QRectF, QPointF, QMargins
 from PyQt5.QtGui import QColor, QPainter, QIcon, QTextOption
 
 import bytefmt
@@ -345,8 +345,6 @@ class ThumbFileItemRenderer:
         return (top_left_text, top_right_text, bottom_left_text, bottom_right_text)
 
     def paint_metadata(self, painter: QPainter) -> None:
-        metadata = self.fileinfo.metadata()
-
         font = self.style.font
         fm = self.style.fm
         painter.setFont(font)
