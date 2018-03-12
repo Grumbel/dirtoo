@@ -18,8 +18,8 @@
 import logging
 from datetime import datetime
 
-from PyQt5.QtCore import Qt, QRect, QMargins
-from PyQt5.QtGui import QColor, QPainter, QIcon
+from PyQt5.QtCore import Qt, QRect, QRectF, QPointF, QSizeF, QMargins
+from PyQt5.QtGui import QColor, QPainter, QIcon, QTextOption
 
 import bytefmt
 
@@ -84,7 +84,7 @@ class ThumbFileItemRenderer:
         self.thumbnail = item._get_thumbnail()
         self.level_of_detail = item.thumb_view._level_of_detail
         self.style = item.thumb_view._style
-        self.column_style = item.thumb_view._column_style
+        self.zoom_index = item.thumb_view._zoom_index
         self.tile_rect = item.tile_rect
         self.thumbnail_rect = QRect(0, 0, item.tile_rect.width(), item.tile_rect.width())
         self.hovering = item.hovering
@@ -95,22 +95,14 @@ class ThumbFileItemRenderer:
         self.is_cursor = item.thumb_view._cursor_item == item
 
     def render(self, painter: QPainter) -> None:
-        self.paint(painter)
+        from dirtools.fileview.thumb_view import FileItemStyle
 
-    def paint(self, painter: QPainter) -> None:
-        self.paint_text_items(painter)
-        self.paint_thumbnail(painter)
-
-        if self.hovering and self.animation_timer is None:
-            painter.setCompositionMode(QPainter.CompositionMode_Overlay)
-            painter.setOpacity(0.75)
-            self.paint_thumbnail(painter)
-            painter.setOpacity(1.0)
-            painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
-
-        if self.level_of_detail > 1 and not self.column_style:
-            self.paint_metadata(painter)
-            self.paint_overlay(painter)
+        if self.style.item_style == FileItemStyle.SMALLICON:
+            self.paint_smallicon_view(painter)
+        elif self.style.item_style == FileItemStyle.DETAIL:
+            self.paint_detail_view(painter)
+        else:
+            self.paint(painter)
 
         if self.is_selected:
             painter.save()
@@ -129,6 +121,121 @@ class ThumbFileItemRenderer:
             painter.setPen(QColor(0, 0, 0))
             painter.setBrush(QColor(255, 255, 255, 96))
             painter.drawRect(self.tile_rect)
+
+    def paint_smallicon_view(self, painter: QPainter) -> None:
+        font = self.style.font
+        fm = self.style.fm
+
+        painter.setFont(font)
+        self.icon.paint(painter, QRect(0, 0,
+                                       self.tile_rect.height(),
+                                       self.tile_rect.height()))
+
+        if self.zoom_index in [0, 1]:
+            text_option = QTextOption(Qt.AlignLeft | Qt.AlignVCenter)
+            text_option.setWrapMode(QTextOption.NoWrap)
+            text_rect = QRectF(QPointF(self.tile_rect.height() + 4,
+                                       0),
+                               QPointF(self.tile_rect.width(),
+                                       self.tile_rect.height()))
+            text = self.fileinfo.basename()
+            text = fm.elidedText(text, Qt.ElideRight, text_rect.width())
+            painter.drawText(text_rect,
+                             text,
+                             text_option)
+        elif self.zoom_index in [2]:
+            text_rect = QRectF(QPointF(self.tile_rect.height() + 4,
+                                       0),
+                               QPointF(self.tile_rect.width() - 80,
+                                       self.tile_rect.height()))
+            text = self.fileinfo.basename()
+            text = fm.elidedText(text, Qt.ElideRight, text_rect.width())
+            text_option = QTextOption(Qt.AlignLeft | Qt.AlignVCenter)
+            text_option.setWrapMode(QTextOption.NoWrap)
+            painter.drawText(text_rect, text, text_option)
+
+            text_rect = QRectF(QPointF(self.tile_rect.width() - 80,
+                                       0),
+                               QPointF(self.tile_rect.width(),
+                                       self.tile_rect.height()))
+            text = bytefmt.humanize(self.fileinfo.size())
+            text = fm.elidedText(text, Qt.ElideRight, text_rect.width())
+            text_option = QTextOption(Qt.AlignRight | Qt.AlignVCenter)
+
+            text_option.setWrapMode(QTextOption.NoWrap)
+            painter.setPen(QColor(96, 96, 96))
+            painter.drawText(text_rect, text, text_option)
+        else:
+            top_left_text, top_right_text, bottom_left_text, bottom_right = self.make_text()
+
+            text_rect = QRectF(QPointF(self.tile_rect.height() + 8,
+                                       0),
+                               QPointF(self.tile_rect.width() - 80,
+                                       self.tile_rect.height()))
+            text = self.fileinfo.basename()
+            text = fm.elidedText(text, Qt.ElideRight, text_rect.width())
+            text_option = QTextOption(Qt.AlignLeft | Qt.AlignTop)
+            text_option.setWrapMode(QTextOption.NoWrap)
+            painter.drawText(text_rect, text, text_option)
+
+            text_rect = QRectF(QPointF(self.tile_rect.width() - 80,
+                                       0),
+                               QPointF(self.tile_rect.width(),
+                                       self.tile_rect.height()))
+            text = bytefmt.humanize(self.fileinfo.size())
+            text = fm.elidedText(text, Qt.ElideRight, text_rect.width())
+            text_option = QTextOption(Qt.AlignRight | Qt.AlignTop)
+
+            text_option.setWrapMode(QTextOption.NoWrap)
+            painter.setPen(QColor(96, 96, 96))
+            painter.drawText(text_rect, text, text_option)
+
+            text_rect = QRectF(QPointF(self.tile_rect.height() + 8,
+                                       0),
+                               QPointF(self.tile_rect.width() - 80,
+                                       self.tile_rect.height()))
+            text = bottom_left_text
+            text = fm.elidedText(text, Qt.ElideRight, text_rect.width())
+            text_option = QTextOption(Qt.AlignLeft | Qt.AlignBottom)
+            text_option.setWrapMode(QTextOption.NoWrap)
+            painter.drawText(text_rect, text, text_option)
+
+            text_rect = QRectF(QPointF(self.tile_rect.width() - 80,
+                                       0),
+                               QPointF(self.tile_rect.width(),
+                                       self.tile_rect.height()))
+            text = top_left_text
+            text = fm.elidedText(text, Qt.ElideRight, text_rect.width())
+            text_option = QTextOption(Qt.AlignRight | Qt.AlignBottom)
+
+            text_option.setWrapMode(QTextOption.NoWrap)
+            painter.setPen(QColor(96, 96, 96))
+            painter.drawText(text_rect, text, text_option)
+
+
+    def paint_detail_view(self, painter: QPainter) -> None:
+        rect = QRect(0, 0,
+                     self.tile_rect.height(),
+                     self.tile_rect.height())
+        self.icon.paint(painter, rect)
+        painter.drawText(self.tile_rect.height() + 4,
+                         self.tile_rect.height() - 4,
+                         self.fileinfo.basename())
+
+    def paint(self, painter: QPainter) -> None:
+        self.paint_text_items(painter)
+        self.paint_thumbnail(painter)
+
+        if self.hovering and self.animation_timer is None:
+            painter.setCompositionMode(QPainter.CompositionMode_Overlay)
+            painter.setOpacity(0.75)
+            self.paint_thumbnail(painter)
+            painter.setOpacity(1.0)
+            painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
+
+        if self.level_of_detail > 1:
+            self.paint_metadata(painter)
+            self.paint_overlay(painter)
 
     def paint_text_items(self, painter: QPainter) -> None:
         # text items
@@ -150,10 +257,7 @@ class ThumbFileItemRenderer:
 
         tmp = text
 
-        if not self.column_style:
-            target_width = self.tile_rect.width()
-        else:
-            target_width = self.tile_rect.width() - 32 - 4
+        target_width = self.tile_rect.width()
 
         if fm.width(tmp) > target_width:
             while fm.width(tmp + "…") > target_width:
@@ -165,21 +269,11 @@ class ThumbFileItemRenderer:
         painter.setFont(font)
 
         k = [0, 1, 1, 2, 3][self.level_of_detail]
-        if not self.column_style:
-            painter.drawText(self.tile_rect.width() / 2 - fm.width(text) / 2,
-                             self.tile_rect.height() - 2 + 16 * row - 16 * k + 14,
-                             text)
-        else:
-            painter.drawText(self.tile_rect.height() + 4,
-                             self.tile_rect.height() - 2 + 16 * row - 16 * k + 14,
-                             text)
+        painter.drawText(self.tile_rect.width() / 2 - fm.width(text) / 2,
+                         self.tile_rect.height() - 2 + 16 * row - 16 * k + 14,
+                         text)
 
     def paint_thumbnail(self, painter: QPainter) -> None:
-
-        if self.column_style:
-            self.paint_icon(painter, self.icon)
-            return
-
         thumbnail = self.thumbnail
 
         if thumbnail.status == ThumbnailStatus.INITIAL:
@@ -207,24 +301,13 @@ class ThumbFileItemRenderer:
                                             self.thumbnail_rect.width(), self.thumbnail_rect.width())
                 painter.drawPixmap(self.thumbnail_rect, pixmap, srcrect)
 
-    def paint_metadata(self, painter: QPainter) -> None:
+    def make_text(self):
         metadata = self.fileinfo.metadata()
-
-        font = self.style.font
-        fm = self.style.fm
-        painter.setFont(font)
 
         top_left_text = ""
         top_right_text = ""
         bottom_left_text = ""
-
-        if self.new:
-            painter.drawPixmap(QRect(2, 2, 24, 24),
-                               self.style.shared_pixmaps.new)
-
-        if "type" in self.fileinfo.metadata() and self.fileinfo.metadata()["type"] == "error":
-            painter.drawPixmap(QRect(2, 2, 24, 24),
-                               self.style.shared_pixmaps.error)
+        bottom_right_text = ""
 
         if 'duration' in metadata:
             hours, minutes, seconds = split_duration(metadata['duration'])
@@ -241,6 +324,25 @@ class ThumbFileItemRenderer:
 
         if 'width' in metadata and 'height' in metadata:
             bottom_left_text = "{}x{}".format(metadata['width'], metadata['height'])
+
+        return (top_left_text, top_right_text, bottom_left_text, bottom_right_text)
+
+    def paint_metadata(self, painter: QPainter) -> None:
+        metadata = self.fileinfo.metadata()
+
+        font = self.style.font
+        fm = self.style.fm
+        painter.setFont(font)
+
+        if self.new:
+            painter.drawPixmap(QRect(2, 2, 24, 24),
+                               self.style.shared_pixmaps.new)
+
+        if "type" in self.fileinfo.metadata() and self.fileinfo.metadata()["type"] == "error":
+            painter.drawPixmap(QRect(2, 2, 24, 24),
+                               self.style.shared_pixmaps.error)
+
+        top_left_text, top_right_text, bottom_left_text, bottom_right = self.make_text()
 
         if top_left_text:
             w = fm.width(top_left_text)
@@ -284,9 +386,6 @@ class ThumbFileItemRenderer:
             painter.setOpacity(1.0)
 
     def paint_overlay(self, painter: QPainter) -> None:
-        if self.column_style:
-            return
-
         if self.fileinfo.have_access() is False:
             painter.setOpacity(0.5)
             m = int(self.thumbnail_rect.width() * 0.125)
@@ -310,12 +409,8 @@ class ThumbFileItemRenderer:
         icon.paint(painter, QRect(self.tile_rect.width() - 48, 0, 48, 48))
 
     def paint_icon(self, painter: QPainter, icon: QIcon) -> None:
-        if not self.column_style:
-            rect = make_unscaled_rect(self.tile_rect.width() * 3 // 4, self.tile_rect.width() * 3 // 4,
-                                      self.tile_rect.width(), self.tile_rect.width())
-        else:
-            rect = QRect(0, 0, self.tile_rect.height(), self.tile_rect.height())
-
+        rect = make_unscaled_rect(self.tile_rect.width() * 3 // 4, self.tile_rect.width() * 3 // 4,
+                                  self.tile_rect.width(), self.tile_rect.width())
         icon.paint(painter, rect)
 
 

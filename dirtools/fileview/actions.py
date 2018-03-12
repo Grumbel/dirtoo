@@ -161,12 +161,17 @@ class Actions(QObject):
         self.view_icon_view = QAction("Icon View", self, checkable=True)
         self.view_small_icon_view = QAction("Small Icon View", self, checkable=True)
 
-        self.view_detail_view = QAction("Detail View")
-        self.view_detail_view.triggered.connect(self.controller.view_detail_view)
-        self.view_icon_view = QAction("Icon View")
+        self.view_icon_view = QAction(QIcon.fromTheme("view-grid-symbolic"),
+                                      "Icon View")
         self.view_icon_view.triggered.connect(self.controller.view_icon_view)
-        self.view_small_icon_view = QAction("Small Icon View")
+
+        self.view_small_icon_view = QAction(QIcon.fromTheme("view-list-symbolic"),
+                                            "Small Icon View")
         self.view_small_icon_view.triggered.connect(self.controller.view_small_icon_view)
+
+        self.view_detail_view = QAction(QIcon.fromTheme("view-more-horizontal-symbolic"),
+                                        "Detail View")
+        self.view_detail_view.triggered.connect(self.controller.view_detail_view)
 
         self.view_group = QActionGroup(self)
         self.view_group.addAction(self.view_detail_view)

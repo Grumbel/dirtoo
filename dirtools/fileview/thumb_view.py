@@ -18,6 +18,7 @@
 from typing import List, Dict, Optional
 
 import logging
+from enum import Enum
 
 from pkg_resources import resource_filename
 
@@ -63,13 +64,21 @@ class SharedPixmaps:
         self.new = QPixmap(resource_filename("dirtools", "fileview/icons/noun_258297_cc.png"))
 
 
+class FileItemStyle(Enum):
+
+    ICON = 0
+    SMALLICON = 1
+    DETAIL = 2
+
+
 class FileViewStyle:
 
     def __init__(self) -> None:
-        self.font = QFont("Verdana", 8)
+        self.font = QFont("Verdana", 10)
         self.fm = QFontMetrics(self.font)
         self.shared_icons = SharedIcons()
         self.shared_pixmaps = SharedPixmaps()
+        self.item_style = FileItemStyle.ICON
 
 
 class ThumbView(QGraphicsView):
@@ -113,7 +122,6 @@ class ThumbView(QGraphicsView):
         self.apply_zoom()
         self._cursor_item: Optional[ThumbFileItem] = None
         self._crop_thumbnails = False
-        self._column_style = False
         self.setBackgroundBrush(QBrush(Qt.white, Qt.SolidPattern))
         self._resize_timer: Optional[int] = None
 
@@ -443,15 +451,25 @@ class ThumbView(QGraphicsView):
             self._zoom_index = 0
         self.apply_zoom()
 
+    def set_style(self, item_style: FileItemStyle) -> None:
+        self._style.item_style = item_style
+        self.apply_zoom()
+
     def apply_zoom(self) -> None:
-        if self._zoom_index == 0:
-            self._column_style = True
-            self._tile_style.set_arrangement(TileStyle.Arrangement.COLUMNS)
+        if self._style.item_style == FileItemStyle.SMALLICON:
+            # self._tile_style.set_arrangement(TileStyle.Arrangement.COLUMNS)
+            self._tile_style.set_arrangement(TileStyle.Arrangement.ROWS)
             self._tile_style.set_padding(8, 8)
             self._tile_style.set_spacing(16, 8)
-            self._tile_style.set_tile_size(256, 16)
-        else:
-            self._column_style = False
+
+            if self._zoom_index == 0:
+                self._tile_style.set_tile_size(384, 16)
+            elif self._zoom_index in [1, 2]:
+                self._tile_style.set_tile_size(384, 24)
+            else:
+                self._tile_style.set_tile_size(384, 40)
+
+        elif self._style.item_style == FileItemStyle.ICON:
             self._tile_style.set_arrangement(TileStyle.Arrangement.ROWS)
             self._tile_style.set_padding(16, 16)
             self._tile_style.set_spacing(16, 16)
@@ -460,6 +478,15 @@ class ThumbView(QGraphicsView):
             tn_width = [16, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, 1536][self._zoom_index]
             tn_height = tn_width
             self._tile_style.set_tile_size(tn_width, tn_height + 16 * k)
+
+        elif self._style.item_style == FileItemStyle.DETAIL:
+            self._tile_style.set_arrangement(TileStyle.Arrangement.COLUMNS)
+            self._tile_style.set_padding(8, 8)
+            self._tile_style.set_spacing(16, 8)
+            self._tile_style.set_tile_size(256, 16)
+
+        else:
+            assert False, "unknown style"
 
         if self._zoom_index < 2:
             self.flavor = "normal"

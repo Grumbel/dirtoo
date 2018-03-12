@@ -425,14 +425,10 @@ class FileViewWindow(QMainWindow):
         self.toolbar.addWidget(button)
 
         self.toolbar.addSeparator()
-        # self.toolbar.addAction(self.style().standardIcon(QStyle.SP_FileDialogContentsView),
-        #                       "List View", self.show_list_view)
-        self.toolbar.addAction(self.style().standardIcon(QStyle.SP_FileDialogContentsView),
-                               "Thumbnail View",
-                               self.show_thumb_view)
-        self.toolbar.addAction(self.style().standardIcon(QStyle.SP_FileDialogDetailedView),
-                               "Detail View",
-                               self.show_detail_view)
+        self.toolbar.addAction(self.actions.view_icon_view)
+        self.toolbar.addAction(self.actions.view_small_icon_view)
+        self.toolbar.addAction(self.actions.view_detail_view)
+
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.actions.zoom_in)
         self.toolbar.addAction(self.actions.zoom_out)

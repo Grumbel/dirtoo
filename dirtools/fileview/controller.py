@@ -40,6 +40,7 @@ from dirtools.fileview.location import Location, Payload
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.search_stream import SearchStream
 from dirtools.fileview.menu import Menu
+from dirtools.fileview.thumb_view import FileItemStyle
 
 logger = logging.getLogger(__name__)
 
@@ -132,16 +133,20 @@ class Controller(QObject):
         self.window.file_view.show_basename()
 
     def view_detail_view(self) -> None:
-        self.window.show_file_view()
+        # self.window.show_file_view()
+        self.window.show_thumb_view()
+        self.window.thumb_view.set_style(FileItemStyle.DETAIL)
 
     def show_thumb_view(self) -> None:
         self.window.show_thumb_view()
 
     def view_icon_view(self) -> None:
-        pass
+        self.window.show_thumb_view()
+        self.window.thumb_view.set_style(FileItemStyle.ICON)
 
     def view_small_icon_view(self) -> None:
-        pass
+        self.window.show_thumb_view()
+        self.window.thumb_view.set_style(FileItemStyle.SMALLICON)
 
     def zoom_in(self) -> None:
         self.window.thumb_view.zoom_in()

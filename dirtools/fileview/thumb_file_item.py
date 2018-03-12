@@ -99,7 +99,7 @@ class ThumbFileItem(FileItem):
             # FIXME: calling os.getuid() is slow, so use 1000 as
             # workaround for now
             if 1000 == self.fileinfo.uid():
-                bg_color = QColor(192 + 32, 192 + 32, 192 + 32)
+                bg_color = QColor(192 + 48, 192 + 48, 192 + 48)
             elif self.fileinfo.uid() == 0:
                 bg_color = QColor(192 + 32, 176, 176)
             else:
@@ -110,7 +110,7 @@ class ThumbFileItem(FileItem):
                               192 + 32 - 10 * self.animation_count)
 
         # background rectangle
-        if not self.thumb_view._column_style or self.animation_timer is not None:
+        if True or self.animation_timer is not None:
             painter.fillRect(0, 0,
                              self.tile_rect.width(),
                              self.tile_rect.height(),
