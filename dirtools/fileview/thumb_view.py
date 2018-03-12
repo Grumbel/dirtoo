@@ -350,6 +350,8 @@ class ThumbView(QGraphicsView):
         logger.debug("ThumbView.resizeEvent: %s", ev)
         super().resizeEvent(ev)
 
+        self.apply_zoom()
+
         if settings.value("globals/resize_delay", True):
             if self._resize_timer is not None:
                 self.killTimer(self._resize_timer)
@@ -462,14 +464,21 @@ class ThumbView(QGraphicsView):
             self._tile_style.set_padding(8, 8)
             self._tile_style.set_spacing(16, 8)
 
-            if self._zoom_index == 0:
-                self._tile_style.set_tile_size(384, 16)
-            elif self._zoom_index in [1, 2]:
-                self._tile_style.set_tile_size(384, 24)
-            elif self._zoom_index in [3]:
-                self._tile_style.set_tile_size(384, 40)
+            # FIXME: this is a bit messy and doesn't take spacing into account properly
+            column_count = (self.viewport().width() // (384 + 16 + 16))
+            if column_count == 0:
+                column_width = self.viewport().width() - 16 - 16
             else:
-                self._tile_style.set_tile_size(384, 48)
+                column_width = (self.viewport().width() / column_count) - 16 - 16
+
+            if self._zoom_index == 0:
+                self._tile_style.set_tile_size(column_width, 16)
+            elif self._zoom_index in [1, 2]:
+                self._tile_style.set_tile_size(column_width, 24)
+            elif self._zoom_index in [3]:
+                self._tile_style.set_tile_size(column_width, 40)
+            else:
+                self._tile_style.set_tile_size(column_width, 48)
 
         elif self._style.item_style == FileItemStyle.ICON:
             self._tile_style.set_arrangement(TileStyle.Arrangement.ROWS)
