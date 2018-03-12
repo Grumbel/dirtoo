@@ -38,6 +38,7 @@ class Layout:
 
     def layout(self, width: int, height: int):
         self.width = width
+        self.height = height
 
     def set_pos(self, x: int, y: int):
         self.x = x
@@ -90,7 +91,7 @@ class RootLayout(Layout):
 
     def append_item(self, item) -> None:
         self.append_layout.append_item(item)
-        self.root.layout(self.width)
+        self.root.layout(self.width, self.height)
 
 
 class HBoxLayout(Layout):
@@ -116,7 +117,7 @@ class HBoxLayout(Layout):
         self.height = y
 
     def resize(self, width: int, height: int) -> None:
-        self.layout(width)
+        self.layout(width, height)
 
 
 class ItemLayout(Layout):
