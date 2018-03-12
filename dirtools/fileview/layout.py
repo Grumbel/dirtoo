@@ -17,6 +17,7 @@
 
 from typing import List, Optional
 
+import math
 from enum import Enum
 from PyQt5.QtCore import QRectF
 from PyQt5.QtWidgets import QGraphicsItem
@@ -35,7 +36,7 @@ class Layout:
         self.width: int = 0
         self.height: int = 0
 
-    def layout(self, width: int):
+    def layout(self, width: int, height: int):
         self.width = width
 
     def set_pos(self, x: int, y: int):
@@ -78,11 +79,11 @@ class RootLayout(Layout):
     def set_append_layout(self, group: 'TileLayout') -> None:
         self.append_layout = group
 
-    def layout(self, viewport_width: int) -> None:
-        super().layout(viewport_width)
+    def layout(self, viewport_width: int, viewport_height: int) -> None:
+        super().layout(viewport_width, viewport_height)
 
         self.root.set_pos(0, 0)
-        self.root.layout(viewport_width)
+        self.root.layout(viewport_width, viewport_height)
 
     def get_bounding_rect(self) -> QRectF:
         return self.root.get_bounding_rect()
@@ -103,13 +104,13 @@ class HBoxLayout(Layout):
         self.children.append(child)
         child.parent = self
 
-    def layout(self, viewport_width: int) -> None:
-        super().layout(viewport_width)
+    def layout(self, viewport_width: int, viewport_height: int) -> None:
+        super().layout(viewport_width, viewport_height)
 
         y = 0
         for child in self.children:
             child.set_pos(0, self.y + y)
-            child.layout(viewport_width)
+            child.layout(viewport_width, viewport_height)
             y += child.height
 
         self.height = y
@@ -130,8 +131,8 @@ class ItemLayout(Layout):
     def set_item(self, item: QGraphicsItem) -> None:
         self.item = item
 
-    def layout(self, viewport_width: int) -> None:
-        super().layout(viewport_width)
+    def layout(self, viewport_width: int, viewport_height: int) -> None:
+        super().layout(viewport_width, viewport_height)
 
         if self.item is not None:
             self.height = self.item.boundingRect().height()
@@ -244,14 +245,18 @@ class TileLayout(Layout):
         super().set_pos(x, y)
 
     @profile
-    def layout(self, viewport_width: int) -> None:
-        super().layout(viewport_width)
+    def layout(self, viewport_width: int, viewport_height: int) -> None:
+        super().layout(viewport_width, viewport_height)
 
         new_columns = self._calc_num_columns(viewport_width)
         grid_width = self._calc_grid_width(new_columns)
 
         self.center_x_off = (viewport_width - grid_width) // 2
         self.columns = new_columns
+        self.rows = self._calc_num_rows(viewport_height)
+
+        if len(self.items) > (self.columns * self.rows):
+            self.rows = math.ceil(len(self.items) / self.columns)
 
         bottom_y = 0
         right_x = 0

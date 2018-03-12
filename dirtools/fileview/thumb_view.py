@@ -365,7 +365,7 @@ class ThumbView(QGraphicsView):
             self._resize_timer = None
 
             if self._layout is not None:
-                self._layout.layout(self.viewport().width())
+                self._layout.layout(self.viewport().width(), self.viewport().height())
             self.layout_items()
         else:
             assert False, "timer foobar"
@@ -414,7 +414,7 @@ class ThumbView(QGraphicsView):
         # self._scene.setItemIndexMethod(QGraphicsScene.NoIndex)
         self._layout = self._layout_builder.build_layout(self._items)
 
-        self._layout.layout(self.viewport().width())
+        self._layout.layout(self.viewport().width(), self.viewport().height())
         self.refresh_bounding_rect()
 
         # self._scene.setItemIndexMethod(old_item_index_method)
@@ -459,8 +459,8 @@ class ThumbView(QGraphicsView):
 
     def apply_zoom(self) -> None:
         if self._style.item_style == FileItemStyle.SMALLICON:
-            # self._tile_style.set_arrangement(TileStyle.Arrangement.COLUMNS)
-            self._tile_style.set_arrangement(TileStyle.Arrangement.ROWS)
+            self._tile_style.set_arrangement(TileStyle.Arrangement.COLUMNS)
+            # self._tile_style.set_arrangement(TileStyle.Arrangement.ROWS)
             self._tile_style.set_padding(8, 8)
             self._tile_style.set_spacing(16, 8)
 
