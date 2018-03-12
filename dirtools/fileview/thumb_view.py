@@ -466,8 +466,10 @@ class ThumbView(QGraphicsView):
                 self._tile_style.set_tile_size(384, 16)
             elif self._zoom_index in [1, 2]:
                 self._tile_style.set_tile_size(384, 24)
-            else:
+            elif self._zoom_index in [3]:
                 self._tile_style.set_tile_size(384, 40)
+            else:
+                self._tile_style.set_tile_size(384, 48)
 
         elif self._style.item_style == FileItemStyle.ICON:
             self._tile_style.set_arrangement(TileStyle.Arrangement.ROWS)

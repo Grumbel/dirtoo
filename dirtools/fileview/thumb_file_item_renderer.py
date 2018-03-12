@@ -130,21 +130,7 @@ class ThumbFileItemRenderer:
         fm = self.style.fm
 
         painter.setFont(font)
-        pixmap = self.thumbnail.get_pixmap()
-        if pixmap is None:
-            self.icon.paint(painter, QRect(0, 0,
-                                           self.tile_rect.height(),
-                                           self.tile_rect.height()))
-        else:
-            if not self.crop_thumbnails:
-                srcrect = make_scaled_rect(pixmap.width(), pixmap.height(),
-                                           self.tile_rect.height(), self.tile_rect.height())
-                painter.drawPixmap(srcrect, pixmap)
-            else:
-                srcrect = make_cropped_rect(pixmap.width(), pixmap.height(),
-                                            self.tile_rect.height(), self.tile_rect.height())
-                painter.drawPixmap(QRectF(0, 0, self.tile_rect.height(), self.tile_rect.height()),
-                                   pixmap, QRectF(srcrect))
+        self.paint_thumbnail(painter)
 
         if self.zoom_index in [0, 1]:
             text_option = QTextOption(Qt.AlignLeft | Qt.AlignVCenter)
@@ -440,10 +426,14 @@ class ThumbFileItemRenderer:
         icon.paint(painter, QRect(self.tile_rect.width() - 48, 0, 48, 48))
 
     def paint_icon(self, painter: QPainter, icon: QIcon) -> None:
-        # rect = make_unscaled_rect(self.tile_rect.width() * 3 // 4, self.tile_rect.width() * 3 // 4,
-        #                           self.tile_rect.width(), self.tile_rect.width())
-        rect = make_unscaled_rect(self.thumbnail_rect.width() * 3 // 4, self.thumbnail_rect.height() * 3 // 4,
-                                  self.thumbnail_rect.width(), self.thumbnail_rect.height())
+        from dirtools.fileview.thumb_view import FileItemStyle
+
+        if self.style.item_style == FileItemStyle.ICON:
+            rect = make_unscaled_rect(self.thumbnail_rect.width() * 3 // 4, self.thumbnail_rect.width() * 3 // 4,
+                                      self.thumbnail_rect.width(), self.thumbnail_rect.height())
+        else:
+            rect = make_unscaled_rect(self.thumbnail_rect.width(), self.thumbnail_rect.height(),
+                                      self.thumbnail_rect.width(), self.thumbnail_rect.height())
         icon.paint(painter, rect.toRect())
 
 
