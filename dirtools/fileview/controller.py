@@ -367,8 +367,12 @@ class Controller(QObject):
         self.window.thumb_view._scene.clearSelection()
 
     def select_all(self) -> None:
-        for item in self.window.thumb_view._scene.items():
+        scene = self.window.thumb_view._scene
+        oldstate = scene.blockSignals(True)
+        for item in scene.items():
             item.setSelected(True)
+        scene.blockSignals(oldstate)
+        scene.selectionChanged.emit()
 
     def on_context_menu(self, pos) -> None:
         menu = QMenu()
