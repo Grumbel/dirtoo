@@ -86,8 +86,9 @@ class Mode:
         self._parent = parent
         self._item_style = item_style
         self._tile_style = TileStyle()
-        self._level_of_detail = 3
-        self._zoom_index = 5
+
+        self._level_of_detail = settings.value("globals/{}_level_of_detail".format(item_style), 3, int)
+        self._zoom_index = settings.value("globals/{}_zoom_index".format(item_style), 5, int)
 
         self.update()
 
@@ -142,20 +143,28 @@ class Mode:
         if self._zoom_index > 11:
             self._zoom_index = 11
 
+        settings.set_value("globals/{}_zoom_index".format(self._item_style), self._zoom_index)
+
     def zoom_out(self) -> None:
         self._zoom_index -= 1
         if self._zoom_index < 0:
             self._zoom_index = 0
+
+        settings.set_value("globals/{}_zoom_index".format(self._item_style), self._zoom_index)
 
     def less_details(self):
         self._level_of_detail -= 1
         if self._level_of_detail < 0:
             self._level_of_detail = 0
 
+        settings.set_value("globals/{}_level_of_detail".format(self._item_style), self._level_of_detail)
+
     def more_details(self):
         self._level_of_detail += 1
         if self._level_of_detail > 4:
             self._level_of_detail = 4
+
+        settings.set_value("globals/{}_level_of_detail".format(self._item_style), self._level_of_detail)
 
 
 class ThumbView(QGraphicsView):
