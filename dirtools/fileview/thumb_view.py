@@ -28,6 +28,8 @@ from PyQt5.QtGui import (QBrush, QIcon, QColor, QPixmap, QImage,
                          QContextMenuEvent)
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QShortcut
 
+import bytefmt
+
 from dirtools.dbus_thumbnailer import DBusThumbnailerError
 from dirtools.fileview.file_collection import FileCollection
 from dirtools.fileview.file_info import FileInfo
@@ -147,8 +149,14 @@ class ThumbView(QGraphicsView):
             item.prepare()
 
     def on_selection_changed(self) -> None:
-        count = len(self._scene.selectedItems())
-        print("{} files selected".format(count))
+        selected_items = self._scene.selectedItems()
+
+        total_size = 0
+        for item in selected_items:
+            total_size += item.fileinfo.size()
+
+        msg = "{} selected ({})".format(len(selected_items), bytefmt.humanize(total_size))
+        self._controller.window.status_bar.showMessage(msg)
 
     def cursor_move(self, dx: int, dy: int) -> None:
         def best_item(items, rect):
