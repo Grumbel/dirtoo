@@ -20,9 +20,7 @@ import logging
 
 import os
 import stat
-import traceback
 
-from dirtools.fileview.location import Location
 from dirtools.fileview.match_func_factory import VIDEO_EXT, IMAGE_EXT, ARCHIVE_EXT
 
 logger = logging.getLogger(__name__)
@@ -31,7 +29,7 @@ logger = logging.getLogger(__name__)
 class LazyFileInfo:
 
     @staticmethod
-    def from_filename(filename: str) -> 'FileInfo':
+    def from_filename(filename: str) -> 'LazyFileInfo':
         logger.debug("LazyFileInfo.from_filename: %s", filename)
 
         # abspath = os.path.abspath(filename)
@@ -56,8 +54,6 @@ class LazyFileInfo:
         self._metadata: Optional[Dict[str, Any]] = None
 
     def _collect_stat(self) -> None:
-        print("LAZY satt", filename)
-        traceback.print_stack()
         if self._stat is None:
             self._stat = os.lstat(self._abspath)
             self._have_access = os.access(self._abspath, os.R_OK)
@@ -121,7 +117,7 @@ class LazyFileInfo:
         return {}  # FIXME: fetch metadata
 
     def __str__(self) -> str:
-        return "LazyFileInfo({})".format(self._filename)
+        return "LazyFileInfo({})".format(self._abspath)
 
 
 # EOF #
