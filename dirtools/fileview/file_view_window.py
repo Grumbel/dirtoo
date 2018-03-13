@@ -35,7 +35,6 @@ from PyQt5.QtWidgets import (
     QToolBar
 )
 
-from dirtools.fileview.detail_view import DetailView
 from dirtools.fileview.thumb_view import ThumbView
 from dirtools.fileview.location import Location
 from dirtools.fileview.menu import Menu
@@ -130,22 +129,18 @@ class FileViewWindow(QMainWindow):
         self.vbox = QVBoxLayout()
         self.vbox.setContentsMargins(0, 0, 0, 0)
 
-        self.file_view = DetailView(self.controller)
-        self.file_view.hide()
         self.thumb_view = ThumbView(self.controller)
 
         self.search_lineedit = SearchLineEdit(self.controller)
         self.location_lineedit = LocationLineEdit(self.controller)
         self.file_filter = FilterLineEdit(self.controller)
         # self.file_filter.setText("File Pattern Here")
-        self.file_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.thumb_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.status_bar = self.statusBar()
 
         self.info = QLabel("")
         self.status_bar.addPermanentWidget(self.info)
 
-        self.vbox.addWidget(self.file_view, Qt.AlignLeft)
         self.vbox.addWidget(self.thumb_view, Qt.AlignLeft)
 
         self._message_area = MessageArea()
@@ -468,14 +463,6 @@ class FileViewWindow(QMainWindow):
 
     def zoom_out(self):
         self.thumb_view.zoom_out()
-
-    def show_detail_view(self):
-        self.thumb_view.hide()
-        self.file_view.show()
-
-    def show_thumb_view(self):
-        self.thumb_view.show()
-        self.file_view.hide()
 
     def set_location(self, path: Location):
         self.location_lineedit.set_location(path)

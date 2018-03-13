@@ -76,7 +76,6 @@ class Controller(QObject):
         self._filelist_stream: Optional[FileListStream] = None
         self._search_stream: Optional[SearchStream] = None
 
-        self.window.file_view.set_file_collection(self.file_collection)
         self.window.thumb_view.set_file_collection(self.file_collection)
 
         self.filter_help = QTextEdit()
@@ -129,25 +128,18 @@ class Controller(QObject):
         self.window.thumb_view.set_show_filtered(not self.window.thumb_view.show_filtered)
 
     def show_abspath(self) -> None:
-        self.window.file_view.show_abspath()
+        pass
 
     def show_basename(self) -> None:
-        self.window.file_view.show_basename()
+        pass
 
     def view_detail_view(self) -> None:
-        # self.window.show_file_view()
-        self.window.show_thumb_view()
         self.window.thumb_view.set_style(FileItemStyle.DETAIL)
 
-    def show_thumb_view(self) -> None:
-        self.window.show_thumb_view()
-
     def view_icon_view(self) -> None:
-        self.window.show_thumb_view()
         self.window.thumb_view.set_style(FileItemStyle.ICON)
 
     def view_small_icon_view(self) -> None:
-        self.window.show_thumb_view()
         self.window.thumb_view.set_style(FileItemStyle.SMALLICON)
 
     def zoom_in(self) -> None:
@@ -349,7 +341,7 @@ class Controller(QObject):
         self.window.thumb_view.set_filtered(filtered_count > 0)
 
     def toggle_timegaps(self) -> None:
-        self.window.file_view.toggle_timegaps()
+        pass
 
     def parent_directory(self, new_window: bool=False):
         if self.location is not None:
