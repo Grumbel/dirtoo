@@ -21,7 +21,7 @@ import os
 
 from dirtools.find.context import Context
 from dirtools.fileview.filter_expr_parser import FilterExprParser
-from dirtools.fileview.file_info import FileInfo
+from dirtools.fileview.lazy_file_info import LazyFileInfo
 
 
 class NoFilter:
@@ -68,7 +68,7 @@ class SimpleFilter:
     def match_file(self, root, filename):
         path = os.path.join(root, filename)
 
-        fileinfo = FileInfo.from_filename(path)
+        fileinfo = LazyFileInfo.from_filename(path)
         return self._expr(fileinfo, 0)
 
 
