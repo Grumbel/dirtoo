@@ -41,6 +41,7 @@ from dirtools.fileview.settings import settings
 from dirtools.fileview.thumbnailer import Thumbnailer
 from dirtools.fileview.virtual_filesystem import VirtualFilesystem
 from dirtools.xdg_mime_associations import XdgMimeAssociations
+from dirtools.fileview.preferences_dialog import PreferencesDialog
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +91,8 @@ class FileViewApplication:
         self.fs_operations = FilesystemOperations()
 
         self.controllers: List[Controller] = []
+
+        self._preferences_dialog = PreferencesDialog()
 
     def on_last_window_closed(self) -> None:
         self.quit()

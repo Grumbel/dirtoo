@@ -277,6 +277,8 @@ class FileViewWindow(QMainWindow):
         edit_menu.addAction(self.actions.redo)
         edit_menu.addSeparator()
         edit_menu.addAction(self.actions.edit_select_all)
+        edit_menu.addSeparator()
+        edit_menu.addAction(self.actions.show_preferences)
 
         view_menu = self.menubar.addMenu('&View')
         view_menu.addSeparator().setText("View Style")

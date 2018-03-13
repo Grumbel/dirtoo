@@ -305,6 +305,9 @@ class Actions(QObject):
         self.about_dialog = AboutDialog()
         self.about.triggered.connect(self.about_dialog.show)
 
+        self.show_preferences = QAction(QIcon.fromTheme("preferences-system"), "Preferencs...")
+        self.show_preferences.triggered.connect(self.controller.show_preferences)
+
         def on_filter_pin(checked) -> None:
             # FIXME: Could use icon state for this
             if checked:

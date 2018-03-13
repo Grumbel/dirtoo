@@ -679,6 +679,10 @@ class Controller(QObject):
         # logic is handled in Controller.set_location()
         pass
 
+    def show_preferences(self):
+        self.app._preferences_dialog.show()
+        self.app._preferences_dialog.raise_()
+
 
 from dirtools.fileview.application import FileViewApplication  # noqa: F401
 
