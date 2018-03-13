@@ -82,9 +82,12 @@ class ThumbFileItemRenderer:
         self.fileinfo = item.fileinfo
         self.icon = item.icon
         self.thumbnail = item._get_thumbnail()
-        self.level_of_detail = item.thumb_view._level_of_detail
+
+        self._item_style = item.thumb_view._mode._item_style
+        self.level_of_detail = item.thumb_view._mode._level_of_detail
         self.style = item.thumb_view._style
-        self.zoom_index = item.thumb_view._zoom_index
+        self.zoom_index = item.thumb_view._mode._zoom_index
+
         self.tile_rect = item.tile_rect
         self.hovering = item.hovering
         self.animation_timer = item.animation_timer
@@ -98,9 +101,9 @@ class ThumbFileItemRenderer:
     def render(self, painter: QPainter) -> None:
         from dirtools.fileview.thumb_view import FileItemStyle
 
-        if self.style.item_style == FileItemStyle.SMALLICON:
+        if self._item_style == FileItemStyle.SMALLICON:
             self.paint_smallicon_view(painter)
-        elif self.style.item_style == FileItemStyle.DETAIL:
+        elif self._item_style == FileItemStyle.DETAIL:
             self.paint_detail_view(painter)
         else:
             self.paint(painter)
@@ -437,7 +440,7 @@ class ThumbFileItemRenderer:
     def paint_icon(self, painter: QPainter, icon: QIcon) -> None:
         from dirtools.fileview.thumb_view import FileItemStyle
 
-        if self.style.item_style == FileItemStyle.ICON:
+        if self._item_style == FileItemStyle.ICON:
             rect = make_unscaled_rect(self.thumbnail_rect.width() * 3 // 4, self.thumbnail_rect.width() * 3 // 4,
                                       self.thumbnail_rect.width(), self.thumbnail_rect.height())
         else:

@@ -48,7 +48,7 @@ class ThumbFileItem(FileItem):
         self.large_thumbnail: Thumbnail = Thumbnail("large", self)
         self.metadata: Optional[Dict[str, Any]] = None
 
-        self.set_tile_size(self.thumb_view._tile_style.tile_width, self.thumb_view._tile_style.tile_height)
+        self.set_tile_size(self.thumb_view._mode._tile_style.tile_width, self.thumb_view._mode._tile_style.tile_height)
         self.animation_timer: Optional[int] = None
 
         self._file_is_final = True

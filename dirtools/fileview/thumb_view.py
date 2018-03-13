@@ -78,7 +78,84 @@ class FileViewStyle:
         self.fm = QFontMetrics(self.font)
         self.shared_icons = SharedIcons()
         self.shared_pixmaps = SharedPixmaps()
-        self.item_style = FileItemStyle.ICON
+
+
+class Mode:
+
+    def __init__(self, item_style: FileItemStyle, parent: 'ThumbView') -> None:
+        self._parent = parent
+        self._item_style = item_style
+        self._tile_style = TileStyle()
+        self._level_of_detail = 3
+        self._zoom_index = 5
+
+        self.update()
+
+    def update(self):
+        if self._item_style == FileItemStyle.SMALLICON:
+            self._tile_style.set_arrangement(TileStyle.Arrangement.COLUMNS)
+            # self._tile_style.set_arrangement(TileStyle.Arrangement.ROWS)
+            self._tile_style.set_padding(8, 8)
+            self._tile_style.set_spacing(16, 8)
+
+            # FIXME: this is a bit messy and doesn't take spacing into account properly
+            column_count = (self._parent.viewport().width() // (384 + 16 + 16))
+            if column_count == 0:
+                column_width = self._parent.viewport().width() - 16 - 16
+            else:
+                column_width = (self._parent.viewport().width() / column_count) - 16 - 16
+
+            if self._zoom_index == 0:
+                self._tile_style.set_tile_size(column_width, 16)
+            elif self._zoom_index in [1, 2]:
+                self._tile_style.set_tile_size(column_width, 24)
+            elif self._zoom_index in [3]:
+                self._tile_style.set_tile_size(column_width, 32)
+            elif self._zoom_index in [4]:
+                self._tile_style.set_tile_size(column_width, 48)
+            elif self._zoom_index in [5]:
+                self._tile_style.set_tile_size(column_width, 64)
+            else:
+                self._tile_style.set_tile_size(column_width, 128)
+
+        elif self._item_style == FileItemStyle.ICON:
+            self._tile_style.set_arrangement(TileStyle.Arrangement.ROWS)
+            self._tile_style.set_padding(16, 16)
+            self._tile_style.set_spacing(16, 16)
+
+            k = [0, 1, 1, 2, 3][self._level_of_detail]
+            tn_width = [16, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, 1536][self._zoom_index]
+            tn_height = tn_width
+            self._tile_style.set_tile_size(tn_width, tn_height + 16 * k)
+
+        elif self._item_style == FileItemStyle.DETAIL:
+            self._tile_style.set_arrangement(TileStyle.Arrangement.ROWS)
+            self._tile_style.set_padding(8, 8)
+            self._tile_style.set_spacing(16, 8)
+            self._tile_style.set_tile_size(self._parent.viewport().width() - 16, 24)
+
+        else:
+            assert False, "unknown style"
+
+    def zoom_in(self) -> None:
+        self._zoom_index += 1
+        if self._zoom_index > 11:
+            self._zoom_index = 11
+
+    def zoom_out(self) -> None:
+        self._zoom_index -= 1
+        if self._zoom_index < 0:
+            self._zoom_index = 0
+
+    def less_details(self):
+        self._level_of_detail -= 1
+        if self._level_of_detail < 0:
+            self._level_of_detail = 0
+
+    def more_details(self):
+        self._level_of_detail += 1
+        if self._level_of_detail > 4:
+            self._level_of_detail = 4
 
 
 class ThumbView(QGraphicsView):
@@ -105,15 +182,16 @@ class ThumbView(QGraphicsView):
 
         self._style = FileViewStyle()
 
-        self._tile_style = TileStyle()
+        self._modes = [
+            Mode(FileItemStyle.ICON, self),
+            Mode(FileItemStyle.SMALLICON, self),
+            Mode(FileItemStyle.DETAIL, self)
+        ]
+        self._mode = self._modes[FileItemStyle.ICON.value]
 
         self._layout: Optional[RootLayout] = None
-        self._layout_builder = LayoutBuilder(self._scene, self._tile_style)
 
         self._items: List[ThumbFileItem] = []
-
-        self._level_of_detail = 3
-        self._zoom_index = 5
 
         self._file_collection: Optional[FileCollection] = None
 
@@ -411,7 +489,8 @@ class ThumbView(QGraphicsView):
         self.setUpdatesEnabled(False)
         # old_item_index_method = self._scene.itemIndexMethod()
         # self._scene.setItemIndexMethod(QGraphicsScene.NoIndex)
-        self._layout = self._layout_builder.build_layout(self._items)
+        layout_builder = LayoutBuilder(self._scene, self._mode._tile_style)
+        self._layout = layout_builder.build_layout(self._items)
 
         self._layout.layout(self.viewport().width(), self.viewport().height())
         self.refresh_bounding_rect()
@@ -441,74 +520,35 @@ class ThumbView(QGraphicsView):
         self.setSceneRect(get_bounding_rect())
 
     def zoom_in(self) -> None:
-        self._zoom_index += 1
-        if self._zoom_index > 11:
-            self._zoom_index = 11
+        self._mode.zoom_in()
         self.apply_zoom()
 
     def zoom_out(self) -> None:
-        self._zoom_index -= 1
-        if self._zoom_index < 0:
-            self._zoom_index = 0
+        self._mode.zoom_out()
+        self.apply_zoom()
+
+    def less_details(self):
+        self._mode.less_details()
+        self.apply_zoom()
+
+    def more_details(self):
+        self._mode.more_details()
         self.apply_zoom()
 
     def set_style(self, item_style: FileItemStyle) -> None:
-        self._style.item_style = item_style
+        self._mode = self._modes[item_style.value]
         self.apply_zoom()
 
     def apply_zoom(self) -> None:
-        if self._style.item_style == FileItemStyle.SMALLICON:
-            self._tile_style.set_arrangement(TileStyle.Arrangement.COLUMNS)
-            # self._tile_style.set_arrangement(TileStyle.Arrangement.ROWS)
-            self._tile_style.set_padding(8, 8)
-            self._tile_style.set_spacing(16, 8)
+        self._mode.update()
 
-            # FIXME: this is a bit messy and doesn't take spacing into account properly
-            column_count = (self.viewport().width() // (384 + 16 + 16))
-            if column_count == 0:
-                column_width = self.viewport().width() - 16 - 16
-            else:
-                column_width = (self.viewport().width() / column_count) - 16 - 16
-
-            if self._zoom_index == 0:
-                self._tile_style.set_tile_size(column_width, 16)
-            elif self._zoom_index in [1, 2]:
-                self._tile_style.set_tile_size(column_width, 24)
-            elif self._zoom_index in [3]:
-                self._tile_style.set_tile_size(column_width, 32)
-            elif self._zoom_index in [4]:
-                self._tile_style.set_tile_size(column_width, 48)
-            elif self._zoom_index in [5]:
-                self._tile_style.set_tile_size(column_width, 64)
-            else:
-                self._tile_style.set_tile_size(column_width, 128)
-
-        elif self._style.item_style == FileItemStyle.ICON:
-            self._tile_style.set_arrangement(TileStyle.Arrangement.ROWS)
-            self._tile_style.set_padding(16, 16)
-            self._tile_style.set_spacing(16, 16)
-
-            k = [0, 1, 1, 2, 3][self._level_of_detail]
-            tn_width = [16, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, 1536][self._zoom_index]
-            tn_height = tn_width
-            self._tile_style.set_tile_size(tn_width, tn_height + 16 * k)
-
-        elif self._style.item_style == FileItemStyle.DETAIL:
-            self._tile_style.set_arrangement(TileStyle.Arrangement.ROWS)
-            self._tile_style.set_padding(8, 8)
-            self._tile_style.set_spacing(16, 8)
-            self._tile_style.set_tile_size(self.viewport().width() - 16, 24)
-
-        else:
-            assert False, "unknown style"
-
-        if self._zoom_index < 2:
+        if self._mode._zoom_index < 2:
             self.flavor = "normal"
         else:
             self.flavor = "large"
 
         for item in self._items:
-            item.set_tile_size(self._tile_style.tile_width, self._tile_style.tile_height)
+            item.set_tile_size(self._mode._tile_style.tile_width, self._mode._tile_style.tile_height)
 
         self.style_items()
         self.layout_items()
@@ -557,18 +597,6 @@ class ThumbView(QGraphicsView):
     def reload_thumbnails(self):
         for item in self._items:
             item.reload_thumbnail()
-
-    def less_details(self):
-        self._level_of_detail -= 1
-        if self._level_of_detail < 0:
-            self._level_of_detail = 0
-        self.apply_zoom()
-
-    def more_details(self):
-        self._level_of_detail += 1
-        if self._level_of_detail > 4:
-            self._level_of_detail = 4
-        self.apply_zoom()
 
     def set_show_filtered(self, show_filtered):
         self._show_filtered = show_filtered
