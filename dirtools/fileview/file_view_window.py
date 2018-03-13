@@ -142,7 +142,7 @@ class FileViewWindow(QMainWindow):
         self.thumb_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.status_bar = self.statusBar()
 
-        self.info = QLabel("lots of files selected")
+        self.info = QLabel("")
         self.status_bar.addPermanentWidget(self.info)
 
         self.vbox.addWidget(self.file_view, Qt.AlignLeft)

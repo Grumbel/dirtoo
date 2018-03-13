@@ -25,6 +25,8 @@ from PyQt5.QtWidgets import QFileDialog, QTextEdit, QMenu
 from PyQt5.QtCore import QObject, Qt, QEvent, pyqtSignal
 from PyQt5.QtGui import QIcon, QCursor, QMouseEvent, QContextMenuEvent
 
+import bytefmt
+
 from dirtools.fileview.file_collection import FileCollection
 from dirtools.fileview.file_view_window import FileViewWindow
 from dirtools.fileview.grouper import (Grouper, DayGrouperFunc,
@@ -314,19 +316,35 @@ class Controller(QObject):
 
         filtered_count = 0
         hidden_count = 0
+        total_size = 0
+        visible_total_size = 0
         for fileinfo in fileinfos:
             if fileinfo.is_hidden:
                 hidden_count += 1
             elif fileinfo.is_excluded:
                 filtered_count += 1
+            else:
+                visible_total_size += fileinfo.size()
+            total_size += fileinfo.size()
 
         total = self.file_collection.size()
 
-        self.window.show_info("{} visible, {} filtered, {} hidden, {} total".format(
+        msg = "{} visible ({}), {} filtered, {} hidden, {} total ({})".format(
             total - filtered_count - hidden_count,
+            bytefmt.humanize(visible_total_size),
             filtered_count,
             hidden_count,
-            total))
+            total,
+            bytefmt.humanize(total_size))
+
+        selected_items = self.window.thumb_view._scene.selectedItems()
+        if selected_items != []:
+            total_size = 0
+            for item in selected_items:
+                total_size += item.fileinfo.size()
+            msg += ", {} selected ({})".format(len(selected_items), bytefmt.humanize(total_size))
+
+        self.window.show_info(msg)
 
         self.window.thumb_view.set_filtered(filtered_count > 0)
 
