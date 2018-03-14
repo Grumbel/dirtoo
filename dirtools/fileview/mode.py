@@ -163,9 +163,9 @@ class DetailMode(Mode):
 
     def update(self):
         self._tile_style.set_arrangement(TileStyle.Arrangement.ROWS)
-        self._tile_style.set_padding(8, 8)
+        self._tile_style.set_padding(24, 8)
         self._tile_style.set_spacing(16, 8)
-        self._tile_style.set_tile_size(self._parent.viewport().width() - 16, 24)
+        self._tile_style.set_tile_size(self._parent.viewport().width() - 48, 24)
 
 
 # EOF #
