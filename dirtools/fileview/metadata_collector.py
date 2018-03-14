@@ -56,30 +56,45 @@ class MetaDataCollectorWorker(QObject):
         abspath = self.vfs.get_stdio_name(location)
         cached_metadata = self.cache.retrieve_metadata(abspath)
 
-        stat = os.lstat(abspath)
+        try:
+            stat = os.lstat(abspath)
+            metadata: Dict[str, Any] = {}
 
-        if cached_metadata is not None and \
-           (("mtime" in cached_metadata) and (stat.st_mtime == cached_metadata["mtime"])):
-            self.sig_metadata_ready.emit(location, cached_metadata)
-        else:
-            try:
-                metadata: Dict[str, Any] = {}
-                metadata.update(self._create_generic_metadata(location, abspath))
-                metadata.update(self._create_type_specific_metadata(location, abspath))
-            except Exception as err:
-                error_message = "".join(traceback.format_exception(etype=type(err),
-                                                                   value=err,
-                                                                   tb=err.__traceback__))
-                metadata = {
-                    'location': location.as_url(),
-                    'path': abspath,
-                    'mtime': stat.st_mtime,
-                    'type': "error",
-                    'error_message': error_message
-                }
-
-            self.cache.store_metadata(abspath, metadata)
+        except FileNotFoundError as err:
+            error_message = "".join(traceback.format_exception(etype=type(err),
+                                                               value=err,
+                                                               tb=err.__traceback__))
+            metadata = {
+                'location': location.as_url(),
+                'path': abspath,
+                'mtime': 0,
+                'type': "error",
+                'error_message': error_message
+            }
             self.sig_metadata_ready.emit(location, metadata)
+
+        else:
+            if cached_metadata is not None and \
+               (("mtime" in cached_metadata) and (stat.st_mtime == cached_metadata["mtime"])):
+                self.sig_metadata_ready.emit(location, cached_metadata)
+            else:
+                try:
+                    metadata.update(self._create_generic_metadata(location, abspath))
+                    metadata.update(self._create_type_specific_metadata(location, abspath))
+                except Exception as err:
+                    error_message = "".join(traceback.format_exception(etype=type(err),
+                                                                       value=err,
+                                                                       tb=err.__traceback__))
+                    metadata = {
+                        'location': location.as_url(),
+                        'path': abspath,
+                        'mtime': stat.st_mtime,
+                        'type': "error",
+                        'error_message': error_message
+                    }
+
+                self.cache.store_metadata(abspath, metadata)
+                self.sig_metadata_ready.emit(location, metadata)
 
     def _create_generic_metadata(self, location: Location, abspath: str) -> Dict[str, Any]:
         metadata: Dict[str, Any] = {}
