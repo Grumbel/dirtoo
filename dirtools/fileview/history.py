@@ -27,33 +27,6 @@ from dirtools.fileview.location import Location
 logger = logging.getLogger(__name__)
 
 
-class FileHistory:
-
-    def __init__(self, filename: str) -> None:
-        self.config_filename = filename
-
-    def get_entries(self) -> List[Location]:
-        try:
-            with open(self.config_filename, "r") as fin:
-                lines = fin.read().splitlines()
-
-                results: List[Location] = []
-                for line in lines:
-                    try:
-                        results.append(Location.from_url(line))
-                    except Exception as err:
-                        logger.warning("ignoring history entry: %s", line)
-
-            return remove_duplicates(results)
-
-        except FileNotFoundError:
-            return []
-
-    def append(self, location: Location) -> None:
-        with open(self.config_filename, "a") as fout:
-            print(location.as_url(), file=fout)
-
-
 class SqlHistory:
 
     def __init__(self, filename: str) -> None:
