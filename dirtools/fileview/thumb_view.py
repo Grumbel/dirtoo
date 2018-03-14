@@ -15,10 +15,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Set
 
 import logging
 
+from collections import defaultdict
 from pkg_resources import resource_filename
 
 from PyQt5.QtCore import Qt, QRectF
@@ -87,7 +88,7 @@ class ThumbView(QGraphicsView):
 
         self._show_filtered = False
 
-        self._location2item: Dict[Location, ThumbFileItem] = {}
+        self._location2item: Dict[Location, List[ThumbFileItem]] = defaultdict(list)
         self.setAcceptDrops(True)
 
         self._scene = QGraphicsScene()
@@ -259,7 +260,7 @@ class ThumbView(QGraphicsView):
         logger.debug("ThumbView.on_file_added: %s", fileinfo)
         item = ThumbFileItem(fileinfo, self._controller, self)
         item._new = True
-        self._location2item[fileinfo.location()] = item
+        self._location2item[fileinfo.location()].append(item)
         self._scene.addItem(item)
         self._items.append(item)
 
@@ -271,39 +272,52 @@ class ThumbView(QGraphicsView):
 
     def on_file_removed(self, location: Location) -> None:
         logger.debug("ThumbView.on_file_removed: %s", location)
-        item = self._location2item.get(location, None)
-        if item is not None:
+        items = self._location2item.get(location, [])
+        for item in items:
             self._scene.removeItem(item)
-            del self._location2item[location]
             self._items.remove(item)
+
+        if items != []:
+            del self._location2item[location]
             self.layout_items()
 
     def on_file_changed(self, fileinfo: FileInfo) -> None:
         logger.debug("ThumbView.on_file_changed: %s", fileinfo)
-        item = self._location2item.get(fileinfo.location(), None)
-        if item is not None:
+        items = self._location2item.get(fileinfo.location(), [])
+        for item in items:
             item.set_fileinfo(fileinfo)
             item.update()
 
     def on_file_updated(self, fileinfo: FileInfo) -> None:
         logger.debug("ThumbView.on_file_updated: %s", fileinfo)
-        item = self._location2item.get(fileinfo.location(), None)
-        if item is not None:
+        items = self._location2item.get(fileinfo.location(), [])
+        for item in items:
             item.set_fileinfo(fileinfo, update=True)
             item.update()
 
     def on_file_closed(self, fileinfo: FileInfo) -> None:
         logger.debug("ThumbView.on_file_closed: %s", fileinfo)
-        item = self._location2item.get(fileinfo.location(), None)
-        if item is not None:
+        items = self._location2item.get(fileinfo.location(), [])
+        for item in items:
             item.set_fileinfo(fileinfo, final=True)
             item.update()
 
     def on_file_collection_reordered(self) -> None:
         logger.debug("ThumbView.on_file_collection_reordered")
-        fi2it = {item.fileinfo.location(): item for item in self._items}
+
         fileinfos = self._file_collection.get_fileinfos()
-        self._items = [fi2it[fileinfo.location()] for fileinfo in fileinfos if fileinfo.location() in fi2it]
+
+        # FIXME: this is a crude hack to deal with duplicate
+        # Locations, this problem should probably be attacked in
+        # FileCollection and asign a unique id to each FileInfo.
+        self._items = []
+        processed: Set[Location] = set()
+        for fi in fileinfos:
+            if fi.location() not in processed:
+                lst = self._location2item[fi.location()]
+                processed.add(fi.location())
+                self._items += lst
+
         self.layout_items()
 
     def on_file_collection_filtered(self) -> None:
@@ -331,7 +345,7 @@ class ThumbView(QGraphicsView):
 
         for fileinfo in fileinfos:
             item = ThumbFileItem(fileinfo, self._controller, self)
-            self._location2item[fileinfo.location()] = item
+            self._location2item[fileinfo.location()].append(item)
             self._scene.addItem(item)
             self._items.append(item)
 
@@ -477,14 +491,12 @@ class ThumbView(QGraphicsView):
 
     def receive_thumbnail(self, location: Location, flavor: str,
                           image: QImage, error_code: int, message: str) -> None:
-        item = self._location2item.get(location, None)
-        if item is not None:
+        # receiving thumbnail for item that no longer exists is normal
+        # when switching directories quickly
+        items = self._location2item.get(location, [])
+        for item in items:
             self.receive_thumbnail_for_item(item, flavor, image, error_code, message)
             item.set_thumbnail_image(image, flavor)
-        else:
-            # receiving thumbnail for item that no longer exists, this
-            # is normal when switching directories quickly
-            pass
 
     def receive_thumbnail_for_item(self, item, flavor: str, image: QImage, error_code: int, message: str) -> None:
         if image is not None:
@@ -534,7 +546,7 @@ class ThumbView(QGraphicsView):
     def set_cursor_to_fileinfo(self, fileinfo):
         if self._cursor_item is not None:
             self._cursor_item.update()
-        self._cursor_item = self._location2item.get(fileinfo.location(), None)
+        self._cursor_item = self._location2item.get(fileinfo.location(), [None])[0]
         if self._cursor_item is not None:
             self._cursor_item.update()
 
