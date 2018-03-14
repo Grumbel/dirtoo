@@ -358,7 +358,7 @@ class FileViewWindow(QMainWindow):
             history_menu.addSection("Location History")
 
             entries: List[Location] = []
-            for entry in reversed(history.get_entries()):
+            for entry in history.get_entries(1000):
                 if entry not in entries:
                     entries.append(entry)
                     if len(entries) >= 35:

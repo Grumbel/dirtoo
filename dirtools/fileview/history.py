@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import List, Optional
 
 import logging
 import sqlite3
@@ -44,12 +44,12 @@ class SqlHistory:
                          "date REAL, "
                          "location TEXT)")
 
-    def get_entries(self) -> List[Location]:
+    def get_entries(self, limit: Optional[int]=None) -> List[Location]:
         c = self._db.cursor()
         c.execute("SELECT group_id, date, location "
                   "FROM history "
-                  "ORDER BY date "
-                  "ASC LIMIT 10")
+                  "ORDER BY date DESC" +
+                  (" LIMIT {}".format(limit) if limit is not None else ""))
 
         results: List[Location] = []
         for group_id, date, location_url in c.fetchall():
