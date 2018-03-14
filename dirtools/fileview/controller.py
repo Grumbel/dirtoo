@@ -488,8 +488,12 @@ class Controller(QObject):
             entries = sorted(entries, key=lambda x: x.getName())
             for entry in entries:
                 action = menu.addAction(QIcon.fromTheme(entry.getIcon()), "Open With {}".format(entry.getName()))
-                action.triggered.connect(lambda checked, exe=entry.getExec(), files=files:
-                                         self.app.executor.launch_multi_from_exec(exe, files))
+
+                def on_action(checked, exe=entry.getExec(), files=files):
+                    self.app.file_history.append_group(files)
+                    self.app.executor.launch_multi_from_exec(exe, files)
+
+                action.triggered.connect(on_action)
 
         if not default_apps:
             menu.addAction("No applications available").setEnabled(False)

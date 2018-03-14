@@ -18,6 +18,8 @@
 from typing import List
 
 import logging
+import sqlite3
+import time
 
 from dirtools.util import remove_duplicates
 from dirtools.fileview.location import Location
@@ -25,7 +27,7 @@ from dirtools.fileview.location import Location
 logger = logging.getLogger(__name__)
 
 
-class History:
+class FileHistory:
 
     def __init__(self, filename: str) -> None:
         self.config_filename = filename
@@ -50,6 +52,58 @@ class History:
     def append(self, location: Location) -> None:
         with open(self.config_filename, "a") as fout:
             print(location.as_url(), file=fout)
+
+
+class SqlHistory:
+
+    def __init__(self, filename: str) -> None:
+        self._db_filename = filename
+        self._db = sqlite3.connect(self._db_filename, isolation_level=None)
+        self._init_db()
+
+    def close(self):
+        self._db.commit()
+        self._db.close()
+
+    def _init_db(self):
+        self._db.execute("CREATE TABLE IF NOT EXISTS history ("
+                         "group_id INTEGER, "
+                         "date REAL, "
+                         "location TEXT)")
+
+    def get_entries(self) -> List[Location]:
+        c = self._db.cursor()
+        c.execute("SELECT group_id, date, location "
+                  "FROM history "
+                  "ORDER BY date "
+                  "ASC LIMIT 10")
+
+        results: List[Location] = []
+        for group_id, date, location_url in c.fetchall():
+            results.append(Location.from_url(location_url))
+        return results
+
+    def append(self, location: Location) -> None:
+        insertion_time = time.time()
+        c = self._db.cursor()
+        c.execute("BEGIN")
+        group_id = (c.execute("SELECT max(group_id) FROM history").fetchone()[0] or 0) + 1
+        c.execute("INSERT INTO history (group_id, date, location) VALUES (?, ?, ?)",
+                  (group_id, insertion_time, location.as_url()))
+        c.execute("COMMIT")
+        self._db.commit()
+
+    def append_group(self, locations: List[Location]) -> None:
+        insertion_time = time.time()
+
+        c = self._db.cursor()
+        c.execute("BEGIN")
+        group_id = (c.execute("SELECT max(group_id) FROM history").fetchone()[0] or 0) + 1
+        values = [(group_id, insertion_time, location.as_url()) for location in locations]
+        c.executemany("INSERT INTO history (group_id, date, location) VALUES (?, ?, ?)",
+                      values)
+        c.execute("COMMIT")
+        self._db.commit()
 
 
 # EOF #

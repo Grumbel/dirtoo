@@ -33,7 +33,7 @@ from dirtools.fileview.bookmarks import Bookmarks
 from dirtools.fileview.executor import Executor
 from dirtools.fileview.filelist_stream import FileListStream
 from dirtools.fileview.filesystem_operations import FilesystemOperations
-from dirtools.fileview.history import History
+from dirtools.fileview.history import SqlHistory
 from dirtools.fileview.location import Location
 from dirtools.fileview.metadata_collector import MetaDataCollector
 from dirtools.fileview.mime_database import MimeDatabase
@@ -70,8 +70,8 @@ class FileViewApplication:
 
         settings.init(self.config_file)
 
-        self.file_history = History(os.path.join(self.config_dir, "file.txt"))
-        self.location_history = History(os.path.join(self.config_dir, "locations.txt"))
+        self.file_history = SqlHistory(os.path.join(self.config_dir, "file.sqlite"))
+        self.location_history = SqlHistory(os.path.join(self.config_dir, "locations.sqlite"))
         self.bookmarks = Bookmarks(os.path.join(self.config_dir, "bookmarks.txt"))
 
         QPixmapCache.setCacheLimit(102400)
@@ -105,6 +105,9 @@ class FileViewApplication:
         return cast(int, self.qapp.exec())
 
     def close(self) -> None:
+        self.file_history.close()
+        self.location_history.close()
+
         settings.save()
 
         self.metadata_collector.close()
