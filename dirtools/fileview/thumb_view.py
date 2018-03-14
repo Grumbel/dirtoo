@@ -125,7 +125,7 @@ class Mode:
             self._tile_style.set_spacing(16, 16)
 
             k = [0, 1, 1, 2, 3][self._level_of_detail]
-            tn_width = [16, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, 1536][self._zoom_index]
+            tn_width = [32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, 1536, 2048][self._zoom_index]
             tn_height = tn_width
             self._tile_style.set_tile_size(tn_width, tn_height + 16 * k)
 
