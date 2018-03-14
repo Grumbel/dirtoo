@@ -538,6 +538,14 @@ class ThumbView(QGraphicsView):
         if self._cursor_item is not None:
             self._cursor_item.update()
 
+    def mousePressEvent(self, ev):
+        super().mousePressEvent(ev)
+
+        item = self._cursor_item
+        if item is not None:
+            self._cursor_item = None
+            item.update()
+
     def contextMenuEvent(self, ev):
         if ev.reason() == QContextMenuEvent.Keyboard:
             if self._cursor_item is None:
