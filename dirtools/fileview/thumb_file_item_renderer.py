@@ -99,7 +99,7 @@ class ThumbFileItemRenderer:
         self.thumbnail_rect = QRectF(0, 0, item.tile_rect.width(), item.tile_rect.width())
 
     def render(self, painter: QPainter) -> None:
-        from dirtools.fileview.thumb_view import FileItemStyle
+        from dirtools.fileview.mode import FileItemStyle
 
         if self._item_style == FileItemStyle.SMALLICON:
             self.paint_smallicon_view(painter)
@@ -438,7 +438,7 @@ class ThumbFileItemRenderer:
         icon.paint(painter, QRect(self.tile_rect.width() - 48, 0, 48, 48))
 
     def paint_icon(self, painter: QPainter, icon: QIcon) -> None:
-        from dirtools.fileview.thumb_view import FileItemStyle
+        from dirtools.fileview.mode import FileItemStyle
 
         if self._item_style == FileItemStyle.ICON:
             rect = make_unscaled_rect(self.thumbnail_rect.width() * 3 // 4, self.thumbnail_rect.width() * 3 // 4,
