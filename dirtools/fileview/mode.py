@@ -130,6 +130,11 @@ class ListMode(Mode):
         self._tile_style.set_padding(8, 8)
         self._tile_style.set_spacing(16, 8)
 
+        # FIXME: This assumes that there are enough items to fill all
+        # the columns, which there often aren't, leading to a bit of
+        # wibbly wobbly when resiizing, when the column size should
+        # just stick to max.
+
         # FIXME: this is a bit messy and doesn't take spacing into account properly
         column_count = (self._parent.viewport().width() // (384 + 16 + 16))
         if column_count == 0:
