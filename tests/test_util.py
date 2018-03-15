@@ -30,6 +30,9 @@ class UtilTestCase(unittest.TestCase):
             (['a9', 'a999', 'a99', 'a9999'],
              ['a9', 'a99', 'a999', 'a9999']),
 
+            (['aaa', '999'],
+             ['999', 'aaa']),
+
             (['a9a', 'a9z', 'a9d', 'a9m3', 'a9m5', 'a9m1'],
              ['a9a', 'a9d', 'a9m1', 'a9m3', 'a9m5', 'a9z']),
         ]

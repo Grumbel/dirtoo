@@ -44,8 +44,13 @@ NUMERIC_SORT_RX = re.compile(r'(\d+)')
 
 
 def numeric_sort_key(text):
+    # For numbers this will return ('', 999, ''), the empty strings
+    # must not be filtered out of the tuple, as they ensure that 'int'
+    # isn't compared to a 'str'. With the empty strings in place all
+    # odd positions are 'str' and all even ones are 'int'.
+
     return tuple(int(sub) if sub.isdigit() else sub
-                 for sub in NUMERIC_SORT_RX.split(text) if sub != "")
+                 for sub in NUMERIC_SORT_RX.split(text))
 
 
 def numeric_sorted(lst: List[str]) -> List[str]:
