@@ -21,6 +21,7 @@ import logging
 import os
 import stat
 
+from dirtools.fileview.location import Location
 from dirtools.fileview.match_func_factory import VIDEO_EXT, IMAGE_EXT, ARCHIVE_EXT
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,8 @@ class LazyFileInfo:
 
     def __init__(self, abspath) -> None:
         self._abspath: Optional[str] = abspath
+
+        self._location: Optional[Location] = None
 
         self._dirname: Optional[str] = os.path.dirname(self._abspath)
         self._basename: Optional[str] = os.path.basename(self._abspath)
@@ -64,6 +67,12 @@ class LazyFileInfo:
 
     def abspath(self) -> str:
         return self._abspath
+
+    def location(self) -> Location:
+        if self._location is None:
+            self._location = Location.from_path(self._abspath)
+
+        return self._location
 
     def dirname(self) -> str:
         return self._dirname
