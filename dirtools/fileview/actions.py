@@ -25,6 +25,7 @@ from PyQt5.QtWidgets import (
     QStyle
 )
 
+from dirtools.util import numeric_sort_key
 from dirtools.fileview.about_dialog import AboutDialog
 from dirtools.fileview.file_info import FileInfo
 
@@ -211,7 +212,7 @@ class Actions(QObject):
         self.sort_by_name = QAction("Sort by Name", checkable=True)
         self.sort_by_name.triggered.connect(lambda:
                                             self.controller._sorter.set_key_func(
-                                                lambda x: x.basename().lower()))
+                                                lambda x: numeric_sort_key(x.basename().lower())))
         self.sort_by_name.setChecked(True)
 
         self.sort_by_size = QAction("Sort by Size", checkable=True)

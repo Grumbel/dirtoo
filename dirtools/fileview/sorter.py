@@ -17,6 +17,7 @@
 
 from typing import Callable, Any
 
+from dirtools.util import numeric_sort_key
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.file_collection import FileCollection
 
@@ -27,7 +28,7 @@ class Sorter:
         self.controller = controller
         self.directories_first = True
         self.reverse = False
-        self.key_func: Callable[[FileInfo], Any] = lambda x: x.basename().lower()
+        self.key_func: Callable[[FileInfo], Any] = lambda x: numeric_sort_key(x.basename().lower())
 
     def set_directories_first(self, v: bool) -> None:
         self.directories_first = v

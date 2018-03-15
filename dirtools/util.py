@@ -43,12 +43,13 @@ def expand_directories(files: List[str], recursive: bool):
 NUMERIC_SORT_RX = re.compile(r'(\d+)')
 
 
-def numeric_sorted(lst: List[str]) -> List[str]:
-    def segmenter(text):
-        return tuple(int(sub) if sub.isdigit() else sub
-                     for sub in NUMERIC_SORT_RX.split(text) if sub != "")
+def numeric_sort_key(text):
+    return tuple(int(sub) if sub.isdigit() else sub
+                 for sub in NUMERIC_SORT_RX.split(text) if sub != "")
 
-    return sorted(lst, key=segmenter)
+
+def numeric_sorted(lst: List[str]) -> List[str]:
+    return sorted(lst, key=numeric_sort_key)
 
 
 def unique(lst: List[object]) -> List[object]:
