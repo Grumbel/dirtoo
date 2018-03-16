@@ -26,6 +26,7 @@ import re
 
 import dirtools.duration as duration
 
+from dirtools.fuzzy import fuzzy
 from dirtools.util import is_glob_pattern
 from dirtools.fileview.match_func import (
     FalseMatchFunc,
@@ -176,6 +177,17 @@ class MatchFuncFactory:
                                True if the file contains the regex REGEX, case-sensitive.
 
                                Example: 'contains:QApplication(.*)'
+                               """)
+
+        self.register_function(["containsfuzzy", "containsfuz", "containsfuzz"], self.make_contains_fuzzy,
+                               """\
+                               {FUZZYPATTERN}
+
+                               True if the file contains the string
+                               FUZZYPATTERN or something similar,
+                               case-insensitive.
+
+                               Example: 'containsfuzzy:main()'
                                """)
 
         self.register_function(["date"], self.make_date,
@@ -425,6 +437,16 @@ class MatchFuncFactory:
 
         def line_match_func(line, rx=rx):
             return bool(rx.search(line))
+
+        return ContainsMatchFunc(line_match_func)
+
+    def make_contains_fuzzy(self, argument):
+        needle = argument
+        n = 3
+        threshold = 0.5
+
+        def line_match_func(line, needle=needle, n=n, threshold=threshold):
+            return fuzzy(needle, line, n) > threshold
 
         return ContainsMatchFunc(line_match_func)
 
