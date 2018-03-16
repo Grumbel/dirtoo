@@ -63,8 +63,8 @@ class FilterLineEdit(QLineEdit):
         self.clear()
         self.history_idx = -1
         self.controller.set_filter("")
-        self.controller.window.hide_filter()
-        self.controller.window.thumb_view.setFocus()
+        self.controller._gui._window.hide_filter()
+        self.controller._gui._window.thumb_view.setFocus()
 
     def on_delete_button(self) -> None:
         self._on_reset()

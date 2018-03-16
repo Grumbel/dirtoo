@@ -120,20 +120,20 @@ class FileViewApplication:
 
     def new_controller(self) -> 'Controller':
         controller = Controller(self)
-        controller.window.show()
+        controller._gui._window.show()
         self.controllers.append(controller)
         return controller
 
     def show_files(self, files: List[Location]) -> None:
         controller = Controller(self)
         controller.set_files(files)
-        controller.window.show()
+        controller._gui._window.window.show()
         self.controllers.append(controller)
 
     def show_filelist_stream(self, stream: FileListStream) -> None:
         controller = Controller(self)
         controller.set_filelist_stream(stream)
-        controller.window.show()
+        controller._gui._window.show()
         self.controllers.append(controller)
 
     def show_location(self, location: Location) -> None:
@@ -141,7 +141,7 @@ class FileViewApplication:
 
         controller = Controller(self)
         controller.set_location(location)
-        controller.window.show()
+        controller._gui._window.show()
         self.controllers.append(controller)
 
 

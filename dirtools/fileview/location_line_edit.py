@@ -76,7 +76,7 @@ class LocationLineEdit(QLineEdit):
             else:
                 self.setText(self.controller.location.as_url())
                 self.on_text_edited(self.text())
-                self.controller.window.thumb_view.setFocus()
+                self.controller._gui._window.thumb_view.setFocus()
 
     def focusInEvent(self, ev) -> None:
         super().focusInEvent(ev)

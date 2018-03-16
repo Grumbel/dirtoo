@@ -69,7 +69,7 @@ class FileItem(QGraphicsObject):
 
             mime_data = QMimeData()
             mime_data.setUrls([QUrl("file://" + self.fileinfo.abspath())])
-            self.drag = QDrag(self.controller.window)
+            self.drag = QDrag(self.controller._gui._window)
 
             pix = QPixmap(self.tile_rect.width(), self.tile_rect.height())
             painter = QPainter(pix)
