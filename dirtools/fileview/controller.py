@@ -21,9 +21,9 @@ import io
 import logging
 import os
 
-from PyQt5.QtWidgets import QFileDialog, QTextEdit, QMenu
-from PyQt5.QtCore import QObject, Qt, QEvent, pyqtSignal
-from PyQt5.QtGui import QIcon, QCursor, QMouseEvent, QContextMenuEvent
+from PyQt5.QtWidgets import QMenu
+from PyQt5.QtCore import QObject, Qt, pyqtSignal
+from PyQt5.QtGui import QIcon, QContextMenuEvent
 
 import bytefmt
 
@@ -78,8 +78,6 @@ class Controller(QObject):
         self._search_stream: Optional[SearchStream] = None
 
         self._gui._window.thumb_view.set_file_collection(self.file_collection)
-
-        self.filter_help = QTextEdit()
 
         self.app.metadata_collector.sig_metadata_ready.connect(self.receive_metadata)
 
@@ -150,9 +148,7 @@ class Controller(QObject):
         fout = io.StringIO()
         parser.print_help(fout)
 
-        self.filter_help.setText(fout.getvalue())
-        self.filter_help.resize(480, 800)
-        self.filter_help.show()
+        self._gui.show_help(fout.getvalue())
 
     def show_search_help(self) -> None:
         parser = FilterParser(self._filter)
@@ -160,9 +156,7 @@ class Controller(QObject):
         fout = io.StringIO()
         parser.print_help(fout)
 
-        self.filter_help.setText(fout.getvalue())
-        self.filter_help.resize(480, 800)
-        self.filter_help.show()
+        self._gui.show_help(fout.getvalue())
 
     def more_details(self) -> None:
         self._gui._window.thumb_view.more_details()
@@ -396,18 +390,7 @@ class Controller(QObject):
         menu.addAction(QIcon.fromTheme('document-properties'), "Properties...")
 
         menu.exec(pos)
-        self.fake_mouse()
-
-    def fake_mouse(self) -> None:
-        """Generate a fake mouse move event to force the ThumbView to update
-        the hover item after a menu was displayed."""
-
-        ev = QMouseEvent(QEvent.MouseMove,
-                         self._gui._window.mapFromGlobal(QCursor.pos()),
-                         Qt.NoButton,
-                         Qt.NoButton,
-                         Qt.NoModifier)
-        self._gui._window.thumb_view.mouseMoveEvent(ev)
+        self._gui.fake_mouse()
 
     def on_item_context_menu(self, ev, item) -> None:
         if item.isSelected():
@@ -541,7 +524,7 @@ class Controller(QObject):
             menu.exec(pos)
         else:
             menu.exec(ev.screenPos())
-        self.fake_mouse()
+        self._gui.fake_mouse()
 
     def show_current_filename(self, filename: str) -> None:
         self._gui._window.show_current_filename(filename)

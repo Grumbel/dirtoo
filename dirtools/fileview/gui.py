@@ -17,7 +17,9 @@
 
 from typing import Optional
 
-from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtCore import QObject, Qt, QEvent
+from PyQt5.QtWidgets import QFileDialog, QTextEdit
+from PyQt5.QtGui import QCursor, QMouseEvent
 
 from dirtools.fileview.file_view_window import FileViewWindow
 
@@ -27,6 +29,7 @@ class Gui:
     def __init__(self, controller):
         self._controller = controller
         self._window = FileViewWindow(self._controller)
+        self._filter_help = QTextEdit()
 
     def get_savefilename(self) -> Optional[str]:
         options = QFileDialog.Options()
@@ -42,6 +45,22 @@ class Gui:
             return None
         else:
             return filename
+
+    def show_help(self, text: str) -> None:
+        self._filter_help.setText(text)
+        self._filter_help.resize(480, 800)
+        self._filter_help.show()
+
+    def fake_mouse(self) -> None:
+        """Generate a fake mouse move event to force the ThumbView to update
+        the hover item after a menu was displayed."""
+
+        ev = QMouseEvent(QEvent.MouseMove,
+                         self._window.mapFromGlobal(QCursor.pos()),
+                         Qt.NoButton,
+                         Qt.NoButton,
+                         Qt.NoModifier)
+        self._window.thumb_view.mouseMoveEvent(ev)
 
 
 # EOF #
