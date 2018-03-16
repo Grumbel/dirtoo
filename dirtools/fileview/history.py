@@ -21,7 +21,6 @@ import logging
 import sqlite3
 import time
 
-from dirtools.util import remove_duplicates
 from dirtools.fileview.location import Location
 
 logger = logging.getLogger(__name__)

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Optional, Set, List
+from typing import Optional, Set, List, cast
 
 from PyQt5.QtCore import QObject, Qt, QEvent
 from PyQt5.QtWidgets import QMenu, QFileDialog, QTextEdit
@@ -47,7 +47,7 @@ class Gui(QObject):
         if filename == "":
             return None
         else:
-            return filename
+            return cast(str, filename)
 
     def show_help(self, text: str) -> None:
         self._filter_help.setText(text)
