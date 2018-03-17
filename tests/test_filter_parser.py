@@ -24,25 +24,49 @@ class UtilTestCase(unittest.TestCase):
 
     def test_filter_parser(self):
         grammar = FilterExprParser._make_grammar(None)
-        grammar.leaveWhitespace()
+        # grammar.leaveWhitespace()
 
         test_strings = [
-            r'',
-            r'  "fooba\"r""join" "no" "join" "do""join"  "bar"   -barfoo size:>50  more ',
-            r' more "-less:oeu" -size:>50  glob:"*.png""more"      ',
-            r'more  -moroe size:4 AND foo',
-            r' -"more AND oeu" OR -foo bar AND bar -site:foo ',
-            r'-notthis more OR not AND bla glob:bla',
-            r' unterminated AND ',
-            r' -unterminated OR ',
-            r' AND unterminated ',
-            r' OR unterminated ',
+            (r'',
+             '[]'),
+
+            (r'  "fooba\"r""join" "no" "join" "do""join"  "bar"   -barfoo size:>50  more ',
+             '[Include(fooba"rjoin), Include(no), Include(join), Include(dojoin), Include(bar), '
+             'Exclude(barfoo), Include(Command(size:>50)), Include(more)]'),
+
+            (r' more "-less:oeu" -size:>50  glob:"*.png""more"      ',
+             '[Include(more), Include(-less:oeu), Exclude(Command(size:>50)), Include(Command(glob:*.pngmore))]'),
+
+            (r'more  -moroe size:4 AND foo',
+             '[Include(more), Exclude(moroe), Include(Command(size:4)), AND, Include(foo)]'),
+
+            (r' -"more AND oeu" OR -foo bar AND bar -site:foo ',
+             '[Exclude(more AND oeu), OR, Exclude(foo), Include(bar), AND, Include(bar), Exclude(Command(site:foo))]'),
+
+            (r'-notthis more OR not AND bla glob:bla',
+             '[Exclude(notthis), Include(more), OR, Include(not), AND, Include(bla), Include(Command(glob:bla))]'),
+
+            (r' unterminated AND ',
+             '[Include(unterminated), AND]'),
+
+            (r' text command:arg ',
+             '[Include(text), Include(Command(command:arg))]'),
+
+            (r' -unterminated OR ',
+             '[Exclude(unterminated), OR]'),
+
+            (r' AND unterminated ',
+             '[AND, Include(unterminated)]'),
+
+            (r' OR unterminated ',
+             '[OR, Include(unterminated)]')
         ]
 
-        print()
         parser = FilterExprParser()
-        for string in test_strings:
-            # print(grammar.parseString(string, parseAll=True))
-            parser.parse(string)
+        for text, expected in test_strings:
+            result = grammar.parseString(text, parseAll=True)
+            result = str(result)
+            self.assertEqual(result, expected)
+            parser.parse(text)
 
 # EOF #
