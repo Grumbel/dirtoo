@@ -25,12 +25,15 @@ from dirtools.fileview.menu import Menu
 from dirtools.fileview.file_view_window import FileViewWindow
 from dirtools.xdg_desktop import get_desktop_entry, get_desktop_file
 from dirtools.fileview.location import Location, Payload
+from dirtools.fileview.controller import Controller
 
 
 class Gui(QObject):
 
-    def __init__(self, controller):
-        self._controller = controller
+    def __init__(self, controller: Controller) -> None:
+        super().__init__()
+
+        self._controller: Controller = controller
         self._window = FileViewWindow(self._controller)
         self._filter_help = QTextEdit()
 
@@ -76,7 +79,7 @@ class Gui(QObject):
 
         if self.location is not None:
             menu.addAction(QIcon.fromTheme('utilities-terminal'), "Open Terminal Here",
-                           lambda location=self.location: self.controller.app.executor.launch_terminal(location))
+                           lambda location=self.location: self._controller.app.executor.launch_terminal(location))
             menu.addSeparator()
 
         menu.addAction(self._controller.actions.edit_select_all)
@@ -90,7 +93,7 @@ class Gui(QObject):
         if item.isSelected():
             selected_items = self._window.thumb_view._scene.selectedItems()
         else:
-            self.clear_selection()
+            self._controller.clear_selection()
             item.setSelected(True)
             selected_items = [item]
 
@@ -133,13 +136,13 @@ class Gui(QObject):
         for sit in selected_items:
             location = sit.fileinfo.location()
             files.append(location)
-            mimetypes.add(self.controller.app.mime_database.get_mime_type(location).name())
+            mimetypes.add(self._controller.app.mime_database.get_mime_type(location).name())
 
         apps_default_sets: List[Set[str]] = []
         apps_other_sets: List[Set[str]] = []
         for mimetype in mimetypes:
-            apps_default_sets.append(set(self.controller.app.mime_associations.get_default_apps(mimetype)))
-            apps_other_sets.append(set(self.controller.app.mime_associations.get_associations(mimetype)))
+            apps_default_sets.append(set(self._controller.app.mime_associations.get_default_apps(mimetype)))
+            apps_other_sets.append(set(self._controller.app.mime_associations.get_associations(mimetype)))
 
         default_apps = set.intersection(*apps_default_sets)
         other_apps = set.intersection(*apps_other_sets)
@@ -160,8 +163,8 @@ class Gui(QObject):
                 action = menu.addAction(QIcon.fromTheme(entry.getIcon()), "Open With {}".format(entry.getName()))
 
                 def on_action(checked, exe=entry.getExec(), files=files):
-                    self.controller.app.file_history.append_group(files)
-                    self.controller.app.executor.launch_multi_from_exec(exe, files)
+                    self._controller.app.file_history.append_group(files)
+                    self._controller.app.executor.launch_multi_from_exec(exe, files)
 
                 action.triggered.connect(on_action)
 
@@ -189,7 +192,7 @@ class Gui(QObject):
         if len(selected_items) == 1 and next(iter(mimetypes)) == "inode/directory":
             menu.addAction(QIcon.fromTheme('utilities-terminal'), "Open Terminal Here",
                            lambda location=item.fileinfo.location():
-                           self.controller.app.executor.launch_terminal(location))
+                           self._controller.app.executor.launch_terminal(location))
             menu.addSeparator()
 
         menu.addSeparator()

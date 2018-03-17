@@ -38,7 +38,6 @@ from dirtools.fileview.location import Location, Payload
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.search_stream import SearchStream
 from dirtools.fileview.thumb_view import FileItemStyle
-from dirtools.fileview.gui import Gui
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +48,8 @@ class Controller(QObject):
     sig_location_changed_to_none = pyqtSignal()
 
     def __init__(self, app: 'FileViewApplication') -> None:
+        from dirtools.fileview.gui import Gui
+
         super().__init__()
 
         from dirtools.fileview.filter import Filter
