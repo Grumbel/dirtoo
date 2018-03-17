@@ -106,7 +106,7 @@ class FilterExprParser:
         word = Combine(OneOrMore(escape | Regex(r'[^\s\\]+')))
         whitespace = Regex(r'\s+').suppress()
         quotedstring = Combine(OneOrMore(QuotedString('"', escChar='\\') | QuotedString("'", escChar='\\')))
-        command = Regex(r'[^:]+') + Literal(":").suppress() + (quotedstring | word)
+        command = Regex(r'[^\s:]+') + Literal(":").suppress() + (quotedstring | word)
         include = quotedstring | command | word
         exclude = (Literal("-") | Literal("^")).suppress() + (quotedstring | command | word)
         or_keyword = CaselessKeyword("or")
