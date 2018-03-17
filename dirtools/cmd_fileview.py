@@ -17,6 +17,7 @@
 
 from typing import List
 
+import logging
 import os
 import sys
 import argparse
@@ -26,8 +27,6 @@ from dirtools.fileview.filelist_stream import FileListStream
 from dirtools.fileview.location import Location
 from dirtools.fileview.profiler import activate_profiler
 from dirtools.util import expand_directories
-
-import logging
 
 logger = logging.getLogger(__name__)
 

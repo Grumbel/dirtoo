@@ -26,7 +26,7 @@ class Menu(QMenu):
     """Regular QMenu, but with some functionality hacked in to handle
     middle mouse clicks"""
 
-    def __init__(self, title: Optional[str]=None) -> None:
+    def __init__(self, title: Optional[str] = None) -> None:
         if title is None:
             super().__init__()
         else:

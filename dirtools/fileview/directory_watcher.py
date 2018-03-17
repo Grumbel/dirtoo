@@ -50,7 +50,7 @@ class INotifyQt(QObject):
 
     sig_event = pyqtSignal(inotify_simple.Event)
 
-    def __init__(self, parent: Optional[QObject]=None) -> None:
+    def __init__(self, parent: Optional[QObject] = None) -> None:
         super().__init__(parent)
 
         self.inotify = INotify()

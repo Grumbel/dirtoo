@@ -25,14 +25,14 @@ from PyQt5.QtDBus import QDBusInterface, QDBusReply
 def dbus_as(value):
     var = QVariant(value)
     ret = var.convert(QVariant.StringList)
-    assert ret, "QVariant conversion failure: %s".format(value)
+    assert ret, "QVariant conversion failure: {}".format(value)
     return var
 
 
 def dbus_uint(value):
     var = QVariant(value)
     ret = var.convert(QVariant.UInt)
-    assert ret, "QVariant conversion failure: %s".format(value)
+    assert ret, "QVariant conversion failure: {}".format(value)
     return var
 
 

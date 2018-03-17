@@ -18,12 +18,12 @@
 from typing import Set
 
 
-def ngram(text: str, n: int=3) -> Set[str]:
+def ngram(text: str, n: int = 3) -> Set[str]:
     """Returns a set containing the ngrams"""
     return {"".join(g) for g in zip(*[text[i:] for i in range(n)])}
 
 
-def fuzzy(neddle: str, haystack: str, n: int=3):
+def fuzzy(neddle: str, haystack: str, n: int = 3):
     neddle_ngrams = ngram(neddle, n)
     haystack_ngrams = ngram(haystack, n)
 

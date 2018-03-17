@@ -58,7 +58,7 @@ class ArchiveExtractor(QObject):
 
         if archive_path.lower().endswith(".rar"):
             self._worker = RarExtractorWorker(archive_path, contentdir)
-        elif True:
+        elif True:  # pylint: disable=using-constant-test
             self._worker = SevenZipExtractorWorker(archive_path, contentdir)
         else:
             self._worker = LibArchiveExtractorWorker(archive_path, contentdir)

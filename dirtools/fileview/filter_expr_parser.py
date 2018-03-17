@@ -139,9 +139,7 @@ class FilterExprParser:
                 pass  # ignore
             elif isinstance(token, OrKeywordExpr):
                 result.append([])
-            elif (isinstance(token, IncludeExpr) or
-                  isinstance(token, ExcludeExpr) or
-                  isinstance(token, CommandExpr)):
+            elif isinstance(token, (IncludeExpr, ExcludeExpr, CommandExpr)):
                 result[-1].append(token)
             else:
                 assert False, "unknown token: {}".format(token)

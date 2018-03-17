@@ -79,7 +79,7 @@ class FilterCommandParser:
     def register_command(self,
                          aliases: Union[str, List[str]],
                          func: Callable,
-                         help: Optional[str]=None) -> None:
+                         help: Optional[str] = None) -> None:
         if isinstance(aliases, list):
             for name in aliases:
                 assert name not in self._commands

@@ -22,11 +22,11 @@ import logging
 import os
 import traceback
 
-from dirtools.fileview.location import Location
-from dirtools.fileview.rename_dialog import RenameDialog
-
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QDialog, QMessageBox
+
+from dirtools.fileview.location import Location
+from dirtools.fileview.rename_dialog import RenameDialog
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +79,7 @@ class FilesystemOperations:
         msg.setStandardButtons(QMessageBox.Ok)
         msg.exec()
 
-    def rename_location(self, location: Location, parent: Optional[QWidget]=None) -> None:
+    def rename_location(self, location: Location, parent: Optional[QWidget] = None) -> None:
         if location.has_payload():
             self._show_rename_error_has_payload(location, parent)
         else:

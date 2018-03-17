@@ -17,7 +17,7 @@
 # https://wiki.gnome.org/action/show/DraftSpecs/ThumbnailerSpec
 
 
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional, cast
 
 import logging
 import os
@@ -62,14 +62,14 @@ class DBusThumbnailerError(Enum):
 def dbus_as(value):
     var = QVariant(value)
     ret = var.convert(QVariant.StringList)
-    assert ret, "QVariant conversion failure: %s".format(value)
+    assert ret, "QVariant conversion failure: {}".format(value)
     return var
 
 
 def dbus_uint(value):
     var = QVariant(value)
     ret = var.convert(QVariant.UInt)
-    assert ret, "QVariant conversion failure: %s".format(value)
+    assert ret, "QVariant conversion failure: {}".format(value)
     return var
 
 
@@ -168,11 +168,12 @@ class DBusThumbnailer(QObject):
         else:
             return msg.arguments()
 
-    def queue(self, files, flavor="default"):
+    def queue(self, files, flavor="default") -> Optional[int]:
         logger.debug("DBusThumbnailer.queue: %s  %s", files, flavor)
 
         if files == []:
-            return
+            return None
+
         urls = ["file://" + urllib.parse.quote(os.path.abspath(f)) for f in files]
         mime_types = [
             mimetypes.guess_type(url)[0] or "application/octet-stream"
@@ -190,7 +191,7 @@ class DBusThumbnailer(QObject):
         )
 
         self._add_request(handle, (urls, mime_types, flavor))
-        return handle
+        return cast(int, handle)
 
     def dequeue(self, handle):
         logger.debug("DBusThumbnailer.dequeue: %s", handle)

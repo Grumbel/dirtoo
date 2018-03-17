@@ -282,17 +282,17 @@ class Actions(QObject):
         self.sort_group.addAction(self.sort_by_random)
 
         self.group_by_none = QAction("Don't Group", checkable=True)
-        self.group_by_none.triggered.connect(lambda: self.controller.set_grouper_by_none())
+        self.group_by_none.triggered.connect(self.controller.set_grouper_by_none)
         self.group_by_none.setChecked(True)
 
         self.group_by_day = QAction("Group by Day", checkable=True)
-        self.group_by_day.triggered.connect(lambda: self.controller.set_grouper_by_day())
+        self.group_by_day.triggered.connect(self.controller.set_grouper_by_day)
 
         self.group_by_directory = QAction("Group by Directory", checkable=True)
-        self.group_by_directory.triggered.connect(lambda: self.controller.set_grouper_by_directory())
+        self.group_by_directory.triggered.connect(self.controller.set_grouper_by_directory)
 
         self.group_by_duration = QAction("Group by Duration", checkable=True)
-        self.group_by_duration.triggered.connect(lambda: self.controller.set_grouper_by_duration())
+        self.group_by_duration.triggered.connect(self.controller.set_grouper_by_duration)
 
         self.group_group = QActionGroup(self)
         self.group_group.addAction(self.group_by_none)

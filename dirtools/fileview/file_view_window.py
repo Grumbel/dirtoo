@@ -352,7 +352,7 @@ class FileViewWindow(QMainWindow):
 
             history_menu.addDoubleAction(
                 QIcon.fromTheme("folder"), "View File History",
-                lambda: self.controller.show_file_history(),
+                self.controller.show_file_history,
                 lambda: self.controller.new_controller().show_file_history())
 
             history_menu.addSection("Location History")

@@ -448,7 +448,7 @@ class Controller(QObject):
         self._grouper.set_func(DurationGrouperFunc())
         self.apply_grouper()
 
-    def show_rename_dialog(self, location: Optional[Location]=None) -> None:
+    def show_rename_dialog(self, location: Optional[Location] = None) -> None:
         if location is None:
             item = self._gui._window.thumb_view._cursor_item
             if item is None:

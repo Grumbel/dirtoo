@@ -86,7 +86,7 @@ class VirtualFilesystem:
                     # FIXME: this is a bit of a crude hack to
                     # communicate the message to the user
                     QTimer.singleShot(0, send_message)
-                    logging.error("{}: archive exist, but is broken: {}".format(location, message))
+                    logging.error("%s: archive exist, but is broken: %s", location, message)
 
             return directory_watcher
 

@@ -98,7 +98,7 @@ class ThumbFileItem(FileItem):
         if self.animation_timer is None:
             # FIXME: calling os.getuid() is slow, so use 1000 as
             # workaround for now
-            if 1000 == self.fileinfo.uid():
+            if self.fileinfo.uid() == 1000:
                 bg_color = QColor(192 + 48, 192 + 48, 192 + 48)
             elif self.fileinfo.uid() == 0:
                 bg_color = QColor(192 + 32, 176, 176)
@@ -184,7 +184,7 @@ class ThumbFileItem(FileItem):
         else:
             assert False, "timer foobar"
 
-    def _get_thumbnail(self, flavor: Optional[str]=None) -> Thumbnail:
+    def _get_thumbnail(self, flavor: Optional[str] = None) -> Thumbnail:
         if flavor is None:
             flavor = self.thumb_view.flavor
 

@@ -75,6 +75,8 @@ class SearchStreamWorker(QObject):
 class SearchStreamAction(Action):
 
     def __init__(self, worker: SearchStreamWorker) -> None:
+        super().__init__()
+
         self._worker = worker
 
     def file(self, root: str, filename: str) -> None:

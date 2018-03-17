@@ -27,14 +27,14 @@ MediaInfoDLL3.MediaInfo.MediaInfoA_Get.argtypes = [
 ]
 
 
-def _to_float(text: str, default: float=0.0) -> float:
+def _to_float(text: str, default: float = 0.0) -> float:
     if text == "":
         return default
     else:
         return float(text)
 
 
-def _to_int(text: str, default: int=0) -> int:
+def _to_int(text: str, default: int = 0) -> int:
     if text == "":
         return default
     else:

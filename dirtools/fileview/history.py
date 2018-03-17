@@ -43,7 +43,7 @@ class SqlHistory:
                          "date REAL, "
                          "location TEXT)")
 
-    def get_entries(self, limit: Optional[int]=None) -> List[Location]:
+    def get_entries(self, limit: Optional[int] = None) -> List[Location]:
         c = self._db.cursor()
         c.execute("SELECT group_id, date, location "
                   "FROM history "

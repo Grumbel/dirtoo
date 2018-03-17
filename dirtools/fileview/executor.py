@@ -32,13 +32,13 @@ class Executor:
     def __init__(self, app) -> None:
         self.app = app
 
-    def launch_terminal(self, working_directory: Optional[Location]=None) -> None:
+    def launch_terminal(self, working_directory: Optional[Location] = None) -> None:
         if working_directory is None:
             self.launch_exo_terminal()
         else:
             self.launch_exo_terminal(self.app.vfs.get_stdio_name(working_directory))
 
-    def launch_exo_terminal(self, working_directory: Optional[str]=None) -> None:
+    def launch_exo_terminal(self, working_directory: Optional[str] = None) -> None:
         argv = ["exo-open", "--launch", "TerminalEmulator"]
         if working_directory is not None:
             argv += ["--working-directory", working_directory]

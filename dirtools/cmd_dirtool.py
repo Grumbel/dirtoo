@@ -109,9 +109,9 @@ class FileDataId:
 class FileObject:
 
     def __init__(self):
-        self.mtime == 0
-        self.ctime == 0
-        self.birth == 0
+        self.mtime = 0
+        self.ctime = 0
+        self.birth = 0
         self.uid = 0
         self.gid = 0
         self.filename = ""

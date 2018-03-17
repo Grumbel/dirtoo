@@ -71,12 +71,12 @@ class LocationLineEdit(QLineEdit):
             self.bookmark_act.setIcon(QIcon.fromTheme("bookmark-missing"))
 
     def _on_reset(self):
-            if self.controller.location is None:
-                self.setText("")
-            else:
-                self.setText(self.controller.location.as_url())
-                self.on_text_edited(self.text())
-                self.controller._gui._window.thumb_view.setFocus()
+        if self.controller.location is None:
+            self.setText("")
+        else:
+            self.setText(self.controller.location.as_url())
+            self.on_text_edited(self.text())
+            self.controller._gui._window.thumb_view.setFocus()
 
     def focusInEvent(self, ev) -> None:
         super().focusInEvent(ev)

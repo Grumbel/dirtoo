@@ -56,6 +56,8 @@ def parse_args(args: List[str]) -> argparse.Namespace:
 class ThumbnailerProgressListener(DBusThumbnailerListener):
 
     def __init__(self, app, verbose: bool) -> None:
+        super().__init__()
+
         self.app = app
         self.verbose = verbose
 
