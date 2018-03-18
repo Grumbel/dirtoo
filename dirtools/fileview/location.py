@@ -25,7 +25,7 @@ from functools import total_ordering
 logger = logging.getLogger(__name__)
 
 
-LOCATION_REGEX = re.compile(r'^([a-z]+)://(.*)$')
+LOCATION_REGEX = re.compile(r'^([a-z0]+)://(.*)$')
 
 
 # URL: {PROTOCOL}://{PAYLOAD}//{PLUGIN}:{PLUGIN_PAYLOAD}

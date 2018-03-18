@@ -23,6 +23,7 @@ from dirtools.fileview.stdio_filesystem import StdioFilesystem
 from dirtools.fileview.directory_watcher import DirectoryWatcher
 from dirtools.fileview.history_provider import HistoryProvider
 from dirtools.fileview.search_stream import SearchStream
+from dirtools.fileview.filelist_stream import FileListStream
 
 logger = logging.getLogger(__name__)
 
@@ -39,11 +40,20 @@ class VirtualFilesystem:
     def opendir(self, location: Location) -> DirectoryWatcher:
         if location.protocol() == "history":
             return HistoryProvider(self._app)
+
         elif location.protocol() == "file":
             return self._stdio_fs.opendir(location)
+
+        elif location.protocol() == "stream":
+            return FileListStream.from_location(self._app.vfs, "\n", location)
+
+        elif location.protocol() == "stream0":
+            return FileListStream.from_location(self._app.vfs, "\0", location)
+
         elif location.protocol() == "search":
             abspath, query = location.search_query()
             return SearchStream(abspath, query)
+
         else:
             raise Exception("unknown protocol: {}", location.protocol())
 

@@ -17,6 +17,7 @@
 
 from typing import Optional, IO
 
+import sys
 import logging
 import fcntl
 import os
@@ -25,7 +26,6 @@ from PyQt5.QtCore import QObject, QSocketNotifier, pyqtSignal
 
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.location import Location
-from dirtools.fileview.virtual_filesystem import VirtualFilesystem  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +65,19 @@ class FileListStream(QObject):
     sig_end_of_stream = pyqtSignal()
     sig_error = pyqtSignal()
 
+    @staticmethod
+    def from_location(app, linesep, location):
+        if location.get_path() in ["/stdin", "stdin"]:
+            fd = sys.stdin
+        else:
+            raise Exception("FileListStream: unknown location: %s", location)
+
+        return FileListStream(app, fd, linesep)
+
+    @property
+    def sig_finished(self):
+        return self.sig_end_of_stream
+
     def __init__(self, vfs: 'VirtualFilesystem', fp: IO, linesep: str="\n") -> None:
         super().__init__()
 
@@ -98,6 +111,9 @@ class FileListStream(QObject):
                     self.sig_file_added.emit(self.vfs.get_fileinfo(location))
                 else:
                     return
+
+
+from dirtools.fileview.virtual_filesystem import VirtualFilesystem  # noqa: F401
 
 
 # EOF #

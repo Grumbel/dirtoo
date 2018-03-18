@@ -23,7 +23,6 @@ import sys
 import argparse
 
 from dirtools.fileview.application import FileViewApplication
-from dirtools.fileview.filelist_stream import FileListStream
 from dirtools.fileview.location import Location
 from dirtools.fileview.profiler import activate_profiler
 from dirtools.util import expand_directories
@@ -66,9 +65,9 @@ def main(argv: List[str]) -> None:
         app.show_location(Location.from_path(os.getcwd()))
     elif args.FILE == ["-"]:
         if args.null:
-            app.show_filelist_stream(FileListStream(app.vfs, sys.stdin, "\0"))
+            app.show_location(Location.from_url("stream0:///stdin"))
         else:
-            app.show_filelist_stream(FileListStream(app.vfs, sys.stdin, "\n"))
+            app.show_location(Location.from_url("stream:///stdin"))
     elif len(args.FILE) == 1 and os.path.isdir(args.FILE[0]):
         app.show_location(Location.from_human(args.FILE[0]))
     elif args.recursive:
