@@ -85,14 +85,15 @@ class FileListStream(QObject):
         self.fp = fp
         self.linesep = linesep
 
-        self.readliner = non_blocking_readline(self.fp, self.linesep)
-
+        self.readliner = None
         self.socket_notifier: Optional[QSocketNotifier] = None
 
     def close(self):
         self.fp.close()
 
     def start(self):
+        self.readliner = non_blocking_readline(self.fp, self.linesep)
+
         self.socket_notifier = QSocketNotifier(self.fp.fileno(), QSocketNotifier.Read)
         self.socket_notifier.activated.connect(self._on_activated)
 
