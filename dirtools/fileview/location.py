@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, NamedTuple, Optional
+from typing import List, NamedTuple, Optional, Tuple
 
 import logging
 import os
@@ -52,6 +52,10 @@ class Location:
             result._payloads[-1] = Payload(result._payloads[-1].protocol,
                                            os.path.join(result._payloads[-1].path, path))
             return result
+
+    @staticmethod
+    def from_search_query(path: str, query: str) -> 'Location':
+        return Location("search", path, [Payload("query", query)])
 
     @staticmethod
     def from_path(path: str) -> 'Location':
@@ -191,6 +195,13 @@ class Location:
 
     def __str__(self) -> str:
         return self.as_url()
+
+    def search_query(self) -> Tuple[str, str]:
+        assert self._protocol == "search"
+        assert len(self._payloads) == 1
+        assert self._payloads[0].protocol == "query"
+
+        return (self._path, self._payloads[0].path)
 
 
 # EOF #

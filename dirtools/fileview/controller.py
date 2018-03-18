@@ -260,8 +260,16 @@ class Controller(QObject):
 
         self._directory_watcher.start()
 
-        self.location = location
-        self._gui._window.set_location(self.location)
+        if location.protocol() == "search":
+            abspath, query = location.search_query()
+            search_location = Location.from_path(abspath)
+            self.location = search_location
+            self._gui._window.set_location(search_location)
+            self._gui._window.search_lineedit.setText(query)
+            self._gui._window.search_toolbar.show()
+        else:
+            self.location = location
+            self._gui._window.set_location(self.location)
 
     def set_files(self, files: List[Location]) -> None:
         self._gui._window.set_file_list()
@@ -520,18 +528,19 @@ class Controller(QObject):
         self._gui._window.filter_toolbar.hide()
 
     def start_search(self, query):
-        self.close()
-
         if self.location is None:
             abspath = "/tmp"
         else:
             abspath = self.app.vfs.get_stdio_name(self.location)
 
-        self.file_collection.clear()
-        self._search_stream = SearchStream(abspath, query)
-        self._search_stream.sig_file_added.connect(self.file_collection.add_fileinfo)
-        self._search_stream.sig_end_of_stream.connect(lambda: self._gui._window.hide_loading())
-        self._search_stream.start()
+        location = Location.from_search_query(abspath, query)
+        self.set_location(location)
+
+        # self.file_collection.clear()
+        # self._search_stream = SearchStream(abspath, query)
+        # self._search_stream.sig_file_added.connect(self.file_collection.add_fileinfo)
+        # self._search_stream.sig_end_of_stream.connect(lambda: self._gui._window.hide_loading())
+        # self._search_stream.start()
 
         self._gui._window.thumb_view.setFocus()
 

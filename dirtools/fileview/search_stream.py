@@ -125,7 +125,7 @@ class SearchStream(QObject):
         return self._worker.sig_file_added
 
     @property
-    def sig_end_of_stream(self):
+    def sig_finished(self):
         return self._worker.sig_end_of_stream
 
     @property
