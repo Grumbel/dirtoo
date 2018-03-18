@@ -187,6 +187,14 @@ class Controller(QObject):
         logger.info("Controller._on_archive_extractor_finished")
         self._gui._window.hide_loading()
 
+    def _on_finished(self) -> None:
+        logger.info("Controller._on_finished")
+        self._gui._window.hide_loading()
+
+        self.apply_sort()
+        self.apply_filter()
+        self.apply_grouper()
+
     def _on_scandir_finished(self, fileinfos) -> None:
         logger.info("Controller._on_scandir_extractor_finished")
         self._gui._window.hide_loading()
@@ -228,12 +236,28 @@ class Controller(QObject):
         if self._directory_watcher is not None:
             self._directory_watcher.close()
         self._directory_watcher = self.app.vfs.opendir(location)
-        self._directory_watcher.sig_file_added.connect(self.file_collection.add_fileinfo)
-        self._directory_watcher.sig_file_removed.connect(self.file_collection.remove_file)
-        self._directory_watcher.sig_file_changed.connect(self.file_collection.change_file)
-        self._directory_watcher.sig_file_closed.connect(self.file_collection.close_file)
-        self._directory_watcher.sig_scandir_finished.connect(self._on_scandir_finished)
-        self._directory_watcher.sig_message.connect(self._on_directory_watcher_message)
+
+        if hasattr(self._directory_watcher, 'sig_file_added'):
+            self._directory_watcher.sig_file_added.connect(self.file_collection.add_fileinfo)
+
+        if hasattr(self._directory_watcher, 'sig_file_removed'):
+            self._directory_watcher.sig_file_removed.connect(self.file_collection.remove_file)
+
+        if hasattr(self._directory_watcher, 'sig_file_changed'):
+            self._directory_watcher.sig_file_changed.connect(self.file_collection.change_file)
+
+        if hasattr(self._directory_watcher, 'sig_file_closed'):
+            self._directory_watcher.sig_file_closed.connect(self.file_collection.close_file)
+
+        if hasattr(self._directory_watcher, 'sig_finished'):
+            self._directory_watcher.sig_finished.connect(self._on_finished)
+
+        if hasattr(self._directory_watcher, 'sig_scandir_finished'):
+            self._directory_watcher.sig_scandir_finished.connect(self._on_scandir_finished)
+
+        if hasattr(self._directory_watcher, 'sig_message'):
+            self._directory_watcher.sig_message.connect(self._on_directory_watcher_message)
+
         self._directory_watcher.start()
 
         self.location = location
@@ -269,9 +293,7 @@ class Controller(QObject):
         return cast('Controller', controller)
 
     def show_file_history(self) -> None:
-        file_history = self.app.file_history
-        entries = file_history.get_entries()
-        self.set_files(entries)
+        self.set_location(Location.from_url("history:///"))
 
     def apply_grouper(self) -> None:
         logger.debug("Controller.apply_grouper")

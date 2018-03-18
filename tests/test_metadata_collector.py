@@ -21,7 +21,7 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QApplication
 
 from dirtools.fileview.metadata_collector import MetaDataCollector
-from dirtools.fileview.virtual_filesystem import VirtualFilesystem
+from dirtools.fileview.stdio_filesystem import StdioFilesystem
 from dirtools.fileview.location import Location
 
 
@@ -31,7 +31,7 @@ class MetaDataCollectorTestCase(unittest.TestCase):
         app = QApplication([])
 
         try:
-            vfs = VirtualFilesystem("/tmp")
+            vfs = StdioFilesystem("/tmp")
             metadata_collector = MetaDataCollector(vfs)
 
             def on_metadata(filename, metadata):

@@ -80,10 +80,10 @@ class FileViewApplication:
         self.qapp.setQuitOnLastWindowClosed(False)
         self.qapp.lastWindowClosed.connect(self.on_last_window_closed)
 
-        self.vfs = VirtualFilesystem(self.cache_dir)
+        self.vfs = VirtualFilesystem(self.cache_dir, self)
         self.executor = Executor(self)
         self.thumbnailer = Thumbnailer(self.vfs)
-        self.metadata_collector = MetaDataCollector(self.vfs)
+        self.metadata_collector = MetaDataCollector(self.vfs.get_stdio_fs())
         self.session_bus = QDBusConnection.sessionBus()
         self.dbus_thumbnail_cache = DBusThumbnailCache(self.session_bus)
         self.mime_database = MimeDatabase(self.vfs)

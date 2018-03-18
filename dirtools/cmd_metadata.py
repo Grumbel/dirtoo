@@ -26,7 +26,7 @@ import xdg.BaseDirectory
 from PyQt5.QtCore import QCoreApplication
 
 from dirtools.fileview.metadata_collector import MetaDataCollector
-from dirtools.fileview.virtual_filesystem import VirtualFilesystem
+from dirtools.fileview.stdio_filesystem import StdioFilesystem
 from dirtools.fileview.location import Location
 
 
@@ -49,7 +49,7 @@ def main(argv: List[str]) -> int:
     app = QCoreApplication([])
 
     cache_dir = os.path.join(xdg.BaseDirectory.xdg_cache_home, "dt-fileview")
-    vfs = VirtualFilesystem(cache_dir)
+    vfs = StdioFilesystem(cache_dir)
     metadata_collector = MetaDataCollector(vfs)
 
     num_requests = 0

@@ -29,7 +29,7 @@ from PyPDF2 import PdfFileReader
 from dirtools.mediainfo import MediaInfo
 from dirtools.archiveinfo import ArchiveInfo
 from dirtools.fileview.metadata_cache import MetaDataCache
-from dirtools.fileview.virtual_filesystem import VirtualFilesystem
+from dirtools.fileview.stdio_filesystem import StdioFilesystem
 from dirtools.fileview.location import Location
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class MetaDataCollectorWorker(QObject):
 
     sig_metadata_ready = pyqtSignal(Location, dict)
 
-    def __init__(self, vfs: VirtualFilesystem) -> None:
+    def __init__(self, vfs: StdioFilesystem) -> None:
         super().__init__()
 
         self.vfs = vfs
@@ -161,7 +161,7 @@ class MetaDataCollector(QObject):
     sig_metadata_ready = pyqtSignal(Location, dict)
     sig_request_metadata = pyqtSignal(Location)
 
-    def __init__(self, vfs: VirtualFilesystem) -> None:
+    def __init__(self, vfs: StdioFilesystem) -> None:
         super().__init__()
 
         self._worker = MetaDataCollectorWorker(vfs)

@@ -149,6 +149,9 @@ class Location:
     def copy(self) -> 'Location':
         return Location(self._protocol, self._path, list(self._payloads))
 
+    def protocol(self) -> str:
+        return self._protocol
+
     def get_path(self) -> str:
         assert not self.has_payload()
         return self._path
