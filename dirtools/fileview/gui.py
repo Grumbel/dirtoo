@@ -131,6 +131,18 @@ class Gui(QObject):
                 left_func, middle_func)
             menu.addSeparator()
 
+        def left_func(location=item.fileinfo.location().parent()):
+            self._controller.set_location(location)
+
+        def middle_func(location=item.fileinfo.location().parent()):
+            self._controller.new_controller().set_location(location)
+
+        menu.addDoubleAction(
+            QIcon.fromTheme("folder"),
+            "Open Containing Folder",
+            left_func, middle_func)
+        menu.addSeparator()
+
         files: List[Location] = []
         mimetypes: Set[str] = set()
         for sit in selected_items:
