@@ -31,60 +31,72 @@ class ItemContextMenu(Menu):
         super().__init__()
 
         self._controller = controller
-        self._build_menu(fileinfos)
+        self._fileinfos = fileinfos
+        self._fileinfo = self._fileinfos[0]
+        self._build_menu()
 
-    def _build_menu(self, fileinfos: List):
-        menu = self
+    def _build_menu(self):
+        if self._fileinfo.is_archive():
+            self._build_archive_menu()
+        elif self._fileinfo.isdir():
+            self._build_directory_menu
 
-        fileinfo = fileinfos[0]
+        self._build_open_menu()
+        self._build_open_containing_folder()
+        # self._build_open_terminal_menu()
+        self._build_edit_menu()
+        self._build_actions_menu()
+        self._build_rename_menu()
+        self._build_properties_entry()
 
-        if fileinfo.is_archive():
-            def make_extract(archive_location):
-                location = archive_location.copy()
-                location._payloads.append(Payload("archive", ""))
-                return location
+    def _build_archive_menu(self):
+        def make_extract(archive_location):
+            location = archive_location.copy()
+            location._payloads.append(Payload("archive", ""))
+            return location
 
-            def left_func(location=fileinfo.location()):
-                self._controller.set_location(make_extract(location))
+        def left_func(location=self._fileinfo.location()):
+            self._controller.set_location(make_extract(location))
 
-            def middle_func(location=fileinfo.location()):
-                self._controller.new_controller().set_location(make_extract(location))
+        def middle_func(location=self._fileinfo.location()):
+            self._controller.new_controller().set_location(make_extract(location))
 
-            menu.addDoubleAction(
-                QIcon.fromTheme("package-x-generic"),
-                "Open Archive",
-                left_func, middle_func)
-            menu.addSeparator()
+        self.addDoubleAction(
+            QIcon.fromTheme("package-x-generic"),
+            "Open Archive",
+            left_func, middle_func)
+        self.addSeparator()
 
-        elif fileinfo.isdir():
-
-            def left_func(location=fileinfo.location()):
-                self._controller.set_location(location)
-
-            def middle_func(location=fileinfo.location()):
-                self._controller.new_controller().set_location(location)
-
-            menu.addDoubleAction(
-                QIcon.fromTheme("folder"),
-                "Open Folder",
-                left_func, middle_func)
-            menu.addSeparator()
-
-        def left_func(location=fileinfo.location().parent()):
+    def _build_directory_menu(self):
+        def left_func(location=self._fileinfo.location()):
             self._controller.set_location(location)
 
-        def middle_func(location=fileinfo.location().parent()):
+        def middle_func(location=self._fileinfo.location()):
             self._controller.new_controller().set_location(location)
 
-        menu.addDoubleAction(
+        self.addDoubleAction(
+            QIcon.fromTheme("folder"),
+            "Open Folder",
+            left_func, middle_func)
+        self.addSeparator()
+
+    def _build_open_containing_folder(self):
+        def left_func(location=self._fileinfo.location().parent()):
+            self._controller.set_location(location)
+
+        def middle_func(location=self._fileinfo.location().parent()):
+            self._controller.new_controller().set_location(location)
+
+        self.addDoubleAction(
             QIcon.fromTheme("folder"),
             "Open Containing Folder",
             left_func, middle_func)
-        menu.addSeparator()
+        self.addSeparator()
 
+    def _build_open_menu(self):
         files: List[Location] = []
         mimetypes: Set[str] = set()
-        for fi in fileinfos:
+        for fi in self._fileinfos:
             location = fi.location()
             files.append(location)
             mimetypes.add(self._controller.app.mime_database.get_mime_type(location).name())
@@ -120,50 +132,54 @@ class ItemContextMenu(Menu):
                 action.triggered.connect(on_action)
 
         if not default_apps:
-            menu.addAction("No applications available").setEnabled(False)
+            self.addAction("No applications available").setEnabled(False)
         else:
-            make_launcher_menu(menu, default_apps)
+            make_launcher_menu(self, default_apps)
 
         if other_apps:
-            open_with_menu = QMenu("Open with...")
+            open_with_menu = QMenu("Open with...", self)
             make_launcher_menu(open_with_menu, other_apps)
-            menu.addMenu(open_with_menu)
+            self.addMenu(open_with_menu)
 
-        menu.addSeparator()
+        self.addSeparator()
 
-        actions_menu = QMenu("Actions")
+    def _build_actions_menu(self):
+        actions_menu = QMenu("Actions", self)
         actions_menu.addAction("Stack Selection...")
         actions_menu.addAction("Tag Selection...")
         actions_menu.addSeparator()
         actions_menu.addAction("Compress...")
         actions_menu.addAction("New Folder With Selection...")
-        menu.addMenu(actions_menu)
-        menu.addSeparator()
+        self.addMenu(actions_menu)
+        self.addSeparator()
 
-        if len(fileinfos) == 1 and next(iter(mimetypes)) == "inode/directory":
-            menu.addAction(QIcon.fromTheme('utilities-terminal'), "Open Terminal Here",
-                           lambda location=fileinfo.location():
+    def _build_open_terminal_menu(self):
+        if len(self._fileinfos) == 1 and next(iter(mimetypes)) == "inode/directory":
+            self.addAction(QIcon.fromTheme('utilities-terminal'), "Open Terminal Here",
+                           lambda location=self._fileinfo.location():
                            self._controller.app.executor.launch_terminal(location))
-            menu.addSeparator()
+            self.addSeparator()
 
-        menu.addSeparator()
-        menu.addAction(self._controller.actions.edit_cut)
-        menu.addAction(self._controller.actions.edit_copy)
-        menu.addSeparator()
-        menu.addAction(self._controller.actions.edit_delete)
-        menu.addAction("Move To Trash")
-        menu.addSeparator()
+    def _build_edit_menu(self):
+        self.addAction(self._controller.actions.edit_cut)
+        self.addAction(self._controller.actions.edit_copy)
+        self.addSeparator()
+        self.addAction(self._controller.actions.edit_delete)
+        self.addAction("Move To Trash")
+        self.addSeparator()
 
-        rename = menu.addAction(
+    def _build_rename_menu(self):
+        rename = self.addAction(
             QIcon.fromTheme('rename'), 'Rename',
-            lambda location=fileinfo.location():
+            lambda location=self._fileinfo.location():
             self.show_rename_dialog(location))
         rename.setShortcut('F2')
         rename.setStatusTip('Rename the current file')
-        menu.addAction(rename)
+        self.addAction(rename)
+        self.addSeparator()
 
-        menu.addSeparator()
-        menu.addAction("Properties...")
+    def _build_properties_entry(self):
+        self.addAction("Properties...")
 
 
 # EOF #
