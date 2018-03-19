@@ -63,7 +63,8 @@ class Location:
 
     @staticmethod
     def from_human(path: str) -> 'Location':
-        if path.startswith("file://"):
+        m = LOCATION_REGEX.match(path)
+        if m is not None:
             return Location.from_url(path)
         else:
             return Location.from_path(os.path.abspath(path))
