@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Set
+from typing import List, Set, Tuple
 
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtGui import QIcon
@@ -43,7 +43,7 @@ class ItemContextMenu(Menu):
 
         self._build_open_menu()
         self._build_open_containing_folder()
-        # self._build_open_terminal_menu()
+        # FIXME: self._build_open_terminal_menu()
         self._build_edit_menu()
         self._build_actions_menu()
         self._build_rename_menu()
@@ -93,19 +93,21 @@ class ItemContextMenu(Menu):
             left_func, middle_func)
         self.addSeparator()
 
-    def _build_open_menu(self):
-        files: List[Location] = []
-        mimetypes: Set[str] = set()
-        for fi in self._fileinfos:
-            location = fi.location()
-            files.append(location)
-            mimetypes.add(self._controller.app.mime_database.get_mime_type(location).name())
+    def _get_supported_apps(self, files: List[Location]) -> Tuple[Set[str], Set[str]]:
+        mimetypes: Set[str] = set(
+            self._controller.app.mime_database.get_mime_type(location).name()
+            for location in files
+        )
 
-        apps_default_sets: List[Set[str]] = []
-        apps_other_sets: List[Set[str]] = []
-        for mimetype in mimetypes:
-            apps_default_sets.append(set(self._controller.app.mime_associations.get_default_apps(mimetype)))
-            apps_other_sets.append(set(self._controller.app.mime_associations.get_associations(mimetype)))
+        apps_default_sets: List[Set[str]] = [
+            set(self._controller.app.mime_associations.get_default_apps(mimetype))
+            for mimetype in mimetypes
+        ]
+
+        apps_other_sets: List[Set[str]] = [
+            set(self._controller.app.mime_associations.get_associations(mimetype))
+            for mimetype in mimetypes
+        ]
 
         default_apps = set.intersection(*apps_default_sets)
         other_apps = set.intersection(*apps_other_sets)
@@ -118,6 +120,13 @@ class ItemContextMenu(Menu):
 
         if None in other_apps:
             other_apps.remove(None)
+
+        return default_apps, other_apps
+
+    def _build_open_menu(self):
+        files: List[Location] = [fi.location() for fi in self._fileinfos]
+
+        default_apps, other_apps = self._get_supported_apps(files)
 
         def make_launcher_menu(menu, apps):
             entries = [get_desktop_entry(app) for app in apps]
