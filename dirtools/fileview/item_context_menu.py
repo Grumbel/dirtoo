@@ -43,7 +43,7 @@ class ItemContextMenu(Menu):
 
         self._build_open_menu()
         self._build_open_containing_folder()
-        # FIXME: self._build_open_terminal_menu()
+        self._build_open_terminal_menu()
         self._build_edit_menu()
         self._build_actions_menu()
         self._build_rename_menu()
@@ -163,7 +163,11 @@ class ItemContextMenu(Menu):
         self.addSeparator()
 
     def _build_open_terminal_menu(self):
-        if len(self._fileinfos) == 1 and next(iter(mimetypes)) == "inode/directory":
+        if len(self._fileinfos) > 1:
+            return
+
+        mimetype = self._controller.app.mime_database.get_mime_type(self._fileinfo.location()).name()
+        if mimetype == "inode/directory":
             self.addAction(QIcon.fromTheme('utilities-terminal'), "Open Terminal Here",
                            lambda location=self._fileinfo.location():
                            self._controller.app.executor.launch_terminal(location))
