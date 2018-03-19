@@ -31,7 +31,6 @@ from PyQt5.QtDBus import QDBusConnection
 from dirtools.dbus_thumbnail_cache import DBusThumbnailCache
 from dirtools.fileview.bookmarks import Bookmarks
 from dirtools.fileview.executor import Executor
-from dirtools.fileview.filelist_stream import FileListStream
 from dirtools.fileview.filesystem_operations import FilesystemOperations
 from dirtools.fileview.history import SqlHistory
 from dirtools.fileview.location import Location
@@ -40,6 +39,7 @@ from dirtools.fileview.mime_database import MimeDatabase
 from dirtools.fileview.settings import settings
 from dirtools.fileview.thumbnailer import Thumbnailer
 from dirtools.fileview.virtual_filesystem import VirtualFilesystem
+from dirtools.fileview.stream_manager import StreamManager
 from dirtools.xdg_mime_associations import XdgMimeAssociations
 from dirtools.fileview.preferences_dialog import PreferencesDialog
 
@@ -58,6 +58,10 @@ class FileViewApplication:
         self.config_file = os.path.join(self.config_dir, "config.ini")
         if not os.path.isdir(self.config_dir):
             os.makedirs(self.config_dir)
+
+        self.stream_dir = os.path.join(self.cache_dir, "streams")
+        if not os.path.isdir(self.stream_dir):
+            os.makedirs(self.stream_dir)
 
         logging_config = os.path.join(self.config_dir, "logging.ini")
         if os.path.exists(logging_config):
@@ -80,6 +84,7 @@ class FileViewApplication:
         self.qapp.setQuitOnLastWindowClosed(False)
         self.qapp.lastWindowClosed.connect(self.on_last_window_closed)
 
+        self.stream_manager = StreamManager(self.stream_dir)
         self.vfs = VirtualFilesystem(self.cache_dir, self)
         self.executor = Executor(self)
         self.thumbnailer = Thumbnailer(self.vfs)
@@ -128,12 +133,6 @@ class FileViewApplication:
         controller = Controller(self)
         controller.set_files(files)
         controller._gui._window.window.show()
-        self.controllers.append(controller)
-
-    def show_filelist_stream(self, stream: FileListStream) -> None:
-        controller = Controller(self)
-        controller.set_filelist_stream(stream)
-        controller._gui._window.show()
         self.controllers.append(controller)
 
     def show_location(self, location: Location) -> None:

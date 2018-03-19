@@ -45,10 +45,10 @@ class VirtualFilesystem:
             return self._stdio_fs.opendir(location)
 
         elif location.protocol() == "stream":
-            return FileListStream.from_location(self._app.vfs, "\n", location)
+            return FileListStream.from_location(self._app, "\n", location)
 
         elif location.protocol() == "stream0":
-            return FileListStream.from_location(self._app.vfs, "\0", location)
+            return FileListStream.from_location(self._app, "\0", location)
 
         elif location.protocol() == "search":
             abspath, query = location.search_query()

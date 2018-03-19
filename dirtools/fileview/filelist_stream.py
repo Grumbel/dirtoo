@@ -17,7 +17,6 @@
 
 from typing import Optional, IO
 
-import sys
 import logging
 import fcntl
 import os
@@ -68,11 +67,11 @@ class FileListStream(QObject):
     @staticmethod
     def from_location(app, linesep, location):
         if location.get_path() in ["/stdin", "stdin"]:
-            fd = sys.stdin
+            tee_fd, stream_id = app.stream_manager.get_stdin()
         else:
             raise Exception("FileListStream: unknown location: %s", location)
 
-        return FileListStream(app, fd, linesep)
+        return FileListStream(app.vfs, tee_fd, linesep)
 
     @property
     def sig_finished(self):
@@ -100,7 +99,7 @@ class FileListStream(QObject):
     def _on_activated(self, fd: int) -> None:
         while True:
             try:
-                filename = next(self.readliner)
+                filename: str = next(self.readliner)
             except StopIteration:
                 self.socket_notifier.setEnabled(False)
                 self.socket_notifier = None
@@ -112,9 +111,6 @@ class FileListStream(QObject):
                     self.sig_file_added.emit(self.vfs.get_fileinfo(location))
                 else:
                     return
-
-
-from dirtools.fileview.virtual_filesystem import VirtualFilesystem  # noqa: F401
 
 
 # EOF #

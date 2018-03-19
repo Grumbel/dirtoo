@@ -282,18 +282,6 @@ class Controller(QObject):
 
         self.sig_location_changed_to_none.emit()
 
-    def set_filelist_stream(self, stream: FileListStream) -> None:
-        self._gui._window.set_file_list()
-
-        self._gui._window.show_loading()
-
-        self._filelist_stream = stream
-        self._filelist_stream.sig_file_added.connect(self.file_collection.add_fileinfo)
-        self._filelist_stream.sig_end_of_stream.connect(lambda: self._gui._window.hide_loading())
-        self._filelist_stream.start()
-
-        self.sig_location_changed_to_none.emit()
-
     def new_controller(self, clone: bool=False) -> 'Controller':
         controller = self.app.new_controller()
         if clone and self.location is not None:

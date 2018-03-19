@@ -15,24 +15,29 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import IO
+
 from io import IOBase
 
 
 class TeeIO(IOBase):
     """TeeIO wraps 'input_fd' and records all data read from it to 'output_fd'"""
 
-    def __init__(self, input_fd, output_fd):
-        self._input_fd = fd
+    def __init__(self, input_fd: IO, output_fd: IO) -> None:
+        self._input_fd = input_fd
         self._output_fd = output_fd
 
     def close(self):
-        return self._input_fd.close()
+        self._input_fd.close()
+        self._output_fd.close()
 
     def fileno(self):
         return self._input_fd.fileno()
 
     def read(self, n=-1):
-        return self._input_fd.read(n)
+        buf = self._input_fd.read(n)
+        self._output_fd.write(buf)
+        return buf
 
 
 # EOF #
