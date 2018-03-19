@@ -26,6 +26,7 @@ from dirtools.fileview.file_view_window import FileViewWindow
 from dirtools.xdg_desktop import get_desktop_entry, get_desktop_file
 from dirtools.fileview.location import Location, Payload
 from dirtools.fileview.controller import Controller
+from dirtools.fileview.item_context_menu import ItemContextMenu
 
 
 class Gui(QObject):
@@ -97,134 +98,7 @@ class Gui(QObject):
             item.setSelected(True)
             selected_items = [item]
 
-        menu = Menu()
-
-        if item.fileinfo.is_archive():
-            def make_extract(archive_location):
-                location = archive_location.copy()
-                location._payloads.append(Payload("archive", ""))
-                return location
-
-            def left_func(location=item.fileinfo.location()):
-                self.set_location(make_extract(location))
-
-            def middle_func(location=item.fileinfo.location()):
-                self.new_controller().set_location(make_extract(location))
-
-            menu.addDoubleAction(
-                QIcon.fromTheme("package-x-generic"),
-                "Open Archive",
-                left_func, middle_func)
-            menu.addSeparator()
-
-        elif item.fileinfo.isdir():
-
-            def left_func(location=item.fileinfo.location()):
-                self.set_location(location)
-
-            def middle_func(location=item.fileinfo.location()):
-                self.new_controller().set_location(location)
-
-            menu.addDoubleAction(
-                QIcon.fromTheme("folder"),
-                "Open Folder",
-                left_func, middle_func)
-            menu.addSeparator()
-
-        def left_func(location=item.fileinfo.location().parent()):
-            self._controller.set_location(location)
-
-        def middle_func(location=item.fileinfo.location().parent()):
-            self._controller.new_controller().set_location(location)
-
-        menu.addDoubleAction(
-            QIcon.fromTheme("folder"),
-            "Open Containing Folder",
-            left_func, middle_func)
-        menu.addSeparator()
-
-        files: List[Location] = []
-        mimetypes: Set[str] = set()
-        for sit in selected_items:
-            location = sit.fileinfo.location()
-            files.append(location)
-            mimetypes.add(self._controller.app.mime_database.get_mime_type(location).name())
-
-        apps_default_sets: List[Set[str]] = []
-        apps_other_sets: List[Set[str]] = []
-        for mimetype in mimetypes:
-            apps_default_sets.append(set(self._controller.app.mime_associations.get_default_apps(mimetype)))
-            apps_other_sets.append(set(self._controller.app.mime_associations.get_associations(mimetype)))
-
-        default_apps = set.intersection(*apps_default_sets)
-        other_apps = set.intersection(*apps_other_sets)
-
-        default_apps = {get_desktop_file(app) for app in default_apps}
-        other_apps = {get_desktop_file(app) for app in other_apps}
-
-        if None in default_apps:
-            default_apps.remove(None)
-
-        if None in other_apps:
-            other_apps.remove(None)
-
-        def make_launcher_menu(menu, apps):
-            entries = [get_desktop_entry(app) for app in apps]
-            entries = sorted(entries, key=lambda x: x.getName())
-            for entry in entries:
-                action = menu.addAction(QIcon.fromTheme(entry.getIcon()), "Open With {}".format(entry.getName()))
-
-                def on_action(checked, exe=entry.getExec(), files=files):
-                    self._controller.app.file_history.append_group(files)
-                    self._controller.app.executor.launch_multi_from_exec(exe, files)
-
-                action.triggered.connect(on_action)
-
-        if not default_apps:
-            menu.addAction("No applications available").setEnabled(False)
-        else:
-            make_launcher_menu(menu, default_apps)
-
-        if other_apps:
-            open_with_menu = QMenu("Open with...")
-            make_launcher_menu(open_with_menu, other_apps)
-            menu.addMenu(open_with_menu)
-
-        menu.addSeparator()
-
-        actions_menu = QMenu("Actions")
-        actions_menu.addAction("Stack Selection...")
-        actions_menu.addAction("Tag Selection...")
-        actions_menu.addSeparator()
-        actions_menu.addAction("Compress...")
-        actions_menu.addAction("New Folder With Selection...")
-        menu.addMenu(actions_menu)
-        menu.addSeparator()
-
-        if len(selected_items) == 1 and next(iter(mimetypes)) == "inode/directory":
-            menu.addAction(QIcon.fromTheme('utilities-terminal'), "Open Terminal Here",
-                           lambda location=item.fileinfo.location():
-                           self._controller.app.executor.launch_terminal(location))
-            menu.addSeparator()
-
-        menu.addSeparator()
-        menu.addAction(self._controller.actions.edit_cut)
-        menu.addAction(self._controller.actions.edit_copy)
-        menu.addSeparator()
-        menu.addAction(self._controller.actions.edit_delete)
-        menu.addAction("Move To Trash")
-        menu.addSeparator()
-
-        rename = menu.addAction(
-            QIcon.fromTheme('rename'), 'Rename',
-            lambda location=item.fileinfo.location():
-            self.show_rename_dialog(location))
-        rename.setShortcut('F2')
-        rename.setStatusTip('Rename the current file')
-        menu.addAction(rename)
-
-        menu.addSeparator()
-        menu.addAction("Properties...")
+        menu = ItemContextMenu(self._controller, [item.fileinfo for item in selected_items])
 
         if ev.reason() == QContextMenuEvent.Keyboard:
             pos = self._window.thumb_view.mapToGlobal(
