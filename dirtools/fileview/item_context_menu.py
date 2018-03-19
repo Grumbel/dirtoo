@@ -15,11 +15,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import List, Set
 
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtGui import QIcon
 
+from dirtools.fileview.location import Location, Payload
 from dirtools.fileview.menu import Menu
 from dirtools.xdg_desktop import get_desktop_entry, get_desktop_file
 

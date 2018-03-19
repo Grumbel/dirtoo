@@ -15,11 +15,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Optional, Set, List, cast
+from typing import Optional, cast
 
 from PyQt5.QtCore import QObject, Qt, QEvent
-from PyQt5.QtWidgets import QMenu, QFileDialog, QTextEdit
-from PyQt5.QtGui import QIcon, QCursor, QMouseEvent, QContextMenuEvent
+from PyQt5.QtWidgets import QFileDialog, QTextEdit
+from PyQt5.QtGui import QCursor, QMouseEvent, QContextMenuEvent
 
 from dirtools.fileview.menu import Menu
 from dirtools.fileview.file_view_window import FileViewWindow
@@ -27,6 +27,7 @@ from dirtools.xdg_desktop import get_desktop_entry, get_desktop_file
 from dirtools.fileview.location import Location, Payload
 from dirtools.fileview.controller import Controller
 from dirtools.fileview.item_context_menu import ItemContextMenu
+from dirtools.fileview.directory_context_menu import DirectoryContextMenu
 
 
 class Gui(QObject):
@@ -70,23 +71,7 @@ class Gui(QObject):
         self._window.thumb_view.mouseMoveEvent(ev)
 
     def on_context_menu(self, pos) -> None:
-        menu = QMenu()
-
-        menu.addAction(QIcon.fromTheme('folder-new'), "Create Directory")
-        menu.addAction(QIcon.fromTheme('document-new'), "Create Text File")
-        menu.addSeparator()
-        menu.addAction(self._controller.actions.edit_paste)
-        menu.addSeparator()
-
-        if self.location is not None:
-            menu.addAction(QIcon.fromTheme('utilities-terminal'), "Open Terminal Here",
-                           lambda location=self.location: self._controller.app.executor.launch_terminal(location))
-            menu.addSeparator()
-
-        menu.addAction(self._controller.actions.edit_select_all)
-        menu.addSeparator()
-        menu.addAction(QIcon.fromTheme('document-properties'), "Properties...")
-
+        menu = DirectoryContextMenu(self._controller, self._controller.location)
         menu.exec(pos)
         self.fake_mouse()
 
