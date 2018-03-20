@@ -19,6 +19,8 @@ from PyQt5.QtWidgets import (QDialog, QDialogButtonBox, QVBoxLayout,
                              QGroupBox, QCheckBox, QSpinBox, QLabel,
                              QLineEdit)
 
+from dirtools.fileview.settings import settings
+
 
 class PreferencesDialog(QDialog):
 
@@ -31,6 +33,30 @@ class PreferencesDialog(QDialog):
     def _make_gui(self):
         self._vbox = QVBoxLayout()
 
+        self._vbox.addWidget(self._make_applications_box())
+        self._vbox.addWidget(self._make_layout_group_box())
+        self._vbox.addWidget(self._make_cache_group_box())
+
+        self._button_box = QDialogButtonBox(QDialogButtonBox.Close)
+        self._button_box.rejected.connect(self.reject)
+        self._vbox.addWidget(self._button_box)
+
+        self.setLayout(self._vbox)
+
+    def _make_applications_box(self):
+        self._applications_group_box = QGroupBox("Applications")
+        vbox = QVBoxLayout()
+
+        checkbox = QCheckBox("Open Archives Internally")
+        checkbox.setChecked(settings.value("globals/open_archives", True, bool))
+        checkbox.stateChanged.connect(lambda state: settings.set_value("globals/open_archives", state))
+        vbox.addWidget(checkbox)
+
+        self._applications_group_box.setLayout(vbox)
+
+        return self._applications_group_box
+
+    def _make_layout_group_box(self):
         # Layout Box
         self._layout_group_box = QGroupBox("Layout")
         vbox = QVBoxLayout()
@@ -48,7 +74,9 @@ class PreferencesDialog(QDialog):
         vbox.addWidget(spinbox)
 
         self._layout_group_box.setLayout(vbox)
+        return self._layout_group_box
 
+    def _make_cache_group_box(self):
         self._cache_group_box = QGroupBox("Cache")
         vbox = QVBoxLayout()
         label = QLabel("Maximum Cache Size")
@@ -62,15 +90,7 @@ class PreferencesDialog(QDialog):
         vbox.addWidget(lineedit)
 
         self._cache_group_box.setLayout(vbox)
-
-        self._button_box = QDialogButtonBox(QDialogButtonBox.Close)
-        self._button_box.rejected.connect(self.reject)
-
-        self._vbox.addWidget(self._layout_group_box)
-        self._vbox.addWidget(self._cache_group_box)
-        self._vbox.addWidget(self._button_box)
-
-        self.setLayout(self._vbox)
+        return self._cache_group_box
 
 
 # EOF #
