@@ -244,8 +244,8 @@ class Controller(QObject):
         if hasattr(self._directory_watcher, 'sig_file_removed'):
             self._directory_watcher.sig_file_removed.connect(self.file_collection.remove_file)
 
-        if hasattr(self._directory_watcher, 'sig_file_changed'):
-            self._directory_watcher.sig_file_changed.connect(self.file_collection.change_file)
+        if hasattr(self._directory_watcher, 'sig_file_modified'):
+            self._directory_watcher.sig_file_modified.connect(self.file_collection.modify_file)
 
         if hasattr(self._directory_watcher, 'sig_file_closed'):
             self._directory_watcher.sig_file_closed.connect(self.file_collection.close_file)
@@ -413,7 +413,7 @@ class Controller(QObject):
             logger.error("Controller.receive_metadata: not found fileinfo for %s", location)
         else:
             fileinfo.metadata().update(metadata)
-            self.file_collection.update_file(fileinfo)
+            self.file_collection.update_fileinfo(fileinfo)
 
     def request_thumbnail(self, fileinfo: FileInfo, flavor: str, force: bool) -> None:
         self.app.thumbnailer.request_thumbnail(fileinfo.location(), flavor, force,

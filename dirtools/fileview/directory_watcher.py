@@ -76,7 +76,7 @@ class DirectoryWatcherWorker(QObject):
 
     sig_file_added = pyqtSignal(FileInfo)
     sig_file_removed = pyqtSignal(Location)
-    sig_file_changed = pyqtSignal(FileInfo)
+    sig_file_modified = pyqtSignal(FileInfo)
     sig_file_closed = pyqtSignal(FileInfo)
     sig_error = pyqtSignal()
     sig_scandir_finished = pyqtSignal(list)
@@ -135,7 +135,7 @@ class DirectoryWatcherWorker(QObject):
             elif ev.mask & inotify_flags.MOVE_SELF:
                 pass  # directory itself has moved
             elif ev.mask & inotify_flags.MODIFY or ev.mask & inotify_flags.ATTRIB:
-                self.sig_file_changed.emit(self.vfs.get_fileinfo(location))
+                self.sig_file_modified.emit(self.vfs.get_fileinfo(location))
             elif ev.mask & inotify_flags.MOVED_FROM:
                 self.sig_file_removed.emit(location)
             elif ev.mask & inotify_flags.MOVED_TO:
@@ -188,8 +188,8 @@ class DirectoryWatcher(QObject):
         return self._worker.sig_file_removed
 
     @property
-    def sig_file_changed(self):
-        return self._worker.sig_file_changed
+    def sig_file_modified(self):
+        return self._worker.sig_file_modified
 
     @property
     def sig_file_closed(self):

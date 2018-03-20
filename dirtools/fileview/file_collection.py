@@ -44,7 +44,7 @@ class FileCollection(QObject):
 
     # New information about a file has becomes available (thumbnail,
     # metadata, etc.)
-    sig_file_updated = pyqtSignal(FileInfo)
+    sig_fileinfo_updated = pyqtSignal(FileInfo)
 
     # File handle was closed and the file is in it's final state.
     sig_file_closed = pyqtSignal(FileInfo)
@@ -90,23 +90,23 @@ class FileCollection(QObject):
             logger.error("FileCollection.remove_file: %s: KeyError", location)
             self.sig_file_removed.emit(location)
 
-    def change_file(self, fileinfo: FileInfo) -> None:
+    def modify_file(self, fileinfo: FileInfo) -> None:
         try:
             self._fileinfos.replace(fileinfo.location(), fileinfo)
         except KeyError:
-            logger.error("FileCollection.change_file: %s: KeyError", fileinfo)
+            logger.error("FileCollection.modify_file: %s: KeyError", fileinfo)
         else:
-            logger.debug("FileCollection.change_file: %s", fileinfo)
+            logger.debug("FileCollection.modify_file: %s", fileinfo)
             self.sig_file_changed.emit(fileinfo)
 
-    def update_file(self, fileinfo: FileInfo) -> None:
+    def update_fileinfo(self, fileinfo: FileInfo) -> None:
         try:
             self._fileinfos.replace(fileinfo.location(), fileinfo)
         except KeyError:
-            logger.error("FileCollection.update_file: %s", fileinfo)
+            logger.error("FileCollection.update_fileinfo: %s", fileinfo)
         else:
-            logger.debug("FileCollection.update_file: %s: KeyError", fileinfo)
-            self.sig_file_updated.emit(fileinfo)
+            logger.debug("FileCollection.update_fileinfo: %s: KeyError", fileinfo)
+            self.sig_fileinfo_updated.emit(fileinfo)
 
     def close_file(self, fileinfo: FileInfo) -> None:
         try:
