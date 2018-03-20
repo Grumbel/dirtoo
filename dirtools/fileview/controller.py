@@ -446,10 +446,13 @@ class Controller(QObject):
         self._gui._window.thumb_view.receive_thumbnail(location, flavor, pixmap, error_code, message)
 
     def reload_thumbnails(self) -> None:
-        self.app.dbus_thumbnail_cache.delete(
-            [f.abspath()
-             for f in self.file_collection.get_fileinfos()])
-        self._gui._window.thumb_view.reload_thumbnails()
+        selected_items = self._gui._window.thumb_view._scene.selectedItems()
+        files = [item.fileinfo.abspath()
+                 for item in selected_items]
+        self.app.dbus_thumbnail_cache.delete(files)
+
+        for item in selected_items:
+            item.reload_thumbnail()
 
     def set_grouper_by_none(self) -> None:
         self._grouper.set_func(NoGrouperFunc())

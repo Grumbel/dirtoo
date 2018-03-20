@@ -154,6 +154,7 @@ class ItemContextMenu(Menu):
 
     def _build_actions_menu(self):
         actions_menu = QMenu("Actions", self)
+        actions_menu.addAction(self._controller.actions.reload_thumbnails)
         actions_menu.addAction("Stack Selection...")
         actions_menu.addAction("Tag Selection...")
         actions_menu.addSeparator()
