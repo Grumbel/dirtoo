@@ -528,13 +528,12 @@ class Controller(QObject):
         location = Location.from_search_query(abspath, query)
         self.set_location(location)
 
-        # self.file_collection.clear()
-        # self._search_stream = SearchStream(abspath, query)
-        # self._search_stream.sig_file_added.connect(self.file_collection.add_fileinfo)
-        # self._search_stream.sig_end_of_stream.connect(lambda: self._gui._window.hide_loading())
-        # self._search_stream.start()
-
         self._gui._window.thumb_view.setFocus()
+
+    def close_search(self):
+        self._gui._window.search_toolbar.hide()
+        self._gui._window.thumb_view.setFocus()
+        self._gui._window.location_lineedit.on_return_pressed()
 
     def close_window(self):
         self._gui._window.close()

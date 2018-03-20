@@ -56,8 +56,7 @@ class SearchLineEdit(QLineEdit):
     def _on_reset(self) -> None:
         self.clear()
         self.history_idx = -1
-        self.controller._gui._window.search_toolbar.hide()
-        self.controller._gui._window.thumb_view.setFocus()
+        self.controller.close_search()
 
     def on_delete_button(self) -> None:
         self._on_reset()
