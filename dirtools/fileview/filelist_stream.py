@@ -23,7 +23,6 @@ import os
 
 from PyQt5.QtCore import QObject, QSocketNotifier, pyqtSignal
 
-import dirtools.fileview.virtual_filesystem as dfv  # noqa: F401
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.location import Location
 
@@ -78,7 +77,7 @@ class FileListStream(QObject):
     def sig_finished(self):
         return self.sig_end_of_stream
 
-    def __init__(self, vfs: 'dfv.VirtualFilesystem',
+    def __init__(self, vfs: 'VirtualFilesystem',
                  fp: IO, linesep: str="\n") -> None:
         super().__init__()
 
