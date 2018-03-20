@@ -40,7 +40,7 @@ class FileCollection(QObject):
     sig_file_removed = pyqtSignal(Location)
 
     # A file changed on disk
-    sig_file_changed = pyqtSignal(FileInfo)
+    sig_file_modified = pyqtSignal(FileInfo)
 
     # New information about a file has becomes available (thumbnail,
     # metadata, etc.)
@@ -97,7 +97,7 @@ class FileCollection(QObject):
             logger.error("FileCollection.modify_file: %s: KeyError", fileinfo)
         else:
             logger.debug("FileCollection.modify_file: %s", fileinfo)
-            self.sig_file_changed.emit(fileinfo)
+            self.sig_file_modified.emit(fileinfo)
 
     def update_fileinfo(self, fileinfo: FileInfo) -> None:
         try:

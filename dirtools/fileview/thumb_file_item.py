@@ -53,14 +53,17 @@ class ThumbFileItem(FileItem):
 
         self._file_is_final = True
 
-    def set_fileinfo(self, fileinfo: FileInfo, final=False, update=False):
+    def on_file_modified(self, fileinfo: FileInfo, final=False):
         self.fileinfo = fileinfo
         self._file_is_final = final
-        if not update:
-            self._new = True
+        self._new = True
+
         if final:
             thumbnail = self._get_thumbnail()
             thumbnail.reset()
+
+    def on_fileinfo_updated(self, fileinfo: FileInfo):
+        self.fileinfo = fileinfo
 
     def set_tile_size(self, tile_width: int, tile_height: int) -> None:
         # the size of the base tile

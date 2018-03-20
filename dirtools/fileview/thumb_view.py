@@ -250,7 +250,7 @@ class ThumbView(QGraphicsView):
 
         self._file_collection.sig_file_added.connect(self.on_file_added)
         self._file_collection.sig_file_removed.connect(self.on_file_removed)
-        self._file_collection.sig_file_changed.connect(self.on_file_changed)
+        self._file_collection.sig_file_modified.connect(self.on_file_modified)
         self._file_collection.sig_fileinfo_updated.connect(self.on_fileinfo_updated)
         self._file_collection.sig_file_closed.connect(self.on_file_closed)
 
@@ -281,25 +281,25 @@ class ThumbView(QGraphicsView):
             del self._location2item[location]
             self.layout_items()
 
-    def on_file_changed(self, fileinfo: FileInfo) -> None:
-        logger.debug("ThumbView.on_file_changed: %s", fileinfo)
+    def on_file_modified(self, fileinfo: FileInfo) -> None:
+        logger.debug("ThumbView.on_file_modified: %s", fileinfo)
         items = self._location2item.get(fileinfo.location(), [])
         for item in items:
-            item.set_fileinfo(fileinfo)
+            item.on_file_modified(fileinfo)
             item.update()
 
     def on_fileinfo_updated(self, fileinfo: FileInfo) -> None:
-        logger.debug("ThumbView.on_file_updated: %s", fileinfo)
+        logger.debug("ThumbView.on_fileinfo_updated: %s", fileinfo)
         items = self._location2item.get(fileinfo.location(), [])
         for item in items:
-            item.set_fileinfo(fileinfo, update=True)
+            item.on_fileinfo_updated(fileinfo)
             item.update()
 
     def on_file_closed(self, fileinfo: FileInfo) -> None:
         logger.debug("ThumbView.on_file_closed: %s", fileinfo)
         items = self._location2item.get(fileinfo.location(), [])
         for item in items:
-            item.set_fileinfo(fileinfo, final=True)
+            item.on_file_modified(fileinfo, final=True)
             item.update()
 
     def on_file_collection_reordered(self) -> None:
