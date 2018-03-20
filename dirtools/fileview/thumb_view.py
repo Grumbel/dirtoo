@@ -544,10 +544,13 @@ class ThumbView(QGraphicsView):
         scrollbar.setValue(scrollbar.value() + x)
 
     def set_cursor_to_fileinfo(self, fileinfo):
+        self._scene.clearSelection()
+
         if self._cursor_item is not None:
             self._cursor_item.update()
         self._cursor_item = self._location2item.get(fileinfo.location(), [None])[0]
         if self._cursor_item is not None:
+            self._cursor_item.setSelected(True)
             self._cursor_item.update()
 
     def mousePressEvent(self, ev):
