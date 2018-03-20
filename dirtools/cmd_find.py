@@ -17,12 +17,16 @@
 
 from typing import List, Optional
 
+import logging
+
 import sys
 import argparse
 
 from dirtools.find.action import Action, MultiAction, PrinterAction, ExecAction, ExprSorterAction
 from dirtools.find.filter import ExprFilter, SimpleFilter, NoFilter
 from dirtools.find.util import find_files
+
+logger = logging.getLogger(__name__)
 
 
 def parse_args(args: List[str], simple) -> argparse.Namespace:
@@ -32,6 +36,9 @@ def parse_args(args: List[str], simple) -> argparse.Namespace:
         parser.add_argument("QUERY", nargs='*')
     else:
         parser.add_argument("DIRECTORY", nargs='*')
+
+    parser.add_argument("--debug", action='store_true', default=False,
+                        help="Print lots of debugging output")
 
     trav_grp = parser.add_argument_group("Traversial Options")
 
@@ -119,6 +126,11 @@ def create_sorter_wrapper(args: argparse.Namespace, find_action):
 
 def main(argv, simple):
     args = parse_args(argv[1:], simple)
+
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.WARNING)
 
     find_action = create_action(args)
     find_action = create_sorter_wrapper(args, find_action)
