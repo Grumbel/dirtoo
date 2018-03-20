@@ -91,12 +91,13 @@ class DirectoryWatcherWorker(QObject):
         self._close = False
 
     def init(self) -> None:
-        self.inotify = INotifyQt(self)
-        self.inotify.add_watch(self.path)
-
-        self.inotify.sig_event.connect(self.on_inotify_event)
-
-        self.process()
+        try:
+            self.inotify = INotifyQt(self)
+            self.inotify.add_watch(self.path)
+            self.inotify.sig_event.connect(self.on_inotify_event)
+            self.process()
+        except Exception as err:
+            self.sig_message.emit(str(err))
 
     def close(self) -> None:
         self.inotify.close()
