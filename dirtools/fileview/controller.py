@@ -109,6 +109,7 @@ class Controller(QObject):
 
     def show_hidden(self) -> None:
         self._filter.show_hidden = not self._filter.show_hidden
+        settings.set_value("globals/show_hidden", self._filter.show_hidden)
         self.apply_filter()
 
     def show_filtered(self) -> None:

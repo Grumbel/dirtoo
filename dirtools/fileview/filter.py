@@ -17,6 +17,7 @@
 
 from typing import Optional
 
+from dirtools.fileview.settings import settings
 from dirtools.fileview.match_func import (
     MatchFunc,
     RegexMatchFunc,
@@ -34,7 +35,7 @@ from dirtools.fileview.match_func import (
 class Filter:
 
     def __init__(self) -> None:
-        self.show_hidden = False
+        self.show_hidden = settings.value("globals/show_hidden", False, bool)
         self.show_inaccessible = True
         self.match_func: Optional[MatchFunc] = None
 

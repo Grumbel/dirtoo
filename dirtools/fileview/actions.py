@@ -25,9 +25,10 @@ from PyQt5.QtWidgets import (
     QStyle
 )
 
-from dirtools.util import numeric_sort_key
 from dirtools.fileview.about_dialog import AboutDialog
 from dirtools.fileview.file_info import FileInfo
+from dirtools.fileview.settings import settings
+from dirtools.util import numeric_sort_key
 
 logger = logging.getLogger(__name__)
 
@@ -182,6 +183,7 @@ class Actions(QObject):
         self.show_hidden = QAction(QIcon.fromTheme('camera-photo'), "Show Hidden", self, checkable=True)
         self.show_hidden.triggered.connect(self.controller.show_hidden)
         self.show_hidden.setShortcut('Ctrl+H')
+        self.show_hidden.setChecked(settings.value("globals/show_hidden", False, bool))
 
         self.show_filtered = QAction(QIcon.fromTheme('camera-photo'), "Show Filtered", self, checkable=True)
         self.show_filtered.triggered.connect(self.controller.show_filtered)
