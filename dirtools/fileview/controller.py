@@ -510,6 +510,9 @@ class Controller(QObject):
         self._gui._window.location_lineedit.setFocus(Qt.ShortcutFocusReason)
         if selectall is False:
             self._gui._window.location_lineedit.set_cursor_to_end()
+            text = self._gui._window.location_lineedit.text()
+            if text and text[-1] != "/":
+                self._gui._window.location_lineedit.setText(text + "/")
 
     def hide_all(self):
         self._gui._window.search_toolbar.hide()
