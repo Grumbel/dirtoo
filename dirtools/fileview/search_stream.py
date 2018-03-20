@@ -33,8 +33,9 @@ logger = logging.getLogger(__name__)
 class SearchStreamWorker(QObject):
 
     sig_file_added = pyqtSignal(FileInfo)
-    sig_end_of_stream = pyqtSignal()
+    sig_finished = pyqtSignal()
     sig_error = pyqtSignal()
+    sig_message = pyqtSignal(str)
 
     def __init__(self, abspath: str, pattern: str) -> None:
         super().__init__()
@@ -57,7 +58,10 @@ class SearchStreamWorker(QObject):
                          action=self._action,
                          topdown=False, maxdepth=None)
 
-        self.sig_end_of_stream.emit()
+        if self._action.found_count() == 0:
+            self.sig_message.emit("Search did not give any results")
+
+        self.sig_finished.emit()
 
     def _find_files(self, directory, recursive, filter_op, action, topdown, maxdepth):
         for root, dirs, files in walk(directory, topdown=topdown, maxdepth=maxdepth):
@@ -77,14 +81,17 @@ class SearchStreamAction(Action):
     def __init__(self, worker: SearchStreamWorker) -> None:
         super().__init__()
 
+        self._found_count = 0
         self._worker = worker
 
     def file(self, root: str, filename: str) -> None:
+        self._found_count += 1
         fullpath = os.path.join(root, filename)
         fileinfo = FileInfo.from_filename(fullpath)
         self._worker.sig_file_added.emit(fileinfo)
 
     def directory(self, root: str, filename: str) -> None:
+        self._found_count += 1
         fullpath = os.path.join(root, filename)
         fileinfo = FileInfo.from_filename(fullpath)
         self._worker.sig_file_added.emit(fileinfo)
@@ -92,6 +99,8 @@ class SearchStreamAction(Action):
     def finish(self) -> None:
         pass
 
+    def found_count(self) -> int:
+        return self._found_count
 
 class SearchStream(QObject):
 
@@ -126,7 +135,11 @@ class SearchStream(QObject):
 
     @property
     def sig_finished(self):
-        return self._worker.sig_end_of_stream
+        return self._worker.sig_finished
+
+    @property
+    def sig_message(self):
+        return self._worker.sig_message
 
     @property
     def sig_error(self):
