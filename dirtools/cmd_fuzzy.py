@@ -27,18 +27,26 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Seach for fuzzily file content")
     parser.add_argument("QUERY", nargs=1)
     parser.add_argument("FILE", nargs='*')
-    parser.add_argument("-n", metavar="N", type=int, default=3,
+    parser.add_argument("-N", metavar="N", type=int, default=3,
                         help="Size of the N-grams")
+    parser.add_argument("-n", "--line-number", action='store_true', default=False,
+                        help="Prefix the output with line numbers")
     parser.add_argument("-t", "--threshold", metavar="INT", type=float, default=0.5,
                         help="Threshold for fuzzy matched")
     return parser.parse_args(args)
 
 
-def process_stream(query: str, filename: Optional[str], fin: IO, fuzzy_options) -> None:
-    for line in fin:
+def process_stream(query: str, filename: Optional[str], fin: IO,
+                   fuzzy_options,
+                   args) -> None:
+    for idx, line in enumerate(fin):
+        line_no = idx + 1
+
         if fuzzy(query, line, n=fuzzy_options.n) > fuzzy_options.threshold:
             if filename is not None:
-                sys.stdout.write("{}: {}".format(filename, line))
+                sys.stdout.write("{}:{}: {}".format(filename, line_no, line))
+            elif args.line_number:
+                sys.stdout.write("{}: {}".format(line_no, line))
             else:
                 sys.stdout.write(line)
 
@@ -55,7 +63,7 @@ def main(argv: List[str]) -> None:
 
     query = args.QUERY[0]
     files = args.FILE
-    fuzzy_options = FuzzyOptions(args.n, args.threshold)
+    fuzzy_options = FuzzyOptions(args.N, args.threshold)
 
     if len(query) < fuzzy_options.n:
         print("error: ngram size can't be larger than query string", file=sys.stderr)
@@ -66,7 +74,7 @@ def main(argv: List[str]) -> None:
     else:
         for filename in files:
             with open(filename) as fin:
-                process_stream(query, filename, fin, fuzzy_options)
+                process_stream(query, filename, fin, fuzzy_options, args)
 
 
 def main_entrypoint() -> None:
