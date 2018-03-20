@@ -70,7 +70,7 @@ def main(argv: List[str]) -> None:
         return
 
     if files == []:
-        process_stream(query, None, sys.stdin, fuzzy_options)
+        process_stream(query, None, sys.stdin, fuzzy_options, args)
     else:
         for filename in files:
             with open(filename) as fin:

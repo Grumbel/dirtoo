@@ -15,8 +15,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
-
 from PyQt5.QtGui import QIcon
 
 from dirtools.fileview.menu import Menu

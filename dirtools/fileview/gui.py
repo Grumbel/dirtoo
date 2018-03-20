@@ -21,10 +21,7 @@ from PyQt5.QtCore import QObject, Qt, QEvent
 from PyQt5.QtWidgets import QFileDialog, QTextEdit
 from PyQt5.QtGui import QCursor, QMouseEvent, QContextMenuEvent
 
-from dirtools.fileview.menu import Menu
 from dirtools.fileview.file_view_window import FileViewWindow
-from dirtools.xdg_desktop import get_desktop_entry, get_desktop_file
-from dirtools.fileview.location import Location, Payload
 from dirtools.fileview.controller import Controller
 from dirtools.fileview.item_context_menu import ItemContextMenu
 from dirtools.fileview.directory_context_menu import DirectoryContextMenu

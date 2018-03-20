@@ -27,7 +27,7 @@ from dirtools.xdg_desktop import get_desktop_entry, get_desktop_file
 
 class ItemContextMenu(Menu):
 
-    def __init__(self, controller, fileinfos: List):
+    def __init__(self, controller, fileinfos: List) -> None:
         super().__init__()
 
         self._controller = controller

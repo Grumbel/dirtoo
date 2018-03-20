@@ -15,12 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Any
+
 import logging
 
 from dirtools.fileview.location import Location
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.stdio_filesystem import StdioFilesystem
-from dirtools.fileview.directory_watcher import DirectoryWatcher
 from dirtools.fileview.history_provider import HistoryProvider
 from dirtools.fileview.search_stream import SearchStream
 from dirtools.fileview.filelist_stream import FileListStream
@@ -37,7 +38,7 @@ class VirtualFilesystem:
     def close(self) -> None:
         self._stdio_fs.close()
 
-    def opendir(self, location: Location) -> DirectoryWatcher:
+    def opendir(self, location: Location) -> Any:
         if location.protocol() == "history":
             return HistoryProvider(self._app)
 

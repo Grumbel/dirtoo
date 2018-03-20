@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import IO, Optional, Tuple
+from typing import IO, Optional, Tuple, cast
 
 import logging
 
@@ -34,15 +34,15 @@ class StreamManager:
         self._cachedir = cachedir
         self._stdin_id = None
 
-    def get_stdin(self) -> Optional[Tuple[TeeIO, str]]:
+    def get_stdin(self) -> Optional[Tuple[IO, str]]:
         if self._stdin_id is None:
             tee_io, stream_id = self.record(sys.stdin)
             self._stdin_id = stream_id
-            return tee_io, stream_id
+            return cast(IO, tee_io), stream_id
         else:
-            tee_io = self.lookup(self._stdin_id)
-            if tee_io is not None:
-                return tee_io, self._stdin_id
+            fd = self.lookup(self._stdin_id)
+            if fd is not None:
+                return fd, self._stdin_id
             else:
                 return None
 
@@ -57,7 +57,7 @@ class StreamManager:
         else:
             return fd
 
-    def record(self, fd: IO) -> Optional[Tuple[IO, str]]:
+    def record(self, fd: IO[str]) -> Optional[Tuple[TeeIO, str]]:
         outfile, stream_id = self._make_outfile()
         try:
             fd_out = open(outfile, "w")

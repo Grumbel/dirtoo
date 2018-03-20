@@ -102,6 +102,7 @@ class SearchStreamAction(Action):
     def found_count(self) -> int:
         return self._found_count
 
+
 class SearchStream(QObject):
 
     sig_close_requested = pyqtSignal()
