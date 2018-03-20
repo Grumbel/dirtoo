@@ -21,7 +21,8 @@ import io
 import logging
 import os
 
-from PyQt5.QtCore import QObject, Qt, pyqtSignal
+from PyQt5.QtCore import QObject, Qt, pyqtSignal, QUrl, QMimeData
+from PyQt5.QtGui import QClipboard
 
 import bytefmt
 
@@ -548,6 +549,45 @@ class Controller(QObject):
     def show_preferences(self):
         self.app._preferences_dialog.show()
         self.app._preferences_dialog.raise_()
+
+    def on_edit_cut(self):
+        clipboard = self.app.qapp.clipboard()
+        logger.debug("cut data to clipboard")
+
+    def on_edit_copy(self):
+        logger.debug("copying data to clipboard")
+        fileinfos = self.selected_fileinfos()
+        urls = [QUrl.fromLocalFile(fi.abspath())
+                for fi in fileinfos]
+
+        text = "\n".join([fi.abspath()
+                          for fi in fileinfos])
+
+        clipboard = self.app.qapp.clipboard()
+        mime_data = QMimeData()
+        mime_data.setUrls(urls)
+        mime_data.setText(text)
+        clipboard.setMimeData(mime_data, QClipboard.Clipboard)
+
+    def on_edit_paste(self):
+        logger.debug("pasting data from clipboard")
+        clipboard = self.app.qapp.clipboard()
+        print("PasteEvent:")
+        data = clipboard.mimeData(QClipboard.Clipboard)
+        # print("Mime:", data.formats())
+        # print("Data:", data.urls())
+
+        for fmt in data.formats():
+            print("Format:", fmt)
+            print(data.data(fmt))
+            print()
+        print()
+        # https://www.uninformativ.de/blog/postings/2017-04-02/0/POSTING-en.html
+
+    def selected_fileinfos(self):
+        selected_items = self._gui._window.thumb_view._scene.selectedItems()
+        return [item.fileinfo
+                for item in selected_items]
 
 
 from dirtools.fileview.application import FileViewApplication  # noqa: F401
