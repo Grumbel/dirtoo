@@ -563,10 +563,14 @@ class Controller(QObject):
         text = "\n".join([fi.abspath()
                           for fi in fileinfos])
 
+        gnome_copied_files = b'copy\n' + b'\n'.join([url.toString().encode()
+                                                     for url in urls])
+
         clipboard = self.app.qapp.clipboard()
         mime_data = QMimeData()
         mime_data.setUrls(urls)
         mime_data.setText(text)
+        mime_data.setData("x-special/gnome-copied-files", gnome_copied_files)
         clipboard.setMimeData(mime_data, QClipboard.Clipboard)
 
     def on_edit_paste(self):
