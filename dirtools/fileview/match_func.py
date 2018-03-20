@@ -323,11 +323,17 @@ class ContainsMatchFunc(MatchFunc):
 
     def __call__(self, fileinfo, idx):
         location = fileinfo.location()
+
         if not location.has_payload():
-            with open(location.get_path(), "r", encoding="utf-8", errors="replace") as fin:
-                for line in fin:
-                    if self._line_match_func(line):
-                        return True
+            try:
+                with open(location.get_path(), "r", encoding="utf-8", errors="replace") as fin:
+                    for line in fin:
+                        if self._line_match_func(line):
+                            return True
+            except IOError as err:
+                logger.warning(str(err))
+                return False
+
         return False
 
     def cost(self):
