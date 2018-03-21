@@ -586,7 +586,7 @@ class Controller(QObject):
         return [item.fileinfo
                 for item in selected_items]
 
-    def selection_to_mimedata(self, gnome_action: Optional[bytes] = None):
+    def selection_to_mimedata(self, uri_only=False, gnome_action: Optional[bytes] = None):
         mime_data = QMimeData()
 
         fileinfos = self.selected_fileinfos()
@@ -595,15 +595,16 @@ class Controller(QObject):
                 for fi in fileinfos]
         mime_data.setUrls(urls)
 
-        text = "\n".join([fi.abspath()
-                          for fi in fileinfos])
-        mime_data.setText(text)
+        if not uri_only:
+            text = "\n".join([fi.abspath()
+                              for fi in fileinfos])
+            mime_data.setText(text)
 
-        if gnome_action is not None:
-            gnome_copied_files = (gnome_action + b'\n' +
-                                  b'\n'.join([url.toString().encode()
-                                              for url in urls]))
-            mime_data.setData("x-special/gnome-copied-files", gnome_copied_files)
+            if gnome_action is not None:
+                gnome_copied_files = (gnome_action + b'\n' +
+                                      b'\n'.join([url.toString().encode()
+                                                  for url in urls]))
+                mime_data.setData("x-special/gnome-copied-files", gnome_copied_files)
 
         return mime_data
 

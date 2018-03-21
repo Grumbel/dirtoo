@@ -17,8 +17,10 @@
 
 import logging
 
+from pkg_resources import resource_filename
+
 from PyQt5.QtCore import Qt, QMimeData, QUrl
-from PyQt5.QtGui import QDrag, QPainter, QPixmap
+from PyQt5.QtGui import QDrag, QPainter, QPixmap, QIcon
 from PyQt5.QtWidgets import QGraphicsObject, QGraphicsItem
 
 logger = logging.getLogger(__name__)
@@ -44,7 +46,7 @@ class FileItem(QGraphicsObject):
             # clicking again. The item on which the context menu was
             # open gets triggered even when the click is completely
             # outside the item. This sems to be due to
-            # mouseMoveEvent() getting missing while the menu is open
+            # mouseMoveEvent() getting missed while the menu is open
             # and Qt triggering on the mouse position before the
             # context menu was opened. There might be better ways to
             # fix this, this is just a workaround. Hover status
@@ -67,26 +69,35 @@ class FileItem(QGraphicsObject):
         if (ev.pos() - self.press_pos).manhattanLength() > 16:
             print("drag start")
 
-            mime_data = QMimeData()
-            mime_data.setUrls([QUrl.fromLocalFile(self.fileinfo.abspath())])
             self.drag = QDrag(self.controller._gui._window)
 
-            pix = QPixmap(self.tile_rect.width(), self.tile_rect.height())
-            painter = QPainter(pix)
-            self.paint(painter, None, None)
-            self.drag.setPixmap(pix)
-            painter.end()
+            # Create the drag thumbnail
+            if False:
+                pix = QPixmap(self.tile_rect.width(), self.tile_rect.height())
+                painter = QPainter(pix)
+                self.paint(painter, None, None)
+                painter.end()
+                self.drag.setPixmap(pix)
+                self.drag.setHotSpot(ev.pos().toPoint() - self.tile_rect.topLeft())
+            else:
+                pix = QPixmap("/usr/share/icons/mate/32x32/actions/gtk-dnd-multiple.png").scaled(48, 48)
+                self.drag.setPixmap(pix)
 
-            self.drag.setHotSpot(ev.pos().toPoint() - self.tile_rect.topLeft())
+            if not self.isSelected():
+                self.controller.clear_selection()
+                self.setSelected(True)
 
-            self.setVisible(False)
-
+            mime_data = self.controller.selection_to_mimedata(uri_only=True)
             self.drag.setMimeData(mime_data)
-            print("---drag start")
-            self.dropAction = self.drag.exec(Qt.CopyAction)
-            print("---drag done")
+
+            self.drag.setDragCursor(QPixmap(resource_filename("dirtools", "fileview/icons/dnd-copy.png")), Qt.CopyAction)
+            self.drag.setDragCursor(QPixmap(resource_filename("dirtools", "fileview/icons/dnd-move.png")), Qt.MoveAction)
+            self.drag.setDragCursor(QPixmap(resource_filename("dirtools", "fileview/icons/dnd-link.png")), Qt.LinkAction)
+
+            self.drag.actionChanged.connect(lambda action: print(action))
+
             # this will eat up the mouseReleaseEvent
-            self.setVisible(True)
+            self.dropAction = self.drag.exec(Qt.CopyAction | Qt.MoveAction | Qt.LinkAction)
 
     def mouseReleaseEvent(self, ev):
         if ev.button() == Qt.LeftButton and self.press_pos is not None:
