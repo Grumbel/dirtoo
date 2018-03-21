@@ -480,7 +480,7 @@ class Controller(QObject):
 
             location = item.fileinfo.location()
 
-        self.app.fs_operations.rename_location(location, parent=self.window)
+        self.app.fs_operations.rename_location(location, parent=self._gui._window)
 
     def toggle_bookmark(self) -> bool:
         """Returns true if a bookmark was set, false otherwise"""

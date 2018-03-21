@@ -17,16 +17,12 @@
 
 from typing import Optional
 
-import html
 import logging
-import os
-import traceback
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QDialog, QMessageBox
+from PyQt5.QtWidgets import QWidget
 
 from dirtools.fileview.location import Location
-from dirtools.fileview.rename_dialog import RenameDialog
+from dirtools.fileview.rename_operation import RenameOperation
 
 logger = logging.getLogger(__name__)
 
@@ -37,70 +33,13 @@ class FilesystemOperations:
 
     def __init__(self, logfile=None):
         self._logfile = logfile
-
-    def _rename(self, oldpath: str, newpath: str) -> None:
-        logger.info("FilesystemOperations._rename: \"%s\" to \"%s\"",
-                    oldpath, newpath)
-        os.rename(oldpath, newpath)
-
-    def _show_rename_error_has_payload(self, location: Location, parent: Optional[QWidget]):
-        msg = QMessageBox(parent)
-        msg.setIcon(QMessageBox.Warning)
-        msg.setWindowTitle("Rename Error")
-        msg.setTextFormat(Qt.RichText)
-        msg.setText("<b>Files inside an archive can't be renamed</b>")
-        msg.setStandardButtons(QMessageBox.Ok)
-        msg.exec()
-
-    def _show_rename_error_os_error(self, location: Location, err: OSError, tb: str,
-                                    parent: Optional[QWidget]):
-        msg = QMessageBox(parent)
-        msg.setIcon(QMessageBox.Critical)
-        msg.setWindowTitle("Rename Error")
-        msg.setTextFormat(Qt.RichText)
-        msg.setText(
-            "<b>Failed to rename \"<tt>{}</tt>\".</b>"
-            .format(html.escape(location.get_basename())))
-        msg.setInformativeText(
-            "A failure occured while trying to rename the file.\n\n{}\n\n{}  →\n{}\n"
-            .format(err.strerror, err.filename, err.filename2))  # type: ignore
-        msg.setDetailedText(tb)
-        msg.setStandardButtons(QMessageBox.Ok)
-        msg.exec()
-
-    def _show_rename_error_file_exists(self, location: Location, parent: Optional[QWidget]):
-        msg = QMessageBox(parent)
-        msg.setIcon(QMessageBox.Critical)
-        msg.setWindowTitle("Rename Error")
-        msg.setTextFormat(Qt.RichText)
-        msg.setText("<b>Failed to rename \"{}\".</b>"
-                    .format(html.escape(location.get_basename())))
-        msg.setInformativeText("Can't rename file, filenname already exists.")
-        msg.setStandardButtons(QMessageBox.Ok)
-        msg.exec()
+        self._rename_op = RenameOperation()
 
     def rename_location(self, location: Location, parent: Optional[QWidget] = None) -> None:
-        if location.has_payload():
-            self._show_rename_error_has_payload(location, parent)
-        else:
-            dialog = RenameDialog(parent)
-            dialog.set_basename(location.get_basename())
-            dialog.exec()
+        self._rename_op.rename_location(location, parent)
 
-            if dialog.result() == QDialog.Accepted:
-                oldpath = location.get_path()
-                newpath = os.path.join(location.get_dirname(), dialog.get_new_basename())
-
-                if oldpath == newpath:
-                    logger.debug("FilesystemOperations.rename_location: source and destination are the same, "
-                                 "skipping: \"%s\" to \"%s\"", oldpath, newpath)
-                elif os.path.exists(newpath):
-                    self._show_rename_error_file_exists(location, parent)
-                else:
-                    try:
-                        self._rename(oldpath, newpath)
-                    except OSError as err:
-                        self._show_rename_error_os_error(location, err, traceback.format_exc(), parent)
+    def move_file(self, source: str, destination: str) -> None:
+        pass
 
 
 # EOF #
