@@ -218,26 +218,54 @@ class ThumbView(QGraphicsView):
         for item in self._items:
             item.update()
 
-    def dragMoveEvent(self, ev) -> None:
-        # the default implementation will check if any item in the
-        # scene accept a drop event, we don't want that, so we
-        # override the function to do nothing
-        pass
-
     def dragEnterEvent(self, ev) -> None:
-        print("dragEnterEvent", ev.mimeData().formats())
-        if ev.mimeData().hasFormat("text/uri-list"):
+        # print("dragEnterEvent")
+
+        if False:
+            data = ev.mimeData()
+            for fmt in data.formats():
+                print("Format:", fmt)
+                print(data.data(fmt))
+                print()
+            print()
+
+        if ev.mimeData().hasUrls():
+            ev.acceptProposedAction()
             ev.accept()
         else:
             ev.ignore()
 
+    def dragMoveEvent(self, ev) -> None:
+        # the default implementation will check if any item in the
+        # scene accept a drop event, we don't want that, so we
+        # override the function to do nothing for now
+        ev.acceptProposedAction()
+        pass
+
     def dragLeaveEvent(self, ev) -> None:
-        print("dragLeaveEvent: leave")
+        # print("dragLeaveEvent: leave")
+        pass
 
     def dropEvent(self, ev):
-        urls = ev.mimeData().urls()
-        # [PyQt5.QtCore.QUrl('file:///home/ingo/projects/dirtool/trunk/setup.py')]
-        self._controller.add_files([Location.from_url(url.toString()) for url in urls])
+        # print("dropEvent")
+
+        mime_data = ev.mimeData()
+        assert mime_data.hasUrls()
+
+        urls = mime_data.urls()
+        files = [url.toLocalFile() for url in urls]
+        action = ev.proposedAction()
+
+        if action == Qt.CopyAction:
+            print("copy", " ".join(files))
+        elif action == Qt.MoveAction:
+            print("move", " ".join(files))
+        elif action == Qt.LinkAction:
+            print("link", " ".join(files))
+        else:
+            print("unsupported drop action", action)
+
+        # self._controller.add_files([Location.from_url(url.toString()) for url in urls])
 
     def set_file_collection(self, file_collection: FileCollection) -> None:
         assert file_collection != self._file_collection

@@ -39,7 +39,10 @@ class FilesystemOperations:
         self._rename_op.rename_location(location, parent)
 
     def move_file(self, source: str, destination: str) -> None:
-        pass
+        print("FilesystemOperations.move_file", source, destination)
+
+    def copy_file(self, source: str, destination: str) -> None:
+        print("FilesystemOperations.copy_file", source, destination)
 
 
 # EOF #

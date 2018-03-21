@@ -67,7 +67,7 @@ class FileItem(QGraphicsObject):
 
     def mouseMoveEvent(self, ev):
         if (ev.pos() - self.press_pos).manhattanLength() > 16:
-            print("drag start")
+            # print("drag start")
 
             self.drag = QDrag(self.controller._gui._window)
 
@@ -94,7 +94,7 @@ class FileItem(QGraphicsObject):
             self.drag.setDragCursor(QPixmap(resource_filename("dirtools", "fileview/icons/dnd-move.png")), Qt.MoveAction)
             self.drag.setDragCursor(QPixmap(resource_filename("dirtools", "fileview/icons/dnd-link.png")), Qt.LinkAction)
 
-            self.drag.actionChanged.connect(lambda action: print(action))
+            # self.drag.actionChanged.connect(lambda action: print(action))
 
             # this will eat up the mouseReleaseEvent
             self.dropAction = self.drag.exec(Qt.CopyAction | Qt.MoveAction | Qt.LinkAction)
