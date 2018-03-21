@@ -551,26 +551,19 @@ class Controller(QObject):
         self.app._preferences_dialog.raise_()
 
     def on_edit_cut(self):
-        clipboard = self.app.qapp.clipboard()
         logger.debug("cut data to clipboard")
+
+        mime_data = self.selection_to_mimedata(gnome_action=b'cut')
+
+        clipboard = self.app.qapp.clipboard()
+        clipboard.setMimeData(mime_data, QClipboard.Clipboard)
 
     def on_edit_copy(self):
         logger.debug("copying data to clipboard")
-        fileinfos = self.selected_fileinfos()
-        urls = [QUrl.fromLocalFile(fi.abspath())
-                for fi in fileinfos]
 
-        text = "\n".join([fi.abspath()
-                          for fi in fileinfos])
-
-        gnome_copied_files = b'copy\n' + b'\n'.join([url.toString().encode()
-                                                     for url in urls])
+        mime_data = self.selection_to_mimedata(gnome_action=b'copy')
 
         clipboard = self.app.qapp.clipboard()
-        mime_data = QMimeData()
-        mime_data.setUrls(urls)
-        mime_data.setText(text)
-        mime_data.setData("x-special/gnome-copied-files", gnome_copied_files)
         clipboard.setMimeData(mime_data, QClipboard.Clipboard)
 
     def on_edit_paste(self):
@@ -592,6 +585,27 @@ class Controller(QObject):
         selected_items = self._gui._window.thumb_view._scene.selectedItems()
         return [item.fileinfo
                 for item in selected_items]
+
+    def selection_to_mimedata(self, gnome_action: Optional[bytes] = None):
+        mime_data = QMimeData()
+
+        fileinfos = self.selected_fileinfos()
+
+        urls = [QUrl.fromLocalFile(fi.abspath())
+                for fi in fileinfos]
+        mime_data.setUrls(urls)
+
+        text = "\n".join([fi.abspath()
+                          for fi in fileinfos])
+        mime_data.setText(text)
+
+        if gnome_action is not None:
+            gnome_copied_files = (gnome_action + b'\n' +
+                                  b'\n'.join([url.toString().encode()
+                                              for url in urls]))
+            mime_data.setData("x-special/gnome-copied-files", gnome_copied_files)
+
+        return mime_data
 
 
 from dirtools.fileview.application import FileViewApplication  # noqa: F401

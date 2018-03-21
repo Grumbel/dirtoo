@@ -84,7 +84,7 @@ class Actions(QObject):
         self.edit_cut = QAction(QIcon.fromTheme('edit-cut'), 'Cu&t', self)
         self.edit_cut.setShortcut('Ctrl+X')
         self.edit_cut.setStatusTip('Cut Selected Files')
-        self.edit_copy.triggered.connect(self.controller.on_edit_cut)
+        self.edit_cut.triggered.connect(self.controller.on_edit_cut)
 
         self.edit_paste = QAction(QIcon.fromTheme('edit-paste'), '&Paste', self)
         self.edit_paste.setShortcut('Ctrl+V')
