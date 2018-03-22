@@ -45,6 +45,7 @@ class FileGraphicsScene(QGraphicsScene):
             print()
 
         if ev.mimeData().hasUrls():
+            assert self._drap_drop_item == None
             self._drap_drop_item = None
             ev.accept()
         else:
@@ -56,16 +57,22 @@ class FileGraphicsScene(QGraphicsScene):
 
         transform = QTransform()
         item = self.itemAt(ev.scenePos(), transform)
-        if isinstance(item, FileItem) and item.fileinfo.isdir():
-            self._drap_drop_item = item
-        else:
-            self._drap_drop_item = None
+        if item != self._drap_drop_item:
+            if self._drap_drop_item is not None:
+                self._drap_drop_item.set_dropable(False)
+
+            if isinstance(item, FileItem) and item.fileinfo.isdir():
+                self._drap_drop_item = item
+                self._drap_drop_item.set_dropable(True)
+            else:
+                self._drap_drop_item = None
 
     def dragLeaveEvent(self, ev) -> None:
         # print("FileGraphicsScene.dragLeaveEvent()")
         ev.accept()
 
         if self._drap_drop_item is not None:
+            self._drap_drop_item.set_dropable(False)
             self._drap_drop_item = None
 
     def dropEvent(self, ev):
@@ -81,6 +88,8 @@ class FileGraphicsScene(QGraphicsScene):
 
         if self._drap_drop_item is not None:
             self.sig_files_drop.emit(action, urls, self._drap_drop_item.fileinfo.location())
+            self._drap_drop_item.set_dropable(False)
+            self._drap_drop_item = None
         else:
             self.sig_files_drop.emit(action, urls, None)
 

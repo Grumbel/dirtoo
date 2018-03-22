@@ -52,6 +52,7 @@ class ThumbFileItem(FileItem):
         self.animation_timer: Optional[int] = None
 
         self._file_is_final = True
+        self._dropable = False
 
     def on_file_modified(self, fileinfo: FileInfo, final=False):
         self.fileinfo = fileinfo
@@ -127,6 +128,13 @@ class ThumbFileItem(FileItem):
                              self.tile_rect.height() + 8,
                              bg_color if self.isSelected() else QColor(192, 192, 192))
 
+        if self._dropable:
+            painter.fillRect(0,
+                             0,
+                             self.tile_rect.width(),
+                             self.tile_rect.height(),
+                             QColor(164, 164, 164))
+
         renderer = ThumbFileItemRenderer(self)
         renderer.render(painter)
 
@@ -197,6 +205,10 @@ class ThumbFileItem(FileItem):
             return self.large_thumbnail
         else:
             return self.large_thumbnail
+
+    def set_dropable(self, value):
+        self._dropable = value
+        self.update()
 
 
 # EOF #
