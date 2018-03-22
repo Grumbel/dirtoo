@@ -15,17 +15,26 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtGui import QTransform
 from PyQt5.QtWidgets import QGraphicsScene
+
+
+from dirtools.fileview.file_item import FileItem
 
 
 class FileGraphicsScene(QGraphicsScene):
 
+    # action, urls, destination
+    sig_files_drop = pyqtSignal(int, list, object)
+
     def __init__(self):
         super().__init__()
 
+        self._drap_drop_item = None
+
     def dragEnterEvent(self, ev) -> None:
-        print("FileGraphicsScene.dragEnterEvent()")
+        # print("FileGraphicsScene.dragEnterEvent()")
 
         if False:
             data = ev.mimeData()
@@ -36,39 +45,44 @@ class FileGraphicsScene(QGraphicsScene):
             print()
 
         if ev.mimeData().hasUrls():
-            super().dragEnterEvent(ev)
-            # This function does this:
-            # Q_D(QGraphicsScene);
-            # d->dragDropItem = 0;
-            # d->lastDropAction = Qt::IgnoreAction;
-            # event->accept();
+            self._drap_drop_item = None
+            ev.accept()
         else:
             ev.ignore()
 
     def dragMoveEvent(self, ev) -> None:
-        print("FileGraphicsScene.dragMoveEvent()")
+        # print("FileGraphicsScene.dragMoveEvent()")
+        ev.acceptProposedAction()
+
+        transform = QTransform()
+        item = self.itemAt(ev.scenePos(), transform)
+        if isinstance(item, FileItem) and item.fileinfo.isdir():
+            self._drap_drop_item = item
+        else:
+            self._drap_drop_item = None
 
     def dragLeaveEvent(self, ev) -> None:
-        print("FileGraphicsScene.dragLeaveEvent()")
+        # print("FileGraphicsScene.dragLeaveEvent()")
+        ev.accept()
+
+        if self._drap_drop_item is not None:
+            self._drap_drop_item = None
 
     def dropEvent(self, ev):
-        print("FileGraphicsScene.dropEvent()")
+        # print("FileGraphicsScene.dropEvent()")
+        ev.accept()
 
         mime_data = ev.mimeData()
         assert mime_data.hasUrls()
 
         urls = mime_data.urls()
-        files = [url.toLocalFile() for url in urls]
-        action = ev.proposedAction()
+        assert ev.dropAction() == ev.proposedAction()
+        action = ev.dropAction()
 
-        if action == Qt.CopyAction:
-            print("copy", " ".join(files))
-        elif action == Qt.MoveAction:
-            print("move", " ".join(files))
-        elif action == Qt.LinkAction:
-            print("link", " ".join(files))
+        if self._drap_drop_item is not None:
+            self.sig_files_drop.emit(action, urls, self._drap_drop_item.fileinfo.location())
         else:
-            print("unsupported drop action", action)
+            self.sig_files_drop.emit(action, urls, None)
 
         # self._controller.add_files([Location.from_url(url.toString()) for url in urls])
 

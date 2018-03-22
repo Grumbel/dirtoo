@@ -38,11 +38,14 @@ class FilesystemOperations:
     def rename_location(self, location: Location, parent: Optional[QWidget] = None) -> None:
         self._rename_op.rename_location(location, parent)
 
-    def move_file(self, source: str, destination: str) -> None:
-        print("FilesystemOperations.move_file", source, destination)
+    def move_files(self, sources: str, destination: str) -> None:
+        print("FilesystemOperations.move_files", sources, destination)
 
-    def copy_file(self, source: str, destination: str) -> None:
-        print("FilesystemOperations.copy_file", source, destination)
+    def copy_files(self, sources: str, destination: str) -> None:
+        print("FilesystemOperations.copy_files", sources, destination)
+
+    def link_files(self, sources: str, destination: str) -> None:
+        print("FilesystemOperations.link_files", sources, destination)
 
 
 # EOF #

@@ -608,6 +608,30 @@ class Controller(QObject):
 
         return mime_data
 
+    def on_files_drop(self, action, urls, destination):
+        if destination is None:
+            destination = self.location
+
+        if destination is None:
+            return
+
+        if destination.has_payload():
+            logger.error("can't drop to a destination with payload: %s", destination)
+            return
+
+        sources = [url.toLocalFile() for url in urls]
+
+        destination_path = destination.get_path()
+
+        if action == Qt.CopyAction:
+            self.app.fs_operations.copy_files(sources, destination_path)
+        elif action == Qt.MoveAction:
+            self.app.fs_operations.move_files(sources, destination_path)
+        elif action == Qt.LinkAction:
+            self.app.fs_operations.link_files(sources, destination_path)
+        else:
+            print("unsupported drop action", action)
+
 
 from dirtools.fileview.application import FileViewApplication  # noqa: F401
 

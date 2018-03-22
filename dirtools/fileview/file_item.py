@@ -19,8 +19,8 @@ import logging
 
 from pkg_resources import resource_filename
 
-from PyQt5.QtCore import Qt, QMimeData, QUrl
-from PyQt5.QtGui import QDrag, QPainter, QPixmap, QIcon
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QDrag, QPainter, QPixmap
 from PyQt5.QtWidgets import QGraphicsObject, QGraphicsItem
 
 logger = logging.getLogger(__name__)
@@ -38,8 +38,7 @@ class FileItem(QGraphicsObject):
         self.setFlags(QGraphicsItem.ItemIsSelectable)
         self.setAcceptHoverEvents(True)
 
-        if fileinfo.isdir():
-            self.setAcceptDrops(True)
+        self.setCursor(Qt.PointingHandCursor)
 
     def mousePressEvent(self, ev):
         if not self.shape().contains(ev.scenePos() - self.pos()):
@@ -93,9 +92,15 @@ class FileItem(QGraphicsObject):
             mime_data = self.controller.selection_to_mimedata(uri_only=True)
             self.drag.setMimeData(mime_data)
 
-            self.drag.setDragCursor(QPixmap(resource_filename("dirtools", "fileview/icons/dnd-copy.png")), Qt.CopyAction)
-            self.drag.setDragCursor(QPixmap(resource_filename("dirtools", "fileview/icons/dnd-move.png")), Qt.MoveAction)
-            self.drag.setDragCursor(QPixmap(resource_filename("dirtools", "fileview/icons/dnd-link.png")), Qt.LinkAction)
+            self.drag.setDragCursor(
+                QPixmap(resource_filename("dirtools", "fileview/icons/dnd-copy.png")),
+                Qt.CopyAction)
+            self.drag.setDragCursor(
+                QPixmap(resource_filename("dirtools", "fileview/icons/dnd-move.png")),
+                Qt.MoveAction)
+            self.drag.setDragCursor(
+                QPixmap(resource_filename("dirtools", "fileview/icons/dnd-link.png")),
+                Qt.LinkAction)
 
             # self.drag.actionChanged.connect(lambda action: print(action))
 
@@ -123,50 +128,6 @@ class FileItem(QGraphicsObject):
 
     def show_abspath(self):
         pass
-
-    def dragEnterEvent(self, ev) -> None:
-        print("FileItem.dragEnterEvent()")
-
-        if False:
-            data = ev.mimeData()
-            for fmt in data.formats():
-                print("Format:", fmt)
-                print(data.data(fmt))
-                print()
-            print()
-
-        if ev.mimeData().hasUrls():
-            # ev.acceptProposedAction()
-            ev.accept()
-        else:
-            ev.ignore()
-
-    def dragMoveEvent(self, ev) -> None:
-        print("FileItem.dragMoveEvent()")
-
-    def dragLeaveEvent(self, ev) -> None:
-        print("FileItem.dragLeaveEvent()")
-
-    def dropEvent(self, ev):
-        print("FileItem.dropEvent()")
-
-        mime_data = ev.mimeData()
-        assert mime_data.hasUrls()
-
-        urls = mime_data.urls()
-        files = [url.toLocalFile() for url in urls]
-        action = ev.proposedAction()
-
-        if action == Qt.CopyAction:
-            print("copy", " ".join(files))
-        elif action == Qt.MoveAction:
-            print("move", " ".join(files))
-        elif action == Qt.LinkAction:
-            print("link", " ".join(files))
-        else:
-            print("unsupported drop action", action)
-
-        # self._controller.add_files([Location.from_url(url.toString()) for url in urls])
 
 
 # EOF #
