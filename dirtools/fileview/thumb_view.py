@@ -26,7 +26,7 @@ from PyQt5.QtCore import Qt, QRectF
 from PyQt5.QtGui import (QBrush, QIcon, QColor, QPixmap, QImage,
                          QPainter, QFontMetrics, QFont, QKeySequence,
                          QContextMenuEvent)
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QShortcut
+from PyQt5.QtWidgets import QGraphicsView, QShortcut
 
 from dirtools.dbus_thumbnailer import DBusThumbnailerError
 from dirtools.fileview.file_collection import FileCollection
@@ -38,6 +38,7 @@ from dirtools.fileview.profiler import profile
 from dirtools.fileview.settings import settings
 from dirtools.fileview.mode import Mode, IconMode, ListMode, DetailMode, FileItemStyle
 from dirtools.fileview.thumb_file_item import ThumbFileItem
+from dirtools.fileview.file_graphics_scene import FileGraphicsScene
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +92,7 @@ class ThumbView(QGraphicsView):
         self._location2item: Dict[Location, List[ThumbFileItem]] = defaultdict(list)
         self.setAcceptDrops(True)
 
-        self._scene = QGraphicsScene()
+        self._scene = FileGraphicsScene()
         self.setScene(self._scene)
 
         self._scene.selectionChanged.connect(self.on_selection_changed)
@@ -219,53 +220,66 @@ class ThumbView(QGraphicsView):
             item.update()
 
     def dragEnterEvent(self, ev) -> None:
-        # print("dragEnterEvent")
+        super().dragEnterEvent(ev)
 
-        if False:
-            data = ev.mimeData()
-            for fmt in data.formats():
-                print("Format:", fmt)
-                print(data.data(fmt))
+        if not ev.isAccepted():
+            print("ThumbView.dragEnterEvent()")
+
+            if False:
+                data = ev.mimeData()
+                for fmt in data.formats():
+                    print("Format:", fmt)
+                    print(data.data(fmt))
+                    print()
                 print()
-            print()
 
-        if ev.mimeData().hasUrls():
-            ev.acceptProposedAction()
-            ev.accept()
-        else:
-            ev.ignore()
+            if ev.mimeData().hasUrls():
+                ev.acceptProposedAction()
+                ev.accept()
+            else:
+                ev.ignore()
 
     def dragMoveEvent(self, ev) -> None:
-        # the default implementation will check if any item in the
-        # scene accept a drop event, we don't want that, so we
-        # override the function to do nothing for now
-        ev.acceptProposedAction()
-        pass
+        super().dragMoveEvent(ev)
+
+        if not ev.isAccepted():
+            print("ThumbView.dragMoveEvent()")
+            # the default implementation will check if any item in the
+            # scene accept a drop event, we don't want that, so we
+            # override the function to do nothing for now
+            ev.acceptProposedAction()
+            pass
 
     def dragLeaveEvent(self, ev) -> None:
-        # print("dragLeaveEvent: leave")
-        pass
+        super().dragLeaveEvent(ev)
+        print("ThumbView.dragLeaveEvent()")
+
+        if not ev.isAccepted():
+            print("ThumbView.dragLeaveEvent()")
 
     def dropEvent(self, ev):
-        # print("dropEvent")
+        super().dropEvent(ev)
 
-        mime_data = ev.mimeData()
-        assert mime_data.hasUrls()
+        if not ev.isAccepted():
+            print("ThumbView.dropEvent()")
 
-        urls = mime_data.urls()
-        files = [url.toLocalFile() for url in urls]
-        action = ev.proposedAction()
+            mime_data = ev.mimeData()
+            assert mime_data.hasUrls()
 
-        if action == Qt.CopyAction:
-            print("copy", " ".join(files))
-        elif action == Qt.MoveAction:
-            print("move", " ".join(files))
-        elif action == Qt.LinkAction:
-            print("link", " ".join(files))
-        else:
-            print("unsupported drop action", action)
+            urls = mime_data.urls()
+            files = [url.toLocalFile() for url in urls]
+            action = ev.proposedAction()
 
-        # self._controller.add_files([Location.from_url(url.toString()) for url in urls])
+            if action == Qt.CopyAction:
+                print("copy", " ".join(files))
+            elif action == Qt.MoveAction:
+                print("move", " ".join(files))
+            elif action == Qt.LinkAction:
+                print("link", " ".join(files))
+            else:
+                print("unsupported drop action", action)
+
+            # self._controller.add_files([Location.from_url(url.toString()) for url in urls])
 
     def set_file_collection(self, file_collection: FileCollection) -> None:
         assert file_collection != self._file_collection

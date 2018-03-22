@@ -38,6 +38,9 @@ class FileItem(QGraphicsObject):
         self.setFlags(QGraphicsItem.ItemIsSelectable)
         self.setAcceptHoverEvents(True)
 
+        if fileinfo.isdir():
+            self.setAcceptDrops(True)
+
     def mousePressEvent(self, ev):
         if not self.shape().contains(ev.scenePos() - self.pos()):
             # Qt is sending events that are outside the item. This
@@ -120,6 +123,50 @@ class FileItem(QGraphicsObject):
 
     def show_abspath(self):
         pass
+
+    def dragEnterEvent(self, ev) -> None:
+        print("FileItem.dragEnterEvent()")
+
+        if False:
+            data = ev.mimeData()
+            for fmt in data.formats():
+                print("Format:", fmt)
+                print(data.data(fmt))
+                print()
+            print()
+
+        if ev.mimeData().hasUrls():
+            # ev.acceptProposedAction()
+            ev.accept()
+        else:
+            ev.ignore()
+
+    def dragMoveEvent(self, ev) -> None:
+        print("FileItem.dragMoveEvent()")
+
+    def dragLeaveEvent(self, ev) -> None:
+        print("FileItem.dragLeaveEvent()")
+
+    def dropEvent(self, ev):
+        print("FileItem.dropEvent()")
+
+        mime_data = ev.mimeData()
+        assert mime_data.hasUrls()
+
+        urls = mime_data.urls()
+        files = [url.toLocalFile() for url in urls]
+        action = ev.proposedAction()
+
+        if action == Qt.CopyAction:
+            print("copy", " ".join(files))
+        elif action == Qt.MoveAction:
+            print("move", " ".join(files))
+        elif action == Qt.LinkAction:
+            print("link", " ".join(files))
+        else:
+            print("unsupported drop action", action)
+
+        # self._controller.add_files([Location.from_url(url.toString()) for url in urls])
 
 
 # EOF #
