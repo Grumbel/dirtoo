@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 import errno
 import logging
 import os
@@ -58,25 +60,37 @@ class Filesystem:
             else:
                 os.rename(oldpath, newpath)
 
-    def move_files(self, sources: str, destination: str) -> None:
+    def move_files(self, sources: List[str], destination: str) -> None:
         self._message("Filesystem.move_files {!r} {!r}".format(sources, destination))
 
         if self._enabled:
-            pass
+            for source in sources:
+                self._move_file(source, destination)
 
-    def copy_files(self, sources: str, destination: str) -> None:
+    def _move_file(self, source: str, destination: str) -> None:
+        pass
+
+    def copy_files(self, sources: List[str], destination: str) -> None:
         self._message("Filesystem.copy_files {!r} {!r}".format(sources, destination))
 
         if self._enabled:
-            pass
+            for source in sources:
+                self._copy_file(source, destination)
 
-    def link_files(self, sources: str, destination: str) -> None:
+    def _copy_file(self, source: str, destination: str) -> None:
+        pass
+
+    def link_files(self, sources: List[str], destination: str) -> None:
         self._message("Filesystem.link_files {!r} {!r}".format(sources, destination))
 
         if self._enabled:
-            pass
+            for source in sources:
+                self._link_file(source, destination)
 
-    def do_files(self, action, sources: str, destination: str) -> None:
+    def _link_file(self, source: str, destination: str) -> None:
+        pass
+
+    def do_files(self, action, sources: List[str], destination: str) -> None:
         if action == Qt.CopyAction:
             self.copy_files(sources, destination)
         elif action == Qt.MoveAction:
