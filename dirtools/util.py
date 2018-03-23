@@ -20,6 +20,7 @@ from typing import List, Any
 import re
 import os
 import collections
+import itertools
 
 
 def expand_file(f: str, recursive: bool):
@@ -78,6 +79,17 @@ GLOB_PATTERN_RX = re.compile(r"[\*\?\[\]]")
 
 def is_glob_pattern(text):
     return bool(GLOB_PATTERN_RX.search(text))
+
+
+def make_non_existing_filename(path: str, name: str) -> str:
+    candidate = name
+    for idx in itertools.count(2):
+        abspath = os.path.join(path, candidate)
+        if not os.path.exists(abspath):
+            return candidate
+        candidate = "{} ({})".format(name, idx)
+
+    assert False, "never reached"
 
 
 # EOF #
