@@ -177,6 +177,15 @@ class ItemContextMenu(Menu):
     def _build_edit_menu(self):
         self.addAction(self._controller.actions.edit_cut)
         self.addAction(self._controller.actions.edit_copy)
+
+        act = self.addAction(QIcon.fromTheme('edit-paste'), "Paste Into Folder")
+        if self._fileinfo.isdir():
+            act.triggered.connect(
+                lambda: self._controller.on_edit_paste_into(self._fileinfo.location()))
+            act.setEnabled(True)
+        else:
+            act.setEnabled(False)
+
         self.addSeparator()
         self.addAction(self._controller.actions.edit_delete)
         self.addAction("Move To Trash")
