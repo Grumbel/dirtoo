@@ -195,7 +195,7 @@ class ItemContextMenu(Menu):
         rename = self.addAction(
             QIcon.fromTheme('rename'), 'Rename',
             lambda location=self._fileinfo.location():
-            self.show_rename_dialog(location))
+            self._controller.show_rename_dialog(location))
         rename.setShortcut('F2')
         rename.setStatusTip('Rename the current file')
         self.addAction(rename)
