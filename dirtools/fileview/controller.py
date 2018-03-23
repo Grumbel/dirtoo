@@ -598,11 +598,11 @@ class Controller(QObject):
                 logger.error("failed to parse clipboard data: %s", err)
             else:
                 sources = [url.toLocalFile() for url in urls]
-                self.app.fs_operations.do_files(action, sources, destination_path)
+                self.app.fs.do_files(action, sources, destination_path)
         elif mime_data.hasUrls():
             urls = mime_data.urls()
             sources = [url.toLocalFile() for url in urls]
-            self.app.fs_operations.copy_files(sources, destination_path)
+            self.app.fs.copy_files(sources, destination_path)
         else:
             logger.debug("unhandled format on paste")
 
@@ -648,7 +648,7 @@ class Controller(QObject):
 
         destination_path = destination.get_path()
 
-        self.app.fs_operations.do_files(action, sources, destination_path)
+        self.app.fs.do_files(action, sources, destination_path)
 
     def create_directory(self):
         if self.location is None:
@@ -662,7 +662,7 @@ class Controller(QObject):
         if name is not None:
             abspath = os.path.join(self.location.get_stdio_name(), name)
             try:
-                self.app.fs_operations.create_directory(abspath)
+                self.app.fs.create_directory(abspath)
             except Exception as err:
                 self._gui.show_error("Error on file creation",
                                      "Error while trying to create directory:\n\n" + str(err))
@@ -679,7 +679,7 @@ class Controller(QObject):
         if name is not None:
             abspath = os.path.join(self.location.get_stdio_name(), name)
             try:
-                self.app.fs_operations.create_file(abspath)
+                self.app.fs.create_file(abspath)
             except Exception as err:
                 self._gui.show_error("Error on file creation",
                                      "Error while trying to create file:\n\n" + str(err))

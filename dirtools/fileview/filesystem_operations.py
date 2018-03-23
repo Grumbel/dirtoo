@@ -18,9 +18,7 @@
 from typing import Optional
 
 import logging
-import os
 
-from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget
 
 from dirtools.fileview.location import Location
@@ -30,43 +28,15 @@ logger = logging.getLogger(__name__)
 
 
 class FilesystemOperations:
+
     """Filesystem operations for the GUI. Messageboxes and dialogs will be
     shown on errors and conflicts."""
 
-    def __init__(self, logfile=None):
-        self._logfile = logfile
+    def __init__(self):
         self._rename_op = RenameOperation()
 
     def rename_location(self, location: Location, parent: Optional[QWidget] = None) -> None:
         self._rename_op.rename_location(location, parent)
-
-    def move_files(self, sources: str, destination: str) -> None:
-        print("FilesystemOperations.move_files", sources, destination)
-
-    def copy_files(self, sources: str, destination: str) -> None:
-        print("FilesystemOperations.copy_files", sources, destination)
-
-    def link_files(self, sources: str, destination: str) -> None:
-        print("FilesystemOperations.link_files", sources, destination)
-
-    def do_files(self, action, sources: str, destination: str) -> None:
-        if action == Qt.CopyAction:
-            self.copy_files(sources, destination)
-        elif action == Qt.MoveAction:
-            self.move_files(sources, destination)
-        elif action == Qt.LinkAction:
-            self.link_files(sources, destination)
-        else:
-            print("unsupported drop action", action)
-
-    def create_directory(self, path: str):
-        logger.info("creating directory: %s", path)
-        os.mkdir(path)
-
-    def create_file(self, path: str):
-        logger.info("creating file: %s", path)
-        with open(path, "xb"):
-            pass
 
 
 # EOF #
