@@ -45,7 +45,7 @@ class FileGraphicsScene(QGraphicsScene):
             print()
 
         if ev.mimeData().hasUrls():
-            assert self._drap_drop_item == None
+            assert self._drap_drop_item is None
             self._drap_drop_item = None
             ev.accept()
         else:
