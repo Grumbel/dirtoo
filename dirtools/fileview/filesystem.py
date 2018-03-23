@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import errno
 import logging
 import os
 
@@ -50,7 +51,12 @@ class Filesystem:
         self._message("Filesystem.rename {!r} {!r}".format(oldpath, newpath))
 
         if self._enabled:
-            os.rename(oldpath, newpath)
+            # FIXME: This contains a race condition, renameat2() could
+            # solve this, but isn't directly accessible from Python.
+            if os.path.exists(newpath):
+                raise FileExistsError(errno.EEXIST, "File exists", newpath)
+            else:
+                os.rename(oldpath, newpath)
 
     def move_files(self, sources: str, destination: str) -> None:
         self._message("Filesystem.move_files {!r} {!r}".format(sources, destination))
