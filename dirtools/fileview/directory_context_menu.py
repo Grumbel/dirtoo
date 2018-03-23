@@ -32,9 +32,9 @@ class DirectoryContextMenu(Menu):
 
     def _build_menu(self) -> None:
         self.addAction(QIcon.fromTheme('folder-new'), "Create Directory",
-                       self._controller.show_create_directory)
+                       self._controller.create_directory)
         self.addAction(QIcon.fromTheme('document-new'), "Create Empty File",
-                       self._controller.show_create_file)
+                       self._controller.create_file)
         self.addSeparator()
         self.addAction(self._controller.actions.edit_paste)
         self.addSeparator()

@@ -650,27 +650,39 @@ class Controller(QObject):
 
         self.app.fs_operations.do_files(action, sources, destination_path)
 
-    def show_create_directory(self):
-        if self.location is not None:
-            self._gui.create_directory(self.location)
+    def create_directory(self):
+        if self.location is None:
+            return
 
-    def show_create_file(self):
-        if self.location is not None:
-            self._gui.create_file(self.location)
-
-    def create_directory(self, location: Location, name: str):
-        if not location.has_stdio_name():
+        if not self.location.has_stdio_name():
             logger.error("can't create directory in non-stdio locations")
-        else:
-            abspath = os.path.join(location.get_stdio_name(), name)
-            self.app.fs_operations.create_directory(abspath)
+            return
 
-    def create_file(self, location: Location, name: str):
-        if not location.has_stdio_name():
+        name = self._gui.create_directory()
+        if name is not None:
+            abspath = os.path.join(self.location.get_stdio_name(), name)
+            try:
+                self.app.fs_operations.create_directory(abspath)
+            except Exception as err:
+                self._gui.show_error("Error on file creation",
+                                     "Error while trying to create directory:\n\n" + str(err))
+
+    def create_file(self):
+        if self.location is None or not self.location.has_stdio_name():
+            return
+
+        if not self.location.has_stdio_name():
             logger.error("can't create file in non-stdio locations")
-        else:
-            abspath = os.path.join(location.get_stdio_name(), name)
-            self.app.fs_operations.create_file(abspath)
+            return
+
+        name = self._gui.create_file()
+        if name is not None:
+            abspath = os.path.join(self.location.get_stdio_name(), name)
+            try:
+                self.app.fs_operations.create_file(abspath)
+            except Exception as err:
+                self._gui.show_error("Error on file creation",
+                                     "Error while trying to create file:\n\n" + str(err))
 
 
 from dirtools.fileview.application import FileViewApplication  # noqa: F401
