@@ -30,10 +30,15 @@ class Filesystem:
     """
 
     def __init__(self):
-        self._enabled = True
+        self._enabled = False
 
     def set_enabled(self, value):
         self._enabled = value
+
+        if self._enabled:
+            print("enabling filesystem write access")
+        else:
+            print("disabling filesystem write access")
 
     def _message(self, text: str) -> None:
         if self._enabled:

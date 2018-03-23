@@ -436,13 +436,14 @@ class FileViewWindow(QMainWindow):
         self.toolbar.addAction(self.actions.lod_out)
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.actions.crop_thumbnails)
-        self.toolbar.addSeparator()
-        self.toolbar.addAction(self.actions.debug)
 
         # Spacer to force right alignment for all following widget
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.toolbar.addWidget(spacer)
+
+        self.toolbar.addAction(self.actions.debug)
+        self.toolbar.addAction(self.controller.app.actions.enable_filesystem)
 
         # Loading icon
         self.loading_movie = QMovie(resource_filename("dirtools", "fileview/icons/gears.gif"))

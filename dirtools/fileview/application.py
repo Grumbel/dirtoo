@@ -43,6 +43,7 @@ from dirtools.fileview.stream_manager import StreamManager
 from dirtools.xdg_mime_associations import XdgMimeAssociations
 from dirtools.fileview.preferences_dialog import PreferencesDialog
 from dirtools.fileview.filesystem import Filesystem
+from dirtools.fileview.application_actions import ApplicationActions
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +100,7 @@ class FileViewApplication:
 
         self.controllers: List[Controller] = []
 
+        self.actions = ApplicationActions(self)
         self._preferences_dialog = PreferencesDialog()
 
     def on_last_window_closed(self) -> None:
@@ -144,6 +146,9 @@ class FileViewApplication:
         controller.set_location(location)
         controller._gui._window.show()
         self.controllers.append(controller)
+
+    def set_filesystem_enabled(self, value):
+        self.fs.set_enabled(value)
 
 
 from dirtools.fileview.controller import Controller  # noqa: E401, E402
