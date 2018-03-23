@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import cast
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QDialog, QPushButton, QLineEdit,
@@ -95,8 +97,12 @@ class CreateDialog(QDialog):
     def _on_cancel_clicked(self) -> None:
         self.reject()
 
+    def set_name(self, text: str) -> None:
+        self.name_edit.setText(text)
+        self.name_edit.selectAll()
+
     def get_name(self) -> str:
-        return self.name_edit.text()
+        return cast(str, self.name_edit.text())
 
 
 # EOF #

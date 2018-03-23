@@ -40,6 +40,7 @@ from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.search_stream import SearchStream
 from dirtools.fileview.thumb_view import FileItemStyle
 from dirtools.fileview.gnome import parse_gnome_copied_files, make_gnome_copied_files
+from dirtools.util import make_non_existing_filename
 
 logger = logging.getLogger(__name__)
 
@@ -658,7 +659,10 @@ class Controller(QObject):
             logger.error("can't create directory in non-stdio locations")
             return
 
-        name = self._gui.create_directory()
+        suggested_name = make_non_existing_filename(self.location.get_stdio_name(),
+                                                    "New Folder")
+
+        name = self._gui.show_create_directory_dialog(suggested_name)
         if name is not None:
             abspath = os.path.join(self.location.get_stdio_name(), name)
             try:
@@ -675,7 +679,10 @@ class Controller(QObject):
             logger.error("can't create file in non-stdio locations")
             return
 
-        name = self._gui.create_file()
+        suggested_name = make_non_existing_filename(self.location.get_stdio_name(),
+                                                    "New File")
+
+        name = self._gui.show_create_file_dialog(suggested_name)
         if name is not None:
             abspath = os.path.join(self.location.get_stdio_name(), name)
             try:

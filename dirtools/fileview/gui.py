@@ -23,7 +23,6 @@ from PyQt5.QtGui import QCursor, QMouseEvent, QContextMenuEvent
 
 from dirtools.fileview.file_view_window import FileViewWindow
 from dirtools.fileview.controller import Controller
-from dirtools.fileview.location import Location
 from dirtools.fileview.item_context_menu import ItemContextMenu
 from dirtools.fileview.directory_context_menu import DirectoryContextMenu
 from dirtools.fileview.create_dialog import CreateDialog
@@ -94,16 +93,20 @@ class Gui(QObject):
             menu.exec(ev.screenPos())
         self.fake_mouse()
 
-    def create_directory(self) -> str:
+    def show_create_directory_dialog(self, name: Optional[str] = None) -> str:
         dialog = CreateDialog(CreateDialog.FOLDER, self._controller, self._window)
+        if name is not None:
+            dialog.set_name(name)
         dialog.exec()
         if dialog.result() == QDialog.Accepted:
             return dialog.get_name()
         else:
             return None
 
-    def create_file(self) -> str:
+    def show_create_file_dialog(self, name: Optional[str] = None) -> str:
         dialog = CreateDialog(CreateDialog.TEXTFILE, self._controller, self._window)
+        if name is not None:
+            dialog.set_name(name)
         dialog.exec()
         if dialog.result() == QDialog.Accepted:
             return dialog.get_name()
