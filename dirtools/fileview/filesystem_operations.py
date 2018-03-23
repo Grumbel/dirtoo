@@ -19,6 +19,7 @@ from typing import Optional
 
 import logging
 
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget
 
 from dirtools.fileview.location import Location
@@ -46,6 +47,16 @@ class FilesystemOperations:
 
     def link_files(self, sources: str, destination: str) -> None:
         print("FilesystemOperations.link_files", sources, destination)
+
+    def do_files(self, action, sources: str, destination: str) -> None:
+        if action == Qt.CopyAction:
+            self.copy_files(sources, destination)
+        elif action == Qt.MoveAction:
+            self.move_files(sources, destination)
+        elif action == Qt.LinkAction:
+            self.link_files(sources, destination)
+        else:
+            print("unsupported drop action", action)
 
 
 # EOF #
