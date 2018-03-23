@@ -42,6 +42,7 @@ from dirtools.fileview.virtual_filesystem import VirtualFilesystem
 from dirtools.fileview.stream_manager import StreamManager
 from dirtools.xdg_mime_associations import XdgMimeAssociations
 from dirtools.fileview.preferences_dialog import PreferencesDialog
+from dirtools.fileview.filesystem import Filesystem
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +95,7 @@ class FileViewApplication:
         self.mime_database = MimeDatabase(self.vfs)
         self.mime_associations = XdgMimeAssociations.system()
         self.fs_operations = FilesystemOperations()
+        self.fs = Filesystem()
 
         self.controllers: List[Controller] = []
 
