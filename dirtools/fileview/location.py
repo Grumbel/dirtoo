@@ -169,6 +169,13 @@ class Location:
         assert not self.has_payload()
         return os.path.dirname(self._path)
 
+    def has_stdio_name(self) -> bool:
+        return not self.has_payload()
+
+    def get_stdio_name(self)-> str:
+        assert self.has_stdio_name()
+        return self.get_path()
+
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Location):
             return (self._protocol, self._path, self._payloads) == (other._protocol, other._path, other._payloads)

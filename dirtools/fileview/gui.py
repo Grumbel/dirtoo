@@ -18,13 +18,15 @@
 from typing import Optional, cast
 
 from PyQt5.QtCore import QObject, Qt, QEvent
-from PyQt5.QtWidgets import QFileDialog, QTextEdit
+from PyQt5.QtWidgets import QFileDialog, QTextEdit, QDialog
 from PyQt5.QtGui import QCursor, QMouseEvent, QContextMenuEvent
 
 from dirtools.fileview.file_view_window import FileViewWindow
 from dirtools.fileview.controller import Controller
+from dirtools.fileview.location import Location
 from dirtools.fileview.item_context_menu import ItemContextMenu
 from dirtools.fileview.directory_context_menu import DirectoryContextMenu
+from dirtools.fileview.create_dialog import CreateDialog
 
 
 class Gui(QObject):
@@ -91,6 +93,18 @@ class Gui(QObject):
         else:
             menu.exec(ev.screenPos())
         self.fake_mouse()
+
+    def create_directory(self, location: Location):
+        dialog = CreateDialog(CreateDialog.FOLDER, self._controller, self._window)
+        dialog.exec()
+        if dialog.result() == QDialog.Accepted:
+            self._controller.create_directory(location, dialog.get_name())
+
+    def create_file(self, location: Location):
+        dialog = CreateDialog(CreateDialog.TEXTFILE, self._controller, self._window)
+        dialog.exec()
+        if dialog.result() == QDialog.Accepted:
+            self._controller.create_file(location, dialog.get_name())
 
 
 # EOF #

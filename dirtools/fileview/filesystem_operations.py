@@ -18,6 +18,7 @@
 from typing import Optional
 
 import logging
+import os
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget
@@ -57,6 +58,15 @@ class FilesystemOperations:
             self.link_files(sources, destination)
         else:
             print("unsupported drop action", action)
+
+    def create_directory(self, path: str):
+        logger.info("creating directory: %s", path)
+        os.mkdir(path)
+
+    def create_file(self, path: str):
+        logger.info("creating file: %s", path)
+        with open(path, "xb"):
+            pass
 
 
 # EOF #

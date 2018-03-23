@@ -650,6 +650,28 @@ class Controller(QObject):
 
         self.app.fs_operations.do_files(action, sources, destination_path)
 
+    def show_create_directory(self):
+        if self.location is not None:
+            self._gui.create_directory(self.location)
+
+    def show_create_file(self):
+        if self.location is not None:
+            self._gui.create_file(self.location)
+
+    def create_directory(self, location: Location, name: str):
+        if not location.has_stdio_name():
+            logger.error("can't create directory in non-stdio locations")
+        else:
+            abspath = os.path.join(location.get_stdio_name(), name)
+            self.app.fs_operations.create_directory(abspath)
+
+    def create_file(self, location: Location, name: str):
+        if not location.has_stdio_name():
+            logger.error("can't create file in non-stdio locations")
+        else:
+            abspath = os.path.join(location.get_stdio_name(), name)
+            self.app.fs_operations.create_file(abspath)
+
 
 from dirtools.fileview.application import FileViewApplication  # noqa: F401
 
