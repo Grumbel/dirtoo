@@ -33,4 +33,18 @@ def parse_gnome_copied_files(data: bytes):
     return action, urls
 
 
+def make_gnome_copied_files(action: Qt.DropActions, urls: QUrl) -> bytes:
+    if action == Qt.CopyAction:
+        gnome_action = b'copy'
+    elif action == Qt.MoveAction:
+        gnome_action = b'move'
+    else:
+        raise Exception("unknown action: {}".format(action))
+
+    result = (gnome_action + b'\n' +
+              b'\n'.join([url.toString().encode()
+                          for url in urls]))
+    return result
+
+
 # EOF #

@@ -39,6 +39,7 @@ from dirtools.fileview.location import Location, Payload
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.search_stream import SearchStream
 from dirtools.fileview.thumb_view import FileItemStyle
+from dirtools.fileview.gnome import parse_gnome_copied_files, make_gnome_copied_files
 
 logger = logging.getLogger(__name__)
 
@@ -553,7 +554,7 @@ class Controller(QObject):
     def on_edit_cut(self):
         logger.debug("cut data to clipboard")
 
-        mime_data = self.selection_to_mimedata(gnome_action=b'cut')
+        mime_data = self.selection_to_mimedata(action=Qt.MoveAction)
 
         clipboard = self.app.qapp.clipboard()
         clipboard.setMimeData(mime_data, QClipboard.Clipboard)
@@ -561,24 +562,50 @@ class Controller(QObject):
     def on_edit_copy(self):
         logger.debug("copying data to clipboard")
 
-        mime_data = self.selection_to_mimedata(gnome_action=b'copy')
+        mime_data = self.selection_to_mimedata(action=Qt.CopyAction)
 
         clipboard = self.app.qapp.clipboard()
         clipboard.setMimeData(mime_data, QClipboard.Clipboard)
 
     def on_edit_paste(self):
-        logger.debug("pasting data from clipboard")
-        clipboard = self.app.qapp.clipboard()
-        print("PasteEvent:")
-        data = clipboard.mimeData(QClipboard.Clipboard)
-        # print("Mime:", data.formats())
-        # print("Data:", data.urls())
+        if self.location is not None:
+            self.on_edit_paste_into(self.location)
 
-        for fmt in data.formats():
-            print("Format:", fmt)
-            print(data.data(fmt))
+    def on_edit_paste_into(self, location: Location):
+        logger.debug("pasting data into folder from clipboard")
+
+        if location is None:
+            logger.error("trying to paste into None")
+            return
+
+        clipboard = self.app.qapp.clipboard()
+        mime_data = clipboard.mimeData(QClipboard.Clipboard)
+
+        if False:
+            for fmt in mime_data.formats():
+                print("Format:", fmt)
+                print(mime_data.data(fmt))
+                print()
             print()
-        print()
+
+        destination_path = location.get_path()
+
+        if mime_data.hasFormat("x-special/gnome-copied-files"):
+            try:
+                action, urls = parse_gnome_copied_files(
+                    mime_data.data("x-special/gnome-copied-files"))
+            except Exception as err:
+                logger.error("failed to parse clipboard data: %s", err)
+            else:
+                sources = [url.toLocalFile() for url in urls]
+                self.app.fs_operations.do_files(action, sources, destination_path)
+        elif mime_data.hasUrls():
+            urls = mime_data.urls()
+            sources = [url.toLocalFile() for url in urls]
+            self.app.fs_operations.copy_files(sources, destination_path)
+        else:
+            logger.debug("unhandled format on paste")
+
         # https://www.uninformativ.de/blog/postings/2017-04-02/0/POSTING-en.html
 
     def selected_fileinfos(self):
@@ -586,7 +613,7 @@ class Controller(QObject):
         return [item.fileinfo
                 for item in selected_items]
 
-    def selection_to_mimedata(self, uri_only=False, gnome_action: Optional[bytes] = None):
+    def selection_to_mimedata(self, uri_only=False, action: Qt.DropActions = None):
         mime_data = QMimeData()
 
         fileinfos = self.selected_fileinfos()
@@ -600,10 +627,8 @@ class Controller(QObject):
                               for fi in fileinfos])
             mime_data.setText(text)
 
-            if gnome_action is not None:
-                gnome_copied_files = (gnome_action + b'\n' +
-                                      b'\n'.join([url.toString().encode()
-                                                  for url in urls]))
+            if action is not None:
+                gnome_copied_files = make_gnome_copied_files(action, urls)
                 mime_data.setData("x-special/gnome-copied-files", gnome_copied_files)
 
         return mime_data
@@ -623,14 +648,7 @@ class Controller(QObject):
 
         destination_path = destination.get_path()
 
-        if action == Qt.CopyAction:
-            self.app.fs_operations.copy_files(sources, destination_path)
-        elif action == Qt.MoveAction:
-            self.app.fs_operations.move_files(sources, destination_path)
-        elif action == Qt.LinkAction:
-            self.app.fs_operations.link_files(sources, destination_path)
-        else:
-            print("unsupported drop action", action)
+        self.app.fs_operations.do_files(action, sources, destination_path)
 
 
 from dirtools.fileview.application import FileViewApplication  # noqa: F401
