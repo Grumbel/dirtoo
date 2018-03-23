@@ -25,7 +25,7 @@ from functools import total_ordering
 logger = logging.getLogger(__name__)
 
 
-LOCATION_REGEX = re.compile(r'^([a-z0]+)://(.*)$')
+LOCATION_REGEX = re.compile(r'^([a-z0]+)://(.*)$', re.DOTALL)
 
 
 # URL: {PROTOCOL}://{PAYLOAD}//{PLUGIN}:{PLUGIN_PAYLOAD}
@@ -73,7 +73,7 @@ class Location:
     def from_url(url: str) -> 'Location':
         m = LOCATION_REGEX.match(url)
         if m is None:
-            raise Exception("Location.from_string: failed to decode: {}".format(url))
+            raise Exception("Location.from_url: failed to decode: {}".format(url))
         else:
             protocol = m.group(1)
             rest = m.group(2)
