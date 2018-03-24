@@ -20,6 +20,7 @@ from typing import List
 import errno
 import logging
 import os
+import shutil
 
 from PyQt5.QtCore import Qt
 
@@ -61,6 +62,7 @@ class Filesystem:
                 os.rename(oldpath, newpath)
 
     def move_files(self, sources: List[str], destination: str) -> None:
+        assert os.path.isdir(destination)
         self._message("Filesystem.move_files {!r} {!r}".format(sources, destination))
 
         if self._enabled:
@@ -68,9 +70,18 @@ class Filesystem:
                 self._move_file(source, destination)
 
     def _move_file(self, source: str, destination: str) -> None:
-        pass
+        basename = os.path.basename(source)
+
+        src = source
+        dst = os.path.join(destination, basename)
+
+        if os.path.exists(dst):
+            raise FileExistsError(errno.EEXIST, "File exists", dst)
+        else:
+            os.rename(src, dst)
 
     def copy_files(self, sources: List[str], destination: str) -> None:
+        assert os.path.isdir(destination)
         self._message("Filesystem.copy_files {!r} {!r}".format(sources, destination))
 
         if self._enabled:
@@ -78,9 +89,21 @@ class Filesystem:
                 self._copy_file(source, destination)
 
     def _copy_file(self, source: str, destination: str) -> None:
-        pass
+        basename = os.path.basename(source)
+
+        if os.path.isfile(source):
+            src = source
+            dst = os.path.join(destination, basename)
+
+            if os.path.exists(dst):
+                raise FileExistsError(errno.EEXIST, "File exists", dst)
+            else:
+                shutil.copyfile(src, dst, follow_symlinks=False)
+        elif os.path.isdir(source):
+            logger.error("copy_file not implemented for directories")
 
     def link_files(self, sources: List[str], destination: str) -> None:
+        assert os.path.isdir(destination)
         self._message("Filesystem.link_files {!r} {!r}".format(sources, destination))
 
         if self._enabled:
@@ -88,7 +111,15 @@ class Filesystem:
                 self._link_file(source, destination)
 
     def _link_file(self, source: str, destination: str) -> None:
-        pass
+        basename = os.path.basename(source)
+
+        src = source
+        dst = os.path.join(destination, basename)
+
+        if os.path.exists(dst):
+            raise FileExistsError(errno.EEXIST, "File exists", dst)
+        else:
+            os.symlink(src, dst)
 
     def do_files(self, action, sources: List[str], destination: str) -> None:
         if action == Qt.CopyAction:
