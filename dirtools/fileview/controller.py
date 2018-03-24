@@ -694,5 +694,8 @@ class Controller(QObject):
                 self._gui.show_error("Error on file creation",
                                      "Error while trying to create file:\n\n" + str(err))
 
+    def show_about_dialog(self) -> None:
+        self._gui.show_about_dialog()
+
 
 # EOF #

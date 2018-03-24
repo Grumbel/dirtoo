@@ -25,7 +25,6 @@ from PyQt5.QtWidgets import (
     QStyle
 )
 
-from dirtools.fileview.about_dialog import AboutDialog
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.settings import settings
 from dirtools.util import numeric_sort_key
@@ -308,8 +307,7 @@ class Actions(QObject):
         self.about = QAction(QIcon.fromTheme('help-about'), 'About dt-fileview', self)
         self.about.setStatusTip('Show About dialog')
 
-        self.about_dialog = AboutDialog()
-        self.about.triggered.connect(self.about_dialog.show)
+        self.about.triggered.connect(self.controller.show_about_dialog)
 
         self.show_preferences = QAction(QIcon.fromTheme("preferences-system"), "Preferencs...")
         self.show_preferences.triggered.connect(self.controller.show_preferences)

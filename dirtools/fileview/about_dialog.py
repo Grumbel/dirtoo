@@ -27,42 +27,44 @@ class AboutDialog(QDialog):
     def __init__(self) -> None:
         super().__init__()
 
-        self.vbox = QVBoxLayout()
-        self.vbox.setAlignment(Qt.AlignHCenter)
-        label = QLabel()
-        p = label.sizePolicy()
-        p.setHorizontalPolicy(QSizePolicy.Expanding)
-        p.setVerticalPolicy(QSizePolicy.Minimum)
-        label.setSizePolicy(p)
-        label.setPixmap(QPixmap(resource_filename("dirtools", "fileview/dt-fileview.svg")))
-        self.vbox.addWidget(label)
+        self._build_gui()
 
-        self.vbox = QVBoxLayout()
+    def _build_gui(self) -> None:
+        # Widgets
+        icon_label = QLabel()
+        icon_label.setAlignment(Qt.AlignHCenter | Qt.AlignBottom)
+        icon_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        icon_label.setPixmap(QPixmap(resource_filename("dirtools", "fileview/dt-fileview.svg")))
 
-        label = QLabel()
-        label.setPixmap(QPixmap(resource_filename("dirtools", "fileview/dt-fileview.svg")))
-        self.vbox.addWidget(label)
+        text_label = QLabel(
+            """
+            <center>
+            <h1>dt-fileview</h1>
+            <p>A file viewer and manager application.</p>
+            <p><a href="https://github.com/Grumbel/dirtool">https://github.com/Grumbel/dirtool</a></p>
+            <p>Copyright (C) 2018\nIngo Ruhnke &lt;<a href="mail:grumbel@gmail.com">grumbel@gmail.com</a>&gt;</p>
+            <p>Licensed under the GPLv3+</p>
+            </center>
 
-        label = QLabel("dt-fileview")
-        self.vbox.addWidget(label)
+            """
+        )
+        text_label.setTextFormat(Qt.RichText)
+        text_label.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
+        text_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        text_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
-        label = QLabel("A file viewer and manager application.")
-        self.vbox.addWidget(label)
+        button_box = QDialogButtonBox(QDialogButtonBox.Close)
+        button_box.rejected.connect(self.reject)
 
-        label = QLabel("Copyright (C) 2018\nIngo Ruhnke <grumbel@gmail.com>")
-        self.vbox.addWidget(label)
+        # Layout
+        vbox = QVBoxLayout()
+        vbox.addStretch()
+        vbox.addWidget(icon_label)
+        vbox.addWidget(text_label)
+        vbox.addStretch()
+        vbox.addWidget(button_box)
 
-        label = QLabel("Licensed under the GPLv3+")
-        self.vbox.addWidget(label)
-
-        box = QDialogButtonBox(QDialogButtonBox.Close)
-        box.rejected.connect(self.reject)
-        self.vbox.addWidget(box)
-
-        self.setLayout(self.vbox)
-
-    def reject(self):
-        self.done(0)
+        self.setLayout(vbox)
 
 
 # EOF #

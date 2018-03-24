@@ -26,6 +26,7 @@ from dirtools.fileview.controller import Controller
 from dirtools.fileview.item_context_menu import ItemContextMenu
 from dirtools.fileview.directory_context_menu import DirectoryContextMenu
 from dirtools.fileview.create_dialog import CreateDialog
+from dirtools.fileview.about_dialog import AboutDialog
 
 
 class Gui(QObject):
@@ -120,6 +121,10 @@ class Gui(QObject):
         msg.setText(message)
         msg.setStandardButtons(QMessageBox.Ok)
         msg.exec()
+
+    def show_about_dialog(self) -> None:
+        dialog = AboutDialog()
+        dialog.exec()
 
 
 # EOF #
