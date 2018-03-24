@@ -19,10 +19,14 @@ from PyQt5.QtGui import QIcon
 
 from dirtools.fileview.menu import Menu
 
+if False:
+    from dirtools.fileview.controller import Controller  # noqa: F401
+    from dirtools.fileview.location import Location  # noqa: F401
+
 
 class DirectoryContextMenu(Menu):
 
-    def __init__(self, controller, location) -> None:
+    def __init__(self, controller: 'Controller', location: 'Location') -> None:
         super().__init__()
 
         self._controller = controller

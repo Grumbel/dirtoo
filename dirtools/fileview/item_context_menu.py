@@ -24,10 +24,13 @@ from dirtools.fileview.location import Location, Payload
 from dirtools.fileview.menu import Menu
 from dirtools.xdg_desktop import get_desktop_entry, get_desktop_file
 
+if False:
+    from dirtools.fileview.controller import Controller  # noqa: F401
+
 
 class ItemContextMenu(Menu):
 
-    def __init__(self, controller, fileinfos: List) -> None:
+    def __init__(self, controller: 'Controller', fileinfos: List) -> None:
         super().__init__()
 
         self._controller = controller

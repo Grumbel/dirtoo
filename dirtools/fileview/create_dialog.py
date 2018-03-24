@@ -23,13 +23,16 @@ from PyQt5.QtWidgets import (QDialog, QPushButton, QLineEdit,
                              QHBoxLayout, QVBoxLayout,
                              QDialogButtonBox, QLabel)
 
+if False:
+    from dirtools.fileview.controller import Controller  # noqa: F401
+
 
 class CreateDialog(QDialog):
 
     FOLDER = 0
     TEXTFILE = 1
 
-    def __init__(self, kind, controller, parent) -> None:
+    def __init__(self, kind, controller: 'Controller', parent) -> None:
         super().__init__(parent)
 
         self._kind = kind

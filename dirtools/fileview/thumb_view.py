@@ -40,6 +40,9 @@ from dirtools.fileview.mode import Mode, IconMode, ListMode, DetailMode, FileIte
 from dirtools.fileview.thumb_file_item import ThumbFileItem
 from dirtools.fileview.file_graphics_scene import FileGraphicsScene
 
+if False:
+    from dirtools.fileview.controller import Controller  # noqa: F401
+
 logger = logging.getLogger(__name__)
 
 
@@ -77,7 +80,7 @@ class FileViewStyle:
 
 class ThumbView(QGraphicsView):
 
-    def __init__(self, controller) -> None:
+    def __init__(self, controller: 'Controller') -> None:
         super().__init__()
 
         self._controller = controller

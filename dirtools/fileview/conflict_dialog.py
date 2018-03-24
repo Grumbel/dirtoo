@@ -15,13 +15,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import cast
-
-import os
-
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLineEdit,
+from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton,
                              QHBoxLayout, QVBoxLayout, QSizePolicy,
                              QDialogButtonBox, QLabel, QCheckBox)
 

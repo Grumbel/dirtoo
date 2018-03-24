@@ -41,10 +41,13 @@ from dirtools.fileview.menu import Menu
 from dirtools.fileview.tool_button import ToolButton
 from dirtools.fileview.message_area import MessageArea
 
+if False:
+    from dirtools.fileview.controller import Controller  # noqa: F401
+
 
 class FileViewWindow(QMainWindow):
 
-    def __init__(self, controller) -> None:
+    def __init__(self, controller: 'Controller') -> None:
         super().__init__()
 
         self._message_area: Optional[MessageArea] = None

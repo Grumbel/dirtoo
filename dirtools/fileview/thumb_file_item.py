@@ -27,12 +27,15 @@ from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.thumbnail import Thumbnail, ThumbnailStatus
 from dirtools.fileview.thumb_file_item_renderer import ThumbFileItemRenderer
 
+if False:
+    from dirtools.fileview.controller import Controller  # noqa: F401
+
 logger = logging.getLogger(__name__)
 
 
 class ThumbFileItem(FileItem):
 
-    def __init__(self, fileinfo: FileInfo, controller, thumb_view) -> None:
+    def __init__(self, fileinfo: FileInfo, controller: 'Controller', thumb_view) -> None:
         logger.debug("ThumbFileItem.__init__: %s", fileinfo)
         super().__init__(fileinfo, controller)
         # self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
