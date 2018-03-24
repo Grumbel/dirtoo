@@ -72,7 +72,7 @@ class ThumbnailerWorker(QObject):
     sig_thumbnail_ready = pyqtSignal(Location, str, CallableWrapper, QImage)
     sig_thumbnail_error = pyqtSignal(Location, str, CallableWrapper, int, str)
 
-    def __init__(self, vfs, parent=None):
+    def __init__(self, vfs, parent=None) -> None:
         super().__init__(parent)
         # This function is called from the main thread, leave
         # construction to init() and deinit()
@@ -86,7 +86,7 @@ class ThumbnailerWorker(QObject):
         self.requests: Dict[int, List[ThumbnailRequest]] = defaultdict(list)
 
         self._timer_id = 0
-        self._thumbnail_requests = []
+        self._thumbnail_requests: List[ThumbnailRequest] = []
 
     def init(self):
         self.session_bus = QDBusConnection.sessionBus()
@@ -181,7 +181,7 @@ class Thumbnailer(QObject):
 
     sig_close_requested = pyqtSignal()
 
-    def __init__(self, vfs, parent=None):
+    def __init__(self, vfs, parent=None) -> None:
         super().__init__(parent)
 
         self._worker = ThumbnailerWorker(vfs)

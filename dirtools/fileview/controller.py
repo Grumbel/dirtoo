@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Dict, Optional, cast
+from typing import List, Dict, Optional
 
 import io
 import logging
@@ -41,6 +41,9 @@ from dirtools.fileview.search_stream import SearchStream
 from dirtools.fileview.thumb_view import FileItemStyle
 from dirtools.fileview.gnome import parse_gnome_copied_files, make_gnome_copied_files
 from dirtools.util import make_non_existing_filename
+
+if False:
+    from dirtools.fileview.application import FileViewApplication  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -290,7 +293,7 @@ class Controller(QObject):
         controller = self.app.new_controller()
         if clone and self.location is not None:
             controller.set_location(self.location)
-        return cast('Controller', controller)
+        return controller
 
     def show_file_history(self) -> None:
         self.set_location(Location.from_url("history:///"))
@@ -690,9 +693,6 @@ class Controller(QObject):
             except Exception as err:
                 self._gui.show_error("Error on file creation",
                                      "Error while trying to create file:\n\n" + str(err))
-
-
-from dirtools.fileview.application import FileViewApplication  # noqa: F401
 
 
 # EOF #

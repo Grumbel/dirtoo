@@ -29,7 +29,7 @@ class CreateDialog(QDialog):
     FOLDER = 0
     TEXTFILE = 1
 
-    def __init__(self, kind, controller, parent):
+    def __init__(self, kind, controller, parent) -> None:
         super().__init__(parent)
 
         self._kind = kind

@@ -30,9 +30,9 @@ logger = logging.getLogger(__name__)
 
 class StreamManager:
 
-    def __init__(self, cachedir):
-        self._cachedir = cachedir
-        self._stdin_id = None
+    def __init__(self, cachedir: str) -> None:
+        self._cachedir: str = cachedir
+        self._stdin_id: Optional[str] = None
 
     def get_stdin(self) -> Optional[Tuple[IO, str]]:
         if self._stdin_id is None:

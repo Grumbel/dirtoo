@@ -15,10 +15,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Optional
+
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QTransform
 from PyQt5.QtWidgets import QGraphicsScene
-
 
 from dirtools.fileview.file_item import FileItem
 
@@ -28,10 +29,10 @@ class FileGraphicsScene(QGraphicsScene):
     # action, urls, destination
     sig_files_drop = pyqtSignal(int, list, object)
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
-        self._drap_drop_item = None
+        self._drag_drop_item: Optional[FileItem] = None
 
     def dragEnterEvent(self, ev) -> None:
         # print("FileGraphicsScene.dragEnterEvent()")
@@ -45,8 +46,8 @@ class FileGraphicsScene(QGraphicsScene):
             print()
 
         if ev.mimeData().hasUrls():
-            assert self._drap_drop_item is None
-            self._drap_drop_item = None
+            assert self._drag_drop_item is None
+            self._drag_drop_item = None
             ev.accept()
         else:
             ev.ignore()
@@ -57,23 +58,23 @@ class FileGraphicsScene(QGraphicsScene):
 
         transform = QTransform()
         item = self.itemAt(ev.scenePos(), transform)
-        if item != self._drap_drop_item:
-            if self._drap_drop_item is not None:
-                self._drap_drop_item.set_dropable(False)
+        if item != self._drag_drop_item:
+            if self._drag_drop_item is not None:
+                self._drag_drop_item.set_dropable(False)
 
             if isinstance(item, FileItem) and item.fileinfo.isdir():
-                self._drap_drop_item = item
-                self._drap_drop_item.set_dropable(True)
+                self._drag_drop_item = item
+                self._drag_drop_item.set_dropable(True)
             else:
-                self._drap_drop_item = None
+                self._drag_drop_item = None
 
     def dragLeaveEvent(self, ev) -> None:
         # print("FileGraphicsScene.dragLeaveEvent()")
         ev.accept()
 
-        if self._drap_drop_item is not None:
-            self._drap_drop_item.set_dropable(False)
-            self._drap_drop_item = None
+        if self._drag_drop_item is not None:
+            self._drag_drop_item.set_dropable(False)
+            self._drag_drop_item = None
 
     def dropEvent(self, ev):
         # print("FileGraphicsScene.dropEvent()")
@@ -86,10 +87,10 @@ class FileGraphicsScene(QGraphicsScene):
         assert ev.dropAction() == ev.proposedAction()
         action = ev.dropAction()
 
-        if self._drap_drop_item is not None:
-            self.sig_files_drop.emit(action, urls, self._drap_drop_item.fileinfo.location())
-            self._drap_drop_item.set_dropable(False)
-            self._drap_drop_item = None
+        if self._drag_drop_item is not None:
+            self.sig_files_drop.emit(action, urls, self._drag_drop_item.fileinfo.location())
+            self._drag_drop_item.set_dropable(False)
+            self._drag_drop_item = None
         else:
             self.sig_files_drop.emit(action, urls, None)
 

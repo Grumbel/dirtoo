@@ -85,7 +85,7 @@ def get_unary_operator_fn(op):
 
 class Context:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._functions = {
             'abs': abs,
             'int': int,
@@ -131,7 +131,7 @@ class Function(Expr):
 
 class Number(Expr):
 
-    def __init__(self, s, loc, toks):
+    def __init__(self, s: str, loc: int, toks: List) -> None:
         self.value = toks[0]
         if len(toks) > 1:
             self.unit = toks[1]
@@ -150,7 +150,7 @@ class Number(Expr):
 
 class String(Expr):
 
-    def __init__(self, s, loc, toks):
+    def __init__(self, s, loc, toks) -> None:
         self.value = toks[0]
 
     def eval(self, ctx):
@@ -162,7 +162,7 @@ class String(Expr):
 
 class Variable(Expr):
 
-    def __init__(self, s, loc, toks):
+    def __init__(self, s, loc, toks) -> None:
         self.name = toks[0]
 
     def eval(self, ctx):
@@ -174,7 +174,7 @@ class Variable(Expr):
 
 class Operator(Expr):
 
-    def __init__(self, op, lhs, rhs):
+    def __init__(self, op, lhs, rhs) -> None:
         self.op = op
         self.lhs = lhs
         self.rhs = rhs
@@ -188,7 +188,7 @@ class Operator(Expr):
 
 class UnaryOperator(Expr):
 
-    def __init__(self, op, lhs):
+    def __init__(self, op, lhs) -> None:
         self.op = op
         self.lhs = lhs
 
@@ -320,7 +320,7 @@ def make_grammar():
 
 class Parser:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.bnf = make_grammar()
 
     def parse(self, text):

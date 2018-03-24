@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 class FilterParser:
 
-    def __init__(self, filter):
+    def __init__(self, filter) -> None:
         self._filter = filter
         self._command_parser = FilterCommandParser(filter)
         self._expr_parser = FilterExprParser()

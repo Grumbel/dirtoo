@@ -25,7 +25,7 @@ class ToolButton(QToolButton):
 
     sig_middle_click = pyqtSignal()
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self._middle_pressed = False
 

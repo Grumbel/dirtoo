@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Callable, Optional, Tuple, Any
+from typing import List, Callable, Optional, Tuple, Any, Dict
 
 
 import datetime
@@ -92,9 +92,9 @@ def parse_op(text: str) -> Tuple[Callable[[Any, Any], bool], str]:
 
 class MatchFuncFactory:
 
-    def __init__(self):
-        self._functions = {}
-        self._docs = []
+    def __init__(self) -> None:
+        self._functions: Dict[str, Callable] = {}
+        self._docs: List[Tuple[List[str], str]] = []
         self._register_defaults()
 
     def get_docs(self):

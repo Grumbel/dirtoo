@@ -26,6 +26,9 @@ from PyQt5.QtCore import QObject, QSocketNotifier, pyqtSignal
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.location import Location
 
+if False:
+    from dirtools.fileview.virtual_filesystem import VirtualFilesystem  # noqa: F401
+
 logger = logging.getLogger(__name__)
 
 

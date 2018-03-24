@@ -44,6 +44,7 @@ from dirtools.xdg_mime_associations import XdgMimeAssociations
 from dirtools.fileview.preferences_dialog import PreferencesDialog
 from dirtools.fileview.filesystem import Filesystem
 from dirtools.fileview.application_actions import ApplicationActions
+from dirtools.fileview.controller import Controller
 
 logger = logging.getLogger(__name__)
 
@@ -149,9 +150,6 @@ class FileViewApplication:
 
     def set_filesystem_enabled(self, value):
         self.fs.set_enabled(value)
-
-
-from dirtools.fileview.controller import Controller  # noqa: E401, E402
 
 
 # EOF #

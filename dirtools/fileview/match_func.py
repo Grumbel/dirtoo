@@ -51,7 +51,7 @@ class FalseMatchFunc(MatchFunc):
 
 class OrMatchFunc(MatchFunc):
 
-    def __init__(self, funcs):
+    def __init__(self, funcs) -> None:
         self._funcs = funcs
 
     def begin(self, fileinfos):
@@ -67,7 +67,7 @@ class OrMatchFunc(MatchFunc):
 
 class AndMatchFunc(MatchFunc):
 
-    def __init__(self, funcs):
+    def __init__(self, funcs) -> None:
         self._funcs = funcs
 
     def begin(self, fileinfos):

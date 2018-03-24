@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 from PyQt5.QtCore import Qt, QUrl
 
 
@@ -33,7 +35,7 @@ def parse_gnome_copied_files(data: bytes):
     return action, urls
 
 
-def make_gnome_copied_files(action: Qt.DropActions, urls: QUrl) -> bytes:
+def make_gnome_copied_files(action: Qt.DropActions, urls: List[QUrl]) -> bytes:
     if action == Qt.CopyAction:
         gnome_action = b'copy'
     elif action == Qt.MoveAction:

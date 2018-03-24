@@ -61,7 +61,7 @@ class RenameOperation:
             .format(html.escape(location.get_basename())))
         msg.setInformativeText(
             "A failure occured while trying to rename the file.\n\n{}\n\n{}  →\n{}\n"
-            .format(err.strerror, err.filename, err.filename2))  # type: ignore
+            .format(err.strerror, err.filename, err.filename2))
         msg.setDetailedText(tb)
         msg.setStandardButtons(QMessageBox.Ok)
         msg.exec()

@@ -23,12 +23,15 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QDrag, QPainter, QPixmap
 from PyQt5.QtWidgets import QGraphicsObject, QGraphicsItem
 
+if False:
+    from dirtools.fileview.controller import Controller  # noqa: F401
+
 logger = logging.getLogger(__name__)
 
 
 class FileItem(QGraphicsObject):
 
-    def __init__(self, fileinfo, controller):
+    def __init__(self, fileinfo: 'FileInfo', controller: 'Controller') -> None:
         super().__init__()
 
         self.fileinfo = fileinfo
@@ -128,6 +131,10 @@ class FileItem(QGraphicsObject):
 
     def show_abspath(self):
         pass
+
+
+from dirtools.fileview.file_info import FileInfo  # noqa: F401
+# import dirtools.fileview.controller as dfc
 
 
 # EOF #

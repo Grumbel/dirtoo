@@ -49,7 +49,7 @@ class Group:
 
 class NoGrouperFunc:
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     def __call__(self, fileinfos):
@@ -59,7 +59,7 @@ class NoGrouperFunc:
 
 class DayGrouperFunc:
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     def __call__(self, fileinfos):
@@ -73,7 +73,7 @@ class DayGrouperFunc:
 
 class DirectoryGrouperFunc:
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     def __call__(self, fileinfos):
@@ -83,7 +83,7 @@ class DirectoryGrouperFunc:
 
 class DurationGrouperFunc:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._buckets = [
             (lambda x: x > 60, Group("Very Long >60 minutes", 4)),
             (lambda x: x > 30, Group("Long (< 60 minutes)", 3)),
@@ -109,7 +109,7 @@ class DurationGrouperFunc:
 
 class Grouper:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.grouper_func = NoGrouperFunc()
 
     def set_func(self, func):

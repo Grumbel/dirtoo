@@ -32,7 +32,7 @@ class FilesystemOperations:
     """Filesystem operations for the GUI. Messageboxes and dialogs will be
     shown on errors and conflicts."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._rename_op = RenameOperation()
 
     def rename_location(self, location: Location, parent: Optional[QWidget] = None) -> None:

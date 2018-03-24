@@ -44,7 +44,7 @@ from dirtools.fileview.message_area import MessageArea
 
 class FileViewWindow(QMainWindow):
 
-    def __init__(self, controller):
+    def __init__(self, controller) -> None:
         super().__init__()
 
         self._message_area: Optional[MessageArea] = None

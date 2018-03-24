@@ -24,7 +24,7 @@ from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QDialogButtonBox, QSiz
 
 class AboutDialog(QDialog):
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
         self.vbox = QVBoxLayout()

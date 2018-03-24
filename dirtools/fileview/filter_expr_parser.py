@@ -73,7 +73,7 @@ class AndKeywordExpr:
 
 class FilterExprParser:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._grammar = self._make_grammar()
         self._func_factory = MatchFuncFactory()
 
