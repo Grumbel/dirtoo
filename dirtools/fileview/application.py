@@ -136,7 +136,7 @@ class FileViewApplication:
     def show_files(self, files: List[Location]) -> None:
         controller = Controller(self)
         controller.set_files(files)
-        controller._gui._window.window.show()
+        controller._gui._window.show()
         self.controllers.append(controller)
 
     def show_location(self, location: Location) -> None:
