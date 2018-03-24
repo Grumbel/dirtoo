@@ -30,7 +30,7 @@ from dirtools.fileview.about_dialog import AboutDialog
 from dirtools.fileview.properties_dialog import PropertiesDialog
 
 if False:
-    from dirtools.fileview.file_info import FileInfo
+    from dirtools.fileview.file_info import FileInfo  # noqa: F401
 
 
 class Gui(QObject):
@@ -133,7 +133,6 @@ class Gui(QObject):
     def show_properties_dialog(self, fileinfo: 'FileInfo'):
         dialog = PropertiesDialog(fileinfo, self._window)
         dialog.exec()
-
 
 
 # EOF #
