@@ -19,7 +19,7 @@ import html
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton,
+from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLayout,
                              QHBoxLayout, QVBoxLayout, QSizePolicy,
                              QDialogButtonBox, QLabel, QCheckBox)
 
@@ -34,7 +34,7 @@ class ConflictDialog(QDialog):
 
         self._make_gui()
 
-    def _make_file_info(self, filename):
+    def _make_file_info(self, filename: str) -> QLayout:
         # Widgets
         file_icon = QLabel()
         file_icon.setPixmap(QIcon.fromTheme("document").pixmap(48))
@@ -59,10 +59,10 @@ class ConflictDialog(QDialog):
 
         return hbox
 
-    def _on_rename(self, abspath):
+    def _on_rename(self, abspath: str) -> None:
         pass
 
-    def _make_gui(self):
+    def _make_gui(self) -> None:
         self.setWindowTitle("Confirm to replace files")
 
         # Widgets

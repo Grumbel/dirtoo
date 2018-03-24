@@ -132,7 +132,7 @@ class FilterExprParser:
         return expr
 
     def _parse_tokens(self, tokens):
-        result = [[]]
+        result: List = [[]]
 
         for token in tokens:
             if isinstance(token, AndKeywordExpr):

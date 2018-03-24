@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import cast, Dict, Any
+from typing import Dict, Any
 
 import hashlib
 import json
@@ -30,17 +30,18 @@ logger = logging.getLogger(__name__)
 class MetaDataCache:
 
     def __init__(self):
-        self.directory = os.path.join(xdg.BaseDirectory.xdg_cache_home, "dt-fileview", "metadata")
-        logger.info("MetaDataCache.__init__: %s", self.directory)
+        self._directory: str = os.path.join(xdg.BaseDirectory.xdg_cache_home, "dt-fileview", "metadata")
+        logger.info("MetaDataCache.__init__: %s", self._directory)
+
         try:
-            os.makedirs(self.directory)
+            os.makedirs(self._directory)
         except FileExistsError:
             pass
 
     def _make_filename(self, abspath: str) -> str:
         url = "file://" + urllib.parse.quote(abspath)
         digest = hashlib.md5(os.fsencode(url)).hexdigest()
-        filename = cast(str, os.path.join(self.directory, digest + ".json"))
+        filename = os.path.join(self._directory, digest + ".json")
         return filename
 
     def retrieve_metadata(self, abspath: str) -> Any:
