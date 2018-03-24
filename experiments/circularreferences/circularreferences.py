@@ -1,11 +1,12 @@
 #!/usr/bin/env python3.7
 
 
-# Experimenting with 'from __future__ import annotations'
+# from __future__ import annotations
 #
 # Only Python3.7 supports it, but Ubuntu 18.04 still uses 3.6 by
-# default. mypy 0.560 can't handle it either.
-# from __future__ import annotations
+# default. mypy 0.580 can't handle it either. So instead quote types
+# and turn them into strings.
+
 
 class Foo:
 
