@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import html
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton,
@@ -28,23 +30,37 @@ class ConflictDialog(QDialog):
         super().__init__()
 
         self._source_filename = "Source File"
-        self._target_filename = "Source File"
+        self._target_filename = "Target File"
 
         self._make_gui()
 
-    def _make_file_info(self):
+    def _make_file_info(self, filename):
+        # Widgets
         file_icon = QLabel()
         file_icon.setPixmap(QIcon.fromTheme("document").pixmap(48))
         file_icon.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
-        file_info = QLabel("Size: 0 bytes\n"
-                           "Modified: Today")
+        file_info = QLabel("Filename: <b>{}</b><br>"
+                           "Size: 0 bytes<br>"
+                           "Modified: Today".format(html.escape(filename)))
+        file_info.setTextFormat(Qt.RichText)
         file_info.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
+        rename_btn = QPushButton("Rename")
+
+        # Layout
         hbox = QHBoxLayout()
         hbox.addWidget(file_icon)
         hbox.addWidget(file_info)
+        hbox.addWidget(rename_btn)
+
+        # Signals
+        rename_btn.clicked.connect(lambda filename=filename: self._on_rename(filename))
+
         return hbox
+
+    def _on_rename(self, abspath):
+        pass
 
     def _make_gui(self):
         self.setWindowTitle("Confirm to replace files")
@@ -54,12 +70,12 @@ class ConflictDialog(QDialog):
         move_icon.setPixmap(QIcon.fromTheme("stock_folder-move").pixmap(48))
         move_icon.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
 
-        header = QLabel("<big>This folder already contains a file <tt>{}</tt></big>".format(self._source_filename))
+        header = QLabel("<big>This folder already contains a file <b>{}</b></big>".format(self._source_filename))
         header.setTextFormat(Qt.RichText)
         subheader = QLabel("Do you want to replace the existing file:")
-        target_file_layout = self._make_file_info()
+        target_file_layout = self._make_file_info(self._target_filename)
         subheader2 = QLabel("with the following file?")
-        source_file_layout = self._make_file_info()
+        source_file_layout = self._make_file_info(self._source_filename)
         repeat_for_all = QCheckBox("Repeat action for all files")
 
         # Widgets.ButtonBox
