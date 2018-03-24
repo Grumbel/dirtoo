@@ -697,5 +697,8 @@ class Controller(QObject):
     def show_about_dialog(self) -> None:
         self._gui.show_about_dialog()
 
+    def show_properties_dialog(self, fileinfo: FileInfo) -> None:
+        self._gui.show_properties_dialog(fileinfo)
+
 
 # EOF #

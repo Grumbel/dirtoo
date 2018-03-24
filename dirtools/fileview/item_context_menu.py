@@ -205,7 +205,7 @@ class ItemContextMenu(Menu):
         self.addSeparator()
 
     def _build_properties_entry(self):
-        self.addAction("Properties...")
+        self.addAction("Properties...", lambda: self._controller.show_properties_dialog(self._fileinfo))
 
 
 # EOF #

@@ -27,6 +27,10 @@ from dirtools.fileview.item_context_menu import ItemContextMenu
 from dirtools.fileview.directory_context_menu import DirectoryContextMenu
 from dirtools.fileview.create_dialog import CreateDialog
 from dirtools.fileview.about_dialog import AboutDialog
+from dirtools.fileview.properties_dialog import PropertiesDialog
+
+if False:
+    from dirtools.fileview.file_info import FileInfo
 
 
 class Gui(QObject):
@@ -125,6 +129,11 @@ class Gui(QObject):
     def show_about_dialog(self) -> None:
         dialog = AboutDialog()
         dialog.exec()
+
+    def show_properties_dialog(self, fileinfo: 'FileInfo'):
+        dialog = PropertiesDialog(fileinfo, self._window)
+        dialog.exec()
+
 
 
 # EOF #
