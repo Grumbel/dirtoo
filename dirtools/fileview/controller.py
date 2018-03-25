@@ -523,6 +523,8 @@ class Controller(QObject):
             text = self._gui._window.location_lineedit.text()
             if text and text[-1] != "/":
                 self._gui._window.location_lineedit.setText(text + "/")
+        else:
+            self._gui._window.location_lineedit.selectAll()
 
     def hide_all(self):
         self._gui._window.search_toolbar.hide()

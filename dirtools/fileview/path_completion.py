@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import List, Tuple
 
 import os
 
@@ -25,10 +25,11 @@ class PathCompletion:
     def __init__(self) -> None:
         pass
 
-    def complete(self, text) -> List[str]:
+    def candidates(self, text) -> List[str]:
         dirname = os.path.dirname(text)
         basename = os.path.basename(text)
 
+        longest = text
         candidates = []
 
         try:
@@ -40,6 +41,16 @@ class PathCompletion:
             pass
 
         return candidates
+
+    def complete(self, text) -> Tuple[str, List[str]]:
+        candidates = self.candidates(text)
+
+        if candidates == []:
+            longest = text
+        else:
+            longest = os.path.commonprefix(candidates)
+
+        return longest, candidates
 
 
 # EOF #
