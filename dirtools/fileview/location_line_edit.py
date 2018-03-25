@@ -15,16 +15,82 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Optional, cast
+
 import logging
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPalette, QIcon, QKeySequence
-from PyQt5.QtWidgets import QLineEdit, QShortcut
+from PyQt5.QtWidgets import QLineEdit, QShortcut, QWidget, QListWidget, QVBoxLayout, QSizePolicy
 
 from dirtools.fileview.controller import Controller
 from dirtools.fileview.location import Location
+from dirtools.fileview.path_completion import PathCompletion
 
 logger = logging.getLogger(__name__)
+
+
+class LocationLineEditPopup(QWidget):
+
+    def __init__(self, parent: QWidget) -> None:
+        super().__init__(parent,
+                         Qt.Window |
+                         Qt.WindowStaysOnTopHint |
+                         Qt.X11BypassWindowManagerHint |
+                         Qt.FramelessWindowHint)
+
+        self._completer = PathCompletion()
+        self._build_gui()
+
+    def _build_gui(self) -> None:
+        # Widgets
+        self.listwidget = QListWidget()
+
+        # Layout
+        vbox = QVBoxLayout()
+        vbox.addWidget(self.listwidget)
+        vbox.setContentsMargins(0, 0, 0, 0)
+
+        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+
+        self.setLayout(vbox)
+
+    def show_completions(self, text: str) -> None:
+        candidates = self._completer.complete(text)
+
+        self.listwidget.clear()
+        for candidate in candidates:
+            self.listwidget.addItem(candidate)
+
+        self._fit_box_to_content()
+
+    def _fit_box_to_content(self) -> None:
+        self.listwidget.setMinimumWidth(self.listwidget.sizeHintForColumn(0))
+
+    def on_key_up(self) -> None:
+        row = self.listwidget.currentRow()
+        row -= 1
+        if row >= -1:
+            self.listwidget.setCurrentRow(row)
+
+    def on_key_down(self) -> None:
+        row = self.listwidget.currentRow()
+        row += 1
+        if row < self.listwidget.count():
+            self.listwidget.setCurrentRow(row)
+
+    def get_prefered_height(self) -> int:
+        height: int = (self.listwidget.sizeHintForRow(0) * self.listwidget.count() +
+                       2 * self.listwidget.frameWidth())
+        return min(height, 400)
+
+    def get_current_completion(self) -> Optional[str]:
+        row = self.listwidget.currentRow()
+        if row == -1:
+            return None
+        else:
+            item = self.listwidget.item(row)
+            return cast(str, item.text())
 
 
 class LocationLineEdit(QLineEdit):
@@ -45,6 +111,8 @@ class LocationLineEdit(QLineEdit):
         self.controller.sig_location_changed.connect(self._on_location_changed)
         self.controller.sig_location_changed_to_none.connect(lambda: self._on_location_changed(None))
 
+        self._popup = LocationLineEditPopup(self)
+
         shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_G), self)
         shortcut.setContext(Qt.WidgetShortcut)
         shortcut.activated.connect(self._on_reset)
@@ -52,6 +120,14 @@ class LocationLineEdit(QLineEdit):
         shortcut = QShortcut(QKeySequence(Qt.Key_Escape), self)
         shortcut.setContext(Qt.WidgetShortcut)
         shortcut.activated.connect(self._on_reset)
+
+        shortcut = QShortcut(QKeySequence(Qt.Key_Up), self)
+        shortcut.setContext(Qt.WidgetShortcut)
+        shortcut.activated.connect(self._popup.on_key_up)
+
+        shortcut = QShortcut(QKeySequence(Qt.Key_Down), self)
+        shortcut.setContext(Qt.WidgetShortcut)
+        shortcut.activated.connect(self._popup.on_key_down)
 
     def _on_location_changed(self, location: Location):
         if location is not None:
@@ -94,6 +170,8 @@ class LocationLineEdit(QLineEdit):
         if ev.reason() != Qt.ActiveWindowFocusReason and self.is_unused:
             self.set_unused_text()
 
+        self._hide_popup()
+
     def on_text_edited(self, text) -> None:
         p = self.palette()
 
@@ -108,17 +186,26 @@ class LocationLineEdit(QLineEdit):
 
         self.setPalette(p)
 
+        self._popup.show_completions(text)
+        self._show_popup()
+
     def set_cursor_to_end(self):
         length = len(self.text())
         self.setCursorPosition(length)
 
     def on_return_pressed(self) -> None:
         try:
-            location = Location.from_human(self.text())
+            completition = self._popup.get_current_completion()
+            self._popup.hide()
+            if completition is not None:
+                location = Location.from_path(completition)
+            else:
+                location = Location.from_human(self.text())
         except Exception:
             logger.warning("unparsable location entered: %s", self.text())
         else:
             self.controller.set_location(location)
+            self._popup.hide()
 
     def set_location(self, location: Location) -> None:
         self.is_unused = False
@@ -133,6 +220,21 @@ class LocationLineEdit(QLineEdit):
         p.setColor(QPalette.Text, Qt.gray)
         self.setPalette(p)
         self.setText("no location selected, file list mode is active")
+
+    def keyPressEvent(self, ev):
+        self._show_popup()
+        super().keyPressEvent(ev)
+
+    def _show_popup(self):
+        pos = self.parentWidget().mapToGlobal(self.geometry().topLeft())
+        self._popup.move(pos.x(),
+                         pos.y() + self.height() - 2)
+        self._popup.resize(self.width() - 32, self._popup.get_prefered_height())
+        if not self._popup.isVisible():
+            self._popup.show()
+
+    def _hide_popup(self):
+        self._popup.hide()
 
 
 # EOF #
