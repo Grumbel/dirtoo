@@ -22,7 +22,8 @@ import os
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLineEdit,
-                             QVBoxLayout, QDialogButtonBox, QLabel)
+                             QHBoxLayout, QVBoxLayout,
+                             QDialogButtonBox, QLabel)
 
 
 class RenameDialog(QDialog):
@@ -32,13 +33,17 @@ class RenameDialog(QDialog):
 
         self._basename: str = ""
 
-        self.build_gui()
+        self._build_gui()
 
-    def build_gui(self) -> None:
-        # gui elements
+    def _build_gui(self) -> None:
         self.resize(600, 100)
         self.setWindowTitle("RenameDialog")
         self.setWindowModality(Qt.WindowModal)
+
+        # Widgets
+        icon_label = QLabel()
+        icon_label.setPixmap(QIcon.fromTheme("accessories-text-editor").pixmap(48))
+        icon_label.setAlignment(Qt.AlignTop)
 
         self.label = QLabel("Rename ...")
         self.label.setTextInteractionFlags(Qt.TextSelectableByMouse)
@@ -60,10 +65,13 @@ class RenameDialog(QDialog):
 
         self.vbox.addWidget(self.label)
         self.vbox.addWidget(self.name_edit)
-
+        self.vbox.addStretch()
         self.vbox.addWidget(self.button_box)
 
-        self.setLayout(self.vbox)
+        hbox = QHBoxLayout()
+        hbox.addWidget(icon_label)
+        hbox.addLayout(self.vbox)
+        self.setLayout(hbox)
 
         # signals
         self.name_edit.returnPressed.connect(self.accept)
