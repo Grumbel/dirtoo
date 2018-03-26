@@ -43,6 +43,7 @@ class LocationLineEditPopup(QWidget):
         self._previous_text: Optional[str] = None
 
         self._build_gui()
+        self.listwidget.itemClicked.connect(self._on_item_clicked)
 
     def _build_gui(self) -> None:
         # Widgets
@@ -118,6 +119,10 @@ class LocationLineEditPopup(QWidget):
         else:
             item = self.listwidget.item(row)
             return cast(str, item.text())
+
+    def _on_item_clicked(self, item):
+        self._parent.setText(item.text())
+        self._parent.on_return_pressed()
 
 
 class LocationLineEdit(QLineEdit):
