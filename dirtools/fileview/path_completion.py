@@ -55,7 +55,7 @@ class PathCompletionWorker(Worker):
         except OSError:
             pass
 
-        return candidates
+        return sorted(candidates)
 
     def complete(self, text) -> Tuple[str, List[str]]:
         candidates = self.candidates(text)
