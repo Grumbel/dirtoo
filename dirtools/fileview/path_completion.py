@@ -29,7 +29,6 @@ class PathCompletion:
         dirname = os.path.dirname(text)
         basename = os.path.basename(text)
 
-        longest = text
         candidates = []
 
         try:
