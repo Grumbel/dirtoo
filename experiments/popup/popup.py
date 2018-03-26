@@ -21,7 +21,7 @@ import signal
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QLineEdit, QApplication, QWidget,
-                             QVBoxLayout, QListWidget)
+                             QSizePolicy, QVBoxLayout, QListWidget)
 
 
 class PopupThing(QWidget):
@@ -36,7 +36,6 @@ class PopupThing(QWidget):
         vbox = QVBoxLayout()
         self.listwidget = QListWidget()
         self.listwidget.addItem("Test")
-        self.listwidget.addItem("Test 2")
         vbox.addWidget(self.listwidget)
         vbox.setContentsMargins(4, 4, 4, 4)
         self.setLayout(vbox)
@@ -48,7 +47,8 @@ class LineThing(QLineEdit):
         super().__init__()
 
         self.widget = PopupThing(self)
-        self.widget.resize(300, 400)
+        # self.setMinimumSize(0, 0)
+        self.widget.listwidget.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
 
     def moveEvent(self, ev):
         super().moveEvent(ev)
@@ -57,7 +57,12 @@ class LineThing(QLineEdit):
 
     def resizeEvent(self, ev):
         super().resizeEvent(ev)
-        self.widget.resize(self.width(), 400)
+
+        height = (self.widget.listwidget.sizeHintForRow(0) * self.widget.listwidget.count() +
+                  2 * self.widget.listwidget.frameWidth() + 8)
+        self.widget.resize(self.width(),
+                           height)
+
         self.widget.move(self.geometry().x(),
                          self.geometry().y() + self.height() + 8)
 
@@ -69,6 +74,8 @@ class LineThing(QLineEdit):
         elif ev.key() == Qt.Key_Down:
             self.widget.listwidget.setCurrentRow(self.widget.listwidget.currentRow() + 1)
             self.widget.show()
+        elif ev.key() == Qt.Key_A:
+            self.widget.listwidget.addItem("Test 2")
 
     def show(self):
         super().show()
