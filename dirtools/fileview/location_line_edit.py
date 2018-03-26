@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Optional, cast
+from typing import Optional, List, cast
 
 import logging
 
@@ -26,7 +26,6 @@ from PyQt5.QtWidgets import (QLineEdit, QShortcut, QWidget,
 
 from dirtools.fileview.controller import Controller
 from dirtools.fileview.location import Location
-from dirtools.fileview.path_completion import PathCompletion
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +40,6 @@ class LocationLineEditPopup(QWidget):
                          Qt.FramelessWindowHint)
 
         self._parent = parent
-        self._completer = PathCompletion()
         self._previous_text: Optional[str] = None
 
         self._build_gui()
@@ -60,11 +58,8 @@ class LocationLineEditPopup(QWidget):
 
         self.setLayout(vbox)
 
-    def show_completions(self, text: str, show_selection: bool) -> None:
-        longest, candidates = self._completer.complete(text)
-
-        self._previous_text = text
-
+    def set_completions(self, longest: str, candidates: List[str], show_selection: bool) -> None:
+        text = self._parent.text()
         if longest != text and show_selection:
             self._parent.setText(longest)
             self._parent.setSelection(len(text), len(longest) - len(text))
@@ -80,6 +75,10 @@ class LocationLineEditPopup(QWidget):
 
     def on_key_up(self) -> None:
         row = self.listwidget.currentRow()
+
+        if row == -1:
+            self._previous_text = self._parent.text()
+
         row -= 1
         if row >= 0:
             self.listwidget.setCurrentRow(row)
@@ -90,6 +89,10 @@ class LocationLineEditPopup(QWidget):
 
     def on_key_down(self) -> None:
         row = self.listwidget.currentRow()
+
+        if row == -1:
+            self._previous_text = self._parent.text()
+
         row += 1
         if row < self.listwidget.count():
             self.listwidget.setCurrentRow(row)
@@ -155,6 +158,11 @@ class LocationLineEdit(QLineEdit):
         shortcut.setContext(Qt.WidgetShortcut)
         shortcut.activated.connect(self._popup.on_key_down)
 
+    def _on_completions(self, longest, candidate) -> None:
+        self._popup.on_completions(longest, candidate)
+        self._show_completion_selection = True
+        self._show_popup()
+
     def _on_location_changed(self, location: Location):
         if location is not None:
             self.bookmark_act.setEnabled(True)
@@ -214,9 +222,7 @@ class LocationLineEdit(QLineEdit):
 
         self.setPalette(p)
 
-        self._popup.show_completions(text, self._show_completion_selection)
-        self._show_completion_selection = True
-        self._show_popup()
+        self.controller._path_completion.request_completions(text)
 
     def set_cursor_to_end(self):
         length = len(self.text())
@@ -267,6 +273,10 @@ class LocationLineEdit(QLineEdit):
 
     def _hide_popup(self):
         self._popup.hide()
+
+    def on_completions(self, longest: str, candidate: List[str]) -> None:
+        self._popup.set_completions(longest, candidate, self._show_completion_selection)
+        self._show_popup()
 
 
 # EOF #

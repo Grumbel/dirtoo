@@ -19,11 +19,24 @@ from typing import List, Tuple
 
 import os
 
+from PyQt5.QtCore import pyqtSignal
 
-class PathCompletion:
+from dirtools.fileview.worker_thread import WorkerThread, Worker
+
+
+class PathCompletionWorker(Worker):
+
+    sig_completions_ready = pyqtSignal(str, list)
 
     def __init__(self) -> None:
-        pass
+        super().__init__()
+
+        self._request_interrupted = False
+
+    def _on_request_completions(self, text) -> None:
+        self._request_interrupted = False
+        longest, candidates = self.complete(text)
+        self.sig_completions_ready.emit(longest, candidates)
 
     def candidates(self, text) -> List[str]:
         dirname = os.path.dirname(text)
@@ -33,6 +46,9 @@ class PathCompletion:
 
         try:
             for entry in os.scandir(dirname):
+                if self._close or self._request_interrupted:
+                    return None
+
                 if entry.is_dir():
                     if entry.name.startswith(basename):
                         candidates.append(entry.path)
@@ -50,6 +66,24 @@ class PathCompletion:
             longest = os.path.commonprefix(candidates)
 
         return longest, candidates
+
+
+class PathCompletion(WorkerThread):
+
+    sig_request_completions = pyqtSignal(str)
+
+    def __init__(self) -> None:
+        worker = PathCompletionWorker()
+        super().__init__(worker)
+        self.sig_request_completions.connect(self._worker._on_request_completions)
+
+    def request_completions(self, text) -> None:
+        self._request_interrupted = True
+        self.sig_request_completions.emit(text)
+
+    @property
+    def sig_completions_ready(self):
+        return self._worker.sig_completions_ready
 
 
 # EOF #

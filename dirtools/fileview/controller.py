@@ -41,6 +41,7 @@ from dirtools.fileview.search_stream import SearchStream
 from dirtools.fileview.thumb_view import FileItemStyle
 from dirtools.fileview.gnome import parse_gnome_copied_files, make_gnome_copied_files
 from dirtools.util import make_non_existing_filename
+from dirtools.fileview.path_completion import PathCompletion
 
 if False:
     from dirtools.fileview.application import FileViewApplication  # noqa: F401
@@ -83,9 +84,14 @@ class Controller(QObject):
 
         self.app.metadata_collector.sig_metadata_ready.connect(self.receive_metadata)
 
+        self._path_completion = PathCompletion()
+        self._path_completion.sig_completions_ready.connect(self._on_completions)
+        self._path_completion.start()
         self._apply_settings()
 
-    def close(self) -> None:
+    def close_streams(self) -> None:
+        self._gui._window._message_area.hide()
+
         if self._directory_watcher is not None:
             self._directory_watcher.close()
             self._directory_watcher = None
@@ -98,7 +104,9 @@ class Controller(QObject):
             self._search_stream.close()
             self._search_stream = None
 
-        self._gui._window._message_area.hide()
+    def close(self) -> None:
+        self.close_streams()
+        self._path_completion.close()
 
     def _apply_settings(self) -> None:
         v = settings.value("globals/crop_thumbnails", False, bool)
@@ -215,7 +223,7 @@ class Controller(QObject):
         self._gui._window._message_area.show_error(message)
 
     def set_location(self, location: Location, track_history=True) -> None:
-        self.close()
+        self.close_streams()
         self._gui._window.search_toolbar.hide()
         if not self.actions.filter_pin.isChecked():
             self.set_filter("")
@@ -701,6 +709,12 @@ class Controller(QObject):
 
     def show_properties_dialog(self, fileinfo: FileInfo) -> None:
         self._gui.show_properties_dialog(fileinfo)
+
+    def request_completions(self, text):
+        self._path_completion.request_completions(text)
+
+    def _on_completions(self, longest: str, candidates: List[str]):
+        self._gui._window.location_lineedit.on_completions(longest, candidates)
 
 
 # EOF #
