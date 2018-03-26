@@ -59,12 +59,7 @@ class LocationLineEditPopup(QWidget):
 
         self.setLayout(vbox)
 
-    def set_completions(self, longest: str, candidates: List[str], show_selection: bool) -> None:
-        text = self._parent.text()
-        if longest != text and show_selection:
-            self._parent.setText(longest)
-            self._parent.setSelection(len(text), len(longest) - len(text))
-
+    def set_completions(self, longest: str, candidates: List[str]) -> None:
         self.listwidget.clear()
         for candidate in candidates:
             self.listwidget.addItem(candidate)
@@ -264,6 +259,8 @@ class LocationLineEdit(QLineEdit):
     def keyPressEvent(self, ev):
         if ev.key() == Qt.Key_Backspace or ev.key() == Qt.Key_Delete:
             self._show_completion_selection = False
+        else:
+            self._show_completion_selection = True
 
         super().keyPressEvent(ev)
 
@@ -280,7 +277,12 @@ class LocationLineEdit(QLineEdit):
         self._popup.hide()
 
     def on_completions(self, longest: str, candidate: List[str]) -> None:
-        self._popup.set_completions(longest, candidate, self._show_completion_selection)
+        text = self.text()
+        if longest != text and self._show_completion_selection:
+            self.setText(longest)
+            self.setSelection(len(text), len(longest) - len(text))
+
+        self._popup.set_completions(longest, candidate)
         self._show_popup()
 
 
