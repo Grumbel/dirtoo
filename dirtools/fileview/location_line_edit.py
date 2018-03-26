@@ -21,7 +21,8 @@ import logging
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPalette, QIcon, QKeySequence
-from PyQt5.QtWidgets import QLineEdit, QShortcut, QWidget, QListWidget, QVBoxLayout, QSizePolicy
+from PyQt5.QtWidgets import (QLineEdit, QShortcut, QWidget,
+                             QListWidget, QVBoxLayout, QSizePolicy)
 
 from dirtools.fileview.controller import Controller
 from dirtools.fileview.location import Location
@@ -29,7 +30,7 @@ from dirtools.fileview.path_completion import PathCompletion
 
 logger = logging.getLogger(__name__)
 
-# FIXME: Try "QCompleter"
+
 class LocationLineEditPopup(QWidget):
 
     def __init__(self, parent: 'LocationLineEdit') -> None:
@@ -41,7 +42,8 @@ class LocationLineEditPopup(QWidget):
 
         self._parent = parent
         self._completer = PathCompletion()
-        self._previous_text = None
+        self._previous_text: Optional[str] = None
+
         self._build_gui()
 
     def _build_gui(self) -> None:
@@ -50,10 +52,11 @@ class LocationLineEditPopup(QWidget):
 
         # Layout
         vbox = QVBoxLayout()
+        # vbox.setSizeConstraint(QLayout.SetMaximumSize)
         vbox.addWidget(self.listwidget)
         vbox.setContentsMargins(0, 0, 0, 0)
 
-        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.listwidget.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
 
         self.setLayout(vbox)
 
@@ -63,7 +66,6 @@ class LocationLineEditPopup(QWidget):
         self._previous_text = text
 
         if longest != text and show_selection:
-            p = self._parent.cursorPosition()
             self._parent.setText(longest)
             self._parent.setSelection(len(text), len(longest) - len(text))
 
@@ -259,6 +261,7 @@ class LocationLineEdit(QLineEdit):
         self._popup.move(pos.x(),
                          pos.y() + self.height() - 2)
         self._popup.resize(self.width() - 32, self._popup.get_prefered_height())
+
         if not self._popup.isVisible():
             self._popup.show()
 
