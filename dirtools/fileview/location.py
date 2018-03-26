@@ -139,7 +139,7 @@ class Location:
         display purpose, as information is lost."""
         payload_text = "".join(["//{}{}".format(prot, (":" + path) if path else "")
                                 for prot, path in self._payloads])
-        return "{}://{}{}".format(self._protocol, self._path, payload_text)
+        return "{}{}".format(self._path, payload_text)
 
     def exists(self) -> bool:
         if self.has_payload():

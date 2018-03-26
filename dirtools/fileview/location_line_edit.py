@@ -176,7 +176,7 @@ class LocationLineEdit(QLineEdit):
         elif self._popup._previous_text is not None:
             self._popup.abort_completion()
         else:
-            self.setText(self.controller.location.as_url())
+            self.setText(self.controller.location.as_path())
             self.on_text_edited(self.text())
             self.controller._gui._window.thumb_view.setFocus()
 
@@ -239,7 +239,7 @@ class LocationLineEdit(QLineEdit):
         p = self.palette()
         p.setColor(QPalette.Text, Qt.black)
         self.setPalette(p)
-        self.setText(location.as_url())
+        self.setText(location.as_path())
 
     def set_unused_text(self) -> None:
         self.is_unused = True
