@@ -530,7 +530,9 @@ class Controller(QObject):
             self._gui._window.location_lineedit.set_cursor_to_end()
             text = self._gui._window.location_lineedit.text()
             if text and text[-1] != "/":
-                self._gui._window.location_lineedit.setText(text + "/")
+                new_text = text + "/"
+                self._gui._window.location_lineedit.setText(new_text)
+                self._gui._window.location_lineedit.on_text_edited(new_text)
         else:
             self._gui._window.location_lineedit.selectAll()
 
