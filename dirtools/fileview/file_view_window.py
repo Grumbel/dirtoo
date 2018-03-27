@@ -40,6 +40,7 @@ from dirtools.fileview.location import Location
 from dirtools.fileview.menu import Menu
 from dirtools.fileview.tool_button import ToolButton
 from dirtools.fileview.message_area import MessageArea
+from dirtools.fileview.history_menu import make_history_menu_entries
 
 if False:
     from dirtools.fileview.controller import Controller  # noqa: F401
@@ -364,21 +365,8 @@ class FileViewWindow(QMainWindow):
 
             history_menu.addSection("Location History")
 
-            entries: List[Location] = []
-            for entry in history.get_entries(1000):
-                if entry not in entries:
-                    entries.append(entry)
-                    if len(entries) >= 35:
-                        break
-
-            icon = QIcon.fromTheme("folder")
-            for entry in entries:
-                action = history_menu.addDoubleAction(
-                    icon, entry.as_url(),
-                    lambda entry=entry: self.controller.set_location(entry),
-                    lambda entry=entry: self.controller.app.show_location(entry))
-                if not entry.exists():
-                    action.setEnabled(False)
+            entries = history.get_unique_entries(35)
+            make_history_menu_entries(self.controller, history_menu, entries)
 
         history_menu.aboutToShow.connect(create_history_menu)
 
@@ -397,8 +385,21 @@ class FileViewWindow(QMainWindow):
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.actions.home)
         self.toolbar.addSeparator()
-        self.toolbar.addAction(self.actions.back)
-        self.toolbar.addAction(self.actions.forward)
+
+        history_back_btn = ToolButton()
+        history_back_btn.setDefaultAction(self.actions.back)
+        history_back_btn.setContextMenuPolicy(Qt.CustomContextMenu)
+        history_back_btn.customContextMenuRequested.connect(
+            lambda pos: self.controller.show_history_context_menu(history_back_btn, False))
+        self.toolbar.addWidget(history_back_btn)
+
+        history_forward_btn = ToolButton()
+        history_forward_btn.setDefaultAction(self.actions.forward)
+        history_forward_btn.setContextMenuPolicy(Qt.CustomContextMenu)
+        history_forward_btn.customContextMenuRequested.connect(
+            lambda pos: self.controller.show_history_context_menu(history_forward_btn, False))
+        self.toolbar.addWidget(history_forward_btn)
+
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.actions.reload)
         self.toolbar.addAction(self.actions.prepare)

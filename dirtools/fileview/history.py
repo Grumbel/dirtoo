@@ -55,6 +55,15 @@ class SqlHistory:
             results.append(Location.from_url(location_url))
         return results
 
+    def get_unique_entries(self, limit: Optional[int] = None) -> List[Location]:
+        entries: List[Location] = []
+        for entry in self.get_entries(1000):
+            if entry not in entries:
+                entries.append(entry)
+                if len(entries) >= limit:
+                    break
+        return entries
+
     def append(self, location: Location) -> None:
         insertion_time = time.time()
         c = self._db.cursor()

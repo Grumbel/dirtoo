@@ -21,7 +21,7 @@ import io
 import logging
 import os
 
-from PyQt5.QtCore import QObject, Qt, pyqtSignal, QUrl, QMimeData
+from PyQt5.QtCore import QObject, Qt, pyqtSignal, QUrl, QMimeData, QPoint
 from PyQt5.QtGui import QClipboard
 
 import bytefmt
@@ -42,6 +42,8 @@ from dirtools.fileview.thumb_view import FileItemStyle
 from dirtools.fileview.gnome import parse_gnome_copied_files, make_gnome_copied_files
 from dirtools.util import make_non_existing_filename
 from dirtools.fileview.path_completion import PathCompletion
+from dirtools.fileview.menu import Menu
+from dirtools.fileview.history_menu import make_history_menu_entries
 
 if False:
     from dirtools.fileview.application import FileViewApplication  # noqa: F401
@@ -717,6 +719,15 @@ class Controller(QObject):
 
     def _on_completions(self, longest: str, candidates: List[str]):
         self._gui._window.location_lineedit.on_completions(longest, candidates)
+
+    def show_history_context_menu(self, button: 'ToolButton', forward: bool):
+        pos = button.mapToGlobal(QPoint(0, button.height()))
+
+        entries = self.app.location_history.get_unique_entries(20)
+
+        menu = Menu()
+        make_history_menu_entries(self, menu, entries)
+        menu.exec(pos)
 
 
 # EOF #
