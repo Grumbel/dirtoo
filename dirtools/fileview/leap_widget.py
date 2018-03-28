@@ -63,13 +63,16 @@ class LeapWidget(QWidget):
         super().hideEvent(ev)
 
     def keyPressEvent(self, ev) -> None:
-        super().keyPressEvent(ev)
-        if ev.key() == Qt.Key_Escape:
-            self.hide()
-        elif ev.key() == Qt.Key_Up:
-            self.sig_leap.emit(self._line_edit.text(), False, True)
-        elif ev.key() == Qt.Key_Down:
-            self.sig_leap.emit(self._line_edit.text(), True, True)
+        if ev.key() in (Qt.Key_Return, Qt.Key_Enter):
+            self.parentWidget().keyPressEvent(ev)
+        else:
+            super().keyPressEvent(ev)
+            if ev.key() == Qt.Key_Escape:
+                self.hide()
+            elif ev.key() == Qt.Key_Up:
+                self.sig_leap.emit(self._line_edit.text(), False, True)
+            elif ev.key() == Qt.Key_Down:
+                self.sig_leap.emit(self._line_edit.text(), True, True)
 
     def on_text_changed(self, text: str) -> None:
         self.sig_leap.emit(text, True, False)
