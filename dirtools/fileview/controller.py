@@ -757,7 +757,7 @@ class Controller(QObject):
                 if skip:
                     idx += 1
 
-                for fi in fileinfos[idx:]:
+                for fi in fileinfos[idx:] + fileinfos[0:idx]:
                     if fi.basename().lower().startswith(text):
                         self._gui._window.thumb_view.set_cursor_to_fileinfo(fi)
                         break
@@ -767,7 +767,7 @@ class Controller(QObject):
 
                 if idx is None:
                     idx = len(fileinfos)
-                for fi in reversed(fileinfos[0:idx+1]):
+                for fi in reversed(fileinfos[idx:] + fileinfos[0:idx + 1]):
                     if fi.basename().lower().startswith(text):
                         self._gui._window.thumb_view.set_cursor_to_fileinfo(fi)
                         break
