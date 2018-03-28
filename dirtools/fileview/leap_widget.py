@@ -21,7 +21,7 @@ from PyQt5.QtWidgets import (QLineEdit, QVBoxLayout, QWidget)
 
 class LeapWidget(QWidget):
 
-    sig_leap = pyqtSignal(str, bool)
+    sig_leap = pyqtSignal(str, bool, bool)
 
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent,
@@ -67,12 +67,12 @@ class LeapWidget(QWidget):
         if ev.key() == Qt.Key_Escape:
             self.hide()
         elif ev.key() == Qt.Key_Up:
-            self.sig_leap.emit(self._line_edit.text(), False)
+            self.sig_leap.emit(self._line_edit.text(), False, True)
         elif ev.key() == Qt.Key_Down:
-            self.sig_leap.emit(self._line_edit.text(), True)
+            self.sig_leap.emit(self._line_edit.text(), True, True)
 
     def on_text_changed(self, text: str) -> None:
-        self.sig_leap.emit(text, True)
+        self.sig_leap.emit(text, True, False)
 
 
 # EOF #

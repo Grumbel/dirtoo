@@ -551,6 +551,7 @@ class ThumbView(QGraphicsView):
         if self._cursor_item is not None:
             self._cursor_item.setSelected(True)
             self._cursor_item.update()
+            self.ensureVisible(self._cursor_item)
 
     def mousePressEvent(self, ev):
         super().mousePressEvent(ev)
@@ -571,8 +572,8 @@ class ThumbView(QGraphicsView):
             if not ev.isAccepted():
                 self._controller.on_context_menu(ev.globalPos())
 
-    def leap_to(self, text: str, forward: bool) -> None:
-        print("leaping: {!r} {}".format(text, forward))
+    def leap_to(self, text: str, forward: bool, skip: bool) -> None:
+        self._controller.leap_to(text, forward, skip)
 
 
 # EOF #
