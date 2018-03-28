@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Optional
+from typing import Optional
 
 from pkg_resources import resource_filename
 from PyQt5.QtCore import Qt

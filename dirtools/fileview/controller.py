@@ -47,6 +47,7 @@ from dirtools.fileview.history_menu import make_history_menu_entries
 
 if False:
     from dirtools.fileview.application import FileViewApplication  # noqa: F401
+    from dirtools.fileview.tool_button import ToolButton  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
