@@ -39,6 +39,7 @@ from dirtools.fileview.settings import settings
 from dirtools.fileview.mode import Mode, IconMode, ListMode, DetailMode, FileItemStyle
 from dirtools.fileview.thumb_file_item import ThumbFileItem
 from dirtools.fileview.file_graphics_scene import FileGraphicsScene
+from dirtools.fileview.leap_widget import LeapWidget
 
 if False:
     from dirtools.fileview.controller import Controller  # noqa: F401
@@ -138,6 +139,9 @@ class ThumbView(QGraphicsView):
         shortcut.setContext(Qt.WidgetShortcut)
         shortcut.activated.connect(lambda: self._controller.show_location_toolbar(False))
 
+        self._leap_widget = LeapWidget(self)
+        self._leap_widget.sig_leap.connect(self.leap_to)
+
     def _on_reset(self):
         self._controller.hide_all()
 
@@ -215,6 +219,10 @@ class ThumbView(QGraphicsView):
         elif ev.key() == Qt.Key_Return:
             if self._cursor_item is not None:
                 self._cursor_item.click_action(new_window=ev.modifiers() & Qt.ShiftModifier)
+        elif ev.text() != "":
+            self._leap_widget.show()
+            self._leap_widget._line_edit.setText(ev.text())
+            self._leap_widget._line_edit.setFocus()
         else:
             super().keyPressEvent(ev)
 
@@ -338,6 +346,7 @@ class ThumbView(QGraphicsView):
 
     def resizeEvent(self, ev) -> None:
         logger.debug("ThumbView.resizeEvent: %s", ev)
+
         super().resizeEvent(ev)
 
         self.apply_zoom()
@@ -348,6 +357,12 @@ class ThumbView(QGraphicsView):
             self._resize_timer = self.startTimer(100)
         else:
             self.layout_items()
+
+        self._leap_widget.place_widget()
+
+    def moveEvent(self, ev):
+        super().moveEvent(ev)
+        self._leap_widget.place_widget()
 
     def timerEvent(self, ev) -> None:
         if ev.timerId() == self._resize_timer:
@@ -555,6 +570,9 @@ class ThumbView(QGraphicsView):
             super().contextMenuEvent(ev)
             if not ev.isAccepted():
                 self._controller.on_context_menu(ev.globalPos())
+
+    def leap_to(self, text: str, forward: bool) -> None:
+        print("leaping: {!r} {}".format(text, forward))
 
 
 # EOF #
