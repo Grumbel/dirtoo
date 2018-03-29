@@ -123,9 +123,8 @@ class Grouper:
     def set_func(self, func: GrouperFunc):
         self.grouper_func = func
 
-    def apply(self, fileinfos: Iterable['FileInfo']):
-        for fileinfo in fileinfos:
-            self.grouper_func(fileinfo)
+    def apply(self, fileinfo: 'FileInfo'):
+        self.grouper_func(fileinfo)
 
 
 # EOF #

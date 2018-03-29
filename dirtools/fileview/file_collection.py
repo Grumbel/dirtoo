@@ -127,7 +127,8 @@ class FileCollection(QObject):
         return len(self._fileinfos)
 
     def group(self, grouper: Grouper) -> None:
-        grouper.apply(self.get_fileinfos())
+        for fi in self.get_fileinfos():
+            grouper.apply(fi)
         self.sig_files_grouped.emit()
 
     def filter(self, filter: Filter) -> None:
