@@ -15,10 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Any, cast
+from typing import Any, Iterable, cast
 
 from functools import total_ordering
 from datetime import datetime
+
+if False:
+    from dirtools.fileview.file_info import FileInfo  # noqa: F401
 
 
 @total_ordering
@@ -47,41 +50,47 @@ class Group:
         return self.label
 
 
-class NoGrouperFunc:
+class GrouperFunc:
 
     def __init__(self) -> None:
         pass
 
-    def __call__(self, fileinfos):
-        for fileinfo in fileinfos:
+    def __call__(self, fileinfo: 'FileInfo'):
+        pass
+
+
+class NoGrouperFunc(GrouperFunc):
+
+    def __init__(self) -> None:
+        pass
+
+    def __call__(self, fileinfo: 'FileInfo'):
+        fileinfo.group = None
+
+
+class DayGrouperFunc(GrouperFunc):
+
+    def __init__(self) -> None:
+        pass
+
+    def __call__(self, fileinfo: 'FileInfo'):
+        if fileinfo.isdir():
             fileinfo.group = None
+        else:
+            date = datetime.fromtimestamp(fileinfo.mtime())
+            fileinfo.group = date.isocalendar()
 
 
-class DayGrouperFunc:
-
-    def __init__(self) -> None:
-        pass
-
-    def __call__(self, fileinfos):
-        for fileinfo in fileinfos:
-            if fileinfo.isdir():
-                fileinfo.group = None
-            else:
-                date = datetime.fromtimestamp(fileinfo.mtime())
-                fileinfo.group = date.isocalendar()
-
-
-class DirectoryGrouperFunc:
+class DirectoryGrouperFunc(GrouperFunc):
 
     def __init__(self) -> None:
         pass
 
-    def __call__(self, fileinfos):
-        for fileinfo in fileinfos:
-            fileinfo.group = fileinfo.dirname()
+    def __call__(self, fileinfo: 'FileInfo'):
+        fileinfo.group = fileinfo.dirname()
 
 
-class DurationGrouperFunc:
+class DurationGrouperFunc(GrouperFunc):
 
     def __init__(self) -> None:
         self._buckets = [
@@ -98,27 +107,25 @@ class DurationGrouperFunc:
                 return group
         return None
 
-    def __call__(self, fileinfos):
-        for fileinfo in fileinfos:
-            metadata = fileinfo.metadata()
-            if "duration" in metadata:
-                fileinfo.group = self._find_bucket(metadata["duration"] / 60000)
-            else:
-                fileinfo.group = None
+    def __call__(self, fileinfo: 'FileInfo'):
+        metadata = fileinfo.metadata()
+        if "duration" in metadata:
+            fileinfo.group = self._find_bucket(metadata["duration"] / 60000)
+        else:
+            fileinfo.group = None
 
 
 class Grouper:
 
     def __init__(self) -> None:
-        self.grouper_func = NoGrouperFunc()
+        self.grouper_func: GrouperFunc = NoGrouperFunc()
 
-    def set_func(self, func):
+    def set_func(self, func: GrouperFunc):
         self.grouper_func = func
 
-    def apply(self, fileinfos):
-        if self.grouper_func is None:
-            return
-        else:
-            self.grouper_func(fileinfos)
+    def apply(self, fileinfos: Iterable['FileInfo']):
+        for fileinfo in fileinfos:
+            self.grouper_func(fileinfo)
+
 
 # EOF #
