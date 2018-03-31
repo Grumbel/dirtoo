@@ -25,7 +25,7 @@ from PyQt5.QtCore import QObject, pyqtSignal
 from dirtools.fileview.location import Location
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.filter import Filter
-from dirtools.fileview.grouper import Grouper
+from dirtools.fileview.grouper import Grouper, NoGrouper
 from dirtools.list_dict import ListDict
 
 logger = logging.getLogger(__name__)
@@ -65,6 +65,7 @@ class FileCollection(QObject):
     def __init__(self) -> None:
         super().__init__()
         self._fileinfos: ListDict[Location, FileInfo] = ListDict(lambda fi: fi.location())
+        self._grouper = NoGrouper()
 
     def clear(self) -> None:
         logger.debug("FileCollection.clear")
@@ -126,9 +127,12 @@ class FileCollection(QObject):
     def size(self) -> int:
         return len(self._fileinfos)
 
-    def group(self, grouper: Grouper) -> None:
+    def set_grouper(self, grouper: Grouper) -> None:
+        self._grouper = grouper
+
         for fi in self.get_fileinfos():
-            grouper.apply(fi)
+            grouper(fi)
+
         self.sig_files_grouped.emit()
 
     def filter(self, filter: Filter) -> None:

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Any, Iterable, cast
+from typing import Any, cast
 
 from functools import total_ordering
 from datetime import datetime
@@ -50,7 +50,7 @@ class Group:
         return self.label
 
 
-class GrouperFunc:
+class Grouper:
 
     def __init__(self) -> None:
         pass
@@ -59,7 +59,7 @@ class GrouperFunc:
         pass
 
 
-class NoGrouperFunc(GrouperFunc):
+class NoGrouper(Grouper):
 
     def __init__(self) -> None:
         pass
@@ -68,7 +68,7 @@ class NoGrouperFunc(GrouperFunc):
         fileinfo.group = None
 
 
-class DayGrouperFunc(GrouperFunc):
+class DayGrouper(Grouper):
 
     def __init__(self) -> None:
         pass
@@ -81,7 +81,7 @@ class DayGrouperFunc(GrouperFunc):
             fileinfo.group = date.isocalendar()
 
 
-class DirectoryGrouperFunc(GrouperFunc):
+class DirectoryGrouper(Grouper):
 
     def __init__(self) -> None:
         pass
@@ -90,7 +90,7 @@ class DirectoryGrouperFunc(GrouperFunc):
         fileinfo.group = fileinfo.dirname()
 
 
-class DurationGrouperFunc(GrouperFunc):
+class DurationGrouper(Grouper):
 
     def __init__(self) -> None:
         self._buckets = [
@@ -113,18 +113,6 @@ class DurationGrouperFunc(GrouperFunc):
             fileinfo.group = self._find_bucket(metadata["duration"] / 60000)
         else:
             fileinfo.group = None
-
-
-class Grouper:
-
-    def __init__(self) -> None:
-        self.grouper_func: GrouperFunc = NoGrouperFunc()
-
-    def set_func(self, func: GrouperFunc):
-        self.grouper_func = func
-
-    def apply(self, fileinfo: 'FileInfo'):
-        self.grouper_func(fileinfo)
 
 
 # EOF #

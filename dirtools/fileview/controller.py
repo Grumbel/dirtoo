@@ -27,10 +27,10 @@ from PyQt5.QtGui import QClipboard
 import bytefmt
 
 from dirtools.fileview.file_collection import FileCollection
-from dirtools.fileview.grouper import (Grouper, DayGrouperFunc,
-                                       DirectoryGrouperFunc,
-                                       NoGrouperFunc,
-                                       DurationGrouperFunc)
+from dirtools.fileview.grouper import (Grouper, DayGrouper,
+                                       DirectoryGrouper,
+                                       NoGrouper,
+                                       DurationGrouper)
 from dirtools.fileview.directory_watcher import DirectoryWatcher
 from dirtools.fileview.filter_parser import FilterParser
 from dirtools.fileview.settings import settings
@@ -74,7 +74,6 @@ class Controller(QObject):
 
         self._filter = Filter()
         self._sorter = Sorter(self)
-        self._grouper = Grouper()
 
         self._location_history: List[Location] = []
         self._location_history_index = 0
@@ -211,7 +210,6 @@ class Controller(QObject):
 
         self.apply_sort()
         self.apply_filter()
-        self.apply_grouper()
 
     def _on_scandir_finished(self, fileinfos) -> None:
         logger.info("Controller._on_scandir_extractor_finished")
@@ -220,7 +218,6 @@ class Controller(QObject):
         self.file_collection.set_fileinfos(fileinfos)
         self.apply_sort()
         self.apply_filter()
-        self.apply_grouper()
 
     def _on_directory_watcher_message(self, message):
         self._gui._window._message_area.show_error(message)
@@ -296,7 +293,6 @@ class Controller(QObject):
         self.file_collection.set_fileinfos([self.app.vfs.get_fileinfo(f) for f in files])
         self.apply_sort()
         self.apply_filter()
-        self.apply_grouper()
 
         self.sig_location_changed_to_none.emit()
 
@@ -308,10 +304,6 @@ class Controller(QObject):
 
     def show_file_history(self) -> None:
         self.set_location(Location.from_url("history:///"))
-
-    def apply_grouper(self) -> None:
-        logger.debug("Controller.apply_grouper")
-        self.file_collection.group(self._grouper)
 
     def apply_sort(self) -> None:
         logger.debug("Controller.apply_sort")
@@ -451,7 +443,6 @@ class Controller(QObject):
 
             self.apply_sort()
             self.apply_filter()
-            self.apply_grouper()
 
     def receive_thumbnail(self, location: Location, flavor: str,
                           pixmap, error_code: int, message: str) -> None:
@@ -472,20 +463,16 @@ class Controller(QObject):
             item.reload_thumbnail()
 
     def set_grouper_by_none(self) -> None:
-        self._grouper.set_func(NoGrouperFunc())
-        self.apply_grouper()
+        self.file_collection.set_grouper(NoGrouper())
 
     def set_grouper_by_directory(self) -> None:
-        self._grouper.set_func(DirectoryGrouperFunc())
-        self.apply_grouper()
+        self.file_collection.set_grouper(DirectoryGrouper())
 
     def set_grouper_by_day(self) -> None:
-        self._grouper.set_func(DayGrouperFunc())
-        self.apply_grouper()
+        self.file_collection.set_grouper(DayGrouper())
 
     def set_grouper_by_duration(self) -> None:
-        self._grouper.set_func(DurationGrouperFunc())
-        self.apply_grouper()
+        self.file_collection.set_grouper(DurationGrouper())
 
     def show_rename_dialog(self, location: Optional[Location] = None) -> None:
         if location is None:
