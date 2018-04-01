@@ -30,14 +30,8 @@ logger = logging.getLogger(__name__)
 
 class MatchFunc:
 
-    def __call__(self, fileinfo, idx):
+    def __call__(self, fileinfo):
         assert False, "MatchFunc.__call__() not implemented"
-
-    def begin(self, fileinfos):
-        """Called once at the start of the filtering. Can be ignored by most
-        filters, but is necessary for filters than need to be aware of
-        the global state (e.g. random pick filter)"""
-        pass
 
     def cost(self):
         return 1
@@ -45,8 +39,14 @@ class MatchFunc:
 
 class FalseMatchFunc(MatchFunc):
 
-    def __call__(self, fileinfo, idx):
+    def __call__(self, fileinfo):
         return False
+
+
+class TrueMatchFunc(MatchFunc):
+
+    def __call__(self, fileinfo):
+        return True
 
 
 class OrMatchFunc(MatchFunc):
@@ -54,13 +54,9 @@ class OrMatchFunc(MatchFunc):
     def __init__(self, funcs) -> None:
         self._funcs = funcs
 
-    def begin(self, fileinfos):
+    def __call__(self, fileinfo):
         for func in self._funcs:
-            func.begin(fileinfos)
-
-    def __call__(self, fileinfo, idx):
-        for func in self._funcs:
-            if func(fileinfo, idx):
+            if func(fileinfo):
                 return True
         return False
 
@@ -70,13 +66,9 @@ class AndMatchFunc(MatchFunc):
     def __init__(self, funcs) -> None:
         self._funcs = funcs
 
-    def begin(self, fileinfos):
+    def __call__(self, fileinfo):
         for func in self._funcs:
-            func.begin(fileinfos)
-
-    def __call__(self, fileinfo, idx):
-        for func in self._funcs:
-            if not func(fileinfo, idx):
+            if not func(fileinfo):
                 return False
         return True
 
@@ -86,11 +78,8 @@ class ExcludeMatchFunc(MatchFunc):
     def __init__(self, func):
         self._func = func
 
-    def begin(self, fileinfos):
-        self._func.begin(fileinfos)
-
-    def __call__(self, fileinfo, idx):
-        return not self._func(fileinfo, idx)
+    def __call__(self, fileinfo):
+        return not self._func(fileinfo)
 
 
 class FolderMatchFunc(MatchFunc):
@@ -98,7 +87,7 @@ class FolderMatchFunc(MatchFunc):
     def __init__(self):
         pass
 
-    def __call__(self, fileinfo, idx):
+    def __call__(self, fileinfo):
         return fileinfo.isdir()
 
 
@@ -111,7 +100,7 @@ class GlobMatchFunc(MatchFunc):
         else:
             self.pattern = pattern.lower()
 
-    def __call__(self, fileinfo, idx):
+    def __call__(self, fileinfo):
         if self.case_sensitive:
             return fnmatchcase(fileinfo.basename(), self.pattern)
         else:
@@ -124,7 +113,7 @@ class RegexMatchFunc(MatchFunc):
     def __init__(self, pattern, flags):
         self.rx = re.compile(pattern, flags)
 
-    def __call__(self, fileinfo, idx):
+    def __call__(self, fileinfo):
         return bool(self.rx.search(fileinfo.basename()))
 
 
@@ -135,7 +124,7 @@ class FuzzyMatchFunc(MatchFunc):
         self.n = n
         self.threshold = threshold
 
-    def __call__(self, fileinfo, idx):
+    def __call__(self, fileinfo):
         result = fuzzy(self.needle, fileinfo.basename(), self.n)
         return result > self.threshold
 
@@ -146,7 +135,7 @@ class SizeMatchFunc(MatchFunc):
         self.size = size
         self.compare = compare
 
-    def __call__(self, fileinfo, idx):
+    def __call__(self, fileinfo):
         return self.compare(fileinfo.size(), self.size)
 
 
@@ -158,7 +147,7 @@ class MetadataMatchFunc(MatchFunc):
         self._value = value
         self._compare = compare
 
-    def __call__(self, fileinfo, idx):
+    def __call__(self, fileinfo):
         metadata = fileinfo.metadata()
         if self._field in metadata:
             try:
@@ -179,7 +168,7 @@ class LengthMatchFunc(MatchFunc):
         self.length = length
         self.compare = compare
 
-    def __call__(self, fileinfo, idx):
+    def __call__(self, fileinfo):
         return self.compare(len(fileinfo.basename()), self.length)
 
 
@@ -189,33 +178,33 @@ class RandomMatchFunc(MatchFunc):
         self.random = random.Random(random.randrange(1024))
         self.probability = probability
 
-    def __call__(self, fileinfo, idx):
+    def __call__(self, fileinfo):
         return (self.random.random() < self.probability)
 
 
-class RandomPickMatchFunc(MatchFunc):
+# class RandomPickMatchFunc(MatchFunc):
 
-    def __init__(self, pick_count):
-        self.pick_count = pick_count
-        self.picked_indices = None
+#     def __init__(self, pick_count):
+#         self.pick_count = pick_count
+#         self.picked_indices = None
 
-    def __call__(self, fileinfo, idx):
-        return idx in self.picked_indices
+#     def __call__(self, fileinfo):
+#         return idx in self.picked_indices
 
-    def begin(self, fileinfos):
-        if self.picked_indices is not None:
-            return
+#     def begin(self, fileinfos):
+#         if self.picked_indices is not None:
+#             return
 
-        if self.pick_count >= len(fileinfos):
-            self.picked_indices = set(range(len(fileinfos)))
-        else:
-            self.picked_indices = set()
-            while len(self.picked_indices) < self.pick_count:
-                idx = random.randrange(len(fileinfos))
-                if idx not in self.picked_indices:
-                    self.picked_indices.add(idx)
+#         if self.pick_count >= len(fileinfos):
+#             self.picked_indices = set(range(len(fileinfos)))
+#         else:
+#             self.picked_indices = set()
+#             while len(self.picked_indices) < self.pick_count:
+#                 idx = random.randrange(len(fileinfos))
+#                 if idx not in self.picked_indices:
+#                     self.picked_indices.add(idx)
 
-        return self
+#         return self
 
 
 class CharsetMatchFunc(MatchFunc):
@@ -223,7 +212,7 @@ class CharsetMatchFunc(MatchFunc):
     def __init__(self, charset):
         self._charset = charset
 
-    def __call__(self, fileinfo, idx):
+    def __call__(self, fileinfo):
         try:
             fileinfo.basename().encode(self._charset)
         except UnicodeEncodeError:
@@ -237,7 +226,7 @@ class DateMatchFunc(MatchFunc):
     def __init__(self, pattern):
         self._pattern = pattern
 
-    def __call__(self, fileinfo, idx):
+    def __call__(self, fileinfo):
         mtime = fileinfo.mtime()
         dt = datetime.fromtimestamp(mtime)
         dtstr = dt.strftime("%Y-%m-%d")
@@ -249,7 +238,7 @@ class TimeMatchFunc(MatchFunc):
     def __init__(self, pattern):
         self._pattern = pattern
 
-    def __call__(self, fileinfo, idx):
+    def __call__(self, fileinfo):
         mtime = fileinfo.mtime()
         dt = datetime.fromtimestamp(mtime)
         dtstr = dt.strftime("%H:%M:%S")
@@ -280,7 +269,7 @@ class TimeOpMatchFunc(MatchFunc):
         else:
             assert False
 
-    def __call__(self, fileinfo, idx):
+    def __call__(self, fileinfo):
         mtime = fileinfo.mtime()
         dt = datetime.fromtimestamp(mtime)
         return self._compare(self._snip_it(dt.time()), self._snip_it(self._time))
@@ -310,7 +299,7 @@ class DateOpMatchFunc(MatchFunc):
         else:
             assert False
 
-    def __call__(self, fileinfo, idx):
+    def __call__(self, fileinfo):
         mtime = fileinfo.mtime()
         dt = datetime.fromtimestamp(mtime)
         return self._compare(self._snip_it(dt.date()), self._snip_it(self._date))
@@ -321,7 +310,7 @@ class ContainsMatchFunc(MatchFunc):
     def __init__(self, line_match_func):
         self._line_match_func = line_match_func
 
-    def __call__(self, fileinfo, idx):
+    def __call__(self, fileinfo):
         location = fileinfo.location()
 
         if not location.has_payload():

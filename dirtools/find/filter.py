@@ -69,7 +69,7 @@ class SimpleFilter:
         path = os.path.join(root, filename)
 
         fileinfo = LazyFileInfo.from_filename(path)
-        return self._expr(fileinfo, 0)
+        return self._expr(fileinfo)
 
 
 # EOF #

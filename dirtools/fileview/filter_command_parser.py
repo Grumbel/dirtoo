@@ -18,11 +18,8 @@
 from typing import Any, Dict, Callable, List, Union, Tuple, Optional
 
 import logging
-import re
 import operator
 import shlex
-
-import bytefmt
 
 logger = logging.getLogger(__name__)
 
@@ -59,9 +56,7 @@ def get_compare_operator(text: str) -> Callable[[Any, Any], bool]:
 
 class FilterCommandParser:
 
-    def __init__(self, filter) -> None:
-        self._filter = filter
-
+    def __init__(self) -> None:
         self._commands: Dict[str, Tuple[List[str], Callable, str]] = {}
         self._register_commands()
 
@@ -88,72 +83,73 @@ class FilterCommandParser:
             self._commands[aliases] = ([aliases], func, help)
 
     def _register_commands(self):
-        self.register_command(
-            ["video", "videos", "vid", "vids"],
-            lambda args: self._filter.set_regex_pattern(VIDEO_REGEX, re.IGNORECASE))
+        pass
+        # self.register_command(
+        #     ["video", "videos", "vid", "vids"],
+        #     lambda args: self._filter.set_regex_pattern(VIDEO_REGEX, re.IGNORECASE))
 
-        self.register_command(
-            ["image", "images", "img", "imgs"],
-            lambda args: self._filter.set_regex_pattern(IMAGE_REGEX, re.IGNORECASE))
+        # self.register_command(
+        #     ["image", "images", "img", "imgs"],
+        #     lambda args: self._filter.set_regex_pattern(IMAGE_REGEX, re.IGNORECASE))
 
-        self.register_command(
-            ["archive", "archives", "arch", "ar"],
-            lambda args: self._filter.set_regex_pattern(ARCHIVE_REGEX, re.IGNORECASE))
+        # self.register_command(
+        #     ["archive", "archives", "arch", "ar"],
+        #     lambda args: self._filter.set_regex_pattern(ARCHIVE_REGEX, re.IGNORECASE))
 
-        self.register_command(
-            ["r", "rx", "re", "regex"],
-            lambda args: self._filter.set_regex_pattern(args[0], re.IGNORECASE))
+        # self.register_command(
+        #     ["r", "rx", "re", "regex"],
+        #     lambda args: self._filter.set_regex_pattern(args[0], re.IGNORECASE))
 
-        self.register_command(
-            "len",
-            lambda args: self._filter.set_length(int(args[1]), get_compare_operator(args[0])))
+        # self.register_command(
+        #     "len",
+        #     lambda args: self._filter.set_length(int(args[1]), get_compare_operator(args[0])))
 
-        self.register_command(
-            "size",
-            lambda args: self._filter.set_size(bytefmt.dehumanize(args[1]),
-                                               get_compare_operator(args[0])))
+        # self.register_command(
+        #     "size",
+        #     lambda args: self._filter.set_size(bytefmt.dehumanize(args[1]),
+        #                                        get_compare_operator(args[0])))
 
-        self.register_command(
-            "random",
-            lambda args: self._filter.set_random(float(args[0])))
+        # self.register_command(
+        #     "random",
+        #     lambda args: self._filter.set_random(float(args[0])))
 
-        self.register_command(
-            "pick",
-            lambda args: self._filter.set_random_pick(int(args[0])))
+        # self.register_command(
+        #     "pick",
+        #     lambda args: self._filter.set_random_pick(int(args[0])))
 
-        self.register_command(
-            ["folder", "folders", "dir", "dirs", "directories"],
-            lambda args: self._filter.set_folder())
+        # self.register_command(
+        #     ["folder", "folders", "dir", "dirs", "directories"],
+        #     lambda args: self._filter.set_folder())
 
-        self.register_command(
-            ["G", "Glob"],
-            lambda args: self._filter.set_pattern(args[0], case_sensitive=True),
-            help="Case-sensitive glob matching")
+        # self.register_command(
+        #     ["G", "Glob"],
+        #     lambda args: self._filter.set_pattern(args[0], case_sensitive=True),
+        #     help="Case-sensitive glob matching")
 
-        self.register_command(
-            ["g", "glob"],
-            lambda args: self._filter.set_pattern(args[0], case_sensitive=False),
-            help="Case-insensitive glob matching")
+        # self.register_command(
+        #     ["g", "glob"],
+        #     lambda args: self._filter.set_pattern(args[0], case_sensitive=False),
+        #     help="Case-insensitive glob matching")
 
-        self.register_command(
-            ["f", "fuz", "fuzz", "fuzzy"],
+        # self.register_command(
+        #     ["f", "fuz", "fuzz", "fuzzy"],
 
-            lambda args: self._filter.set_fuzzy(args[0]),
-            help="Fuzzy match the filename")
+        #     lambda args: self._filter.set_fuzzy(args[0]),
+        #     help="Fuzzy match the filename")
 
-        self.register_command(
-            ["ascii"],
-            lambda args: self._filter.set_ascii(True),
-            help="filenames with only ASCII character")
+        # self.register_command(
+        #     ["ascii"],
+        #     lambda args: self._filter.set_ascii(True),
+        #     help="filenames with only ASCII character")
 
-        self.register_command(
-            ["nonascii"],
-            lambda args: self._filter.set_ascii(False),
-            help="filenames with some non-ASCII character")
+        # self.register_command(
+        #     ["nonascii"],
+        #     lambda args: self._filter.set_ascii(False),
+        #     help="filenames with some non-ASCII character")
 
-        self.register_command(
-            ["help", "h"],
-            lambda args: self.print_help())
+        # self.register_command(
+        #     ["help", "h"],
+        #     lambda args: self.print_help())
 
 
 # EOF #

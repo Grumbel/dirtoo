@@ -15,24 +15,26 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Optional
+
 import logging
 import sys
 import textwrap
 
 from dirtools.fileview.filter_command_parser import FilterCommandParser
 from dirtools.fileview.filter_expr_parser import FilterExprParser
+from dirtools.fileview.match_func import MatchFunc
 
 logger = logging.getLogger(__name__)
 
 
 class FilterParser:
 
-    def __init__(self, filter) -> None:
-        self._filter = filter
-        self._command_parser = FilterCommandParser(filter)
+    def __init__(self) -> None:
+        self._command_parser = FilterCommandParser()
         self._expr_parser = FilterExprParser()
 
-    def print_help(self, fout=sys.stdout):
+    def print_help(self, fout=sys.stdout) -> None:
         for aliases, doc in self._expr_parser._func_factory.get_docs():
             fout.write("{}:{}".format(aliases[0],
                                       textwrap.dedent(doc or "")))
@@ -41,14 +43,12 @@ class FilterParser:
             print(file=fout)
             print(file=fout)
 
-    def parse(self, pattern: str) -> None:
-        if pattern == "":
-            self._filter.set_none()
-        elif pattern.startswith("/"):
+    def parse(self, pattern: str) -> Optional[MatchFunc]:
+        if pattern.startswith("/"):
             self._command_parser.parse(pattern)
+            return None
         else:
-            func = self._expr_parser.parse(pattern)
-            self._filter.set_match_func(func)
+            return self._expr_parser.parse(pattern)
 
 
 # EOF #

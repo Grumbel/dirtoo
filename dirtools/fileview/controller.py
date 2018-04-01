@@ -27,10 +27,8 @@ from PyQt5.QtGui import QClipboard
 import bytefmt
 
 from dirtools.fileview.file_collection import FileCollection
-from dirtools.fileview.grouper import (Grouper, DayGrouper,
-                                       DirectoryGrouper,
-                                       NoGrouper,
-                                       DurationGrouper)
+from dirtools.fileview.grouper import (DayGrouper, DirectoryGrouper,
+                                       NoGrouper, DurationGrouper)
 from dirtools.fileview.directory_watcher import DirectoryWatcher
 from dirtools.fileview.filter_parser import FilterParser
 from dirtools.fileview.settings import settings
@@ -126,7 +124,7 @@ class Controller(QObject):
     def show_hidden(self) -> None:
         self._filter.show_hidden = not self._filter.show_hidden
         settings.set_value("globals/show_hidden", self._filter.show_hidden)
-        self.apply_filter()
+        self.file_collection.set_filter(self._filter)
 
     def show_filtered(self) -> None:
         self._gui._window.thumb_view.set_show_filtered(not self._gui._window.thumb_view.show_filtered)
@@ -156,7 +154,7 @@ class Controller(QObject):
         self._gui._window.thumb_view.less_details()
 
     def show_filter_help(self) -> None:
-        parser = FilterParser(self._filter)
+        parser = FilterParser()
 
         fout = io.StringIO()
         parser.print_help(fout)
@@ -164,7 +162,7 @@ class Controller(QObject):
         self._gui.show_help(fout.getvalue())
 
     def show_search_help(self) -> None:
-        parser = FilterParser(self._filter)
+        parser = FilterParser()
 
         fout = io.StringIO()
         parser.print_help(fout)
@@ -174,10 +172,13 @@ class Controller(QObject):
     def more_details(self) -> None:
         self._gui._window.thumb_view.more_details()
 
-    def set_filter(self, pattern):
-        parser = FilterParser(self._filter)
-        parser.parse(pattern)
-        self.apply_filter()
+    def set_filter(self, pattern: str) -> None:
+        parser = FilterParser()
+        match_func = parser.parse(pattern)
+        if match_func is not None:
+            self._filter.set_match_func(match_func)
+            self.file_collection.set_filter(self._filter)
+        self._update_info()
 
     def go_forward(self) -> None:
         if self._location_history != []:
@@ -209,7 +210,6 @@ class Controller(QObject):
         self._gui._window.hide_loading()
 
         self.apply_sort()
-        self.apply_filter()
 
     def _on_scandir_finished(self, fileinfos) -> None:
         logger.info("Controller._on_scandir_extractor_finished")
@@ -217,7 +217,6 @@ class Controller(QObject):
 
         self.file_collection.set_fileinfos(fileinfos)
         self.apply_sort()
-        self.apply_filter()
 
     def _on_directory_watcher_message(self, message):
         self._gui._window._message_area.show_error(message)
@@ -292,7 +291,6 @@ class Controller(QObject):
         self.location = None
         self.file_collection.set_fileinfos([self.app.vfs.get_fileinfo(f) for f in files])
         self.apply_sort()
-        self.apply_filter()
 
         self.sig_location_changed_to_none.emit()
 
@@ -308,11 +306,6 @@ class Controller(QObject):
     def apply_sort(self) -> None:
         logger.debug("Controller.apply_sort")
         self._sorter.apply(self.file_collection)
-
-    def apply_filter(self) -> None:
-        logger.debug("Controller.apply_filter")
-        self.file_collection.filter(self._filter)
-        self._update_info()
 
     def _update_info(self) -> None:
         fileinfos = self.file_collection.get_fileinfos()
@@ -442,7 +435,6 @@ class Controller(QObject):
             self.file_collection.set_fileinfos(fileinfos)
 
             self.apply_sort()
-            self.apply_filter()
 
     def receive_thumbnail(self, location: Location, flavor: str,
                           pixmap, error_code: int, message: str) -> None:

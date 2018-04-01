@@ -65,7 +65,8 @@ class FileCollection(QObject):
     def __init__(self) -> None:
         super().__init__()
         self._fileinfos: ListDict[Location, FileInfo] = ListDict(lambda fi: fi.location())
-        self._grouper = NoGrouper()
+        self._grouper: Grouper = NoGrouper()
+        self._filter: Filter = Filter()
 
     def clear(self) -> None:
         logger.debug("FileCollection.clear")
@@ -131,12 +132,16 @@ class FileCollection(QObject):
         self._grouper = grouper
 
         for fi in self.get_fileinfos():
-            grouper(fi)
+            self._grouper(fi)
 
         self.sig_files_grouped.emit()
 
-    def filter(self, filter: Filter) -> None:
-        filter.apply(list(self.get_fileinfos()))
+    def set_filter(self, filter: Filter) -> None:
+        self._filter = filter
+
+        for fi in self.get_fileinfos():
+            self._filter.apply(fi)
+
         self.sig_files_filtered.emit()
 
     def sort(self, key, reverse: bool=False) -> None:

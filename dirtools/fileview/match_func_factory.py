@@ -37,7 +37,6 @@ from dirtools.fileview.match_func import (
     SizeMatchFunc,
     LengthMatchFunc,
     RandomMatchFunc,
-    RandomPickMatchFunc,
     FolderMatchFunc,
     CharsetMatchFunc,
     MetadataMatchFunc,
@@ -279,14 +278,14 @@ class MatchFuncFactory:
                                Example: 'pages:>100'
                                """)
 
-        self.register_function(["pick"], self.make_pick,
-                               """\
-                               {COUNT}
+        # self.register_function(["pick"], self.make_pick,
+        #                        """\
+        #                        {COUNT}
 
-                               Randomly picks COUNT number of items.
+        #                        Randomly picks COUNT number of items.
 
-                               Example: pick:10
-                               """)
+        #                        Example: pick:10
+        #                        """)
 
         self.register_function(["random"], self.make_random,
                                """\
@@ -466,9 +465,6 @@ class MatchFuncFactory:
 
     def make_random(self, argument):
         return RandomMatchFunc(float(argument))
-
-    def make_pick(self, argument):
-        return RandomPickMatchFunc(int(argument))
 
     def make_duration(self, argument):
         op, rest = parse_op(argument)
