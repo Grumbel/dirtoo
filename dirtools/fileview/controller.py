@@ -292,6 +292,10 @@ class Controller(QObject):
 
         self.sig_location_changed_to_none.emit()
 
+    def set_sort_reversed(self, reversed: bool) -> None:
+        self._sorter.set_sort_reversed(reversed)
+        self.file_collection.set_sorter(self._sorter)
+
     def set_sort_key_func(self, func) -> None:
         self._sorter.set_key_func(func)
         self.file_collection.set_sorter(self._sorter)

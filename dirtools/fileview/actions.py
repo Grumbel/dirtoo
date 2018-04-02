@@ -211,7 +211,7 @@ class Actions(QObject):
 
         self.sort_reversed = QAction("Reverse Sort", checkable=True)
         self.sort_reversed.triggered.connect(
-            lambda: self.controller._sorter.set_sort_reversed(self.sort_reversed.isChecked()))
+            lambda: self.controller.set_sort_reversed(self.sort_reversed.isChecked()))
 
         self.sort_by_name = QAction("Sort by Name", checkable=True)
         self.sort_by_name.triggered.connect(lambda:
