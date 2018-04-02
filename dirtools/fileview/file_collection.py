@@ -20,13 +20,15 @@ from typing import Iterable, Optional, Iterator, cast
 import logging
 import random
 
+from sortedcollections import SortedList
+
 from PyQt5.QtCore import QObject, pyqtSignal
 
 from dirtools.fileview.location import Location
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.filter import Filter
 from dirtools.fileview.grouper import Grouper, NoGrouper
-from dirtools.list_dict import ListDict
+from dirtools.fileview.sorter import Sorter
 
 logger = logging.getLogger(__name__)
 
@@ -64,9 +66,12 @@ class FileCollection(QObject):
 
     def __init__(self) -> None:
         super().__init__()
-        self._fileinfos: ListDict[Location, FileInfo] = ListDict(lambda fi: fi.location())
+
         self._grouper: Grouper = NoGrouper()
         self._filter: Filter = Filter()
+        self._sorter: Sorter = Sorter()
+
+        self._fileinfos: SortedList[FileInfo] = SortedList(key=self._sorter.get_key_func())
 
     def clear(self) -> None:
         logger.debug("FileCollection.clear")
@@ -75,13 +80,19 @@ class FileCollection(QObject):
 
     def set_fileinfos(self, fileinfos: Iterable[FileInfo]) -> None:
         logger.debug("FileCollection.set_fileinfos")
-        self._fileinfos = ListDict(lambda fi: fi.location(), fileinfos)
+
+        self._fileinfos.clear()
+        self._fileinfos.update(fileinfos)
+
         self.sig_files_set.emit()
 
     def add_fileinfo(self, fi: FileInfo) -> None:
         logger.debug("FileCollection.add_fileinfos: %s", fi)
-        self._fileinfos.append(fi)
+        self._fileinfos.add(fi)
         self.sig_file_added.emit(fi)
+
+        # FIXME: file_added should include an index/fileid of the new position
+        self.sig_files_reordered.emit()
 
     def remove_file(self, location: Location) -> None:
         try:
@@ -94,7 +105,7 @@ class FileCollection(QObject):
 
     def modify_file(self, fileinfo: FileInfo) -> None:
         try:
-            self._fileinfos.replace(fileinfo.location(), fileinfo)
+            self._replace_fileinfo(fileinfo)
         except KeyError:
             logger.error("FileCollection.modify_file: %s: KeyError", fileinfo)
         else:
@@ -103,7 +114,7 @@ class FileCollection(QObject):
 
     def update_fileinfo(self, fileinfo: FileInfo) -> None:
         try:
-            self._fileinfos.replace(fileinfo.location(), fileinfo)
+            self._replace_fileinfo(fileinfo)
         except KeyError:
             logger.error("FileCollection.update_fileinfo: %s", fileinfo)
         else:
@@ -112,7 +123,7 @@ class FileCollection(QObject):
 
     def close_file(self, fileinfo: FileInfo) -> None:
         try:
-            self._fileinfos.replace(fileinfo.location(), fileinfo)
+            self._replace_fileinfo(fileinfo)
         except KeyError:
             logger.error("FileCollection.close_file: %s", fileinfo)
         else:
@@ -123,7 +134,11 @@ class FileCollection(QObject):
         return cast(Iterator[FileInfo], iter(self._fileinfos))
 
     def get_fileinfo(self, location: Location) -> Optional[FileInfo]:
-        return self._fileinfos.get(location)
+        results = [fi for fi in self._fileinfos if fi.location() == location]
+        if results == []:
+            return None
+        else:
+            return results[0]
 
     def size(self) -> int:
         return len(self._fileinfos)
@@ -144,23 +159,35 @@ class FileCollection(QObject):
 
         self.sig_files_filtered.emit()
 
-    def sort(self, key, reverse: bool=False) -> None:
-        logger.debug("FileCollection.sort")
-        self._fileinfos.sort(key=key)
-        if reverse:
-            self._fileinfos.sort(key=key, reverse=True)
-        logger.debug("FileCollection.sort:done")
+    def set_sorter(self, sorter: Sorter) -> None:
+        print("rebuilding fileinfos")
+        self._sorter = sorter
+        self._fileinfos = SortedList(self._fileinfos, key=self._sorter.get_key_func())
         self.sig_files_reordered.emit()
 
-    def shuffle(self) -> None:
-        logger.debug("FileCollection.sort")
+    # def sort(self, key, reverse: bool=False) -> None:
+    #     logger.debug("FileCollection.sort")
+    #     self._fileinfos.sort(key=key)
+    #     if reverse:
+    #         self._fileinfos.sort(key=key, reverse=True)
+    #     logger.debug("FileCollection.sort:done")
+    #     self.sig_files_reordered.emit()
 
-        tmp = list(self._fileinfos)
-        random.shuffle(tmp)
-        self._fileinfos = ListDict(lambda fi: fi.location(), tmp)
+    def _replace_fileinfo(self, fileinfo: FileInfo) -> None:
+        location = fileinfo.location()
+        self._fileinfos = SortedList([fi for fi in self._fileinfos if fi.location() != location],
+                                     key=self._fileinfos._key)
+        self._fileinfos.add(fileinfo)
 
-        logger.debug("FileCollection.sort:done")
-        self.sig_files_reordered.emit()
+    # def shuffle(self) -> None:
+    #     logger.debug("FileCollection.sort")
+
+    #     tmp = list(self._fileinfos)
+    #     random.shuffle(tmp)
+    #     self._fileinfos = ListDict(lambda fi: fi.location(), tmp)
+
+    #     logger.debug("FileCollection.sort:done")
+    #     self.sig_files_reordered.emit()
 
     def save_as(self, filename: str) -> None:
         with open(filename, "w") as fout:

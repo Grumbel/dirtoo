@@ -215,25 +215,25 @@ class Actions(QObject):
 
         self.sort_by_name = QAction("Sort by Name", checkable=True)
         self.sort_by_name.triggered.connect(lambda:
-                                            self.controller._sorter.set_key_func(
+                                            self.controller.set_sort_key_func(
                                                 lambda x: numeric_sort_key(x.basename().lower())))
         self.sort_by_name.setChecked(True)
 
         self.sort_by_size = QAction("Sort by Size", checkable=True)
-        self.sort_by_size.triggered.connect(lambda: self.controller._sorter.set_key_func(FileInfo.size))
+        self.sort_by_size.triggered.connect(lambda: self.controller.set_sort_key_func(FileInfo.size))
 
         self.sort_by_ext = QAction("Sort by Extension", checkable=True)
-        self.sort_by_ext.triggered.connect(lambda: self.controller._sorter.set_key_func(FileInfo.ext))
+        self.sort_by_ext.triggered.connect(lambda: self.controller.set_sort_key_func(FileInfo.ext))
 
         self.sort_by_date = QAction("Sort by Date", checkable=True)
-        self.sort_by_date.triggered.connect(lambda: self.controller._sorter.set_key_func(FileInfo.mtime))
+        self.sort_by_date.triggered.connect(lambda: self.controller.set_sort_key_func(FileInfo.mtime))
 
         def framerate_key(fileinfo):
             metadata = fileinfo.metadata()
             return metadata.get('framerate', 0)
 
         self.sort_by_framerate = QAction("Sort by Framerate", checkable=True)
-        self.sort_by_framerate.triggered.connect(lambda: self.controller._sorter.set_key_func(framerate_key))
+        self.sort_by_framerate.triggered.connect(lambda: self.controller.set_sort_key_func(framerate_key))
 
         def aspect_ratio_key(fileinfo):
             metadata = fileinfo.metadata()
@@ -243,7 +243,7 @@ class Actions(QObject):
                 return 0
 
         self.sort_by_aspect_ratio = QAction("Sort by Aspect Ratio", checkable=True)
-        self.sort_by_aspect_ratio.triggered.connect(lambda: self.controller._sorter.set_key_func(aspect_ratio_key))
+        self.sort_by_aspect_ratio.triggered.connect(lambda: self.controller.set_sort_key_func(aspect_ratio_key))
 
         def area_key(fileinfo):
             metadata = fileinfo.metadata()
@@ -253,7 +253,7 @@ class Actions(QObject):
                 return 0
 
         self.sort_by_area = QAction("Sort by Area", checkable=True)
-        self.sort_by_area.triggered.connect(lambda: self.controller._sorter.set_key_func(area_key))
+        self.sort_by_area.triggered.connect(lambda: self.controller.set_sort_key_func(area_key))
 
         def duration_key(fileinfo):
             metadata = fileinfo.metadata()
@@ -263,13 +263,14 @@ class Actions(QObject):
                 return 0
 
         self.sort_by_duration = QAction("Sort by Duration", checkable=True)
-        self.sort_by_duration.triggered.connect(lambda: self.controller._sorter.set_key_func(duration_key))
+        self.sort_by_duration.triggered.connect(lambda: self.controller.set_sort_key_func(duration_key))
 
         self.sort_by_user = QAction("Sort by User", checkable=True)
         self.sort_by_group = QAction("Sort by Group", checkable=True)
         self.sort_by_permission = QAction("Sort by Permission", checkable=True)
         self.sort_by_random = QAction("Random Shuffle", checkable=True)
-        self.sort_by_random.triggered.connect(lambda: self.controller._sorter.set_key_func(None))
+        # self.sort_by_random.triggered.connect(lambda: self.controller.set_sort_key_func(None))
+        self.sort_by_random.triggered.connect(lambda: print("sort_by_random: not implemented"))
 
         self.sort_group = QActionGroup(self)
         self.sort_group.addAction(self.sort_by_name)

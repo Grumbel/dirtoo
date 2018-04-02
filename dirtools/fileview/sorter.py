@@ -19,28 +19,26 @@ from typing import Callable, Any
 
 from dirtools.util import numeric_sort_key
 from dirtools.fileview.file_info import FileInfo
-from dirtools.fileview.file_collection import FileCollection
+
+if False:
+    from dirtools.fileview.file_collection import FileCollection  # noqa: F401
 
 
 class Sorter:
 
-    def __init__(self, controller: 'Controller') -> None:
-        self.controller = controller
+    def __init__(self) -> None:
         self.directories_first = True
         self.reverse = False
         self.key_func: Callable[[FileInfo], Any] = lambda x: numeric_sort_key(x.basename().lower())
 
     def set_directories_first(self, v: bool) -> None:
         self.directories_first = v
-        self.controller.apply_sort()
 
     def set_sort_reversed(self, rev: bool) -> None:
         self.reverse = rev
-        self.controller.apply_sort()
 
     def set_key_func(self, key_func: Callable[[FileInfo], Any]) -> None:
         self.key_func = key_func
-        self.controller.apply_sort()
 
     def get_key_func(self) -> Callable[[FileInfo], Any]:
         if self.directories_first:
@@ -48,14 +46,8 @@ class Sorter:
         else:
             return self.key_func
 
-    def apply(self, file_collection: FileCollection) -> None:
-        if self.key_func is None:
-            file_collection.shuffle()
-        else:
-            file_collection.sort(self.get_key_func(), reverse=self.reverse)
-
-
-from dirtools.fileview.controller import Controller   # noqa: F401
+    # def apply(self, file_collection: 'FileCollection') -> None:
+    #     file_collection.sort(self.get_key_func(), reverse=self.reverse)
 
 
 # EOF #

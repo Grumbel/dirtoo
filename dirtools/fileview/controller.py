@@ -71,7 +71,7 @@ class Controller(QObject):
         self._gui = Gui(self)
 
         self._filter = Filter()
-        self._sorter = Sorter(self)
+        self._sorter = Sorter()
 
         self._location_history: List[Location] = []
         self._location_history_index = 0
@@ -209,14 +209,11 @@ class Controller(QObject):
         logger.info("Controller._on_finished")
         self._gui._window.hide_loading()
 
-        self.apply_sort()
-
     def _on_scandir_finished(self, fileinfos) -> None:
         logger.info("Controller._on_scandir_extractor_finished")
         self._gui._window.hide_loading()
 
         self.file_collection.set_fileinfos(fileinfos)
-        self.apply_sort()
 
     def _on_directory_watcher_message(self, message):
         self._gui._window._message_area.show_error(message)
@@ -289,10 +286,15 @@ class Controller(QObject):
         self._gui._window.set_file_list()
 
         self.location = None
-        self.file_collection.set_fileinfos([self.app.vfs.get_fileinfo(f) for f in files])
-        self.apply_sort()
+
+        fileinfos = [self.app.vfs.get_fileinfo(f) for f in files]
+        self.file_collection.set_fileinfos(fileinfos)
 
         self.sig_location_changed_to_none.emit()
+
+    def set_sort_key_func(self, func) -> None:
+        self._sorter.set_key_func(func)
+        self.file_collection.set_sorter(self._sorter)
 
     def new_controller(self, clone: bool=False) -> 'Controller':
         controller = self.app.new_controller()
@@ -302,10 +304,6 @@ class Controller(QObject):
 
     def show_file_history(self) -> None:
         self.set_location(Location.from_url("history:///"))
-
-    def apply_sort(self) -> None:
-        logger.debug("Controller.apply_sort")
-        self._sorter.apply(self.file_collection)
 
     def _update_info(self) -> None:
         fileinfos = self.file_collection.get_fileinfos()
@@ -433,8 +431,6 @@ class Controller(QObject):
             fileinfos = self.file_collection.get_fileinfos()
             fileinfos = (self.app.vfs.get_fileinfo(f.location()) for f in fileinfos)
             self.file_collection.set_fileinfos(fileinfos)
-
-            self.apply_sort()
 
     def receive_thumbnail(self, location: Location, flavor: str,
                           pixmap, error_code: int, message: str) -> None:
