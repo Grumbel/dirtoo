@@ -25,23 +25,6 @@ if False:
     from dirtools.fileview.file_collection import FileCollection  # noqa: F401
 
 
-@total_ordering
-class Reverser:
-
-    def __init__(self, value):
-        self._value = value
-
-    def __eq__(self, other):
-        return self._value == other._value
-
-    def __lt__(self, other):
-        return self._value > other._value
-
-
-def reverse_key_func(key_func):
-    return lambda value: Reverser(key_func(value))
-
-
 class Sorter:
 
     def __init__(self) -> None:
@@ -60,14 +43,9 @@ class Sorter:
 
     def get_key_func(self) -> Callable[[FileInfo], Any]:
         if self.directories_first:
-            key_func = lambda fileinfo: (not fileinfo.isdir(), self.key_func(fileinfo))
+            return lambda fileinfo: (not fileinfo.isdir(), self.key_func(fileinfo))
         else:
-            key_func = self.key_func
-
-        if self.reverse:
-            return reverse_key_func(key_func)
-        else:
-            return key_func
+            return self.key_func
 
     # def apply(self, file_collection: 'FileCollection') -> None:
     #     file_collection.sort(self.get_key_func(), reverse=self.reverse)

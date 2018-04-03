@@ -131,7 +131,10 @@ class FileCollection(QObject):
             self.sig_file_closed.emit(fileinfo)
 
     def get_fileinfos(self) -> Iterator[FileInfo]:
-        return cast(Iterator[FileInfo], iter(self._fileinfos))
+        if self._sorter.reverse:
+            return cast(Iterator[FileInfo], reversed(self._fileinfos))
+        else:
+            return cast(Iterator[FileInfo], iter(self._fileinfos))
 
     def get_fileinfo(self, location: Location) -> Optional[FileInfo]:
         results = [fi for fi in self._fileinfos if fi.location() == location]
