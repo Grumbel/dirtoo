@@ -62,7 +62,7 @@ class FilterLineEdit(QLineEdit):
     def _on_reset(self) -> None:
         self.clear()
         self.history_idx = -1
-        self.controller.set_filter("")
+        self.controller.clear_filter()
         self.controller._gui._window.hide_filter()
         self.controller._gui._window.thumb_view.setFocus()
 

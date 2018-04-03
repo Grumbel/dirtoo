@@ -172,6 +172,11 @@ class Controller(QObject):
     def more_details(self) -> None:
         self._gui._window.thumb_view.more_details()
 
+    def clear_filter(self) -> None:
+        self._filter.set_match_func(None)
+        self.file_collection.set_filter(self._filter)
+        self._update_info()
+
     def set_filter(self, pattern: str) -> None:
         parser = FilterParser()
         match_func = parser.parse(pattern)
@@ -222,7 +227,7 @@ class Controller(QObject):
         self.close_streams()
         self._gui._window.search_toolbar.hide()
         if not self.actions.filter_pin.isChecked():
-            self.set_filter("")
+            self.clear_filter()
             self._gui._window.filter_toolbar.hide()
         self._gui._window.thumb_view.setFocus()
 

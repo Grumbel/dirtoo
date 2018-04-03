@@ -46,7 +46,10 @@ class Filter:
         return False
 
     def _is_excluded(self, fileinfo) -> bool:
-        return not self.match_func(fileinfo)
+        if self.match_func is None:
+            return False
+        else:
+            return not self.match_func(fileinfo)
 
     # def set_regex_pattern(self, pattern, flags=0) -> None:
     #     self.match_func = RegexMatchFunc(pattern, flags)
