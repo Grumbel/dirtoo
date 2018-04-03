@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 class FileCollection(QObject):
 
     # A new file entry has been added
-    sig_file_added = pyqtSignal(FileInfo)
+    sig_file_added = pyqtSignal(int, FileInfo)
 
     # An existing file entry has been removed
     sig_file_removed = pyqtSignal(Location)
@@ -88,11 +88,9 @@ class FileCollection(QObject):
 
     def add_fileinfo(self, fi: FileInfo) -> None:
         logger.debug("FileCollection.add_fileinfos: %s", fi)
-        self._fileinfos.add(fi)
-        self.sig_file_added.emit(fi)
-
-        # FIXME: file_added should include an index/fileid of the new position
-        self.sig_files_reordered.emit()
+        idx = self._fileinfos.bisect(fi)
+        self._fileinfos.insert(idx, fi)
+        self.sig_file_added.emit(idx, fi)
 
     def remove_file(self, location: Location) -> None:
         try:
