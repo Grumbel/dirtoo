@@ -18,7 +18,6 @@
 from typing import Iterable, Optional, Iterator, cast
 
 import logging
-import random
 
 from sortedcollections import SortedList
 
@@ -139,7 +138,7 @@ class FileCollection(QObject):
         if results == []:
             return None
         else:
-            return results[0]
+            return cast(FileInfo, results[0])
 
     def size(self) -> int:
         return len(self._fileinfos)

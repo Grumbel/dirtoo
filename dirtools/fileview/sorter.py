@@ -16,7 +16,6 @@
 
 
 from typing import Callable, Any
-from functools import total_ordering
 
 from dirtools.util import numeric_sort_key
 from dirtools.fileview.file_info import FileInfo
