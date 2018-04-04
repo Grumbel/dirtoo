@@ -716,45 +716,7 @@ class Controller(QObject):
 
     def leap_to(self, text: str, forward: bool, skip: bool) -> None:
         text = text.lower()
-
-        if text == "":
-            item = self._gui._window.thumb_view._cursor_item
-            self._gui._window.thumb_view._cursor_item = None
-            if item is not None:
-                item.update()
-        else:
-            fileinfos = list(self.file_collection.get_fileinfos())
-
-            item = self._gui._window.thumb_view._cursor_item
-            if item is not None:
-                try:
-                    idx = fileinfos.index(item.fileinfo)
-                except ValueError:
-                    idx = None
-            else:
-                idx = None
-
-            if forward:
-                if idx is None:
-                    idx = 0
-
-                if skip:
-                    idx += 1
-
-                for fi in fileinfos[idx:] + fileinfos[0:idx]:
-                    if fi.basename().lower().startswith(text):
-                        self._gui._window.thumb_view.set_cursor_to_fileinfo(fi)
-                        break
-            else:
-                if skip:
-                    idx -= 1
-
-                if idx is None:
-                    idx = len(fileinfos)
-                for fi in reversed(fileinfos[idx:] + fileinfos[0:idx + 1]):
-                    if fi.basename().lower().startswith(text):
-                        self._gui._window.thumb_view.set_cursor_to_fileinfo(fi)
-                        break
+        self._gui._window.thumb_view.leap_to(text, forward, skip)
 
 
 # EOF #

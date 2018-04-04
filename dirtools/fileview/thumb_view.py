@@ -573,7 +573,44 @@ class ThumbView(QGraphicsView):
                 self._controller.on_context_menu(ev.globalPos())
 
     def leap_to(self, text: str, forward: bool, skip: bool) -> None:
-        self._controller.leap_to(text, forward, skip)
+        if text == "":
+            item = self._cursor_item
+            self._cursor_item = None
+            if item is not None:
+                item.update()
+        else:
+            fileinfos = list(self._file_collection.get_fileinfos())
+
+            item = self._cursor_item
+            if item is not None:
+                try:
+                    idx = fileinfos.index(item.fileinfo)
+                except ValueError:
+                    idx = None
+            else:
+                idx = None
+
+            if forward:
+                if idx is None:
+                    idx = 0
+
+                if skip:
+                    idx += 1
+
+                for fi in fileinfos[idx:] + fileinfos[0:idx]:
+                    if fi.basename().lower().startswith(text):
+                        self.set_cursor_to_fileinfo(fi)
+                        break
+            else:
+                if skip:
+                    idx -= 1
+
+                if idx is None:
+                    idx = len(fileinfos)
+                for fi in reversed(fileinfos[idx:] + fileinfos[0:idx + 1]):
+                    if fi.basename().lower().startswith(text):
+                        self.set_cursor_to_fileinfo(fi)
+                        break
 
 
 # EOF #
