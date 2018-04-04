@@ -32,10 +32,8 @@ from dirtools.fileview.grouper import (DayGrouper, DirectoryGrouper,
 from dirtools.fileview.directory_watcher import DirectoryWatcher
 from dirtools.fileview.filter_parser import FilterParser
 from dirtools.fileview.settings import settings
-from dirtools.fileview.filelist_stream import FileListStream
 from dirtools.fileview.location import Location, Payload
 from dirtools.fileview.file_info import FileInfo
-from dirtools.fileview.search_stream import SearchStream
 from dirtools.fileview.thumb_view import FileItemStyle
 from dirtools.fileview.gnome import parse_gnome_copied_files, make_gnome_copied_files
 from dirtools.util import make_non_existing_filename
@@ -77,8 +75,6 @@ class Controller(QObject):
         self._location_history_index = 0
 
         self._directory_watcher: Optional[DirectoryWatcher] = None
-        self._filelist_stream: Optional[FileListStream] = None
-        self._search_stream: Optional[SearchStream] = None
 
         self._gui._window.thumb_view.set_file_collection(self.file_collection)
 
@@ -95,14 +91,6 @@ class Controller(QObject):
         if self._directory_watcher is not None:
             self._directory_watcher.close()
             self._directory_watcher = None
-
-        if self._filelist_stream is not None:
-            self._filelist_stream.close()
-            self._filelist_stream = None
-
-        if self._search_stream is not None:
-            self._search_stream.close()
-            self._search_stream = None
 
     def close(self) -> None:
         self.close_streams()
