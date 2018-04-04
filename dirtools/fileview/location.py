@@ -141,6 +141,12 @@ class Location:
                                 for prot, path in self._payloads])
         return "{}{}".format(self._path, payload_text)
 
+    def as_human(self) -> str:
+        if self._protocol == "file":
+            return self.as_path()
+        else:
+            return self.as_url()
+
     def exists(self) -> bool:
         if self.has_payload():
             if len(self._payloads) != 1:

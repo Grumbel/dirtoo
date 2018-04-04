@@ -247,7 +247,7 @@ class LocationLineEdit(QLineEdit):
         p = self.palette()
         p.setColor(QPalette.Text, Qt.black)
         self.setPalette(p)
-        self.setText(location.as_path())
+        self.setText(location.as_human())
 
     def set_unused_text(self) -> None:
         self.is_unused = True

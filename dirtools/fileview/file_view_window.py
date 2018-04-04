@@ -472,9 +472,9 @@ class FileViewWindow(QMainWindow):
     def zoom_out(self):
         self.thumb_view.zoom_out()
 
-    def set_location(self, path: Location):
-        self.location_lineedit.set_location(path)
-        self.setWindowTitle("{} - dt-fileview".format(path.as_path()))
+    def set_location(self, location: Location):
+        self.location_lineedit.set_location(location)
+        self.setWindowTitle("{} - dt-fileview".format(location.as_human()))
 
     def set_file_list(self):
         self.location_lineedit.set_unused_text()
