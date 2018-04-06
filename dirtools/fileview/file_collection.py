@@ -92,13 +92,15 @@ class FileCollection(QObject):
         self.sig_file_added.emit(idx, fi)
 
     def remove_file(self, location: Location) -> None:
-        try:
-            self._fileinfos.remove(location)
-        except KeyError:
-            logger.debug("FileCollection.remove_file: %s", location)
+        # FIXME: deleting by location is not such a great idea
+        for idx, fi in enumerate(self._fileinfos):
+            if fi.location() == location:
+                logger.debug("FileCollection.remove_file: %s", location)
+                del self._fileinfos[idx]
+                self.sig_file_removed.emit(location)
+                break
         else:
             logger.error("FileCollection.remove_file: %s: KeyError", location)
-            self.sig_file_removed.emit(location)
 
     def modify_file(self, fileinfo: FileInfo) -> None:
         try:
