@@ -34,15 +34,6 @@ logger = logging.getLogger(__name__)
 ThumbnailCallback = Callable[[Location, Optional[str], QImage, int, str], None]
 
 
-class CallableWrapper:
-
-    def __init__(self, func):
-        self._func = func
-
-    def __call__(self, *args):
-        return self._func(*args)
-
-
 class WorkerDBusThumbnailerListener:
 
     def __init__(self, worker):
@@ -69,8 +60,11 @@ ThumbnailRequest = namedtuple('ThumbnailRequest', ['location', 'flavor', 'callba
 
 class ThumbnailerWorker(QObject):
 
-    sig_thumbnail_ready = pyqtSignal(Location, str, CallableWrapper, QImage)
-    sig_thumbnail_error = pyqtSignal(Location, str, CallableWrapper, int, str)
+    # location, flavor, callback, image
+    sig_thumbnail_ready = pyqtSignal(Location, str, object, QImage)
+
+    # location, flavor, callback, error_code, error_message
+    sig_thumbnail_error = pyqtSignal(Location, str, object, int, str)
 
     def __init__(self, vfs, parent=None) -> None:
         super().__init__(parent)
@@ -173,8 +167,11 @@ class ThumbnailerWorker(QObject):
 
 class Thumbnailer(QObject):
 
-    sig_thumbnail_requested = pyqtSignal(Location, str, bool, CallableWrapper)
-    sig_thumbnail_error = pyqtSignal(Location, str, CallableWrapper)
+    # location, flavor, force, callback
+    sig_thumbnail_requested = pyqtSignal(Location, str, bool, object)
+
+    # location, flavor, callback
+    sig_thumbnail_error = pyqtSignal(Location, str, object)
 
     sig_close_requested = pyqtSignal()
 
@@ -207,7 +204,7 @@ class Thumbnailer(QObject):
     def request_thumbnail(self, location: Location, flavor: str, force: bool,
                           callback: ThumbnailCallback):
         logger.debug("Thumbnailer.request_thumbnail: %s  %s", location, flavor)
-        self.sig_thumbnail_requested.emit(location, flavor, force, CallableWrapper(callback))
+        self.sig_thumbnail_requested.emit(location, flavor, force, callback)
 
     def delete_thumbnails(self, files: List[str]):
         logger.warning("Thumbnailer.delete_thumbnail (not implemented): %s", files)
