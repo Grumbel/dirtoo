@@ -37,28 +37,28 @@ ThumbnailCallback = Callable[[Location, Optional[str], QImage, int, str], None]
 class CallableWrapper:
 
     def __init__(self, func):
-        self.func = func
+        self._func = func
 
     def __call__(self, *args):
-        return self.func(*args)
+        return self._func(*args)
 
 
 class WorkerDBusThumbnailerListener:
 
     def __init__(self, worker):
-        self.worker = worker
+        self._worker = worker
 
     def started(self, handle):
-        self.worker.on_thumbnail_started(handle)
+        self._worker.on_thumbnail_started(handle)
 
     def ready(self, handle, urls, flavor):
-        self.worker.on_thumbnail_ready(handle, urls, flavor)
+        self._worker.on_thumbnail_ready(handle, urls, flavor)
 
     def error(self, handle, uris, error_code, message):
-        self.worker.on_thumbnail_error(handle, uris, error_code, message)
+        self._worker.on_thumbnail_error(handle, uris, error_code, message)
 
     def finished(self, handle):
-        self.worker.on_thumbnail_finished(handle)
+        self._worker.on_thumbnail_finished(handle)
 
     def idle(self):
         pass
@@ -77,26 +77,23 @@ class ThumbnailerWorker(QObject):
         # This function is called from the main thread, leave
         # construction to init() and deinit()
 
-        self.vfs = vfs
+        self._vfs = vfs
         self._close = False
 
-        self.dbus_loop = None
-        self.session_bus = None
-        self.dbus_thumbnailer: Optional[DBusThumbnailer] = None
-        self.requests: Dict[int, List[ThumbnailRequest]] = defaultdict(list)
+        self._dbus_thumbnailer: Optional[DBusThumbnailer] = None
+        self._queued_requests: Dict[int, List[ThumbnailRequest]] = defaultdict(list)
 
         self._timer_id = 0
         self._thumbnail_requests: List[ThumbnailRequest] = []
 
     def init(self):
-        self.session_bus = QDBusConnection.sessionBus()
-        self.dbus_thumbnailer = DBusThumbnailer(self.session_bus,
+        self._dbus_thumbnailer = DBusThumbnailer(QDBusConnection.sessionBus(),
                                                 WorkerDBusThumbnailerListener(self))
 
     def close(self):
         assert self._close
 
-        del self.dbus_thumbnailer
+        del self._dbus_thumbnailer
 
     def timerEvent(self, ev) -> None:
         req_by_flavor: defaultdict = defaultdict(list)
@@ -108,17 +105,17 @@ class ThumbnailerWorker(QObject):
 
             filenames = []
             for req in reqs:
-                filenames.append(self.vfs.get_stdio_name(req.location))
+                filenames.append(self._vfs.get_stdio_name(req.location))
 
-            handle = self.dbus_thumbnailer.queue(filenames, flavor)
-            self.requests[handle].append(reqs)
+            handle = self._dbus_thumbnailer.queue(filenames, flavor)
+            self._queued_requests[handle].append(reqs)
 
         self._thumbnail_requests.clear()
 
     def on_thumbnail_requested(self, location: Location, flavor: str, force: bool,
                                callback: ThumbnailCallback):
 
-        stdio_filename = self.vfs.get_stdio_name(location)
+        stdio_filename = self._vfs.get_stdio_name(location)
         thumbnail_filename = DBusThumbnailer.thumbnail_from_filename(stdio_filename, flavor)
         exists = os.path.exists(thumbnail_filename)
         if exists and not force:
@@ -144,13 +141,13 @@ class ThumbnailerWorker(QObject):
         pass
 
     def on_thumbnail_finished(self, handle: int):
-        del self.requests[handle]
+        del self._queued_requests[handle]
 
     def _find_requests(self, handle, urls) -> List[ThumbnailRequest]:
         results = []
-        for reqs in self.requests.get(handle, []):
+        for reqs in self._queued_requests.get(handle, []):
             for req in reqs:
-                req_url = self.vfs.get_stdio_url(req.location)
+                req_url = self._vfs.get_stdio_url(req.location)
                 if req_url in urls:
                     results.append(req)
         return results
@@ -160,7 +157,7 @@ class ThumbnailerWorker(QObject):
 
         for req in reqs:
             thumbnail_filename = DBusThumbnailer.thumbnail_from_filename(
-                self.vfs.get_stdio_name(req.location), req.flavor)
+                self._vfs.get_stdio_name(req.location), req.flavor)
 
             # On shutdown this causes:
             # QObject::~QObject: Timers cannot be stopped from another thread
