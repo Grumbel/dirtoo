@@ -4,10 +4,47 @@ import dbus
 import xml
 import xml.dom.minidom
 import xml.etree.ElementTree as ET
+from dbus.mainloop.glib import DBusGMainLoop
+from gi.repository import GLib
+
+
+DBusGMainLoop(set_as_default=True)
 
 bus = dbus.SystemBus()
 
 ud_manager_obj = bus.get_object("org.freedesktop.UDisks2", "/org/freedesktop/UDisks2")
+
+
+def dbus_bin2str(data):
+    return bytes(data).decode()
+
+
+def on_interfaces_added(objpath, interfaces):
+    print("--added---------------------")
+    print(objpath)
+    for interface, properties in interfaces.items():
+        print(interface)
+        for k, v in properties.items():
+            print("    ", k, "->", v)
+
+
+def on_interfaces_removed(objpath, interfaces):
+    print("--removed-------------------")
+    print(objpath)
+    for interface in interfaces:
+        print("  ", interface)
+
+
+ud_manager_if = dbus.Interface(ud_manager_obj, "org.freedesktop.DBus.ObjectManager")
+
+ud_manager_if.connect_to_signal("InterfacesAdded",
+                                handler_function=on_interfaces_added,
+                                dbus_interface="org.freedesktop.DBus.ObjectManager")
+
+ud_manager_if.connect_to_signal("InterfacesRemoved",
+                                handler_function=on_interfaces_removed,
+                                dbus_interface="org.freedesktop.DBus.ObjectManager")
+
 
 manager_obj = bus.get_object("org.freedesktop.UDisks2", "/org/freedesktop/UDisks2/Manager")
 manager_if = dbus.Interface(manager_obj, "org.freedesktop.UDisks2.Manager")
@@ -36,7 +73,7 @@ for dev in devs:
 
         print()
     except Exception as err:
-        pass # print(err)
+        pass  # print(err)
 
 if False:
     ud_manager = dbus.Interface(ud_manager_obj, 'org.freedesktop.DBus.ObjectManager')
@@ -72,5 +109,10 @@ if False:
 
     # print(dbus.PROPERTIES_IFACE)
     # "org.freedesktop.DBus.Properties"
+
+
+loop = GLib.MainLoop()
+loop.run()
+
 
 # EOF #
