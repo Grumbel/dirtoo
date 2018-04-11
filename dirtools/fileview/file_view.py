@@ -142,6 +142,30 @@ class FileView(QGraphicsView):
         self._leap_widget = LeapWidget(self)
         self._leap_widget.sig_leap.connect(self.leap_to)
 
+        self._scroll_timer = None
+        self._is_scrolling = False
+        self.verticalScrollBar().sliderReleased.connect(self._on_vertical_scrollbar_slider_released)
+        self.verticalScrollBar().valueChanged.connect(self._on_vertical_scrollbar_slider_value_changed)
+
+    def _on_vertical_scrollbar_slider_released(self) -> None:
+        self._is_scrolling = False
+
+        if self._scroll_timer is not None:
+            self.killTimer(self._scroll_timer)
+            self._scroll_timer = None
+
+    def _on_vertical_scrollbar_slider_value_changed(self, value: int) -> None:
+        self._is_scrolling = True
+
+        if self._scroll_timer is not None:
+            self.killTimer(self._scroll_timer)
+            self._scroll_timer = None
+
+        self._scroll_timer = self.startTimer(500)
+
+    def is_scrolling(self) -> bool:
+        return self._is_scrolling
+
     def _on_reset(self):
         self._controller.hide_all()
 
@@ -372,8 +396,12 @@ class FileView(QGraphicsView):
             if self._layout is not None:
                 self._layout.layout(self.viewport().width(), self.viewport().height())
             self.layout_items()
+        elif ev.timerId() == self._scroll_timer:
+            self.killTimer(self._scroll_timer)
+            self._is_scrolling = False
+            self._scroll_timer = None
         else:
-            assert False, "timer foobar"
+            assert False, "timer foobar: {}".format(ev.timerId())
 
     def style_item(self, item) -> None:
         if self._show_filtered:
