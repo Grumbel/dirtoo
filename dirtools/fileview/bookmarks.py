@@ -18,9 +18,7 @@
 from typing import List
 
 import logging
-
-if False:
-    from dirtools.fileview.location import Location   # noqa: F401
+from dirtools.fileview.location import Location
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +38,7 @@ class Bookmarks:
                     try:
                         result.append(Location.from_url(line))
                     except Exception as err:
-                        logger.warning("ignoring bookmark entry: %s", line)
+                        logger.warning("ignoring bookmark entry: %s: %s", line, err)
 
                 return sorted(result)
 
