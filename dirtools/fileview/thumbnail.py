@@ -86,7 +86,7 @@ class Thumbnail:
             self.status = ThumbnailStatus.THUMBNAIL_UNAVAILABLE
         else:
             self.status = ThumbnailStatus.LOADING
-            self.parent_item.thumb_view.request_thumbnail(
+            self.parent_item.file_view.request_thumbnail(
                 self.parent_item, self.parent_item.fileinfo, self.flavor, force=force)
 
 

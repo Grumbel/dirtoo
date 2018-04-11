@@ -35,12 +35,12 @@ logger = logging.getLogger(__name__)
 
 class ThumbFileItem(FileItem):
 
-    def __init__(self, fileinfo: FileInfo, controller: 'Controller', thumb_view) -> None:
+    def __init__(self, fileinfo: FileInfo, controller: 'Controller', file_view) -> None:
         logger.debug("ThumbFileItem.__init__: %s", fileinfo)
         super().__init__(fileinfo, controller)
         # self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
 
-        self.thumb_view = thumb_view
+        self.file_view = file_view
 
         self._new = False
         self.hovering: bool = False
@@ -51,7 +51,7 @@ class ThumbFileItem(FileItem):
         self.large_thumbnail: Thumbnail = Thumbnail("large", self)
         self.metadata: Optional[Dict[str, Any]] = None
 
-        self.set_tile_size(self.thumb_view._mode._tile_style.tile_width, self.thumb_view._mode._tile_style.tile_height)
+        self.set_tile_size(self.file_view._mode._tile_style.tile_width, self.file_view._mode._tile_style.tile_height)
         self.animation_timer: Optional[int] = None
 
         self._file_is_final = True
@@ -142,7 +142,7 @@ class ThumbFileItem(FileItem):
         renderer.render(painter)
 
     def make_icon(self):
-        icon = self.thumb_view.icon_from_fileinfo(self.fileinfo)
+        icon = self.file_view.icon_from_fileinfo(self.fileinfo)
         return icon
 
     def hoverEnterEvent(self, ev):
@@ -200,7 +200,7 @@ class ThumbFileItem(FileItem):
 
     def _get_thumbnail(self, flavor: Optional[str] = None) -> Thumbnail:
         if flavor is None:
-            flavor = self.thumb_view.flavor
+            flavor = self.file_view.flavor
 
         if flavor == "normal":
             return self.normal_thumbnail

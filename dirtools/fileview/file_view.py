@@ -79,7 +79,7 @@ class FileViewStyle:
         self.shared_pixmaps = SharedPixmaps()
 
 
-class ThumbView(QGraphicsView):
+class FileView(QGraphicsView):
 
     def __init__(self, controller: 'Controller') -> None:
         super().__init__()
@@ -233,7 +233,7 @@ class ThumbView(QGraphicsView):
 
     def set_file_collection(self, file_collection: FileCollection) -> None:
         assert file_collection != self._file_collection
-        logger.debug("ThumbView.set_file_collection")
+        logger.debug("FileView.set_file_collection")
         self._file_collection = file_collection
         self._file_collection.sig_files_set.connect(self.on_file_collection_set)
         self._file_collection.sig_files_reordered.connect(self.on_file_collection_reordered)
@@ -249,7 +249,7 @@ class ThumbView(QGraphicsView):
         self.on_file_collection_set()
 
     def on_file_added(self, idx: int, fileinfo: FileInfo) -> None:
-        logger.debug("ThumbView.on_file_added: %s %s", idx, fileinfo)
+        logger.debug("FileView.on_file_added: %s %s", idx, fileinfo)
         item = ThumbFileItem(fileinfo, self._controller, self)
         item._new = True
         self._location2item[fileinfo.location()].append(item)
@@ -263,7 +263,7 @@ class ThumbView(QGraphicsView):
             self.refresh_bounding_rect()
 
     def on_file_removed(self, location: Location) -> None:
-        logger.debug("ThumbView.on_file_removed: %s", location)
+        logger.debug("FileView.on_file_removed: %s", location)
         items = self._location2item.get(location, [])
         for item in items:
             self._scene.removeItem(item)
@@ -274,28 +274,28 @@ class ThumbView(QGraphicsView):
             self.layout_items()
 
     def on_file_modified(self, fileinfo: FileInfo) -> None:
-        logger.debug("ThumbView.on_file_modified: %s", fileinfo)
+        logger.debug("FileView.on_file_modified: %s", fileinfo)
         items = self._location2item.get(fileinfo.location(), [])
         for item in items:
             item.on_file_modified(fileinfo)
             item.update()
 
     def on_fileinfo_updated(self, fileinfo: FileInfo) -> None:
-        logger.debug("ThumbView.on_fileinfo_updated: %s", fileinfo)
+        logger.debug("FileView.on_fileinfo_updated: %s", fileinfo)
         items = self._location2item.get(fileinfo.location(), [])
         for item in items:
             item.on_fileinfo_updated(fileinfo)
             item.update()
 
     def on_file_closed(self, fileinfo: FileInfo) -> None:
-        logger.debug("ThumbView.on_file_closed: %s", fileinfo)
+        logger.debug("FileView.on_file_closed: %s", fileinfo)
         items = self._location2item.get(fileinfo.location(), [])
         for item in items:
             item.on_file_modified(fileinfo, final=True)
             item.update()
 
     def on_file_collection_reordered(self) -> None:
-        logger.debug("ThumbView.on_file_collection_reordered")
+        logger.debug("FileView.on_file_collection_reordered")
 
         fileinfos = self._file_collection.get_fileinfos()
 
@@ -313,12 +313,12 @@ class ThumbView(QGraphicsView):
         self.layout_items()
 
     def on_file_collection_filtered(self) -> None:
-        logger.debug("ThumbView.on_file_collection_filtered")
+        logger.debug("FileView.on_file_collection_filtered")
         self.style_items()
         self.layout_items()
 
     def on_file_collection_grouped(self) -> None:
-        logger.debug("ThumbView.on_file_collection_grouped")
+        logger.debug("FileView.on_file_collection_grouped")
         self.style_items()
         self.layout_items()
 
@@ -330,7 +330,7 @@ class ThumbView(QGraphicsView):
         self._layout = None
 
     def on_file_collection_set(self) -> None:
-        logger.debug("ThumbView.on_file_collection_set")
+        logger.debug("FileView.on_file_collection_set")
         self.clear()
 
         fileinfos = self._file_collection.get_fileinfos()
@@ -345,7 +345,7 @@ class ThumbView(QGraphicsView):
         self.layout_items()
 
     def resizeEvent(self, ev) -> None:
-        logger.debug("ThumbView.resizeEvent: %s", ev)
+        logger.debug("FileView.resizeEvent: %s", ev)
 
         super().resizeEvent(ev)
 
@@ -394,7 +394,7 @@ class ThumbView(QGraphicsView):
             self.style_item(item)
 
     def initPainter(self, painter):
-        # logger.debug("ThumbView.initPainter:")
+        # logger.debug("FileView.initPainter:")
         pass
 
     @profile
@@ -412,7 +412,7 @@ class ThumbView(QGraphicsView):
 
     @profile
     def _layout_items(self) -> None:
-        logger.debug("ThumbView._layout_items")
+        logger.debug("FileView._layout_items")
 
         self.setUpdatesEnabled(False)
         # old_item_index_method = self._scene.itemIndexMethod()
@@ -426,7 +426,7 @@ class ThumbView(QGraphicsView):
         # self._scene.setItemIndexMethod(old_item_index_method)
         self.setUpdatesEnabled(True)
 
-        logger.debug("ThumbView.layout_items: done")
+        logger.debug("FileView.layout_items: done")
 
     def refresh_bounding_rect(self) -> None:
         if self._layout is None:

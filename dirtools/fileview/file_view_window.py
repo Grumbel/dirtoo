@@ -35,7 +35,7 @@ from PyQt5.QtWidgets import (
     QToolBar
 )
 
-from dirtools.fileview.thumb_view import ThumbView
+from dirtools.fileview.file_view import FileView
 from dirtools.fileview.location import Location
 from dirtools.fileview.menu import Menu
 from dirtools.fileview.tool_button import ToolButton
@@ -65,7 +65,7 @@ class FileViewWindow(QMainWindow):
         self.make_search_toolbar()
         self.make_shortcut()
 
-        self.thumb_view.setFocus()
+        self.file_view.setFocus()
 
         self.resize(1024, 768)
         self.move(QCursor.pos().x() - self.width() / 2,
@@ -107,21 +107,21 @@ class FileViewWindow(QMainWindow):
 
         shortcut = QShortcut(Qt.Key_Home, self)
         shortcut.setContext(Qt.WindowShortcut)
-        shortcut.activated.connect(lambda: self.thumb_view.ensureVisible(0, 0, 1, 1))
+        shortcut.activated.connect(lambda: self.file_view.ensureVisible(0, 0, 1, 1))
 
         shortcut = QShortcut(Qt.Key_End, self)
         shortcut.setContext(Qt.WindowShortcut)
         shortcut.activated.connect(
-            lambda: self.thumb_view.ensureVisible(
-                0, self.thumb_view._layout.get_bounding_rect().height(), 1, 1))
+            lambda: self.file_view.ensureVisible(
+                0, self.file_view._layout.get_bounding_rect().height(), 1, 1))
 
         shortcut = QShortcut(Qt.Key_PageUp, self)
         shortcut.setContext(Qt.WindowShortcut)
-        shortcut.activated.connect(lambda: self.thumb_view.scroll_by(0, -self.thumb_view.viewport().height()))
+        shortcut.activated.connect(lambda: self.file_view.scroll_by(0, -self.file_view.viewport().height()))
 
         shortcut = QShortcut(Qt.Key_PageDown, self)
         shortcut.setContext(Qt.WindowShortcut)
-        shortcut.activated.connect(lambda: self.thumb_view.scroll_by(0, self.thumb_view.viewport().height()))
+        shortcut.activated.connect(lambda: self.file_view.scroll_by(0, self.file_view.viewport().height()))
 
     def make_window(self):
         from dirtools.fileview.location_line_edit import LocationLineEdit
@@ -133,19 +133,19 @@ class FileViewWindow(QMainWindow):
         self.vbox = QVBoxLayout()
         self.vbox.setContentsMargins(0, 0, 0, 0)
 
-        self.thumb_view = ThumbView(self.controller)
+        self.file_view = FileView(self.controller)
 
         self.search_lineedit = SearchLineEdit(self.controller)
         self.location_lineedit = LocationLineEdit(self.controller)
         self.file_filter = FilterLineEdit(self.controller)
         # self.file_filter.setText("File Pattern Here")
-        self.thumb_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.file_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.status_bar = self.statusBar()
 
         self.info = QLabel("")
         self.status_bar.addPermanentWidget(self.info)
 
-        self.vbox.addWidget(self.thumb_view, Qt.AlignLeft)
+        self.vbox.addWidget(self.file_view, Qt.AlignLeft)
 
         self._message_area = MessageArea()
         self._message_area.hide()
@@ -467,10 +467,10 @@ class FileViewWindow(QMainWindow):
         self.loading_label.setVisible(False)
 
     def zoom_in(self):
-        self.thumb_view.zoom_in()
+        self.file_view.zoom_in()
 
     def zoom_out(self):
-        self.thumb_view.zoom_out()
+        self.file_view.zoom_out()
 
     def set_location(self, location: Location):
         self.location_lineedit.set_location(location)

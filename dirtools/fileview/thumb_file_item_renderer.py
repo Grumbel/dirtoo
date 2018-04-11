@@ -83,18 +83,18 @@ class ThumbFileItemRenderer:
         self.icon = item.icon
         self.thumbnail = item._get_thumbnail()
 
-        self._item_style = item.thumb_view._mode._item_style
-        self.level_of_detail = item.thumb_view._mode._level_of_detail
-        self.style = item.thumb_view._style
-        self.zoom_index = item.thumb_view._mode._zoom_index
+        self._item_style = item.file_view._mode._item_style
+        self.level_of_detail = item.file_view._mode._level_of_detail
+        self.style = item.file_view._style
+        self.zoom_index = item.file_view._mode._zoom_index
 
         self.tile_rect = item.tile_rect
         self.hovering = item.hovering
         self.animation_timer = item.animation_timer
         self.new = item._new
-        self.crop_thumbnails = item.thumb_view._crop_thumbnails
+        self.crop_thumbnails = item.file_view._crop_thumbnails
         self.is_selected = item.isSelected()
-        self.is_cursor = item.thumb_view._cursor_item == item
+        self.is_cursor = item.file_view._cursor_item == item
 
         self.thumbnail_rect = QRectF(0, 0, item.tile_rect.width(), item.tile_rect.width())
 

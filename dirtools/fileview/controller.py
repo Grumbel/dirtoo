@@ -34,7 +34,7 @@ from dirtools.fileview.filter_parser import FilterParser
 from dirtools.fileview.settings import settings
 from dirtools.fileview.location import Location, Payload
 from dirtools.fileview.file_info import FileInfo
-from dirtools.fileview.thumb_view import FileItemStyle
+from dirtools.fileview.file_view import FileItemStyle
 from dirtools.fileview.gnome import parse_gnome_copied_files, make_gnome_copied_files
 from dirtools.util import make_non_existing_filename
 from dirtools.fileview.path_completion import PathCompletion
@@ -76,7 +76,7 @@ class Controller(QObject):
 
         self._directory_watcher: Optional[DirectoryWatcher] = None
 
-        self._gui._window.thumb_view.set_file_collection(self.file_collection)
+        self._gui._window.file_view.set_file_collection(self.file_collection)
 
         self.app.metadata_collector.sig_metadata_ready.connect(self.receive_metadata)
 
@@ -115,7 +115,7 @@ class Controller(QObject):
         self.file_collection.set_filter(self._filter)
 
     def show_filtered(self) -> None:
-        self._gui._window.thumb_view.set_show_filtered(not self._gui._window.thumb_view.show_filtered)
+        self._gui._window.file_view.set_show_filtered(not self._gui._window.file_view.show_filtered)
 
     def show_abspath(self) -> None:
         pass
@@ -124,22 +124,22 @@ class Controller(QObject):
         pass
 
     def view_detail_view(self) -> None:
-        self._gui._window.thumb_view.set_style(FileItemStyle.DETAIL)
+        self._gui._window.file_view.set_style(FileItemStyle.DETAIL)
 
     def view_icon_view(self) -> None:
-        self._gui._window.thumb_view.set_style(FileItemStyle.ICON)
+        self._gui._window.file_view.set_style(FileItemStyle.ICON)
 
     def view_small_icon_view(self) -> None:
-        self._gui._window.thumb_view.set_style(FileItemStyle.SMALLICON)
+        self._gui._window.file_view.set_style(FileItemStyle.SMALLICON)
 
     def zoom_in(self) -> None:
-        self._gui._window.thumb_view.zoom_in()
+        self._gui._window.file_view.zoom_in()
 
     def zoom_out(self) -> None:
-        self._gui._window.thumb_view.zoom_out()
+        self._gui._window.file_view.zoom_out()
 
     def less_details(self) -> None:
-        self._gui._window.thumb_view.less_details()
+        self._gui._window.file_view.less_details()
 
     def show_filter_help(self) -> None:
         parser = FilterParser()
@@ -158,7 +158,7 @@ class Controller(QObject):
         self._gui.show_help(fout.getvalue())
 
     def more_details(self) -> None:
-        self._gui._window.thumb_view.more_details()
+        self._gui._window.file_view.more_details()
 
     def clear_filter(self) -> None:
         self._filter.set_match_func(None)
@@ -217,7 +217,7 @@ class Controller(QObject):
         if not self.actions.filter_pin.isChecked():
             self.clear_filter()
             self._gui._window.filter_toolbar.hide()
-        self._gui._window.thumb_view.setFocus()
+        self._gui._window.file_view.setFocus()
 
         self.app.location_history.append(location)
 
@@ -328,7 +328,7 @@ class Controller(QObject):
             total,
             bytefmt.humanize(total_size))
 
-        selected_items = self._gui._window.thumb_view._scene.selectedItems()
+        selected_items = self._gui._window.file_view._scene.selectedItems()
         if selected_items != []:
             total_size = 0
             for item in selected_items:
@@ -337,7 +337,7 @@ class Controller(QObject):
 
         self._gui._window.show_info(msg)
 
-        self._gui._window.thumb_view.set_filtered(filtered_count > 0)
+        self._gui._window.file_view.set_filtered(filtered_count > 0)
 
     def toggle_timegaps(self) -> None:
         pass
@@ -350,7 +350,7 @@ class Controller(QObject):
                 self.set_location(self.location.parent())
 
     def on_click(self, fileinfo: FileInfo, new_window=False) -> None:
-        self._gui._window.thumb_view.set_cursor_to_fileinfo(fileinfo)
+        self._gui._window.file_view.set_cursor_to_fileinfo(fileinfo)
 
         if not fileinfo.isdir():
             if fileinfo.is_archive() and settings.value("globals/open_archives", True, bool):
@@ -373,10 +373,10 @@ class Controller(QObject):
                 self.set_location(fileinfo.location())
 
     def clear_selection(self) -> None:
-        self._gui._window.thumb_view._scene.clearSelection()
+        self._gui._window.file_view._scene.clearSelection()
 
     def select_all(self) -> None:
-        scene = self._gui._window.thumb_view._scene
+        scene = self._gui._window.file_view._scene
         oldstate = scene.blockSignals(True)
         for item in scene.items():
             item.setSelected(True)
@@ -398,7 +398,7 @@ class Controller(QObject):
 
     def set_crop_thumbnails(self, v: bool) -> None:
         settings.set_value("globals/crop_thumbnails", v)
-        self._gui._window.thumb_view.set_crop_thumbnails(v)
+        self._gui._window.file_view.set_crop_thumbnails(v)
 
     def request_metadata(self, fileinfo: FileInfo) -> None:
         self.app.metadata_collector.request_metadata(fileinfo.location())
@@ -417,7 +417,7 @@ class Controller(QObject):
                                                self.receive_thumbnail)
 
     def prepare(self) -> None:
-        self._gui._window.thumb_view.prepare()
+        self._gui._window.file_view.prepare()
 
     def reload(self) -> None:
         if self.location is not None:
@@ -436,10 +436,10 @@ class Controller(QObject):
         if pixmap is None:
             logger.error("Controller.receive_thumbnail: error: %s  %s  %s", location, error_code, message)
 
-        self._gui._window.thumb_view.receive_thumbnail(location, flavor, pixmap, error_code, message)
+        self._gui._window.file_view.receive_thumbnail(location, flavor, pixmap, error_code, message)
 
     def reload_thumbnails(self) -> None:
-        selected_items = self._gui._window.thumb_view._scene.selectedItems()
+        selected_items = self._gui._window.file_view._scene.selectedItems()
         files = [item.fileinfo.abspath()
                  for item in selected_items]
         self.app.dbus_thumbnail_cache.delete(files)
@@ -461,7 +461,7 @@ class Controller(QObject):
 
     def show_rename_dialog(self, location: Optional[Location] = None) -> None:
         if location is None:
-            item = self._gui._window.thumb_view._cursor_item
+            item = self._gui._window.file_view._cursor_item
             if item is None:
                 logger.error("no file selected for renaming")
                 return
@@ -494,7 +494,7 @@ class Controller(QObject):
 
     def hide_search_toolbar(self) -> None:
         self._gui._window.search_toolbar.hide()
-        self._gui._window.thumb_view.setFocus()
+        self._gui._window.file_view.setFocus()
         self.set_location(self.location)
 
     def show_location_toolbar(self, selectall=True) -> None:
@@ -524,11 +524,11 @@ class Controller(QObject):
         location = Location.from_search_query(abspath, query)
         self.set_location(location)
 
-        self._gui._window.thumb_view.setFocus()
+        self._gui._window.file_view.setFocus()
 
     def close_search(self):
         self._gui._window.search_toolbar.hide()
-        self._gui._window.thumb_view.setFocus()
+        self._gui._window.file_view.setFocus()
         self._gui._window.location_lineedit.on_return_pressed()
 
     def close_window(self):
@@ -600,7 +600,7 @@ class Controller(QObject):
         # https://www.uninformativ.de/blog/postings/2017-04-02/0/POSTING-en.html
 
     def selected_fileinfos(self):
-        selected_items = self._gui._window.thumb_view._scene.selectedItems()
+        selected_items = self._gui._window.file_view._scene.selectedItems()
         return [item.fileinfo
                 for item in selected_items]
 
@@ -704,7 +704,7 @@ class Controller(QObject):
 
     def leap_to(self, text: str, forward: bool, skip: bool) -> None:
         text = text.lower()
-        self._gui._window.thumb_view.leap_to(text, forward, skip)
+        self._gui._window.file_view.leap_to(text, forward, skip)
 
 
 # EOF #

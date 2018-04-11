@@ -63,7 +63,7 @@ class Gui(QObject):
         self._filter_help.show()
 
     def fake_mouse(self) -> None:
-        """Generate a fake mouse move event to force the ThumbView to update
+        """Generate a fake mouse move event to force the FileView to update
         the hover item after a menu was displayed."""
 
         ev = QMouseEvent(QEvent.MouseMove,
@@ -71,7 +71,7 @@ class Gui(QObject):
                          Qt.NoButton,
                          Qt.NoButton,
                          Qt.NoModifier)
-        self._window.thumb_view.mouseMoveEvent(ev)
+        self._window.file_view.mouseMoveEvent(ev)
 
     def on_context_menu(self, pos) -> None:
         menu = DirectoryContextMenu(self._controller, self._controller.location)
@@ -80,7 +80,7 @@ class Gui(QObject):
 
     def on_item_context_menu(self, ev, item) -> None:
         if item.isSelected():
-            selected_items = self._window.thumb_view._scene.selectedItems()
+            selected_items = self._window.file_view._scene.selectedItems()
         else:
             self._controller.clear_selection()
             item.setSelected(True)
@@ -89,8 +89,8 @@ class Gui(QObject):
         menu = ItemContextMenu(self._controller, [item.fileinfo for item in selected_items])
 
         if ev.reason() == QContextMenuEvent.Keyboard:
-            pos = self._window.thumb_view.mapToGlobal(
-                self._window.thumb_view.mapFromScene(
+            pos = self._window.file_view.mapToGlobal(
+                self._window.file_view.mapFromScene(
                     item.pos() + item.boundingRect().center()))
             print(pos, item.boundingRect())
             menu.exec(pos)
