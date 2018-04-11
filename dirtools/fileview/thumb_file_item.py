@@ -149,13 +149,19 @@ class ThumbFileItem(FileItem):
     def hoverEnterEvent(self, ev):
         # logger.debug("ThumbFileItem.hoverEnterEvent: %s", self.fileinfo)
         self.hovering = True
-        self.controller.show_current_filename(self.fileinfo.abspath())
+
+        if not self.file_view.is_scrolling():
+            self.controller.show_current_filename(self.fileinfo.abspath())
+
         self.update()
 
     def hoverLeaveEvent(self, ev):
         # logger.debug("ThumbFileItem.hoverLeaveEvent: %s", self.fileinfo)
         self.hovering = False
-        self.controller.show_current_filename("")
+
+        if not self.file_view.is_scrolling():
+            self.controller.show_current_filename("")
+
         self.update()
 
     def set_thumbnail_image(self, image: QImage, flavor) -> None:
