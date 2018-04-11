@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Iterable, Optional, Iterator, cast
+from typing import Iterable, Optional, Iterator, Dict, cast
 
 import logging
 
@@ -70,15 +70,23 @@ class FileCollection(QObject):
         self._filter: Filter = Filter()
         self._sorter: Sorter = Sorter()
 
+        self._location2fileinfo: Dict[Location, FileInfo] = {}
         self._fileinfos: SortedList[FileInfo] = SortedList(key=self._sorter.get_key_func())
 
     def clear(self) -> None:
         logger.debug("FileCollection.clear")
+
+        self._location2fileinfo.clear()
+
         self._fileinfos.clear()
+
         self.sig_files_set.emit()
 
     def set_fileinfos(self, fileinfos: Iterable[FileInfo]) -> None:
         logger.debug("FileCollection.set_fileinfos")
+
+        for fi in fileinfos:
+            self._location2fileinfo[fi.location()] = fi
 
         self._fileinfos.clear()
         self._fileinfos.update(fileinfos)
@@ -87,20 +95,26 @@ class FileCollection(QObject):
 
     def add_fileinfo(self, fi: FileInfo) -> None:
         logger.debug("FileCollection.add_fileinfos: %s", fi)
+
+        self._location2fileinfo[fi.location()] = fi
+
         idx = self._fileinfos.bisect(fi)
         self._fileinfos.insert(idx, fi)
+
         self.sig_file_added.emit(idx, fi)
 
     def remove_file(self, location: Location) -> None:
-        # FIXME: deleting by location is not such a great idea
-        for idx, fi in enumerate(self._fileinfos):
-            if fi.location() == location:
-                logger.debug("FileCollection.remove_file: %s", location)
-                del self._fileinfos[idx]
-                self.sig_file_removed.emit(location)
-                break
-        else:
+        try:
+            fi = self._location2fileinfo[location]
+        except KeyError:
             logger.error("FileCollection.remove_file: %s: KeyError", location)
+        else:
+            logger.debug("FileCollection.remove_file: %s", location)
+
+            del self._location2fileinfo[location]
+            self._fileinfos.remove(fi)
+
+            self.sig_file_removed.emit(location)
 
     def modify_file(self, fileinfo: FileInfo) -> None:
         try:
@@ -136,13 +150,15 @@ class FileCollection(QObject):
             return cast(Iterator[FileInfo], iter(self._fileinfos))
 
     def get_fileinfo(self, location: Location) -> Optional[FileInfo]:
-        results = [fi for fi in self._fileinfos if fi.location() == location]
-        if results == []:
+        try:
+            fi = self._location2fileinfo[location]
+        except KeyError:
             return None
         else:
-            return cast(FileInfo, results[0])
+            return fi
 
     def size(self) -> int:
+        assert len(self._fileinfos) == len(self._location2fileinfo)
         return len(self._fileinfos)
 
     def set_grouper(self, grouper: Grouper) -> None:
@@ -177,8 +193,12 @@ class FileCollection(QObject):
 
     def _replace_fileinfo(self, fileinfo: FileInfo) -> None:
         location = fileinfo.location()
-        self._fileinfos = SortedList([fi for fi in self._fileinfos if fi.location() != location],
-                                     key=self._fileinfos._key)
+
+        fi = self._location2fileinfo[location]
+
+        self._location2fileinfo[location] = fileinfo
+
+        self._fileinfos.remove(fi)
         self._fileinfos.add(fileinfo)
 
     # def shuffle(self) -> None:
