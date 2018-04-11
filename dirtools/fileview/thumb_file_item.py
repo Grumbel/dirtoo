@@ -100,7 +100,8 @@ class ThumbFileItem(FileItem):
     def paint(self, painter, option, widget) -> None:
         # logger.debug("ThumbFileItem.paint: %s", self.fileinfo)
 
-        self.prepare()
+        if not self.file_view.is_scrolling():
+            self.prepare()
 
         if self.animation_timer is None:
             # FIXME: calling os.getuid() is slow, so use 1000 as
