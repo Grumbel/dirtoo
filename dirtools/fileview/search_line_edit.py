@@ -21,6 +21,9 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPalette, QIcon, QKeySequence
 from PyQt5.QtWidgets import QLineEdit, QShortcut
 
+if False:
+    from dirtools.fileview.controller import Controller   # noqa: F401
+
 
 class SearchLineEdit(QLineEdit):
 
@@ -107,9 +110,6 @@ class SearchLineEdit(QLineEdit):
                 self.history_idx = 0
             else:
                 self.setText(self.history[len(self.history) - self.history_idx - 1])
-
-
-from dirtools.fileview.controller import Controller   # noqa: F401
 
 
 # EOF #

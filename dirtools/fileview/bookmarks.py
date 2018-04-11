@@ -19,6 +19,9 @@ from typing import List
 
 import logging
 
+if False:
+    from dirtools.fileview.location import Location   # noqa: F401
+
 logger = logging.getLogger(__name__)
 
 
@@ -58,9 +61,6 @@ class Bookmarks:
             for entry in entries:
                 if entry != location:
                     print(entry.as_url(), file=fout)
-
-
-from dirtools.fileview.location import Location   # noqa: F401
 
 
 # EOF #

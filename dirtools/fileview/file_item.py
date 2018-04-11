@@ -25,6 +25,7 @@ from PyQt5.QtWidgets import QGraphicsObject, QGraphicsItem
 
 if False:
     from dirtools.fileview.controller import Controller  # noqa: F401
+    from dirtools.fileview.file_info import FileInfo  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -131,10 +132,6 @@ class FileItem(QGraphicsObject):
 
     def show_abspath(self):
         pass
-
-
-from dirtools.fileview.file_info import FileInfo  # noqa: F401
-# import dirtools.fileview.controller as dfc
 
 
 # EOF #

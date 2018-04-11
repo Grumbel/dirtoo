@@ -29,6 +29,9 @@ from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.settings import settings
 from dirtools.util import numeric_sort_key
 
+if False:
+    from dirtools.fileview.controller import Controller  # noqa: F401
+
 logger = logging.getLogger(__name__)
 
 
@@ -325,9 +328,6 @@ class Actions(QObject):
         # self.filter_pin.setToolTip("Pin the filter")
 
         self.filter_pin.triggered.connect(on_filter_pin)
-
-
-from dirtools.fileview.controller import Controller  # noqa: F401
 
 
 # EOF #
