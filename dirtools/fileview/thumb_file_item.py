@@ -25,7 +25,7 @@ from PyQt5.QtGui import QColor, QPainterPath, QImage
 from dirtools.fileview.file_item import FileItem
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.thumbnail import Thumbnail, ThumbnailStatus
-from dirtools.fileview.thumb_file_item_renderer import ThumbFileItemRenderer
+from dirtools.fileview.file_item_renderer import FileItemRenderer
 
 if False:
     from dirtools.fileview.controller import Controller  # noqa: F401
@@ -139,7 +139,7 @@ class ThumbFileItem(FileItem):
                              self.tile_rect.height(),
                              QColor(164, 164, 164))
 
-        renderer = ThumbFileItemRenderer(self)
+        renderer = FileItemRenderer(self)
         renderer.render(painter)
 
     def make_icon(self):

@@ -76,7 +76,7 @@ def make_cropped_rect(sw, sh, tw, th):
                       w, h)
 
 
-class ThumbFileItemRenderer:
+class FileItemRenderer:
 
     def __init__(self, item):
         self.fileinfo = item.fileinfo
