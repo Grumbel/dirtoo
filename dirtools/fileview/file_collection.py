@@ -19,6 +19,7 @@ from typing import Iterable, Optional, Iterator, Dict, cast
 
 import logging
 
+from collections import defaultdict
 from sortedcollections import SortedList
 
 from PyQt5.QtCore import QObject, pyqtSignal
@@ -70,7 +71,7 @@ class FileCollection(QObject):
         self._filter: Filter = Filter()
         self._sorter: Sorter = Sorter()
 
-        self._location2fileinfo: Dict[Location, FileInfo] = {}
+        self._location2fileinfo: Dict[Location, List[FileInfo]] = defaultdict(list)
         self._fileinfos: SortedList[FileInfo] = SortedList(key=self._sorter.get_key_func())
 
     def clear(self) -> None:
@@ -86,7 +87,7 @@ class FileCollection(QObject):
         logger.debug("FileCollection.set_fileinfos")
 
         for fi in fileinfos:
-            self._location2fileinfo[fi.location()] = fi
+            self._location2fileinfo[fi.location()].append(fi)
 
         self._fileinfos.clear()
         self._fileinfos.update(fileinfos)
@@ -96,7 +97,7 @@ class FileCollection(QObject):
     def add_fileinfo(self, fi: FileInfo) -> None:
         logger.debug("FileCollection.add_fileinfos: %s", fi)
 
-        self._location2fileinfo[fi.location()] = fi
+        self._location2fileinfo[fi.location()].append(fi)
 
         idx = self._fileinfos.bisect(fi)
         self._fileinfos.insert(idx, fi)
@@ -105,14 +106,15 @@ class FileCollection(QObject):
 
     def remove_file(self, location: Location) -> None:
         try:
-            fi = self._location2fileinfo[location]
+            fis = self._location2fileinfo[location]
         except KeyError:
             logger.error("FileCollection.remove_file: %s: KeyError", location)
         else:
             logger.debug("FileCollection.remove_file: %s", location)
 
             del self._location2fileinfo[location]
-            self._fileinfos.remove(fi)
+            for fi in fis:
+                self._fileinfos.remove(fi)
 
             self.sig_file_removed.emit(location)
 
@@ -151,20 +153,19 @@ class FileCollection(QObject):
 
     def get_fileinfo(self, location: Location) -> Optional[FileInfo]:
         try:
-            fi = self._location2fileinfo[location]
+            fis = self._location2fileinfo[location]
         except KeyError:
             return None
         else:
-            return fi
+            return fis[0]  # FIXME: this is fishy
 
     def size(self) -> int:
-        assert len(self._fileinfos) == len(self._location2fileinfo)
         return len(self._fileinfos)
 
     def set_grouper(self, grouper: Grouper) -> None:
         self._grouper = grouper
 
-        for fi in self.get_fileinfos():
+        for fi in self._fileinfos:
             self._grouper(fi)
 
         self.sig_files_grouped.emit()
@@ -172,7 +173,7 @@ class FileCollection(QObject):
     def set_filter(self, filter: Filter) -> None:
         self._filter = filter
 
-        for fi in self.get_fileinfos():
+        for fi in self._fileinfos:
             self._filter.apply(fi)
 
         self.sig_files_filtered.emit()
@@ -194,11 +195,14 @@ class FileCollection(QObject):
     def _replace_fileinfo(self, fileinfo: FileInfo) -> None:
         location = fileinfo.location()
 
-        fi = self._location2fileinfo[location]
+        fis = self._location2fileinfo[location]
 
-        self._location2fileinfo[location] = fileinfo
+        self._location2fileinfo[location].clear()
+        self._location2fileinfo[location].append(fileinfo)
 
-        self._fileinfos.remove(fi)
+        for fi in fis:
+            self._fileinfos.remove(fi)
+
         self._fileinfos.add(fileinfo)
 
     # def shuffle(self) -> None:
