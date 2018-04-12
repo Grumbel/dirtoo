@@ -22,7 +22,7 @@ from PyQt5.QtWidgets import QGraphicsItem
 
 from dirtools.fileview.layout import RootLayout, HBoxLayout, TileLayout, ItemLayout, VSpacer
 from dirtools.fileview.file_info import FileInfo
-from dirtools.fileview.thumb_file_item import ThumbFileItem
+from dirtools.fileview.file_item import FileItem
 
 
 class LayoutBuilder:
@@ -52,9 +52,9 @@ class LayoutBuilder:
         return tile_layout
 
     def cleanup(self):
-        # ThumbFileItem's are recycled between layouts
+        # FileItem's are recycled between layouts
         for item in self._scene.items():
-            if not isinstance(item, ThumbFileItem):
+            if not isinstance(item, FileItem):
                 self._scene.removeItem(item)
 
     def build_layout(self, items: List[Any]) -> RootLayout:

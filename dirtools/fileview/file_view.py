@@ -37,7 +37,7 @@ from dirtools.fileview.location import Location
 from dirtools.fileview.profiler import profile
 from dirtools.fileview.settings import settings
 from dirtools.fileview.mode import Mode, IconMode, ListMode, DetailMode, FileItemStyle
-from dirtools.fileview.thumb_file_item import ThumbFileItem
+from dirtools.fileview.file_item import FileItem
 from dirtools.fileview.file_graphics_scene import FileGraphicsScene
 from dirtools.fileview.leap_widget import LeapWidget
 
@@ -93,7 +93,7 @@ class FileView(QGraphicsView):
 
         self._show_filtered = False
 
-        self._location2item: Dict[Location, List[ThumbFileItem]] = defaultdict(list)
+        self._location2item: Dict[Location, List[FileItem]] = defaultdict(list)
         self.setAcceptDrops(True)
 
         self._scene = FileGraphicsScene()
@@ -113,14 +113,14 @@ class FileView(QGraphicsView):
 
         self._layout: Optional[RootLayout] = None
 
-        self._items: List[ThumbFileItem] = []
+        self._items: List[FileItem] = []
 
         self._file_collection: Optional[FileCollection] = None
 
         self._needs_layout = True
 
         self.apply_zoom()
-        self._cursor_item: Optional[ThumbFileItem] = None
+        self._cursor_item: Optional[FileItem] = None
         self._crop_thumbnails = False
         self.setBackgroundBrush(QBrush(Qt.white, Qt.SolidPattern))
         self._resize_timer: Optional[int] = None
@@ -191,7 +191,7 @@ class FileView(QGraphicsView):
 
         if self._cursor_item is None:
             rect = self.mapToScene(self.rect()).boundingRect()
-            items = [item for item in self._scene.items(rect) if isinstance(item, ThumbFileItem)]
+            items = [item for item in self._scene.items(rect) if isinstance(item, FileItem)]
             if not items:
                 return
             else:
@@ -207,7 +207,7 @@ class FileView(QGraphicsView):
         rect = QRectF(self._cursor_item.tile_rect)
         rect.moveTo(self._cursor_item.pos().x() + (self._cursor_item.tile_rect.width() + 4) * dx,
                     self._cursor_item.pos().y() + (self._cursor_item.tile_rect.height() + 4) * dy)
-        items = [item for item in self._scene.items(rect) if isinstance(item, ThumbFileItem)]
+        items = [item for item in self._scene.items(rect) if isinstance(item, FileItem)]
         if items:
             self._cursor_item = items[0]
 
@@ -274,7 +274,7 @@ class FileView(QGraphicsView):
 
     def on_file_added(self, idx: int, fileinfo: FileInfo) -> None:
         logger.debug("FileView.on_file_added: %s %s", idx, fileinfo)
-        item = ThumbFileItem(fileinfo, self._controller, self)
+        item = FileItem(fileinfo, self._controller, self)
         item._new = True
         self._location2item[fileinfo.location()].append(item)
         self._scene.addItem(item)
@@ -360,7 +360,7 @@ class FileView(QGraphicsView):
         fileinfos = self._file_collection.get_fileinfos()
 
         for fileinfo in fileinfos:
-            item = ThumbFileItem(fileinfo, self._controller, self)
+            item = FileItem(fileinfo, self._controller, self)
             self._location2item[fileinfo.location()].append(item)
             self._scene.addItem(item)
             self._items.append(item)
