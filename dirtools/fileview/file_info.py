@@ -20,11 +20,22 @@ import logging
 
 import os
 import stat
+import errno
+from enum import Enum
 
 from dirtools.fileview.location import Location
 from dirtools.fileview.match_func_factory import VIDEO_EXT, IMAGE_EXT, ARCHIVE_EXT
 
 logger = logging.getLogger(__name__)
+
+
+class FileInfoError(Enum):
+
+    NO_ERROR = 0
+    FILENOTFOUND = 1
+    PERMISSIONDENIED = 2
+    IO = 3
+    UNKNOWN = 4
 
 
 class FileInfo:
@@ -35,38 +46,49 @@ class FileInfo:
 
         fi = FileInfo()
 
+        fi._abspath = os.path.abspath(filename)
+        fi._location = Location.from_path(fi._abspath)
+        fi._dirname = os.path.dirname(fi._abspath)
+        fi._basename = os.path.basename(fi._abspath)
+        fi._ext = os.path.splitext(fi._abspath)[1]
+
         try:
-            fi._abspath = os.path.abspath(filename)
-            fi._location = Location.from_path(fi._abspath)
-            fi._dirname = os.path.dirname(fi._abspath)
-            fi._basename = os.path.basename(fi._abspath)
-            fi._ext = os.path.splitext(fi._abspath)[1]
-
-            fi._collect_stat()
-
+            fi._stat = os.lstat(fi._abspath)
+            fi._have_access = os.access(fi._abspath, os.R_OK)
+            fi._error = FileInfoError.NO_ERROR
+        except (FileNotFoundError, NotADirectoryError):
+            fi._error = FileInfoError.FILENOTFOUND
+        except PermissionError:
+            fi._error = FileInfoError.PERMISSIONDENIED
+        except OSError as err:
+            if err.errno == errno.EIO:
+                fi._error = FileInfoError.IO
+            else:
+                fi._error = FileInfoError.UNKNOWN
+        except Exception as err:
+            fi._error = FileInfoError.UNKNOWN
+        else:
             fi._isdir = os.path.isdir(fi._abspath)
             fi._isfile = stat.S_ISREG(fi._stat.st_mode)
             fi._issymlink = stat.S_ISLNK(fi._stat.st_mode)
-        except FileNotFoundError:
-            fi._filenotfound = True
 
         return fi
 
     def __init__(self) -> None:
-        self._abspath: Optional[str] = None
+        self._abspath: str = ""
         self._location: Optional[Location] = None
-        self._dirname: Optional[str] = None
-        self._basename: Optional[str] = None
-        self._ext: Optional[str] = None
+        self._dirname: str = ""
+        self._basename: str = ""
+        self._ext: str = ""
 
-        self._isdir: Optional[bool] = None
-        self._isfile: Optional[bool] = None
-        self._issymlink: Optional[bool] = None
+        self._isdir: bool = False
+        self._isfile: bool = False
+        self._issymlink: bool = False
 
         self._stat: Optional[os.stat_result] = None
-        self._have_access: Optional[bool] = None
+        self._have_access: bool = False
 
-        self._filenotfound = False
+        self._error: FileInfoError = FileInfoError.NO_ERROR
 
         self._metadata: Dict[str, Any] = {}
 
@@ -77,13 +99,12 @@ class FileInfo:
         # grouper variables
         self.group: Any = None
 
-    def _collect_stat(self) -> None:
-        self._stat = os.lstat(self._abspath)
-        self._have_access = os.access(self._abspath, os.R_OK)
-
     @property
     def is_visible(self) -> bool:
         return not self.is_hidden and not self.is_excluded
+
+    def error(self) -> FileInfoError:
+        return self._error
 
     def have_access(self) -> bool:
         return self._have_access
