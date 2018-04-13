@@ -92,7 +92,7 @@ class StdioFilesystem:
 
     def get_fileinfo(self, location: Location) -> FileInfo:
         if not location.has_payload():
-            fi = FileInfo.from_filename(location.get_path())
+            fi = FileInfo.from_path(location.get_path())
             fi._location = location
             return fi
         else:
@@ -102,7 +102,7 @@ class StdioFilesystem:
             outdir = os.path.join(self._make_extractor_outdir(parent), "contents")
             path = os.path.join(outdir, location._payloads[-1].path)
 
-            fi = FileInfo.from_filename(path)
+            fi = FileInfo.from_path(path)
             fi._location = location
             return fi
 

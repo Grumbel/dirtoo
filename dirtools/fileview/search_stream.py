@@ -87,13 +87,13 @@ class SearchStreamAction(Action):
     def file(self, root: str, filename: str) -> None:
         self._found_count += 1
         fullpath = os.path.join(root, filename)
-        fileinfo = FileInfo.from_filename(fullpath)
+        fileinfo = FileInfo.from_path(fullpath)
         self._worker.sig_file_added.emit(fileinfo)
 
     def directory(self, root: str, filename: str) -> None:
         self._found_count += 1
         fullpath = os.path.join(root, filename)
-        fileinfo = FileInfo.from_filename(fullpath)
+        fileinfo = FileInfo.from_path(fullpath)
         self._worker.sig_file_added.emit(fileinfo)
 
     def finish(self) -> None:

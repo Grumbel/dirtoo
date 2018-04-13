@@ -41,12 +41,12 @@ class FileInfoError(Enum):
 class FileInfo:
 
     @staticmethod
-    def from_filename(filename: str) -> 'FileInfo':
-        logger.debug("FileInfo.from_filename: %s", filename)
+    def from_path(path: str) -> 'FileInfo':
+        logger.debug("FileInfo.from_path: %s", path)
 
         fi = FileInfo()
 
-        fi._abspath = os.path.abspath(filename)
+        fi._abspath = os.path.abspath(path)
         fi._location = Location.from_path(fi._abspath)
         fi._dirname = os.path.dirname(fi._abspath)
         fi._basename = os.path.basename(fi._abspath)

@@ -30,11 +30,11 @@ logger = logging.getLogger(__name__)
 class LazyFileInfo:
 
     @staticmethod
-    def from_filename(filename: str) -> 'LazyFileInfo':
-        logger.debug("LazyFileInfo.from_filename: %s", filename)
+    def from_path(path: str) -> 'LazyFileInfo':
+        logger.debug("LazyFileInfo.from_path: %s", path)
 
-        # abspath = os.path.abspath(filename)
-        fi = LazyFileInfo(filename)
+        # abspath = os.path.abspath(path)
+        fi = LazyFileInfo(path)
         return fi
 
     def __init__(self, abspath) -> None:
