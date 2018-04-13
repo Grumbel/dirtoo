@@ -157,7 +157,13 @@ class FileCollection(QObject):
             fis = self._location2fileinfo[location]
             return fis[0]  # FIXME: this is fishy
 
-    def size(self) -> int:
+    def index(self, fileinfo: FileInfo):
+        return self._fileinfos.index(fileinfo)
+
+    def __getitem__(self, key):
+        return self._fileinfos[key]
+
+    def __len__(self) -> int:
         return len(self._fileinfos)
 
     def set_grouper(self, grouper: Grouper) -> None:

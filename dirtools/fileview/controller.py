@@ -318,7 +318,7 @@ class Controller(QObject):
                 visible_total_size += fileinfo.size()
             total_size += fileinfo.size()
 
-        total = self.file_collection.size()
+        total = len(self.file_collection)
 
         msg = "{} visible ({}), {} filtered, {} hidden, {} total ({})".format(
             total - filtered_count - hidden_count,
