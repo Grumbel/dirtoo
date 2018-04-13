@@ -33,12 +33,11 @@ class LazyFileInfo:
     def from_path(path: str) -> 'LazyFileInfo':
         logger.debug("LazyFileInfo.from_path: %s", path)
 
-        # abspath = os.path.abspath(path)
         fi = LazyFileInfo(path)
         return fi
 
-    def __init__(self, abspath) -> None:
-        self._abspath: Optional[str] = abspath
+    def __init__(self, path) -> None:
+        self._abspath: Optional[str] = os.path.abspath(path)
 
         self._location: Optional[Location] = None
 
