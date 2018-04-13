@@ -19,6 +19,7 @@ from typing import List, Dict, Optional, Set
 
 import logging
 
+import itertools
 from collections import defaultdict
 from pkg_resources import resource_filename
 
@@ -607,12 +608,12 @@ class FileView(QGraphicsView):
             if item is not None:
                 item.update()
         else:
-            fileinfos = list(self._file_collection.get_fileinfos())
+            text = text.lower()
 
             item = self._cursor_item
             if item is not None:
                 try:
-                    idx = fileinfos.index(item.fileinfo)
+                    idx = self._file_collection.index(item.fileinfo)
                 except ValueError:
                     idx = None
             else:
@@ -621,21 +622,22 @@ class FileView(QGraphicsView):
             if forward:
                 if idx is None:
                     idx = 0
-
-                if skip:
+                elif skip:
                     idx += 1
 
-                for fi in fileinfos[idx:] + fileinfos[0:idx]:
+                for fi in itertools.chain(self._file_collection[idx:],
+                                          self._file_collection[0:idx]):
                     if fi.basename().lower().startswith(text):
                         self.set_cursor_to_fileinfo(fi)
                         break
             else:
-                if skip:
+                if idx is None:
+                    idx = len(self._file_collection)
+                elif skip:
                     idx -= 1
 
-                if idx is None:
-                    idx = len(fileinfos)
-                for fi in reversed(fileinfos[idx:] + fileinfos[0:idx + 1]):
+                for fi in itertools.chain(reversed(self._file_collection[0:idx + 1]),
+                                          reversed(self._file_collection[idx:])):
                     if fi.basename().lower().startswith(text):
                         self.set_cursor_to_fileinfo(fi)
                         break
