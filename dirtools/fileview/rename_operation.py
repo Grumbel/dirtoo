@@ -58,7 +58,7 @@ class RenameOperation:
         msg.setTextFormat(Qt.RichText)
         msg.setText(
             "<b>Failed to rename \"<tt>{}</tt>\".</b>"
-            .format(html.escape(location.get_basename())))
+            .format(html.escape(location.as_human())))
         msg.setInformativeText(
             "A failure occured while trying to rename the file.\n\n{}\n\n{}  →\n{}\n"
             .format(err.strerror, err.filename, err.filename2))
@@ -72,7 +72,7 @@ class RenameOperation:
         msg.setWindowTitle("Rename Error")
         msg.setTextFormat(Qt.RichText)
         msg.setText("<b>Failed to rename \"{}\".</b>"
-                    .format(html.escape(location.get_basename())))
+                    .format(html.escape(location.as_human())))
         msg.setInformativeText("Can't rename file, filenname already exists.")
         msg.setStandardButtons(QMessageBox.Ok)
         msg.exec()
@@ -81,13 +81,17 @@ class RenameOperation:
         if location.has_payload():
             self._show_rename_error_has_payload(location, parent)
         else:
+            srcpath = location.get_stdio_name()
+            srcbasename = os.path.basename(srcpath)
+            srcdir = os.path.dirname(srcpath)
+
             dialog = RenameDialog(parent)
-            dialog.set_basename(location.get_basename())
+            dialog.set_basename(srcbasename)
             dialog.exec()
 
             if dialog.result() == QDialog.Accepted:
-                oldpath = location.get_path()
-                newpath = os.path.join(location.get_dirname(), dialog.get_new_basename())
+                oldpath = srcpath
+                newpath = os.path.join(srcdir, dialog.get_new_basename())
 
                 if oldpath == newpath:
                     logger.debug("FilesystemOperations.rename_location: source and destination are the same, "

@@ -167,14 +167,6 @@ class Location:
         assert not self.has_payload()
         return self._path
 
-    def get_basename(self) -> str:
-        assert not self.has_payload()
-        return os.path.basename(self._path)
-
-    def get_dirname(self) -> str:
-        assert not self.has_payload()
-        return os.path.dirname(self._path)
-
     def has_stdio_name(self) -> bool:
         return not self.has_payload()
 
