@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Iterable, Optional, Iterator, Dict, cast
+from typing import Iterable, Optional, Iterator, Dict, List, cast
 
 import logging
 
@@ -105,12 +105,11 @@ class FileCollection(QObject):
         self.sig_file_added.emit(idx, fi)
 
     def remove_file(self, location: Location) -> None:
-        try:
-            fis = self._location2fileinfo[location]
-        except KeyError:
+        if location not in self._location2fileinfo:
             logger.error("FileCollection.remove_file: %s: KeyError", location)
         else:
             logger.debug("FileCollection.remove_file: %s", location)
+            fis = self._location2fileinfo[location]
 
             del self._location2fileinfo[location]
             for fi in fis:
@@ -152,11 +151,10 @@ class FileCollection(QObject):
             return cast(Iterator[FileInfo], iter(self._fileinfos))
 
     def get_fileinfo(self, location: Location) -> Optional[FileInfo]:
-        try:
-            fis = self._location2fileinfo[location]
-        except KeyError:
+        if location not in self._location2fileinfo:
             return None
         else:
+            fis = self._location2fileinfo[location]
             return fis[0]  # FIXME: this is fishy
 
     def size(self) -> int:
@@ -193,17 +191,22 @@ class FileCollection(QObject):
     #     self.sig_files_reordered.emit()
 
     def _replace_fileinfo(self, fileinfo: FileInfo) -> None:
+        if fileinfo in self._fileinfos:
+            return
+
         location = fileinfo.location()
 
-        fis = self._location2fileinfo[location]
+        if location not in self._location2fileinfo:
+            raise KeyError("location not in location2fileinfo: {}".format(location))
+        else:
+            fis = self._location2fileinfo[location]
 
-        self._location2fileinfo[location].clear()
-        self._location2fileinfo[location].append(fileinfo)
+            self._location2fileinfo[location] = [fileinfo]
 
-        for fi in fis:
-            self._fileinfos.remove(fi)
+            for fi in fis:
+                self._fileinfos.remove(fi)
 
-        self._fileinfos.add(fileinfo)
+            self._fileinfos.add(fileinfo)
 
     # def shuffle(self) -> None:
     #     logger.debug("FileCollection.sort")
