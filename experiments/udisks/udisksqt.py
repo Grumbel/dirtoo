@@ -2,13 +2,13 @@
 
 import signal
 import pprint
-import xml
-import xml.dom.minidom
+
 from xml.etree import ElementTree
+from collections import defaultdict
 
 from PyQt5.QtDBus import QDBusConnection
 from PyQt5.QtDBus import QDBusReply, QDBusMessage, QDBusInterface
-from PyQt5.QtCore import QObject, pyqtSlot, QVariant, QCoreApplication
+from PyQt5.QtCore import QObject, pyqtSlot, QCoreApplication
 
 
 def call(obj, method, *args):
@@ -38,23 +38,46 @@ class UDiskManager(QObject):
                     'org.freedesktop.DBus.ObjectManager',
                     'InterfacesRemoved', self._on_interfaces_removed)
 
+        if False:
+            ud_objectmanager = QDBusInterface("org.freedesktop.UDisks2",
+                                              "/org/freedesktop/UDisks2",
+                                              "org.freedesktop.DBus.ObjectManager",
+                                              connection=bus)
+
+            result = call(ud_objectmanager, "GetManagedObjects")
+            pprint.pprint(result)
+
+            self._print_blockdevices(bus)
+            self._print_drives(bus)
+
         self.udisks_manager = QDBusInterface("org.freedesktop.UDisks2",
                                              "/org/freedesktop/UDisks2/Manager",
                                              "org.freedesktop.UDisks2.Manager",
                                              connection=bus)
 
-        ud_objectmanager = QDBusInterface("org.freedesktop.UDisks2",
-                                          "/org/freedesktop/UDisks2",
-                                          "org.freedesktop.DBus.ObjectManager",
-                                          connection=bus)
+        self._drives = defaultdict(list)
+        block_devices = call(self.udisks_manager, "GetBlockDevices", {})[0]
 
-        result = call(ud_objectmanager, "GetManagedObjects")
-        pprint.pprint(result)
+        for block_device in block_devices:
+            # block_iface = QDBusInterface("org.freedesktop.UDisks2",
+            #                              block_device,
+            #                              "org.freedesktop.UDisks2.Block",
+            #                              connection=bus)
 
-        self._print_blockdevices(bus)
-        self._print_drives(bus)
+            block_props = QDBusInterface("org.freedesktop.UDisks2",
+                                         block_device,
+                                         "org.freedesktop.DBus.Properties",
+                                         connection=bus)
+            drive = call(block_props, "Get", "org.freedesktop.UDisks2.Block", "Drive")[0]
 
-        print("Results: ", call(self.udisks_manager, "GetBlockDevices", {}))
+            self._drives[drive].append(block_device)
+
+    def print_info(self):
+        for drive, block_devices in self._drives.items():
+            print(drive)
+            for block_device in sorted(block_devices):
+                print("    ", block_device)
+            print()
 
     def _print_blockdevices(self, bus):
         udisks_manager_introspect = QDBusInterface("org.freedesktop.UDisks2",
@@ -100,6 +123,7 @@ def main():
     bus = QDBusConnection.systemBus()
 
     udisk_manager = UDiskManager(bus)
+    udisk_manager.print_info()
     app.exec()
 
 

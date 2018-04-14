@@ -78,7 +78,7 @@ for dev in devs:
 if False:
     ud_manager = dbus.Interface(ud_manager_obj, 'org.freedesktop.DBus.ObjectManager')
 
-    for dev in ud_obj_manager.GetManagedObjects():
+    for dev in ud_manager.GetManagedObjects():
         print(dev)
         device_obj = bus.get_object("org.freedesktop.UDisks2", dev)
         device_intro = dbus.Interface(device_obj, "org.freedesktop.DBus.Introspectable")
