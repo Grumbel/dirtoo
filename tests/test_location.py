@@ -22,6 +22,28 @@ from dirtools.fileview.location import Location, Payload
 
 class LocationTestCase(unittest.TestCase):
 
+    def test_from_human(self):
+        humans = [
+            ("/",
+             "file:///"),
+
+            ("/tmp/file.rar://rar",
+             "file:///tmp/file.rar://rar"),
+
+            ("/tmp/file",
+             "file:///tmp/file"),
+
+            ("file:///tmp/file2",
+             "file:///tmp/file2"),
+
+            ("file:///tmp/file.rar//rar:foo.bar",
+             "file:///tmp/file.rar//rar:foo.bar")
+        ]
+
+        for human, expected in humans:
+            location = Location.from_human(human)
+            self.assertEqual(location.as_url(), expected)
+
     def test_location_init(self):
         ok_texts = [
             ("file:///home/juser/test.rar//rar:file_inside.rar",

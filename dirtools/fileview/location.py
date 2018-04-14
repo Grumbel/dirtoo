@@ -67,7 +67,7 @@ class Location:
         if m is not None:
             return Location.from_url(path)
         else:
-            return Location.from_path(os.path.abspath(path))
+            return Location.from_url("file://" + path)
 
     @staticmethod
     def from_url(url: str) -> 'Location':
