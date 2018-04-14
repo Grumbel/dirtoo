@@ -114,5 +114,39 @@ class LocationTestCase(unittest.TestCase):
             self.assertEqual(result._path, abspath, base_text)
             self.assertEqual(result._payloads, payloads, base_text)
 
+    def test_ancestry(self):
+        location = Location.from_url("file:///home/juser/test.rar//rar:bar/foo.zip//zip:bar.png")
+        result = location.ancestry()
+        expected = [
+            Location.from_url('file:///'),
+            Location.from_url('file:///home'),
+            Location.from_url('file:///home/juser'),
+            Location.from_url('file:///home/juser/test.rar//rar'),
+            Location.from_url('file:///home/juser/test.rar//rar:bar'),
+            Location.from_url('file:///home/juser/test.rar//rar:bar/foo.zip//zip'),
+            Location.from_url('file:///home/juser/test.rar//rar:bar/foo.zip//zip:bar.png')
+        ]
+        self.assertEqual(result, expected)
+
+    def test_basename(self):
+        testcases = [
+            ("file:///home/juser/test.rar//rar:bar/foo.zip//zip:bar.png",
+             "bar.png"),
+
+            ("file:///home/juser/test.rar//rar:bar/foo.zip//zip",
+             "foo.zip//zip"),
+
+            ("file:///home/juser/foo.zip//zip:test.rar",
+             "test.rar"),
+
+            ("file:///home/juser/test.rar",
+             "test.rar"),
+        ]
+
+        for url, expected in testcases:
+            location = Location.from_url(url)
+            result = location.basename()
+            self.assertEqual(result, expected)
+
 
 # EOF #

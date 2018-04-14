@@ -118,9 +118,41 @@ class Location:
                 payloads = self._payloads[:-1] + [Payload(self._payloads[-1].protocol, path)]
                 return Location(self._protocol, self._path, payloads)
 
+    def basename(self) -> str:
+        """Returns the last element in the URL."""
+
+        if self._payloads == []:
+            return os.path.basename(self._path)
+        elif len(self._payloads) == 1 and self._payloads[-1].path == "":
+            return "{}//{}".format(os.path.basename(self._path),
+                                   self._payloads[-1].protocol)
+        elif self._payloads[-1].path == "":
+            return "{}//{}".format(os.path.basename(self._payloads[-2].path),
+                                   self._payloads[-1].protocol)
+        else:
+            return "{}".format(os.path.basename(self._payloads[-1].path))
+
+    def ancestry(self) -> List['Location']:
+        """Return a list of parents of this Location as well as the Location
+        itself."""
+
+        ancestry: List['Location'] = [self]
+
+        last_parent = self
+        while True:
+            parent = last_parent.parent()
+            if parent == last_parent:
+                break
+
+            ancestry.append(parent)
+            last_parent = parent
+
+        return list(reversed(ancestry))
+
     def origin(self) -> Optional['Location']:
-        """The location that is 'housing' self. For a while inside an archive,
-        this would return the location of the archive itself."""
+        """The location that is 'housing' self. For example for a Location
+        pointing to inside an archive, this would return the location
+        of the archive itself."""
 
         if self._payloads == []:
             return None
@@ -201,6 +233,9 @@ class Location:
 
     def __str__(self) -> str:
         return self.as_url()
+
+    def __repr__(self) -> str:
+        return "Location.from_url({!r})".format(self.as_url())
 
     def search_query(self) -> Tuple[str, str]:
         assert self._protocol == "search"
