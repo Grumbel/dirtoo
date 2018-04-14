@@ -15,10 +15,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QPushButton, QSizePolicy
+from PyQt5.QtGui import QIcon
 import sip
 
 from dirtools.fileview.location import Location
@@ -34,21 +35,41 @@ class LocationButtonBar(QWidget):
 
         self._controller = controller
         self._location: Option[Location] = None
+        self._buttons: List[Tuple[Location, QPushButton]] = []
 
     def set_location(self, location: Location) -> None:
         self._location = location
-        self._build_buttons()
+
+        found = False
+        for btn_loc, button in self._buttons:
+            if location == btn_loc:
+                button.setDown(True)
+                found = True
+            else:
+                button.setDown(False)
+
+        if not found:
+            self._build_buttons()
 
     def _build_buttons(self) -> None:
+        self._buttons.clear()
+
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         ancestry = self._location.ancestry()
 
         for location in ancestry:
-            print(location.basename())
-            button = QPushButton(location.basename())
+            basename = location.basename()
+            if basename == "":
+                button = QPushButton(QIcon.fromTheme("drive-harddisk"), "")
+            else:
+                button = QPushButton(basename)
+            button.setMinimumWidth(5)
             button.clicked.connect(lambda checked, location=location: self._controller.set_location(location))
             button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+
+            self._buttons.append((location, button))
+
             layout.addWidget(button, Qt.AlignLeft)
 
         button.setDown(True)
