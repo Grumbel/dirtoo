@@ -19,12 +19,13 @@ from datetime import datetime
 import grp
 import pwd
 import stat
+import io
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLineEdit,
                              QGroupBox, QGridLayout, QVBoxLayout, QDialogButtonBox,
-                             QLabel)
+                             QLabel, QTabWidget, QPlainTextEdit)
 
 import bytefmt
 
@@ -44,11 +45,45 @@ class PropertiesDialog(QDialog):
     def _make_gui(self) -> None:
         self.setWindowTitle("Properties of {}".format("TestName"))
 
-        # Widgets
         icon_label = QLabel()
         icon_label.setPixmap(QIcon.fromTheme("document").pixmap(48))
         icon_label.setAlignment(Qt.AlignHCenter)
+        name_label = QLabel(self._fileinfo.basename())
+        name_label.setAlignment(Qt.AlignHCenter)
 
+        general_tab = self._make_general_tab()
+        metadata_tab = self._make_metadata_tab()
+
+        tab_widget = QTabWidget()
+        tab_widget.addTab(general_tab, "General")
+        tab_widget.addTab(metadata_tab, "MetaData")
+
+        vbox = QVBoxLayout()
+        vbox.addWidget(icon_label)
+        vbox.addWidget(name_label)
+        vbox.addWidget(tab_widget)
+        self.setLayout(vbox)
+
+    def _make_metadata_tab(self) -> QWidget:
+        # Widgets
+        textedit = QPlainTextEdit()
+        # textedit.setLineWrapMode(QPlainTextEdit.NoWrap)
+
+        out = io.StringIO()
+        for k, v in self._fileinfo.metadata().items():
+            print("{}:\n{!r}\n".format(k, v), file=out)
+        textedit.setPlainText(out.getvalue())
+
+        # Layout
+        vbox = QVBoxLayout()
+        vbox.addWidget(textedit)
+
+        widget = QWidget()
+        widget.setLayout(vbox)
+        return widget
+
+    def _make_general_tab(self) -> QWidget:
+        # Widgets
         size_box = QGroupBox("Basic")
         name_label = QLabel("Name:")
         name_edit = QLineEdit(self._fileinfo.basename())
@@ -146,8 +181,6 @@ class PropertiesDialog(QDialog):
         # Layout
         vbox = QVBoxLayout()
 
-        vbox.addWidget(icon_label)
-
         grid = QGridLayout()
         grid.addWidget(name_label, 0, 0, Qt.AlignRight)
         grid.addWidget(name_edit, 0, 1)
@@ -200,7 +233,9 @@ class PropertiesDialog(QDialog):
         vbox.addStretch()
         vbox.addWidget(button_box)
 
-        self.setLayout(vbox)
+        widget = QWidget()
+        widget.setLayout(vbox)
+        return widget
 
 
 # EOF #
