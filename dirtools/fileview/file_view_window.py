@@ -125,6 +125,7 @@ class FileViewWindow(QMainWindow):
 
     def make_window(self):
         from dirtools.fileview.location_line_edit import LocationLineEdit
+        from dirtools.fileview.location_buttonbar import LocationButtonBar
         from dirtools.fileview.filter_line_edit import FilterLineEdit
         from dirtools.fileview.search_line_edit import SearchLineEdit
 
@@ -137,6 +138,7 @@ class FileViewWindow(QMainWindow):
 
         self.search_lineedit = SearchLineEdit(self.controller)
         self.location_lineedit = LocationLineEdit(self.controller)
+        self.location_buttonbar = LocationButtonBar(self.controller)
         self.file_filter = FilterLineEdit(self.controller)
         # self.file_filter.setText("File Pattern Here")
         self.file_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -209,6 +211,7 @@ class FileViewWindow(QMainWindow):
         widget = QWidget()
         form = QFormLayout()
         label = QLabel("Location:")
+        label2 = QLabel("Location:")
 
         def show_location_menu(pos):
             self.controller.on_context_menu(label.mapToGlobal(pos))
@@ -218,6 +221,8 @@ class FileViewWindow(QMainWindow):
 
         label.setBuddy(self.location_lineedit)
         form.addRow(label, self.location_lineedit)
+        form.addRow(label2, self.location_buttonbar)
+
         form.setContentsMargins(0, 0, 0, 0)
         widget.setLayout(form)
         self.location_toolbar.addWidget(widget)
@@ -474,6 +479,7 @@ class FileViewWindow(QMainWindow):
 
     def set_location(self, location: Location):
         self.location_lineedit.set_location(location)
+        self.location_buttonbar.set_location(location)
         self.setWindowTitle("{} - dt-fileview".format(location.as_human()))
 
     def set_file_list(self):
