@@ -24,11 +24,8 @@ import os
 from PyQt5.QtCore import QObject, pyqtSignal, QThread
 from PyQt5.QtCore import QMimeDatabase
 
-from PyPDF2 import PdfFileReader
-
-from dirtools.mediainfo import MediaInfo
-from dirtools.archiveinfo import ArchiveInfo
 from dirtools.fileview.metadata_cache import MetaDataCache
+from dirtools.fileview.metadata import MetaData
 from dirtools.fileview.stdio_filesystem import StdioFilesystem
 from dirtools.fileview.location import Location
 
@@ -109,51 +106,7 @@ class MetaDataCollectorWorker(QObject):
 
     def _create_type_specific_metadata(self, location: Location, abspath: str) -> Dict[str, Any]:
         logger.debug("MetaDataCollectorWorker.create_metadata: %s", abspath)
-
-        mimetype = self.mimedb.mimeTypeForFile(abspath)
-
-        metadata: Dict[str, Any] = {}
-
-        metadata['mime-type'] = mimetype.name()
-
-        if mimetype.name().startswith("video/"):
-            minfo = MediaInfo(abspath)
-            metadata['type'] = 'video'
-            metadata['width'] = minfo.width()
-            metadata['height'] = minfo.height()
-            metadata['duration'] = minfo.duration()
-            metadata['framerate'] = minfo.framerate()
-        elif mimetype.name().startswith("audio/"):
-            minfo = MediaInfo(abspath)
-            metadata['type'] = 'audio'
-            metadata['duration'] = minfo.duration()
-            # bitrate, samplerate, channels
-        elif mimetype.name().startswith("image/"):
-            metadata['type'] = 'image'
-            minfo = MediaInfo(abspath)
-            metadata['width'] = minfo.width()
-            metadata['height'] = minfo.height()
-        elif mimetype.name() == 'application/pdf':
-            metadata['type'] = 'pdf'
-            with open(abspath, 'rb') as fin:
-                pdf = PdfFileReader(fin)
-                metadata['pages'] = pdf.getNumPages()
-        elif mimetype.name() in ['application/zip',
-                                 'application/vnd.rar',
-                                 'application/rar']:
-            archiveinfo = ArchiveInfo.from_file(abspath)
-            metadata['type'] = 'archive'
-            metadata['file_count'] = archiveinfo.file_count
-        elif mimetype.name() == "inode/directory":
-            metadata['type'] = 'directory'
-            entries = os.listdir(abspath)
-            metadata['file_count'] = len(entries)
-        else:
-            logger.debug("MetaDataCollectorWorker.on_metadata_requested: "
-                         "unhandled mime-type: %s - %s",
-                         abspath, mimetype.name())
-
-        return metadata
+        return MetaData.from_path(abspath, self.mimedb)
 
 
 class MetaDataCollector(QObject):
