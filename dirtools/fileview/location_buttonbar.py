@@ -17,7 +17,7 @@
 
 from typing import Optional, List, Tuple
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QPushButton, QSizePolicy
 from PyQt5.QtGui import QIcon
 import sip
@@ -34,7 +34,7 @@ class LocationButtonBar(QWidget):
         super().__init__()
 
         self._controller = controller
-        self._location: Option[Location] = None
+        self._location: Optional[Location] = None
         self._buttons: List[Tuple[Location, QPushButton]] = []
 
     def set_location(self, location: Location) -> None:
@@ -56,21 +56,23 @@ class LocationButtonBar(QWidget):
 
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
         ancestry = self._location.ancestry()
 
         for location in ancestry:
             basename = location.basename()
             if basename == "":
                 button = QPushButton(QIcon.fromTheme("drive-harddisk"), "")
+                button.setIconSize(QSize(16, 16))
             else:
                 button = QPushButton(basename)
-            button.setMinimumWidth(5)
+                button.setStyleSheet("padding: 3px 4px;")
             button.clicked.connect(lambda checked, location=location: self._controller.set_location(location))
             button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
-
+            button.setMinimumWidth(4)
             self._buttons.append((location, button))
 
-            layout.addWidget(button, Qt.AlignLeft)
+            layout.addWidget(button, Qt.AlignCenter)
 
         button.setDown(True)
 
