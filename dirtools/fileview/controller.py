@@ -350,7 +350,7 @@ class Controller(QObject):
                 self.set_location(self.location.parent())
 
     def on_click(self, fileinfo: FileInfo, new_window=False) -> None:
-        self._gui._window.file_view.set_cursor_to_fileinfo(fileinfo)
+        self._gui._window.file_view.set_cursor_to_fileinfo(fileinfo, False)
 
         if not fileinfo.isdir():
             if fileinfo.is_archive() and settings.value("globals/open_archives", True, bool):

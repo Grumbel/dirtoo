@@ -571,7 +571,7 @@ class FileView(QGraphicsView):
         scrollbar = self.horizontalScrollBar()
         scrollbar.setValue(scrollbar.value() + x)
 
-    def set_cursor_to_fileinfo(self, fileinfo):
+    def set_cursor_to_fileinfo(self, fileinfo: 'FileInfo', ensure_visible: bool):
         self._scene.clearSelection()
 
         if self._cursor_item is not None:
@@ -580,7 +580,8 @@ class FileView(QGraphicsView):
         if self._cursor_item is not None:
             self._cursor_item.setSelected(True)
             self._cursor_item.update()
-            self.ensureVisible(self._cursor_item)
+            if ensure_visible:
+                self.ensureVisible(self._cursor_item)
 
     def mousePressEvent(self, ev):
         super().mousePressEvent(ev)
@@ -628,7 +629,7 @@ class FileView(QGraphicsView):
                 for fi in itertools.chain(self._file_collection[idx:],
                                           self._file_collection[0:idx]):
                     if fi.basename().lower().startswith(text):
-                        self.set_cursor_to_fileinfo(fi)
+                        self.set_cursor_to_fileinfo(fi, True)
                         break
             else:
                 if idx is None:
@@ -639,7 +640,7 @@ class FileView(QGraphicsView):
                 for fi in itertools.chain(reversed(self._file_collection[0:idx + 1]),
                                           reversed(self._file_collection[idx:])):
                     if fi.basename().lower().startswith(text):
-                        self.set_cursor_to_fileinfo(fi)
+                        self.set_cursor_to_fileinfo(fi, True)
                         break
 
 
