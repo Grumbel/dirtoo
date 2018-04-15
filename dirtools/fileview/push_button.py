@@ -41,12 +41,13 @@ class PushButton(QPushButton):
                 self.repaint()
 
     def mousePressEvent(self, ev) -> None:
-        super().mouseMoveEvent(ev)
+        super().mousePressEvent(ev)
 
         if not ev.isAccepted():
-            ev.accept()
-            self.setDown(True)
-            self.repaint()
+            if ev.button() == Qt.MiddleButton:
+                ev.accept()
+                self.setDown(True)
+                self.repaint()
 
     def mouseReleaseEvent(self, ev) -> None:
         super().mouseReleaseEvent(ev)
