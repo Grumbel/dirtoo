@@ -24,6 +24,7 @@ import sip
 
 from dirtools.fileview.location import Location
 from dirtools.fileview.push_button import PushButton
+from dirtools.fileview.item_context_menu import ItemContextMenu
 
 if False:
     from dirtools.fileview.controller import Controller  # noqa: F401
@@ -69,6 +70,10 @@ class LocationButtonBar(QWidget):
                 button = PushButton(basename)
                 button.setStyleSheet("padding: 3px 4px;")
 
+            button.setContextMenuPolicy(Qt.CustomContextMenu)
+            button.customContextMenuRequested.connect(lambda pos, button=button, location=location:
+                                                      self._on_button_context_menu(button, location, pos))
+
             button.clicked.connect(lambda checked, location=location:
                                    self._controller.set_location(location))
             button.middle_clicked.connect(lambda location=location:
@@ -86,6 +91,11 @@ class LocationButtonBar(QWidget):
 
         self._clearLayout()
         self.setLayout(layout)
+
+    def _on_button_context_menu(self, button: PushButton, location: Location, pos) -> None:
+        fileinfo = self._controller.app.vfs.get_fileinfo(location)
+        menu = ItemContextMenu(self._controller, [fileinfo])
+        menu.exec(button.mapToGlobal(pos))
 
     def _clearLayout(self):
         # See: https://stackoverflow.com/questions/4528347/clear-all-widgets-in-a-layout-in-pyqt
