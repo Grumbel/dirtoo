@@ -36,11 +36,15 @@ from PyQt5.QtWidgets import (
 )
 
 from dirtools.fileview.file_view import FileView
-from dirtools.fileview.location import Location
-from dirtools.fileview.menu import Menu
-from dirtools.fileview.tool_button import ToolButton
-from dirtools.fileview.message_area import MessageArea
+from dirtools.fileview.filter_line_edit import FilterLineEdit
 from dirtools.fileview.history_menu import make_history_menu_entries
+from dirtools.fileview.location import Location
+from dirtools.fileview.location_buttonbar import LocationButtonBar
+from dirtools.fileview.location_lineedit import LocationLineEdit
+from dirtools.fileview.menu import Menu
+from dirtools.fileview.message_area import MessageArea
+from dirtools.fileview.search_line_edit import SearchLineEdit
+from dirtools.fileview.tool_button import ToolButton
 
 if False:
     from dirtools.fileview.controller import Controller  # noqa: F401
@@ -124,11 +128,6 @@ class FileViewWindow(QMainWindow):
         shortcut.activated.connect(lambda: self.file_view.scroll_by(0, self.file_view.viewport().height()))
 
     def make_window(self):
-        from dirtools.fileview.location_lineedit import LocationLineEdit
-        from dirtools.fileview.location_buttonbar import LocationButtonBar
-        from dirtools.fileview.filter_line_edit import FilterLineEdit
-        from dirtools.fileview.search_line_edit import SearchLineEdit
-
         self.setWindowTitle("dt-fileview")
         self.setWindowIcon(QIcon(resource_filename("dirtools", "fileview/dt-fileview.svg")))
         self.vbox = QVBoxLayout()

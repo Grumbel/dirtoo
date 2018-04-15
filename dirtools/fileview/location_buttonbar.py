@@ -18,7 +18,7 @@
 from typing import Optional, List, Tuple
 
 from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QPushButton, QSizePolicy
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QSizePolicy
 from PyQt5.QtGui import QIcon
 import sip
 

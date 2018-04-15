@@ -22,7 +22,6 @@ from PyQt5.QtWidgets import QFileDialog, QTextEdit, QDialog, QMessageBox
 from PyQt5.QtGui import QCursor, QMouseEvent, QContextMenuEvent
 
 from dirtools.fileview.file_view_window import FileViewWindow
-from dirtools.fileview.controller import Controller
 from dirtools.fileview.item_context_menu import ItemContextMenu
 from dirtools.fileview.directory_context_menu import DirectoryContextMenu
 from dirtools.fileview.create_dialog import CreateDialog
@@ -31,11 +30,12 @@ from dirtools.fileview.properties_dialog import PropertiesDialog
 
 if False:
     from dirtools.fileview.file_info import FileInfo  # noqa: F401
+    from dirtools.fileview.controller import Controller  # noqa: F401
 
 
 class Gui(QObject):
 
-    def __init__(self, controller: Controller) -> None:
+    def __init__(self, controller: 'Controller') -> None:
         super().__init__()
 
         self._controller: Controller = controller

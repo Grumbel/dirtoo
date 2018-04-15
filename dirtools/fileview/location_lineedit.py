@@ -24,8 +24,10 @@ from PyQt5.QtGui import QPalette, QIcon, QKeySequence
 from PyQt5.QtWidgets import (QLineEdit, QShortcut, QWidget,
                              QListWidget, QVBoxLayout, QSizePolicy)
 
-from dirtools.fileview.controller import Controller
 from dirtools.fileview.location import Location
+
+if False:
+    from dirtools.fileview.controller import Controller  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +124,7 @@ class LocationLineEditPopup(QWidget):
 
 class LocationLineEdit(QLineEdit):
 
-    def __init__(self, controller: Controller) -> None:
+    def __init__(self, controller: 'Controller') -> None:
         super().__init__()
 
         self.controller = controller

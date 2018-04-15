@@ -26,6 +26,7 @@ import re
 
 import dirtools.duration as duration
 
+from dirtools.fileview.filter_expr_parser import CommandExpr
 from dirtools.fuzzy import fuzzy
 from dirtools.util import is_glob_pattern
 from dirtools.fileview.match_func import (
@@ -110,8 +111,6 @@ class MatchFuncFactory:
             self._functions[alias] = func
 
     def make_match_func(self, child):
-        from dirtools.fileview.filter_expr_parser import CommandExpr
-
         if isinstance(child, str):
             # If the pattern doesn't contain special characters
             # perform a basic substring search instead of a glob

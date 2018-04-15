@@ -20,7 +20,6 @@ from typing import Any, List
 import logging
 
 from dirtools.fileview.match_func import MatchFunc, AndMatchFunc, OrMatchFunc, ExcludeMatchFunc
-from dirtools.fileview.match_func_factory import MatchFuncFactory
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +73,8 @@ class AndKeywordExpr:
 class FilterExprParser:
 
     def __init__(self) -> None:
+        from dirtools.fileview.match_func_factory import MatchFuncFactory
+
         self._grammar = self._make_grammar()
         self._func_factory = MatchFuncFactory()
 

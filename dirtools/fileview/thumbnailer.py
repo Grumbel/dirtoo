@@ -82,7 +82,7 @@ class ThumbnailerWorker(QObject):
 
     def init(self):
         self._dbus_thumbnailer = DBusThumbnailer(QDBusConnection.sessionBus(),
-                                                WorkerDBusThumbnailerListener(self))
+                                                 WorkerDBusThumbnailerListener(self))
 
     def close(self):
         assert self._close

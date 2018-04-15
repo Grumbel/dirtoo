@@ -40,6 +40,10 @@ from dirtools.util import make_non_existing_filename
 from dirtools.fileview.path_completion import PathCompletion
 from dirtools.fileview.menu import Menu
 from dirtools.fileview.history_menu import make_history_menu_entries
+from dirtools.fileview.gui import Gui
+from dirtools.fileview.filter import Filter
+from dirtools.fileview.sorter import Sorter
+from dirtools.fileview.actions import Actions
 
 if False:
     from dirtools.fileview.application import FileViewApplication  # noqa: F401
@@ -54,13 +58,7 @@ class Controller(QObject):
     sig_location_changed_to_none = pyqtSignal()
 
     def __init__(self, app: 'FileViewApplication') -> None:
-        from dirtools.fileview.gui import Gui
-
         super().__init__()
-
-        from dirtools.fileview.filter import Filter
-        from dirtools.fileview.sorter import Sorter
-        from dirtools.fileview.actions import Actions
 
         self.app: 'FileViewApplication' = app
         self.location: Optional[Location] = None
