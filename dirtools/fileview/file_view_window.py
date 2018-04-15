@@ -45,6 +45,7 @@ from dirtools.fileview.menu import Menu
 from dirtools.fileview.message_area import MessageArea
 from dirtools.fileview.search_line_edit import SearchLineEdit
 from dirtools.fileview.tool_button import ToolButton
+from dirtools.fileview.label import Label
 
 if False:
     from dirtools.fileview.controller import Controller  # noqa: F401
@@ -209,8 +210,8 @@ class FileViewWindow(QMainWindow):
         self.location_toolbar = self.addToolBar("Location")
         widget = QWidget()
         form = QFormLayout()
-        label = QLabel("Location:")
-        label2 = QLabel("Location:")
+        label = Label("Location:")
+        label.clicked.connect(self.controller.show_location_toolbar)
 
         def show_location_menu(pos):
             self.controller.on_context_menu(label.mapToGlobal(pos))
