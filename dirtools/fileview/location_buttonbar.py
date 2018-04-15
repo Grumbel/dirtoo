@@ -23,6 +23,7 @@ from PyQt5.QtGui import QIcon
 import sip
 
 from dirtools.fileview.location import Location
+from dirtools.fileview.push_button import PushButton
 
 if False:
     from dirtools.fileview.controller import Controller  # noqa: F401
@@ -35,7 +36,7 @@ class LocationButtonBar(QWidget):
 
         self._controller = controller
         self._location: Optional[Location] = None
-        self._buttons: List[Tuple[Location, QPushButton]] = []
+        self._buttons: List[Tuple[Location, PushButton]] = []
 
     def set_location(self, location: Location) -> None:
         self._location = location
@@ -62,12 +63,17 @@ class LocationButtonBar(QWidget):
         for location in ancestry:
             basename = location.basename()
             if basename == "":
-                button = QPushButton(QIcon.fromTheme("drive-harddisk"), "")
+                button = PushButton(QIcon.fromTheme("drive-harddisk"), "")
                 button.setIconSize(QSize(16, 16))
             else:
-                button = QPushButton(basename)
+                button = PushButton(basename)
                 button.setStyleSheet("padding: 3px 4px;")
-            button.clicked.connect(lambda checked, location=location: self._controller.set_location(location))
+
+            button.clicked.connect(lambda checked, location=location:
+                                   self._controller.set_location(location))
+            button.middle_clicked.connect(lambda location=location:
+                                          self._controller.new_controller().set_location(location))
+
             button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
             button.setMinimumWidth(4)
             self._buttons.append((location, button))
@@ -90,6 +96,9 @@ class LocationButtonBar(QWidget):
                 if w is not None:
                     w.setParent(None)
             sip.delete(old_layout)
+
+    def mousePressEvent(self, ev):
+        print("LocationButtonBar: press event", ev)
 
 
 # EOF #
