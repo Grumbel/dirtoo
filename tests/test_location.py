@@ -16,6 +16,7 @@
 
 
 import unittest
+import os
 
 from dirtools.fileview.location import Location, Payload
 
@@ -43,6 +44,15 @@ class LocationTestCase(unittest.TestCase):
         for human, expected in humans:
             location = Location.from_human(human)
             self.assertEqual(location.as_url(), expected)
+
+    def test_from_human_path(self):
+        result = Location.from_human(".")
+        expected = Location.from_path(os.getcwd())
+        self.assertEqual(result, expected)
+
+        result = Location.from_human("")
+        expected = Location.from_path("/")
+        self.assertEqual(result, expected)
 
     def test_location_init(self):
         ok_texts = [

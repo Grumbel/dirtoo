@@ -63,11 +63,15 @@ class Location:
 
     @staticmethod
     def from_human(path: str) -> 'Location':
-        m = LOCATION_REGEX.match(path)
-        if m is not None:
+        try:
             return Location.from_url(path)
-        else:
-            return Location.from_url("file://" + path)
+        except Exception:
+            if path == "":
+                return Location.from_url("file://" + os.getcwd())
+            elif path[0] == "/":
+                return Location.from_url("file://" + path)
+            else:
+                return Location.from_url("file://" + os.path.join(os.getcwd(), path))
 
     @staticmethod
     def from_url(url: str) -> 'Location':
@@ -91,11 +95,11 @@ class Location:
 
             return Location(protocol, abspath, payloads)
 
-    def __init__(self, protocol: str, path: str, payloads: List[Payload]) -> None:
-        assert os.path.isabs(path)
+    def __init__(self, protocol: str, abspath: str, payloads: List[Payload]) -> None:
+        assert os.path.isabs(abspath)
 
         self._protocol: str = protocol
-        self._path: str = path
+        self._path: str = abspath
         self._payloads: List[Payload] = payloads
 
     def has_payload(self) -> bool:
