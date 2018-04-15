@@ -51,7 +51,7 @@ class LocationTestCase(unittest.TestCase):
         self.assertEqual(result, expected)
 
         result = Location.from_human("")
-        expected = Location.from_path("/")
+        expected = Location.from_path(os.getcwd())
         self.assertEqual(result, expected)
 
     def test_location_init(self):

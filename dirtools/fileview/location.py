@@ -67,6 +67,8 @@ class Location:
             return Location.from_url(path)
         except Exception:
             if path == "":
+                # Interpret the empty string as the current directory,
+                # mimicing the behaviour of os.path.abspath("").
                 return Location.from_url("file://" + os.getcwd())
             elif path[0] == "/":
                 return Location.from_url("file://" + path)
