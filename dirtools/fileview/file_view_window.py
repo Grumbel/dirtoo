@@ -124,7 +124,7 @@ class FileViewWindow(QMainWindow):
         shortcut.activated.connect(lambda: self.file_view.scroll_by(0, self.file_view.viewport().height()))
 
     def make_window(self):
-        from dirtools.fileview.location_line_edit import LocationLineEdit
+        from dirtools.fileview.location_lineedit import LocationLineEdit
         from dirtools.fileview.location_buttonbar import LocationButtonBar
         from dirtools.fileview.filter_line_edit import FilterLineEdit
         from dirtools.fileview.search_line_edit import SearchLineEdit
