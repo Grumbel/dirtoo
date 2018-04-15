@@ -499,6 +499,10 @@ class Controller(QObject):
         self._gui._window.file_view.setFocus()
         self.set_location(self.location)
 
+    def show_location_buttonbar(self) -> None:
+        self._gui._window.location_lineedit.hide()
+        self._gui._window.location_buttonbar.show()
+
     def show_location_toolbar(self, selectall=True) -> None:
         self._gui._window.location_lineedit.show()
         self._gui._window.location_buttonbar.hide()

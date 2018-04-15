@@ -127,7 +127,7 @@ class LocationLineEdit(QLineEdit):
     def __init__(self, controller: 'Controller') -> None:
         super().__init__()
 
-        self.controller = controller
+        self._controller = controller
         self.is_unused = True
         self._show_completion_selection = True
 
@@ -139,8 +139,8 @@ class LocationLineEdit(QLineEdit):
         self.bookmark_act.triggered.connect(self._on_bookmark_triggered)
         self.bookmark_act.setToolTip("Toggle bookmark for this location")
 
-        self.controller.sig_location_changed.connect(self._on_location_changed)
-        self.controller.sig_location_changed_to_none.connect(lambda: self._on_location_changed(None))
+        self._controller.sig_location_changed.connect(self._on_location_changed)
+        self._controller.sig_location_changed_to_none.connect(lambda: self._on_location_changed(None))
 
         self._popup = LocationLineEditPopup(self)
 
@@ -168,7 +168,7 @@ class LocationLineEdit(QLineEdit):
     def _on_location_changed(self, location: Location):
         if location is not None:
             self.bookmark_act.setEnabled(True)
-            if self.controller.has_bookmark():
+            if self._controller.has_bookmark():
                 self.bookmark_act.setIcon(QIcon.fromTheme("user-bookmarks"))
             else:
                 self.bookmark_act.setIcon(QIcon.fromTheme("bookmark-missing"))
@@ -177,20 +177,27 @@ class LocationLineEdit(QLineEdit):
             self.bookmark_act.setIcon(QIcon())
 
     def _on_bookmark_triggered(self, checked):
-        if self.controller.toggle_bookmark():
+        if self._controller.toggle_bookmark():
             self.bookmark_act.setIcon(QIcon.fromTheme("user-bookmarks"))
         else:
             self.bookmark_act.setIcon(QIcon.fromTheme("bookmark-missing"))
 
     def _on_escape_press(self):
-        if self.controller.location is None:
+        if self._controller.location is None:
             self.setText("")
         elif self._popup._previous_text is not None:
             self._popup.abort_completion()
         else:
-            self.setText(self.controller.location.as_path())
-            self.on_text_edited(self.text())
-            self.controller._gui._window.file_view.setFocus()
+            self.setText(self._controller.location.as_path())
+
+            p = self.palette()
+            p.setColor(QPalette.Text, Qt.black)
+            self.setPalette(p)
+
+            self._controller._gui._window.file_view.setFocus()
+
+        self._controller.show_location_buttonbar()
+        self._hide_popup()
 
     def focusInEvent(self, ev) -> None:
         super().focusInEvent(ev)
@@ -205,10 +212,13 @@ class LocationLineEdit(QLineEdit):
     def focusOutEvent(self, ev) -> None:
         super().focusOutEvent(ev)
 
-        if ev.reason() != Qt.ActiveWindowFocusReason and self.is_unused:
-            self.set_unused_text()
-
         self._hide_popup()
+
+        if ev.reason() != Qt.ActiveWindowFocusReason:
+            self._controller.show_location_buttonbar()
+
+            if self.is_unused:
+                self.set_unused_text()
 
     def on_text_edited(self, text) -> None:
         p = self.palette()
@@ -224,7 +234,7 @@ class LocationLineEdit(QLineEdit):
 
         self.setPalette(p)
 
-        self.controller._path_completion.request_completions(text)
+        self._controller._path_completion.request_completions(text)
 
     def set_cursor_to_end(self):
         length = len(self.text())
@@ -241,7 +251,7 @@ class LocationLineEdit(QLineEdit):
         except Exception:
             logger.warning("unparsable location entered: %s", self.text())
         else:
-            self.controller.set_location(location)
+            self._controller.set_location(location)
             self._popup.hide()
 
     def set_location(self, location: Location) -> None:
