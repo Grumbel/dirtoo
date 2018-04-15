@@ -287,5 +287,9 @@ class LocationLineEdit(QLineEdit):
         self._popup.set_completions(longest, candidate)
         self._show_popup()
 
+    def hideEvent(self, ev) -> None:
+        super().hideEvent(ev)
+        self._hide_popup()
+
 
 # EOF #

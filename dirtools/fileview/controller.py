@@ -211,6 +211,10 @@ class Controller(QObject):
 
     def set_location(self, location: Location, track_history=True) -> None:
         self.close_streams()
+
+        self._gui._window.location_lineedit.hide()
+        self._gui._window.location_buttonbar.show()
+
         self._gui._window.search_toolbar.hide()
         if not self.actions.filter_pin.isChecked():
             self.clear_filter()
@@ -496,8 +500,9 @@ class Controller(QObject):
         self.set_location(self.location)
 
     def show_location_toolbar(self, selectall=True) -> None:
-        # self._gui._window.search_toolbar.hide()
-        # self._gui._window.location_toolbar.show()
+        self._gui._window.location_lineedit.show()
+        self._gui._window.location_buttonbar.hide()
+
         self._gui._window.location_lineedit.setFocus(Qt.ShortcutFocusReason)
         if selectall is False:
             self._gui._window.location_lineedit.set_cursor_to_end()

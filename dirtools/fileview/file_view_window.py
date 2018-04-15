@@ -218,9 +218,10 @@ class FileViewWindow(QMainWindow):
         label.setContextMenuPolicy(Qt.CustomContextMenu)
         label.customContextMenuRequested.connect(show_location_menu)
 
-        label.setBuddy(self.location_lineedit)
-        form.addRow(label, self.location_lineedit)
-        form.addRow(label2, self.location_buttonbar)
+        both = QVBoxLayout()
+        both.addWidget(self.location_buttonbar)
+        both.addWidget(self.location_lineedit)
+        form.addRow(label, both)
 
         form.setContentsMargins(0, 0, 0, 0)
         widget.setLayout(form)

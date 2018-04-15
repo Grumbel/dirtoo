@@ -109,6 +109,7 @@ class LocationButtonBar(QWidget):
 
     def mousePressEvent(self, ev):
         print("LocationButtonBar: press event", ev)
+        self._controller.show_location_toolbar()
 
 
 # EOF #
