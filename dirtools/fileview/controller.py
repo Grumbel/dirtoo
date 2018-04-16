@@ -449,6 +449,14 @@ class Controller(QObject):
         for item in selected_items:
             item.reload_thumbnail()
 
+    def reload_metadata(self) -> None:
+        selected_items = self._gui._window.file_view._scene.selectedItems()
+        locations = [item.fileinfo.location() for item in selected_items]
+        self.app.metadata_collector.request_delete_metadatas(locations)
+
+        for item in selected_items:
+            item.reload_metadata()
+
     def set_grouper_by_none(self) -> None:
         self.file_collection.set_grouper(NoGrouper())
 

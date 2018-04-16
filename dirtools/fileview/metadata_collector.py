@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Dict, Any
+from typing import Dict, List, Any
 
 import traceback
 import logging
@@ -46,7 +46,12 @@ class MetaDataCollectorWorker(QObject):
         self.mimedb = QMimeDatabase()
         self.cache = MetaDataCache()
 
-    def on_metadata_requested(self, location: Location):
+    def on_delete_metadata_requested(self, locations: List[Location]) -> None:
+        for location in locations:
+            abspath = self.vfs.get_stdio_name(location)
+            self.cache.clear_metadata(abspath)
+
+    def on_metadata_requested(self, location: Location) -> None:
         if self._close:
             return
 
@@ -113,6 +118,7 @@ class MetaDataCollector(QObject):
 
     sig_metadata_ready = pyqtSignal(Location, dict)
     sig_request_metadata = pyqtSignal(Location)
+    sig_delete_metadatas = pyqtSignal(list)
 
     def __init__(self, vfs: StdioFilesystem) -> None:
         super().__init__()
@@ -123,6 +129,7 @@ class MetaDataCollector(QObject):
 
         self._thread.started.connect(self._worker.init)
         self.sig_request_metadata.connect(self._worker.on_metadata_requested)
+        self.sig_delete_metadatas.connect(self._worker.on_delete_metadata_requested)
         self._worker.sig_metadata_ready.connect(self._on_metadata_ready)
 
         self._thread.start()
@@ -134,6 +141,9 @@ class MetaDataCollector(QObject):
 
     def request_metadata(self, location: Location) -> None:
         self.sig_request_metadata.emit(location)
+
+    def request_delete_metadatas(self, locations: List[Location]) -> None:
+        self.sig_delete_metadatas.emit(locations)
 
     def _on_metadata_ready(self, location: Location, metadata: Any):
         self.sig_metadata_ready.emit(location, metadata)

@@ -155,9 +155,12 @@ class Actions(QObject):
         self.rename.triggered.connect(lambda checked: self.controller.show_rename_dialog())
 
         self.reload_thumbnails = QAction(QIcon.fromTheme('edit-delete'), 'Reload Thumbnails', self)
-        # self.reload_thumbnails.setShortcut('Shift+F5')
         self.reload_thumbnails.setStatusTip('Reload Thumbnails')
         self.reload_thumbnails.triggered.connect(self.controller.reload_thumbnails)
+
+        self.reload_metadata = QAction(QIcon.fromTheme('edit-delete'), 'Reload MetaData', self)
+        self.reload_metadata.setStatusTip('Reload MetaData')
+        self.reload_metadata.triggered.connect(self.controller.reload_metadata)
 
         self.prepare = QAction(QIcon.fromTheme('media-playback-start'), 'Load Thumbnails', self)
         self.prepare.setShortcut('F6')

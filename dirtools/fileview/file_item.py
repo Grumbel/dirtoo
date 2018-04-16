@@ -194,8 +194,11 @@ class FileItem(QGraphicsObject):
         self.large_thumbnail = Thumbnail("large", self)
         self.update()
 
-    def reload_thumbnail(self):
+    def reload_thumbnail(self) -> None:
         self.reload()
+
+    def reload_metadata(self) -> None:
+        self.metadata = None
 
     def on_click_animation(self) -> None:
         if self.animation_timer is not None:
