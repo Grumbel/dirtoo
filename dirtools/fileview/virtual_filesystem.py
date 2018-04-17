@@ -23,6 +23,7 @@ from dirtools.fileview.location import Location
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.stdio_filesystem import StdioFilesystem
 from dirtools.fileview.history_provider import HistoryProvider
+from dirtools.fileview.bookmarks_provider import BookmarksProvider
 from dirtools.fileview.search_stream import SearchStream
 from dirtools.fileview.filelist_stream import FileListStream
 
@@ -41,6 +42,9 @@ class VirtualFilesystem:
     def opendir(self, location: Location) -> Any:
         if location.protocol() == "history":
             return HistoryProvider(self._app)
+
+        elif location.protocol() == "bookmarks":
+            return BookmarksProvider(self._app)
 
         elif location.protocol() == "file":
             return self._stdio_fs.opendir(location)
