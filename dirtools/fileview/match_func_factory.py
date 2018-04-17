@@ -46,6 +46,7 @@ from dirtools.fileview.match_func import (
     TimeMatchFunc,
     DateOpMatchFunc,
     TimeOpMatchFunc,
+    WeekdayMatchFunc,
 )
 
 logger = logging.getLogger(__name__)
@@ -193,6 +194,13 @@ class MatchFuncFactory:
                                {DATEPATTERN}, {CMP}{DATE}
 
                                Example: 'date:>2017-12', 'date:*-12-24'
+                               """)
+
+        self.register_function(["weekday"], self.make_weekday,
+                               """\
+                               {WEEKDAY}, {CMP}{WEEKDAY}
+
+                               Example: 'date:>friday', 'date:monday'
                                """)
 
         self.register_function(["duration"], self.make_duration,
@@ -390,6 +398,10 @@ class MatchFuncFactory:
             else:
                 op, rest = parse_op(argument)
                 return DateOpMatchFunc(rest, op)
+
+    def make_weekday(self, argument):
+        op, rest = parse_op(argument)
+        return WeekdayMatchFunc(rest, op)
 
     def make_time(self, argument):
         if is_glob_pattern(argument):

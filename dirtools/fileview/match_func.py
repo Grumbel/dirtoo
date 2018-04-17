@@ -25,6 +25,9 @@ from datetime import datetime
 
 from dirtools.fuzzy import fuzzy
 
+if False:
+    from dirtools.fileview.file_info import FileInfo
+
 logger = logging.getLogger(__name__)
 
 
@@ -303,6 +306,35 @@ class DateOpMatchFunc(MatchFunc):
         mtime = fileinfo.mtime()
         dt = datetime.fromtimestamp(mtime)
         return self._compare(self._snip_it(dt.date()), self._snip_it(self._date))
+
+
+WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+
+
+def text2weekday(text: str):
+    try:
+        return int(text)
+    except ValueError:
+        text = text.lower()
+        results = [idx for idx, weekday in enumerate(WEEKDAYS) if weekday.startswith(text)]
+        if len(results) == 0:
+            raise Exception("failed to parse text: {}".format(text))
+        elif len(results) == 1:
+            return results[0]
+        else:
+            raise Exception("ambiguous weekday: {}".format(text))
+
+
+class WeekdayMatchFunc(MatchFunc):
+
+    def __init__(self, text: str, compare: Callable) -> None:
+        self._weekday = text2weekday(text)
+        self._compare = compare
+
+    def __call__(self, fileinfo: 'FileInfo'):
+        mtime = fileinfo.mtime()
+        dt = datetime.fromtimestamp(mtime)
+        return self._compare(dt.weekday(), self._weekday)
 
 
 class ContainsMatchFunc(MatchFunc):
