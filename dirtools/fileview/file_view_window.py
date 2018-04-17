@@ -342,6 +342,13 @@ class FileViewWindow(QMainWindow):
                                          bookmarks.append(loc))
             bookmarks_menu.addSeparator()
 
+            bookmarks_menu.addDoubleAction(
+                QIcon.fromTheme("folder"), "View Bookmarks",
+                lambda: self.controller.set_location(Location("bookmarks", "/", [])),
+                lambda: self.controller.new_controller().set_location(Location("bookmarks", "/", [])))
+
+            bookmarks_menu.addSeparator()
+
             icon = QIcon.fromTheme("folder")
             for entry in entries:
                 action = bookmarks_menu.addDoubleAction(
