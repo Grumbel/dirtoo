@@ -26,29 +26,29 @@ from datetime import datetime
 from dirtools.fuzzy import fuzzy
 
 if False:
-    from dirtools.fileview.file_info import FileInfo
+    from dirtools.fileview.file_info import FileInfo  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
 
 class MatchFunc:
 
-    def __call__(self, fileinfo):
+    def __call__(self, fileinfo: 'FileInfo') -> bool:
         assert False, "MatchFunc.__call__() not implemented"
 
-    def cost(self):
+    def cost(self) -> float:
         return 1
 
 
 class FalseMatchFunc(MatchFunc):
 
-    def __call__(self, fileinfo):
+    def __call__(self, fileinfo: 'FileInfo') -> bool:
         return False
 
 
 class TrueMatchFunc(MatchFunc):
 
-    def __call__(self, fileinfo):
+    def __call__(self, fileinfo: 'FileInfo') -> bool:
         return True
 
 
@@ -57,7 +57,7 @@ class OrMatchFunc(MatchFunc):
     def __init__(self, funcs) -> None:
         self._funcs = funcs
 
-    def __call__(self, fileinfo):
+    def __call__(self, fileinfo: 'FileInfo') -> bool:
         for func in self._funcs:
             if func(fileinfo):
                 return True
@@ -69,7 +69,7 @@ class AndMatchFunc(MatchFunc):
     def __init__(self, funcs) -> None:
         self._funcs = funcs
 
-    def __call__(self, fileinfo):
+    def __call__(self, fileinfo: 'FileInfo') -> bool:
         for func in self._funcs:
             if not func(fileinfo):
                 return False
@@ -78,19 +78,19 @@ class AndMatchFunc(MatchFunc):
 
 class ExcludeMatchFunc(MatchFunc):
 
-    def __init__(self, func):
+    def __init__(self, func) -> None:
         self._func = func
 
-    def __call__(self, fileinfo):
+    def __call__(self, fileinfo: 'FileInfo') -> bool:
         return not self._func(fileinfo)
 
 
 class FolderMatchFunc(MatchFunc):
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def __call__(self, fileinfo):
+    def __call__(self, fileinfo: 'FileInfo') -> bool:
         return fileinfo.isdir()
 
 
@@ -103,7 +103,7 @@ class GlobMatchFunc(MatchFunc):
         else:
             self.pattern = pattern.lower()
 
-    def __call__(self, fileinfo):
+    def __call__(self, fileinfo: 'FileInfo') -> bool:
         if self.case_sensitive:
             return fnmatchcase(fileinfo.basename(), self.pattern)
         else:
@@ -113,44 +113,44 @@ class GlobMatchFunc(MatchFunc):
 
 class RegexMatchFunc(MatchFunc):
 
-    def __init__(self, pattern, flags):
+    def __init__(self, pattern, flags) -> None:
         self.rx = re.compile(pattern, flags)
 
-    def __call__(self, fileinfo):
+    def __call__(self, fileinfo: 'FileInfo') -> bool:
         return bool(self.rx.search(fileinfo.basename()))
 
 
 class FuzzyMatchFunc(MatchFunc):
 
-    def __init__(self, needle, n=3, threshold=0.5):
+    def __init__(self, needle, n=3, threshold=0.5) -> None:
         self.needle = needle
         self.n = n
         self.threshold = threshold
 
-    def __call__(self, fileinfo):
+    def __call__(self, fileinfo: 'FileInfo') -> bool:
         result = fuzzy(self.needle, fileinfo.basename(), self.n)
         return result > self.threshold
 
 
 class SizeMatchFunc(MatchFunc):
 
-    def __init__(self, size, compare):
+    def __init__(self, size, compare) -> None:
         self.size = size
         self.compare = compare
 
-    def __call__(self, fileinfo):
+    def __call__(self, fileinfo: 'FileInfo') -> bool:
         return self.compare(fileinfo.size(), self.size)
 
 
 class MetadataMatchFunc(MatchFunc):
 
-    def __init__(self, field, type, value, compare):
+    def __init__(self, field, type, value, compare) -> None:
         self._field = field
         self._type = type
         self._value = value
         self._compare = compare
 
-    def __call__(self, fileinfo):
+    def __call__(self, fileinfo: 'FileInfo') -> bool:
         metadata = fileinfo.metadata()
         if self._field in metadata:
             try:
@@ -161,37 +161,37 @@ class MetadataMatchFunc(MatchFunc):
         else:
             return False
 
-    def cost(self):
+    def cost(self) -> float:
         return 50
 
 
 class LengthMatchFunc(MatchFunc):
 
-    def __init__(self, length, compare):
+    def __init__(self, length, compare) -> None:
         self.length = length
         self.compare = compare
 
-    def __call__(self, fileinfo):
+    def __call__(self, fileinfo: 'FileInfo') -> bool:
         return self.compare(len(fileinfo.basename()), self.length)
 
 
 class RandomMatchFunc(MatchFunc):
 
-    def __init__(self, probability):
+    def __init__(self, probability) -> None:
         self.random = random.Random(random.randrange(1024))
         self.probability = probability
 
-    def __call__(self, fileinfo):
+    def __call__(self, fileinfo: 'FileInfo') -> bool:
         return (self.random.random() < self.probability)
 
 
 # class RandomPickMatchFunc(MatchFunc):
 
-#     def __init__(self, pick_count):
+#     def __init__(self, pick_count) -> None:
 #         self.pick_count = pick_count
 #         self.picked_indices = None
 
-#     def __call__(self, fileinfo):
+#     def __call__(self, fileinfo: 'FileInfo') -> bool:
 #         return idx in self.picked_indices
 
 #     def begin(self, fileinfos):
@@ -212,10 +212,10 @@ class RandomMatchFunc(MatchFunc):
 
 class CharsetMatchFunc(MatchFunc):
 
-    def __init__(self, charset):
+    def __init__(self, charset: str) -> None:
         self._charset = charset
 
-    def __call__(self, fileinfo):
+    def __call__(self, fileinfo: 'FileInfo') -> bool:
         try:
             fileinfo.basename().encode(self._charset)
         except UnicodeEncodeError:
@@ -226,10 +226,10 @@ class CharsetMatchFunc(MatchFunc):
 
 class DateMatchFunc(MatchFunc):
 
-    def __init__(self, pattern):
+    def __init__(self, pattern: str) -> None:
         self._pattern = pattern
 
-    def __call__(self, fileinfo):
+    def __call__(self, fileinfo: 'FileInfo') -> bool:
         mtime = fileinfo.mtime()
         dt = datetime.fromtimestamp(mtime)
         dtstr = dt.strftime("%Y-%m-%d")
@@ -238,10 +238,10 @@ class DateMatchFunc(MatchFunc):
 
 class TimeMatchFunc(MatchFunc):
 
-    def __init__(self, pattern):
+    def __init__(self, pattern: str) -> None:
         self._pattern = pattern
 
-    def __call__(self, fileinfo):
+    def __call__(self, fileinfo: 'FileInfo') -> bool:
         mtime = fileinfo.mtime()
         dt = datetime.fromtimestamp(mtime)
         dtstr = dt.strftime("%H:%M:%S")
@@ -272,7 +272,7 @@ class TimeOpMatchFunc(MatchFunc):
         else:
             assert False
 
-    def __call__(self, fileinfo):
+    def __call__(self, fileinfo: 'FileInfo') -> bool:
         mtime = fileinfo.mtime()
         dt = datetime.fromtimestamp(mtime)
         return self._compare(self._snip_it(dt.time()), self._snip_it(self._time))
@@ -302,7 +302,7 @@ class DateOpMatchFunc(MatchFunc):
         else:
             assert False
 
-    def __call__(self, fileinfo):
+    def __call__(self, fileinfo: 'FileInfo') -> bool:
         mtime = fileinfo.mtime()
         dt = datetime.fromtimestamp(mtime)
         return self._compare(self._snip_it(dt.date()), self._snip_it(self._date))
@@ -331,7 +331,7 @@ class WeekdayMatchFunc(MatchFunc):
         self._weekday = text2weekday(text)
         self._compare = compare
 
-    def __call__(self, fileinfo: 'FileInfo'):
+    def __call__(self, fileinfo: 'FileInfo') -> bool:
         mtime = fileinfo.mtime()
         dt = datetime.fromtimestamp(mtime)
         return self._compare(dt.weekday(), self._weekday)
@@ -339,10 +339,10 @@ class WeekdayMatchFunc(MatchFunc):
 
 class ContainsMatchFunc(MatchFunc):
 
-    def __init__(self, line_match_func):
+    def __init__(self, line_match_func) -> None:
         self._line_match_func = line_match_func
 
-    def __call__(self, fileinfo):
+    def __call__(self, fileinfo: 'FileInfo') -> bool:
         location = fileinfo.location()
 
         if not location.has_payload():
@@ -357,7 +357,7 @@ class ContainsMatchFunc(MatchFunc):
 
         return False
 
-    def cost(self):
+    def cost(self) -> float:
         return 100
 
 
