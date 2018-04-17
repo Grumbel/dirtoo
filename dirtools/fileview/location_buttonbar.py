@@ -64,8 +64,11 @@ class LocationButtonBar(QWidget):
         for location in ancestry:
             basename = location.basename()
             if basename == "":
-                button = PushButton(QIcon.fromTheme("drive-harddisk"), "")
-                button.setIconSize(QSize(16, 16))
+                if location.protocol() == "file":
+                    button = PushButton(QIcon.fromTheme("drive-harddisk"), "")
+                    button.setIconSize(QSize(16, 16))
+                else:
+                    button = PushButton(location.protocol() + "://")
             else:
                 button = PushButton(basename)
                 button.setStyleSheet("padding: 3px 4px;")
