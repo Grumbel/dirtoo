@@ -457,6 +457,21 @@ class Controller(QObject):
         for item in selected_items:
             item.reload_metadata()
 
+    def make_directory_thumbnails(self) -> None:
+        selected_items = self._gui._window.file_view._scene.selectedItems()
+        locations = []
+        for item in selected_items:
+            if item.fileinfo.isdir():
+                locations.append(item.fileinfo.location())
+            elif item.fileinfo.is_archive():
+                location = item.fileinfo.location().copy()
+                location._payloads.append(Payload("archive", ""))
+                locations.append(location)
+
+        for location in locations:
+            self.app.directory_thumbnailer.request_thumbnail(location,
+                                                             lambda *args: print("Results:", args))
+
     def set_grouper_by_none(self) -> None:
         self.file_collection.set_grouper(NoGrouper())
 

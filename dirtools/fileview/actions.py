@@ -162,6 +162,10 @@ class Actions(QObject):
         self.reload_metadata.setStatusTip('Reload MetaData')
         self.reload_metadata.triggered.connect(self.controller.reload_metadata)
 
+        self.make_directory_thumbnails = QAction(QIcon.fromTheme('folder'), 'Make Directory Thumbnails', self)
+        self.make_directory_thumbnails.setStatusTip('Make Directory Thumbnails')
+        self.make_directory_thumbnails.triggered.connect(self.controller.make_directory_thumbnails)
+
         self.prepare = QAction(QIcon.fromTheme('media-playback-start'), 'Load Thumbnails', self)
         self.prepare.setShortcut('F6')
         self.prepare.setStatusTip('Load Thumbnails')
