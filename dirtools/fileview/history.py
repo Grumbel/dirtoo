@@ -52,7 +52,13 @@ class SqlHistory:
 
         results: List[Location] = []
         for group_id, date, location_url in c.fetchall():
-            results.append(Location.from_url(location_url))
+            try:
+                loc = Location.from_url(location_url)
+            except Exception:
+                logging.exception("Location parsing failed")
+            else:
+                results.append(loc)
+
         return results
 
     def get_unique_entries(self, limit: Optional[int] = None) -> List[Location]:
