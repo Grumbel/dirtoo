@@ -99,7 +99,9 @@ class DirectoryThumbnailerTask(QObject):
     def _on_scandir_finished(self, fileinfos):
         # print("_on_scandir_finished:")
         self._file_collection.set_fileinfos(fileinfos)
-        self._request_thumbnails()
+        if not self._request_thumbnails():
+            print("directory seems empty, no thumbnails to generate (might be archive, see file_collection.add_file)")
+            self.sig_done.emit()
 
     def _on_directory_watcher_message(self, message):
         print("ERROR:", message)
