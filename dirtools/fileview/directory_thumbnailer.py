@@ -18,12 +18,15 @@
 from typing import Callable
 
 import logging
+import os
 
 from PyQt5.QtCore import QObject, QSize, QRect, pyqtSignal
 from PyQt5.QtGui import QBrush, QIcon, QColor, QPixmap, QImage, QPainter
 
 from dirtools.fileview.file_collection import FileCollection
 from dirtools.fileview.worker_thread import WorkerThread, Worker
+from dirtools.fileview.scaler import make_cropped_rect
+from dirtools.dbus_thumbnailer import DBusThumbnailer
 
 if False:
     from dirtools.fileview.application import FileViewApplication  # noqa: F401
@@ -35,51 +38,32 @@ logger = logging.getLogger(__name__)
 ThumbnailCallback = Callable
 
 
-class DirectoryThumbnailerWorker(Worker):
+class DirectoryThumbnailerTask(QObject):
 
     sig_thumbnail_ready = pyqtSignal(object, str, object, int, str)
+    sig_done = pyqtSignal()
 
-    # Location, Callback
-    sig_thumbnail_requested = pyqtSignal(object, object)
-
-    def __init__(self, app: 'FileViewApplication') -> None:
+    def __init__(self, app: 'FileViewApplication',
+                 location: 'Location', callback: ThumbnailCallback):
         super().__init__()
-
-        self._app = app
-        self._queue = []
 
         self._stream = None
         self._file_collection = None
 
+        self._app = app
+        self.sig_thumbnail_ready.connect(self._on_thumbnail_ready)
+
+        self._location = location
+        self._fileinfo = self._app.vfs.get_fileinfo(location)
+        self._stream = self._app.vfs.opendir(location)
+
         self._thumbnails = []
         self._fileinfo_idx = 0
-
-        self.sig_thumbnail_ready.connect(self._on_thumbnail_ready)
-        self.sig_thumbnail_requested.connect(self._on_thumbnail_requested)
-
-    def close(self) -> None:
-        if self._stream is not None:
-            self._stream.close()
-
-    def _on_thumbnail_requested(self, location: 'Location', callback: ThumbnailCallback):
-        print("_on_thumbnail_requested")
-        logger.debug("DirectoryThumbnailer.request_thumbnail: %s", location)
-        self._queue.append((location, callback))
-        if self._stream is None:
-            self._start_thumbnail_build(location, callback)
-
-    def _start_thumbnail_build(self, location: 'Location', callback: ThumbnailCallback):
-        assert self._stream is None
-        assert self._file_collection is None
-
-        self._stream = self._app.vfs.opendir(location)
 
         self._file_collection = FileCollection()
 
         if hasattr(self._stream, 'sig_file_added'):
             self._stream.sig_file_added.connect(self._file_collection.add_fileinfo)
-        print("oeu")
-        self._stream.sig_file_added.connect(lambda *args: print(*args))
 
         if hasattr(self._stream, 'sig_file_removed'):
             self._stream.sig_file_removed.connect(self._file_collection.remove_file)
@@ -102,6 +86,9 @@ class DirectoryThumbnailerWorker(Worker):
         print("stream start: ", self._stream)
         self._stream.start()
 
+    def close(self) -> None:
+        self._stream.close()
+
     def _on_finished(self):
         print("_on_finished")
 
@@ -116,13 +103,11 @@ class DirectoryThumbnailerWorker(Worker):
     def _request_thumbnails(self) -> None:
         print("_request_thumbnails")
         print(self._fileinfo_idx, len(self._file_collection))
-        for fi in self._file_collection:
-            print(fi)
 
         if self._fileinfo_idx < len(self._file_collection):
             print("requesting...")
             fi = self._file_collection[self._fileinfo_idx]
-            self._app.thumbnailer.request_thumbnail(fi.location(), "normal", False,
+            self._app.thumbnailer.request_thumbnail(fi.location(), "large", False,
                                                     lambda *args: self.sig_thumbnail_ready.emit(*args))
             self._fileinfo_idx += 1
             return True
@@ -136,38 +121,84 @@ class DirectoryThumbnailerWorker(Worker):
         if image is not None:
             self._thumbnails.append(image)
 
-        if len(self._thumbnails) >= 9 or not self._request_thumbnails():
+        if len(self._thumbnails) >= 9:
             self._build_directory_thumbnail()
         else:
-            self._request_thumbnails()
+            if not self._request_thumbnails():
+                self._build_directory_thumbnail()
 
     def _build_directory_thumbnail(self):
         print("_build_directory_thumbnail: ", len(self._thumbnails))
         output = QImage(QSize(256, 256), QImage.Format_RGB32)
         painter = QPainter(output)
+        painter.setRenderHints(QPainter.SmoothPixmapTransform |
+                               QPainter.Antialiasing)
 
+        # FIXME: insert code to handle more image numbers
         spec = [(0, 0, 85, 85), (85, 0, 86, 86), (171, 0, 85, 85),
                 (0, 85, 86, 86), (85, 85, 86, 86), (171, 85, 86, 86),
                 (0, 171, 85, 85), (85, 171, 86, 86), (171, 171, 85, 85)]
 
-        if len(self._thumbnails) == 9:
-            for idx, thumbnail in enumerate(self._thumbnails):
-                dstrect = QRect(*spec[idx])
-                srcrect = QRect(0, 0, thumbnail.width(), thumbnail.height())
-                painter.drawImage(dstrect, thumbnail, srcrect)
+        for idx, thumbnail in enumerate(self._thumbnails[:9]):
+            dstrect = QRect(*spec[idx])
+            srcrect = make_cropped_rect(thumbnail.width(), thumbnail.height(), spec[idx][2], spec[idx][3])
+            print(srcrect)
+            painter.drawImage(dstrect, thumbnail, srcrect)
 
         painter.end()
 
-        output.setText("Thumb::URI", "foo")
-        output.setText("Thumb::MTime", "foo")
-        output.setText("Thumb::Size", "foo")
-        output.setText("Thumb::Mimetype", "foo")
-        output.setText("Thumb::Image::Width", "foo")
-        output.setText("Thumb::Image::Height", "foo")
+        url = self._location.as_url()
+        output.setText("Thumb::URI", url)
+        output.setText("Thumb::MTime", str(int(self._fileinfo.mtime())))
+        output.setText("Thumb::Size", str(self._fileinfo.size()))
+        output.setText("Thumb::Mimetype", "inode/directory")
+        output.setText("Thumb::Image::Width", "256")
+        output.setText("Thumb::Image::Height", "256")
 
-        output.save("/tmp/out.png")
+        thumbnail_filename = DBusThumbnailer.thumbnail_from_url(url)
+        if not os.path.exists(thumbnail_filename):
+            print("Wrote thumbnail to {}".format(thumbnail_filename))
+            output.save(thumbnail_filename)
+        self.sig_done.emit()
+
+
+class DirectoryThumbnailerWorker(Worker):
+
+    # Location, Callback
+    sig_thumbnail_requested = pyqtSignal(object, object)
+
+    def __init__(self, app: 'FileViewApplication') -> None:
+        super().__init__()
+
+        self._app = app
+
+        self._task = None
+        self._queue = []
+
+        self.sig_thumbnail_requested.connect(self._on_thumbnail_requested)
+
+    def close(self) -> None:
+        if self._task is not None:
+            self._task.close()
+
+    def _on_thumbnail_requested(self, location: 'Location', callback: ThumbnailCallback):
+        print("_on_thumbnail_requested")
+        logger.debug("DirectoryThumbnailer.request_thumbnail: %s", location)
+
+        if self._task is None:
+            self._start_task(location, callback)
+        else:
+            self._queue.append((location, callback))
+
+    def _start_task(self, location: 'Location', callback: ThumbnailCallback):
+        self._task = DirectoryThumbnailerTask(self._app, location, callback)
+        self._task.sig_done.connect(self._on_task_done)
+
+    def _on_task_done(self):
         print("DONE")
-        self._close = True
+        if self._queue != []:
+            location, callback = self._queue.pop()
+            self._start_task(location, callback)
 
 
 class DirectoryThumbnailer(WorkerThread):
