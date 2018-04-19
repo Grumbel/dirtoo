@@ -29,7 +29,7 @@ class LocationTestCase(unittest.TestCase):
              "file:///"),
 
             ("/tmp/file.rar://rar",
-             "file:///tmp/file.rar://rar"),
+             "file:///tmp/file.rar%3A//rar"),
 
             ("/tmp/file",
              "file:///tmp/file"),
@@ -38,7 +38,10 @@ class LocationTestCase(unittest.TestCase):
              "file:///tmp/file2"),
 
             ("file:///tmp/file.rar//rar:foo.bar",
-             "file:///tmp/file.rar//rar:foo.bar")
+             "file:///tmp/file.rar//rar:foo.bar"),
+
+            ("file:///tmp/file spacetest",
+             "file:///tmp/file%20spacetest"),
         ]
 
         for human, expected in humans:

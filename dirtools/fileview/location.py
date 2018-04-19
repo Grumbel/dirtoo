@@ -17,6 +17,7 @@
 
 from typing import List, NamedTuple, Optional, Tuple
 
+import urllib.parse
 import logging
 import os
 import re
@@ -168,9 +169,12 @@ class Location:
             return location
 
     def as_url(self) -> str:
-        payload_text = "".join(["//{}{}".format(prot, (":" + path) if path else "")
+        payload_text = "".join(["//{}{}".format(prot, (":" + urllib.parse.quote(path)) if path else "")
                                 for prot, path in self._payloads])
-        return "{}://{}{}".format(self._protocol, self._path, payload_text)
+        return ("{}://{}{}".format(
+            self._protocol,
+            urllib.parse.quote(self._path),
+            payload_text))
 
     def as_path(self) -> str:
         """Like .as_url() but without the protocol part. Only use this for
