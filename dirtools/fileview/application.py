@@ -45,6 +45,7 @@ from dirtools.fileview.preferences_dialog import PreferencesDialog
 from dirtools.fileview.filesystem import Filesystem
 from dirtools.fileview.application_actions import ApplicationActions
 from dirtools.fileview.controller import Controller
+from dirtools.fileview.directory_thumbnailer import DirectoryThumbnailer
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +100,9 @@ class FileViewApplication:
         self.fs_operations = FilesystemOperations()
         self.fs = Filesystem()
 
+        self.directory_thumbnailer = DirectoryThumbnailer(self)
+        self.directory_thumbnailer.start()
+
         self.controllers: List[Controller] = []
 
         self.actions = ApplicationActions(self)
@@ -115,6 +119,8 @@ class FileViewApplication:
         return cast(int, self.qapp.exec())
 
     def close(self) -> None:
+        self.directory_thumbnailer.close()
+
         self.file_history.close()
         self.location_history.close()
 
