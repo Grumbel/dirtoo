@@ -109,8 +109,7 @@ class ThumbnailerWorker(QObject):
     def on_thumbnail_requested(self, location: Location, flavor: str, force: bool,
                                callback: ThumbnailCallback):
 
-        stdio_filename = self._vfs.get_stdio_name(location)
-        thumbnail_filename = DBusThumbnailer.thumbnail_from_filename(stdio_filename, flavor)
+        thumbnail_filename = DBusThumbnailer.thumbnail_from_url(location.as_url(), flavor)
         exists = os.path.exists(thumbnail_filename)
         if exists and not force:
             image = QImage(thumbnail_filename)
@@ -123,7 +122,7 @@ class ThumbnailerWorker(QObject):
                 # employ brute force to get rid of the thumbnail
                 # quickly.
                 #
-                # self.dbus_thumbnail_cache.delete(stdio_filename)
+                # self.dbus_thumbnail_cache.delete(location.as_url())
                 os.unlink(thumbnail_filename)
 
             self._thumbnail_requests.append(ThumbnailRequest(location, flavor, callback))
