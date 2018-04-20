@@ -18,7 +18,13 @@
 from PyQt5.QtCore import QRect
 
 
-def make_scaled_rect(sw: int , sh: int , tw: int, th: int) -> QRect:
+def make_unscaled_rect(sw: int, sh: int, tw: int, th: int) -> QRect:
+    return QRect(tw // 2 - sw // 2,
+                 th // 2 - sh // 2,
+                 sw, sh)
+
+
+def make_scaled_rect(sw: int, sh: int, tw: int, th: int) -> QRect:
     tratio = tw / th
     sratio = sw / sh
 

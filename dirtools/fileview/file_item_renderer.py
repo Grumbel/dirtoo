@@ -27,55 +27,9 @@ from dirtools.fileview.thumbnail import ThumbnailStatus
 from dirtools.mediainfo import split_duration
 from dirtools.fileview.mode import FileItemStyle
 from dirtools.fileview.image_filter import white_outline
+from dirtools.fileview.scaler import make_unscaled_rect, make_scaled_rect, make_cropped_rect
 
 logger = logging.getLogger(__name__)
-
-
-def make_scaled_rect(sw, sh, tw, th):
-    tratio = tw / th
-    sratio = sw / sh
-
-    if tratio > sratio:
-        w = sw * th // sh
-        h = th
-    else:
-        w = tw
-        h = sh * tw // sw
-
-    return QRectF(tw // 2 - w // 2,
-                  th // 2 - h // 2,
-                  w, h)
-
-
-def make_unscaled_rect(sw, sh, tw, th):
-    return QRectF(tw // 2 - sw // 2,
-                  th // 2 - sh // 2,
-                  sw, sh)
-
-
-def make_cropped_rect(sw, sh, tw, th):
-    """Calculate a srcrect that fits into the dstrect and fills it,
-    cropping the src."""
-
-    tratio = tw / th
-    sratio = sw / sh
-
-    if tratio > sratio:
-        w = sw
-        h = th * sw // tw
-
-        return QRectF(0,
-                      0,  # top align
-                      # max(0, sh // 3 - h // 2),
-                      # center: sh // 2 - h // 2,
-                      w, h)
-    else:
-        w = tw * sh // tw
-        h = sh
-
-        return QRectF(sw // 2 - w // 2,
-                      0,
-                      w, h)
 
 
 class FileItemRenderer:
@@ -327,11 +281,11 @@ class FileItemRenderer:
             if not self.crop_thumbnails:
                 rect = make_scaled_rect(pixmap.width(), pixmap.height(),
                                         self.thumbnail_rect.width(), self.thumbnail_rect.width())
-                painter.drawPixmap(rect.toRect(), pixmap)
+                painter.drawPixmap(rect, pixmap)
             else:
                 srcrect = make_cropped_rect(pixmap.width(), pixmap.height(),
                                             self.thumbnail_rect.width(), self.thumbnail_rect.width())
-                painter.drawPixmap(self.thumbnail_rect.toRect(), pixmap, srcrect.toRect())
+                painter.drawPixmap(self.thumbnail_rect, pixmap, srcrect)
 
             if (self.fileinfo.is_archive() or self.fileinfo.isdir()) and not self.hovering:
                 self.paint_icon(painter, self.icon)
@@ -422,7 +376,7 @@ class FileItemRenderer:
         if self.fileinfo.have_access() is False:
             painter.setOpacity(0.5)
             m = int(self.thumbnail_rect.width() * 0.125)
-            painter.drawPixmap(self.thumbnail_rect.marginsRemoved(QMarginsF(m, m, m, m)).toRect(),
+            painter.drawPixmap(self.thumbnail_rect.marginsRemoved(QMarginsF(m, m, m, m)),
                                self.style.shared_pixmaps.locked)
             painter.setOpacity(1.0)
 
@@ -454,14 +408,14 @@ class FileItemRenderer:
             img = QImage(self.thumbnail_rect.width(), self.thumbnail_rect.height(), QImage.Format_ARGB32)
             img.fill(0)
             p = QPainter(img)
-            icon.paint(p, rect.toRect())
+            icon.paint(p, rect)
             p.end()
 
             img = white_outline(img, sigma=6, repeat=3)
 
             painter.drawImage(0, 0, img)
 
-        icon.paint(painter, rect.toRect())
+        icon.paint(painter, rect)
 
 
 # EOF #
