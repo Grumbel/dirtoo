@@ -258,11 +258,12 @@ class FileItemRenderer:
         self.paint_thumbnail(painter)
 
         if self.hovering and self.animation_timer is None:
-            painter.setCompositionMode(QPainter.CompositionMode_Overlay)
-            painter.setOpacity(0.75)
-            self.paint_thumbnail(painter)
-            painter.setOpacity(1.0)
-            painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
+            if not self.fileinfo.isdir() and not self.fileinfo.is_archive():
+                painter.setCompositionMode(QPainter.CompositionMode_Overlay)
+                painter.setOpacity(0.75)
+                self.paint_thumbnail(painter)
+                painter.setOpacity(1.0)
+                painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
 
         if self.level_of_detail > 1:
             self.paint_metadata(painter)
@@ -332,7 +333,7 @@ class FileItemRenderer:
                                             self.thumbnail_rect.width(), self.thumbnail_rect.width())
                 painter.drawPixmap(self.thumbnail_rect.toRect(), pixmap, srcrect.toRect())
 
-            if self.fileinfo.is_archive() or self.fileinfo.isdir():
+            if (self.fileinfo.is_archive() or self.fileinfo.isdir()) and not self.hovering:
                 self.paint_icon(painter, self.icon)
 
     def make_text(self):
@@ -449,6 +450,7 @@ class FileItemRenderer:
                                       self.thumbnail_rect.width(), self.thumbnail_rect.height())
 
         if self.fileinfo.isdir() or self.fileinfo.is_archive():
+            # FIXME: This is slow and stupid, need to do it as shared_pixmap
             img = QImage(self.thumbnail_rect.width(), self.thumbnail_rect.height(), QImage.Format_ARGB32)
             img.fill(0)
             p = QPainter(img)
