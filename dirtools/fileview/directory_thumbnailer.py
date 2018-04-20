@@ -135,7 +135,8 @@ class DirectoryThumbnailerTask(QObject):
 
     def _build_directory_thumbnail(self):
         # print("_build_directory_thumbnail: ", len(self._thumbnails))
-        output = QImage(QSize(256, 256), QImage.Format_RGB32)
+        output = QImage(QSize(256, 256), QImage.Format_ARGB32)
+        output.fill(0)
         painter = QPainter(output)
         painter.setRenderHints(QPainter.SmoothPixmapTransform |
                                QPainter.Antialiasing)
