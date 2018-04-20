@@ -414,6 +414,7 @@ class FileItemRenderer:
             img = white_outline(img, sigma=6, repeat=3)
 
             painter.drawImage(0, 0, img)
+            painter.fillRect(self.thumbnail_rect, QBrush(QColor(255, 255, 255, 160)))
 
         icon.paint(painter, rect)
 
