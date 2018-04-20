@@ -51,7 +51,7 @@ def make_cropped_rect(sw: int, sh: int, tw: int, th: int) -> QRect:
                      # center: sh // 2 - h // 2,
                      w, h)
     else:
-        w = tw * sh // tw
+        w = tw * sh // th
         h = sh
 
         return QRect(sw // 2 - w // 2,
