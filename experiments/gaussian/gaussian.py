@@ -23,7 +23,10 @@ from scipy.ndimage.filters import gaussian_filter
 from PyQt5.QtGui import QImage
 
 
-def drop_shadow(image: QImage):
+def drop_shadow(image: QImage) -> QImage:
+    if image.format() != QImage.Format_ARGB32:
+        image = image.convertToFormat(QImage.Format_ARGB32)
+
     bits = image.bits()
     bits.setsize(image.byteCount())
 
@@ -41,13 +44,42 @@ def drop_shadow(image: QImage):
 
     arr = numpy.dstack((color, color, color, alpha))
 
-    return QImage(bytes(arr), image.width(), image.height(), QImage.Format_ARGB32)
+    return QImage(arr, image.width(), image.height(), QImage.Format_ARGB32)
+
+
+def white_outline(image: QImage) -> QImage:
+    if image.format() != QImage.Format_ARGB32:
+        image = image.convertToFormat(QImage.Format_ARGB32)
+
+    bits = image.bits()
+    bits.setsize(image.byteCount())
+
+    shape = (image.width() * image.height())
+    strides = (4,)
+
+    alpha = numpy.ndarray(shape=shape, dtype=numpy.uint8,
+                          buffer=bits, strides=strides, offset=3)
+    color = numpy.ndarray(shape=shape, dtype=numpy.uint8)
+    color.fill(255)
+
+    alpha = alpha.reshape((image.width(), image.height()))
+    alpha = alpha.astype(numpy.float)
+    alpha = gaussian_filter(alpha, sigma=8)
+    alpha *= 8
+    numpy.clip(alpha, 0, 255, out=alpha)
+    alpha = alpha.astype(numpy.uint8)
+    alpha = alpha.reshape(shape)
+
+    arr = numpy.dstack((color, color, color, alpha))
+
+    return QImage(arr, image.width(), image.height(), QImage.Format_ARGB32)
 
 
 def main():
     image = QImage("/usr/share/icons/gnome/256x256/places/folder.png")
 
     output = drop_shadow(image)
+    output = white_outline(image)
 
     outfile = "/tmp/out.png"
     print("writing output to {}".format(outfile))
