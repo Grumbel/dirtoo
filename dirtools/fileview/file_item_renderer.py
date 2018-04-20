@@ -19,13 +19,14 @@ import logging
 from datetime import datetime
 
 from PyQt5.QtCore import Qt, QRect, QRectF, QPointF, QMarginsF
-from PyQt5.QtGui import QColor, QPainter, QIcon, QTextOption
+from PyQt5.QtGui import QColor, QPainter, QIcon, QTextOption, QImage
 
 import bytefmt
 
 from dirtools.fileview.thumbnail import ThumbnailStatus
 from dirtools.mediainfo import split_duration
 from dirtools.fileview.mode import FileItemStyle
+from dirtools.fileview.image_filter import white_outline
 
 logger = logging.getLogger(__name__)
 
@@ -331,6 +332,9 @@ class FileItemRenderer:
                                             self.thumbnail_rect.width(), self.thumbnail_rect.width())
                 painter.drawPixmap(self.thumbnail_rect.toRect(), pixmap, srcrect.toRect())
 
+            if self.fileinfo.is_archive() or self.fileinfo.isdir():
+                self.paint_icon(painter, self.icon)
+
     def make_text(self):
         metadata = self.fileinfo.metadata()
 
@@ -443,6 +447,18 @@ class FileItemRenderer:
         else:
             rect = make_unscaled_rect(self.thumbnail_rect.width(), self.thumbnail_rect.height(),
                                       self.thumbnail_rect.width(), self.thumbnail_rect.height())
+
+        if self.fileinfo.isdir() or self.fileinfo.is_archive():
+            img = QImage(self.thumbnail_rect.width(), self.thumbnail_rect.height(), QImage.Format_ARGB32)
+            img.fill(0)
+            p = QPainter(img)
+            icon.paint(p, rect.toRect())
+            p.end()
+
+            img = white_outline(img, sigma=6, repeat=3)
+
+            painter.drawImage(0, 0, img)
+
         icon.paint(painter, rect.toRect())
 
 
