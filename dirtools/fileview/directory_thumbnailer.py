@@ -18,10 +18,9 @@
 from typing import Callable
 
 import logging
-import os
 
-from PyQt5.QtCore import QObject, QSize, QRect, pyqtSignal
-from PyQt5.QtGui import QBrush, QIcon, QColor, QPixmap, QImage, QPainter
+from PyQt5.QtCore import QObject, QSize, QRect, QPoint, pyqtSignal
+from PyQt5.QtGui import QImage, QPainter
 
 from dirtools.fileview.file_collection import FileCollection
 from dirtools.fileview.worker_thread import WorkerThread, Worker
@@ -141,14 +140,53 @@ class DirectoryThumbnailerTask(QObject):
         painter.setRenderHints(QPainter.SmoothPixmapTransform |
                                QPainter.Antialiasing)
 
-        # FIXME: insert code to handle more image numbers
-        spec = [(0, 0, 85, 85), (85, 0, 86, 86), (171, 0, 85, 85),
-                (0, 85, 86, 86), (85, 85, 86, 86), (171, 85, 86, 86),
-                (0, 171, 85, 85), (85, 171, 86, 86), (171, 171, 85, 85)]
+        # (x1, y1, x2, y2) coordinates normalized to [0 - 1] for thumbnail arrangement
+        specs = {
+            0: [],
 
-        for idx, thumbnail in enumerate(self._thumbnails[:9]):
-            dstrect = QRect(*spec[idx])
-            srcrect = make_cropped_rect(thumbnail.width(), thumbnail.height(), spec[idx][2], spec[idx][3])
+            1: [(0, 0, 1, 1)],
+
+            2: [(0, 0, 0.5, 1),
+                (0.5, 0, 1, 1)],
+
+            3: [(0, 0, 0.333, 1), (0.333, 0, 0.666, 1), (0.666, 0, 1, 1)],
+
+            4: [(0, 0, 0.5, 0.5), (0.5, 0, 1, 0.5),
+                (0, 0.5, 0.5, 1), (0.5, 0.5, 1, 1)],
+
+            5: [(0, 0, 0.333, 0.5), (0.666, 0, 1, 0.5),
+                (0.333, 0, 0.666, 1),
+                (0, 0.5, 0.333, 1), (0.666, 0.5, 1, 1)],
+
+            6: [(0, 0, 0.333, 0.5), (0.333, 0, 0.666, 0.5), (0.666, 0, 1, 0.5),
+                (0, 0.5, 0.333, 1), (0.333, 0.5, 0.666, 1), (0.666, 0.5, 1, 1)],
+
+            7: [(0, 0, 0.333, 0.5), (0.333, 0, 0.666, 0.333), (0.666, 0, 1, 0.5),
+                (0.333, 0.333, 0.666, 0.666),
+                (0, 0.5, 0.333, 1), (0.333, 0.666, 0.666, 1), (0.666, 0.5, 1, 1)],
+
+            8: [(0, 0, 0.333, 0.333), (0.333, 0, 0.666, 0.333), (0.666, 0, 1, 0.333),
+                (0, 0.333, 0.5, 0.666), (0.5, 0.333, 1, 0.666),
+                (0, 0.666, 0.333, 1), (0.333, 0.666, 0.666, 1), (0.666, 0.666, 1, 1)],
+
+            9: [(0, 0, 0.333, 0.333), (0.333, 0, 0.666, 0.333), (0.666, 0, 1, 0.333),
+                (0, 0.333, 0.333, 0.666), (0.333, 0.333, 0.666, 0.666), (0.666, 0.333, 1, 0.666),
+                (0, 0.666, 0.333, 1), (0.333, 0.666, 0.666, 1), (0.666, 0.666, 1, 1)]
+        }
+
+        # FIXME: check if the majority of thumbnail is landscape or
+        # portrait and rotate the spec accordingly
+
+        thumbnails = self._thumbnails[:9]
+        spec = specs[len(thumbnails)]
+
+        for idx, thumbnail in enumerate(thumbnails):
+            s = spec[idx]
+            dstrect = QRect(QPoint(s[0] * 256, s[1] * 256),
+                            QPoint(s[2] * 256, s[3] * 256))
+            srcrect = make_cropped_rect(thumbnail.width(), thumbnail.height(),
+                                        (s[2] - s[0]) * 256,
+                                        (s[3] - s[1]) * 256)
             painter.drawImage(dstrect, thumbnail, srcrect)
 
         painter.end()
@@ -206,7 +244,7 @@ class DirectoryThumbnailerWorker(Worker):
             self._queue.append((location, callback))
 
     def _start_task(self, location: 'Location', callback: ThumbnailCallback):
-        assert self._task == None
+        assert self._task is None
         self._task = DirectoryThumbnailerTask(self._app, location, callback)
         self._task.sig_done.connect(self._on_task_done)
 
