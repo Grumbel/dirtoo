@@ -159,10 +159,7 @@ class ItemContextMenu(Menu):
         actions_menu = QMenu("Actions", self)
         actions_menu.addAction(self._controller.actions.reload_thumbnails)
         actions_menu.addAction(self._controller.actions.reload_metadata)
-        if self._fileinfo.is_archive() or self._fileinfo.isdir():
-            actions_menu.addAction(self._controller.actions.make_directory_thumbnails)
-        else:
-            actions_menu.addAction(self._controller.actions.make_directory_thumbnails).setEnabled(False)
+        actions_menu.addAction(self._controller.actions.make_directory_thumbnails)
 
         actions_menu.addAction("Stack Selection...")
         actions_menu.addAction("Tag Selection...")
