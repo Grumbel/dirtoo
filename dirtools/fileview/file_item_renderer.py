@@ -18,7 +18,7 @@
 import logging
 from datetime import datetime
 
-from PyQt5.QtCore import Qt, QRect, QPoint, QMargins
+from PyQt5.QtCore import Qt, QRect, QRectF, QPoint, QPointF, QMargins
 from PyQt5.QtGui import QColor, QPainter, QIcon, QTextOption, QBrush
 
 import bytefmt
@@ -97,7 +97,7 @@ class FileItemRenderer:
                                      self.tile_rect.height()))
             text = self.fileinfo.basename()
             text = fm.elidedText(text, Qt.ElideRight, text_rect.width())
-            painter.drawText(text_rect,
+            painter.drawText(QRectF(text_rect),
                              text,
                              text_option)
         elif self.zoom_index in [2]:
@@ -109,7 +109,7 @@ class FileItemRenderer:
             text = fm.elidedText(text, Qt.ElideRight, text_rect.width())
             text_option = QTextOption(Qt.AlignLeft | Qt.AlignVCenter)
             text_option.setWrapMode(QTextOption.NoWrap)
-            painter.drawText(text_rect, text, text_option)
+            painter.drawText(QRectF(text_rect), text, text_option)
 
             text_rect = QRect(QPoint(self.tile_rect.width() - 80,
                                      0),
@@ -121,7 +121,7 @@ class FileItemRenderer:
 
             text_option.setWrapMode(QTextOption.NoWrap)
             painter.setPen(QColor(96, 96, 96))
-            painter.drawText(text_rect, text, text_option)
+            painter.drawText(QRectF(text_rect), text, text_option)
         else:
             top_left_text, top_right_text, bottom_left_text, bottom_right = self.make_text()
 
@@ -143,7 +143,7 @@ class FileItemRenderer:
             text = fm.elidedText(text, Qt.ElideRight, text_rect.width())
             text_option = QTextOption(Qt.AlignLeft | Qt.AlignVCenter)
             text_option.setWrapMode(QTextOption.NoWrap)
-            painter.drawText(text_rect, text, text_option)
+            painter.drawText(QRectF(text_rect), text, text_option)
 
             text_rect = QRect(QPoint(row1_rect.left() - 80,
                                      row1_rect.top()),
@@ -155,7 +155,7 @@ class FileItemRenderer:
 
             text_option.setWrapMode(QTextOption.NoWrap)
             painter.setPen(QColor(96, 96, 96))
-            painter.drawText(text_rect, text, text_option)
+            painter.drawText(QRectF(text_rect), text, text_option)
 
             # row 2
             text_rect = QRect(QPoint(row2_rect.left(),
@@ -166,7 +166,7 @@ class FileItemRenderer:
             text = fm.elidedText(text, Qt.ElideRight, text_rect.width())
             text_option = QTextOption(Qt.AlignLeft | Qt.AlignVCenter)
             text_option.setWrapMode(QTextOption.NoWrap)
-            painter.drawText(text_rect, text, text_option)
+            painter.drawText(QRectF(text_rect), text, text_option)
 
             text_rect = QRect(QPoint(row2_rect.left() - 80,
                                      row2_rect.top()),
@@ -178,7 +178,7 @@ class FileItemRenderer:
 
             text_option.setWrapMode(QTextOption.NoWrap)
             painter.setPen(QColor(96, 96, 96))
-            painter.drawText(text_rect, text, text_option)
+            painter.drawText(QRectF(text_rect), text, text_option)
 
     def paint_detail_view(self, painter: QPainter) -> None:
         self.thumbnail_rect = QRect(0, 0, self.tile_rect.height(), self.tile_rect.height())
@@ -200,8 +200,8 @@ class FileItemRenderer:
                 text_option.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
 
             width = total_width * (widths[idx] / 100)
-            painter.drawText(QRect(x, 0,
-                                   width, self.tile_rect.height()),
+            painter.drawText(QRectF(x, 0,
+                                    width, self.tile_rect.height()),
                              text,
                              text_option)
             x += width
