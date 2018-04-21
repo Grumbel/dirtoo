@@ -404,19 +404,12 @@ class FileItemRenderer:
                                       self.thumbnail_rect.width(), self.thumbnail_rect.height())
 
         if self.fileinfo.isdir() or self.fileinfo.is_archive():
-            # FIXME: This is slow and stupid, need to do it as shared_pixmap
-            img = QImage(self.thumbnail_rect.width(), self.thumbnail_rect.height(), QImage.Format_ARGB32)
-            img.fill(0)
-            p = QPainter(img)
-            icon.paint(p, rect)
-            p.end()
-
-            img = white_outline(img, sigma=6, repeat=3)
-
-            painter.drawImage(0, 0, img)
+            scalable = self.style.shared_scalable(self.thumbnail_rect.width(), self.thumbnail_rect.height(),)
+            pixmap = scalable.load_icon_icon(icon, outline=True)
             painter.fillRect(self.thumbnail_rect, QBrush(QColor(255, 255, 255, 160)))
-
-        icon.paint(painter, rect)
+            painter.drawPixmap(0, 0, pixmap)
+        else:
+            icon.paint(painter, rect)
 
 
 # EOF #

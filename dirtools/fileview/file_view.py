@@ -21,12 +21,10 @@ import logging
 
 import itertools
 from collections import defaultdict
-from pkg_resources import resource_filename
 
 from PyQt5.QtCore import Qt, QRectF
-from PyQt5.QtGui import (QBrush, QIcon, QColor, QPixmap, QImage,
-                         QPainter, QFontMetrics, QFont, QKeySequence,
-                         QContextMenuEvent)
+from PyQt5.QtGui import (QBrush, QIcon, QColor, QPainter, QImage,
+                         QKeySequence, QContextMenuEvent)
 from PyQt5.QtWidgets import QGraphicsView, QShortcut
 
 from dirtools.dbus_thumbnailer import DBusThumbnailerError
@@ -41,43 +39,12 @@ from dirtools.fileview.mode import Mode, IconMode, ListMode, DetailMode, FileIte
 from dirtools.fileview.file_item import FileItem
 from dirtools.fileview.file_graphics_scene import FileGraphicsScene
 from dirtools.fileview.leap_widget import LeapWidget
+from dirtools.fileview.file_view_style import FileViewStyle
 
 if False:
     from dirtools.fileview.controller import Controller  # noqa: F401
 
 logger = logging.getLogger(__name__)
-
-
-class SharedIcons:
-
-    def __init__(self) -> None:
-        self.folder = QIcon.fromTheme("folder")
-        self.rar = QIcon.fromTheme("rar")
-        self.zip = QIcon.fromTheme("zip")
-        self.txt = QIcon.fromTheme("txt")
-        self.image_loading = QIcon.fromTheme("image-loading")
-        self.image_missing = QIcon.fromTheme("image-missing")
-        self.locked = QIcon.fromTheme("locked")
-
-
-class SharedPixmaps:
-
-    def __init__(self) -> None:
-        self.video = QPixmap(resource_filename("dirtools", "fileview/icons/noun_36746_cc.png"))
-        self.image = QPixmap(resource_filename("dirtools", "fileview/icons/noun_386758_cc.png"))  # noun_757280_cc.png
-        self.loading = QPixmap(resource_filename("dirtools", "fileview/icons/noun_409399_cc.png"))
-        self.error = QPixmap(resource_filename("dirtools", "fileview/icons/noun_175057_cc.png"))
-        self.locked = QPixmap(resource_filename("dirtools", "fileview/icons/noun_236873_cc.png"))
-        self.new = QPixmap(resource_filename("dirtools", "fileview/icons/noun_258297_cc.png"))
-
-
-class FileViewStyle:
-
-    def __init__(self) -> None:
-        self.font = QFont("Verdana", 10)
-        self.fm = QFontMetrics(self.font)
-        self.shared_icons = SharedIcons()
-        self.shared_pixmaps = SharedPixmaps()
 
 
 class FileView(QGraphicsView):
