@@ -15,9 +15,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Dict, Tuple
+
 from pkg_resources import resource_filename
 
-from PyQt5.QtCore import QRect
 from PyQt5.QtGui import QIcon, QPixmap, QFont, QFontMetrics, QImage, QPainter
 
 from dirtools.fileview.image_filter import white_outline
@@ -52,7 +53,7 @@ class SharedScaleable:
     def __init__(self, width: int, height: int) -> None:
         self.width = width
         self.height = height
-        self._cached_icon_pixmaps = {}
+        self._cached_icon_pixmaps: Dict[QIcon, QPixmap] = {}
 
         self.folder = self.load_icon("folder", outline=True)
         self.rar = self.load_icon("rar", outline=True)
@@ -108,7 +109,7 @@ class FileViewStyle:
         self.fm = QFontMetrics(self.font)
         self.shared_icons = SharedIcons()
         self.shared_pixmaps = SharedPixmaps()
-        self._shared_scalable = {}
+        self._shared_scalable: Dict[Tuple[int, int], SharedScaleable] = {}
 
     def shared_scalable(self, width: int, height: int) -> QPixmap:
         key = (width, height)

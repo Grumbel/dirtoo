@@ -19,14 +19,13 @@ import logging
 from datetime import datetime
 
 from PyQt5.QtCore import Qt, QRect, QPoint, QMargins
-from PyQt5.QtGui import QColor, QPainter, QIcon, QTextOption, QImage, QBrush
+from PyQt5.QtGui import QColor, QPainter, QIcon, QTextOption, QBrush
 
 import bytefmt
 
 from dirtools.fileview.thumbnail import ThumbnailStatus
 from dirtools.mediainfo import split_duration
 from dirtools.fileview.mode import FileItemStyle
-from dirtools.fileview.image_filter import white_outline
 from dirtools.fileview.scaler import make_unscaled_rect, make_scaled_rect, make_cropped_rect
 
 logger = logging.getLogger(__name__)

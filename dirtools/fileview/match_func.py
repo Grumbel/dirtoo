@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Callable
+from typing import Callable, Any
 
 import logging
 import random
@@ -29,6 +29,9 @@ if False:
     from dirtools.fileview.file_info import FileInfo  # noqa: F401
 
 logger = logging.getLogger(__name__)
+
+
+CompareCallable = Callable[[Any, Any], bool]
 
 
 class MatchFunc:
@@ -122,7 +125,7 @@ class RegexMatchFunc(MatchFunc):
 
 class FuzzyMatchFunc(MatchFunc):
 
-    def __init__(self, needle, n=3, threshold=0.5) -> None:
+    def __init__(self, needle: str, n: int=3, threshold: float=0.5) -> None:
         self.needle = needle
         self.n = n
         self.threshold = threshold
@@ -134,7 +137,7 @@ class FuzzyMatchFunc(MatchFunc):
 
 class SizeMatchFunc(MatchFunc):
 
-    def __init__(self, size, compare) -> None:
+    def __init__(self, size, compare: CompareCallable) -> None:
         self.size = size
         self.compare = compare
 
@@ -144,7 +147,7 @@ class SizeMatchFunc(MatchFunc):
 
 class MetadataMatchFunc(MatchFunc):
 
-    def __init__(self, field, type, value, compare) -> None:
+    def __init__(self, field, type, value, compare: CompareCallable) -> None:
         self._field = field
         self._type = type
         self._value = value
@@ -167,7 +170,7 @@ class MetadataMatchFunc(MatchFunc):
 
 class LengthMatchFunc(MatchFunc):
 
-    def __init__(self, length, compare) -> None:
+    def __init__(self, length: int, compare: CompareCallable) -> None:
         self.length = length
         self.compare = compare
 
@@ -177,7 +180,7 @@ class LengthMatchFunc(MatchFunc):
 
 class RandomMatchFunc(MatchFunc):
 
-    def __init__(self, probability) -> None:
+    def __init__(self, probability: float) -> None:
         self.random = random.Random(random.randrange(1024))
         self.probability = probability
 
@@ -250,7 +253,7 @@ class TimeMatchFunc(MatchFunc):
 
 class TimeOpMatchFunc(MatchFunc):
 
-    def __init__(self, text: str, compare: Callable) -> None:
+    def __init__(self, text: str, compare: CompareCallable) -> None:
         self._compare = compare
         for idx, fmt in enumerate(["%H:%M:%S", "%H:%M", "%H"]):
             try:
@@ -280,7 +283,7 @@ class TimeOpMatchFunc(MatchFunc):
 
 class DateOpMatchFunc(MatchFunc):
 
-    def __init__(self, text: str, compare: Callable) -> None:
+    def __init__(self, text: str, compare: CompareCallable) -> None:
         self._compare = compare
         for idx, fmt in enumerate(["%Y-%m-%d", "%Y-%m", "%Y"]):
             try:
@@ -327,7 +330,7 @@ def text2weekday(text: str):
 
 class WeekdayMatchFunc(MatchFunc):
 
-    def __init__(self, text: str, compare: Callable) -> None:
+    def __init__(self, text: str, compare: CompareCallable) -> None:
         self._weekday = text2weekday(text)
         self._compare = compare
 

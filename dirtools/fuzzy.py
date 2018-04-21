@@ -23,7 +23,7 @@ def ngram(text: str, n: int = 3) -> Set[str]:
     return {"".join(g) for g in zip(*[text[i:] for i in range(n)])}
 
 
-def fuzzy(neddle: str, haystack: str, n: int = 3):
+def fuzzy(neddle: str, haystack: str, n: int = 3) -> float:
     neddle_ngrams = ngram(neddle, n)
     haystack_ngrams = ngram(haystack, n)
 

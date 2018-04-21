@@ -144,7 +144,7 @@ class DirectoryWatcherWorker(QObject):
                 self.sig_file_closed.emit(self.vfs.get_fileinfo(location))
             else:
                 # unhandled event
-                print("ERROR: Unhandlade flags:")
+                print("ERROR: Unhandled flags:")
                 for flag in inotify_flags.from_mask(ev.mask):
                     print('    ' + str(flag))
         except Exception as err:

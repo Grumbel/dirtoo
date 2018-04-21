@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Callable
+from typing import Callable, Optional, List, Tuple
 
 import logging
 
@@ -34,7 +34,7 @@ if False:
 logger = logging.getLogger(__name__)
 
 
-ThumbnailCallback = Callable
+ThumbnailCallback = Callable[['Location', Optional[str], QImage, int, str], None]
 
 
 class DirectoryThumbnailerTask(QObject):
@@ -43,7 +43,7 @@ class DirectoryThumbnailerTask(QObject):
     sig_done = pyqtSignal()
 
     def __init__(self, app: 'FileViewApplication',
-                 location: 'Location', callback: ThumbnailCallback):
+                 location: 'Location', callback: ThumbnailCallback) -> None:
         super().__init__()
 
         self._stream = None
@@ -59,7 +59,7 @@ class DirectoryThumbnailerTask(QObject):
             self._fileinfo = self._app.vfs.get_fileinfo(location.origin())
         self._stream = self._app.vfs.opendir(location)
 
-        self._thumbnails = []
+        self._thumbnails: List[QImage] = []
         self._fileinfo_idx = 0
 
         self._file_collection = FileCollection()
@@ -105,7 +105,7 @@ class DirectoryThumbnailerTask(QObject):
     def _on_directory_watcher_message(self, message):
         print("ERROR:", message)
 
-    def _request_thumbnails(self) -> None:
+    def _request_thumbnails(self) -> bool:
         # print("_request_thumbnails")
         # print(self._fileinfo_idx, len(self._file_collection))
 
@@ -224,8 +224,8 @@ class DirectoryThumbnailerWorker(Worker):
 
         self._app = app
 
-        self._task = None
-        self._queue = []
+        self._task: Optional[DirectoryThumbnailerTask] = None
+        self._queue: List[Tuple[Location, ThumbnailCallback]] = []
 
         self.sig_thumbnail_requested.connect(self._on_thumbnail_requested)
 
