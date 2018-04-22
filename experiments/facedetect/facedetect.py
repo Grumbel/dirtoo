@@ -25,17 +25,26 @@ import dlib
 import cv2
 import numpy
 
-from PyQt5.QtCore import QRect
-from PyQt5.QtGui import QImage, QPixmap, QPainter, QColor
+from PyQt5.QtCore import Qt, QRect
+from PyQt5.QtGui import QImage, QPixmap, QPainter, QColor, QBrush
 from PyQt5.QtWidgets import QApplication, QLabel
 
 
-def main(argv: List[str]) -> None:
-    signal.signal(signal.SIGINT, signal.SIG_DFL)
+# Dlib's face detection can't handle small faces (< 80x80), scaling
+# the image up makes it work better, but it still misses a lot at 4x.
+# Doesn't seem suitable to operate directly on thumbnails.
+scale_factor = 2
 
-    image = QImage('face.jpg')
+
+def run_facedetect(filename: str) -> None:
+    image = QImage(filename)
     if image.format() != QImage.Format_RGB32:
         image = image.convertToFormat(QImage.Format_RGB32)
+
+    image = image.scaled(image.width() * scale_factor,
+                         image.height() * scale_factor,
+                         Qt.IgnoreAspectRatio,
+                         Qt.SmoothTransformation)
 
     bits = image.bits()
     bits.setsize(image.byteCount())
@@ -44,7 +53,7 @@ def main(argv: List[str]) -> None:
                           buffer=bits)
     array = array[:image.height(), :image.width(), :3]
 
-    img = cv2.imread('face.jpg', cv2.IMREAD_COLOR)
+    img = cv2.imread(filename, cv2.IMREAD_COLOR)
     print(img.shape)
     print(array.shape)
 
@@ -58,16 +67,37 @@ def main(argv: List[str]) -> None:
     results = detector(array)
     print(results)
 
-    painter = QPainter(image)
-    painter.setPen(QColor(0xffffff))
-    for rect in results:
-        painter.drawRect(QRect(rect.left(), rect.top(), rect.width(), rect.height()))
-    painter.end()
+    print("detected {} faces".format(len(results)))
+
+    image = image.scaled(image.width() // scale_factor,
+                         image.height() // scale_factor)
+
+    return image, results
+
+def main(argv: List[str]) -> None:
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
 
     app = QApplication([])
-    label = QLabel()
-    label.setPixmap(QPixmap.fromImage(image))
-    label.show()
+    print(sys.argv[1:])
+    gui = []
+    for image_filename in sys.argv[1:] or ["face.jpg"]:
+        image, results = run_facedetect(image_filename)
+
+        painter = QPainter(image)
+        painter.setPen(QColor(0xffffff))
+        for rect in results:
+            painter.fillRect(QRect(rect.left() // scale_factor,
+                                   rect.top() // scale_factor,
+                                   rect.width() // scale_factor,
+                                   rect.height() // scale_factor),
+                             QBrush(QColor(255, 0, 255)))
+        painter.end()
+
+        label = QLabel()
+        label.setPixmap(QPixmap.fromImage(image))
+        label.show()
+        gui.append(label)
+
     app.exec()
 
 
