@@ -154,6 +154,12 @@ class FileInfo:
     def size(self) -> int:
         return self._stat.st_size if self._stat is not None else 0
 
+    def atime(self) -> float:
+        return self._stat.st_atime if self._stat is not None else 0
+
+    def ctime(self) -> float:
+        return self._stat.st_ctime if self._stat is not None else 0
+
     def mtime(self) -> float:
         return self._stat.st_mtime if self._stat is not None else 0
 
