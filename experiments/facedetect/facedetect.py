@@ -34,17 +34,17 @@ def main(argv: List[str]) -> None:
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
     image = QImage('face.jpg')
-    if image.format() != QImage.Format_Grayscale8:
-        image = image.convertToFormat(QImage.Format_Grayscale8)
+    if image.format() != QImage.Format_RGB32:
+        image = image.convertToFormat(QImage.Format_RGB32)
 
     bits = image.bits()
     bits.setsize(image.byteCount())
 
-    array = numpy.ndarray(shape=(image.height(), image.bytesPerLine()), dtype=numpy.uint8,
+    array = numpy.ndarray(shape=(image.height(), image.bytesPerLine() // 4, 4), dtype=numpy.uint8,
                           buffer=bits)
-    array = array[:image.height(), :image.width()]
+    array = array[:image.height(), :image.width(), :3]
 
-    img = cv2.imread('face.jpg', cv2.IMREAD_GRAYSCALE)
+    img = cv2.imread('face.jpg', cv2.IMREAD_COLOR)
     print(img.shape)
     print(array.shape)
 
