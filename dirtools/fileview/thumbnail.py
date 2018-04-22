@@ -22,6 +22,9 @@ from enum import Enum
 
 from PyQt5.QtGui import QPixmap, QImage
 
+if False:
+    from dirtools.fileview.file_item import FileItem
+
 logger = logging.getLogger(__name__)
 
 
@@ -36,8 +39,8 @@ class ThumbnailStatus(Enum):
 
 class Thumbnail:
 
-    def __init__(self, flavor: str, parent_item) -> None:
-        self.parent_item = parent_item
+    def __init__(self, flavor: str, file_item: 'FileItem') -> None:
+        self.file_item = file_item
         self.pixmap: Optional[QPixmap] = None
         self.status: ThumbnailStatus = ThumbnailStatus.INITIAL
         self.flavor: str = flavor
@@ -66,11 +69,11 @@ class Thumbnail:
                 # is quite possible for an thumbnail to be out of date
                 # when the file was modified while the thumbnail was
                 # extracting (e.g. looking at an extracting archive).
-                if int(self.parent_item.fileinfo.mtime()) != self.mtime:
+                if int(self.file_item.fileinfo.mtime()) != self.mtime:
                     self.reset()
             except ValueError as err:
                 logger.error("%s: couldn't read Thumb::MTime tag on thumbnail: %s",
-                             self.parent_item.fileinfo.location(), err)
+                             self.file_item.fileinfo.location(), err)
 
     def reset(self) -> None:
         self.pixmap = None
@@ -82,12 +85,16 @@ class Thumbnail:
     def request(self, force=False) -> None:
         assert self.status != ThumbnailStatus.LOADING
 
-        if not self.parent_item.fileinfo.is_thumbnailable():
+        thumbnailer = self.file_item.controller.app.thumbnailer
+        location = self.file_item.fileinfo.location()
+        mimetype = self.file_item.controller.app.mime_database.get_mime_type(location).name()
+
+        if not thumbnailer.is_supported(mimetype):
             self.status = ThumbnailStatus.THUMBNAIL_UNAVAILABLE
         else:
             self.status = ThumbnailStatus.LOADING
-            self.parent_item.file_view.request_thumbnail(
-                self.parent_item, self.parent_item.fileinfo, self.flavor, force=force)
+            self.file_item.file_view.request_thumbnail(
+                self.file_item, self.file_item.fileinfo, self.flavor, force=force)
 
 
 # EOF #

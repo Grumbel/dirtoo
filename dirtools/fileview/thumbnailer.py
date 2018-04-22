@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Callable, Dict, Optional
+from typing import List, Callable, Dict, Optional, Set
 
 import logging
 import os
@@ -80,9 +80,25 @@ class ThumbnailerWorker(QObject):
         self._timer_id = 0
         self._thumbnail_requests: List[ThumbnailRequest] = []
 
+        self._supported_uri_types: Set[str] = set()
+        self._supported_mime_types: Set[str] = set([
+            # FIXME: this is incomplete and needs some more work
+            "inode/directory",
+            "application/rar",
+            "application/vnd",
+            "application/x-rar",
+            "application/x-rar-compressed",
+            "application/zip"
+        ])
+
     def init(self):
         self._dbus_thumbnailer = DBusThumbnailer(QDBusConnection.sessionBus(),
                                                  WorkerDBusThumbnailerListener(self))
+
+        # FIXME: potential race condition
+        result = self._dbus_thumbnailer.get_supported()
+        self._supported_uri_types.update(result[0])
+        self._supported_mime_types.update(result[1])
 
     def close(self):
         assert self._close
@@ -199,6 +215,12 @@ class Thumbnailer(QObject):
         self.sig_close_requested.emit()
         self._thread.quit()
         self._thread.wait()
+
+    def is_supported(self, mime_type: str) -> bool:
+        return mime_type in self._worker._supported_mime_types
+
+    def get_supported(self) -> Set[str]:
+        return self._worker._supported_mime_types
 
     def request_thumbnail(self, location: Location, flavor: str, force: bool,
                           callback: ThumbnailCallback):

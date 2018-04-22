@@ -127,9 +127,6 @@ class FileInfo:
     def isfile(self) -> bool:
         return self._isfile
 
-    def is_thumbnailable(self) -> bool:
-        return self.is_video() or self.is_image() or self.isdir() or self.is_archive()
-
     def is_video(self) -> bool:
         return self._ext[1:].lower() in VIDEO_EXT
 

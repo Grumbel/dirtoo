@@ -86,9 +86,6 @@ class LazyFileInfo:
         self._collect_stat()
         return stat.S_ISREG(self._stat.st_mode)
 
-    def is_thumbnailable(self) -> bool:
-        return self.is_video() or self.is_image()
-
     def is_video(self) -> bool:
         return self._ext[1:].lower() in VIDEO_EXT
 
