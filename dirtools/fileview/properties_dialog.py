@@ -85,8 +85,13 @@ class PropertiesDialog(QDialog):
     def _make_general_tab(self) -> QWidget:
         # Widgets
         size_box = QGroupBox("Basic")
+
         name_label = QLabel("Name:")
         name_edit = QLineEdit(self._fileinfo.basename())
+
+        abspath_label = QLabel("AbsPath:")
+        abspath_edit = QLineEdit(self._fileinfo.abspath())
+
         size_label = QLabel("Size:")
         size_edit = QLineEdit(bytefmt.humanize(self._fileinfo.size()))
         size_edit.setReadOnly(True)
@@ -160,19 +165,23 @@ class PropertiesDialog(QDialog):
         access_special_sticky.setCheckable(True)
         access_special_sticky.setChecked(stat.S_ISVTX & mode)
 
+        def timestamp2str(time):
+            dt = datetime.fromtimestamp(time)
+            dtstr = dt.strftime("%Y-%m-%d %H:%M:%S")
+            return dtstr
+
         time_box = QGroupBox("Time")
-        mtime_label = QLabel("Access:")
 
-        dt = datetime.fromtimestamp(self._fileinfo.mtime())
-        dtstr = dt.strftime("%Y-%m-%d %H:%M:%S")
-
-        mtime_edit = QLineEdit(dtstr)
-        mtime_edit.setReadOnly(True)
-        atime_label = QLabel("Modify:")
-        atime_edit = QLineEdit(dtstr)
+        atime_label = QLabel("Access:")
+        atime_edit = QLineEdit(timestamp2str(self._fileinfo.atime()))
         atime_edit.setReadOnly(True)
+
+        mtime_label = QLabel("Modify:")
+        mtime_edit = QLineEdit(timestamp2str(self._fileinfo.mtime()))
+        mtime_edit.setReadOnly(True)
+
         ctime_label = QLabel("Change:")
-        ctime_edit = QLineEdit(dtstr)
+        ctime_edit = QLineEdit(timestamp2str(self._fileinfo.ctime()))
         ctime_edit.setReadOnly(True)
 
         button_box = QDialogButtonBox(QDialogButtonBox.Close | QDialogButtonBox.Reset)
@@ -184,8 +193,10 @@ class PropertiesDialog(QDialog):
         grid = QGridLayout()
         grid.addWidget(name_label, 0, 0, Qt.AlignRight)
         grid.addWidget(name_edit, 0, 1)
-        grid.addWidget(size_label, 1, 0, Qt.AlignRight)
-        grid.addWidget(size_edit, 1, 1)
+        grid.addWidget(abspath_label, 1, 0, Qt.AlignRight)
+        grid.addWidget(abspath_edit, 1, 1)
+        grid.addWidget(size_label, 2, 0, Qt.AlignRight)
+        grid.addWidget(size_edit, 2, 1)
         size_box.setLayout(grid)
         vbox.addWidget(size_box)
 
@@ -198,10 +209,10 @@ class PropertiesDialog(QDialog):
         vbox.addWidget(ownership_box)
 
         grid = QGridLayout()
-        grid.addWidget(mtime_label, 0, 0, Qt.AlignRight)
-        grid.addWidget(mtime_edit, 0, 1)
-        grid.addWidget(atime_label, 1, 0, Qt.AlignRight)
-        grid.addWidget(atime_edit, 1, 1)
+        grid.addWidget(atime_label, 0, 0, Qt.AlignRight)
+        grid.addWidget(atime_edit, 0, 1)
+        grid.addWidget(mtime_label, 1, 0, Qt.AlignRight)
+        grid.addWidget(mtime_edit, 1, 1)
         grid.addWidget(ctime_label, 2, 0, Qt.AlignRight)
         grid.addWidget(ctime_edit, 2, 1)
         time_box.setLayout(grid)
