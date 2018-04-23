@@ -85,7 +85,7 @@ class ThumbnailerWorker(QObject):
             # FIXME: this is incomplete and needs some more work
             "inode/directory",
             "application/rar",
-            "application/vnd",
+            'application/vnd.rar',
             "application/x-rar",
             "application/x-rar-compressed",
             "application/zip"
