@@ -89,10 +89,10 @@ class FileItem(QGraphicsObject):
 
         # the bounding rect for drawing, it's a little bigger to allow
         # border effects and such
-        self.bounding_rect = QRect(self.tile_rect.x() - 8,
-                                   self.tile_rect.y() - 8,
-                                   self.tile_rect.width() + 16,
-                                   self.tile_rect.height() + 16)
+        self.bounding_rect = QRect(self.tile_rect.x() - 3,
+                                   self.tile_rect.y() - 3,
+                                   self.tile_rect.width() + 6,
+                                   self.tile_rect.height() + 6)
 
         # the path used for collision detection
         self.qpainter_path = QPainterPath()
