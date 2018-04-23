@@ -122,6 +122,14 @@ class FileView(QGraphicsView):
             self.killTimer(self._scroll_timer)
             self._scroll_timer = None
 
+        self._prepare_viewport()
+
+    def _prepare_viewport(self) -> None:
+        # print(self.viewport().rect())
+        visible_items = self._scene.items(self.mapToScene(self.viewport().rect()))
+        for item in visible_items:
+            item.prepare()
+
     def _on_vertical_scrollbar_slider_value_changed(self, value: int) -> None:
         self._is_scrolling = True
 
@@ -239,6 +247,8 @@ class FileView(QGraphicsView):
         self._file_collection.sig_file_closed.connect(self.on_file_closed)
 
         self.on_file_collection_set()
+
+        self._prepare_viewport()
 
     def on_file_added(self, idx: int, fileinfo: FileInfo) -> None:
         logger.debug("FileView.on_file_added: %s %s", idx, fileinfo)
@@ -368,6 +378,7 @@ class FileView(QGraphicsView):
             self.killTimer(self._scroll_timer)
             self._is_scrolling = False
             self._scroll_timer = None
+            self._prepare_viewport()
         else:
             assert False, "timer foobar: {}".format(ev.timerId())
 
