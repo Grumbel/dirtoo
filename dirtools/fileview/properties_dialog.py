@@ -96,6 +96,10 @@ class PropertiesDialog(QDialog):
         size_edit = QLineEdit(bytefmt.humanize(self._fileinfo.size()))
         size_edit.setReadOnly(True)
 
+        mimetype_label = QLabel("MimeType:")
+        mimetype_edit = QLineEdit(self._fileinfo.metadata().get("mime-type", "<unknown>"))
+        mimetype_edit.setReadOnly(True)
+
         ownership_box = QGroupBox("Ownership")
 
         user_label = QLabel("User:")
@@ -197,6 +201,9 @@ class PropertiesDialog(QDialog):
         grid.addWidget(abspath_edit, 1, 1)
         grid.addWidget(size_label, 2, 0, Qt.AlignRight)
         grid.addWidget(size_edit, 2, 1)
+        grid.addWidget(mimetype_label, 3, 0, Qt.AlignRight)
+        grid.addWidget(mimetype_edit, 3, 1)
+
         size_box.setLayout(grid)
         vbox.addWidget(size_box)
 
