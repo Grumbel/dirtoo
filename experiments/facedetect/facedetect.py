@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import List, Any, Tuple
 
 import signal
 import sys
@@ -36,7 +36,7 @@ from PyQt5.QtWidgets import QApplication, QLabel
 scale_factor = 2
 
 
-def run_facedetect(filename: str) -> None:
+def run_facedetect(filename: str) -> Tuple[QImage, List[Any]]:
     image = QImage(filename)
     if image.format() != QImage.Format_RGB32:
         image = image.convertToFormat(QImage.Format_RGB32)
@@ -73,6 +73,7 @@ def run_facedetect(filename: str) -> None:
                          image.height() // scale_factor)
 
     return image, results
+
 
 def main(argv: List[str]) -> None:
     signal.signal(signal.SIGINT, signal.SIG_DFL)

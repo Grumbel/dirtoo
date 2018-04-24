@@ -23,7 +23,7 @@ from enum import Enum
 from PyQt5.QtGui import QPixmap, QImage
 
 if False:
-    from dirtools.fileview.file_item import FileItem
+    from dirtools.fileview.file_item import FileItem  # noqa: F401
 
 logger = logging.getLogger(__name__)
 

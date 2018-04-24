@@ -18,7 +18,7 @@
 import logging
 from datetime import datetime
 
-from PyQt5.QtCore import Qt, QRect, QRectF, QPoint, QPointF, QMargins
+from PyQt5.QtCore import Qt, QRect, QRectF, QPoint, QMargins
 from PyQt5.QtGui import QColor, QPainter, QIcon, QTextOption, QBrush
 
 import bytefmt
