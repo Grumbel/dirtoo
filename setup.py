@@ -44,6 +44,7 @@ setup(name='dirtools',
               'dt-thumbnailer = dirtools.cmd_thumbnailer:main_entrypoint',
               'dt-metadata = dirtools.cmd_metadata:main_entrypoint',
               'dt-qtthumbnailer = dirtools.cmd_qtthumbnailer:main_entrypoint',
+              'dt-guitest = dirtools.cmd_guitest:main_entrypoint',
           ],
           'gui_scripts': []
           },

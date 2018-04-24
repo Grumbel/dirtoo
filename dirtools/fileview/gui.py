@@ -99,7 +99,7 @@ class Gui(QObject):
         self.fake_mouse()
 
     def show_create_directory_dialog(self, name: Optional[str] = None) -> str:
-        dialog = CreateDialog(CreateDialog.FOLDER, self._controller, self._window)
+        dialog = CreateDialog(CreateDialog.FOLDER, self._window)
         if name is not None:
             dialog.set_name(name)
         dialog.exec()
@@ -109,7 +109,7 @@ class Gui(QObject):
             return None
 
     def show_create_file_dialog(self, name: Optional[str] = None) -> str:
-        dialog = CreateDialog(CreateDialog.TEXTFILE, self._controller, self._window)
+        dialog = CreateDialog(CreateDialog.TEXTFILE, self._window)
         if name is not None:
             dialog.set_name(name)
         dialog.exec()
