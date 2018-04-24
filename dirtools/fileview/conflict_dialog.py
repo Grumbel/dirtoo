@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import cast
+
 import html
 
 from PyQt5.QtCore import Qt
@@ -26,13 +28,24 @@ from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLayout,
 
 class ConflictDialog(QDialog):
 
+    Replace = QDialog.Accepted
+    Cancel = QDialog.Rejected
+    Skip = 3
+    RenameSource = 4
+    RenameTarget = 5
+
     def __init__(self, parent: QWidget) -> None:
         super().__init__()
 
         self._source_filename = "Source File"
         self._target_filename = "Target File"
 
+        self._repeat_for_all: QCheckBox
+
         self._make_gui()
+
+    def repeat_for_all(self) -> bool:
+        return cast(bool, self._repeat_for_all.isChecked())
 
     def _make_file_info(self, filename: str) -> QLayout:
         # Widgets
@@ -55,12 +68,12 @@ class ConflictDialog(QDialog):
         hbox.addWidget(rename_btn)
 
         # Signals
-        rename_btn.clicked.connect(lambda filename=filename: self._on_rename(filename))
+        if filename is self._source_filename:
+            rename_btn.clicked.connect(lambda: self.done(ConflictDialog.RenameSource))
+        elif filename is self._target_filename:
+            rename_btn.clicked.connect(lambda: self.done(ConflictDialog.RenameTarget))
 
         return hbox
-
-    def _on_rename(self, abspath: str) -> None:
-        pass
 
     def _make_gui(self) -> None:
         self.setWindowTitle("Confirm to replace files")
@@ -77,19 +90,20 @@ class ConflictDialog(QDialog):
         subheader2 = QLabel("with the following file?")
         source_file_layout = self._make_file_info(self._source_filename)
         repeat_for_all = QCheckBox("Repeat action for all files")
+        self._repeat_for_all = repeat_for_all
 
         # Widgets.ButtonBox
-        self.button_box = QDialogButtonBox(self)
-        self.button_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        button_box = QDialogButtonBox(self)
+        button_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
-        self.btn_replace = QPushButton("Replace")
-        self.btn_skip = QPushButton("Skip")
+        btn_replace = QPushButton("Replace")
+        btn_skip = QPushButton("Skip")
 
-        self.button_box.addButton(QDialogButtonBox.Cancel)
-        self.button_box.addButton(self.btn_replace, QDialogButtonBox.YesRole)
-        self.button_box.addButton(self.btn_skip, QDialogButtonBox.NoRole)
+        btn_cancel = button_box.addButton(QDialogButtonBox.Cancel)
+        button_box.addButton(btn_replace, QDialogButtonBox.YesRole)
+        button_box.addButton(btn_skip, QDialogButtonBox.NoRole)
 
-        self.btn_replace.setDefault(True)
+        btn_replace.setDefault(True)
 
         # Layout
         subvbox = QVBoxLayout()
@@ -106,8 +120,13 @@ class ConflictDialog(QDialog):
 
         vbox = QVBoxLayout()
         vbox.addLayout(hbox)
-        vbox.addWidget(self.button_box)
+        vbox.addWidget(button_box)
         self.setLayout(vbox)
+
+        # Signals
+        btn_replace.clicked.connect(self.accept)
+        btn_skip.clicked.connect(lambda: self.done(ConflictDialog.Skip))
+        btn_cancel.clicked.connect(lambda: self.done(ConflictDialog.Cancel))
 
 
 # EOF #
