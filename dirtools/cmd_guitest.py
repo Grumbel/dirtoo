@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import List, Dict, Callable
 
 import logging
 import signal
@@ -23,7 +23,7 @@ import sys
 import argparse
 import tempfile
 
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QDialog
 
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.conflict_dialog import ConflictDialog
@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 def parse_args(args: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Test GUI Widgets")
-    parser.add_argument("DIALOG", nargs='*')
+    parser.add_argument("DIALOG", nargs='?')
     parser.add_argument("-l", "--list", action='store_true', default=False,
                         help="List available dialogs")
     return parser.parse_args(args)
@@ -49,14 +49,14 @@ def main(argv: List[str]) -> None:
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
     args = parse_args(argv[1:])
-    app = QApplication([])
+    app = QApplication([])  # noqa: F841
 
     dialog_spec = args.DIALOG
 
     tmpfile = tempfile.mkstemp()[1]
     settings.init(tmpfile)
 
-    dialog_factory = {
+    dialog_factory: Dict[str, Callable[[], QDialog]] = {
         'AboutDialog': lambda: AboutDialog(),
         'ConflictDialog': lambda: ConflictDialog(None),
         'CreateDialog-folder': lambda: CreateDialog(CreateDialog.FOLDER, None),
@@ -70,13 +70,10 @@ def main(argv: List[str]) -> None:
         for k in dialog_factory.keys():
             print(k)
     else:
-        dialogs = []
-        for k in dialog_spec:
-            dialog_func = dialog_factory[k]
-            dialog = dialog_func()
-            dialog.show()
-            dialogs.append(dialog)
-            sys.exit(app.exec())
+        dialog_func = dialog_factory[dialog_spec]
+        dialog = dialog_func()
+        dialog.exec()
+        print("result:", dialog.result())
 
 
 def main_entrypoint() -> None:
