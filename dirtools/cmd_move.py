@@ -22,6 +22,8 @@ import hashlib
 import os
 import sys
 
+import bytefmt
+
 
 class MoveContext:
 
@@ -84,23 +86,10 @@ class MoveContext:
                     pass  # try to read input again
 
 
-def bytes2human(num_bytes: int) -> str:
-    if num_bytes < 1000:
-        return "{} B".format(num_bytes)
-    elif num_bytes < 1000 * 1000:
-        return "{} KB".format(num_bytes)
-    elif num_bytes < 1000 * 1000 * 1000:
-        return "{} MB".format(num_bytes)
-    elif num_bytes < 1000 * 1000 * 1000 * 1000:
-        return "{} GB".format(num_bytes)
-    else:
-        return "{} TB".format(num_bytes)
-
-
 def file_info(filename: str) -> str:
     return ("  name: {}\n"
             "  size: {}").format(filename,
-                                 bytes2human(os.path.getsize(filename)))
+                                 bytefmt.humanize(os.path.getsize(filename)))
 
 
 def merge_directory(ctx: MoveContext, source: str, destdir: str):
