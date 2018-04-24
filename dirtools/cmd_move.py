@@ -15,25 +15,26 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Optional
+from typing import List, Optional
 
 import argparse
-import os
 import hashlib
+import os
+import sys
 
 
 class MoveContext:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.verbose = False
         self.dry_run = False
         self.overwrite: Optional[str] = None
 
-    def skip_rename(self, oldpath, newpath):
+    def skip_rename(self, oldpath: str, newpath: str) -> None:
         if self.verbose:
             print("skipping {} -> {}".format(oldpath, newpath))
 
-    def rename(self, oldpath, newpath):
+    def rename(self, oldpath: str, newpath: str) -> None:
         if self.verbose or self.dry_run:
             print("{} -> {}".format(oldpath, newpath))
 
@@ -43,7 +44,7 @@ class MoveContext:
             else:
                 os.rename(oldpath, newpath)
 
-    def makedirs(self, path):
+    def makedirs(self, path: str) -> None:
         if self.verbose:
             print("makedirs: {}".format(path))
 
@@ -52,7 +53,7 @@ class MoveContext:
             if not os.path.isdir(path):
                 os.makedirs(path)
 
-    def resolve_conflict(self, source, dest):
+    def resolve_conflict(self, source: str, dest: str) -> str:
         source_sha1 = sha1sum(source)
         dest_sha1 = sha1sum(dest)
         if source == dest:
@@ -83,7 +84,7 @@ class MoveContext:
                     pass  # try to read input again
 
 
-def bytes2human(num_bytes):
+def bytes2human(num_bytes: int) -> str:
     if num_bytes < 1000:
         return "{} B".format(num_bytes)
     elif num_bytes < 1000 * 1000:
@@ -96,13 +97,13 @@ def bytes2human(num_bytes):
         return "{} TB".format(num_bytes)
 
 
-def file_info(filename):
+def file_info(filename: str) -> str:
     return ("  name: {}\n"
             "  size: {}").format(filename,
                                  bytes2human(os.path.getsize(filename)))
 
 
-def merge_directory(ctx, source, destdir):
+def merge_directory(ctx: MoveContext, source: str, destdir: str):
     for name in os.listdir(source):
         path = os.path.join(source, name)
         if os.path.isdir(path):
@@ -111,7 +112,7 @@ def merge_directory(ctx, source, destdir):
             move_file(ctx, path, destdir)
 
 
-def sha1sum(filename, blocksize=65536):
+def sha1sum(filename: str, blocksize: int=65536) -> str:
     with open(filename, 'rb') as fin:
         hasher = hashlib.sha1()
         buf = fin.read(blocksize)
@@ -121,7 +122,7 @@ def sha1sum(filename, blocksize=65536):
         return hasher.hexdigest()
 
 
-def move_file(ctx, source, destdir):
+def move_file(ctx: MoveContext, source: str, destdir: str) -> None:
     base = os.path.basename(source)
     dest = os.path.join(destdir, base)
 
@@ -140,7 +141,7 @@ def move_file(ctx, source, destdir):
         ctx.rename(source, dest)
 
 
-def move_directory(ctx, source, destdir):
+def move_directory(ctx: MoveContext, source: str, destdir: str) -> None:
     base = os.path.basename(source)
     dest = os.path.join(destdir, base)
 
@@ -150,7 +151,7 @@ def move_directory(ctx, source, destdir):
         ctx.rename(source, dest)
 
 
-def move_path(ctx, source, destdir, prefix):
+def move_path(ctx: MoveContext, source: str, destdir: str, prefix: str) -> None:
     if not os.path.isdir(destdir):
         raise Exception("{}: target directory does not exist".format(destdir))
 
@@ -164,7 +165,7 @@ def move_path(ctx, source, destdir, prefix):
         move_file(ctx, source, destdir)
 
 
-def move_cmd(ctx, source, destdir, relative):
+def move_cmd(ctx: MoveContext, source: str, destdir: str, relative: bool) -> None:
     if relative:
         prefix = os.path.dirname(source)
     else:
@@ -173,12 +174,12 @@ def move_cmd(ctx, source, destdir, relative):
     move_path(ctx, source, destdir, prefix)
 
 
-def move_multi_cmd(ctx, sources, destdir, relative):
+def move_multi_cmd(ctx: MoveContext, sources: List[str], destdir: str, relative: bool) -> None:
     for source in sources:
         move_cmd(ctx, source, destdir, relative)
 
 
-def parse_args():
+def parse_args(args: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Move files and directories.")
     parser.add_argument('FILE', action='store', nargs='+',
                         help='Files to move')
@@ -194,11 +195,11 @@ def parse_args():
                         help="Never overwrite any files")
     parser.add_argument('-Y', '--always', action='store_true', default=False,
                         help="Always overwrite files on conflict")
-    return parser.parse_args()
+    return parser.parse_args(args)
 
 
-def main():
-    args = parse_args()
+def main(argv: List[str]) -> None:
+    args = parse_args(argv[1:])
 
     ctx = MoveContext()
     ctx.verbose = args.verbose
@@ -212,6 +213,10 @@ def main():
     destdir = os.path.normpath(args.target_directory)
 
     move_multi_cmd(ctx, sources, destdir, args.relative)
+
+
+def main_entrypoint() -> None:
+    main(sys.argv)
 
 
 # EOF #
