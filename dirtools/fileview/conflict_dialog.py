@@ -23,7 +23,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLayout,
                              QHBoxLayout, QVBoxLayout, QSizePolicy,
-                             QDialogButtonBox, QLabel, QCheckBox)
+                             QDialogButtonBox, QLabel, QCheckBox, QGroupBox)
 
 
 class ConflictDialog(QDialog):
@@ -79,16 +79,24 @@ class ConflictDialog(QDialog):
         self.setWindowTitle("Confirm to replace files")
 
         # Widgets
-        move_icon = QLabel("Aeuau")
+        move_icon = QLabel()
         move_icon.setPixmap(QIcon.fromTheme("stock_folder-move").pixmap(48))
         move_icon.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
 
-        header = QLabel("<big>This folder already contains a file <b>{}</b></big>".format(self._source_filename))
+        header = QLabel("<big>This folder already contains a file named <b>{}</b></big>".format(self._source_filename))
         header.setTextFormat(Qt.RichText)
-        subheader = QLabel("Do you want to replace the existing file:")
-        target_file_layout = self._make_file_info(self._target_filename)
-        subheader2 = QLabel("with the following file?")
+
+        # subheader = QLabel("Would you like to use:")
+        subheader = QLabel("Replace the existing file in the destination folder?")
         source_file_layout = self._make_file_info(self._source_filename)
+        source_file_widget = QGroupBox("New / Source:")
+        source_file_widget.setLayout(source_file_layout)
+
+        # subheader2 = QLabel("to overwrite:")
+        target_file_layout = self._make_file_info(self._target_filename)
+        target_file_widget = QGroupBox("Existing / Destination:")
+        target_file_widget.setLayout(target_file_layout)
+
         repeat_for_all = QCheckBox("Repeat action for all files")
         self._repeat_for_all = repeat_for_all
 
@@ -109,9 +117,9 @@ class ConflictDialog(QDialog):
         subvbox = QVBoxLayout()
         subvbox.addWidget(header)
         subvbox.addWidget(subheader)
-        subvbox.addLayout(target_file_layout)
-        subvbox.addWidget(subheader2)
-        subvbox.addLayout(source_file_layout)
+        subvbox.addWidget(source_file_widget)
+        # subvbox.addWidget(subheader2)
+        subvbox.addWidget(target_file_widget)
         subvbox.addWidget(repeat_for_all)
 
         hbox = QHBoxLayout()
