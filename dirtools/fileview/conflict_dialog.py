@@ -92,6 +92,10 @@ class ConflictDialog(QDialog):
         source_file_widget = QGroupBox("New / Source:")
         source_file_widget.setLayout(source_file_layout)
 
+        arrow_label = QLabel()
+        arrow_label.setPixmap(QIcon.fromTheme("down").pixmap(24))
+        arrow_label.setAlignment(Qt.AlignCenter)
+
         # subheader2 = QLabel("to overwrite:")
         target_file_layout = self._make_file_info(self._target_filename)
         target_file_widget = QGroupBox("Existing / Destination:")
@@ -118,7 +122,7 @@ class ConflictDialog(QDialog):
         subvbox.addWidget(header)
         subvbox.addWidget(subheader)
         subvbox.addWidget(source_file_widget)
-        # subvbox.addWidget(subheader2)
+        subvbox.addWidget(arrow_label)
         subvbox.addWidget(target_file_widget)
         subvbox.addWidget(repeat_for_all)
 
