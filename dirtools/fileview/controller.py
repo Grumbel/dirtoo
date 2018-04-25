@@ -44,6 +44,7 @@ from dirtools.fileview.gui import Gui
 from dirtools.fileview.filter import Filter
 from dirtools.fileview.sorter import Sorter
 from dirtools.fileview.actions import Actions
+from dirtools.fileview.transfer_dialog import TransferDialog
 
 if False:
     from dirtools.fileview.application import FileViewApplication  # noqa: F401
@@ -669,7 +670,18 @@ class Controller(QObject):
 
         destination_path = destination.get_path()
 
-        self.app.fs.do_files(action, sources, destination_path)
+        transfer_dialog = TransferDialog(sources, destination_path, self._gui._window)
+        transfer_dialog.exec()
+
+        result = transfer_dialog.result()
+        if result == TransferDialog.Move:
+            self.app.fs.do_files(Qt.MoveAction, sources, destination_path)
+        elif result == TransferDialog.Copy:
+            self.app.fs.do_files(Qt.CopyAction, sources, destination_path)
+        elif result == TransferDialog.Link:
+            self.app.fs.do_files(Qt.LinkAction, sources, destination_path)
+        else:
+            pass
 
     def create_directory(self):
         if self.location is None:

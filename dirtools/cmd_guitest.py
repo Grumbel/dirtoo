@@ -46,6 +46,21 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     return parser.parse_args(args)
 
 
+
+def make_transfer_dialog() -> None:
+    dialog = TransferDialog(
+        [
+            "/home/juser/test.txt",
+            "/home/juser/README.md",
+            "/home/juser/NotAFile.c",
+            "/home/juser/NotAFile.c",
+        ],
+        "/home/juser/Target Directory",
+        None)
+
+    return dialog
+
+
 def main(argv: List[str]) -> None:
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
@@ -62,7 +77,7 @@ def main(argv: List[str]) -> None:
         'ConflictDialog': lambda: ConflictDialog(None),
         'CreateDialog-folder': lambda: CreateDialog(CreateDialog.FOLDER, None),
         'CreateDialog-file': lambda: CreateDialog(CreateDialog.TEXTFILE, None),
-        'TransferDialog': lambda: TransferDialog(None),
+        'TransferDialog': make_transfer_dialog,
         'PreferencesDialog': lambda: PreferencesDialog(),
         'PropertiesDialog': lambda: PropertiesDialog(FileInfo.from_path("/tmp/"), None),
         'RenameDialog': lambda: RenameDialog(None),

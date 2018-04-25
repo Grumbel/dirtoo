@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import cast
+from typing import cast, List
 
 import html
 
@@ -34,16 +34,11 @@ class TransferDialog(QDialog):
     Copy = 3
     Link = 4
 
-    def __init__(self, parent: QWidget) -> None:
+    def __init__(self, source_files: List[str], target_directory: str, parent: QWidget) -> None:
         super().__init__()
 
-        self._source_files = [
-            "/home/juser/test.txt",
-            "/home/juser/README.md",
-            "/home/juser/NotAFile.c",
-            "/home/juser/NotAFile.c",
-        ]
-        self._target_directory = "/home/juser/Target Directory"
+        self._source_files = source_files
+        self._target_directory = target_directory
 
         self._make_gui()
 
