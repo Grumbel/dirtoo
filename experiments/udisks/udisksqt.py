@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from typing import Dict, List
+
 import signal
 import pprint
 
@@ -55,7 +57,7 @@ class UDiskManager(QObject):
                                              "org.freedesktop.UDisks2.Manager",
                                              connection=bus)
 
-        self._drives = defaultdict(list)
+        self._drives: Dict[str, List[str]] = defaultdict(list)
         block_devices = call(self.udisks_manager, "GetBlockDevices", {})[0]
 
         for block_device in block_devices:

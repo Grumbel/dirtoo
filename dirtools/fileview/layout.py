@@ -138,7 +138,7 @@ class ItemLayout(Layout):
         super().layout(viewport_width, viewport_height)
 
         if self.item is not None:
-            self.height = self.item.boundingRect().height()
+            self.height = int(self.item.boundingRect().height())
 
     def set_pos(self, x: int, y: int) -> None:
         super().set_pos(x, y)

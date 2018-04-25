@@ -118,56 +118,56 @@ class PropertiesDialog(QDialog):
 
         access_user_read = QPushButton("Read")
         access_user_read.setCheckable(True)
-        access_user_read.setChecked(stat.S_IRUSR & mode)
+        access_user_read.setChecked(bool(stat.S_IRUSR & mode))
 
         access_user_write = QPushButton("Write")
         access_user_write.setCheckable(True)
-        access_user_write.setChecked(stat.S_IWUSR & mode)
+        access_user_write.setChecked(bool(stat.S_IWUSR & mode))
 
         access_user_exec = QPushButton("Execute")
         access_user_exec.setCheckable(True)
-        access_user_exec.setChecked(stat.S_IXUSR & mode)
+        access_user_exec.setChecked(bool(stat.S_IXUSR & mode))
 
         access_group_label = QLabel("Group:")
 
         access_group_read = QPushButton("Read")
         access_group_read.setCheckable(True)
-        access_group_read.setChecked(stat.S_IRGRP & mode)
+        access_group_read.setChecked(bool(stat.S_IRGRP & mode))
 
         access_group_write = QPushButton("Write")
         access_group_write.setCheckable(True)
-        access_group_write.setChecked(stat.S_IWGRP & mode)
+        access_group_write.setChecked(bool(stat.S_IWGRP & mode))
 
         access_group_exec = QPushButton("Execute")
         access_group_exec.setCheckable(True)
-        access_group_exec.setChecked(stat.S_IXGRP & mode)
+        access_group_exec.setChecked(bool(stat.S_IXGRP & mode))
 
         access_other_label = QLabel("Other:")
 
         access_other_read = QPushButton("Read")
         access_other_read.setCheckable(True)
-        access_other_read.setChecked(stat.S_IROTH & mode)
+        access_other_read.setChecked(bool(stat.S_IROTH & mode))
 
         access_other_write = QPushButton("Write")
         access_other_write.setCheckable(True)
-        access_other_write.setChecked(stat.S_IWOTH & mode)
+        access_other_write.setChecked(bool(stat.S_IWOTH & mode))
 
         access_other_exec = QPushButton("Execute")
         access_other_exec.setCheckable(True)
-        access_other_exec.setChecked(stat.S_IXOTH & mode)
+        access_other_exec.setChecked(bool(stat.S_IXOTH & mode))
 
         access_special_label = QLabel("Special:")
         access_special_setuid = QPushButton("SetUid")
         access_special_setuid.setCheckable(True)
-        access_special_setuid.setChecked(stat.S_ISUID & mode)
+        access_special_setuid.setChecked(bool(stat.S_ISUID & mode))
 
         access_special_setgid = QPushButton("SetGid")
         access_special_setgid.setCheckable(True)
-        access_special_setgid.setChecked(stat.S_ISGID & mode)
+        access_special_setgid.setChecked(bool(stat.S_ISGID & mode))
 
         access_special_sticky = QPushButton("Sticky")
         access_special_sticky.setCheckable(True)
-        access_special_sticky.setChecked(stat.S_ISVTX & mode)
+        access_special_sticky.setChecked(bool(stat.S_ISVTX & mode))
 
         def timestamp2str(time):
             dt = datetime.fromtimestamp(time)
