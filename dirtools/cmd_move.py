@@ -15,14 +15,28 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Optional
+from typing import List
 
 import argparse
 import hashlib
 import os
 import sys
 
+from enum import Enum
 import bytefmt
+
+
+class Resolution(Enum):
+
+    SKIP = 1
+    CONTINUE = 2
+
+
+class Overwrite(Enum):
+
+    ASK = 0
+    NEVER = 1
+    ALWAYS = 2
 
 
 class MoveContext:
@@ -30,7 +44,7 @@ class MoveContext:
     def __init__(self) -> None:
         self.verbose = False
         self.dry_run = False
-        self.overwrite: Optional[str] = None
+        self.overwrite = Overwrite.ASK
 
     def skip_rename(self, oldpath: str, newpath: str) -> None:
         if self.verbose:
@@ -55,15 +69,15 @@ class MoveContext:
             if not os.path.isdir(path):
                 os.makedirs(path)
 
-    def resolve_conflict(self, source: str, dest: str) -> str:
+    def resolve_conflict(self, source: str, dest: str) -> Resolution:
         source_sha1 = sha1sum(source)
         dest_sha1 = sha1sum(dest)
         if source == dest:
             print("skipping '{}' same file as '{}'".format(source, dest))
-            return "skip"
+            return Resolution.SKIP
         elif source_sha1 == dest_sha1:
             print("skipping '{}' same content as '{}'".format(source, dest))
-            return "skip"
+            return Resolution.SKIP
         else:
             print("Conflict: {}: destination file already exists".format(dest))
             print("source:\n{}\n  sha1: {}".format(file_info(source), source_sha1))
@@ -73,15 +87,15 @@ class MoveContext:
                 c = c.lower()
                 if c == 'n':
                     print("skipping {}".format(source))
-                    return "skip"
+                    return Resolution.SKIP
                 elif c == 'y':
-                    return "continue"
+                    return Resolution.CONTINUE
                 elif c == 'a':
-                    self.overwrite = 'always'
-                    return "continue"
+                    self.overwrite = Overwrite.ALWAYS
+                    return Resolution.CONTINUE
                 elif c == 'e':
-                    self.overwrite = 'never'
-                    return "skip"
+                    self.overwrite = Overwrite.NEVER
+                    return Resolution.SKIP
                 else:
                     pass  # try to read input again
 
@@ -120,9 +134,9 @@ def move_file(ctx: MoveContext, source: str, destdir: str) -> None:
             ctx.skip_rename(source, dest)
         else:
             resolution = ctx.resolve_conflict(source, dest)
-            if resolution == "skip":
+            if resolution == Resolution.SKIP:
                 ctx.skip_rename(source, dest)
-            elif resolution == "continue":
+            elif resolution == Resolution.CONTINUE:
                 ctx.rename(source, dest)
             else:
                 assert False, "unknown conflict resolution: %r" % resolution
@@ -181,9 +195,9 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help="Be more verbose")
     parser.add_argument('-N', '--never', action='store_true', default=False,
-                        help="Never overwrite any files")
+                        help="NEVER overwrite any files")
     parser.add_argument('-Y', '--always', action='store_true', default=False,
-                        help="Always overwrite files on conflict")
+                        help="ALWAYS overwrite files on conflict")
     return parser.parse_args(args)
 
 
@@ -194,9 +208,9 @@ def main(argv: List[str]) -> None:
     ctx.verbose = args.verbose
     ctx.dry_run = args.dry_run
     if args.always:
-        ctx.overwrite = 'always'
+        ctx.overwrite = Overwrite.ALWAYS
     if args.never:
-        ctx.overwrite = 'never'
+        ctx.overwrite = Overwrite.NEVER
 
     sources = [os.path.normpath(p) for p in args.FILE]
     destdir = os.path.normpath(args.target_directory)
