@@ -27,6 +27,7 @@ from PyQt5.QtWidgets import QApplication, QDialog
 
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.conflict_dialog import ConflictDialog
+from dirtools.fileview.transfer_dialog import TransferDialog
 from dirtools.fileview.rename_dialog import RenameDialog
 from dirtools.fileview.properties_dialog import PropertiesDialog
 from dirtools.fileview.about_dialog import AboutDialog
@@ -61,6 +62,7 @@ def main(argv: List[str]) -> None:
         'ConflictDialog': lambda: ConflictDialog(None),
         'CreateDialog-folder': lambda: CreateDialog(CreateDialog.FOLDER, None),
         'CreateDialog-file': lambda: CreateDialog(CreateDialog.TEXTFILE, None),
+        'TransferDialog': lambda: TransferDialog(None),
         'PreferencesDialog': lambda: PreferencesDialog(),
         'PropertiesDialog': lambda: PropertiesDialog(FileInfo.from_path("/tmp/"), None),
         'RenameDialog': lambda: RenameDialog(None),
