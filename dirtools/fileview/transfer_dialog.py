@@ -24,7 +24,7 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLayout,
                              QHBoxLayout, QVBoxLayout, QSizePolicy,
                              QDialogButtonBox, QLabel, QCheckBox,
-                             QListWidget, QAbstractScrollArea)
+                             QListWidget, QAbstractScrollArea, QGroupBox)
 
 
 class TransferDialog(QDialog):
@@ -32,6 +32,7 @@ class TransferDialog(QDialog):
     Cancel = QDialog.Rejected
     Move = 2
     Copy = 3
+    Link = 4
 
     def __init__(self, parent: QWidget) -> None:
         super().__init__()
@@ -75,15 +76,25 @@ class TransferDialog(QDialog):
 
         header = QLabel("<big>A file transfer was requested.</big>")
         header.setTextFormat(Qt.RichText)
-        subheader = QLabel("Do you want to transfer the following files:")
+        subheader = QLabel("Do you want to transfer the following files to the given directory?")
 
+        source_files_widget = QGroupBox("Sources:")
         source_files_list = QListWidget()
         source_files_list.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
         for source_file in self._source_files:
             source_files_list.addItem(source_file)
 
-        subheader2 = QLabel("into the target directory:")
+        box = QVBoxLayout()
+        box.addWidget(source_files_list)
+        source_files_widget.setLayout(box)
+
+        arrow_label = QLabel()
+        arrow_label.setPixmap(QIcon.fromTheme("down").pixmap(24))
+        arrow_label.setAlignment(Qt.AlignCenter)
+
         target_directory_layout = self._make_file_info(self._target_directory)
+        target_directory_widget = QGroupBox("Destination:")
+        target_directory_widget.setLayout(target_directory_layout)
 
         # Widgets.ButtonBox
         button_box = QDialogButtonBox(self)
@@ -93,17 +104,19 @@ class TransferDialog(QDialog):
 
         btn_copy = QPushButton(QIcon.fromTheme("stock_folder-copy"), "Copy Files")
         btn_move = QPushButton(QIcon.fromTheme("stock_folder-move"), "Move Files")
+        btn_link = QPushButton(QIcon.fromTheme("stock_folder-move"), "Link Files")
         button_box.addButton(btn_move, QDialogButtonBox.AcceptRole)
         button_box.addButton(btn_copy, QDialogButtonBox.AcceptRole)
+        button_box.addButton(btn_link, QDialogButtonBox.AcceptRole)
         btn_move.setDefault(True)
 
         # Layout
         subvbox = QVBoxLayout()
         subvbox.addWidget(header)
         subvbox.addWidget(subheader)
-        subvbox.addWidget(source_files_list)
-        subvbox.addWidget(subheader2)
-        subvbox.addLayout(target_directory_layout)
+        subvbox.addWidget(source_files_widget)
+        subvbox.addWidget(arrow_label)
+        subvbox.addWidget(target_directory_widget)
 
         hbox = QHBoxLayout()
         hbox.addWidget(move_icon)
@@ -117,6 +130,7 @@ class TransferDialog(QDialog):
         # Signals
         btn_copy.clicked.connect(lambda: self.done(TransferDialog.Copy))
         btn_move.clicked.connect(lambda: self.done(TransferDialog.Move))
+        btn_link.clicked.connect(lambda: self.done(TransferDialog.Link))
         btn_cancel.clicked.connect(lambda: self.done(TransferDialog.Cancel))
 
 
