@@ -670,18 +670,25 @@ class Controller(QObject):
 
         destination_path = destination.get_path()
 
-        transfer_dialog = TransferDialog(sources, destination_path, self._gui._window)
-        transfer_dialog.exec()
-
-        result = transfer_dialog.result()
-        if result == TransferDialog.Move:
-            self.app.fs.do_files(Qt.MoveAction, sources, destination_path)
-        elif result == TransferDialog.Copy:
-            self.app.fs.do_files(Qt.CopyAction, sources, destination_path)
-        elif result == TransferDialog.Link:
-            self.app.fs.do_files(Qt.LinkAction, sources, destination_path)
+        # FIXME: 0xf0 is a magic value hack to represent a
+        # 'Qt.AskAction', which Qt doesn't have, only
+        # Link/Move/Copy/Ignore are available. The mouse cursor isn't
+        # updated properly here.
+        if action != 0xf0:
+            self.app.fs.do_files(action, sources, destination_path)
         else:
-            pass
+            transfer_dialog = TransferDialog(sources, destination_path, self._gui._window)
+            transfer_dialog.exec()
+
+            result = transfer_dialog.result()
+            if result == TransferDialog.Move:
+                self.app.fs.do_files(Qt.MoveAction, sources, destination_path)
+            elif result == TransferDialog.Copy:
+                self.app.fs.do_files(Qt.CopyAction, sources, destination_path)
+            elif result == TransferDialog.Link:
+                self.app.fs.do_files(Qt.LinkAction, sources, destination_path)
+            else:
+                pass
 
     def create_directory(self):
         if self.location is None:

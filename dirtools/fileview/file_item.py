@@ -286,20 +286,23 @@ class FileItem(QGraphicsObject):
             mime_data = self.controller.selection_to_mimedata(uri_only=True)
             self.drag.setMimeData(mime_data)
 
-            self.drag.setDragCursor(
-                QPixmap(resource_filename("dirtools", "fileview/icons/dnd-copy.png")),
-                Qt.CopyAction)
-            self.drag.setDragCursor(
-                QPixmap(resource_filename("dirtools", "fileview/icons/dnd-move.png")),
-                Qt.MoveAction)
-            self.drag.setDragCursor(
-                QPixmap(resource_filename("dirtools", "fileview/icons/dnd-link.png")),
-                Qt.LinkAction)
+            # self.drag.setDragCursor(
+            #     QPixmap(resource_filename("dirtools", "fileview/icons/dnd-ask.png")),
+            #     0xf0)
+            # self.drag.setDragCursor(
+            #     QPixmap(resource_filename("dirtools", "fileview/icons/dnd-copy.png")),
+            #     Qt.CopyAction)
+            # self.drag.setDragCursor(
+            #     QPixmap(resource_filename("dirtools", "fileview/icons/dnd-move.png")),
+            #     Qt.MoveAction)
+            # self.drag.setDragCursor(
+            #     QPixmap(resource_filename("dirtools", "fileview/icons/dnd-link.png")),
+            #     Qt.LinkAction)
 
             # self.drag.actionChanged.connect(lambda action: print(action))
 
             # this will eat up the mouseReleaseEvent
-            self.dropAction = self.drag.exec(Qt.CopyAction | Qt.MoveAction | Qt.LinkAction)
+            self.drag.exec(Qt.CopyAction | Qt.MoveAction | Qt.LinkAction | 0xf0, 0xf0)
 
     def mouseReleaseEvent(self, ev):
         if ev.button() == Qt.LeftButton and self.press_pos is not None:
