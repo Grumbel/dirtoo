@@ -17,16 +17,17 @@
 
 from typing import Dict, Any, Optional
 
-from pkg_resources import resource_filename
 import logging
 
 from PyQt5.QtCore import Qt, QRectF, QRect
 from PyQt5.QtGui import QColor, QPainter, QPainterPath, QImage, QDrag, QPixmap
+from PyQt5.QtWidgets import QGraphicsObject, QGraphicsItem
 
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.thumbnail import Thumbnail, ThumbnailStatus
 from dirtools.fileview.file_item_renderer import FileItemRenderer
-from PyQt5.QtWidgets import QGraphicsObject, QGraphicsItem
+from dirtools.fileview.drag_widget import DragWidget
+
 
 if False:
     from dirtools.fileview.controller import Controller  # noqa: F401
@@ -265,7 +266,7 @@ class FileItem(QGraphicsObject):
         if (ev.pos() - self.press_pos).manhattanLength() > 16:
             # print("drag start")
 
-            self.drag = QDrag(self.controller._gui._window)
+            drag = QDrag(self.controller._gui._window)
 
             # Create the drag thumbnail
             if False:
@@ -273,36 +274,28 @@ class FileItem(QGraphicsObject):
                 painter = QPainter(pix)
                 self.paint(painter, None, None)
                 painter.end()
-                self.drag.setPixmap(pix)
-                self.drag.setHotSpot(ev.pos().toPoint() - self.tile_rect.topLeft())
+                drag.setPixmap(pix)
+                drag.setHotSpot(ev.pos().toPoint() - self.tile_rect.topLeft())
             else:
                 pix = QPixmap("/usr/share/icons/mate/32x32/actions/gtk-dnd-multiple.png").scaled(48, 48)
-                self.drag.setPixmap(pix)
+                drag.setPixmap(pix)
 
             if not self.isSelected():
                 self.controller.clear_selection()
                 self.setSelected(True)
 
             mime_data = self.controller.selection_to_mimedata(uri_only=True)
-            self.drag.setMimeData(mime_data)
+            drag.setMimeData(mime_data)
 
-            # self.drag.setDragCursor(
-            #     QPixmap(resource_filename("dirtools", "fileview/icons/dnd-ask.png")),
-            #     0xf0)
-            # self.drag.setDragCursor(
-            #     QPixmap(resource_filename("dirtools", "fileview/icons/dnd-copy.png")),
-            #     Qt.CopyAction)
-            # self.drag.setDragCursor(
-            #     QPixmap(resource_filename("dirtools", "fileview/icons/dnd-move.png")),
-            #     Qt.MoveAction)
-            # self.drag.setDragCursor(
-            #     QPixmap(resource_filename("dirtools", "fileview/icons/dnd-link.png")),
-            #     Qt.LinkAction)
-
-            # self.drag.actionChanged.connect(lambda action: print(action))
+            # Qt does not allow custom drag actions officially. The
+            # default drag action value is however carried through
+            # even if it's invalid, but cursor changes and signals
+            # like actionChanged() misbehave. The DragWidget class is
+            # a workaround.
+            drag_widget = DragWidget(None)  # noqa: F841
 
             # this will eat up the mouseReleaseEvent
-            self.drag.exec(Qt.CopyAction | Qt.MoveAction | Qt.LinkAction | 0xf0, 0xf0)
+            drag.exec(Qt.CopyAction | Qt.MoveAction | Qt.LinkAction | 0x40, 0x40)
 
     def mouseReleaseEvent(self, ev):
         if ev.button() == Qt.LeftButton and self.press_pos is not None:
