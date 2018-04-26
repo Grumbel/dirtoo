@@ -59,6 +59,13 @@ class Filesystem:
         if self.verbose:
             print("skipping {} -> {}".format(oldpath, newpath))
 
+    def overwrite(self, src: str, dst: str) -> None:
+        if self.verbose or self.dry_run:
+            print("overwriting {} -> {}".format(src, dst))
+
+        if not self.dry_run:
+            os.rename(src, dst)
+
     def rename(self, oldpath: str, newpath: str) -> None:
         if self.verbose or self.dry_run:
             print("{} -> {}".format(oldpath, newpath))
@@ -90,6 +97,16 @@ class Mediator:
                                      bytefmt.humanize(os.path.getsize(filename)))
 
     def resolve_conflict(self, source: str, dest: str) -> Resolution:
+        if self.overwrite == Overwrite.ASK:
+            return self._resolve_conflict_interactive(source, dest)
+        elif self.overwrite == Overwrite.ALWAYS:
+            return Resolution.CONTINUE
+        elif self.overwrite == Overwrite.NEVER:
+            return Resolution.SKIP
+        else:
+            assert False
+
+    def _resolve_conflict_interactive(self, source: str, dest: str) -> Resolution:
         source_sha1 = sha1sum(source)
         dest_sha1 = sha1sum(dest)
         if source == dest:
@@ -138,19 +155,14 @@ class MoveContext:
         base = os.path.basename(source)
         dest = os.path.join(destdir, base)
 
-        if os.path.exists(dest) and self.mediator.overwrite != Overwrite.ALWAYS:
-            if self.mediator.overwrite == Overwrite.NEVER:
+        if os.path.exists(dest):
+            resolution = self.mediator.resolve_conflict(source, dest)
+            if resolution == Resolution.SKIP:
                 self.fs.skip_rename(source, dest)
+            elif resolution == Resolution.CONTINUE:
+                self.fs.overwrite(source, dest)
             else:
-                resolution = self.mediator.resolve_conflict(source, dest)
-                if resolution == Resolution.SKIP:
-                    self.fs.skip_rename(source, dest)
-                elif resolution == Resolution.CONTINUE:
-                    self.fs.rename(source, dest)
-                else:
-                    assert False, "unknown conflict resolution: %r" % resolution
-        else:
-            self.fs.rename(source, dest)
+                assert False, "unknown conflict resolution: %r" % resolution
 
     def move_directory(self, source: str, destdir: str) -> None:
         base = os.path.basename(source)
