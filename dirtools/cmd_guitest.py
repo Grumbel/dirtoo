@@ -46,8 +46,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     return parser.parse_args(args)
 
 
-
-def make_transfer_dialog() -> None:
+def make_transfer_dialog() -> TransferDialog:
     dialog = TransferDialog(
         [
             "/home/juser/test.txt",
