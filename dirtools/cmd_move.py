@@ -39,12 +39,21 @@ class Overwrite(Enum):
     ALWAYS = 2
 
 
-class MoveContext:
+def sha1sum(filename: str, blocksize: int=65536) -> str:
+    with open(filename, 'rb') as fin:
+        hasher = hashlib.sha1()
+        buf = fin.read(blocksize)
+        while len(buf) > 0:
+            hasher.update(buf)
+            buf = fin.read(blocksize)
+        return hasher.hexdigest()
+
+
+class Filesystem:
 
     def __init__(self) -> None:
         self.verbose: bool = False
         self.dry_run: bool = False
-        self.overwrite: Overwrite = Overwrite.ASK
 
     def skip_rename(self, oldpath: str, newpath: str) -> None:
         if self.verbose:
@@ -69,6 +78,17 @@ class MoveContext:
             if not os.path.isdir(path):
                 os.makedirs(path)
 
+
+class Mediator:
+
+    def __init__(self) -> None:
+        self.overwrite: Overwrite = Overwrite.ASK
+
+    def file_info(self, filename: str) -> str:
+        return ("  name: {}\n"
+                "  size: {}").format(filename,
+                                     bytefmt.humanize(os.path.getsize(filename)))
+
     def resolve_conflict(self, source: str, dest: str) -> Resolution:
         source_sha1 = sha1sum(source)
         dest_sha1 = sha1sum(dest)
@@ -80,8 +100,8 @@ class MoveContext:
             return Resolution.SKIP
         else:
             print("Conflict: {}: destination file already exists".format(dest))
-            print("source:\n{}\n  sha1: {}".format(file_info(source), source_sha1))
-            print("target:\n{}\n  sha1: {}".format(file_info(dest), dest_sha1))
+            print("source:\n{}\n  sha1: {}".format(self.file_info(source), source_sha1))
+            print("target:\n{}\n  sha1: {}".format(self.file_info(dest), dest_sha1))
             while True:
                 c = input("Overwrite {} ([Y]es, [N]o, [A]lways, n[E]ver)? ".format(dest))  # [R]ename, [Q]uit
                 c = c.lower()
@@ -100,86 +120,71 @@ class MoveContext:
                     pass  # try to read input again
 
 
-def file_info(filename: str) -> str:
-    return ("  name: {}\n"
-            "  size: {}").format(filename,
-                                 bytefmt.humanize(os.path.getsize(filename)))
+class MoveContext:
 
+    def __init__(self, fs: Filesystem, mediator: Mediator) -> None:
+        self.fs = fs
+        self.mediator = mediator
 
-def merge_directory(ctx: MoveContext, source: str, destdir: str):
-    for name in os.listdir(source):
-        path = os.path.join(source, name)
-        if os.path.isdir(path):
-            move_directory(ctx, path, destdir)
-        else:
-            move_file(ctx, path, destdir)
-
-
-def sha1sum(filename: str, blocksize: int=65536) -> str:
-    with open(filename, 'rb') as fin:
-        hasher = hashlib.sha1()
-        buf = fin.read(blocksize)
-        while len(buf) > 0:
-            hasher.update(buf)
-            buf = fin.read(blocksize)
-        return hasher.hexdigest()
-
-
-def move_file(ctx: MoveContext, source: str, destdir: str) -> None:
-    base = os.path.basename(source)
-    dest = os.path.join(destdir, base)
-
-    if os.path.exists(dest) and ctx.overwrite != Overwrite.ALWAYS:
-        if ctx.overwrite == Overwrite.NEVER:
-            ctx.skip_rename(source, dest)
-        else:
-            resolution = ctx.resolve_conflict(source, dest)
-            if resolution == Resolution.SKIP:
-                ctx.skip_rename(source, dest)
-            elif resolution == Resolution.CONTINUE:
-                ctx.rename(source, dest)
+    def merge_directory(self, source: str, destdir: str):
+        for name in os.listdir(source):
+            path = os.path.join(source, name)
+            if os.path.isdir(path):
+                self.move_directory(path, destdir)
             else:
-                assert False, "unknown conflict resolution: %r" % resolution
-    else:
-        ctx.rename(source, dest)
+                self.move_file(path, destdir)
 
+    def move_file(self, source: str, destdir: str) -> None:
+        base = os.path.basename(source)
+        dest = os.path.join(destdir, base)
 
-def move_directory(ctx: MoveContext, source: str, destdir: str) -> None:
-    base = os.path.basename(source)
-    dest = os.path.join(destdir, base)
+        if os.path.exists(dest) and self.mediator.overwrite != Overwrite.ALWAYS:
+            if self.mediator.overwrite == Overwrite.NEVER:
+                self.fs.skip_rename(source, dest)
+            else:
+                resolution = self.mediator.resolve_conflict(source, dest)
+                if resolution == Resolution.SKIP:
+                    self.fs.skip_rename(source, dest)
+                elif resolution == Resolution.CONTINUE:
+                    self.fs.rename(source, dest)
+                else:
+                    assert False, "unknown conflict resolution: %r" % resolution
+        else:
+            self.fs.rename(source, dest)
 
-    if os.path.exists(dest):
-        merge_directory(ctx, source, dest)
-    else:
-        ctx.rename(source, dest)
+    def move_directory(self, source: str, destdir: str) -> None:
+        base = os.path.basename(source)
+        dest = os.path.join(destdir, base)
 
+        if os.path.exists(dest):
+            self.merge_directory(source, dest)
+        else:
+            self.fs.rename(source, dest)
 
-def move_path(ctx: MoveContext, source: str, destdir: str, prefix: str) -> None:
-    if not os.path.isdir(destdir):
-        raise Exception("{}: target directory does not exist".format(destdir))
+    def move_path(self, source: str, destdir: str, prefix: str) -> None:
+        if not os.path.isdir(destdir):
+            raise Exception("{}: target directory does not exist".format(destdir))
 
-    if prefix is not None:
-        ctx.makedirs(os.path.join(destdir, prefix))
-        destdir = os.path.join(destdir, prefix)
+        if prefix is not None:
+            self.fs.makedirs(os.path.join(destdir, prefix))
+            destdir = os.path.join(destdir, prefix)
 
-    if os.path.isdir(source):
-        move_directory(ctx, source, destdir)
-    else:
-        move_file(ctx, source, destdir)
+        if os.path.isdir(source):
+            self.move_directory(source, destdir)
+        else:
+            self.move_file(source, destdir)
 
+    def move_cmd(self, source: str, destdir: str, relative: bool) -> None:
+        if relative:
+            prefix = os.path.dirname(source)
+        else:
+            prefix = None
 
-def move_cmd(ctx: MoveContext, source: str, destdir: str, relative: bool) -> None:
-    if relative:
-        prefix = os.path.dirname(source)
-    else:
-        prefix = None
+        self.move_path(source, destdir, prefix)
 
-    move_path(ctx, source, destdir, prefix)
-
-
-def move_multi_cmd(ctx: MoveContext, sources: List[str], destdir: str, relative: bool) -> None:
-    for source in sources:
-        move_cmd(ctx, source, destdir, relative)
+    def move_multi_cmd(self, sources: List[str], destdir: str, relative: bool) -> None:
+        for source in sources:
+            self.move_cmd(source, destdir, relative)
 
 
 def parse_args(args: List[str]) -> argparse.Namespace:
@@ -204,18 +209,21 @@ def parse_args(args: List[str]) -> argparse.Namespace:
 def main(argv: List[str]) -> None:
     args = parse_args(argv[1:])
 
-    ctx = MoveContext()
-    ctx.verbose = args.verbose
-    ctx.dry_run = args.dry_run
-    if args.always:
-        ctx.overwrite = Overwrite.ALWAYS
-    if args.never:
-        ctx.overwrite = Overwrite.NEVER
-
     sources = [os.path.normpath(p) for p in args.FILE]
     destdir = os.path.normpath(args.target_directory)
 
-    move_multi_cmd(ctx, sources, destdir, args.relative)
+    fs = Filesystem()
+    fs.verbose = args.verbose
+    fs.dry_run = args.dry_run
+
+    mediator = Mediator()
+    if args.always:
+        mediator.overwrite = Overwrite.ALWAYS
+    if args.never:
+        mediator.overwrite = Overwrite.NEVER
+
+    ctx = MoveContext(fs, mediator)
+    ctx.move_multi_cmd(sources, destdir, args.relative)
 
 
 def main_entrypoint() -> None:
