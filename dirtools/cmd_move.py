@@ -42,9 +42,9 @@ class Overwrite(Enum):
 class MoveContext:
 
     def __init__(self) -> None:
-        self.verbose = False
-        self.dry_run = False
-        self.overwrite = Overwrite.ASK
+        self.verbose: bool = False
+        self.dry_run: bool = False
+        self.overwrite: Overwrite = Overwrite.ASK
 
     def skip_rename(self, oldpath: str, newpath: str) -> None:
         if self.verbose:
@@ -129,8 +129,8 @@ def move_file(ctx: MoveContext, source: str, destdir: str) -> None:
     base = os.path.basename(source)
     dest = os.path.join(destdir, base)
 
-    if os.path.exists(dest) and ctx.overwrite != "always":
-        if ctx.overwrite == "never":
+    if os.path.exists(dest) and ctx.overwrite != Overwrite.ALWAYS:
+        if ctx.overwrite == Overwrite.NEVER:
             ctx.skip_rename(source, dest)
         else:
             resolution = ctx.resolve_conflict(source, dest)
