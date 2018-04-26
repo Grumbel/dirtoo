@@ -55,6 +55,15 @@ class Filesystem:
         self.verbose: bool = False
         self.dry_run: bool = False
 
+    def isdir(self, path: str) -> bool:
+        return os.path.isdir(path)
+
+    def exists(self, path: str) -> bool:
+        return os.path.exists(path)
+
+    def listdir(self, path: str) -> List[str]:
+        return os.listdir(path)
+
     def skip_rename(self, oldpath: str, newpath: str) -> None:
         if self.verbose:
             print("skipping {} -> {}".format(oldpath, newpath))
@@ -144,9 +153,9 @@ class MoveContext:
         self.mediator = mediator
 
     def merge_directory(self, source: str, destdir: str):
-        for name in os.listdir(source):
+        for name in self.fs.listdir(source):
             path = os.path.join(source, name)
-            if os.path.isdir(path):
+            if self.fs.isdir(path):
                 self.move_directory(path, destdir)
             else:
                 self.move_file(path, destdir)
@@ -155,7 +164,7 @@ class MoveContext:
         base = os.path.basename(source)
         dest = os.path.join(destdir, base)
 
-        if os.path.exists(dest):
+        if self.fs.exists(dest):
             resolution = self.mediator.resolve_conflict(source, dest)
             if resolution == Resolution.SKIP:
                 self.fs.skip_rename(source, dest)
@@ -174,7 +183,7 @@ class MoveContext:
             self.fs.rename(source, dest)
 
     def move_path(self, source: str, destdir: str, prefix: str) -> None:
-        if not os.path.isdir(destdir):
+        if not self.fs.isdir(destdir):
             raise Exception("{}: target directory does not exist".format(destdir))
 
         if prefix is not None:
