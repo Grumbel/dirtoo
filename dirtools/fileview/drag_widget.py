@@ -43,44 +43,45 @@ class DragWidget(QWidget):
 
     def timerEvent(self, ev) -> None:
         if ev.timerId() == self._mouse_move_timer:
-            # update the mouse position
-            pos = QCursor.pos()
-            x = pos.x() + 16
-            y = pos.y() - 12
-            self.move(x, y)
-
-            # dispose the widget when the mouse button is released
             buttons = QApplication.mouseButtons()
             if not buttons & Qt.LeftButton:
+                # dispose the widget when the mouse button is released
                 self.hide()
                 self.killTimer(self._mouse_move_timer)
                 self._mouse_move_timer = None
-
-            # FIXME: Qt-bug? modifiers aren't updated until the mouse is moved
-            modifiers = QApplication.keyboardModifiers()
-            # print("timer: ", int(modifiers))
-
-            old_text = self._text
-
-            if modifiers & Qt.ControlModifier and modifiers & Qt.ShiftModifier:
-                self._text = "Link"
-            elif modifiers & Qt.ControlModifier:
-                self._text = "Copy"
-            elif modifiers & Qt.ShiftModifier:
-                self._text = "Move"
-            elif modifiers & Qt.AltModifier:
-                self._text = "Link"
             else:
-                self._text = None
+                # update the mouse position
+                pos = QCursor.pos()
+                x = pos.x() + 16
+                y = pos.y() - 12
+                self.move(x, y)
 
-            if old_text != self._text:
-                if self._text is None:
-                    # print("Hide")
-                    self.hide()
+                # FIXME: Qt-bug? .keyboardModifiers() doesn't update until
+                # the mouse is moved. .queryKeyboardModifiers() reads
+                # straight from the input device and updates properly.
+                modifiers = QApplication.queryKeyboardModifiers()
+
+                old_text = self._text
+
+                if modifiers & Qt.ControlModifier and modifiers & Qt.ShiftModifier:
+                    self._text = "Link"
+                elif modifiers & Qt.ControlModifier:
+                    self._text = "Copy"
+                elif modifiers & Qt.ShiftModifier:
+                    self._text = "Move"
+                elif modifiers & Qt.AltModifier:
+                    self._text = "Link"
                 else:
-                    # print("Show")
-                    self.show()
-                    self.repaint()
+                    self._text = None
+
+                if old_text != self._text:
+                    if self._text is None:
+                        # print("Hide")
+                        self.hide()
+                    else:
+                        # print("Show")
+                        self.show()
+                        self.repaint()
 
     def paintEvent(self, ev) -> None:
         if self._text is not None:
