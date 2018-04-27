@@ -96,6 +96,8 @@ class Filesystem:
 
 
 class Mediator:
+    """Whenever a filesystem operation would result in the destruction of data,
+    the Mediator is called to decide which action should be taken."""
 
     def __init__(self) -> None:
         self.overwrite: Overwrite = Overwrite.ASK
@@ -149,13 +151,13 @@ class Mediator:
 class MoveContext:
 
     def __init__(self, fs: Filesystem, mediator: Mediator) -> None:
-        self.fs = fs
-        self.mediator = mediator
+        self._fs = fs
+        self._mediator = mediator
 
-    def merge_directory(self, source: str, destdir: str):
-        for name in self.fs.listdir(source):
-            path = os.path.join(source, name)
-            if self.fs.isdir(path):
+    def merge_directory(self, sourcedir: str, destdir: str):
+        for name in self._fs.listdir(sourcedir):
+            path = os.path.join(sourcedir, name)
+            if self._fs.isdir(path):
                 self.move_directory(path, destdir)
             else:
                 self.move_file(path, destdir)
@@ -164,12 +166,12 @@ class MoveContext:
         base = os.path.basename(source)
         dest = os.path.join(destdir, base)
 
-        if self.fs.exists(dest):
-            resolution = self.mediator.resolve_conflict(source, dest)
+        if self._fs.exists(dest):
+            resolution = self._mediator.resolve_conflict(source, dest)
             if resolution == Resolution.SKIP:
-                self.fs.skip_rename(source, dest)
+                self._fs.skip_rename(source, dest)
             elif resolution == Resolution.CONTINUE:
-                self.fs.overwrite(source, dest)
+                self._fs.overwrite(source, dest)
             else:
                 assert False, "unknown conflict resolution: %r" % resolution
 
@@ -178,34 +180,30 @@ class MoveContext:
         dest = os.path.join(destdir, base)
 
         if os.path.exists(dest):
+            # FIXME: Insert merge-mediator here
             self.merge_directory(source, dest)
         else:
-            self.fs.rename(source, dest)
+            self._fs.rename(source, dest)
 
-    def move_path(self, source: str, destdir: str, prefix: str) -> None:
-        if not self.fs.isdir(destdir):
+    def move_path(self, source: str, destdir: str) -> None:
+        if not self._fs.isdir(destdir):
             raise Exception("{}: target directory does not exist".format(destdir))
-
-        if prefix is not None:
-            self.fs.makedirs(os.path.join(destdir, prefix))
-            destdir = os.path.join(destdir, prefix)
 
         if os.path.isdir(source):
             self.move_directory(source, destdir)
         else:
             self.move_file(source, destdir)
 
-    def move_cmd(self, source: str, destdir: str, relative: bool) -> None:
+    def move_cmd(self, source: str, destdir: str, relative: bool=False) -> None:
         if relative:
+            if not self._fs.isdir(destdir):
+                raise Exception("{}: target directory does not exist".format(destdir))
+
             prefix = os.path.dirname(source)
-        else:
-            prefix = None
+            self._fs.makedirs(os.path.join(destdir, prefix))
+            destdir = os.path.join(destdir, prefix)
 
-        self.move_path(source, destdir, prefix)
-
-    def move_multi_cmd(self, sources: List[str], destdir: str, relative: bool) -> None:
-        for source in sources:
-            self.move_cmd(source, destdir, relative)
+        self.move_path(source, destdir)
 
 
 def parse_args(args: List[str]) -> argparse.Namespace:
@@ -244,7 +242,8 @@ def main(argv: List[str]) -> None:
         mediator.overwrite = Overwrite.NEVER
 
     ctx = MoveContext(fs, mediator)
-    ctx.move_multi_cmd(sources, destdir, args.relative)
+    for source in sources:
+        ctx.move_cmd(source, destdir, args.relative)
 
 
 def main_entrypoint() -> None:
