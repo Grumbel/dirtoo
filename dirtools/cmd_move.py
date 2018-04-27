@@ -75,6 +75,9 @@ class Filesystem:
         if not self.dry_run:
             os.rename(src, dst)
 
+    def move(self, src: str, dst: str) -> None:
+        self.rename(src, dst)
+
     def rename(self, oldpath: str, newpath: str) -> None:
         if self.verbose or self.dry_run:
             print("{} -> {}".format(oldpath, newpath))
@@ -101,15 +104,16 @@ class Mediator:
 
     def __init__(self) -> None:
         self.overwrite: Overwrite = Overwrite.ASK
+        self.merge: Overwrite = Overwrite.ASK
 
     def file_info(self, filename: str) -> str:
         return ("  name: {}\n"
                 "  size: {}").format(filename,
                                      bytefmt.humanize(os.path.getsize(filename)))
 
-    def resolve_conflict(self, source: str, dest: str) -> Resolution:
+    def file_conflict(self, source: str, dest: str) -> Resolution:
         if self.overwrite == Overwrite.ASK:
-            return self._resolve_conflict_interactive(source, dest)
+            return self._file_conflict_interactive(source, dest)
         elif self.overwrite == Overwrite.ALWAYS:
             return Resolution.CONTINUE
         elif self.overwrite == Overwrite.NEVER:
@@ -117,7 +121,7 @@ class Mediator:
         else:
             assert False
 
-    def _resolve_conflict_interactive(self, source: str, dest: str) -> Resolution:
+    def _file_conflict_interactive(self, source: str, dest: str) -> Resolution:
         source_sha1 = sha1sum(source)
         dest_sha1 = sha1sum(dest)
         if source == dest:
@@ -147,6 +151,37 @@ class Mediator:
                 else:
                     pass  # try to read input again
 
+    def directory_conflict(self, sourcedir: str, destdir: str) -> Resolution:
+        if self.merge == Overwrite.ASK:
+            return self._directory_conflict_interactive(sourcedir, destdir)
+        elif self.merge == Overwrite.ALWAYS:
+            return Resolution.CONTINUE
+        elif self.merge == Overwrite.NEVER:
+            return Resolution.SKIP
+        else:
+            assert False
+
+    def _directory_conflict_interactive(self, sourcedir: str, destdir: str) -> Resolution:
+        print("Conflict: {}: destination directory already exists".format(destdir))
+        print("source: {}".format(sourcedir))
+        print("target: {}".format(destdir))
+        while True:
+            c = input("Merge into {} ([Y]es, [N]o, [A]lways, n[E]ver)? ".format(destdir))  # [R]ename, [Q]uit
+            c = c.lower()
+            if c == 'n':
+                print("skipping {}".format(sourcedir))
+                return Resolution.SKIP
+            elif c == 'y':
+                return Resolution.CONTINUE
+            elif c == 'a':
+                self.merge = Overwrite.ALWAYS
+                return Resolution.CONTINUE
+            elif c == 'e':
+                self.merge = Overwrite.NEVER
+                return Resolution.SKIP
+            else:
+                pass  # try to read input again
+
 
 class MoveContext:
 
@@ -167,23 +202,30 @@ class MoveContext:
         dest = os.path.join(destdir, base)
 
         if self._fs.exists(dest):
-            resolution = self._mediator.resolve_conflict(source, dest)
+            resolution = self._mediator.file_conflict(source, dest)
             if resolution == Resolution.SKIP:
                 self._fs.skip_rename(source, dest)
             elif resolution == Resolution.CONTINUE:
                 self._fs.overwrite(source, dest)
             else:
                 assert False, "unknown conflict resolution: %r" % resolution
+        else:
+            self._fs.move(source, dest)
 
     def move_directory(self, source: str, destdir: str) -> None:
         base = os.path.basename(source)
         dest = os.path.join(destdir, base)
 
         if os.path.exists(dest):
-            # FIXME: Insert merge-mediator here
-            self.merge_directory(source, dest)
+            resolution = self._mediator.directory_conflict(source, dest)
+            if resolution == Resolution.SKIP:
+                pass
+            elif resolution == Resolution.CONTINUE:
+                self.merge_directory(source, dest)
+            else:
+                assert False, "unknown conflict resolution: %r" % resolution
         else:
-            self._fs.rename(source, dest)
+            self._fs.move(source, dest)
 
     def move_path(self, source: str, destdir: str) -> None:
         if not self._fs.isdir(destdir):
