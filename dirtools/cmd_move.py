@@ -18,9 +18,12 @@
 from typing import List
 
 import argparse
+import errno
 import hashlib
 import os
 import sys
+import shutil
+import stat
 
 from enum import Enum
 import bytefmt
@@ -50,6 +53,10 @@ def sha1sum(filename: str, blocksize: int=65536) -> str:
 
 
 class Filesystem:
+    """Low level filesystem functions, unlike the standard POSIX function
+    the functions here try to be non-destructive and will error out when
+    trying to overwrite files unless an overwrite is explicitly
+    requested."""
 
     def __init__(self) -> None:
         self.verbose: bool = False
@@ -58,15 +65,25 @@ class Filesystem:
     def isdir(self, path: str) -> bool:
         return os.path.isdir(path)
 
+    def isreg(self, path: str) -> bool:
+        st = os.lstat(path)
+        return stat.S_ISREG(st.st_mode)
+
+    def islink(self, path: str) -> bool:
+        return os.path.islink(path)
+
     def exists(self, path: str) -> bool:
         return os.path.exists(path)
 
     def listdir(self, path: str) -> List[str]:
         return os.listdir(path)
 
-    def skip_rename(self, oldpath: str, newpath: str) -> None:
-        if self.verbose:
-            print("skipping {} -> {}".format(oldpath, newpath))
+    def remove_file(self, path: str):
+        if self.verbose or self.dry_run:
+            print("remove_file {}".format(path))
+
+        if not self.dry_run:
+            os.unlink(path)
 
     def overwrite(self, src: str, dst: str) -> None:
         if self.verbose or self.dry_run:
@@ -75,18 +92,30 @@ class Filesystem:
         if not self.dry_run:
             os.rename(src, dst)
 
-    def move(self, src: str, dst: str) -> None:
-        self.rename(src, dst)
-
     def rename(self, oldpath: str, newpath: str) -> None:
         if self.verbose or self.dry_run:
-            print("{} -> {}".format(oldpath, newpath))
+            print("rename {} -> {}".format(oldpath, newpath))
 
         if not self.dry_run:
             if os.path.exists(newpath):
                 raise FileExistsError(newpath)
             else:
                 os.rename(oldpath, newpath)
+
+    def copy_file(self, src: str, dst: str, overwrite: bool=False) -> None:
+        if self.verbose or self.dry_run:
+            print("copy {} -> {}".format(src, dst))
+
+        if not self.dry_run:
+            if overwrite:
+                # Will throw "shutil.SameFileError"
+                shutil.copy2(src, dst, follow_symlinks=False)
+            else:
+                if os.path.exists(dst):
+                    raise FileExistsError(dst)
+                else:
+                    # Will throw "shutil.SameFileError"
+                    shutil.copy2(src, dst, follow_symlinks=False)
 
     def makedirs(self, path: str) -> None:
         if self.verbose:
@@ -96,6 +125,16 @@ class Filesystem:
             # makedirs() fails if the last element in the path already exists
             if not os.path.isdir(path):
                 os.makedirs(path)
+
+
+class Progress:
+
+    def __init__(self):
+        self.verbose: bool = False
+
+    def skip_rename(self, oldpath: str, newpath: str) -> None:
+        if self.verbose:
+            print("skipping {} -> {}".format(oldpath, newpath))
 
 
 class Mediator:
@@ -185,34 +224,62 @@ class Mediator:
 
 class MoveContext:
 
-    def __init__(self, fs: Filesystem, mediator: Mediator) -> None:
+    def __init__(self, fs: Filesystem, mediator: Mediator, progress: Progress) -> None:
         self._fs = fs
         self._mediator = mediator
+        self._progress = progress
 
     def merge_directory(self, sourcedir: str, destdir: str):
+        assert os.path.isdir(sourcedir)
+        assert os.path.isdir(destdir)
+
         for name in self._fs.listdir(sourcedir):
             path = os.path.join(sourcedir, name)
-            if self._fs.isdir(path):
-                self.move_directory(path, destdir)
-            else:
-                self.move_file(path, destdir)
+            self.move_path(path, destdir)
+
+    def move_symlink(self, source: str, destdir: str) -> None:
+        assert self._fs.islink(source)
+        assert os.path.isdir(destdir)
+
+        # os.symlink(src, dst, target_is_directory=False, *, dir_fd=None)
+        pass
 
     def move_file(self, source: str, destdir: str) -> None:
+        assert self._fs.isreg(source)
+        assert os.path.isdir(destdir)
+
         base = os.path.basename(source)
         dest = os.path.join(destdir, base)
 
         if self._fs.exists(dest):
             resolution = self._mediator.file_conflict(source, dest)
             if resolution == Resolution.SKIP:
-                self._fs.skip_rename(source, dest)
+                self._progress.skip_rename(source, dest)
             elif resolution == Resolution.CONTINUE:
-                self._fs.overwrite(source, dest)
+                try:
+                    self._fs.overwrite(source, dest)
+                except OSError as err:
+                    if err.errno == errno.EXDEV:
+                        self._fs.copy_file(source, dest, overwrite=True)
+                        self._fs.remove_file(source)
+                    else:
+                        raise
             else:
                 assert False, "unknown conflict resolution: %r" % resolution
         else:
-            self._fs.move(source, dest)
+            try:
+                self._fs.rename(source, dest)
+            except OSError as err:
+                if err.errno == errno.EXDEV:
+                    self._fs.copy_file(source, dest)
+                    self._fs.remove_file(source)
+                else:
+                    raise
 
     def move_directory(self, source: str, destdir: str) -> None:
+        assert os.path.isdir(source)
+        assert os.path.isdir(destdir)
+
         base = os.path.basename(source)
         dest = os.path.join(destdir, base)
 
@@ -225,7 +292,7 @@ class MoveContext:
             else:
                 assert False, "unknown conflict resolution: %r" % resolution
         else:
-            self._fs.move(source, dest)
+            self._fs.rename(source, dest)
 
     def move_path(self, source: str, destdir: str) -> None:
         if not self._fs.isdir(destdir):
@@ -233,10 +300,24 @@ class MoveContext:
 
         if os.path.isdir(source):
             self.move_directory(source, destdir)
-        else:
+        elif self._fs.isreg(source):
             self.move_file(source, destdir)
+        elif self._fs.islink(source):
+            self.move_symlink(source, destdir)
+        else:
+            print("skipping unknown filetype")
 
-    def move_cmd(self, source: str, destdir: str, relative: bool=False) -> None:
+    def move(self, source: str, destdir: str, relative: bool=False) -> None:
+        """Move 'source' to the directory 'destdir'. 'source' can be any file
+        object or directory.
+
+        relative: If True, the given source will be moved over to
+        destdir while preserving all preceding path elements.
+
+        """
+
+        assert os.path.isdir(destdir)
+
         if relative:
             if not self._fs.isdir(destdir):
                 raise Exception("{}: target directory does not exist".format(destdir))
@@ -283,9 +364,12 @@ def main(argv: List[str]) -> None:
     if args.never:
         mediator.overwrite = Overwrite.NEVER
 
-    ctx = MoveContext(fs, mediator)
+    progress = Progress()
+    progress.verbose = args.verbose
+
+    ctx = MoveContext(fs, mediator, progress)
     for source in sources:
-        ctx.move_cmd(source, destdir, args.relative)
+        ctx.move(source, destdir, args.relative)
 
 
 def main_entrypoint() -> None:
