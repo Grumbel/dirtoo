@@ -26,7 +26,8 @@ setup(name='dirtools',
       entry_points={
           'console_scripts': [
               'dt-archive-extractor = dirtools.cmd_archive_extractor:main_entrypoint',
-              'dt-move = dirtools.cmd_move:main_entrypoint',
+              'dt-move = dirtools.cmd_move:move_main_entrypoint',
+              'dt-copy = dirtools.cmd_move:copy_main_entrypoint',
               'dt-expr = dirtools.cmd_expr:main_entrypoint',
               'dt-find = dirtools.cmd_find:find_entrypoint',
               'dt-fuzzy = dirtools.cmd_fuzzy:main_entrypoint',

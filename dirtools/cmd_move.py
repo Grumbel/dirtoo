@@ -72,14 +72,17 @@ class Filesystem:
     def islink(self, path: str) -> bool:
         return os.path.islink(path)
 
-    def exists(self, path: str) -> bool:
-        return os.path.exists(path)
+    def lexists(self, path: str) -> bool:
+        return os.path.lexists(path)
 
     def listdir(self, path: str) -> List[str]:
         return os.listdir(path)
 
     def scandir(self, path: str):
         return os.scandir(path)
+
+    def symlink(self, src: str, dst: str) -> None:
+        os.symlink(src, dst)
 
     def mkdir(self, path: str) -> None:
         os.mkdir(path)
@@ -106,7 +109,7 @@ class Filesystem:
             print("rename {} -> {}".format(oldpath, newpath))
 
         if not self.dry_run:
-            if os.path.exists(newpath):
+            if os.path.lexists(newpath):
                 raise FileExistsError(newpath)
             else:
                 os.rename(oldpath, newpath)
@@ -131,7 +134,7 @@ class Filesystem:
                 # Will throw "shutil.SameFileError"
                 shutil.copy2(src, dst, follow_symlinks=False)
             else:
-                if os.path.exists(dst):
+                if os.path.lexists(dst):
                     raise FileExistsError(dst)
                 else:
                     # Will throw "shutil.SameFileError"
@@ -156,6 +159,10 @@ class Progress:
         if self.verbose:
             print("skipping {} -> {}".format(oldpath, newpath))
 
+    def skip_copy(self, src: str, dst: str) -> None:
+        if self.verbose:
+            print("skipping {} -> {}".format(src, dst))
+
     def skip_move_directory(self, src: str, dst: str) -> None:
         if self.verbose:
             print("skipping {} -> {}".format(src, dst))
@@ -164,9 +171,17 @@ class Progress:
         if self.verbose:
             print("copying {} -> {}".format(src, dst))
 
+    def copy_directory(self, src: str, dst: str) -> None:
+        if self.verbose:
+            print("copying {} -> {}".format(src, dst))
+
     def remove_file(self, src: str) -> None:
         if self.verbose:
             print("removing {}".format(src))
+
+    def link_file(self, src: str, dst: str) -> None:
+        if self.verbose:
+            print("linking {} -> {}".format(src, dst))
 
 
 class Mediator:
@@ -268,7 +283,7 @@ class MoveContext:
         base = os.path.basename(source)
         dest = os.path.join(destdir, base)
 
-        if self._fs.exists(dest):
+        if self._fs.lexists(dest):
             resolution = self._mediator.file_conflict(source, dest)
             if resolution == Resolution.SKIP:
                 self._progress.skip_rename(source, dest)
@@ -296,7 +311,7 @@ class MoveContext:
                 else:
                     raise
 
-    def _merge_directory(self, sourcedir: str, destdir: str) -> None:
+    def _move_directory_content(self, sourcedir: str, destdir: str) -> None:
         assert os.path.isdir(sourcedir), "{}: not a directory".format(sourcedir)
         assert os.path.isdir(destdir), "{}: not a directory".format(destdir)
 
@@ -312,12 +327,12 @@ class MoveContext:
         base = os.path.basename(sourcedir)
         dest = os.path.join(destdir, base)
 
-        if self._fs.exists(dest):
+        if self._fs.lexists(dest):
             resolution = self._mediator.directory_conflict(sourcedir, dest)
             if resolution == Resolution.SKIP:
                 self._progress.skip_move_directory(sourcedir, dest)
             elif resolution == Resolution.CONTINUE:
-                self._merge_directory(sourcedir, dest)
+                self._move_directory_content(sourcedir, dest)
             else:
                 assert False, "unknown conflict resolution: {}".format(resolution)
         else:
@@ -327,7 +342,7 @@ class MoveContext:
                 if err.errno == errno.EXDEV:
                     self._fs.mkdir(dest)
                     self._fs.copy_stat(sourcedir, dest)
-                    self._merge_directory(sourcedir, dest)
+                    self._move_directory_content(sourcedir, dest)
                     self._fs.rmdir(sourcedir)
                 else:
                     raise
@@ -362,15 +377,79 @@ class MoveContext:
 
         self._move_path(source, destdir)
 
+    def link(self, source: str, destdir: str) -> None:
+        dest = os.path.join(destdir, source)
+        self._progress.link_file(source, dest)
+        self._fs.symlink(source, dest)
 
-def parse_args(args: List[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Move files and directories.")
+    def _copy_file(self, source: str, destdir: str) -> None:
+        assert self._fs.isreg(source) or self._fs.islink(source), "{}: unknown file type".format(source)
+        assert os.path.isdir(destdir), "{}: not a directory".format(destdir)
+
+        base = os.path.basename(source)
+        dest = os.path.join(destdir, base)
+
+        if self._fs.lexists(dest):
+            resolution = self._mediator.file_conflict(source, dest)
+            if resolution == Resolution.SKIP:
+                self._progress.skip_copy(source, dest)
+            elif resolution == Resolution.CONTINUE:
+                self._progress.copy_file(source, dest)
+                self._fs.copy_file(source, dest, overwrite=True)
+            else:
+                assert False, "unknown conflict resolution: {}".format(resolution)
+        else:
+            self._fs.copy_file(source, dest)
+
+    def _copy_directory_content(self, sourcedir: str, destdir: str) -> None:
+        assert os.path.isdir(sourcedir), "{}: not a directory".format(sourcedir)
+        assert os.path.isdir(destdir), "{}: not a directory".format(destdir)
+
+        for name in self._fs.listdir(sourcedir):
+            src = os.path.join(sourcedir, name)
+            # FIXME: this could be speed up by using os.scandir()
+            self.copy(src, destdir)
+
+    def _copy_directory(self, sourcedir: str, destdir: str) -> None:
+        assert os.path.isdir(sourcedir), "{}: not a directory".format(sourcedir)
+        assert os.path.isdir(destdir), "{}: not a directory".format(destdir)
+
+        base = os.path.basename(sourcedir)
+        dest = os.path.join(destdir, base)
+
+        if self._fs.lexists(dest):
+            resolution = self._mediator.directory_conflict(sourcedir, dest)
+            if resolution == Resolution.SKIP:
+                self._progress.skip_copy(sourcedir, dest)
+            elif resolution == Resolution.CONTINUE:
+                self._copy_directory_content(sourcedir, dest)
+            else:
+                assert False, "unknown conflict resolution: {}".format(resolution)
+        else:
+            self._progress.copy_directory(sourcedir, dest)
+            self._fs.mkdir(dest)
+            self._fs.copy_stat(sourcedir, dest)
+            self._copy_directory_content(sourcedir, dest)
+
+    def copy(self, source: str, destdir: str) -> None:
+        if not self._fs.isdir(destdir):
+            raise Exception("{}: target directory does not exist".format(destdir))
+
+        if os.path.isdir(source):
+            self._copy_directory(source, destdir)
+        else:
+            self._copy_file(source, destdir)
+
+
+def parse_args(action: str, args: List[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="{} files and directories.".format(action.capitalize()))
+
     parser.add_argument('FILE', action='store', nargs='+',
-                        help='Files to move')
+                        help='Files to {}'.format(action))
     parser.add_argument('-t', '--target-directory', metavar='DIRECTORY', required=True,
                         help="Target directory")
     parser.add_argument('-R', '--relative', action='store_true', default=False,
-                        help="Preserve the path prefix on move")
+                        help="Preserve the path prefix on {}".format(action))
     parser.add_argument('-n', '--dry-run', action='store_true', default=False,
                         help="Don't do anything, just print the actions")
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
@@ -382,8 +461,8 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     return parser.parse_args(args)
 
 
-def main(argv: List[str]) -> None:
-    args = parse_args(argv[1:])
+def main(action: str, argv: List[str]) -> None:
+    args = parse_args(action, argv[1:])
 
     sources = [os.path.normpath(p) for p in args.FILE]
     destdir = os.path.normpath(args.target_directory)
@@ -403,11 +482,19 @@ def main(argv: List[str]) -> None:
 
     ctx = MoveContext(fs, mediator, progress)
     for source in sources:
-        ctx.move(source, destdir, args.relative)
+        if action == "copy":
+            assert args.relative == False
+            ctx.copy(source, destdir)
+        elif action == "move":
+            ctx.move(source, destdir, args.relative)
 
 
-def main_entrypoint() -> None:
-    main(sys.argv)
+def move_main_entrypoint() -> None:
+    main("move", sys.argv)
+
+
+def copy_main_entrypoint() -> None:
+    main("copy", sys.argv)
 
 
 # EOF #
