@@ -130,15 +130,11 @@ class Filesystem:
             # stat.S_ISSOCK(mode)
 
         if not self.dry_run:
-            if overwrite:
+            if not overwrite and os.path.lexists(dst):
+                raise FileExistsError(dst)
+            else:
                 # Will throw "shutil.SameFileError"
                 shutil.copy2(src, dst, follow_symlinks=False)
-            else:
-                if os.path.lexists(dst):
-                    raise FileExistsError(dst)
-                else:
-                    # Will throw "shutil.SameFileError"
-                    shutil.copy2(src, dst, follow_symlinks=False)
 
     def makedirs(self, path: str) -> None:
         if self.verbose:
