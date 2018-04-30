@@ -24,6 +24,7 @@ from enum import Enum
 import bytefmt
 
 from dirtools.filesystem import Filesystem
+from dirtools.format import progressbar
 
 
 class Resolution(Enum):
@@ -170,15 +171,13 @@ class Progress:
     def copy_progress(self, current: int, total: int) -> None:
         progress = current / total
         total_width = 50
-        width = int(progress * total_width)
 
         if current != total:
-            sys.stdout.write("{:2d}% [{}{}]\r".format(
+            sys.stdout.write("{:3d}% |{}|\r".format(
                 int(progress * 100),
-                width * "#",
-                (total_width - width) * " "))
+                progressbar(total_width, current, total)))
         else:
-            sys.stdout.write("     {}\r".format(total_width * " "))
+            sys.stdout.write("       {}\r".format(total_width * " "))
 
 
 class FileTransfer:
@@ -205,7 +204,7 @@ class FileTransfer:
                 except OSError as err:
                     if err.errno == errno.EXDEV:
                         self._progress.copy_file(source, dest)
-                        self._fs.copy_file(source, dest, overwrite=True)
+                        self._fs.copy_file(source, dest, overwrite=True, progress=self._progress.copy_progress)
 
                         self._progress.remove_file(source)
                         self._fs.remove_file(source)
@@ -218,7 +217,7 @@ class FileTransfer:
                 self._fs.rename(source, dest)
             except OSError as err:
                 if err.errno == errno.EXDEV:
-                    self._fs.copy_file(source, dest)
+                    self._fs.copy_file(source, dest, progress=self._progress.copy_progress)
                     self._fs.remove_file(source)
                 else:
                     raise
