@@ -318,7 +318,7 @@ class MoveContext:
         for name in self._fs.listdir(sourcedir):
             src = os.path.join(sourcedir, name)
             # FIXME: this could be speed up by using os.scandir()
-            self._move_path(src, destdir)
+            self.move(src, destdir)
 
     def _move_directory(self, sourcedir: str, destdir: str) -> None:
         assert os.path.isdir(sourcedir), "{}: not a directory".format(sourcedir)
@@ -347,7 +347,11 @@ class MoveContext:
                 else:
                     raise
 
-    def _move_path(self, source: str, destdir: str) -> None:
+    def move(self, source: str, destdir: str) -> None:
+        """Move 'source' to the directory 'destdir'. 'source' can be any file
+        object or directory.
+        """
+
         if not self._fs.isdir(destdir):
             raise Exception("{}: target directory does not exist".format(destdir))
 
@@ -355,27 +359,6 @@ class MoveContext:
             self._move_directory(source, destdir)
         else:
             self._move_file(source, destdir)
-
-    def move(self, source: str, destdir: str, relative: bool=False) -> None:
-        """Move 'source' to the directory 'destdir'. 'source' can be any file
-        object or directory.
-
-        relative: If True, the given source will be moved over to
-        destdir while preserving all preceding path elements.
-
-        """
-
-        assert os.path.isdir(destdir)
-
-        if relative:
-            if not self._fs.isdir(destdir):
-                raise Exception("{}: target directory does not exist".format(destdir))
-
-            prefix = os.path.dirname(source)
-            self._fs.makedirs(os.path.join(destdir, prefix))
-            destdir = os.path.join(destdir, prefix)
-
-        self._move_path(source, destdir)
 
     def link(self, source: str, destdir: str) -> None:
         dest = os.path.join(destdir, source)
@@ -440,6 +423,19 @@ class MoveContext:
         else:
             self._copy_file(source, destdir)
 
+    def make_relative_dir(self, source: str, destdir: str) -> None:
+        prefix = os.path.dirname(source)
+
+        if os.path.isabs(prefix):
+            prefix = os.path.relpath(prefix, "/")
+
+        actual_destdir = os.path.join(destdir, prefix)
+
+        if not os.path.isdir(actual_destdir):
+            self._fs.makedirs(actual_destdir)
+
+        return actual_destdir
+
 
 def parse_args(action: str, args: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="{} files and directories.".format(action.capitalize()))
@@ -480,13 +476,21 @@ def main(action: str, argv: List[str]) -> None:
     progress = Progress()
     progress.verbose = args.verbose
 
+    if not fs.isdir(destdir):
+        raise Exception("{}: target directory does not exist".format(destdir))
+
     ctx = MoveContext(fs, mediator, progress)
     for source in sources:
+        if args.relative:
+            actual_destdir = ctx.make_relative_dir(source, destdir)
+        else:
+            actual_destdir = destdir
+
         if action == "copy":
-            assert args.relative == False
-            ctx.copy(source, destdir)
+            assert args.relative is False
+            ctx.copy(source, actual_destdir)
         elif action == "move":
-            ctx.move(source, destdir, args.relative)
+            ctx.move(source, actual_destdir)
 
 
 def move_main_entrypoint() -> None:
