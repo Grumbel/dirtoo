@@ -27,7 +27,7 @@ from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLayout,
                              QAbstractScrollArea, QGroupBox)
 
 
-class TransferDialog(QDialog):
+class TransferRequestDialog(QDialog):
 
     Cancel = QDialog.Rejected
     Move = 2
@@ -123,10 +123,10 @@ class TransferDialog(QDialog):
         self.setLayout(vbox)
 
         # Signals
-        btn_copy.clicked.connect(lambda: self.done(TransferDialog.Copy))
-        btn_move.clicked.connect(lambda: self.done(TransferDialog.Move))
-        btn_link.clicked.connect(lambda: self.done(TransferDialog.Link))
-        btn_cancel.clicked.connect(lambda: self.done(TransferDialog.Cancel))
+        btn_copy.clicked.connect(lambda: self.done(TransferRequestDialog.Copy))
+        btn_move.clicked.connect(lambda: self.done(TransferRequestDialog.Move))
+        btn_link.clicked.connect(lambda: self.done(TransferRequestDialog.Link))
+        btn_cancel.clicked.connect(lambda: self.done(TransferRequestDialog.Cancel))
 
 
 # EOF #

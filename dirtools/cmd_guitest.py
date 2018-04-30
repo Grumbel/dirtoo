@@ -27,7 +27,7 @@ from PyQt5.QtWidgets import QApplication, QDialog
 
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.conflict_dialog import ConflictDialog
-from dirtools.fileview.transfer_dialog import TransferDialog
+from dirtools.fileview.transfer_request_dialog import TransferRequestDialog
 from dirtools.fileview.rename_dialog import RenameDialog
 from dirtools.fileview.properties_dialog import PropertiesDialog
 from dirtools.fileview.about_dialog import AboutDialog
@@ -46,8 +46,8 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     return parser.parse_args(args)
 
 
-def make_transfer_dialog() -> TransferDialog:
-    dialog = TransferDialog(
+def make_transfer_dialog() -> TransferRequestDialog:
+    dialog = TransferRequestDialog(
         [
             "/home/juser/test.txt",
             "/home/juser/README.md",
@@ -76,13 +76,13 @@ def main(argv: List[str]) -> None:
         'ConflictDialog': lambda: ConflictDialog(None),
         'CreateDialog-folder': lambda: CreateDialog(CreateDialog.FOLDER, None),
         'CreateDialog-file': lambda: CreateDialog(CreateDialog.TEXTFILE, None),
-        'TransferDialog': make_transfer_dialog,
+        'TransferRequestDialog': make_transfer_dialog,
         'PreferencesDialog': lambda: PreferencesDialog(),
         'PropertiesDialog': lambda: PropertiesDialog(FileInfo.from_path("/tmp/"), None),
         'RenameDialog': lambda: RenameDialog(None),
     }
 
-    if args.list:
+    if args.list or dialog_spec is None:
         for k in dialog_factory.keys():
             print(k)
     else:
