@@ -21,7 +21,7 @@ import argparse
 import os
 import sys
 
-from dirtools.file_transfer import FileTransfer, Mediator, Progress, Overwrite
+from dirtools.file_transfer import FileTransfer, ConsoleMediator, ConsoleProgress, Overwrite
 from dirtools.filesystem import Filesystem
 
 
@@ -55,13 +55,13 @@ def main(action: str, argv: List[str]) -> None:
     fs.verbose = args.verbose
     fs.dry_run = args.dry_run
 
-    mediator = Mediator()
+    mediator = ConsoleMediator()
     if args.always:
         mediator.overwrite = Overwrite.ALWAYS
     if args.never:
         mediator.overwrite = Overwrite.NEVER
 
-    progress = Progress()
+    progress = ConsoleProgress()
     progress.verbose = args.verbose
 
     if not fs.isdir(destdir):

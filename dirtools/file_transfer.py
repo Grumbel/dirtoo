@@ -21,6 +21,7 @@ import os
 import sys
 
 from enum import Enum
+from abc import ABC, abstractmethod
 import bytefmt
 
 from dirtools.filesystem import Filesystem
@@ -50,9 +51,28 @@ def sha1sum(filename: str, blocksize: int=65536) -> str:
         return hasher.hexdigest()
 
 
-class Mediator:
+class Mediator(ABC):
     """Whenever a filesystem operation would result in the destruction of data,
     the Mediator is called to decide which action should be taken."""
+
+    @abstractmethod
+    def file_conflict(self, source: str, dest: str) -> Resolution:
+        pass
+
+    @abstractmethod
+    def _file_conflict_interactive(self, source: str, dest: str) -> Resolution:
+        pass
+
+    @abstractmethod
+    def directory_conflict(self, sourcedir: str, destdir: str) -> Resolution:
+        pass
+
+    @abstractmethod
+    def _directory_conflict_interactive(self, sourcedir: str, destdir: str) -> Resolution:
+        pass
+
+
+class ConsoleMediator(Mediator):
 
     def __init__(self) -> None:
         self.overwrite: Overwrite = Overwrite.ASK
@@ -135,7 +155,41 @@ class Mediator:
                 pass  # try to read input again
 
 
-class Progress:
+class Progress(ABC):
+
+    @abstractmethod
+    def skip_rename(self, oldpath: str, newpath: str) -> None:
+        pass
+
+    @abstractmethod
+    def skip_copy(self, src: str, dst: str) -> None:
+        pass
+
+    @abstractmethod
+    def skip_move_directory(self, src: str, dst: str) -> None:
+        pass
+
+    @abstractmethod
+    def copy_file(self, src: str, dst: str) -> None:
+        pass
+
+    @abstractmethod
+    def copy_directory(self, src: str, dst: str) -> None:
+        pass
+
+    @abstractmethod
+    def remove_file(self, src: str) -> None:
+        pass
+
+    @abstractmethod
+    def link_file(self, src: str, dst: str) -> None:
+        pass
+
+    def copy_progress(self, current: int, total: int) -> None:
+        pass
+
+
+class ConsoleProgress(Progress):
 
     def __init__(self):
         self.verbose: bool = False
