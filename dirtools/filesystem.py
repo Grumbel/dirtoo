@@ -22,6 +22,13 @@ import shutil
 import stat
 
 
+CopyProgressCallback = Callable[[int, int], None]
+
+
+def null_progress(current: int, total: int):
+    pass
+
+
 class Filesystem:
     """Low level filesystem functions, unlike the standard POSIX function
     the functions here try to be non-destructive and will error out when
@@ -29,6 +36,8 @@ class Filesystem:
     requested."""
 
     def __init__(self) -> None:
+        self.buffer_size: int = 16 * 1024
+
         self.verbose: bool = False
         self.dry_run: bool = False
 
@@ -88,32 +97,35 @@ class Filesystem:
         if not self.dry_run:
             shutil.copystat(src, dst, follow_symlinks=False)
 
-    def copy_filecontent(self, src: str, dst: str, progress_cb: Callable[[int, int], None], buf_size: int=16 * 1024):
+    def _copy_filecontent(self, src: str, dst: str,
+                         progress: CopyProgressCallback=null_progress):
         if self.dry_run:
             return
 
-        if os.path.lexists(dst):
-            raise FileExistsError(dst)
-
         with open(src, 'rb') as fd_src, open(dst, 'wb') as fd_dst:
 
-            if progress_cb is not None:
+            if progress is not None:
                 fd_src.seek(0, os.SEEK_END)
                 total_size = fd_src.tell()
+                fd_src.seek(0, os.SEEK_SET)
                 current_size = 0
 
             while True:
-                buf = fd_src.read(buf_size)
+                buf = fd_src.read(self.buffer_size)
+
                 if not buf:
                     break
 
                 fd_dst.write(buf)
-                if progress_cb is not None:
-                    current_size += len(buf)
-                    progress_cb(current_size, total_size)
 
-    def copy_file(self, src: str, dst: str, overwrite: bool=False) -> None:
-        st = os.stat(src)
+                if progress is not None:
+                    current_size += len(buf)
+                    progress(current_size, total_size)
+
+    def copy_file(self, src: str, dst: str,
+                  overwrite: bool=False,
+                  progress: CopyProgressCallback=null_progress) -> None:
+        st = os.lstat(src)
         if not (stat.S_ISREG(st.st_mode) or
                 stat.S_ISLNK(st.st_mode)):
             raise Exception("unknown filetype: {}".format(src))
@@ -127,8 +139,14 @@ class Filesystem:
             if not overwrite and os.path.lexists(dst):
                 raise FileExistsError(dst)
             else:
-                # Will throw "shutil.SameFileError"
-                shutil.copy2(src, dst, follow_symlinks=False)
+                if self.islink(dst):
+                    os.unlink(dst)
+
+                if self.islink(src):
+                    os.symlink(os.readlink(src), dst)
+                else:
+                    self._copy_filecontent(src, dst, progress)
+                    shutil.copystat(src, dst, follow_symlinks=False)
 
     def makedirs(self, path: str) -> None:
         if self.verbose:

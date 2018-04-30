@@ -18,6 +18,7 @@
 import errno
 import hashlib
 import os
+import sys
 
 from enum import Enum
 import bytefmt
@@ -166,6 +167,19 @@ class Progress:
         if self.verbose:
             print("linking {} -> {}".format(src, dst))
 
+    def copy_progress(self, current: int, total: int) -> None:
+        progress = current / total
+        total_width = 50
+        width = int(progress * total_width)
+
+        if current != total:
+            sys.stdout.write("{:2d}% [{}{}]\r".format(
+                int(progress * 100),
+                width * "#",
+                (total_width - width) * " "))
+        else:
+            sys.stdout.write("     {}\r".format(total_width * " "))
+
 
 class FileTransfer:
 
@@ -276,11 +290,12 @@ class FileTransfer:
                 self._progress.skip_copy(source, dest)
             elif resolution == Resolution.CONTINUE:
                 self._progress.copy_file(source, dest)
-                self._fs.copy_file(source, dest, overwrite=True)
+                self._fs.copy_file(source, dest, overwrite=True, progress=self._progress.copy_progress)
             else:
                 assert False, "unknown conflict resolution: {}".format(resolution)
         else:
-            self._fs.copy_file(source, dest)
+            self._progress.copy_file(source, dest)
+            self._fs.copy_file(source, dest, progress=self._progress.copy_progress)
 
     def _copy_directory_content(self, sourcedir: str, destdir: str) -> None:
         assert os.path.isdir(sourcedir), "{}: not a directory".format(sourcedir)
@@ -303,6 +318,7 @@ class FileTransfer:
             if resolution == Resolution.SKIP:
                 self._progress.skip_copy(sourcedir, dest)
             elif resolution == Resolution.CONTINUE:
+                self._progress.copy_directory(sourcedir, destdir)
                 self._copy_directory_content(sourcedir, dest)
             else:
                 assert False, "unknown conflict resolution: {}".format(resolution)
