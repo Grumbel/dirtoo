@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import List, Callable
 
 import argparse
 import errno
@@ -117,6 +117,30 @@ class Filesystem:
     def copy_stat(self, src: str, dst: str) -> None:
         if not self.dry_run:
             shutil.copystat(src, dst, follow_symlinks=False)
+
+    def copy_filecontent(self, src: str, dst: str, progress_cb: Callable[[int, int], None], buf_size: int=16 * 1024):
+        if self.dry_run:
+            return
+
+        if os.path.lexists(dst):
+            raise FileExistsError(dst)
+
+        with open(src, 'rb') as fd_src, open(dst, 'wb') as fd_dst:
+
+            if progress_cb is not None:
+                fd_src.seek(0, os.SEEK_END)
+                total_size = fd_src.tell()
+                current_size = 0
+
+            while True:
+                buf = fd_src.read(buf_size)
+                if not buf:
+                    break
+
+                fd_dst.write(buf)
+                if progress_cb is not None:
+                    current_size += len(buf)
+                    progress_cb(current_size, total_size)
 
     def copy_file(self, src: str, dst: str, overwrite: bool=False) -> None:
         st = os.stat(src)
