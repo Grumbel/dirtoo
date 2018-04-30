@@ -98,7 +98,7 @@ class Filesystem:
             shutil.copystat(src, dst, follow_symlinks=False)
 
     def _copy_filecontent(self, src: str, dst: str,
-                         progress: CopyProgressCallback=null_progress):
+                          progress: CopyProgressCallback=null_progress):
         if self.dry_run:
             return
 
