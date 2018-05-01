@@ -18,8 +18,9 @@
 from typing import List
 
 import html
+import time
 
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, QTime, pyqtSignal
 from PyQt5.QtGui import QIcon, QTextOption, QTextCursor
 from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLayout,
                              QHBoxLayout, QVBoxLayout, QSizePolicy,
@@ -28,6 +29,8 @@ from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLayout,
                              QFormLayout, QProgressBar)
 
 import bytefmt
+
+from dirtools.mediainfo import split_duration
 
 
 class TransferDialog(QDialog):
@@ -39,10 +42,13 @@ class TransferDialog(QDialog):
     sig_move = pyqtSignal(str)
     sig_link = pyqtSignal(str)
 
+    sig_transfer_complete = pyqtSignal()
+
     def __init__(self, target_directory: str, parent: QWidget) -> None:
         super().__init__()
 
         self._target_directory = target_directory
+        self._paused = False
 
         self._make_gui()
         self.resize(600, 400)
@@ -53,6 +59,11 @@ class TransferDialog(QDialog):
 
         self.sig_move.connect(self._on_move)
         self.sig_link.connect(self._on_link)
+
+        self.sig_transfer_complete.connect(self._on_transfer_complete)
+
+        self._timer = self.startTimer(500)
+        self._time = time.time()
 
     def _on_copy_begin(self, src: str):
         self._transfer_log_widget.append("copying {}".format(src))
@@ -76,24 +87,35 @@ class TransferDialog(QDialog):
         self._transfer_log_widget.append("linking {}".format(src))
         self._from_widget.setText(src)
 
-    def _make_file_info(self, filename: str) -> QLayout:
-        # Widgets
-        file_icon = QLabel()
-        file_icon.setPixmap(QIcon.fromTheme("folder").pixmap(48))
-        file_icon.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+    def _on_transfer_complete(self):
+        self._btn_cancel.setVisible(False)
+        self._btn_close.setVisible(True)
 
-        file_info = QLabel("Filename: <b>{}</b><br>"
-                           "Size: 0 bytes<br>"
-                           "Modified: Today".format(html.escape(filename)))
-        file_info.setTextFormat(Qt.RichText)
-        file_info.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.killTimer(self._timer)
+        self._timer = None
 
-        # Layout
-        hbox = QHBoxLayout()
-        hbox.addWidget(file_icon)
-        hbox.addWidget(file_info)
+    def _on_pause_button(self):
+        print("transfer pause not implemented")
 
-        return hbox
+        if self._paused:
+            self._time = time.time() - self._time
+            self._paused = False
+            self._btn_pause.setText("Pause")
+        else:
+            self._time = time.time() - self._time
+            self._paused = True
+            self._btn_pause.setText("Continue")
+
+    def timerEvent(self, ev) -> None:
+        if ev.timerId() == self._timer:
+            if self._paused:
+                msec = int(self._time * 1000)
+            else:
+                msec = int((time.time() - self._time) * 1000)
+
+            hours, minutes, seconds = split_duration(msec)
+            self._time_widget.setText("{:02d}h:{:02d}m:{:02d}s".format(
+                hours, minutes, seconds))
 
     def _make_gui(self) -> None:
         self.setWindowTitle("Transfering files")
@@ -138,7 +160,8 @@ class TransferDialog(QDialog):
         self._transfered = transfered_widget
 
         time_label = QLabel("Time passed:")
-        time_widget = QLabel("00:00:00")
+        time_widget = QLabel()
+        self._time_widget = time_widget
 
         current_file_form.addRow(to_label, to_widget)
         current_file_form.addRow(from_label, from_widget)
@@ -152,8 +175,17 @@ class TransferDialog(QDialog):
         button_box = QDialogButtonBox(self)
         button_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
+        btn_pause = QPushButton(QIcon.fromTheme("media-pause"), "Pause")
+        button_box.addButton(btn_pause, QDialogButtonBox.ActionRole)
+        self._btn_pause = btn_pause
+
         btn_cancel = button_box.addButton(QDialogButtonBox.Cancel)
         btn_cancel.setDefault(True)
+        self._btn_cancel = btn_cancel
+
+        btn_close = button_box.addButton(QDialogButtonBox.Close)
+        self._btn_close = btn_close
+        self._btn_close.setVisible(False)
 
         # Layout
         subvbox = QVBoxLayout()
@@ -171,7 +203,11 @@ class TransferDialog(QDialog):
         self.setLayout(vbox)
 
         # Signals
-        btn_cancel.clicked.connect(lambda: self.reject)
+        btn_pause.clicked.connect(self._on_pause_button)
+        btn_cancel.clicked.connect(self.reject)
+        btn_close.clicked.connect(self.accept)
+
+
 
 
 # EOF #
