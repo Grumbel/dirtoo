@@ -15,14 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Dict, Callable
+from typing import List, Dict, Callable, Any
 
 import logging
 import signal
 import sys
 import argparse
 import tempfile
-import threading
 
 from PyQt5.QtCore import QThread, QObject
 from PyQt5.QtWidgets import QApplication, QDialog
@@ -94,7 +93,7 @@ class TransferDialogTest(QObject):
         self._dialog.sig_transfer_complete.emit()
 
 
-g_keep_alive = []
+g_keep_alive: List[Any] = []
 
 
 def make_transfer_dialog() -> TransferDialog:

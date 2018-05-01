@@ -15,18 +15,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
-
-import html
 import time
 
-from PyQt5.QtCore import Qt, QTime, pyqtSignal
-from PyQt5.QtGui import QIcon, QTextOption, QTextCursor
-from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLayout,
+from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QIcon, QTextOption
+from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton,
                              QHBoxLayout, QVBoxLayout, QSizePolicy,
-                             QDialogButtonBox, QLabel, QListWidget,
-                             QAbstractScrollArea, QGroupBox, QTextEdit,
-                             QFormLayout, QProgressBar)
+                             QDialogButtonBox, QLabel, QGroupBox,
+                             QTextEdit, QFormLayout, QProgressBar)
 
 import bytefmt
 
@@ -206,8 +202,6 @@ class TransferDialog(QDialog):
         btn_pause.clicked.connect(self._on_pause_button)
         btn_cancel.clicked.connect(self.reject)
         btn_close.clicked.connect(self.accept)
-
-
 
 
 # EOF #
