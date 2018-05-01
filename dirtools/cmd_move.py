@@ -53,7 +53,7 @@ def main(action: str, argv: List[str]) -> None:
 
     fs = Filesystem()
     fs.verbose = args.verbose
-    fs.dry_run = args.dry_run
+    fs.enabled = not args.dry_run
 
     mediator = ConsoleMediator()
     if args.always:

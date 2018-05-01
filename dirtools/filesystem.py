@@ -17,9 +17,12 @@
 
 from typing import List, Callable
 
+import logging
 import os
 import shutil
 import stat
+
+logger = logging.getLogger(__name__)
 
 
 CopyProgressCallback = Callable[[int, int], None]
@@ -38,8 +41,14 @@ class Filesystem:
     def __init__(self) -> None:
         self.buffer_size: int = 16 * 1024
 
-        self.verbose: bool = False
-        self.dry_run: bool = False
+        self.verbose: bool = True
+        self.enabled: bool = True
+
+    def _message(self, text: str) -> None:
+        if self.verbose:
+            print(text)
+        else:
+            logger.info(text)
 
     def isdir(self, path: str) -> bool:
         return os.path.isdir(path)
@@ -61,46 +70,66 @@ class Filesystem:
         return os.scandir(path)
 
     def symlink(self, src: str, dst: str) -> None:
-        os.symlink(src, dst)
+        self._message("symlink {!r} -> {!r}".format(src, dst))
 
-    def mkdir(self, path: str) -> None:
-        os.mkdir(path)
+        if self.enabled:
+            os.symlink(src, dst)
 
     def rmdir(self, path: str) -> None:
-        os.rmdir(path)
+        self._message("rmdir {!r}".format(path))
+
+        if self.enabled:
+            os.rmdir(path)
+
+    def mkdir(self, path: str) -> None:
+        self._message("mkdir {!r}".format(path))
+
+        if self.enabled:
+            os.mkdir(path)
+
+    def create_directory(self, path: str) -> None:
+        self._message("create_directory {!r}".format(path))
+
+        if self.enabled:
+            os.mkdir(path)
+
+    def create_file(self, path: str) -> None:
+        self._message("create_file {!r}".format(path))
+
+        if self.enabled:
+            with open(path, "xb"):
+                pass
 
     def remove_file(self, path: str):
-        if self.verbose or self.dry_run:
-            print("remove_file {}".format(path))
+        self._message("remove_file {!r}".format(path))
 
-        if not self.dry_run:
+        if self.enabled:
             os.unlink(path)
 
     def overwrite(self, src: str, dst: str) -> None:
-        if self.verbose or self.dry_run:
-            print("overwriting {} -> {}".format(src, dst))
+        self._message("overwrite {!r} -> {!r}".format(src, dst))
 
-        if not self.dry_run:
+        if self.enabled:
             os.rename(src, dst)
 
-    def rename(self, oldpath: str, newpath: str) -> None:
-        if self.verbose or self.dry_run:
-            print("rename {} -> {}".format(oldpath, newpath))
+    def rename(self, src: str, dst: str) -> None:
+        self._message("rename {!r} -> {!r}".format(src, dst))
 
-        if not self.dry_run:
-            if os.path.lexists(newpath):
-                raise FileExistsError(newpath)
+        if self.enabled:
+            if os.path.lexists(dst):
+                raise FileExistsError(dst)
             else:
-                os.rename(oldpath, newpath)
+                os.rename(src, dst)
 
     def copy_stat(self, src: str, dst: str) -> None:
-        if not self.dry_run:
+        self._message("copy_stat {!r} -> {!r}".format(src, dst))
+
+        if self.enabled:
             shutil.copystat(src, dst, follow_symlinks=False)
 
     def _copy_filecontent(self, src: str, dst: str,
                           progress: CopyProgressCallback=null_progress):
-        if self.dry_run:
-            return
+        assert self.enabled
 
         with open(src, 'rb') as fd_src, open(dst, 'wb') as fd_dst:
 
@@ -125,6 +154,11 @@ class Filesystem:
     def copy_file(self, src: str, dst: str,
                   overwrite: bool=False,
                   progress: CopyProgressCallback=null_progress) -> None:
+        self._message("copy_file {!r} -> {!r}  overwrite={}".format(src, dst, overwrite))
+
+        if not self.enabled:
+            return
+
         st = os.lstat(src)
         if not (stat.S_ISREG(st.st_mode) or
                 stat.S_ISLNK(st.st_mode)):
@@ -135,7 +169,7 @@ class Filesystem:
             # stat.S_ISFIFO(mode)
             # stat.S_ISSOCK(mode)
 
-        if not self.dry_run:
+        if self.enabled:
             if not overwrite and os.path.lexists(dst):
                 raise FileExistsError(dst)
             else:
@@ -149,10 +183,9 @@ class Filesystem:
                     shutil.copystat(src, dst, follow_symlinks=False)
 
     def makedirs(self, path: str) -> None:
-        if self.verbose:
-            print("makedirs: {}".format(path))
+        self._message("makedirs: {!r}".format(path))
 
-        if not self.dry_run:
+        if self.enabled:
             # makedirs() fails if the last element in the path already exists
             if not os.path.isdir(path):
                 os.makedirs(path)
