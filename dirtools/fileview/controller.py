@@ -44,7 +44,7 @@ from dirtools.fileview.gui import Gui
 from dirtools.fileview.filter import Filter
 from dirtools.fileview.sorter import Sorter
 from dirtools.fileview.actions import Actions
-from dirtools.fileview.transfer_dialog import TransferDialog
+from dirtools.fileview.transfer_request_dialog import TransferRequestDialog
 
 if False:
     from dirtools.fileview.application import FileViewApplication  # noqa: F401
@@ -690,16 +690,16 @@ class Controller(QObject):
             # value hack to represent a 'Qt.AskAction', which Qt doesn't
             # have.
 
-            transfer_dialog = TransferDialog(sources, destination_path, self._gui._window)
+            transfer_dialog = TransferRequestDialog(sources, destination_path, self._gui._window)
             transfer_dialog.exec()
 
             result = transfer_dialog.result()
 
-            if result == TransferDialog.Move:
+            if result == TransferRequestDialog.Move:
                 self.app.fs_operations.move_files(sources, destination_path)
-            elif result == TransferDialog.Copy:
+            elif result == TransferRequestDialog.Copy:
                 self.app.fs_operations.copy_files(sources, destination_path)
-            elif result == TransferDialog.Link:
+            elif result == TransferRequestDialog.Link:
                 self.app.fs_operations.link_files(sources, destination_path)
             else:
                 pass

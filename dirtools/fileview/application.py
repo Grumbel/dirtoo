@@ -97,7 +97,7 @@ class FileViewApplication:
         self.dbus_thumbnail_cache = DBusThumbnailCache(self.session_bus)
         self.mime_database = MimeDatabase(self.vfs)
         self.mime_associations = XdgMimeAssociations.system()
-        self.fs_operations = FilesystemOperations()
+        self.fs_operations = FilesystemOperations(self)
         self.fs = Filesystem()
 
         self.directory_thumbnailer = DirectoryThumbnailer(self)
