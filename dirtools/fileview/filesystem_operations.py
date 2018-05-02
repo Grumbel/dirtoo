@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Optional
+from typing import Optional, List
 
 import logging
 
@@ -37,6 +37,21 @@ class FilesystemOperations:
 
     def rename_location(self, location: Location, parent: Optional[QWidget] = None) -> None:
         self._rename_op.rename_location(location, parent)
+
+    def move_files(self, sources: List[str], destination: str) -> None:
+        pass
+
+    def copy_files(self, sources: List[str], destination: str) -> None:
+        pass
+
+    def link_files(self, sources: List[str], destination: str) -> None:
+        pass
+
+    def create_file(self, path: str) -> None:
+        pass
+
+    def create_directory(self, path: str) -> None:
+        pass
 
 
 # EOF #

@@ -42,7 +42,7 @@ from dirtools.fileview.virtual_filesystem import VirtualFilesystem
 from dirtools.fileview.stream_manager import StreamManager
 from dirtools.xdg_mime_associations import XdgMimeAssociations
 from dirtools.fileview.preferences_dialog import PreferencesDialog
-from dirtools.fileview.filesystem import Filesystem
+from dirtools.filesystem import Filesystem
 from dirtools.fileview.application_actions import ApplicationActions
 from dirtools.fileview.controller import Controller
 from dirtools.fileview.directory_thumbnailer import DirectoryThumbnailer

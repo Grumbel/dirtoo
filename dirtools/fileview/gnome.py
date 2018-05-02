@@ -15,12 +15,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import List, Tuple
 
 from PyQt5.QtCore import Qt, QUrl
 
 
-def parse_gnome_copied_files(data: bytes):
+def parse_gnome_copied_files(data: bytes) -> Tuple[Qt.DropAction, List[QUrl]]:
     lines = data.split(b'\n')
 
     if lines[0] == "copy":

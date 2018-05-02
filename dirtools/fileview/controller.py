@@ -620,11 +620,18 @@ class Controller(QObject):
                 logger.error("failed to parse clipboard data: %s", err)
             else:
                 sources = [url.toLocalFile() for url in urls]
-                self.app.fs.do_files(action, sources, destination_path)
+
+                if action == Qt.MoveAction:
+                    self.app.fs_operations.move_files(sources, destination_path)
+                elif action == Qt.CopyAction:
+                    self.app.fs_operations.copy_files(sources, destination_path)
+                elif action == Qt.LinkAction:
+                    self.app.fs_operations.link_files(sources, destination_path)
+
         elif mime_data.hasUrls():
             urls = mime_data.urls()
             sources = [url.toLocalFile() for url in urls]
-            self.app.fs.copy_files(sources, destination_path)
+            self.app.fs_operations.copy_files(sources, destination_path)
         else:
             logger.debug("unhandled format on paste")
 
@@ -670,23 +677,30 @@ class Controller(QObject):
 
         destination_path = destination.get_path()
 
-        # FIXME: 0x40 is a magic value hack to represent a
-        # 'Qt.AskAction', which Qt doesn't have, only
-        # Link/Move/Copy/Ignore are available. The mouse cursor isn't
-        # updated properly here.
-        if action != 0x40:
-            self.app.fs.do_files(action, sources, destination_path)
+        if action == Qt.MoveAction:
+            self.app.fs_operations.move_files(sources, destination_path)
+        elif action == Qt.CopyAction:
+            self.app.fs_operations.copy_files(sources, destination_path)
+        elif action == Qt.LinkAction:
+            self.app.fs_operations.link_files(sources, destination_path)
+        elif action == Qt.IgnoreAction:
+            pass
         else:
+            # FIXME: this is triggered by action == 0x40, which is a magic
+            # value hack to represent a 'Qt.AskAction', which Qt doesn't
+            # have.
+
             transfer_dialog = TransferDialog(sources, destination_path, self._gui._window)
             transfer_dialog.exec()
 
             result = transfer_dialog.result()
+
             if result == TransferDialog.Move:
-                self.app.fs.do_files(Qt.MoveAction, sources, destination_path)
+                self.app.fs_operations.move_files(sources, destination_path)
             elif result == TransferDialog.Copy:
-                self.app.fs.do_files(Qt.CopyAction, sources, destination_path)
+                self.app.fs_operations.copy_files(sources, destination_path)
             elif result == TransferDialog.Link:
-                self.app.fs.do_files(Qt.LinkAction, sources, destination_path)
+                self.app.fs_operations.link_files(sources, destination_path)
             else:
                 pass
 
@@ -705,7 +719,7 @@ class Controller(QObject):
         if name is not None:
             abspath = os.path.join(self.location.get_stdio_name(), name)
             try:
-                self.app.fs.create_directory(abspath)
+                self.app.fs_operations.create_directory(abspath)
             except Exception as err:
                 self._gui.show_error("Error on file creation",
                                      "Error while trying to create directory:\n\n" + str(err))
@@ -725,7 +739,7 @@ class Controller(QObject):
         if name is not None:
             abspath = os.path.join(self.location.get_stdio_name(), name)
             try:
-                self.app.fs.create_file(abspath)
+                self.app.fs_operations.create_file(abspath)
             except Exception as err:
                 self._gui.show_error("Error on file creation",
                                      "Error while trying to create file:\n\n" + str(err))
