@@ -19,12 +19,14 @@ from typing import Optional, List, Callable
 
 import logging
 
-from PyQt5.QtCore import QObject, QThread
+from PyQt5.QtCore import QObject, QThread, pyqtSignal
 from PyQt5.QtWidgets import QWidget
 
 from dirtools.fileview.location import Location
 from dirtools.fileview.rename_operation import RenameOperation
-from dirtools.file_transfer import FileTransfer, ConsoleMediator, ConsoleProgress
+from dirtools.fileview.return_value import ReturnValue
+from dirtools.file_transfer import FileTransfer, ConsoleProgress, Resolution, Mediator
+from dirtools.fileview.conflict_dialog import ConflictDialog
 
 if False:
     from dirtools.filesystem import Filesystem  # noqa: F401
@@ -34,21 +36,43 @@ logger = logging.getLogger(__name__)
 
 class TransferWorker(QObject):
 
-    def __init__(self, fs: 'Filesystem', action: Callable, sources: List[str], destination: str) -> None:
+    def __init__(self, fs: 'Filesystem', action: Callable, sources: List[str], destination: str,
+                 mediator: Mediator) -> None:
         super().__init__()
 
         self._fs = fs
         self._action = action
         self._sources = sources
         self._destination = destination
+        self._mediator = mediator
 
     def on_started(self) -> None:
-        mediator = ConsoleMediator()
         progress = ConsoleProgress()
-        transfer = FileTransfer(self._fs, mediator, progress)
+        transfer = FileTransfer(self._fs, self._mediator, progress)
 
         for source in self._sources:
             self._action(transfer, source, self._destination)
+
+
+class GuiMediator(QObject):
+    """Whenever a filesystem operation would result in the destruction of data,
+    the Mediator is called to decide which action should be taken."""
+
+    sig_file_conflict = pyqtSignal(ReturnValue)
+    sig_directory_conflict = pyqtSignal(ReturnValue)
+
+    def __init__(self, parent) -> None:
+        super().__init__(parent)
+
+    def file_conflict(self, source: str, dest: str) -> Resolution:
+        retval = ReturnValue()
+        self.sig_file_conflict.emit(retval)
+        result = retval.receive()
+        print("RESULT: ", result)
+        return Resolution.SKIP  # FIXME
+
+    def directory_conflict(self, sourcedir: str, destdir: str) -> Resolution:
+        pass
 
 
 class FilesystemOperations:
@@ -80,7 +104,13 @@ class FilesystemOperations:
 
     def _transfer_files(self, action: Callable, sources: List[str], destination: str) -> None:
         thread = QThread()
-        worker = TransferWorker(self._app.fs, action, sources, destination)
+
+        mediator = GuiMediator(None)
+        mediator.sig_file_conflict.connect(self._on_file_conflict)
+        mediator.sig_directory_conflict.connect(self._on_directory_conflict)
+        mediator.moveToThread(thread)
+
+        worker = TransferWorker(self._app.fs, action, sources, destination, mediator)
         worker.moveToThread(thread)
         thread.started.connect(worker.on_started)
         thread.start()
@@ -92,6 +122,15 @@ class FilesystemOperations:
         pass
 
     def create_directory(self, path: str) -> None:
+        pass
+
+    def _on_file_conflict(self, retval: ReturnValue) -> None:
+        print("file conflict")
+        dialog = ConflictDialog(None)
+        result = dialog.exec()
+        retval.send(result)
+
+    def _on_directory_conflict(self, retval: ReturnValue) -> None:
         pass
 
 

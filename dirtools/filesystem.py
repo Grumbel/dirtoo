@@ -44,6 +44,9 @@ class Filesystem:
         self.verbose: bool = True
         self.enabled: bool = True
 
+    def set_enabled(self, value: bool) -> None:
+        self.enabled = value
+
     def _message(self, text: str) -> None:
         if self.verbose:
             print(text)

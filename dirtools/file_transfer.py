@@ -60,15 +60,7 @@ class Mediator(ABC):
         pass
 
     @abstractmethod
-    def _file_conflict_interactive(self, source: str, dest: str) -> Resolution:
-        pass
-
-    @abstractmethod
     def directory_conflict(self, sourcedir: str, destdir: str) -> Resolution:
-        pass
-
-    @abstractmethod
-    def _directory_conflict_interactive(self, sourcedir: str, destdir: str) -> Resolution:
         pass
 
 
