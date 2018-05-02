@@ -326,7 +326,9 @@ class FileTransfer:
             self._move_file(source, destdir)
 
     def link(self, source: str, destdir: str) -> None:
-        dest = os.path.join(destdir, source)
+        base = os.path.basename(source)
+        dest = os.path.join(destdir, base)
+
         self._progress.link_file(source, dest)
         self._fs.symlink(source, dest)
 
