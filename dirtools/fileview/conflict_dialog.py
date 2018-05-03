@@ -25,14 +25,10 @@ from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLayout,
                              QHBoxLayout, QVBoxLayout, QSizePolicy,
                              QDialogButtonBox, QLabel, QCheckBox, QGroupBox)
 
+from dirtools.file_transfer import Resolution
+
 
 class ConflictDialog(QDialog):
-
-    Replace = QDialog.Accepted
-    Cancel = QDialog.Rejected
-    Skip = 3
-    RenameSource = 4
-    RenameTarget = 5
 
     def __init__(self, parent: QWidget) -> None:
         super().__init__()
@@ -69,9 +65,9 @@ class ConflictDialog(QDialog):
 
         # Signals
         if filename is self._source_filename:
-            rename_btn.clicked.connect(lambda: self.done(ConflictDialog.RenameSource))
+            rename_btn.clicked.connect(lambda: self.done(Resolution.RENAME_SOURCE.value))
         elif filename is self._target_filename:
-            rename_btn.clicked.connect(lambda: self.done(ConflictDialog.RenameTarget))
+            rename_btn.clicked.connect(lambda: self.done(Resolution.RENAME_TARGET.value))
 
         return hbox
 
@@ -136,9 +132,9 @@ class ConflictDialog(QDialog):
         self.setLayout(vbox)
 
         # Signals
-        btn_replace.clicked.connect(self.accept)
-        btn_skip.clicked.connect(lambda: self.done(ConflictDialog.Skip))
-        btn_cancel.clicked.connect(lambda: self.done(ConflictDialog.Cancel))
+        btn_replace.clicked.connect(lambda: self.done(Resolution.OVERWRITE.value))
+        btn_skip.clicked.connect(lambda: self.done(Resolution.SKIP.value))
+        btn_cancel.clicked.connect(lambda: self.done(Resolution.CANCEL.value))
 
 
 # EOF #

@@ -128,43 +128,13 @@ class FilesystemOperations:
 
     def _on_file_conflict(self, retval: ReturnValue[Resolution]) -> None:
         dialog = ConflictDialog(None)
-        result = dialog.exec()
-
-        if result == ConflictDialog.Replace:
-            retval.send(Resolution.CONTINUE)
-        elif result == ConflictDialog.Cancel:
-            print("not implemented")  # FIXME
-            retval.send(Resolution.SKIP)
-        elif result == ConflictDialog.Skip:
-            retval.send(Resolution.SKIP)
-        elif result == ConflictDialog.RenameSource:
-            print("not implemented")  # FIXME
-            retval.send(Resolution.SKIP)
-        elif result == ConflictDialog.RenameTarget:
-            print("not implemented")  # FIXME
-            retval.send(Resolution.SKIP)
-        else:
-            assert False, "unknown result value"
+        resolution = Resolution(dialog.exec())
+        retval.send(resolution)
 
     def _on_directory_conflict(self, retval: ReturnValue[Resolution]) -> None:
         dialog = ConflictDialog(None)
-        result = dialog.exec()
-
-        if result == ConflictDialog.Replace:
-            retval.send(Resolution.CONTINUE)
-        elif result == ConflictDialog.Cancel:
-            print("not implemented")  # FIXME
-            retval.send(Resolution.SKIP)
-        elif result == ConflictDialog.Skip:
-            retval.send(Resolution.SKIP)
-        elif result == ConflictDialog.RenameSource:
-            print("not implemented")  # FIXME
-            retval.send(Resolution.SKIP)
-        elif result == ConflictDialog.RenameTarget:
-            print("not implemented")  # FIXME
-            retval.send(Resolution.SKIP)
-        else:
-            assert False, "unknown result value"
+        resolution = Resolution(dialog.exec())
+        retval.send(resolution)
 
 
 # EOF #

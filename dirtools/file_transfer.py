@@ -30,8 +30,11 @@ from dirtools.format import progressbar
 
 class Resolution(Enum):
 
-    SKIP = 1
-    CONTINUE = 2
+    CANCEL = 0  # QDialog.Rejected
+    OVERWRITE = 1  # QDialog.Accepted
+    SKIP = 2
+    RENAME_SOURCE = 3
+    RENAME_TARGET = 4
 
 
 class Overwrite(Enum):
@@ -79,7 +82,7 @@ class ConsoleMediator(Mediator):
         if self.overwrite == Overwrite.ASK:
             return self._file_conflict_interactive(source, dest)
         elif self.overwrite == Overwrite.ALWAYS:
-            return Resolution.CONTINUE
+            return Resolution.OVERWRITE
         elif self.overwrite == Overwrite.NEVER:
             return Resolution.SKIP
         else:
@@ -105,10 +108,10 @@ class ConsoleMediator(Mediator):
                     print("skipping {}".format(source))
                     return Resolution.SKIP
                 elif c == 'y':
-                    return Resolution.CONTINUE
+                    return Resolution.OVERWRITE
                 elif c == 'a':
                     self.overwrite = Overwrite.ALWAYS
-                    return Resolution.CONTINUE
+                    return Resolution.OVERWRITE
                 elif c == 'e':
                     self.overwrite = Overwrite.NEVER
                     return Resolution.SKIP
@@ -119,7 +122,7 @@ class ConsoleMediator(Mediator):
         if self.merge == Overwrite.ASK:
             return self._directory_conflict_interactive(sourcedir, destdir)
         elif self.merge == Overwrite.ALWAYS:
-            return Resolution.CONTINUE
+            return Resolution.OVERWRITE
         elif self.merge == Overwrite.NEVER:
             return Resolution.SKIP
         else:
@@ -136,10 +139,10 @@ class ConsoleMediator(Mediator):
                 print("skipping {}".format(sourcedir))
                 return Resolution.SKIP
             elif c == 'y':
-                return Resolution.CONTINUE
+                return Resolution.OVERWRITE
             elif c == 'a':
                 self.merge = Overwrite.ALWAYS
-                return Resolution.CONTINUE
+                return Resolution.OVERWRITE
             elif c == 'e':
                 self.merge = Overwrite.NEVER
                 return Resolution.SKIP
@@ -244,7 +247,7 @@ class FileTransfer:
             resolution = self._mediator.file_conflict(source, dest)
             if resolution == Resolution.SKIP:
                 self._progress.skip_rename(source, dest)
-            elif resolution == Resolution.CONTINUE:
+            elif resolution == Resolution.OVERWRITE:
                 try:
                     self._fs.overwrite(source, dest)
                 except OSError as err:
@@ -256,6 +259,12 @@ class FileTransfer:
                         self._fs.remove_file(source)
                     else:
                         raise
+            elif resolution == Resolution.RENAME_SOURCE:
+                pass
+            elif resolution == Resolution.RENAME_TARGET:
+                pass
+            elif resolution == Resolution.CANCEL:
+                pass
             else:
                 assert False, "unknown conflict resolution: %r" % resolution
         else:
@@ -288,8 +297,14 @@ class FileTransfer:
             resolution = self._mediator.directory_conflict(sourcedir, dest)
             if resolution == Resolution.SKIP:
                 self._progress.skip_move_directory(sourcedir, dest)
-            elif resolution == Resolution.CONTINUE:
+            elif resolution == Resolution.OVERWRITE:
                 self._move_directory_content(sourcedir, dest)
+            elif resolution == Resolution.RENAME_SOURCE:
+                pass
+            elif resolution == Resolution.RENAME_TARGET:
+                pass
+            elif resolution == Resolution.CANCEL:
+                pass
             else:
                 assert False, "unknown conflict resolution: {}".format(resolution)
         else:
@@ -335,9 +350,19 @@ class FileTransfer:
             resolution = self._mediator.file_conflict(source, dest)
             if resolution == Resolution.SKIP:
                 self._progress.skip_copy(source, dest)
-            elif resolution == Resolution.CONTINUE:
+            elif resolution == Resolution.OVERWRITE:
                 self._progress.copy_file(source, dest)
                 self._fs.copy_file(source, dest, overwrite=True, progress=self._progress.copy_progress)
+            elif resolution == Resolution.RENAME_SOURCE:
+                source = self._fs.rename_unique(source)
+                self._copy_file(source, destdir)
+                return
+            elif resolution == Resolution.RENAME_TARGET:
+                self._fs.rename_unique(dest)
+                self._copy_file(source, destdir)
+                return
+            elif resolution == Resolution.CANCEL:
+                pass
             else:
                 assert False, "unknown conflict resolution: {}".format(resolution)
         else:
@@ -364,9 +389,15 @@ class FileTransfer:
             resolution = self._mediator.directory_conflict(sourcedir, dest)
             if resolution == Resolution.SKIP:
                 self._progress.skip_copy(sourcedir, dest)
-            elif resolution == Resolution.CONTINUE:
+            elif resolution == Resolution.OVERWRITE:
                 self._progress.copy_directory(sourcedir, destdir)
                 self._copy_directory_content(sourcedir, dest)
+            elif resolution == Resolution.RENAME_SOURCE:
+                pass
+            elif resolution == Resolution.RENAME_TARGET:
+                pass
+            elif resolution == Resolution.CANCEL:
+                pass
             else:
                 assert False, "unknown conflict resolution: {}".format(resolution)
         else:
