@@ -65,14 +65,16 @@ class GuiMediator(QObject):
         super().__init__(parent)
 
     def file_conflict(self, source: str, dest: str) -> Resolution:
-        retval = ReturnValue()
+        retval = ReturnValue[Resolution]()
         self.sig_file_conflict.emit(retval)
-        result = retval.receive()
-        print("RESULT: ", result)
-        return Resolution.SKIP  # FIXME
+        result: Resolution = retval.receive()
+        return result
 
     def directory_conflict(self, sourcedir: str, destdir: str) -> Resolution:
-        pass
+        retval = ReturnValue[Resolution]()
+        self.sig_file_conflict.emit(retval)
+        result: Resolution = retval.receive()
+        return result
 
 
 class FilesystemOperations:
@@ -124,14 +126,45 @@ class FilesystemOperations:
     def create_directory(self, path: str) -> None:
         self._app.fs.create_directory(path)
 
-    def _on_file_conflict(self, retval: ReturnValue) -> None:
-        print("file conflict")
+    def _on_file_conflict(self, retval: ReturnValue[Resolution]) -> None:
         dialog = ConflictDialog(None)
         result = dialog.exec()
-        retval.send(result)
 
-    def _on_directory_conflict(self, retval: ReturnValue) -> None:
-        pass
+        if result == ConflictDialog.Replace:
+            retval.send(Resolution.CONTINUE)
+        elif result == ConflictDialog.Cancel:
+            print("not implemented")  # FIXME
+            retval.send(Resolution.SKIP)
+        elif result == ConflictDialog.Skip:
+            retval.send(Resolution.SKIP)
+        elif result == ConflictDialog.RenameSource:
+            print("not implemented")  # FIXME
+            retval.send(Resolution.SKIP)
+        elif result == ConflictDialog.RenameTarget:
+            print("not implemented")  # FIXME
+            retval.send(Resolution.SKIP)
+        else:
+            assert False, "unknown result value"
+
+    def _on_directory_conflict(self, retval: ReturnValue[Resolution]) -> None:
+        dialog = ConflictDialog(None)
+        result = dialog.exec()
+
+        if result == ConflictDialog.Replace:
+            retval.send(Resolution.CONTINUE)
+        elif result == ConflictDialog.Cancel:
+            print("not implemented")  # FIXME
+            retval.send(Resolution.SKIP)
+        elif result == ConflictDialog.Skip:
+            retval.send(Resolution.SKIP)
+        elif result == ConflictDialog.RenameSource:
+            print("not implemented")  # FIXME
+            retval.send(Resolution.SKIP)
+        elif result == ConflictDialog.RenameTarget:
+            print("not implemented")  # FIXME
+            retval.send(Resolution.SKIP)
+        else:
+            assert False, "unknown result value"
 
 
 # EOF #

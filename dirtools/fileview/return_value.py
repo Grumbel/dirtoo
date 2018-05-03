@@ -15,19 +15,22 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Any
+from typing import TypeVar, Generic
 
 from PyQt5.QtCore import QMutex, QWaitCondition
 
 
-class ReturnValue:
+T = TypeVar('T')
+
+
+class ReturnValue(Generic[T]):
 
     def __init__(self) -> None:
         self._mutex = QMutex()
         self._wait_condition = QWaitCondition()
-        self._value: Any = None
+        self._value: T = None
 
-    def receive(self) -> Any:
+    def receive(self) -> T:
         self._mutex.lock()
         while self._value is None:
             self._wait_condition.wait(self._mutex)
@@ -35,7 +38,7 @@ class ReturnValue:
 
         return self._value
 
-    def send(self, value) -> None:
+    def send(self, value: T) -> None:
         self._value = value
         self._wait_condition.wakeAll()
 
