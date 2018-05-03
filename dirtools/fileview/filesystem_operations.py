@@ -119,10 +119,10 @@ class FilesystemOperations:
         self._workers.append(worker)
 
     def create_file(self, path: str) -> None:
-        pass
+        self._app.fs.create_file(path)
 
     def create_directory(self, path: str) -> None:
-        pass
+        self._app.fs.create_directory(path)
 
     def _on_file_conflict(self, retval: ReturnValue) -> None:
         print("file conflict")
