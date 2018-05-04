@@ -24,6 +24,10 @@ T = TypeVar('T')
 
 
 class ReturnValue(Generic[T]):
+    """Pass a return value from a slot back to the signal emitting thread.
+    The ReturnValue has to be send with the signal, the receiving
+    thread than calls .send() to set the value, while the calling
+    thread calls .receive() to wait until the value arrives."""
 
     def __init__(self) -> None:
         self._mutex = QMutex()
