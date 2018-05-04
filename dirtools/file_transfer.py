@@ -157,6 +157,10 @@ class Progress(ABC):
         pass
 
     @abstractmethod
+    def skip_link(self, src: str, dst: str) -> None:
+        pass
+
+    @abstractmethod
     def skip_copy(self, src: str, dst: str) -> None:
         pass
 
@@ -192,6 +196,10 @@ class ConsoleProgress(Progress):
     def skip_rename(self, oldpath: str, newpath: str) -> None:
         if self.verbose:
             print("skipping {} -> {}".format(oldpath, newpath))
+
+    def skip_link(self, src: str, dst: str) -> None:
+        if self.verbose:
+            print("skipping {} -> {}".format(src, dst))
 
     def skip_copy(self, src: str, dst: str) -> None:
         if self.verbose:
@@ -243,6 +251,9 @@ class FileTransfer:
         base = os.path.basename(source)
         dest = os.path.join(destdir, base)
 
+        self._move_file2(source, dest, destdir)
+
+    def _move_file2(self, source: str, dest: str, destdir: str) -> None:
         if self._fs.lexists(dest):
             resolution = self._mediator.file_conflict(source, dest)
             if resolution == Resolution.SKIP:
@@ -260,9 +271,11 @@ class FileTransfer:
                     else:
                         raise
             elif resolution == Resolution.RENAME_SOURCE:
-                pass
+                new_dest = self._fs.generate_unique(dest)
+                self._move_file2(source, new_dest, destdir)
             elif resolution == Resolution.RENAME_TARGET:
-                pass
+                self._fs.rename_unique(dest)
+                self._move_file(source, destdir)
             elif resolution == Resolution.CANCEL:
                 pass
             else:
@@ -293,6 +306,9 @@ class FileTransfer:
         base = os.path.basename(sourcedir)
         dest = os.path.join(destdir, base)
 
+        self._move_directory2(sourcedir, dest, destdir)
+
+    def _move_directory2(self, sourcedir: str, dest: str, destdir: str) -> None:
         if self._fs.lexists(dest):
             resolution = self._mediator.directory_conflict(sourcedir, dest)
             if resolution == Resolution.SKIP:
@@ -300,9 +316,11 @@ class FileTransfer:
             elif resolution == Resolution.OVERWRITE:
                 self._move_directory_content(sourcedir, dest)
             elif resolution == Resolution.RENAME_SOURCE:
-                pass
+                new_dest = self._fs.generate_unique(dest)
+                self._move_directory2(sourcedir, new_dest, destdir)
             elif resolution == Resolution.RENAME_TARGET:
-                pass
+                self._fs.rename_unique(dest)
+                self._move_directory(sourcedir, destdir)
             elif resolution == Resolution.CANCEL:
                 pass
             else:
@@ -336,8 +354,30 @@ class FileTransfer:
         base = os.path.basename(source)
         dest = os.path.join(destdir, base)
 
-        self._progress.link_file(source, dest)
-        self._fs.symlink(source, dest)
+        self._link(source, dest, destdir)
+
+    def _link(self, source: str, dest: str, destdir: str) -> None:
+        if self._fs.lexists(dest):
+            resolution = self._mediator.file_conflict(source, dest)
+            if resolution == Resolution.SKIP:
+                self._progress.skip_link(source, dest)
+            elif resolution == Resolution.OVERWRITE:
+                self._progress.link_file(source, dest)
+                self._fs.remove_file(dest)
+                self._fs.symlink(source, dest)
+            elif resolution == Resolution.RENAME_SOURCE:
+                new_dest = self._fs.generate_unique(dest)
+                self._link(source, new_dest, destdir)
+            elif resolution == Resolution.RENAME_TARGET:
+                self._fs.rename_unique(dest)
+                self.link(source, destdir)
+            elif resolution == Resolution.CANCEL:
+                pass
+            else:
+                assert False, "unknown conflict resolution: {}".format(resolution)
+        else:
+            self._progress.link_file(source, dest)
+            self._fs.symlink(source, dest)
 
     def _copy_file(self, source: str, destdir: str) -> None:
         assert self._fs.isreg(source) or self._fs.islink(source), "{}: unknown file type".format(source)
@@ -346,6 +386,9 @@ class FileTransfer:
         base = os.path.basename(source)
         dest = os.path.join(destdir, base)
 
+        self._copy_file2(source, dest, destdir)
+
+    def _copy_file2(self, source: str, dest: str, destdir: str) -> None:
         if self._fs.lexists(dest):
             resolution = self._mediator.file_conflict(source, dest)
             if resolution == Resolution.SKIP:
@@ -354,13 +397,11 @@ class FileTransfer:
                 self._progress.copy_file(source, dest)
                 self._fs.copy_file(source, dest, overwrite=True, progress=self._progress.copy_progress)
             elif resolution == Resolution.RENAME_SOURCE:
-                source = self._fs.rename_unique(source)
-                self._copy_file(source, destdir)
-                return
+                new_dest = self._fs.generate_unique(dest)
+                self._copy_file2(source, new_dest, destdir)
             elif resolution == Resolution.RENAME_TARGET:
                 self._fs.rename_unique(dest)
                 self._copy_file(source, destdir)
-                return
             elif resolution == Resolution.CANCEL:
                 pass
             else:
@@ -385,6 +426,9 @@ class FileTransfer:
         base = os.path.basename(sourcedir)
         dest = os.path.join(destdir, base)
 
+        self._copy_directory2(sourcedir, dest, destdir)
+
+    def _copy_directory2(self, sourcedir: str, dest: str, destdir: str) -> None:
         if self._fs.lexists(dest):
             resolution = self._mediator.directory_conflict(sourcedir, dest)
             if resolution == Resolution.SKIP:
@@ -393,9 +437,11 @@ class FileTransfer:
                 self._progress.copy_directory(sourcedir, destdir)
                 self._copy_directory_content(sourcedir, dest)
             elif resolution == Resolution.RENAME_SOURCE:
-                pass
+                new_dest = self._fs.generate_unique(dest)
+                self._copy_directory2(sourcedir, new_dest, destdir)
             elif resolution == Resolution.RENAME_TARGET:
-                pass
+                self._fs.rename_unique(dest)
+                self._copy_directory(sourcedir, destdir)
             elif resolution == Resolution.CANCEL:
                 pass
             else:

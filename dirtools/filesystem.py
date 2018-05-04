@@ -124,6 +124,27 @@ class Filesystem:
             else:
                 os.rename(src, dst)
 
+    def rename_unique(self, path: str) -> str:
+        new_path = self.generate_unique(path)
+        self.rename(path, new_path)
+        return new_path
+
+    def generate_unique(self, path: str) -> str:
+        base = os.path.basename(path)
+        directory = os.path.dirname(path)
+
+        i = 2
+        while True:
+            new_base = self._gen_name(base, i)
+            new_path = os.path.join(directory, new_base)
+            if not os.path.lexists(new_path):
+                return new_path
+            i += 1
+
+    def _gen_name(self, basename: str, i: int) -> str:
+        base, ext = os.path.splitext(basename)
+        return "{} ({}){}".format(base, i, ext)
+
     def copy_stat(self, src: str, dst: str) -> None:
         self._message("copy_stat {!r} -> {!r}".format(src, dst))
 
