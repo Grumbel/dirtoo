@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Optional
+from typing import List
 
 import argparse
 import logging
@@ -39,7 +39,7 @@ def parse_args(args: List[str], simple) -> argparse.Namespace:
 def main(argv, simple) -> None:
     args = parse_args(argv[1:], simple)
 
-    app = QApplication([])
+    app = QApplication([])  # noqa: F841
 
     if args.list:
         for idx, path in enumerate(QIcon.themeSearchPaths()):
@@ -57,7 +57,7 @@ def main(argv, simple) -> None:
                     print("{:>17}   {!r}".format("", path))
         else:
             for iconname in args.ICON:
-                  print("{}: {}".format(iconname, "OK" if QIcon.hasThemeIcon(iconname) else "FAILED"))
+                print("{}: {}".format(iconname, "OK" if QIcon.hasThemeIcon(iconname) else "FAILED"))
 
 
 def main_entrypoint():
