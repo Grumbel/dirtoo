@@ -30,6 +30,38 @@ if False:
     from dirtools.fileview.controller import Controller  # noqa: F401
 
 
+class LocationButton(PushButton):
+
+    def __init__(self, controller: 'Controller', location: Location, *args) -> None:
+        super().__init__(*args)
+
+        self._controller = controller
+        self._location = location
+
+        self.setAcceptDrops(True)
+
+    def dragEnterEvent(self, ev) -> None:
+        if ev.mimeData().hasUrls():
+            ev.accept()
+        else:
+            ev.ignore()
+
+    def dragLeaveEvent(self, ev) -> None:
+        ev.accept()
+
+    def dropEvent(self, ev):
+        ev.accept()
+
+        mime_data = ev.mimeData()
+        assert mime_data.hasUrls()
+
+        urls = mime_data.urls()
+        assert ev.dropAction() == ev.proposedAction()
+        action = ev.dropAction()
+
+        self._controller.on_files_drop(action, urls, self._location)
+
+
 class LocationButtonBar(QWidget):
 
     def __init__(self, controller: 'Controller') -> None:
@@ -37,7 +69,7 @@ class LocationButtonBar(QWidget):
 
         self._controller = controller
         self._location: Optional[Location] = None
-        self._buttons: List[Tuple[Location, PushButton]] = []
+        self._buttons: List[Tuple[Location, LocationButton]] = []
 
     def set_location(self, location: Location) -> None:
         self._location = location
@@ -65,12 +97,12 @@ class LocationButtonBar(QWidget):
             basename = location.basename()
             if basename == "":
                 if location.protocol() == "file":
-                    button = PushButton(QIcon.fromTheme("drive-harddisk"), "")
+                    button = LocationButton(self._controller, location, QIcon.fromTheme("drive-harddisk"), "")
                     button.setIconSize(QSize(16, 16))
                 else:
-                    button = PushButton(location.protocol() + "://")
+                    button = LocationButton(self._controller, location, location.protocol() + "://")
             else:
-                button = PushButton(basename)
+                button = LocationButton(self._controller, location, basename)
                 button.setStyleSheet("padding: 3px 4px;")
 
             button.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -95,7 +127,7 @@ class LocationButtonBar(QWidget):
         self._clearLayout()
         self.setLayout(layout)
 
-    def _on_button_context_menu(self, button: PushButton, location: Location, pos) -> None:
+    def _on_button_context_menu(self, button: LocationButton, location: Location, pos) -> None:
         fileinfo = self._controller.app.vfs.get_fileinfo(location)
         menu = ItemContextMenu(self._controller, [fileinfo])
         menu.exec(button.mapToGlobal(pos))
