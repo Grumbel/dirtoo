@@ -70,12 +70,19 @@ class Mediator(ABC):
     def directory_conflict(self, sourcedir: str, destdir: str) -> Resolution:
         pass
 
+    @abstractmethod
+    def cancel_transfer(self) -> bool:
+        pass
+
 
 class ConsoleMediator(Mediator):
 
     def __init__(self) -> None:
         self.overwrite: Overwrite = Overwrite.ASK
         self.merge: Overwrite = Overwrite.ASK
+
+    def cancel_transfer(self) -> bool:
+        return False
 
     def file_info(self, filename: str) -> str:
         return ("  name: {}\n"
@@ -354,6 +361,8 @@ class FileTransfer:
         object or directory.
         """
 
+        self.interruption_point()
+
         if not self._fs.isdir(destdir):
             raise Exception("{}: target directory does not exist".format(destdir))
 
@@ -363,6 +372,8 @@ class FileTransfer:
             self._move_file(source, destdir)
 
     def link(self, source: str, destdir: str) -> None:
+        self.interruption_point()
+
         base = os.path.basename(source)
         dest = os.path.join(destdir, base)
 
@@ -465,6 +476,8 @@ class FileTransfer:
             self._copy_directory_content(sourcedir, dest)
 
     def copy(self, source: str, destdir: str) -> None:
+        self.interruption_point()
+
         if not self._fs.isdir(destdir):
             raise Exception("{}: target directory does not exist".format(destdir))
 
@@ -485,6 +498,10 @@ class FileTransfer:
             self._fs.makedirs(actual_destdir)
 
         return actual_destdir
+
+    def interruption_point(self) -> None:
+        if self._mediator.cancel_transfer():
+            raise CancellationException()
 
 
 # EOF #

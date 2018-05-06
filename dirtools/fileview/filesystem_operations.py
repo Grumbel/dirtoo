@@ -67,6 +67,9 @@ class GuiMediator(QObject):
     def __init__(self, parent) -> None:
         super().__init__(parent)
 
+    def cancel_transfer(self) -> bool:
+        return False
+
     def file_conflict(self, source: str, dest: str) -> Resolution:
         retval = ReturnValue[Resolution]()
         self.sig_file_conflict.emit(retval)
