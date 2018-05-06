@@ -25,7 +25,7 @@ from PyQt5.QtWidgets import QWidget
 from dirtools.fileview.location import Location
 from dirtools.fileview.rename_operation import RenameOperation
 from dirtools.fileview.return_value import ReturnValue
-from dirtools.file_transfer import FileTransfer, ConsoleProgress, Resolution, Mediator
+from dirtools.file_transfer import FileTransfer, ConsoleProgress, Resolution, Mediator, CancellationException
 from dirtools.fileview.conflict_dialog import ConflictDialog
 
 if False:
@@ -50,8 +50,11 @@ class TransferWorker(QObject):
         progress = ConsoleProgress()
         transfer = FileTransfer(self._fs, self._mediator, progress)
 
-        for source in self._sources:
-            self._action(transfer, source, self._destination)
+        try:
+            for source in self._sources:
+                self._action(transfer, source, self._destination)
+        except CancellationException:
+            progress.transfer_canceled()
 
 
 class GuiMediator(QObject):

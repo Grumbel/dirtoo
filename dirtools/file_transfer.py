@@ -28,6 +28,10 @@ from dirtools.filesystem import Filesystem
 from dirtools.format import progressbar
 
 
+class CancellationException(Exception):
+    pass
+
+
 class Resolution(Enum):
 
     CANCEL = 0  # QDialog.Rejected
@@ -184,7 +188,12 @@ class Progress(ABC):
     def link_file(self, src: str, dst: str) -> None:
         pass
 
+    @abstractmethod
     def copy_progress(self, current: int, total: int) -> None:
+        pass
+
+    @abstractmethod
+    def transfer_canceled(self) -> None:
         pass
 
 
@@ -236,6 +245,9 @@ class ConsoleProgress(Progress):
         else:
             sys.stdout.write("       {}\r".format(total_width * " "))
 
+    def transfer_canceled(self) -> None:
+        print("transfer canceled")
+
 
 class FileTransfer:
 
@@ -277,7 +289,7 @@ class FileTransfer:
                 self._fs.rename_unique(dest)
                 self._move_file(source, destdir)
             elif resolution == Resolution.CANCEL:
-                pass
+                raise CancellationException()
             else:
                 assert False, "unknown conflict resolution: %r" % resolution
         else:
@@ -322,7 +334,7 @@ class FileTransfer:
                 self._fs.rename_unique(dest)
                 self._move_directory(sourcedir, destdir)
             elif resolution == Resolution.CANCEL:
-                pass
+                raise CancellationException()
             else:
                 assert False, "unknown conflict resolution: {}".format(resolution)
         else:
@@ -372,7 +384,7 @@ class FileTransfer:
                 self._fs.rename_unique(dest)
                 self.link(source, destdir)
             elif resolution == Resolution.CANCEL:
-                pass
+                raise CancellationException()
             else:
                 assert False, "unknown conflict resolution: {}".format(resolution)
         else:
@@ -403,7 +415,7 @@ class FileTransfer:
                 self._fs.rename_unique(dest)
                 self._copy_file(source, destdir)
             elif resolution == Resolution.CANCEL:
-                pass
+                raise CancellationException()
             else:
                 assert False, "unknown conflict resolution: {}".format(resolution)
         else:
@@ -443,7 +455,7 @@ class FileTransfer:
                 self._fs.rename_unique(dest)
                 self._copy_directory(sourcedir, destdir)
             elif resolution == Resolution.CANCEL:
-                pass
+                raise CancellationException()
             else:
                 assert False, "unknown conflict resolution: {}".format(resolution)
         else:
