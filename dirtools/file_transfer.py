@@ -192,6 +192,14 @@ class Progress(ABC):
         pass
 
     @abstractmethod
+    def move_file(self, src: str, dst: str) -> None:
+        pass
+
+    @abstractmethod
+    def move_directory(self, src: str, dst: str) -> None:
+        pass
+
+    @abstractmethod
     def link_file(self, src: str, dst: str) -> None:
         pass
 
@@ -201,6 +209,10 @@ class Progress(ABC):
 
     @abstractmethod
     def transfer_canceled(self) -> None:
+        pass
+
+    @abstractmethod
+    def transfer_completed(self) -> None:
         pass
 
 
@@ -241,6 +253,14 @@ class ConsoleProgress(Progress):
         if self.verbose:
             print("linking {} -> {}".format(src, dst))
 
+    def move_file(self, src: str, dst: str) -> None:
+        if self.verbose:
+            print("moving {} -> {}".format(src, dst))
+
+    def move_directory(self, src: str, dst: str) -> None:
+        if self.verbose:
+            print("moving {} -> {}".format(src, dst))
+
     def copy_progress(self, current: int, total: int) -> None:
         progress = current / total
         total_width = 50
@@ -254,6 +274,9 @@ class ConsoleProgress(Progress):
 
     def transfer_canceled(self) -> None:
         print("transfer canceled")
+
+    def transfer_completed(self) -> None:
+        print("transfer completed")
 
 
 class FileTransfer:
@@ -270,6 +293,7 @@ class FileTransfer:
         base = os.path.basename(source)
         dest = os.path.join(destdir, base)
 
+        self._progress.move_file(source, dest)
         self._move_file2(source, dest, destdir)
 
     def _move_file2(self, source: str, dest: str, destdir: str) -> None:
@@ -325,6 +349,7 @@ class FileTransfer:
         base = os.path.basename(sourcedir)
         dest = os.path.join(destdir, base)
 
+        self._progress.move_directory(sourcedir, dest)
         self._move_directory2(sourcedir, dest, destdir)
 
     def _move_directory2(self, sourcedir: str, dest: str, destdir: str) -> None:

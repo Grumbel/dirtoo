@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import TYPE_CHECKING
+
 import time
 
 from PyQt5.QtCore import Qt, pyqtSignal
@@ -28,6 +30,9 @@ import bytefmt
 
 from dirtools.mediainfo import split_duration
 
+if TYPE_CHECKING:
+    from dirtools.fileview.filesystem_operations import GuiProgress  # noqa: F401
+
 
 class TransferDialog(QDialog):
 
@@ -38,7 +43,7 @@ class TransferDialog(QDialog):
     sig_move = pyqtSignal(str)
     sig_link = pyqtSignal(str)
 
-    sig_transfer_complete = pyqtSignal()
+    sig_transfer_completed = pyqtSignal()
 
     def __init__(self, target_directory: str, parent: QWidget) -> None:
         super().__init__()
@@ -56,7 +61,7 @@ class TransferDialog(QDialog):
         self.sig_move.connect(self._on_move)
         self.sig_link.connect(self._on_link)
 
-        self.sig_transfer_complete.connect(self._on_transfer_complete)
+        self.sig_transfer_completed.connect(self._on_transfer_completed)
 
         self._timer = self.startTimer(500)
         self._time = time.time()
@@ -75,20 +80,25 @@ class TransferDialog(QDialog):
     def _on_copy_end(self, src: str):
         pass
 
-    def _on_move(self, src: str):
+    def _on_move(self, src: str, dstdir: str):
         self._transfer_log_widget.append("moving {}".format(src))
         self._from_widget.setText(src)
 
-    def _on_link(self, src: str):
+    def _on_link(self, src: str, dstdir: str):
         self._transfer_log_widget.append("linking {}".format(src))
         self._from_widget.setText(src)
 
-    def _on_transfer_complete(self):
+    def _on_transfer_completed(self):
+        self._transfer_log_widget.append("transfer completed")
+
         self._btn_cancel.setVisible(False)
         self._btn_close.setVisible(True)
 
         self.killTimer(self._timer)
         self._timer = None
+
+    def _on_transfer_canceled(self):
+        self._transfer_log_widget.append("transfer canceled")
 
     def _on_pause_button(self):
         print("transfer pause not implemented")
@@ -202,6 +212,20 @@ class TransferDialog(QDialog):
         btn_pause.clicked.connect(self._on_pause_button)
         btn_cancel.clicked.connect(self.reject)
         btn_close.clicked.connect(self.accept)
+
+    def connect(self, progress: 'GuiProgress') -> None:
+        # progress.sig_skip_rename
+        # progress.sig_skip_link
+        # progress.sig_skip_copy
+        progress.sig_move_file.connect(self._on_move)
+        progress.sig_move_directory.connect(self._on_move)
+        # progress.sig_copy_file
+        # progress.sig_copy_directory
+        # progress.sig_remove_file
+        # progress.sig_link_file
+        progress.sig_copy_progress.connect(lambda x, y: self._on_copy_progress("", x, y))
+        progress.sig_transfer_canceled.connect(self._on_transfer_canceled)
+        progress.sig_transfer_completed.connect(self._on_transfer_completed)
 
 
 # EOF #
