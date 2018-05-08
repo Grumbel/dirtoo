@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 
 import time
 
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon, QTextOption
 from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton,
                              QHBoxLayout, QVBoxLayout, QSizePolicy,
@@ -36,15 +36,6 @@ if TYPE_CHECKING:
 
 class TransferDialog(QDialog):
 
-    sig_copy_begin = pyqtSignal(str)
-    sig_copy_progress = pyqtSignal(str, int, int)
-    sig_copy_end = pyqtSignal(str)
-
-    sig_move = pyqtSignal(str)
-    sig_link = pyqtSignal(str)
-
-    sig_transfer_completed = pyqtSignal()
-
     def __init__(self, target_directory: str, parent: QWidget) -> None:
         super().__init__()
 
@@ -53,15 +44,6 @@ class TransferDialog(QDialog):
 
         self._make_gui()
         self.resize(600, 400)
-
-        self.sig_copy_begin.connect(self._on_copy_begin)
-        self.sig_copy_progress.connect(self._on_copy_progress)
-        self.sig_copy_end.connect(self._on_copy_end)
-
-        self.sig_move.connect(self._on_move)
-        self.sig_link.connect(self._on_link)
-
-        self.sig_transfer_completed.connect(self._on_transfer_completed)
 
         self._timer = self.startTimer(500)
         self._time = time.time()

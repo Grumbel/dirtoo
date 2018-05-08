@@ -23,7 +23,7 @@ import sys
 import argparse
 import tempfile
 
-from PyQt5.QtCore import QThread, QObject
+from PyQt5.QtCore import QThread, QObject, pyqtSignal
 from PyQt5.QtWidgets import QApplication, QDialog
 
 from dirtools.fileview.file_info import FileInfo
@@ -64,33 +64,49 @@ def make_transfer_request_dialog() -> TransferRequestDialog:
 
 class TransferDialogTest(QObject):
 
+    sig_copy_directory = pyqtSignal(str, str)
+    sig_copy_file = pyqtSignal(str, str)
+    sig_copy_progress = pyqtSignal(int, int)
+    sig_link_file = pyqtSignal(str, str)
+    sig_move_file = pyqtSignal(str, str)
+    sig_move_directory = pyqtSignal(str, str)
+    sig_remove_file = pyqtSignal(str)
+    sig_skip_copy = pyqtSignal(str, str)
+    sig_skip_link = pyqtSignal(str, str)
+    sig_skip_move_file = pyqtSignal(str, str)
+    sig_skip_move_directory = pyqtSignal(str, str)
+    sig_skip_rename = pyqtSignal(str, str)
+    sig_transfer_canceled = pyqtSignal()
+    sig_transfer_completed = pyqtSignal()
+
     def __init__(self, dialog: TransferDialog, parent: QObject) -> None:
         super().__init__()
         self._dialog = dialog
+        self._dialog.connect(self)
 
     def on_started(self) -> None:
         sleep_time = 1000
 
-        self._dialog.sig_link.emit("/home/juser/symlink_file")
+        self.sig_link_file.emit("/home/juser/symlink_file", "/tmp")
         self.thread().msleep(sleep_time)
-        self._dialog.sig_move.emit("/home/juser/move_file")
+        self.sig_move_file.emit("/home/juser/move_file", "/tmp")
         self.thread().msleep(sleep_time)
 
         for i in range(5):
             src = "/home/juser/foobar{}".format(i)
-            self._dialog.sig_copy_begin.emit(src)
+            # self.sig_copy_begin.emit(src)
             total = 100000
             for j in range(100 + 1):
-                self._dialog.sig_copy_progress.emit(src, j * total // 100, total)
+                self.sig_copy_progress.emit(j * total // 100, total)
                 self.thread().msleep(sleep_time // 20)
-            self._dialog.sig_copy_end.emit(src)
+            # self.sig_copy_end.emit(src)
             self.thread().msleep(sleep_time)
 
-        self._dialog.sig_move.emit("/home/juser/second_last_file")
+        self.sig_move_file.emit("/home/juser/second_last_file", "/tmp")
         self.thread().msleep(sleep_time)
-        self._dialog.sig_move.emit("/home/juser/last_file")
+        self.sig_move_file.emit("/home/juser/last_file", "/tmp")
         self.thread().msleep(sleep_time)
-        self._dialog.sig_transfer_complete.emit()
+        self.sig_transfer_completed.emit()
 
 
 g_keep_alive: List[Any] = []
