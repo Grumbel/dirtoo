@@ -19,7 +19,7 @@ from typing import Optional, List, Callable, TYPE_CHECKING
 
 import logging
 
-from PyQt5.QtCore import QObject, QThread, pyqtSignal
+from PyQt5.QtCore import Qt, QObject, QThread, pyqtSignal
 from PyQt5.QtWidgets import QWidget
 
 from dirtools.fileview.location import Location
@@ -48,6 +48,11 @@ class TransferWorker(QObject):
         self._mediator = mediator
         self._progress = progress
 
+        self._close = False
+
+    def close(self) -> None:
+        pass
+
     def on_started(self) -> None:
         transfer = FileTransfer(self._fs, self._mediator, self._progress)
 
@@ -71,6 +76,8 @@ class GuiProgress(QObject):
     sig_remove_file = pyqtSignal(str)
     sig_skip_copy = pyqtSignal(str, str)
     sig_skip_link = pyqtSignal(str, str)
+    sig_skip_move_file = pyqtSignal(str, str)
+    sig_skip_move_directory = pyqtSignal(str, str)
     sig_skip_rename = pyqtSignal(str, str)
     sig_transfer_canceled = pyqtSignal()
     sig_transfer_completed = pyqtSignal()
@@ -144,6 +151,62 @@ class GuiMediator(QObject):
         return result
 
 
+class GuiFileTransfer(QObject):
+
+    sig_finished = pyqtSignal()
+    sig_close_requested = pyqtSignal()
+
+    def __init__(self, app, action: Callable, sources: List[str], destination: str) -> None:
+        super().__init__()
+
+        self._app = app
+
+        thread = QThread()
+
+        mediator = GuiMediator(None)
+        mediator.sig_file_conflict.connect(self._on_file_conflict)
+        mediator.sig_directory_conflict.connect(self._on_directory_conflict)
+        mediator.moveToThread(thread)
+
+        progress = GuiProgress()
+
+        transfer_dialog = TransferDialog(destination, None)
+        transfer_dialog.connect(progress)
+        transfer_dialog.finished.connect(self._on_finished)
+        transfer_dialog.show()
+
+        worker = TransferWorker(self._app.fs, action, sources, destination, mediator, progress)
+        worker.moveToThread(thread)
+        thread.started.connect(worker.on_started)
+        thread.start()
+
+        self.sig_close_requested.connect(worker.close, type=Qt.BlockingQueuedConnection)
+
+        self._thread = thread
+        self._worker = worker
+        self._transfer_dialog = transfer_dialog
+
+    def close(self) -> None:
+        assert self._worker._close is False
+        self._worker._close = True
+        self.sig_close_requested.emit()
+        self._thread.quit()
+        self._thread.wait()
+
+    def _on_finished(self, result: int):
+        self.sig_finished.emit()
+
+    def _on_file_conflict(self, retval: ReturnValue[Resolution]) -> None:
+        dialog = ConflictDialog(None)
+        resolution = Resolution(dialog.exec())
+        retval.send(resolution)
+
+    def _on_directory_conflict(self, retval: ReturnValue[Resolution]) -> None:
+        dialog = ConflictDialog(None)
+        resolution = Resolution(dialog.exec())
+        retval.send(resolution)
+
+
 class FilesystemOperations:
 
     """Filesystem operations for the GUI. Messageboxes and dialogs will be
@@ -152,9 +215,7 @@ class FilesystemOperations:
     def __init__(self, app) -> None:
         self._app = app
         self._rename_op = RenameOperation()
-        self._threads: List[QThread] = []
-        self._workers: List[TransferWorker] = []
-        self._transfer_dialogs: List[TransferDialog] = []
+        self._transfers: List[GuiFileTransfer] = []
 
     def close(self) -> None:
         pass
@@ -173,43 +234,19 @@ class FilesystemOperations:
         self._transfer_files(FileTransfer.link, sources, destination)
 
     def _transfer_files(self, action: Callable, sources: List[str], destination: str) -> None:
-        thread = QThread()
+        transfer = GuiFileTransfer(self._app, action, sources, destination)
+        transfer.sig_finished.connect(lambda transfer=transfer: self._cleanup_transfer(transfer))
+        self._transfers.append(transfer)
 
-        mediator = GuiMediator(None)
-        mediator.sig_file_conflict.connect(self._on_file_conflict)
-        mediator.sig_directory_conflict.connect(self._on_directory_conflict)
-        mediator.moveToThread(thread)
-
-        progress = GuiProgress()
-
-        transfer_dialog = TransferDialog(destination, None)
-        transfer_dialog.connect(progress)
-        transfer_dialog.show()
-
-        worker = TransferWorker(self._app.fs, action, sources, destination, mediator, progress)
-        worker.moveToThread(thread)
-        thread.started.connect(worker.on_started)
-        thread.start()
-
-        self._threads.append(thread)
-        self._workers.append(worker)
-        self._transfer_dialogs.append(transfer_dialog)
+    def _cleanup_transfer(self, transfer: GuiFileTransfer) -> None:
+        transfer.close()
+        self._transfers.remove(transfer)
 
     def create_file(self, path: str) -> None:
         self._app.fs.create_file(path)
 
     def create_directory(self, path: str) -> None:
         self._app.fs.create_directory(path)
-
-    def _on_file_conflict(self, retval: ReturnValue[Resolution]) -> None:
-        dialog = ConflictDialog(None)
-        resolution = Resolution(dialog.exec())
-        retval.send(resolution)
-
-    def _on_directory_conflict(self, retval: ReturnValue[Resolution]) -> None:
-        dialog = ConflictDialog(None)
-        resolution = Resolution(dialog.exec())
-        retval.send(resolution)
 
 
 # EOF #
