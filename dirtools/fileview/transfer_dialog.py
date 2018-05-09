@@ -21,7 +21,7 @@ import time
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon, QTextOption
-from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton,
+from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QCheckBox,
                              QHBoxLayout, QVBoxLayout, QSizePolicy,
                              QDialogButtonBox, QLabel, QGroupBox,
                              QTextEdit, QFormLayout, QProgressBar)
@@ -29,6 +29,7 @@ from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton,
 import bytefmt
 
 from dirtools.mediainfo import split_duration
+from dirtools.fileview.settings import settings
 
 if TYPE_CHECKING:
     from dirtools.fileview.filesystem_operations import GuiProgress  # noqa: F401
@@ -78,6 +79,12 @@ class TransferDialog(QDialog):
 
         self.killTimer(self._timer)
         self._timer = None
+
+        if self._close_checkbox.isChecked():
+            self.hide()
+
+    def _on_close_checkbox_toggled(self, state):
+        settings.set_value("globals/close_on_transfer_completed", state)
 
     def _on_transfer_canceled(self):
         self._transfer_log_widget.append("transfer canceled")
@@ -151,6 +158,11 @@ class TransferDialog(QDialog):
         time_widget = QLabel()
         self._time_widget = time_widget
 
+        close_checkbox = QCheckBox("Close when finished")
+        close_checkbox.setChecked(settings.value("globals/close_on_transfer_completed", True, bool))
+        close_checkbox.toggled.connect(self._on_close_checkbox_toggled)
+        self._close_checkbox = close_checkbox
+
         current_file_form.addRow(to_label, to_widget)
         current_file_form.addRow(from_label, from_widget)
         current_file_form.addRow(progress_label, progress_widget)
@@ -180,6 +192,7 @@ class TransferDialog(QDialog):
         subvbox.addWidget(header)
         subvbox.addWidget(transfer_log_box)
         subvbox.addWidget(current_file_box)
+        subvbox.addWidget(close_checkbox)
 
         hbox = QHBoxLayout()
         hbox.addWidget(move_icon)
