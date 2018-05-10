@@ -26,6 +26,7 @@ import tempfile
 from PyQt5.QtCore import QThread, QObject, pyqtSignal
 from PyQt5.QtWidgets import QApplication, QDialog
 
+from dirtools.file_transfer import Resolution
 from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.conflict_dialog import ConflictDialog
 from dirtools.fileview.transfer_request_dialog import TransferRequestDialog
@@ -64,18 +65,14 @@ def make_transfer_request_dialog() -> TransferRequestDialog:
 
 class TransferDialogTest(QObject):
 
-    sig_copy_directory = pyqtSignal(str, str)
-    sig_copy_file = pyqtSignal(str, str)
+    sig_copy_directory = pyqtSignal(str, str, Resolution)
+    sig_copy_file = pyqtSignal(str, str, Resolution)
     sig_copy_progress = pyqtSignal(int, int)
-    sig_link_file = pyqtSignal(str, str)
-    sig_move_file = pyqtSignal(str, str)
-    sig_move_directory = pyqtSignal(str, str)
+    sig_link_file = pyqtSignal(str, str, Resolution)
+    sig_move_file = pyqtSignal(str, str, Resolution)
+    sig_move_directory = pyqtSignal(str, str, Resolution)
     sig_remove_file = pyqtSignal(str)
-    sig_skip_copy = pyqtSignal(str, str)
-    sig_skip_link = pyqtSignal(str, str)
-    sig_skip_move_file = pyqtSignal(str, str)
-    sig_skip_move_directory = pyqtSignal(str, str)
-    sig_skip_rename = pyqtSignal(str, str)
+    sig_remove_directory = pyqtSignal(str)
     sig_transfer_canceled = pyqtSignal()
     sig_transfer_completed = pyqtSignal()
 
@@ -85,16 +82,18 @@ class TransferDialogTest(QObject):
         self._dialog.connect(self)
 
     def on_started(self) -> None:
-        sleep_time = 1000
+        sleep_time = 100
 
-        self.sig_link_file.emit("/home/juser/symlink_file", "/tmp")
+        self.sig_link_file.emit("/home/juser/symlink_file", "/tmp", Resolution.SKIP)
+        self.sig_link_file.emit("/home/juser/symlink_file", "/tmp", Resolution.NO_CONFLICT)
         self.thread().msleep(sleep_time)
-        self.sig_move_file.emit("/home/juser/move_file", "/tmp")
+        self.sig_move_file.emit("/home/juser/move_file", "/tmp", Resolution.NO_CONFLICT)
         self.thread().msleep(sleep_time)
 
         for i in range(5):
             src = "/home/juser/foobar{}".format(i)
-            # self.sig_copy_begin.emit(src)
+            dst = "/home/juser/otherdir/foobar{}".format(i)
+            self.sig_copy_file.emit(src, dst, Resolution.NO_CONFLICT)
             total = 100000
             for j in range(100 + 1):
                 self.sig_copy_progress.emit(j * total // 100, total)
@@ -102,9 +101,10 @@ class TransferDialogTest(QObject):
             # self.sig_copy_end.emit(src)
             self.thread().msleep(sleep_time)
 
-        self.sig_move_file.emit("/home/juser/second_last_file", "/tmp")
+        self.sig_move_file.emit("/home/juser/second_last_file", "/tmp", Resolution.NO_CONFLICT)
+        self.sig_move_file.emit("/home/juser/second_last_file", "/tmp", Resolution.SKIP)
         self.thread().msleep(sleep_time)
-        self.sig_move_file.emit("/home/juser/last_file", "/tmp")
+        self.sig_move_file.emit("/home/juser/last_file", "/tmp", Resolution.NO_CONFLICT)
         self.thread().msleep(sleep_time)
         self.sig_transfer_completed.emit()
 

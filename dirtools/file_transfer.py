@@ -39,6 +39,7 @@ class Resolution(Enum):
     SKIP = 2
     RENAME_SOURCE = 3
     RENAME_TARGET = 4
+    NO_CONFLICT = 5
 
 
 class Overwrite(Enum):
@@ -164,27 +165,15 @@ class ConsoleMediator(Mediator):
 class Progress(ABC):
 
     @abstractmethod
-    def skip_rename(self, oldpath: str, newpath: str) -> None:
+    def copy_file(self, src: str, dst: str, resolution: Resolution) -> None:
         pass
 
     @abstractmethod
-    def skip_link(self, src: str, dst: str) -> None:
+    def copy_progress(self, current: int, total: int) -> None:
         pass
 
     @abstractmethod
-    def skip_copy(self, src: str, dst: str) -> None:
-        pass
-
-    @abstractmethod
-    def skip_move_directory(self, src: str, dst: str) -> None:
-        pass
-
-    @abstractmethod
-    def copy_file(self, src: str, dst: str) -> None:
-        pass
-
-    @abstractmethod
-    def copy_directory(self, src: str, dst: str) -> None:
+    def copy_directory(self, src: str, dst: str, resolution: Resolution) -> None:
         pass
 
     @abstractmethod
@@ -192,19 +181,19 @@ class Progress(ABC):
         pass
 
     @abstractmethod
-    def move_file(self, src: str, dst: str) -> None:
+    def remove_directory(self, src: str) -> None:
         pass
 
     @abstractmethod
-    def move_directory(self, src: str, dst: str) -> None:
+    def move_file(self, src: str, dst: str, resolution: Resolution) -> None:
         pass
 
     @abstractmethod
-    def link_file(self, src: str, dst: str) -> None:
+    def move_directory(self, src: str, dst: str, resolution: Resolution) -> None:
         pass
 
     @abstractmethod
-    def copy_progress(self, current: int, total: int) -> None:
+    def link_file(self, src: str, dst: str, resolution: Resolution) -> None:
         pass
 
     @abstractmethod
@@ -221,45 +210,9 @@ class ConsoleProgress(Progress):
     def __init__(self):
         self.verbose: bool = False
 
-    def skip_rename(self, oldpath: str, newpath: str) -> None:
-        if self.verbose:
-            print("skipping {} -> {}".format(oldpath, newpath))
-
-    def skip_link(self, src: str, dst: str) -> None:
-        if self.verbose:
-            print("skipping {} -> {}".format(src, dst))
-
-    def skip_copy(self, src: str, dst: str) -> None:
-        if self.verbose:
-            print("skipping {} -> {}".format(src, dst))
-
-    def skip_move_directory(self, src: str, dst: str) -> None:
-        if self.verbose:
-            print("skipping {} -> {}".format(src, dst))
-
-    def copy_file(self, src: str, dst: str) -> None:
+    def copy_file(self, src: str, dst: str, resolution: Resolution) -> None:
         if self.verbose:
             print("copying {} -> {}".format(src, dst))
-
-    def copy_directory(self, src: str, dst: str) -> None:
-        if self.verbose:
-            print("copying {} -> {}".format(src, dst))
-
-    def remove_file(self, src: str) -> None:
-        if self.verbose:
-            print("removing {}".format(src))
-
-    def link_file(self, src: str, dst: str) -> None:
-        if self.verbose:
-            print("linking {} -> {}".format(src, dst))
-
-    def move_file(self, src: str, dst: str) -> None:
-        if self.verbose:
-            print("moving {} -> {}".format(src, dst))
-
-    def move_directory(self, src: str, dst: str) -> None:
-        if self.verbose:
-            print("moving {} -> {}".format(src, dst))
 
     def copy_progress(self, current: int, total: int) -> None:
         progress = current / total
@@ -271,6 +224,30 @@ class ConsoleProgress(Progress):
                 progressbar(total_width, current, total)))
         else:
             sys.stdout.write("       {}\r".format(total_width * " "))
+
+    def copy_directory(self, src: str, dst: str, resolution: Resolution) -> None:
+        if self.verbose:
+            print("copying {} -> {}".format(src, dst))
+
+    def remove_file(self, src: str) -> None:
+        if self.verbose:
+            print("removing {}".format(src))
+
+    def remove_directory(self, src: str) -> None:
+        if self.verbose:
+            print("removing {}".format(src))
+
+    def link_file(self, src: str, dst: str, resolution: Resolution) -> None:
+        if self.verbose:
+            print("linking {} -> {}".format(src, dst))
+
+    def move_file(self, src: str, dst: str, resolution: Resolution) -> None:
+        if self.verbose:
+            print("moving {} -> {}".format(src, dst))
+
+    def move_directory(self, src: str, dst: str, resolution: Resolution) -> None:
+        if self.verbose:
+            print("moving {} -> {}".format(src, dst))
 
     def transfer_canceled(self) -> None:
         print("transfer canceled")
@@ -293,20 +270,20 @@ class FileTransfer:
         base = os.path.basename(source)
         dest = os.path.join(destdir, base)
 
-        self._progress.move_file(source, dest)
+        self._progress.move_file(source, dest, Resolution.NO_CONFLICT)
         self._move_file2(source, dest, destdir)
 
     def _move_file2(self, source: str, dest: str, destdir: str) -> None:
         if self._fs.lexists(dest):
             resolution = self._mediator.file_conflict(source, dest)
             if resolution == Resolution.SKIP:
-                self._progress.skip_rename(source, dest)
+                self._progress.move_file(source, dest, resolution)
             elif resolution == Resolution.OVERWRITE:
                 try:
                     self._fs.overwrite(source, dest)
                 except OSError as err:
                     if err.errno == errno.EXDEV:
-                        self._progress.copy_file(source, dest)
+                        self._progress.copy_file(source, dest, resolution)
                         self._fs.copy_file(source, dest, overwrite=True, progress=self._progress.copy_progress)
 
                         self._progress.remove_file(source)
@@ -349,14 +326,14 @@ class FileTransfer:
         base = os.path.basename(sourcedir)
         dest = os.path.join(destdir, base)
 
-        self._progress.move_directory(sourcedir, dest)
+        self._progress.move_directory(sourcedir, dest, Resolution.NO_CONFLICT)
         self._move_directory2(sourcedir, dest, destdir)
 
     def _move_directory2(self, sourcedir: str, dest: str, destdir: str) -> None:
         if self._fs.lexists(dest):
             resolution = self._mediator.directory_conflict(sourcedir, dest)
             if resolution == Resolution.SKIP:
-                self._progress.skip_move_directory(sourcedir, dest)
+                self._progress.move_directory(sourcedir, dest, resolution)
             elif resolution == Resolution.OVERWRITE:
                 self._move_directory_content(sourcedir, dest)
             elif resolution == Resolution.RENAME_SOURCE:
@@ -408,9 +385,9 @@ class FileTransfer:
         if self._fs.lexists(dest):
             resolution = self._mediator.file_conflict(source, dest)
             if resolution == Resolution.SKIP:
-                self._progress.skip_link(source, dest)
+                self._progress.link_file(source, dest, resolution)
             elif resolution == Resolution.OVERWRITE:
-                self._progress.link_file(source, dest)
+                self._progress.link_file(source, dest, resolution)
                 self._fs.remove_file(dest)
                 self._fs.symlink(source, dest)
             elif resolution == Resolution.RENAME_SOURCE:
@@ -424,7 +401,7 @@ class FileTransfer:
             else:
                 assert False, "unknown conflict resolution: {}".format(resolution)
         else:
-            self._progress.link_file(source, dest)
+            self._progress.link_file(source, dest, Resolution.NO_CONFLICT)
             self._fs.symlink(source, dest)
 
     def _copy_file(self, source: str, destdir: str) -> None:
@@ -440,9 +417,9 @@ class FileTransfer:
         if self._fs.lexists(dest):
             resolution = self._mediator.file_conflict(source, dest)
             if resolution == Resolution.SKIP:
-                self._progress.skip_copy(source, dest)
+                self._progress.copy_file(source, dest, resolution)
             elif resolution == Resolution.OVERWRITE:
-                self._progress.copy_file(source, dest)
+                self._progress.copy_file(source, dest, resolution)
                 self._fs.copy_file(source, dest, overwrite=True, progress=self._progress.copy_progress)
             elif resolution == Resolution.RENAME_SOURCE:
                 new_dest = self._fs.generate_unique(dest)
@@ -455,7 +432,7 @@ class FileTransfer:
             else:
                 assert False, "unknown conflict resolution: {}".format(resolution)
         else:
-            self._progress.copy_file(source, dest)
+            self._progress.copy_file(source, dest, Resolution.NO_CONFLICT)
             self._fs.copy_file(source, dest, progress=self._progress.copy_progress)
 
     def _copy_directory_content(self, sourcedir: str, destdir: str) -> None:
@@ -480,9 +457,9 @@ class FileTransfer:
         if self._fs.lexists(dest):
             resolution = self._mediator.directory_conflict(sourcedir, dest)
             if resolution == Resolution.SKIP:
-                self._progress.skip_copy(sourcedir, dest)
+                self._progress.copy_directory(sourcedir, dest, resolution)
             elif resolution == Resolution.OVERWRITE:
-                self._progress.copy_directory(sourcedir, destdir)
+                self._progress.copy_directory(sourcedir, destdir, resolution)
                 self._copy_directory_content(sourcedir, dest)
             elif resolution == Resolution.RENAME_SOURCE:
                 new_dest = self._fs.generate_unique(dest)
@@ -495,7 +472,7 @@ class FileTransfer:
             else:
                 assert False, "unknown conflict resolution: {}".format(resolution)
         else:
-            self._progress.copy_directory(sourcedir, dest)
+            self._progress.copy_directory(sourcedir, dest, Resolution.NO_CONFLICT)
             self._fs.mkdir(dest)
             self._fs.copy_stat(sourcedir, dest)
             self._copy_directory_content(sourcedir, dest)

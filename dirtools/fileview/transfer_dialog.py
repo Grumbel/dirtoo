@@ -29,6 +29,7 @@ from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QCheckBox,
 import bytefmt
 
 from dirtools.mediainfo import split_duration
+from dirtools.file_transfer import Resolution
 from dirtools.fileview.settings import settings
 
 if TYPE_CHECKING:
@@ -48,40 +49,6 @@ class TransferDialog(QDialog):
 
         self._timer = self.startTimer(500)
         self._time = time.time()
-
-    def _on_copy_begin(self, src: str):
-        self._transfer_log_widget.append("copying {}".format(src))
-        self._from_widget.setText(src)
-
-    def _on_copy_progress(self, src: str, current: int, total: int):
-        self._progress_bar.setMinimum(0)
-        self._progress_bar.setMaximum(total)
-        self._progress_bar.setValue(current)
-
-        self._transfered.setText("{} / {}".format(bytefmt.humanize(current), bytefmt.humanize(total)))
-
-    def _on_copy_end(self, src: str):
-        pass
-
-    def _on_move(self, src: str, dstdir: str):
-        self._transfer_log_widget.append("moving {}".format(src))
-        self._from_widget.setText(src)
-
-    def _on_link(self, src: str, dstdir: str):
-        self._transfer_log_widget.append("linking {}".format(src))
-        self._from_widget.setText(src)
-
-    def _on_transfer_completed(self):
-        self._transfer_log_widget.append("transfer completed")
-
-        self._btn_cancel.setVisible(False)
-        self._btn_close.setVisible(True)
-
-        self.killTimer(self._timer)
-        self._timer = None
-
-        if self._close_checkbox.isChecked():
-            self.hide()
 
     def _on_close_checkbox_toggled(self, state):
         settings.set_value("globals/close_on_transfer_completed", state)
@@ -137,14 +104,15 @@ class TransferDialog(QDialog):
         current_file_box = QGroupBox("Info:")
 
         current_file_form = QFormLayout()
-        to_label = QLabel("Destination:")
-        to_widget = QLabel(self._target_directory)
-        to_widget.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        dest_label = QLabel("Destination:")
+        dest_widget = QLabel(self._target_directory)
+        dest_widget.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self._dest_widget = dest_widget
 
-        from_label = QLabel("Source:")
-        from_widget = QLabel()
-        from_widget.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self._from_widget = from_widget
+        source_label = QLabel("Source:")
+        source_widget = QLabel()
+        source_widget.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self._source_widget = source_widget
 
         progress_label = QLabel("Progress:")
         progress_widget = QProgressBar()
@@ -163,8 +131,8 @@ class TransferDialog(QDialog):
         close_checkbox.toggled.connect(self._on_close_checkbox_toggled)
         self._close_checkbox = close_checkbox
 
-        current_file_form.addRow(to_label, to_widget)
-        current_file_form.addRow(from_label, from_widget)
+        current_file_form.addRow(dest_label, dest_widget)
+        current_file_form.addRow(source_label, source_widget)
         current_file_form.addRow(progress_label, progress_widget)
         current_file_form.addRow(transfered_label, transfered_widget)
         current_file_form.addRow(time_label, time_widget)
@@ -209,18 +177,82 @@ class TransferDialog(QDialog):
         btn_close.clicked.connect(self.accept)
 
     def connect(self, progress: 'GuiProgress') -> None:
-        # progress.sig_skip_rename
-        # progress.sig_skip_link
-        # progress.sig_skip_copy
-        progress.sig_move_file.connect(self._on_move)
-        progress.sig_move_directory.connect(self._on_move)
-        # progress.sig_copy_file
-        # progress.sig_copy_directory
-        # progress.sig_remove_file
-        # progress.sig_link_file
+        progress.sig_move_file.connect(self._on_move_file)
+        progress.sig_move_directory.connect(self._on_move_directory)
+        progress.sig_copy_file.connect(self._on_copy_file)
         progress.sig_copy_progress.connect(lambda x, y: self._on_copy_progress("", x, y))
+        progress.sig_copy_directory.connect(self._on_copy_directory)
+        progress.sig_remove_file.connect(self._on_remove_file)
+        progress.sig_remove_directory.connect(self._on_remove_directory)
+        progress.sig_link_file.connect(self._on_link_file)
         progress.sig_transfer_canceled.connect(self._on_transfer_canceled)
         progress.sig_transfer_completed.connect(self._on_transfer_completed)
+
+    def _on_copy_file(self, src: str, dst: str, resolution: Resolution):
+        if resolution == Resolution.SKIP:
+            self._transfer_log_widget.append("skipping file {}".format(src))
+        else:
+            self._transfer_log_widget.append("copying file {} -> {}".format(src, dst))
+            self._source_widget.setText(src)
+            self._dest_widget.setText(dst)
+
+    def _on_copy_progress(self, src: str, current: int, total: int):
+        self._progress_bar.setMinimum(0)
+        self._progress_bar.setMaximum(total)
+        self._progress_bar.setValue(current)
+
+        self._transfered.setText("{} / {}".format(bytefmt.humanize(current), bytefmt.humanize(total)))
+
+    def _on_copy_directory(self, src: str, dst: str, resolution: Resolution):
+        if resolution == Resolution.SKIP:
+            self._transfer_log_widget.append("skipping directory {}".format(src))
+        else:
+            self._transfer_log_widget.append("copying directory {}".format(src, dst))
+            self._source_widget.setText(src)
+            self._dest_widget.setText(dst)
+
+    def _on_move_file(self, src: str, dst: str, resolution: Resolution):
+        if resolution == Resolution.SKIP:
+            self._transfer_log_widget.append("skipping file {}".format(src))
+        else:
+            self._transfer_log_widget.append("moving file {} -> {}".format(src, dst))
+            self._source_widget.setText(src)
+            self._dest_widget.setText(dst)
+
+    def _on_move_directory(self, src: str, dst: str, resolution: Resolution):
+        if resolution == Resolution.SKIP:
+            self._transfer_log_widget.append("skipping directory {}".format(src))
+        else:
+            self._transfer_log_widget.append("moving directory {} -> {}".format(src, dst))
+            self._source_widget.setText(src)
+            self._dest_widget.setText(dst)
+
+    def _on_link_file(self, src: str, dst: str, resolution: Resolution):
+        if resolution == Resolution.SKIP:
+            self._transfer_log_widget.append("skipping directory {}".format(src))
+        else:
+            self._transfer_log_widget.append("linking {}".format(src, dst))
+            self._source_widget.setText(src)
+            self._dest_widget.setText(dst)
+
+    def _on_remove_file(self, src: str):
+        self._transfer_log_widget.append("removing file {}".format(src))
+        self._source_widget.setText(src)
+
+    def _on_remove_directory(self, src: str):
+        self._transfer_log_widget.append("removing directory {}".format(src))
+
+    def _on_transfer_completed(self):
+        self._transfer_log_widget.append("transfer completed")
+
+        self._btn_cancel.setVisible(False)
+        self._btn_close.setVisible(True)
+
+        self.killTimer(self._timer)
+        self._timer = None
+
+        if self._close_checkbox.isChecked():
+            self.hide()
 
 
 # EOF #

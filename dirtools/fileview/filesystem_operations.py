@@ -67,56 +67,43 @@ class TransferWorker(QObject):
 
 class GuiProgress(QObject):
 
-    sig_copy_directory = pyqtSignal(str, str)
-    sig_copy_file = pyqtSignal(str, str)
+    sig_copy_file = pyqtSignal(str, str, Resolution)
     sig_copy_progress = pyqtSignal(int, int)
-    sig_link_file = pyqtSignal(str, str)
-    sig_move_file = pyqtSignal(str, str)
-    sig_move_directory = pyqtSignal(str, str)
+    sig_copy_directory = pyqtSignal(str, str, Resolution)
+    sig_link_file = pyqtSignal(str, str, Resolution)
+    sig_move_file = pyqtSignal(str, str, Resolution)
+    sig_move_directory = pyqtSignal(str, str, Resolution)
     sig_remove_file = pyqtSignal(str)
-    sig_skip_copy = pyqtSignal(str, str)
-    sig_skip_link = pyqtSignal(str, str)
-    sig_skip_move_file = pyqtSignal(str, str)
-    sig_skip_move_directory = pyqtSignal(str, str)
-    sig_skip_rename = pyqtSignal(str, str)
+    sig_remove_directory = pyqtSignal(str)
     sig_transfer_canceled = pyqtSignal()
     sig_transfer_completed = pyqtSignal()
 
     def __init__(self) -> None:
         super().__init__()
 
-    def skip_rename(self, src: str, dst: str) -> None:
-        self.sig_skip_rename.emit(src, dst)
-
-    def skip_link(self, src: str, dst: str) -> None:
-        self.sig_skip_link.emit(src, dst)
-
-    def skip_copy(self, src: str, dst: str) -> None:
-        self.sig_skip_copy.emit(src, dst)
-
-    def skip_move_directory(self, src: str, dst: str) -> None:
-        self.sig_skip_move_directory.emit(src, dst)
-
-    def copy_file(self, src: str, dst: str) -> None:
+    def copy_file(self, src: str, dst: str, resolution: Resolution) -> None:
         self.sig_copy_file.emit(src, dst)
 
-    def copy_directory(self, src: str, dst: str) -> None:
+    def copy_progress(self, current: int, total: int) -> None:
+        self.sig_copy_progress.emit(current, total)
+
+    def copy_directory(self, src: str, dst: str, resolution: Resolution) -> None:
         self.sig_copy_directory.emit(src, dst)
 
     def remove_file(self, src: str) -> None:
         self.sig_remove_file.emit(src)
 
-    def link_file(self, src: str, dst: str) -> None:
+    def remove_directory(self, src: str) -> None:
+        self.sig_remove_directory.emit(src)
+
+    def link_file(self, src: str, dst: str, resolution: Resolution) -> None:
         self.sig_link_file.emit(src, dst)
 
-    def move_file(self, src: str, dst: str) -> None:
+    def move_file(self, src: str, dst: str, resolution: Resolution) -> None:
         self.sig_move_file.emit(src, dst)
 
-    def move_directory(self, src: str, dst: str) -> None:
+    def move_directory(self, src: str, dst: str, resolution: Resolution) -> None:
         self.sig_move_directory.emit(src, dst)
-
-    def copy_progress(self, current: int, total: int) -> None:
-        self.sig_copy_progress.emit(current, total)
 
     def transfer_canceled(self) -> None:
         self.sig_transfer_canceled.emit()
