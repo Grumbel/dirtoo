@@ -82,13 +82,13 @@ class GuiProgress(QObject):
         super().__init__()
 
     def copy_file(self, src: str, dst: str, resolution: Resolution) -> None:
-        self.sig_copy_file.emit(src, dst)
+        self.sig_copy_file.emit(src, dst, resolution)
 
     def copy_progress(self, current: int, total: int) -> None:
         self.sig_copy_progress.emit(current, total)
 
     def copy_directory(self, src: str, dst: str, resolution: Resolution) -> None:
-        self.sig_copy_directory.emit(src, dst)
+        self.sig_copy_directory.emit(src, dst, resolution)
 
     def remove_file(self, src: str) -> None:
         self.sig_remove_file.emit(src)
@@ -97,13 +97,13 @@ class GuiProgress(QObject):
         self.sig_remove_directory.emit(src)
 
     def link_file(self, src: str, dst: str, resolution: Resolution) -> None:
-        self.sig_link_file.emit(src, dst)
+        self.sig_link_file.emit(src, dst, resolution)
 
     def move_file(self, src: str, dst: str, resolution: Resolution) -> None:
-        self.sig_move_file.emit(src, dst)
+        self.sig_move_file.emit(src, dst, resolution)
 
     def move_directory(self, src: str, dst: str, resolution: Resolution) -> None:
-        self.sig_move_directory.emit(src, dst)
+        self.sig_move_directory.emit(src, dst, resolution)
 
     def transfer_canceled(self) -> None:
         self.sig_transfer_canceled.emit()
