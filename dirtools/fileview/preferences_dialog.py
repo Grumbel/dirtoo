@@ -34,6 +34,7 @@ class PreferencesDialog(QDialog):
         self._vbox = QVBoxLayout()
 
         self._vbox.addWidget(self._make_applications_box())
+        self._vbox.addWidget(self._make_transfer_group_box())
         self._vbox.addWidget(self._make_layout_group_box())
         self._vbox.addWidget(self._make_cache_group_box())
 
@@ -91,6 +92,18 @@ class PreferencesDialog(QDialog):
 
         self._cache_group_box.setLayout(vbox)
         return self._cache_group_box
+
+    def _make_transfer_group_box(self):
+        self._transfer_group_box = QGroupBox("Transfer")
+        vbox = QVBoxLayout()
+
+        checkbox = QCheckBox("Automatically close TransferDialog on completition")
+        checkbox.setChecked(settings.value("globals/close_on_transfer_completed", True, bool))
+        checkbox.stateChanged.connect(lambda state: settings.set_value("globals/close_on_transfer_completed", state))
+        vbox.addWidget(checkbox)
+
+        self._transfer_group_box.setLayout(vbox)
+        return self._transfer_group_box
 
 
 # EOF #
