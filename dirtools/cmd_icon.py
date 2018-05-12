@@ -22,6 +22,7 @@ import logging
 import os
 import sys
 
+from PyQt5.QtCore import QMimeDatabase
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication
 
@@ -33,6 +34,8 @@ def parse_args(args: List[str], simple) -> argparse.Namespace:
     parser.add_argument("ICON", nargs='*')
     parser.add_argument("-l", "--list", action='store_true', default=False,
                         help="List available icons")
+    parser.add_argument("-m", "--mime-type", action='store_true', default=False,
+                        help="Lookup icons by mime-type")
     return parser.parse_args(args)
 
 
@@ -56,8 +59,18 @@ def main(argv, simple) -> None:
                 else:
                     print("{:>17}   {!r}".format("", path))
         else:
-            for iconname in args.ICON:
-                print("{}: {}".format(iconname, "OK" if QIcon.hasThemeIcon(iconname) else "FAILED"))
+            if args.mime_type:
+                mimedb = QMimeDatabase()
+                for mimetype in args.ICON:
+                    mt = mimedb.mimeTypeForName(mimetype)
+                    if mt.isValid():
+                        iconname = mt.iconName()
+                        print("{}: {}  {}".format(mimetype, iconname, "OK" if QIcon.hasThemeIcon(iconname) else "FAILED"))
+                    else:
+                        print("{}: invalid mime-type".format(mimetype))
+            else:
+                for iconname in args.ICON:
+                    print("{}: {}".format(iconname, "OK" if QIcon.hasThemeIcon(iconname) else "FAILED"))
 
 
 def main_entrypoint():
