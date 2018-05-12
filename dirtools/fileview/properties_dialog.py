@@ -45,6 +45,7 @@ class PropertiesDialog(QDialog):
     def _make_gui(self) -> None:
         self.setWindowTitle("Properties of {}".format("TestName"))
 
+        # Widgets
         icon_label = QLabel()
         icon_label.setPixmap(QIcon.fromTheme("document").pixmap(48))
         icon_label.setAlignment(Qt.AlignHCenter)
@@ -58,10 +59,16 @@ class PropertiesDialog(QDialog):
         tab_widget.addTab(general_tab, "General")
         tab_widget.addTab(metadata_tab, "MetaData")
 
+        button_box = QDialogButtonBox(QDialogButtonBox.Close | QDialogButtonBox.Reset)
+        button_box.rejected.connect(self.reject)
+
+        # Layout
         vbox = QVBoxLayout()
         vbox.addWidget(icon_label)
         vbox.addWidget(name_label)
         vbox.addWidget(tab_widget)
+        vbox.addWidget(button_box)
+
         self.setLayout(vbox)
 
     def _make_metadata_tab(self) -> QWidget:
@@ -188,9 +195,6 @@ class PropertiesDialog(QDialog):
         ctime_edit = QLineEdit(timestamp2str(self._fileinfo.ctime()))
         ctime_edit.setReadOnly(True)
 
-        button_box = QDialogButtonBox(QDialogButtonBox.Close | QDialogButtonBox.Reset)
-        button_box.rejected.connect(self.reject)
-
         # Layout
         vbox = QVBoxLayout()
 
@@ -247,9 +251,6 @@ class PropertiesDialog(QDialog):
         grid.addWidget(access_special_sticky, 3, 3)
         access_box.setLayout(grid)
         vbox.addWidget(access_box)
-
-        vbox.addStretch()
-        vbox.addWidget(button_box)
 
         widget = QWidget()
         widget.setLayout(vbox)
