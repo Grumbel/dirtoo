@@ -31,6 +31,7 @@ from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.conflict_dialog import ConflictDialog
 from dirtools.fileview.transfer_request_dialog import TransferRequestDialog
 from dirtools.fileview.transfer_dialog import TransferDialog
+from dirtools.fileview.transfer_error_dialog import TransferErrorDialog
 from dirtools.fileview.rename_dialog import RenameDialog
 from dirtools.fileview.properties_dialog import PropertiesDialog
 from dirtools.fileview.about_dialog import AboutDialog
@@ -144,6 +145,12 @@ def main(argv: List[str]) -> None:
         'CreateDialog-folder': lambda: CreateDialog(CreateDialog.FOLDER, None),
         'CreateDialog-file': lambda: CreateDialog(CreateDialog.TEXTFILE, None),
         'TransferRequestDialog': make_transfer_request_dialog,
+        'TransferErrorDialog': lambda: TransferErrorDialog("some_source", "some_target",
+                                                           ("Lengthy error message\n"
+                                                            "Lengthy error message\n"
+                                                            "Lengthy error message\n"
+                                                            "Lengthy error message"),
+                                                           None),
         'TransferDialog': make_transfer_dialog,
         'PreferencesDialog': lambda: PreferencesDialog(),
         'PropertiesDialog': lambda: PropertiesDialog(FileInfo.from_path("/tmp/"), None),
