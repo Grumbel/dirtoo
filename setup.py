@@ -51,7 +51,7 @@ setup(name='dirtools',
           ],
           'gui_scripts': []
           },
-      install_requires=['bytefmt'],
+      install_requires=['bytefmt', 'ngram', 'pyparsing'],
       packages=['dirtools', 'dirtools.fileview', 'dirtools.find'],
       include_package_data=True,
       package_data={'dirtools': ['dirtools/fileview/fileview.svg',
