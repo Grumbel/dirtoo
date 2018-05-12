@@ -4,15 +4,30 @@ dirtools
 Dependencies
 ------------
 
-apt-get install \
-  python3-libarchive-c \
-  python3-mediainfodll \
-  python3-pypdf2 \
-  python3-pyqt5
+The following install instructions are for Ubuntu 18.04, package names
+might vary for other distributions.
 
-pip3 install bytefmt
-pip3 install inotify-simple
-pip3 install ngram
+    sudo -H apt-get install \
+        python3-pip \
+        python3-setuptools \
+        python3-pyparsing \
+        python3-xdg \
+        python3-pyqt5 \
+        python3-mediainfodll \
+        python3-pypdf2 \
+        python3-libarchive-c \
+        python3-mediainfodll \
+        python3-pyqt5 \
+        python3-wheel \
+        python3-numpy \
+        python3-scipy \
+        tumbler
+
+    sudo -H pip3 install \
+        bytefmt \
+        inotify-simple \
+        ngram \
+        sortedcollections
 
 
 dt-fsck
