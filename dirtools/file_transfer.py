@@ -32,7 +32,7 @@ class CancellationException(Exception):
     pass
 
 
-class Resolution(Enum):
+class ConflictResolution(Enum):
 
     CANCEL = 0  # QDialog.Rejected
     OVERWRITE = 1  # QDialog.Accepted
@@ -64,11 +64,11 @@ class Mediator(ABC):
     the Mediator is called to decide which action should be taken."""
 
     @abstractmethod
-    def file_conflict(self, source: str, dest: str) -> Resolution:
+    def file_conflict(self, source: str, dest: str) -> ConflictResolution:
         pass
 
     @abstractmethod
-    def directory_conflict(self, sourcedir: str, destdir: str) -> Resolution:
+    def directory_conflict(self, sourcedir: str, destdir: str) -> ConflictResolution:
         pass
 
     @abstractmethod
@@ -90,25 +90,25 @@ class ConsoleMediator(Mediator):
                 "  size: {}").format(filename,
                                      bytefmt.humanize(os.path.getsize(filename)))
 
-    def file_conflict(self, source: str, dest: str) -> Resolution:
+    def file_conflict(self, source: str, dest: str) -> ConflictResolution:
         if self.overwrite == Overwrite.ASK:
             return self._file_conflict_interactive(source, dest)
         elif self.overwrite == Overwrite.ALWAYS:
-            return Resolution.OVERWRITE
+            return ConflictResolution.OVERWRITE
         elif self.overwrite == Overwrite.NEVER:
-            return Resolution.SKIP
+            return ConflictResolution.SKIP
         else:
             assert False
 
-    def _file_conflict_interactive(self, source: str, dest: str) -> Resolution:
+    def _file_conflict_interactive(self, source: str, dest: str) -> ConflictResolution:
         source_sha1 = sha1sum(source)
         dest_sha1 = sha1sum(dest)
         if source == dest:
             print("skipping '{}' same file as '{}'".format(source, dest))
-            return Resolution.SKIP
+            return ConflictResolution.SKIP
         elif source_sha1 == dest_sha1:
             print("skipping '{}' same content as '{}'".format(source, dest))
-            return Resolution.SKIP
+            return ConflictResolution.SKIP
         else:
             print("Conflict: {}: destination file already exists".format(dest))
             print("source:\n{}\n  sha1: {}".format(self.file_info(source), source_sha1))
@@ -118,29 +118,29 @@ class ConsoleMediator(Mediator):
                 c = c.lower()
                 if c == 'n':
                     print("skipping {}".format(source))
-                    return Resolution.SKIP
+                    return ConflictResolution.SKIP
                 elif c == 'y':
-                    return Resolution.OVERWRITE
+                    return ConflictResolution.OVERWRITE
                 elif c == 'a':
                     self.overwrite = Overwrite.ALWAYS
-                    return Resolution.OVERWRITE
+                    return ConflictResolution.OVERWRITE
                 elif c == 'e':
                     self.overwrite = Overwrite.NEVER
-                    return Resolution.SKIP
+                    return ConflictResolution.SKIP
                 else:
                     pass  # try to read input again
 
-    def directory_conflict(self, sourcedir: str, destdir: str) -> Resolution:
+    def directory_conflict(self, sourcedir: str, destdir: str) -> ConflictResolution:
         if self.merge == Overwrite.ASK:
             return self._directory_conflict_interactive(sourcedir, destdir)
         elif self.merge == Overwrite.ALWAYS:
-            return Resolution.OVERWRITE
+            return ConflictResolution.OVERWRITE
         elif self.merge == Overwrite.NEVER:
-            return Resolution.SKIP
+            return ConflictResolution.SKIP
         else:
             assert False
 
-    def _directory_conflict_interactive(self, sourcedir: str, destdir: str) -> Resolution:
+    def _directory_conflict_interactive(self, sourcedir: str, destdir: str) -> ConflictResolution:
         print("Conflict: {}: destination directory already exists".format(destdir))
         print("source: {}".format(sourcedir))
         print("target: {}".format(destdir))
@@ -149,15 +149,15 @@ class ConsoleMediator(Mediator):
             c = c.lower()
             if c == 'n':
                 print("skipping {}".format(sourcedir))
-                return Resolution.SKIP
+                return ConflictResolution.SKIP
             elif c == 'y':
-                return Resolution.OVERWRITE
+                return ConflictResolution.OVERWRITE
             elif c == 'a':
                 self.merge = Overwrite.ALWAYS
-                return Resolution.OVERWRITE
+                return ConflictResolution.OVERWRITE
             elif c == 'e':
                 self.merge = Overwrite.NEVER
-                return Resolution.SKIP
+                return ConflictResolution.SKIP
             else:
                 pass  # try to read input again
 
@@ -165,7 +165,7 @@ class ConsoleMediator(Mediator):
 class Progress(ABC):
 
     @abstractmethod
-    def copy_file(self, src: str, dst: str, resolution: Resolution) -> None:
+    def copy_file(self, src: str, dst: str, resolution: ConflictResolution) -> None:
         pass
 
     @abstractmethod
@@ -173,7 +173,7 @@ class Progress(ABC):
         pass
 
     @abstractmethod
-    def copy_directory(self, src: str, dst: str, resolution: Resolution) -> None:
+    def copy_directory(self, src: str, dst: str, resolution: ConflictResolution) -> None:
         pass
 
     @abstractmethod
@@ -185,15 +185,15 @@ class Progress(ABC):
         pass
 
     @abstractmethod
-    def move_file(self, src: str, dst: str, resolution: Resolution) -> None:
+    def move_file(self, src: str, dst: str, resolution: ConflictResolution) -> None:
         pass
 
     @abstractmethod
-    def move_directory(self, src: str, dst: str, resolution: Resolution) -> None:
+    def move_directory(self, src: str, dst: str, resolution: ConflictResolution) -> None:
         pass
 
     @abstractmethod
-    def link_file(self, src: str, dst: str, resolution: Resolution) -> None:
+    def link_file(self, src: str, dst: str, resolution: ConflictResolution) -> None:
         pass
 
     @abstractmethod
@@ -210,7 +210,7 @@ class ConsoleProgress(Progress):
     def __init__(self):
         self.verbose: bool = False
 
-    def copy_file(self, src: str, dst: str, resolution: Resolution) -> None:
+    def copy_file(self, src: str, dst: str, resolution: ConflictResolution) -> None:
         if self.verbose:
             print("copying {} -> {}".format(src, dst))
 
@@ -225,7 +225,7 @@ class ConsoleProgress(Progress):
         else:
             sys.stdout.write("       {}\r".format(total_width * " "))
 
-    def copy_directory(self, src: str, dst: str, resolution: Resolution) -> None:
+    def copy_directory(self, src: str, dst: str, resolution: ConflictResolution) -> None:
         if self.verbose:
             print("copying {} -> {}".format(src, dst))
 
@@ -237,15 +237,15 @@ class ConsoleProgress(Progress):
         if self.verbose:
             print("removing {}".format(src))
 
-    def link_file(self, src: str, dst: str, resolution: Resolution) -> None:
+    def link_file(self, src: str, dst: str, resolution: ConflictResolution) -> None:
         if self.verbose:
             print("linking {} -> {}".format(src, dst))
 
-    def move_file(self, src: str, dst: str, resolution: Resolution) -> None:
+    def move_file(self, src: str, dst: str, resolution: ConflictResolution) -> None:
         if self.verbose:
             print("moving {} -> {}".format(src, dst))
 
-    def move_directory(self, src: str, dst: str, resolution: Resolution) -> None:
+    def move_directory(self, src: str, dst: str, resolution: ConflictResolution) -> None:
         if self.verbose:
             print("moving {} -> {}".format(src, dst))
 
@@ -270,15 +270,15 @@ class FileTransfer:
         base = os.path.basename(source)
         dest = os.path.join(destdir, base)
 
-        self._progress.move_file(source, dest, Resolution.NO_CONFLICT)
+        self._progress.move_file(source, dest, ConflictResolution.NO_CONFLICT)
         self._move_file2(source, dest, destdir)
 
     def _move_file2(self, source: str, dest: str, destdir: str) -> None:
         if self._fs.lexists(dest):
             resolution = self._mediator.file_conflict(source, dest)
-            if resolution == Resolution.SKIP:
+            if resolution == ConflictResolution.SKIP:
                 self._progress.move_file(source, dest, resolution)
-            elif resolution == Resolution.OVERWRITE:
+            elif resolution == ConflictResolution.OVERWRITE:
                 try:
                     self._fs.overwrite(source, dest)
                 except OSError as err:
@@ -290,13 +290,13 @@ class FileTransfer:
                         self._fs.remove_file(source)
                     else:
                         raise
-            elif resolution == Resolution.RENAME_SOURCE:
+            elif resolution == ConflictResolution.RENAME_SOURCE:
                 new_dest = self._fs.generate_unique(dest)
                 self._move_file2(source, new_dest, destdir)
-            elif resolution == Resolution.RENAME_TARGET:
+            elif resolution == ConflictResolution.RENAME_TARGET:
                 self._fs.rename_unique(dest)
                 self._move_file(source, destdir)
-            elif resolution == Resolution.CANCEL:
+            elif resolution == ConflictResolution.CANCEL:
                 raise CancellationException()
             else:
                 assert False, "unknown conflict resolution: %r" % resolution
@@ -326,23 +326,23 @@ class FileTransfer:
         base = os.path.basename(sourcedir)
         dest = os.path.join(destdir, base)
 
-        self._progress.move_directory(sourcedir, dest, Resolution.NO_CONFLICT)
+        self._progress.move_directory(sourcedir, dest, ConflictResolution.NO_CONFLICT)
         self._move_directory2(sourcedir, dest, destdir)
 
     def _move_directory2(self, sourcedir: str, dest: str, destdir: str) -> None:
         if self._fs.lexists(dest):
             resolution = self._mediator.directory_conflict(sourcedir, dest)
-            if resolution == Resolution.SKIP:
+            if resolution == ConflictResolution.SKIP:
                 self._progress.move_directory(sourcedir, dest, resolution)
-            elif resolution == Resolution.OVERWRITE:
+            elif resolution == ConflictResolution.OVERWRITE:
                 self._move_directory_content(sourcedir, dest)
-            elif resolution == Resolution.RENAME_SOURCE:
+            elif resolution == ConflictResolution.RENAME_SOURCE:
                 new_dest = self._fs.generate_unique(dest)
                 self._move_directory2(sourcedir, new_dest, destdir)
-            elif resolution == Resolution.RENAME_TARGET:
+            elif resolution == ConflictResolution.RENAME_TARGET:
                 self._fs.rename_unique(dest)
                 self._move_directory(sourcedir, destdir)
-            elif resolution == Resolution.CANCEL:
+            elif resolution == ConflictResolution.CANCEL:
                 raise CancellationException()
             else:
                 assert False, "unknown conflict resolution: {}".format(resolution)
@@ -384,24 +384,24 @@ class FileTransfer:
     def _link(self, source: str, dest: str, destdir: str) -> None:
         if self._fs.lexists(dest):
             resolution = self._mediator.file_conflict(source, dest)
-            if resolution == Resolution.SKIP:
+            if resolution == ConflictResolution.SKIP:
                 self._progress.link_file(source, dest, resolution)
-            elif resolution == Resolution.OVERWRITE:
+            elif resolution == ConflictResolution.OVERWRITE:
                 self._progress.link_file(source, dest, resolution)
                 self._fs.remove_file(dest)
                 self._fs.symlink(source, dest)
-            elif resolution == Resolution.RENAME_SOURCE:
+            elif resolution == ConflictResolution.RENAME_SOURCE:
                 new_dest = self._fs.generate_unique(dest)
                 self._link(source, new_dest, destdir)
-            elif resolution == Resolution.RENAME_TARGET:
+            elif resolution == ConflictResolution.RENAME_TARGET:
                 self._fs.rename_unique(dest)
                 self.link(source, destdir)
-            elif resolution == Resolution.CANCEL:
+            elif resolution == ConflictResolution.CANCEL:
                 raise CancellationException()
             else:
                 assert False, "unknown conflict resolution: {}".format(resolution)
         else:
-            self._progress.link_file(source, dest, Resolution.NO_CONFLICT)
+            self._progress.link_file(source, dest, ConflictResolution.NO_CONFLICT)
             self._fs.symlink(source, dest)
 
     def _copy_file(self, source: str, destdir: str) -> None:
@@ -416,23 +416,23 @@ class FileTransfer:
     def _copy_file2(self, source: str, dest: str, destdir: str) -> None:
         if self._fs.lexists(dest):
             resolution = self._mediator.file_conflict(source, dest)
-            if resolution == Resolution.SKIP:
+            if resolution == ConflictResolution.SKIP:
                 self._progress.copy_file(source, dest, resolution)
-            elif resolution == Resolution.OVERWRITE:
+            elif resolution == ConflictResolution.OVERWRITE:
                 self._progress.copy_file(source, dest, resolution)
                 self._fs.copy_file(source, dest, overwrite=True, progress=self._progress.copy_progress)
-            elif resolution == Resolution.RENAME_SOURCE:
+            elif resolution == ConflictResolution.RENAME_SOURCE:
                 new_dest = self._fs.generate_unique(dest)
                 self._copy_file2(source, new_dest, destdir)
-            elif resolution == Resolution.RENAME_TARGET:
+            elif resolution == ConflictResolution.RENAME_TARGET:
                 self._fs.rename_unique(dest)
                 self._copy_file(source, destdir)
-            elif resolution == Resolution.CANCEL:
+            elif resolution == ConflictResolution.CANCEL:
                 raise CancellationException()
             else:
                 assert False, "unknown conflict resolution: {}".format(resolution)
         else:
-            self._progress.copy_file(source, dest, Resolution.NO_CONFLICT)
+            self._progress.copy_file(source, dest, ConflictResolution.NO_CONFLICT)
             self._fs.copy_file(source, dest, progress=self._progress.copy_progress)
 
     def _copy_directory_content(self, sourcedir: str, destdir: str) -> None:
@@ -456,23 +456,23 @@ class FileTransfer:
     def _copy_directory2(self, sourcedir: str, dest: str, destdir: str) -> None:
         if self._fs.lexists(dest):
             resolution = self._mediator.directory_conflict(sourcedir, dest)
-            if resolution == Resolution.SKIP:
+            if resolution == ConflictResolution.SKIP:
                 self._progress.copy_directory(sourcedir, dest, resolution)
-            elif resolution == Resolution.OVERWRITE:
+            elif resolution == ConflictResolution.OVERWRITE:
                 self._progress.copy_directory(sourcedir, destdir, resolution)
                 self._copy_directory_content(sourcedir, dest)
-            elif resolution == Resolution.RENAME_SOURCE:
+            elif resolution == ConflictResolution.RENAME_SOURCE:
                 new_dest = self._fs.generate_unique(dest)
                 self._copy_directory2(sourcedir, new_dest, destdir)
-            elif resolution == Resolution.RENAME_TARGET:
+            elif resolution == ConflictResolution.RENAME_TARGET:
                 self._fs.rename_unique(dest)
                 self._copy_directory(sourcedir, destdir)
-            elif resolution == Resolution.CANCEL:
+            elif resolution == ConflictResolution.CANCEL:
                 raise CancellationException()
             else:
                 assert False, "unknown conflict resolution: {}".format(resolution)
         else:
-            self._progress.copy_directory(sourcedir, dest, Resolution.NO_CONFLICT)
+            self._progress.copy_directory(sourcedir, dest, ConflictResolution.NO_CONFLICT)
             self._fs.mkdir(dest)
             self._fs.copy_stat(sourcedir, dest)
             self._copy_directory_content(sourcedir, dest)

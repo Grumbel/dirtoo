@@ -29,7 +29,7 @@ from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QCheckBox,
 import bytefmt
 
 from dirtools.mediainfo import split_duration
-from dirtools.file_transfer import Resolution
+from dirtools.file_transfer import ConflictResolution
 from dirtools.fileview.settings import settings
 
 if TYPE_CHECKING:
@@ -188,8 +188,8 @@ class TransferDialog(QDialog):
         progress.sig_transfer_canceled.connect(self._on_transfer_canceled)
         progress.sig_transfer_completed.connect(self._on_transfer_completed)
 
-    def _on_copy_file(self, src: str, dst: str, resolution: Resolution):
-        if resolution == Resolution.SKIP:
+    def _on_copy_file(self, src: str, dst: str, resolution: ConflictResolution):
+        if resolution == ConflictResolution.SKIP:
             self._transfer_log_widget.append("skipping file {}".format(src))
         else:
             self._transfer_log_widget.append("copying file {} -> {}".format(src, dst))
@@ -203,32 +203,32 @@ class TransferDialog(QDialog):
 
         self._transfered.setText("{} / {}".format(bytefmt.humanize(current), bytefmt.humanize(total)))
 
-    def _on_copy_directory(self, src: str, dst: str, resolution: Resolution):
-        if resolution == Resolution.SKIP:
+    def _on_copy_directory(self, src: str, dst: str, resolution: ConflictResolution):
+        if resolution == ConflictResolution.SKIP:
             self._transfer_log_widget.append("skipping directory {}".format(src))
         else:
             self._transfer_log_widget.append("copying directory {}".format(src, dst))
             self._source_widget.setText(src)
             self._dest_widget.setText(dst)
 
-    def _on_move_file(self, src: str, dst: str, resolution: Resolution):
-        if resolution == Resolution.SKIP:
+    def _on_move_file(self, src: str, dst: str, resolution: ConflictResolution):
+        if resolution == ConflictResolution.SKIP:
             self._transfer_log_widget.append("skipping file {}".format(src))
         else:
             self._transfer_log_widget.append("moving file {} -> {}".format(src, dst))
             self._source_widget.setText(src)
             self._dest_widget.setText(dst)
 
-    def _on_move_directory(self, src: str, dst: str, resolution: Resolution):
-        if resolution == Resolution.SKIP:
+    def _on_move_directory(self, src: str, dst: str, resolution: ConflictResolution):
+        if resolution == ConflictResolution.SKIP:
             self._transfer_log_widget.append("skipping directory {}".format(src))
         else:
             self._transfer_log_widget.append("moving directory {} -> {}".format(src, dst))
             self._source_widget.setText(src)
             self._dest_widget.setText(dst)
 
-    def _on_link_file(self, src: str, dst: str, resolution: Resolution):
-        if resolution == Resolution.SKIP:
+    def _on_link_file(self, src: str, dst: str, resolution: ConflictResolution):
+        if resolution == ConflictResolution.SKIP:
             self._transfer_log_widget.append("skipping directory {}".format(src))
         else:
             self._transfer_log_widget.append("linking {}".format(src, dst))

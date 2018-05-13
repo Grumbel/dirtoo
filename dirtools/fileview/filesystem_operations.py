@@ -25,7 +25,7 @@ from PyQt5.QtWidgets import QWidget
 from dirtools.fileview.location import Location
 from dirtools.fileview.rename_operation import RenameOperation
 from dirtools.fileview.return_value import ReturnValue
-from dirtools.file_transfer import FileTransfer, Progress, Resolution, Mediator, CancellationException
+from dirtools.file_transfer import FileTransfer, Progress, ConflictResolution, Mediator, CancellationException
 from dirtools.fileview.conflict_dialog import ConflictDialog
 from dirtools.fileview.transfer_dialog import TransferDialog
 
@@ -67,12 +67,12 @@ class TransferWorker(QObject):
 
 class GuiProgress(QObject):
 
-    sig_copy_file = pyqtSignal(str, str, Resolution)
+    sig_copy_file = pyqtSignal(str, str, ConflictResolution)
     sig_copy_progress = pyqtSignal(int, int)
-    sig_copy_directory = pyqtSignal(str, str, Resolution)
-    sig_link_file = pyqtSignal(str, str, Resolution)
-    sig_move_file = pyqtSignal(str, str, Resolution)
-    sig_move_directory = pyqtSignal(str, str, Resolution)
+    sig_copy_directory = pyqtSignal(str, str, ConflictResolution)
+    sig_link_file = pyqtSignal(str, str, ConflictResolution)
+    sig_move_file = pyqtSignal(str, str, ConflictResolution)
+    sig_move_directory = pyqtSignal(str, str, ConflictResolution)
     sig_remove_file = pyqtSignal(str)
     sig_remove_directory = pyqtSignal(str)
     sig_transfer_canceled = pyqtSignal()
@@ -81,13 +81,13 @@ class GuiProgress(QObject):
     def __init__(self) -> None:
         super().__init__()
 
-    def copy_file(self, src: str, dst: str, resolution: Resolution) -> None:
+    def copy_file(self, src: str, dst: str, resolution: ConflictResolution) -> None:
         self.sig_copy_file.emit(src, dst, resolution)
 
     def copy_progress(self, current: int, total: int) -> None:
         self.sig_copy_progress.emit(current, total)
 
-    def copy_directory(self, src: str, dst: str, resolution: Resolution) -> None:
+    def copy_directory(self, src: str, dst: str, resolution: ConflictResolution) -> None:
         self.sig_copy_directory.emit(src, dst, resolution)
 
     def remove_file(self, src: str) -> None:
@@ -96,13 +96,13 @@ class GuiProgress(QObject):
     def remove_directory(self, src: str) -> None:
         self.sig_remove_directory.emit(src)
 
-    def link_file(self, src: str, dst: str, resolution: Resolution) -> None:
+    def link_file(self, src: str, dst: str, resolution: ConflictResolution) -> None:
         self.sig_link_file.emit(src, dst, resolution)
 
-    def move_file(self, src: str, dst: str, resolution: Resolution) -> None:
+    def move_file(self, src: str, dst: str, resolution: ConflictResolution) -> None:
         self.sig_move_file.emit(src, dst, resolution)
 
-    def move_directory(self, src: str, dst: str, resolution: Resolution) -> None:
+    def move_directory(self, src: str, dst: str, resolution: ConflictResolution) -> None:
         self.sig_move_directory.emit(src, dst, resolution)
 
     def transfer_canceled(self) -> None:
@@ -125,16 +125,16 @@ class GuiMediator(QObject):
     def cancel_transfer(self) -> bool:
         return False
 
-    def file_conflict(self, source: str, dest: str) -> Resolution:
-        retval = ReturnValue[Resolution]()
+    def file_conflict(self, source: str, dest: str) -> ConflictResolution:
+        retval = ReturnValue[ConflictResolution]()
         self.sig_file_conflict.emit(retval)
-        result: Resolution = retval.receive()
+        result: ConflictResolution = retval.receive()
         return result
 
-    def directory_conflict(self, sourcedir: str, destdir: str) -> Resolution:
-        retval = ReturnValue[Resolution]()
+    def directory_conflict(self, sourcedir: str, destdir: str) -> ConflictResolution:
+        retval = ReturnValue[ConflictResolution]()
         self.sig_file_conflict.emit(retval)
-        result: Resolution = retval.receive()
+        result: ConflictResolution = retval.receive()
         return result
 
 
@@ -183,14 +183,14 @@ class GuiFileTransfer(QObject):
     def _on_finished(self, result: int):
         self.sig_finished.emit()
 
-    def _on_file_conflict(self, retval: ReturnValue[Resolution]) -> None:
+    def _on_file_conflict(self, retval: ReturnValue[ConflictResolution]) -> None:
         dialog = ConflictDialog(None)
-        resolution = Resolution(dialog.exec())
+        resolution = ConflictResolution(dialog.exec())
         retval.send(resolution)
 
-    def _on_directory_conflict(self, retval: ReturnValue[Resolution]) -> None:
+    def _on_directory_conflict(self, retval: ReturnValue[ConflictResolution]) -> None:
         dialog = ConflictDialog(None)
-        resolution = Resolution(dialog.exec())
+        resolution = ConflictResolution(dialog.exec())
         retval.send(resolution)
 
 
