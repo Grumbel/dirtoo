@@ -43,6 +43,11 @@ class WorkerThread(QObject):
         self._worker: Optional[Worker] = None
 
     def set_worker(self, worker: Worker):
+        """Sets the Worker associated with this thread. Note this function has
+        to be called before connecting any signals, otherwise the
+        signals won't be associated with the right thread.
+
+        """
         assert self._worker is None
 
         self._worker = worker

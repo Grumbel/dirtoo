@@ -82,8 +82,8 @@ class RarExtractorWorkerTestCase(unittest.TestCase):
             'folder/3.txt'
         ]
 
-        QTimer.singleShot(0, lambda: worker.init())
-        QTimer.singleShot(0, lambda: worker_inc.init())
+        QTimer.singleShot(0, lambda: worker.on_thread_started())
+        QTimer.singleShot(0, lambda: worker_inc.on_thread_started())
         app.exec()
 
         worker.close()

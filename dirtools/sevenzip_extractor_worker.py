@@ -21,9 +21,10 @@ import logging
 import os
 import traceback
 
-from PyQt5.QtCore import QObject, QProcess, QByteArray, pyqtSignal
+from PyQt5.QtCore import QProcess, QByteArray, pyqtSignal
 
 from dirtools.extractor_worker import ExtractorResult
+from dirtools.fileview.worker_thread import Worker
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +49,7 @@ logger = logging.getLogger(__name__)
 # 7zr x -o outdir ${archive}
 
 
-class SevenZipExtractorWorker(QObject):
+class SevenZipExtractorWorker(Worker):
 
     sig_entry_extracted = pyqtSignal(str, str)
     sig_finished = pyqtSignal(ExtractorResult)
@@ -72,7 +73,7 @@ class SevenZipExtractorWorker(QObject):
             self._process.terminate()
             # self._process.kill()
 
-    def init(self) -> None:
+    def on_thread_started(self) -> None:
         try:
             self._start_extract(self._outdir)
         except Exception as err:

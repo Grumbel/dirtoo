@@ -45,7 +45,7 @@ class SevenZipExtractorWorkerTestCase(unittest.TestCase):
         worker.sig_entry_extracted.connect(lambda lhs, rhs: results.append(lhs))
         worker.sig_finished.connect(lambda: app.quit())
 
-        QTimer.singleShot(0, lambda: worker.init())
+        QTimer.singleShot(0, lambda: worker.on_thread_started())
         app.exec()
 
         worker.close()

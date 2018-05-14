@@ -22,9 +22,10 @@ import logging
 import os
 import re
 
-from PyQt5.QtCore import QObject, QProcess, QByteArray, pyqtSignal
+from PyQt5.QtCore import QProcess, QByteArray, pyqtSignal
 
 from dirtools.extractor_worker import ExtractorResult
+from dirtools.fileview.worker_thread import Worker
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ class State(Enum):
     RESULT = 2
 
 
-class RarExtractorWorker(QObject):
+class RarExtractorWorker(Worker):
 
     sig_entry_extracted = pyqtSignal(str, str)
     sig_finished = pyqtSignal(ExtractorResult)
@@ -50,7 +51,6 @@ class RarExtractorWorker(QObject):
     def __init__(self, filename: str, outdir: str) -> None:
         super().__init__()
 
-        self._close = False
         self._filename = os.path.abspath(filename)
         self._outdir = outdir
 
@@ -60,13 +60,11 @@ class RarExtractorWorker(QObject):
         self._output_state = State.HEADER
 
     def close(self):
-        self._close = True
-
         if self._process is not None:
             self._process.terminate()
             # self._process.kill()
 
-    def init(self) -> None:
+    def on_thread_started(self) -> None:
         try:
             self._start_extract(self._outdir)
         except Exception as err:

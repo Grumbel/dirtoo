@@ -21,17 +21,18 @@ import json
 import logging
 import os
 
-from PyQt5.QtCore import QObject, QThread, Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal
 
 from dirtools.rar_extractor_worker import RarExtractorWorker
 from dirtools.sevenzip_extractor_worker import SevenZipExtractorWorker
 from dirtools.libarchive_extractor_worker import LibArchiveExtractorWorker
 from dirtools.extractor_worker import ExtractorResult
+from dirtools.fileview.worker_thread import WorkerThread
 
 logger = logging.getLogger(__name__)
 
 
-class ArchiveExtractor(QObject):
+class ArchiveExtractor(WorkerThread):
 
     sig_close_requested = pyqtSignal()
 
@@ -57,26 +58,23 @@ class ArchiveExtractor(QObject):
             os.makedirs(contentdir)
 
         if archive_path.lower().endswith(".rar"):
-            self._worker = RarExtractorWorker(archive_path, contentdir)
+            worker = RarExtractorWorker(archive_path, contentdir)
         elif True:  # pylint: disable=using-constant-test
-            self._worker = SevenZipExtractorWorker(archive_path, contentdir)
+            worker = SevenZipExtractorWorker(archive_path, contentdir)
         else:
-            self._worker = LibArchiveExtractorWorker(archive_path, contentdir)
+            worker = LibArchiveExtractorWorker(archive_path, contentdir)
 
-        self._thread = QThread(self)
-        self._worker.moveToThread(self._thread)
+        self.set_worker(worker)
 
-        self._thread.started.connect(self._worker.init)
-
-        self._worker.sig_entry_extracted.connect(self._on_entry_extracted)
-        self._worker.sig_finished.connect(self._on_finished)
+        worker.sig_entry_extracted.connect(self._on_entry_extracted)
+        worker.sig_finished.connect(self._on_worker_finished)
 
         # close() is a blocking connection so the thread is properly
         # done after the signal was emit'ed and we don't have to fuss
         # around with sig_finished() and other stuff
-        self.sig_close_requested.connect(self._worker.close, type=Qt.BlockingQueuedConnection)
+        self.sig_close_requested.connect(worker.close, type=Qt.BlockingQueuedConnection)
 
-    def _on_started(self):
+    def _on_worker_started(self):
         js = {
             "path": self._archive_path,
             "mtime": self._mtime,
@@ -89,7 +87,7 @@ class ArchiveExtractor(QObject):
             json.dump(js, fout)
             fout.write("\n")
 
-    def _on_finished(self, result: ExtractorResult):
+    def _on_worker_finished(self, result: ExtractorResult):
         js = {
             "path": self._archive_path,
             "mtime": self._mtime,
@@ -106,15 +104,8 @@ class ArchiveExtractor(QObject):
         self._extracted_entries.append((entry, outfile))
 
     def start(self) -> None:
-        self._on_started()
-        self._thread.start()
-
-    def close(self) -> None:
-        assert self._worker._close is False
-        self._worker._close = True
-        self.sig_close_requested.emit()
-        self._thread.quit()
-        self._thread.wait()
+        super().start()
+        self._on_worker_started()
 
     @property
     def sig_entry_extracted(self):

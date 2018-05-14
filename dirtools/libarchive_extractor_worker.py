@@ -19,7 +19,9 @@ import logging
 import os
 import libarchive
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import pyqtSignal
+
+from dirtools.fileview.worker_thread import Worker
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +36,7 @@ def sanitize(pathname):
         return normpath
 
 
-class LibArchiveExtractorWorker(QObject):
+class LibArchiveExtractorWorker(Worker):
 
     sig_entry_extracted = pyqtSignal(str, str)
     sig_finished = pyqtSignal()
@@ -52,7 +54,7 @@ class LibArchiveExtractorWorker(QObject):
         if self._close:
             raise Exception("{}: archive extraction was interrupted".format(self.filename))
 
-    def init(self) -> None:
+    def on_thread_started(self) -> None:
         try:
             self._extract(self.outdir)
         except Exception as err:
