@@ -73,8 +73,8 @@ class PathCompletion(WorkerThread):
     sig_request_completions = pyqtSignal(str)
 
     def __init__(self) -> None:
-        worker = PathCompletionWorker()
-        super().__init__(worker)
+        super().__init__()
+        self.set_worker(PathCompletionWorker())
         self.sig_request_completions.connect(self._worker._on_request_completions)
 
     def request_completions(self, text) -> None:

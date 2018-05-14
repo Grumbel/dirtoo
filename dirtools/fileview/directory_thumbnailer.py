@@ -262,8 +262,8 @@ class DirectoryThumbnailerWorker(Worker):
 class DirectoryThumbnailer(WorkerThread):
 
     def __init__(self, app: 'FileViewApplication') -> None:
-        worker = DirectoryThumbnailerWorker(app)
-        super().__init__(worker)
+        super().__init__()
+        self.set_worker(DirectoryThumbnailerWorker(app))
 
     def request_thumbnail(self, location: 'Location', callback: ThumbnailCallback):
         print("request_thumbnail", location, callback)

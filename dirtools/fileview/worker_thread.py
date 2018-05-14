@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Optional
+
 from PyQt5.QtCore import QObject, pyqtSignal, Qt, QThread
 
 
@@ -36,8 +38,12 @@ class WorkerThread(QObject):
 
     sig_close_requested = pyqtSignal()
 
-    def __init__(self, worker) -> None:
+    def __init__(self) -> None:
         super().__init__()
+        self._worker: Optional[Worker] = None
+
+    def set_worker(self, worker: Worker):
+        assert self._worker is None
 
         self._worker = worker
         self._thread = QThread()
@@ -51,10 +57,14 @@ class WorkerThread(QObject):
         self.sig_close_requested.connect(self._worker.close, type=Qt.BlockingQueuedConnection)
 
     def start(self) -> None:
+        assert self._worker is not None
+
         self._thread.start()
 
     def close(self) -> None:
+        assert self._worker is not None
         assert self._worker._close is False, "WorkerThread.close() was called twice"
+
         self._worker._close = True
         self.sig_close_requested.emit()
         self._thread.quit()
