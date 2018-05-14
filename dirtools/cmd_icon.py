@@ -65,7 +65,10 @@ def main(argv, simple) -> None:
                     mt = mimedb.mimeTypeForName(mimetype)
                     if mt.isValid():
                         iconname = mt.iconName()
-                        print("{}: {}  {}".format(mimetype, iconname, "OK" if QIcon.hasThemeIcon(iconname) else "FAILED"))
+                        print("{}: {}  {}".format(mimetype, iconname,
+                                                  "OK"
+                                                  if QIcon.hasThemeIcon(iconname)
+                                                  else "FAILED"))
                     else:
                         print("{}: invalid mime-type".format(mimetype))
             else:
