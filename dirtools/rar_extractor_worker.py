@@ -25,7 +25,6 @@ import re
 from PyQt5.QtCore import QProcess, QByteArray, pyqtSignal
 
 from dirtools.extractor import Extractor, ExtractorResult
-from dirtools.fileview.worker_thread import Worker
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +42,7 @@ class State(Enum):
     RESULT = 2
 
 
-class RarExtractorWorker(Worker):
+class RarExtractor(Extractor):
 
     sig_entry_extracted = pyqtSignal(str, str)
     sig_finished = pyqtSignal(ExtractorResult)
@@ -59,14 +58,15 @@ class RarExtractorWorker(Worker):
 
         self._output_state = State.HEADER
 
-    def close(self):
+    def interrupt(self):
         if self._process is not None:
             self._process.terminate()
             # self._process.kill()
 
-    def on_thread_started(self) -> None:
+    def extract(self) -> None:
         try:
             self._start_extract(self._outdir)
+            self._process.waitForFinished(-1)
         except Exception as err:
             message = "{}: failure when extracting archive".format(self._filename)
             logger.exception(message)

@@ -23,13 +23,32 @@ import os
 
 from PyQt5.QtCore import Qt, pyqtSignal
 
-from dirtools.rar_extractor_worker import RarExtractorWorker
-from dirtools.sevenzip_extractor_worker import SevenZipExtractorWorker
-from dirtools.libarchive_extractor_worker import LibArchiveExtractorWorker
-from dirtools.fileview.worker_thread import WorkerThread
+from dirtools.rar_extractor_worker import RarExtractor
+from dirtools.sevenzip_extractor_worker import SevenZipExtractor
+from dirtools.libarchive_extractor_worker import LibArchiveExtractor
 from dirtools.extractor import ExtractorResult
+from dirtools.fileview.worker_thread import WorkerThread, Worker
 
 logger = logging.getLogger(__name__)
+
+
+class ArchiveExtractorWorker(Worker):
+
+    def __init__(self, extractor):
+        super().__init__()
+        self._extractor = extractor
+
+    def on_thread_started(self) -> None:
+        self._extractor.extract()
+
+    def close(self) -> None:
+        self._extractor.interrupt()
+
+    def sig_entry_extracted(self):
+        return self._extractor.sig_entry_extracted
+
+    def sig_finished(self):
+        return self._extractor.sig_finished
 
 
 class ArchiveExtractor(WorkerThread):
@@ -57,13 +76,15 @@ class ArchiveExtractor(WorkerThread):
         if not os.path.isdir(contentdir):
             os.makedirs(contentdir)
 
+        # FIXME: Use mime-type to decide proper extractor
         if archive_path.lower().endswith(".rar"):
-            worker = RarExtractorWorker(archive_path, contentdir)
+            extractor = RarExtractor(archive_path, contentdir)
         elif True:  # pylint: disable=using-constant-test
-            worker = SevenZipExtractorWorker(archive_path, contentdir)
+            extractor = SevenZipExtractor(archive_path, contentdir)
         else:
-            worker = LibArchiveExtractorWorker(archive_path, contentdir)
+            extractor = LibArchiveExtractor(archive_path, contentdir)
 
+        worker = ArchiveExtractorWorker(extractor)
         self.set_worker(worker)
 
         worker.sig_entry_extracted.connect(self._on_entry_extracted)

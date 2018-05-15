@@ -21,7 +21,8 @@ import signal
 import tempfile
 import unittest
 
-from dirtools.rar_extractor_worker import RarExtractorWorker
+from dirtools.extractor import ExtractorResult
+from dirtools.rar_extractor_worker import RarExtractor
 
 from PyQt5.QtCore import QCoreApplication, QTimer
 
@@ -34,26 +35,13 @@ class RarExtractorWorkerTestCase(unittest.TestCase):
     def test_rar(self):
         signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-        app = QCoreApplication([])
-
         archive_file = os.path.join(DATADIR, "test.rar")
         outdir = tempfile.mkdtemp()
 
         archive_file_inc = os.path.join(DATADIR, "test_incomplete.rar")
         outdir_inc = tempfile.mkdtemp()
 
-        counter = 2
-        def do_quit(x):
-            nonlocal counter
-            counter -= 1
-            if counter == 0:
-                app.quit()
-
         results = []
-        worker = RarExtractorWorker(archive_file, outdir)
-        worker.sig_entry_extracted.connect(lambda lhs, rhs: results.append(lhs))
-        worker.sig_finished.connect(lambda x: do_quit(x))
-
         expected = [
             'folder',
             '1.txt',
@@ -66,11 +54,14 @@ class RarExtractorWorkerTestCase(unittest.TestCase):
             'folder/4.txt'
         ]
 
-        results_inc = []
-        worker_inc = RarExtractorWorker(archive_file_inc, outdir_inc)
-        worker_inc.sig_entry_extracted.connect(lambda lhs, rhs: results_inc.append(lhs))
-        worker_inc.sig_finished.connect(lambda x: do_quit(x))
+        worker = RarExtractor(archive_file, outdir)
+        worker.sig_entry_extracted.connect(lambda lhs, rhs: results.append(lhs))
+        worker.sig_finished.connect(lambda x: self.assertEqual(x.status, ExtractorResult.SUCCESS))
+        worker.extract()
 
+        self.assertEqual(sorted(results), sorted(expected))
+
+        results_inc = []
         expected_inc = [
             'folder',
             '1.txt',
@@ -82,14 +73,11 @@ class RarExtractorWorkerTestCase(unittest.TestCase):
             'folder/3.txt'
         ]
 
-        QTimer.singleShot(0, lambda: worker.on_thread_started())
-        QTimer.singleShot(0, lambda: worker_inc.on_thread_started())
-        app.exec()
+        worker_inc = RarExtractor(archive_file_inc, outdir_inc)
+        worker_inc.sig_entry_extracted.connect(lambda lhs, rhs: results_inc.append(lhs))
+        worker.sig_finished.connect(lambda x: self.assertEqual(x.status, ExtractorResult.SUCCESS))
+        worker_inc.extract()
 
-        worker.close()
-        del app
-
-        self.assertEqual(sorted(results), sorted(expected))
         self.assertEqual(sorted(results_inc), sorted(expected_inc))
 
 

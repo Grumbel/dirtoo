@@ -15,7 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from abc import ABC, abstractmethod
+from PyQt5.QtCore import QObject
+from abc import abstractmethod
 
 
 class ExtractorResult:
@@ -40,7 +41,10 @@ class ExtractorResult:
         return "ExtractorResult({}, \"{}\")".format(self.status, self.message)
 
 
-class Extractor(ABC):
+class Extractor(QObject):
+
+    def __init__(self) -> None:
+        super().__init__()
 
     @abstractmethod
     def sig_entry_extracted(self):
@@ -51,7 +55,10 @@ class Extractor(ABC):
         pass
 
     @abstractmethod
-    def extract(self, outdir: str) -> None:
+    def extract(self) -> None:
+        pass
+
+    def interrupt(self) -> None:
         pass
 
 

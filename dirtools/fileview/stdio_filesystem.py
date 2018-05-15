@@ -25,7 +25,7 @@ import urllib
 
 from PyQt5.QtCore import QTimer
 
-from dirtools.extractor_worker import ExtractorResult
+from dirtools.extractor import ExtractorResult
 from dirtools.fileview.location import Location, Payload
 from dirtools.fileview.directory_watcher import DirectoryWatcher
 from dirtools.archive_extractor import ArchiveExtractor

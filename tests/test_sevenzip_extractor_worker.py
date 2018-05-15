@@ -21,7 +21,9 @@ import signal
 import unittest
 import pyparsing
 
-from dirtools.sevenzip_extractor_worker import SevenZipExtractorWorker
+
+from dirtools.extractor import ExtractorResult
+from dirtools.sevenzip_extractor_worker import SevenZipExtractor
 
 from PyQt5.QtCore import QCoreApplication, QTimer
 
@@ -37,20 +39,9 @@ class SevenZipExtractorWorkerTestCase(unittest.TestCase):
         archive_file = os.path.join(DATADIR, "test.7z")
         outdir = tempfile.mkdtemp()
 
-        app = QCoreApplication([])
-        worker = SevenZipExtractorWorker(archive_file, outdir)
+        worker = SevenZipExtractor(archive_file, outdir)
 
         results = []
-
-        worker.sig_entry_extracted.connect(lambda lhs, rhs: results.append(lhs))
-        worker.sig_finished.connect(lambda: app.quit())
-
-        QTimer.singleShot(0, lambda: worker.on_thread_started())
-        app.exec()
-
-        worker.close()
-        del app
-
         expected = [
             'folder',
             '1.txt',
@@ -62,6 +53,10 @@ class SevenZipExtractorWorkerTestCase(unittest.TestCase):
             'folder/3.txt',
             'folder/4.txt'
         ]
+
+        worker.sig_entry_extracted.connect(lambda lhs, rhs: results.append(lhs))
+        worker.sig_finished.connect(lambda x: self.assertEqual(x.status, ExtractorResult.SUCCESS))
+        worker.extract()
 
         self.assertEqual(sorted(results), sorted(expected))
 

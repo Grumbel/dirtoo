@@ -24,7 +24,6 @@ import traceback
 from PyQt5.QtCore import QProcess, QByteArray, pyqtSignal
 
 from dirtools.extractor import Extractor, ExtractorResult
-from dirtools.fileview.worker_thread import Worker
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +48,7 @@ logger = logging.getLogger(__name__)
 # 7zr x -o outdir ${archive}
 
 
-class SevenZipExtractorWorker(Worker):
+class SevenZipExtractor(Extractor):
 
     sig_entry_extracted = pyqtSignal(str, str)
     sig_finished = pyqtSignal(ExtractorResult)
@@ -57,7 +56,6 @@ class SevenZipExtractorWorker(Worker):
     def __init__(self, filename: str, outdir: str) -> None:
         super().__init__()
 
-        self._close = False
         self._filename = os.path.abspath(filename)
         self._outdir = outdir
 
@@ -66,16 +64,16 @@ class SevenZipExtractorWorker(Worker):
 
         self._error_summary = False
 
-    def close(self):
-        self._close = True
-
+    def interrupt(self):
         if self._process is not None:
             self._process.terminate()
+            # self._process.waitForBytesWritten(int msecs = 30000)
             # self._process.kill()
 
-    def on_thread_started(self) -> None:
+    def extract(self) -> None:
         try:
             self._start_extract(self._outdir)
+            self._process.waitForFinished(-1)
         except Exception as err:
             message = "{}: failure when extracting archive".format(self._filename)
             logger.exception(message)

@@ -18,11 +18,11 @@
 import logging
 import os
 import libarchive
+import threading
 
 from PyQt5.QtCore import pyqtSignal
 
 from dirtools.extractor import Extractor, ExtractorResult
-from dirtools.fileview.worker_thread import Worker
 
 logger = logging.getLogger(__name__)
 
@@ -37,31 +37,33 @@ def sanitize(pathname):
         return normpath
 
 
-class LibArchiveExtractorWorker(Worker):
+class LibArchiveExtractor(Extractor):
 
     sig_entry_extracted = pyqtSignal(str, str)
-    sig_finished = pyqtSignal()
+    sig_finished = pyqtSignal(ExtractorResult)
 
     def __init__(self, filename: str, outdir: str) -> None:
         super().__init__()
         self.filename = os.path.abspath(filename)
-        self.outdir = outdir
-        self._close = False
+        self._outdir = outdir
+        self._interruption_event = threading.Event()
 
-    def close(self):
-        self._close = True
+    def interrupt(self) -> None:
+        self._interruption_event.set()
 
     def interruption_point(self):
-        if self._close:
+        if self._interruption_event.is_set():
             raise Exception("{}: archive extraction was interrupted".format(self.filename))
 
-    def on_thread_started(self) -> None:
+    def extract(self) -> None:
         try:
-            self._extract(self.outdir)
+            self._extract(self._outdir)
         except Exception as err:
-            logger.exception("{}: failure when extracting archive".format(self.filename))
-
-        self.sig_finished.emit()
+            msg = "{}: failure when extracting archive".format(self.filename)
+            logger.exception(msg)
+            self.sig_finished.emit(ExtractorResult.failure(msg))
+        else:
+            self.sig_finished.emit(ExtractorResult.success())
 
     def _extract(self, outdir: str) -> None:
         with libarchive.file_reader(self.filename) as entries:
