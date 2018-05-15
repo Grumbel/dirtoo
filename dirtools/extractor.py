@@ -15,6 +15,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from abc import ABC, abstractmethod
+
+
 class ExtractorResult:
 
     SUCCESS = 0
@@ -35,6 +38,21 @@ class ExtractorResult:
 
     def __str__(self):
         return "ExtractorResult({}, \"{}\")".format(self.status, self.message)
+
+
+class Extractor(ABC):
+
+    @abstractmethod
+    def sig_entry_extracted(self):
+        pass
+
+    @abstractmethod
+    def sig_finished(self):
+        pass
+
+    @abstractmethod
+    def extract(self, outdir: str) -> None:
+        pass
 
 
 # EOF #

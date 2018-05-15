@@ -21,6 +21,7 @@ import libarchive
 
 from PyQt5.QtCore import pyqtSignal
 
+from dirtools.extractor import Extractor, ExtractorResult
 from dirtools.fileview.worker_thread import Worker
 
 logger = logging.getLogger(__name__)

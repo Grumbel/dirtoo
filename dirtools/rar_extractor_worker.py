@@ -24,7 +24,7 @@ import re
 
 from PyQt5.QtCore import QProcess, QByteArray, pyqtSignal
 
-from dirtools.extractor_worker import ExtractorResult
+from dirtools.extractor import Extractor, ExtractorResult
 from dirtools.fileview.worker_thread import Worker
 
 logger = logging.getLogger(__name__)

@@ -26,8 +26,8 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from dirtools.rar_extractor_worker import RarExtractorWorker
 from dirtools.sevenzip_extractor_worker import SevenZipExtractorWorker
 from dirtools.libarchive_extractor_worker import LibArchiveExtractorWorker
-from dirtools.extractor_worker import ExtractorResult
 from dirtools.fileview.worker_thread import WorkerThread
+from dirtools.extractor import ExtractorResult
 
 logger = logging.getLogger(__name__)
 
