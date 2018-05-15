@@ -46,7 +46,10 @@ def main(argv):
     if args.verbose:
         extractor.sig_entry_extracted.connect(lambda x, y: print(y))
 
-    extractor.sig_finished.connect(app.quit)
+    def on_finished(*args):
+        app.quit()
+
+    extractor.sig_finished.connect(on_finished)
 
     extractor.start()
 

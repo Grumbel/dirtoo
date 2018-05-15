@@ -65,7 +65,6 @@ class SevenZipExtractor(Extractor):
         self._error_summary = False
 
     def interrupt(self):
-        print("CAPUTTT interrupt")
         if self._process is not None:
             self._process.terminate()
             # self._process.waitForBytesWritten(int msecs = 30000)
@@ -74,9 +73,7 @@ class SevenZipExtractor(Extractor):
     def extract(self) -> None:
         try:
             self._start_extract(self._outdir)
-            print("waiting")
-            self._process.waitForFinished(1000000)
-            print("donessss")
+            self._process.waitForFinished(-1)
         except Exception as err:
             message = "{}: failure when extracting archive".format(self._filename)
             logger.exception(message)

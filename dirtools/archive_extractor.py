@@ -15,18 +15,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import json
 import logging
 import os
 
-from PyQt5.QtCore import Qt, pyqtSignal, pyqtBoundSignal
+from PyQt5.QtCore import Qt, pyqtSignal
 
 from dirtools.rar_extractor import RarExtractor
 from dirtools.sevenzip_extractor import SevenZipExtractor
 from dirtools.libarchive_extractor import LibArchiveExtractor
-from dirtools.extractor import ExtractorResult
+from dirtools.extractor import Extractor, ExtractorResult
 from dirtools.fileview.worker_thread import WorkerThread, Worker
 
 logger = logging.getLogger(__name__)
@@ -34,23 +34,34 @@ logger = logging.getLogger(__name__)
 
 class ArchiveExtractorWorker(Worker):
 
-    def __init__(self, extractor):
+    sig_entry_extracted = pyqtSignal(str, str)
+    sig_finished = pyqtSignal(ExtractorResult)
+
+    def __init__(self, archive_path: str, contentdir: str) -> None:
         super().__init__()
-        self._extractor = extractor
+        self._archive_path = archive_path
+        self._contentdir = contentdir
+        self._extractor: Optional[Extractor] = None
 
     def on_thread_started(self) -> None:
-        self._extractor.extract()
+        # FIXME: Use mime-type to decide proper extractor
+        if self._archive_path.lower().endswith(".rar"):
+            extractor = RarExtractor(self._archive_path, self._contentdir)
+        elif True:  # pylint: disable=using-constant-test
+            extractor = SevenZipExtractor(self._archive_path, self._contentdir)
+        else:
+            extractor = LibArchiveExtractor(self._archive_path, self._contentdir)
+
+        # forward signals
+        extractor.sig_entry_extracted.connect(self.sig_entry_extracted)
+        extractor.sig_finished.connect(self.sig_finished)
+
+        self._extractor = extractor
+
+        extractor.extract()
 
     def close(self) -> None:
         self._extractor.interrupt()
-
-    @property
-    def sig_entry_extracted(self) -> pyqtBoundSignal:
-        return self._extractor.sig_entry_extracted
-
-    @property
-    def sig_finished(self) -> pyqtBoundSignal:
-        return self._extractor.sig_finished
 
 
 class ArchiveExtractor(WorkerThread):
@@ -78,15 +89,7 @@ class ArchiveExtractor(WorkerThread):
         if not os.path.isdir(contentdir):
             os.makedirs(contentdir)
 
-        # FIXME: Use mime-type to decide proper extractor
-        if archive_path.lower().endswith(".rar"):
-            extractor = RarExtractor(archive_path, contentdir)
-        elif True:  # pylint: disable=using-constant-test
-            extractor = SevenZipExtractor(archive_path, contentdir)
-        else:
-            extractor = LibArchiveExtractor(archive_path, contentdir)
-
-        worker = ArchiveExtractorWorker(extractor)
+        worker = ArchiveExtractorWorker(archive_path, contentdir)
         self.set_worker(worker)
 
         worker.sig_entry_extracted.connect(self._on_entry_extracted)
