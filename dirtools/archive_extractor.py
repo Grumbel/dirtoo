@@ -21,11 +21,11 @@ import json
 import logging
 import os
 
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, pyqtBoundSignal
 
-from dirtools.rar_extractor_worker import RarExtractor
-from dirtools.sevenzip_extractor_worker import SevenZipExtractor
-from dirtools.libarchive_extractor_worker import LibArchiveExtractor
+from dirtools.rar_extractor import RarExtractor
+from dirtools.sevenzip_extractor import SevenZipExtractor
+from dirtools.libarchive_extractor import LibArchiveExtractor
 from dirtools.extractor import ExtractorResult
 from dirtools.fileview.worker_thread import WorkerThread, Worker
 
@@ -44,10 +44,12 @@ class ArchiveExtractorWorker(Worker):
     def close(self) -> None:
         self._extractor.interrupt()
 
-    def sig_entry_extracted(self):
+    @property
+    def sig_entry_extracted(self) -> pyqtBoundSignal:
         return self._extractor.sig_entry_extracted
 
-    def sig_finished(self):
+    @property
+    def sig_finished(self) -> pyqtBoundSignal:
         return self._extractor.sig_finished
 
 
