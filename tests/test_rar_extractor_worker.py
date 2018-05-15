@@ -22,7 +22,7 @@ import tempfile
 import unittest
 
 from dirtools.extractor import ExtractorResult
-from dirtools.rar_extractor_worker import RarExtractor
+from dirtools.rar_extractor import RarExtractor
 
 from PyQt5.QtCore import QCoreApplication, QTimer
 

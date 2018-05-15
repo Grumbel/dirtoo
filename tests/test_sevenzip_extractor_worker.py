@@ -23,7 +23,7 @@ import pyparsing
 
 
 from dirtools.extractor import ExtractorResult
-from dirtools.sevenzip_extractor_worker import SevenZipExtractor
+from dirtools.sevenzip_extractor import SevenZipExtractor
 
 from PyQt5.QtCore import QCoreApplication, QTimer
 

@@ -65,6 +65,7 @@ class SevenZipExtractor(Extractor):
         self._error_summary = False
 
     def interrupt(self):
+        print("CAPUTTT interrupt")
         if self._process is not None:
             self._process.terminate()
             # self._process.waitForBytesWritten(int msecs = 30000)
@@ -73,7 +74,9 @@ class SevenZipExtractor(Extractor):
     def extract(self) -> None:
         try:
             self._start_extract(self._outdir)
-            self._process.waitForFinished(-1)
+            print("waiting")
+            self._process.waitForFinished(1000000)
+            print("donessss")
         except Exception as err:
             message = "{}: failure when extracting archive".format(self._filename)
             logger.exception(message)
@@ -91,12 +94,12 @@ class SevenZipExtractor(Extractor):
 
         self._process.readyReadStandardOutput.connect(self._on_ready_read_stdout)
         self._process.readyReadStandardError.connect(self._on_ready_read_stderr)
-        self._process.finished.connect(self._on_finished)
+        self._process.finished.connect(self._on_process_finished)
 
         self._process.start()
         self._process.closeWriteChannel()
 
-    def _on_finished(self, exit_code, exit_status):
+    def _on_process_finished(self, exit_code, exit_status):
         self._process.setCurrentReadChannel(QProcess.StandardOutput)
         for line in os.fsdecode(self._process.readAll().data()).splitlines():
             self._process_stdout(line)

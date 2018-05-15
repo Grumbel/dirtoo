@@ -92,9 +92,9 @@ class RarExtractor(Extractor):
         self._process.readyReadStandardOutput.connect(self._on_ready_read_stdout)
         self._process.readyReadStandardError.connect(self._on_ready_read_stderr)
         self._process.errorOccurred.connect(self._on_error_occured)
-        self._process.finished.connect(self._on_finished)
+        self._process.finished.connect(self._on_process_finished)
 
-    def _on_finished(self, exit_code, exit_status):
+    def _on_process_finished(self, exit_code, exit_status):
         self._process.setCurrentReadChannel(QProcess.StandardOutput)
         for line in os.fsdecode(self._process.readAll().data()).splitlines():
             self._process_stdout(line)
