@@ -46,10 +46,12 @@ class Extractor(QObject):
     def __init__(self) -> None:
         super().__init__()
 
+    @property
     @abstractmethod
     def sig_entry_extracted(self):
         pass
 
+    @property
     @abstractmethod
     def sig_finished(self):
         pass
@@ -60,6 +62,23 @@ class Extractor(QObject):
 
     def interrupt(self) -> None:
         pass
+
+
+def make_extractor(filename: str, outdir: str)-> Extractor:
+
+    from dirtools.rar_extractor import RarExtractor
+    from dirtools.sevenzip_extractor import SevenZipExtractor
+    from dirtools.libarchive_extractor import LibArchiveExtractor
+
+    # FIXME: Use mime-type to decide proper extractor
+    if filename.lower().endswith(".rar"):
+        extractor = RarExtractor(filename, outdir)
+    elif True:  # pylint: disable=using-constant-test
+        extractor = SevenZipExtractor(filename, outdir)
+    else:
+        extractor = LibArchiveExtractor(filename, outdir)
+
+    return extractor
 
 
 # EOF #

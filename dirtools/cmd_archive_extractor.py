@@ -15,13 +15,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import signal
 import argparse
 import sys
 
-from PyQt5.QtCore import QCoreApplication
-
-from dirtools.archive_extractor import ArchiveExtractor
+from dirtools.extractor import make_extractor
 
 
 def parse_args(args):
@@ -38,30 +35,16 @@ def parse_args(args):
 def main(argv):
     args = parse_args(argv[1:])
 
-    signal.signal(signal.SIGINT, signal.SIG_DFL)
-    app = QCoreApplication([])
-
-    extractor = ArchiveExtractor(args.ARCHIVE[0], args.outdir)
+    extractor = make_extractor(args.ARCHIVE[0], args.outdir)
 
     if args.verbose:
         extractor.sig_entry_extracted.connect(lambda x, y: print(y))
 
-    def on_finished(*args):
-        app.quit()
-
-    extractor.sig_finished.connect(on_finished)
-
-    extractor.start()
-
-    ret = app.exec()
-
-    extractor.close()
-
-    return ret
+    extractor.extract()
 
 
 def main_entrypoint():
-    sys.exit(main(sys.argv))
+    main(sys.argv)
 
 
 # EOF #

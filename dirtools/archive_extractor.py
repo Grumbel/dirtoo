@@ -23,10 +23,7 @@ import os
 
 from PyQt5.QtCore import Qt, pyqtSignal
 
-from dirtools.rar_extractor import RarExtractor
-from dirtools.sevenzip_extractor import SevenZipExtractor
-from dirtools.libarchive_extractor import LibArchiveExtractor
-from dirtools.extractor import Extractor, ExtractorResult
+from dirtools.extractor import Extractor, ExtractorResult, make_extractor
 from dirtools.fileview.worker_thread import WorkerThread, Worker
 
 logger = logging.getLogger(__name__)
@@ -44,13 +41,7 @@ class ArchiveExtractorWorker(Worker):
         self._extractor: Optional[Extractor] = None
 
     def on_thread_started(self) -> None:
-        # FIXME: Use mime-type to decide proper extractor
-        if self._archive_path.lower().endswith(".rar"):
-            extractor = RarExtractor(self._archive_path, self._contentdir)
-        elif True:  # pylint: disable=using-constant-test
-            extractor = SevenZipExtractor(self._archive_path, self._contentdir)
-        else:
-            extractor = LibArchiveExtractor(self._archive_path, self._contentdir)
+        extractor = make_extractor(self._archive_path, self._contentdir)
 
         # forward signals
         extractor.sig_entry_extracted.connect(self.sig_entry_extracted)
