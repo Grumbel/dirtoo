@@ -31,6 +31,30 @@ from dirtools.archive_extractor import ArchiveExtractor
 logger = logging.getLogger(__name__)
 
 
+class ExtractorStatus:
+
+    @staticmethod
+    def from_file(filename: str) -> 'ExtractorStatus':
+        try:
+            with open(filename, "r") as fin:
+                js = json.load(fin)
+                return ExtractorStatus(js)
+        except Exception as err:
+            return ExtractorStatus({
+                'status': ExtractorResult.FAILURE,
+                'message': "{}: exception while loading: {}".format(filename, err)
+            })
+
+    def __init__(self, js: Dict) -> None:
+        self._js = js
+
+    def status(self) -> ExtractorResult:
+        return self._js.get("status", ExtractorResult.FAILURE)
+
+    def message(self) -> str:
+        return self._js.get("message", "<no message>")
+
+
 class ArchiveManager:
 
     def __init__(self, directory: str) -> None:
@@ -45,9 +69,12 @@ class ArchiveManager:
             extractor.close()
 
     def extract(self, location: Location, directory_watcher, stdio) -> None:
+        if location in self.extractors:
+            return  # extraction already running
+
         outdir = self._make_extractor_outdir(location)
 
-        if not os.path.isdir(outdir) and location not in self.extractors:
+        if not os.path.isdir(outdir):
             extractor = ArchiveExtractor(stdio.get_stdio_name(location.origin()), outdir)
             self.extractors[location] = extractor
             extractor.sig_finished.connect(lambda result=None, x=extractor, d=directory_watcher:
@@ -55,24 +82,16 @@ class ArchiveManager:
             extractor.start()
         else:
             status_file = os.path.join(outdir, "status.json")
-            with open(status_file, "r") as fin:
-                js = json.load(fin)
-            if "status" in js and \
-               js["status"] in [ExtractorResult.SUCCESS, ExtractorResult.WORKING]:
-                pass  # everything ok
-            else:
-                if "message" in js:
-                    message = js["message"]
-                else:
-                    message = "<no message>"
+            status = ExtractorStatus.from_file(status_file)
 
-                def send_message(dw=directory_watcher, message=message):
-                    dw.sig_message.emit(message)
+            if status.status() == ExtractorResult.FAILURE:
+                def send_message(dw=directory_watcher, message=status.message()):
+                    dw.sig_message.emit(status.message())
 
                 # FIXME: this is a bit of a crude hack to
                 # communicate the message to the user
                 QTimer.singleShot(0, send_message)
-                logging.error("%s: archive exist, but is broken: %s", location, message)
+                logging.error("%s: archive exist, but is broken: %s", location, status.message())
 
     def get_extractor_content_dir(self, location: Location) -> str:
         return os.path.join(self._make_extractor_outdir(location), "contents")
