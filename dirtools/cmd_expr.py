@@ -27,7 +27,9 @@ from dirtools.expr import Parser, Context
 
 def parse_args(args: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate expressions")
-    parser.add_argument("EXPRESSION", nargs='*')
+    parser.add_argument("EXPRESSION", nargs='+')
+    parser.add_argument('-v', '--verbose', action='store_true', default=False,
+                        help="Be verbose")
     return parser.parse_args(args)
 
 
@@ -37,9 +39,11 @@ def main(argv: List[str]) -> None:
     parser = Parser()
     ctx = Context()
     for expression in args.EXPRESSION:
-        print(expression)
         result = parser.eval(expression, ctx)
-        print("Result: {}".format(result))
+        if args.verbose:
+            print("{} => {}".format(expression, result))
+        else:
+            print(result)
 
 
 def main_entrypoint() -> None:
