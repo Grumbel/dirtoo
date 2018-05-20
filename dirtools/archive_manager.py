@@ -106,8 +106,8 @@ class ArchiveManager:
             self._extractors[location] = extractor
             extractor.sig_started.connect(lambda extractor:
                                           self._on_archive_extractor_started(extractor))
-            extractor.sig_finished.connect(lambda extractor, result=None, d=directory_watcher:
-                                           self._on_archive_extractor_finished(extractor, d, result))
+            extractor.sig_finished.connect(lambda extractor, d=directory_watcher:
+                                           self._on_archive_extractor_finished(extractor, d))
             extractor.start()
         else:
             status_file = os.path.join(outdir, "status.json")
@@ -140,13 +140,13 @@ class ArchiveManager:
         status.save(extractor.get_status_file())
 
     def _on_archive_extractor_finished(self, extractor: ArchiveExtractor,
-                                       directory_watcher: DirectoryWatcher,
-                                       result=None) -> None:
+                                       directory_watcher: DirectoryWatcher) -> None:
         logger.info("ArchiveManager_.on_archive_extractor_finished")
         extractor.close()
         self._extractors = {k: v for k, v in self._extractors.items() if v != extractor}
 
-        if result is not None and result.status != 0:
+        result = extractor.get_result()
+        if result.status != 0:
             directory_watcher.sig_message.emit(result.message)
 
         status = ExtractorStatus.finished(extractor)
