@@ -51,7 +51,6 @@ logger = logging.getLogger(__name__)
 class SevenZipExtractor(Extractor):
 
     sig_entry_extracted = pyqtSignal(str, str)
-    sig_finished = pyqtSignal(ExtractorResult)
 
     def __init__(self, filename: str, outdir: str) -> None:
         super().__init__()
@@ -63,6 +62,7 @@ class SevenZipExtractor(Extractor):
         self._errors: List[str] = []
 
         self._error_summary = False
+        self._result: Optional[ExtractorResult] = None
 
     def interrupt(self):
         if self._process is not None:
@@ -70,15 +70,17 @@ class SevenZipExtractor(Extractor):
             # self._process.waitForBytesWritten(int msecs = 30000)
             # self._process.kill()
 
-    def extract(self) -> None:
+    def extract(self) -> ExtractorResult:
         try:
             self._start_extract(self._outdir)
             self._process.waitForFinished(-1)
+            assert self._result is not None
+            return self._result
         except Exception as err:
             message = "{}: failure when extracting archive".format(self._filename)
             logger.exception(message)
             message += "\n\n" + traceback.format_exc()
-            self.sig_finished.emit(ExtractorResult.failure(message))
+            return ExtractorResult.failure(message)
 
     def _start_extract(self, outdir: str) -> None:
         program = "7z"
@@ -115,10 +117,10 @@ class SevenZipExtractor(Extractor):
 
         if exit_status != QProcess.NormalExit or exit_code != 0:
             logger.error("SevenZipExtractorWorker: something went wrong: %s  %s", exit_code, exit_status)
-            self.sig_finished.emit(ExtractorResult.failure(message))
+            self._result = ExtractorResult.failure(message)
         else:
             logger.debug("SevenZipExtractorWorker: finished successfully: %s  %s", exit_code, exit_status)
-            self.sig_finished.emit(ExtractorResult.success())
+            self._result = ExtractorResult.success()
 
     def _process_stdout(self, line):
         if line.startswith("- "):

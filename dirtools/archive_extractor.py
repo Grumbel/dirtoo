@@ -17,11 +17,10 @@
 
 from typing import List, Tuple, Optional
 
-import json
 import logging
 import os
 
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import pyqtSignal
 
 from dirtools.extractor import Extractor, ExtractorResult, make_extractor
 from dirtools.fileview.worker_thread import WorkerThread, Worker
@@ -44,12 +43,15 @@ class ArchiveExtractorWorker(Worker):
         extractor = make_extractor(self._archive_path, self._contentdir)
 
         # forward signals
-        extractor.sig_entry_extracted.connect(self.sig_entry_extracted)
-        extractor.sig_finished.connect(self.sig_finished)
+        extractor.sig_entry_extracted.connect(self.sig_entry_extracted.emit)
 
         self._extractor = extractor
 
-        extractor.extract()
+        result = extractor.extract()
+        self.sig_finished.emit(result)
+
+    def interrupt(self) -> None:
+        self._extractor.interrupt()
 
     def close(self) -> None:
         self._extractor.interrupt()
@@ -57,7 +59,8 @@ class ArchiveExtractorWorker(Worker):
 
 class ArchiveExtractor(WorkerThread):
 
-    sig_close_requested = pyqtSignal()
+    sig_started = pyqtSignal(object)  # ArchiveExtractor
+    sig_finished = pyqtSignal(object)  # ArchiveExtractor
 
     def __init__(self, archive_path: str, outdir: str) -> None:
         super().__init__()
@@ -65,6 +68,7 @@ class ArchiveExtractor(WorkerThread):
         self._archive_path = archive_path
         self._outdir = outdir
         self._extracted_entries: List[Tuple[str, str]] = []
+        self._result: Optional[ExtractorResult] = None
 
         stat = os.stat(self._archive_path)
         self._mtime = stat.st_mtime
@@ -86,51 +90,37 @@ class ArchiveExtractor(WorkerThread):
         worker.sig_entry_extracted.connect(self._on_entry_extracted)
         worker.sig_finished.connect(self._on_worker_finished)
 
-        # close() is a blocking connection so the thread is properly
-        # done after the signal was emit'ed and we don't have to fuss
-        # around with sig_finished() and other stuff
-        self.sig_close_requested.connect(worker.close, type=Qt.BlockingQueuedConnection)
+    def get_archive_path(self) -> str:
+        return self._archive_path
 
-    def _on_worker_started(self):
-        js = {
-            "path": self._archive_path,
-            "mtime": self._mtime,
-            "status": ExtractorResult.WORKING,
-            "message": "Extraction in progress",
-            "entries": []
-        }
-        status_path = os.path.join(self._outdir, "status.json")
-        with open(status_path, "w") as fout:
-            json.dump(js, fout)
-            fout.write("\n")
+    def get_mtime(self) -> float:
+        return self._mtime
 
-    def _on_worker_finished(self, result: ExtractorResult):
-        js = {
-            "path": self._archive_path,
-            "mtime": self._mtime,
-            "status": result.status,
-            "message": result.message,
-            "entries": self._extracted_entries,
-        }
-        status_path = os.path.join(self._outdir, "status.json")
-        with open(status_path, "w") as fout:
-            json.dump(js, fout)
-            fout.write("\n")
+    def get_result(self) -> ExtractorResult:
+        assert self._result is not None
+        return self._result
 
-    def _on_entry_extracted(self, entry: str, outfile: str):
+    def get_entries(self) -> List[str]:
+        return [i[0] for i in self._extracted_entries]
+
+    # FIXME: this doesn't really belong in this class
+    def get_status_file(self) -> str:
+        return os.path.join(self._outdir, "status.json")
+
+    def _on_entry_extracted(self, entry: str, outfile: str) -> None:
         self._extracted_entries.append((entry, outfile))
+
+    def _on_worker_finished(self, result: ExtractorResult) -> None:
+        self._result = result
+        self.sig_finished.emit(self)
 
     def start(self) -> None:
         super().start()
-        self._on_worker_started()
+        self.sig_started.emit(self)
 
     @property
     def sig_entry_extracted(self):
         return self._worker.sig_entry_extracted
-
-    @property
-    def sig_finished(self):
-        return self._worker.sig_finished
 
 
 # EOF #

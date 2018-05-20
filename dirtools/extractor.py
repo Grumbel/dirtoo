@@ -26,18 +26,18 @@ class ExtractorResult:
     WORKING = 2
 
     @staticmethod
-    def success(message=""):
+    def success(message: str="") -> 'ExtractorResult':
         return ExtractorResult(ExtractorResult.SUCCESS, message)
 
     @staticmethod
-    def failure(message):
+    def failure(message: str) -> 'ExtractorResult':
         return ExtractorResult(ExtractorResult.FAILURE, message)
 
-    def __init__(self, status, message=""):
+    def __init__(self, status: int, message: str="") -> None:
         self.status = status
         self.message = message
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "ExtractorResult({}, \"{}\")".format(self.status, self.message)
 
 
@@ -57,7 +57,7 @@ class Extractor(QObject):
         pass
 
     @abstractmethod
-    def extract(self) -> None:
+    def extract(self) -> ExtractorResult:
         pass
 
     def interrupt(self) -> None:

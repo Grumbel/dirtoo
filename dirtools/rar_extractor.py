@@ -45,7 +45,6 @@ class State(Enum):
 class RarExtractor(Extractor):
 
     sig_entry_extracted = pyqtSignal(str, str)
-    sig_finished = pyqtSignal(ExtractorResult)
 
     def __init__(self, filename: str, outdir: str) -> None:
         super().__init__()
@@ -56,6 +55,8 @@ class RarExtractor(Extractor):
         self._process: Optional[QProcess] = None
         self._errors: List[str] = []
 
+        self._result: Optional[ExtractorResult] = None
+
         self._output_state = State.HEADER
 
     def interrupt(self):
@@ -63,14 +64,15 @@ class RarExtractor(Extractor):
             self._process.terminate()
             # self._process.kill()
 
-    def extract(self) -> None:
+    def extract(self) -> ExtractorResult:
         try:
             self._start_extract(self._outdir)
             self._process.waitForFinished(-1)
+            return self._result
         except Exception as err:
             message = "{}: failure when extracting archive".format(self._filename)
             logger.exception(message)
-            self.sig_finished.emit(ExtractorResult.failure(message))
+            return ExtractorResult.failure(message)
 
     def _start_extract(self, outdir: str) -> None:
         # The directory is already created in ArchiveExtractor
@@ -110,14 +112,14 @@ class RarExtractor(Extractor):
 
         if exit_status != QProcess.NormalExit or exit_code != 0:
             logger.error("RarExtractorWorker: something went wrong: %s  %s", exit_code, exit_status)
-            self.sig_finished.emit(ExtractorResult.failure(message))
+            self._result = ExtractorResult.failure(message)
         else:
             logger.debug("RarExtractorWorker: finished successfully: %s  %s", exit_code, exit_status)
-            self.sig_finished.emit(ExtractorResult.success(message))
+            self._result = ExtractorResult.success(message)
 
     def _on_error_occured(self, error) -> None:
         logger.error("RarExtractorWorker: an error occured: %s", error)
-        self.sig_finished.emit(ExtractorResult.failure("RarExtractorWorker: an error occured: {}".format(error)))
+        self._result = ExtractorResult.failure("RarExtractorWorker: an error occured: {}".format(error))
 
     def _process_stdout(self, line):
         # print("stdout:", repr(line))

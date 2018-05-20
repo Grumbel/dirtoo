@@ -45,6 +45,28 @@ class ExtractorStatus:
                 'message': "{}: exception while loading: {}".format(filename, err)
             })
 
+    @staticmethod
+    def finished(extractor: ArchiveExtractor) -> 'ExtractorStatus':
+        js = {
+            "path": extractor.get_archive_path(),
+            "mtime": extractor.get_mtime(),
+            "status": extractor.get_result().status,
+            "message": extractor.get_result().message,
+            "entries": extractor.get_entries(),
+        }
+        return ExtractorStatus(js)
+
+    @staticmethod
+    def working(extractor: ArchiveExtractor) -> 'ExtractorStatus':
+        js = {
+            "path": extractor.get_archive_path(),
+            "mtime": extractor.get_mtime(),
+            "status": ExtractorResult.WORKING,
+            "message": "Extraction in progress",
+            "entries": []
+        }
+        return ExtractorStatus(js)
+
     def __init__(self, js: Dict) -> None:
         self._js = js
 
@@ -54,31 +76,38 @@ class ExtractorStatus:
     def message(self) -> str:
         return self._js.get("message", "<no message>")
 
+    def save(self, filename: str) -> None:
+        with open(filename, "w") as fout:
+            json.dump(self._js, fout)
+            fout.write("\n")
+
 
 class ArchiveManager:
 
     def __init__(self, directory: str) -> None:
-        self.extractor_dir = directory
-        self.extractors: Dict[Location, ArchiveExtractor] = {}
+        self._extractor_dir = directory
+        self._extractors: Dict[Location, ArchiveExtractor] = {}
 
-        if not os.path.isdir(self.extractor_dir):
-            os.makedirs(self.extractor_dir)
+        if not os.path.isdir(self._extractor_dir):
+            os.makedirs(self._extractor_dir)
 
     def close(self) -> None:
-        for location, extractor in self.extractors.items():
+        for location, extractor in self._extractors.items():
             extractor.close()
 
     def extract(self, location: Location, directory_watcher, stdio) -> None:
-        if location in self.extractors:
+        if location in self._extractors:
             return  # extraction already running
 
         outdir = self._make_extractor_outdir(location)
 
         if not os.path.isdir(outdir):
             extractor = ArchiveExtractor(stdio.get_stdio_name(location.origin()), outdir)
-            self.extractors[location] = extractor
-            extractor.sig_finished.connect(lambda result=None, x=extractor, d=directory_watcher:
-                                           self._on_archive_extractor_finished(x, d, result))
+            self._extractors[location] = extractor
+            extractor.sig_started.connect(lambda extractor:
+                                          self._on_archive_extractor_started(extractor))
+            extractor.sig_finished.connect(lambda extractor, result=None, d=directory_watcher:
+                                           self._on_archive_extractor_finished(extractor, d, result))
             extractor.start()
         else:
             status_file = os.path.join(outdir, "status.json")
@@ -103,18 +132,25 @@ class ArchiveManager:
         origin._payloads.append(Payload("archive", ""))
 
         loc_hash = hashlib.md5(origin.as_url().encode()).hexdigest()
-        outdir = os.path.join(self.extractor_dir, loc_hash)
+        outdir = os.path.join(self._extractor_dir, loc_hash)
         return outdir
+
+    def _on_archive_extractor_started(self, extractor: ArchiveExtractor):
+        status = ExtractorStatus.working(extractor)
+        status.save(extractor.get_status_file())
 
     def _on_archive_extractor_finished(self, extractor: ArchiveExtractor,
                                        directory_watcher: DirectoryWatcher,
                                        result=None) -> None:
-        logger.info("VirtualFilesystem.on_archive_extractor_finished")
+        logger.info("ArchiveManager_.on_archive_extractor_finished")
         extractor.close()
-        self.extractors = {k: v for k, v in self.extractors.items() if v != extractor}
+        self._extractors = {k: v for k, v in self._extractors.items() if v != extractor}
 
         if result is not None and result.status != 0:
             directory_watcher.sig_message.emit(result.message)
+
+        status = ExtractorStatus.finished(extractor)
+        status.save(extractor.get_status_file())
 
 
 # EOF #

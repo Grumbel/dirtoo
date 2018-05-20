@@ -40,7 +40,6 @@ def sanitize(pathname):
 class LibArchiveExtractor(Extractor):
 
     sig_entry_extracted = pyqtSignal(str, str)
-    sig_finished = pyqtSignal(ExtractorResult)
 
     def __init__(self, filename: str, outdir: str) -> None:
         super().__init__()
@@ -55,15 +54,14 @@ class LibArchiveExtractor(Extractor):
         if self._interruption_event.is_set():
             raise Exception("{}: archive extraction was interrupted".format(self.filename))
 
-    def extract(self) -> None:
+    def extract(self) -> ExtractorResult:
         try:
             self._extract(self._outdir)
+            return ExtractorResult.success()
         except Exception as err:
             msg = "{}: failure when extracting archive".format(self.filename)
             logger.exception(msg)
-            self.sig_finished.emit(ExtractorResult.failure(msg))
-        else:
-            self.sig_finished.emit(ExtractorResult.success())
+            return ExtractorResult.failure(msg)
 
     def _extract(self, outdir: str) -> None:
         with libarchive.file_reader(self.filename) as entries:

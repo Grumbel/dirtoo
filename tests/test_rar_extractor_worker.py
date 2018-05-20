@@ -56,9 +56,8 @@ class RarExtractorWorkerTestCase(unittest.TestCase):
 
         worker = RarExtractor(archive_file, outdir)
         worker.sig_entry_extracted.connect(lambda lhs, rhs: results.append(lhs))
-        worker.sig_finished.connect(lambda x: self.assertEqual(x.status, ExtractorResult.SUCCESS))
-        worker.extract()
-
+        result = worker.extract()
+        self.assertEqual(result.status, ExtractorResult.SUCCESS)
         self.assertEqual(sorted(results), sorted(expected))
 
         results_inc = []
@@ -75,9 +74,9 @@ class RarExtractorWorkerTestCase(unittest.TestCase):
 
         worker_inc = RarExtractor(archive_file_inc, outdir_inc)
         worker_inc.sig_entry_extracted.connect(lambda lhs, rhs: results_inc.append(lhs))
-        worker.sig_finished.connect(lambda x: self.assertEqual(x.status, ExtractorResult.SUCCESS))
-        worker_inc.extract()
+        result = worker_inc.extract()
 
+        self.assertEqual(result.status, ExtractorResult.FAILURE)
         self.assertEqual(sorted(results_inc), sorted(expected_inc))
 
 

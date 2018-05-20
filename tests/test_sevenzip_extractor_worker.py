@@ -55,9 +55,9 @@ class SevenZipExtractorWorkerTestCase(unittest.TestCase):
         ]
 
         worker.sig_entry_extracted.connect(lambda lhs, rhs: results.append(lhs))
-        worker.sig_finished.connect(lambda x: self.assertEqual(x.status, ExtractorResult.SUCCESS))
-        worker.extract()
+        result = worker.extract()
 
+        self.assertEqual(result.status, ExtractorResult.SUCCESS)
         self.assertEqual(sorted(results), sorted(expected))
 
 
