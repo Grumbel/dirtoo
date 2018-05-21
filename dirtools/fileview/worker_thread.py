@@ -40,7 +40,9 @@ class WorkerThread(QObject):
 
     def __init__(self) -> None:
         super().__init__()
+
         self._worker: Optional[Worker] = None
+        self._thread: Optional[QThread] = None
 
     def set_worker(self, worker: Worker):
         """Sets the Worker associated with this thread. Note this function has
@@ -65,6 +67,9 @@ class WorkerThread(QObject):
         assert self._worker is not None
 
         self._thread.start()
+
+    def is_running(self) -> bool:
+        return bool(self._thread.isRunning())
 
     def close(self) -> None:
         assert self._worker is not None

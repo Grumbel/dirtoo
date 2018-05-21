@@ -14,12 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Dict
+from typing import Dict, Deque
 
 import json
 import os
 import logging
 import hashlib
+from collections import deque
 
 from PyQt5.QtCore import QTimer
 
@@ -87,6 +88,8 @@ class ArchiveManager:
     def __init__(self, directory: str) -> None:
         self._extractor_dir = directory
         self._extractors: Dict[Location, ArchiveExtractor] = {}
+        self._queued_extractors: Deque[ArchiveExtractor] = deque()
+        self._max_extractors = 2
 
         if not os.path.isdir(self._extractor_dir):
             os.makedirs(self._extractor_dir)
@@ -97,7 +100,7 @@ class ArchiveManager:
 
     def extract(self, location: Location, directory_watcher, stdio) -> None:
         if location in self._extractors:
-            return  # extraction already running
+            return  # extraction already running or queued
 
         outdir = self._make_extractor_outdir(location)
 
@@ -108,7 +111,11 @@ class ArchiveManager:
                                           self._on_archive_extractor_started(extractor))
             extractor.sig_finished.connect(lambda extractor, d=directory_watcher:
                                            self._on_archive_extractor_finished(extractor, d))
-            extractor.start()
+
+            if self.get_running_extractor_count() < self._max_extractors:
+                extractor.start()
+            else:
+                self._queued_extractors.append(extractor)
         else:
             status_file = os.path.join(outdir, "status.json")
             status = ExtractorStatus.from_file(status_file)
@@ -120,10 +127,22 @@ class ArchiveManager:
                 # FIXME: this is a bit of a crude hack to
                 # communicate the message to the user
                 QTimer.singleShot(0, send_message)
-                logging.error("%s: archive exist, but is broken: %s", location, status.message())
+                logger.error("%s: archive exist, but is broken: %s", location, status.message())
 
     def get_extractor_content_dir(self, location: Location) -> str:
         return os.path.join(self._make_extractor_outdir(location), "contents")
+
+    def get_running_extractor_count(self) -> int:
+        count = 0
+        for v in self._extractors.values():
+            if v.is_running():
+                count += 1
+        return count
+
+    def _process_queue(self) -> None:
+        if self._queued_extractors:
+            extractor = self._queued_extractors.popleft()
+            extractor.start()
 
     def _make_extractor_outdir(self, location: Location) -> str:
         assert location._payloads[-1].protocol == "archive"
@@ -136,6 +155,7 @@ class ArchiveManager:
         return outdir
 
     def _on_archive_extractor_started(self, extractor: ArchiveExtractor):
+        print("ArchiveManager: starting extractor: {}".format(extractor.get_archive_path()))
         status = ExtractorStatus.working(extractor)
         status.save(extractor.get_status_file())
 
@@ -151,6 +171,8 @@ class ArchiveManager:
 
         status = ExtractorStatus.finished(extractor)
         status.save(extractor.get_status_file())
+
+        self._process_queue()
 
 
 # EOF #
