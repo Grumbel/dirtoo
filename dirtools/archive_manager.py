@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Dict, Deque
+from typing import Dict, Deque, Optional
 
 import json
 import os
@@ -98,7 +98,7 @@ class ArchiveManager:
         for location, extractor in self._extractors.items():
             extractor.close()
 
-    def extract(self, location: Location, directory_watcher, stdio) -> None:
+    def extract(self, location: Location, directory_watcher, stdio) -> Optional[ArchiveExtractor]:
         if location in self._extractors:
             return  # extraction already running or queued
 
@@ -116,6 +116,8 @@ class ArchiveManager:
                 extractor.start()
             else:
                 self._queued_extractors.append(extractor)
+
+            return extractor
         else:
             status_file = os.path.join(outdir, "status.json")
             status = ExtractorStatus.from_file(status_file)
@@ -128,6 +130,8 @@ class ArchiveManager:
                 # communicate the message to the user
                 QTimer.singleShot(0, send_message)
                 logger.error("%s: archive exist, but is broken: %s", location, status.message())
+
+            return None
 
     def get_extractor_content_dir(self, location: Location) -> str:
         return os.path.join(self._make_extractor_outdir(location), "contents")

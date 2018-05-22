@@ -21,6 +21,7 @@ import urllib
 
 from dirtools.fileview.location import Location
 from dirtools.fileview.directory_watcher import DirectoryWatcher
+from dirtools.fileview.archive_directory_watcher import ArchiveDirectoryWatcher
 from dirtools.archive_manager import ArchiveManager
 from dirtools.fileview.file_info import FileInfo
 
@@ -45,8 +46,11 @@ class StdioFilesystem:
             return directory_watcher
         else:
             directory_watcher = DirectoryWatcher(self, location)
-            self._archive_manager.extract(location, directory_watcher, self)
-            return directory_watcher
+            extractor = self._archive_manager.extract(location, directory_watcher, self)
+            if extractor is None:
+                return directory_watcher
+            else:
+                return ArchiveDirectoryWatcher(directory_watcher, extractor)
 
     def get_fileinfo(self, location: Location) -> FileInfo:
         if not location.has_payload():
