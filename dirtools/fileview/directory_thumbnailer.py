@@ -191,13 +191,7 @@ class DirectoryThumbnailerTask(QObject):
 
         painter.end()
 
-        # FIXME: this is fishy, need something in Location to handle
-        # "//archive", as the thumbnail needs to be created for
-        # "foo.zip" not "foo.zip//archive"
-        loc = self._location.origin()
-        if loc is None:
-            loc = self._location
-
+        loc = self._location.pure()
         url = loc.as_url()
 
         output.setText("Thumb::URI", url)
