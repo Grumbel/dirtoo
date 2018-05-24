@@ -128,7 +128,7 @@ class LocationButtonBar(QWidget):
         self.setLayout(layout)
 
     def _on_button_context_menu(self, button: LocationButton, location: Location, pos) -> None:
-        fileinfo = self._controller.app.vfs.get_fileinfo(location)
+        fileinfo = self._controller.app.vfs.get_fileinfo(location.pure())
         menu = ItemContextMenu(self._controller, [fileinfo])
         menu.exec(button.mapToGlobal(pos))
 
