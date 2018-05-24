@@ -99,8 +99,9 @@ class ArchiveManager:
             extractor.close()
 
     def extract(self, location: Location, directory_watcher, stdio) -> Optional[ArchiveExtractor]:
-        if location in self._extractors:
-            return  # extraction already running or queued
+        extractor = self._extractors.get(location, None)
+        if extractor is not None:
+            return extractor  # extraction already running or queued
 
         outdir = self._make_extractor_outdir(location)
 

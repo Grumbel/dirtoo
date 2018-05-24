@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Union
+
 import os
 import logging
 import urllib
@@ -37,7 +39,7 @@ class StdioFilesystem:
     def close(self) -> None:
         self._archive_manager.close()
 
-    def opendir(self, location: Location) -> 'DirectoryWatcher':
+    def opendir(self, location: Location) -> Union['DirectoryWatcher', 'ArchiveDirectoryWatcher']:
         """Create a watcher object for the given directory. The caller is
         responsible for .close()`ing it."""
 

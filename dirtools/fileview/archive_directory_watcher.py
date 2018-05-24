@@ -18,8 +18,8 @@
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from dirtools.fileview.directory_watcher import DirectoryWatcher
-    from dirtools.fileview.archive_directory_watcher import ArchiveDirectoryWatcher
+    from dirtools.fileview.directory_watcher import DirectoryWatcher  # noqa: F401
+    from dirtools.fileview.archive_extractor import ArchiveExtractor  # noqa: F401
 
 
 class ArchiveDirectoryWatcher:
