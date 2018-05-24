@@ -45,6 +45,7 @@ class Context:  # pylint: disable=R0904,R0915
             'p': self.fullpath,
             'fullpath': self.fullpath,
             'abspath': self.fullpath,
+            'ext': self.ext,
             'random': self.random,
             'rnd': self.random,
             'rand': self.random,
@@ -137,6 +138,10 @@ class Context:  # pylint: disable=R0904,R0915
 
     def fullpath(self):
         return self.current_file
+
+    def ext(self):
+        _, ext = os.path.splitext(self.current_file)
+        return ext
 
     def sha1(self):
         sha1 = hashlib.sha1()
