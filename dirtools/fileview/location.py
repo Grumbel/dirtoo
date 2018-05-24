@@ -168,6 +168,17 @@ class Location:
             location._payloads.pop()
             return location
 
+    def pure(self) -> 'Location':
+        """Returns Location with the last payload stripped if the payload path
+        is empty, i.e. strip the '//archive' part if it exist."""
+
+        if self._payloads == [] or self._payloads[-1].path != "":
+            return self.copy()
+        else:
+            location = self.copy()
+            location._payloads.pop()
+            return location
+
     def as_url(self) -> str:
         payload_text = "".join(["//{}{}".format(prot, (":" + urllib.parse.quote(path)) if path else "")
                                 for prot, path in self._payloads])

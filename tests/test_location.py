@@ -163,6 +163,51 @@ class LocationTestCase(unittest.TestCase):
         ]
         self.assertEqual(result, expected)
 
+    def test_pure(self):
+        testcases = [
+            ("file:///home/juser/test.rar//rar:bar/foo.zip//zip:bar.png",
+             "file:///home/juser/test.rar//rar:bar/foo.zip//zip:bar.png"),
+
+            ("file:///home/juser/test.rar//rar:bar/foo2.zip//zip",
+             "file:///home/juser/test.rar//rar:bar/foo2.zip"),
+
+            ("file:///home/juser/test.rar//rar:bar/foo3.zip//zip:",
+             "file:///home/juser/test.rar//rar:bar/foo3.zip"),
+
+            ("file:///home/juser/foo.zip//zip:test.rar",
+             "file:///home/juser/foo.zip//zip:test.rar"),
+
+            ("file:///home/juser/test.rar",
+             "file:///home/juser/test.rar")
+        ]
+
+        for url, expected in testcases:
+            location = Location.from_url(url)
+            result = location.pure()
+            self.assertEqual(result.as_url(), expected)
+
+    def test_origin(self):
+        testcases = [
+            (Location.from_url("file:///home/juser/test.rar//rar:bar/foo1.zip//zip:bar.png"),
+             Location.from_url("file:///home/juser/test.rar//rar:bar/foo1.zip")),
+
+            (Location.from_url("file:///home/juser/test.rar//rar:bar/foo2.zip//zip"),
+             Location.from_url("file:///home/juser/test.rar//rar:bar/foo2.zip")),
+
+            (Location.from_url("file:///home/juser/test.rar//rar:bar/foo3.zip//zip:"),
+             Location.from_url("file:///home/juser/test.rar//rar:bar/foo3.zip")),
+
+            (Location.from_url("file:///home/juser/foo4.zip//zip:test.rar"),
+             Location.from_url("file:///home/juser/foo4.zip")),
+
+            (Location.from_url("file:///home/juser/test5.rar"),
+             None)
+        ]
+
+        for location, expected in testcases:
+            result = location.origin()
+            self.assertEqual(result, expected)
+
     def test_basename(self):
         testcases = [
             ("file:///home/juser/test.rar//rar:bar/foo.zip//zip:bar.png",
