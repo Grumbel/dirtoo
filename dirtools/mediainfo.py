@@ -63,6 +63,8 @@ def split_duration(duration: int) -> Tuple[int, int, int]:
 class MediaInfo:
 
     def __init__(self, filename: str) -> None:
+        self._filename = filename
+
         minfo = MediaInfoDLL3.MediaInfo()
 
         ret = minfo.Open(filename)
@@ -101,10 +103,14 @@ class MediaInfo:
 
             minfo.Close()
 
+    def filename(self) -> str:
+        return self._filename
+
     def duration(self) -> int:
         return self._duration
 
     def duration_tuple(self) -> Tuple[int, int, int]:
+        # FIXME: use divmod()
         duration = self._duration
         hours = duration // 1000 // 60 // 60
         duration -= 1000 * 60 * 60 * hours
