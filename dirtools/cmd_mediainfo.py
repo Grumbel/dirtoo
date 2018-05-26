@@ -21,6 +21,7 @@ import string
 import sys
 
 from dirtools.mediainfo import MediaInfo
+from dirtools.expr import Parser, Context
 
 
 def parse_args():
@@ -37,19 +38,21 @@ def parse_args():
 def format_output(mediainfo: MediaInfo, fmt_str: str):
     global_vars = {}
 
+    parser = Parser()
+
     dt = mediainfo.duration_tuple()
 
-    local_vars = {
-        'duration': mediainfo.duration(),
-        'hours': dt[0],
-        'minutes': dt[1],
-        'seconds': dt[2],
-        'framerate': mediainfo.framerate(),
-        'width': mediainfo.width(),
-        'height': mediainfo.height(),
-        'filesize': bytefmt.humanize(mediainfo.filesize(), compact=True),
-        'filename': mediainfo.filename()
-    }
+    ctx = Context()
+
+    ctx.set_variable('duration', mediainfo.duration())
+    ctx.set_variable('hours', dt[0])
+    ctx.set_variable('minutes', dt[1])
+    ctx.set_variable('seconds', dt[2])
+    ctx.set_variable('framerate', mediainfo.framerate())
+    ctx.set_variable('width', mediainfo.width())
+    ctx.set_variable('height', mediainfo.height())
+    ctx.set_variable('filesize', bytefmt.humanize(mediainfo.filesize(), compact=True))
+    ctx.set_variable('filename', mediainfo.filename())
 
     fmt = string.Formatter()
     for (literal_text, field_name, format_spec, _) in fmt.parse(fmt_str):
@@ -57,8 +60,7 @@ def format_output(mediainfo: MediaInfo, fmt_str: str):
             sys.stdout.write(literal_text)
 
         if field_name is not None:
-            # FIXME: use expr parser here, not eval
-            value = eval(field_name, global_vars, local_vars)
+            value = parser.eval(field_name, ctx)
             sys.stdout.write(format(value, format_spec))
 
 

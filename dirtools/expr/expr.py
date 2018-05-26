@@ -106,6 +106,12 @@ class Context:
     def get_variable(self, name):
         return self._variables[name]
 
+    def set_function(self, name, value):
+        self._functions[name] = value
+
+    def set_variable(self, name, value):
+        self._variables[name] = value
+
 
 class Expr(ABC):
 
@@ -205,12 +211,6 @@ def make_grammar():
                            ZeroOrMore, Keyword, alphas, alphanums,
                            nums)
     ParserElement.enablePackrat()
-
-    def test(s, loc, toks):
-        print()
-        print("'{}' {} =>\n  {}".format(s, loc, toks))
-        print()
-        return None
 
     plus = Literal("+")
     minus = Literal("-")
