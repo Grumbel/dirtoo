@@ -128,7 +128,8 @@ class FileView(QGraphicsView):
         # print(self.viewport().rect())
         visible_items = self._scene.items(self.mapToScene(self.viewport().rect()))
         for item in visible_items:
-            item.prepare()
+            if isinstance(item, FileItem):
+                item.prepare()
 
     def _on_vertical_scrollbar_slider_value_changed(self, value: int) -> None:
         self._is_scrolling = True
