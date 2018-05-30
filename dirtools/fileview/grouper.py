@@ -44,7 +44,7 @@ class Group:
         return cast(bool, self.value < other.value)
 
     def __hash__(self):
-        return self.value
+        return hash(self.value)
 
     def __str__(self):
         return self.label
@@ -71,14 +71,19 @@ class NoGrouper(Grouper):
 class DayGrouper(Grouper):
 
     def __init__(self) -> None:
-        pass
+        self._groups = {}
 
     def __call__(self, fileinfo: 'FileInfo'):
         if fileinfo.isdir():
             fileinfo.group = None
         else:
             date = datetime.fromtimestamp(fileinfo.mtime())
-            fileinfo.group = date.isocalendar()
+            date_str = date.strftime("%Y-%m-%d")
+            group = self._groups.get(date_str, None)
+            if group is None:
+                group = Group(date_str, date_str)
+                self._groups[date_str] = group
+            fileinfo.group = group
 
 
 class DirectoryGrouper(Grouper):
