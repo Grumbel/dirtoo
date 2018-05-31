@@ -15,12 +15,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from dirtools.fileview.settings import settings
 from dirtools.fileview.match_func import MatchFunc
 
-if False:
+if TYPE_CHECKING:
     from dirtools.fileview.file_info import FileInfo  # noqa: F401
 
 

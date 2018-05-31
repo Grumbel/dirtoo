@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import TYPE_CHECKING
+
 from datetime import datetime
 import grp
 import pwd
@@ -29,7 +31,7 @@ from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLineEdit,
 
 import bytefmt
 
-if False:
+if TYPE_CHECKING:
     from dirtools.fileview.file_info import FileInfo  # noqa: F401
 
 

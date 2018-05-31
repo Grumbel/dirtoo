@@ -15,11 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import TYPE_CHECKING
+
 from PyQt5.QtGui import QIcon
 
 from dirtools.fileview.menu import Menu
 
-if False:
+if TYPE_CHECKING:
     from dirtools.fileview.controller import Controller  # noqa: F401
     from dirtools.fileview.location import Location  # noqa: F401
 

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from pkg_resources import resource_filename
 from PyQt5.QtCore import Qt
@@ -47,7 +47,7 @@ from dirtools.fileview.search_line_edit import SearchLineEdit
 from dirtools.fileview.tool_button import ToolButton
 from dirtools.fileview.label import Label
 
-if False:
+if TYPE_CHECKING:
     from dirtools.fileview.controller import Controller  # noqa: F401
 
 

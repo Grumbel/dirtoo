@@ -15,12 +15,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from functools import total_ordering
 from datetime import datetime
 
-if False:
+if TYPE_CHECKING:
     from dirtools.fileview.file_info import FileInfo  # noqa: F401
 
 

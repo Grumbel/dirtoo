@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Callable, Any
+from typing import TYPE_CHECKING, Callable, Any
 
 import logging
 import random
@@ -25,7 +25,7 @@ from datetime import datetime
 
 from dirtools.fuzzy import fuzzy
 
-if False:
+if TYPE_CHECKING:
     from dirtools.fileview.file_info import FileInfo  # noqa: F401
 
 logger = logging.getLogger(__name__)

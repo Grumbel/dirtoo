@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Optional, cast
+from typing import TYPE_CHECKING, Optional, cast
 
 from PyQt5.QtCore import QObject, Qt, QEvent
 from PyQt5.QtWidgets import QFileDialog, QTextEdit, QDialog, QMessageBox
@@ -28,7 +28,7 @@ from dirtools.fileview.create_dialog import CreateDialog
 from dirtools.fileview.about_dialog import AboutDialog
 from dirtools.fileview.properties_dialog import PropertiesDialog
 
-if False:
+if TYPE_CHECKING:
     from dirtools.fileview.file_info import FileInfo  # noqa: F401
     from dirtools.fileview.controller import Controller  # noqa: F401
 

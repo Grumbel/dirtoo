@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Optional, List, Tuple
+from typing import TYPE_CHECKING, Optional, List, Tuple
 
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QSizePolicy
@@ -26,7 +26,7 @@ from dirtools.fileview.location import Location
 from dirtools.fileview.push_button import PushButton
 from dirtools.fileview.item_context_menu import ItemContextMenu
 
-if False:
+if TYPE_CHECKING:
     from dirtools.fileview.controller import Controller  # noqa: F401
 
 

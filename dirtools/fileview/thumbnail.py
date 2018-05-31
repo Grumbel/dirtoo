@@ -15,14 +15,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import logging
 from enum import Enum
 
 from PyQt5.QtGui import QPixmap, QImage
 
-if False:
+if TYPE_CHECKING:
     from dirtools.fileview.file_item import FileItem  # noqa: F401
 
 logger = logging.getLogger(__name__)

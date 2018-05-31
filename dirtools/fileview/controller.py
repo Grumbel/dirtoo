@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Dict, Optional
+from typing import TYPE_CHECKING, List, Dict, Optional
 
 import io
 import logging
@@ -46,7 +46,7 @@ from dirtools.fileview.sorter import Sorter
 from dirtools.fileview.actions import Actions
 from dirtools.fileview.transfer_request_dialog import TransferRequestDialog
 
-if False:
+if TYPE_CHECKING:
     from dirtools.fileview.application import FileViewApplication  # noqa: F401
     from dirtools.fileview.tool_button import ToolButton  # noqa: F401
 

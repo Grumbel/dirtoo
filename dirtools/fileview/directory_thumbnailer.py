@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Callable, Optional, List, Tuple
+from typing import TYPE_CHECKING, Callable, Optional, List, Tuple
 
 import logging
 
@@ -27,7 +27,7 @@ from dirtools.fileview.worker_thread import WorkerThread, Worker
 from dirtools.fileview.scaler import make_cropped_rect
 from dirtools.dbus_thumbnailer import DBusThumbnailer
 
-if False:
+if TYPE_CHECKING:
     from dirtools.fileview.application import FileViewApplication  # noqa: F401
     from dirtools.fileview.location import Location  # noqa: F401
 

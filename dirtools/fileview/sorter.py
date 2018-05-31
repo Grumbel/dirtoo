@@ -15,12 +15,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Callable, Any
+from typing import TYPE_CHECKING, Callable, Any
 
 from dirtools.util import numeric_sort_key
 from dirtools.fileview.file_info import FileInfo
 
-if False:
+if TYPE_CHECKING:
     from dirtools.fileview.file_collection import FileCollection  # noqa: F401
 
 

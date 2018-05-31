@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Dict, Any, Optional
+from typing import TYPE_CHECKING, Dict, Any, Optional
 
 import logging
 
@@ -29,7 +29,7 @@ from dirtools.fileview.file_item_renderer import FileItemRenderer
 from dirtools.fileview.drag_widget import DragWidget
 
 
-if False:
+if TYPE_CHECKING:
     from dirtools.fileview.controller import Controller  # noqa: F401
 
 logger = logging.getLogger(__name__)

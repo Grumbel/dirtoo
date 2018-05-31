@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import TYPE_CHECKING
+
 import logging
 
 from PyQt5.QtCore import QObject
@@ -29,7 +31,7 @@ from dirtools.fileview.file_info import FileInfo
 from dirtools.fileview.settings import settings
 from dirtools.util import numeric_sort_key
 
-if False:
+if TYPE_CHECKING:
     from dirtools.fileview.controller import Controller  # noqa: F401
 
 logger = logging.getLogger(__name__)

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Dict, Optional, Set
+from typing import TYPE_CHECKING, List, Dict, Optional, Set
 
 import logging
 
@@ -41,7 +41,7 @@ from dirtools.fileview.file_graphics_scene import FileGraphicsScene
 from dirtools.fileview.leap_widget import LeapWidget
 from dirtools.fileview.file_view_style import FileViewStyle
 
-if False:
+if TYPE_CHECKING:
     from dirtools.fileview.controller import Controller  # noqa: F401
 
 logger = logging.getLogger(__name__)

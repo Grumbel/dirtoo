@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Set, Tuple
+from typing import TYPE_CHECKING, List, Set, Tuple
 
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtGui import QIcon
@@ -24,7 +24,7 @@ from dirtools.fileview.location import Location, Payload
 from dirtools.fileview.menu import Menu
 from dirtools.xdg_desktop import get_desktop_entry, get_desktop_file
 
-if False:
+if TYPE_CHECKING:
     from dirtools.fileview.controller import Controller  # noqa: F401
 
 

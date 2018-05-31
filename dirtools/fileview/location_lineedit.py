@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Optional, List, cast
+from typing import TYPE_CHECKING, Optional, List, cast
 
 import logging
 
@@ -26,7 +26,7 @@ from PyQt5.QtWidgets import (QLineEdit, QShortcut, QWidget,
 
 from dirtools.fileview.location import Location
 
-if False:
+if TYPE_CHECKING:
     from dirtools.fileview.controller import Controller  # noqa: F401
 
 logger = logging.getLogger(__name__)
