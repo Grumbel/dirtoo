@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Dict, List, Callable, Any
+from typing import Dict, List, Callable, Union, cast
 
 import operator
 from abc import ABC, abstractmethod
@@ -83,16 +83,20 @@ def get_unary_operator_fn(op):
     return NAME2UNARYOP[op]
 
 
+ExprValue = Union[int, float, bool, str]
+ExprFunction = Callable[..., ExprValue]
+
+
 class Context:
 
     def __init__(self) -> None:
-        self._functions = {
+        self._functions: Dict[str, ExprFunction] = {
             'abs': abs,
             'int': int,
             'float': float,
         }
 
-        self._variables = {
+        self._variables: Dict[str, ExprValue] = {
             'version': "0.1",
             'true': True,
             'false': False,
@@ -100,33 +104,33 @@ class Context:
             'False': False,
         }
 
-    def get_function(self, name):
+    def get_function(self, name: str) -> ExprFunction:
         return self._functions[name]
 
-    def get_variable(self, name):
+    def get_variable(self, name: str) -> ExprValue:
         return self._variables[name]
 
-    def set_function(self, name, value):
+    def set_function(self, name: str, value: ExprFunction) -> None:
         self._functions[name] = value
 
-    def set_variable(self, name, value):
+    def set_variable(self, name: str, value: ExprValue) -> None:
         self._variables[name] = value
 
 
 class Expr(ABC):
 
     @abstractmethod
-    def eval(self, ctx: Context) -> Any:
+    def eval(self, ctx: Context) -> ExprValue:
         pass
 
 
 class Function(Expr):
 
     def __init__(self, s: str, loc: int, toks: List[Expr]) -> None:
-        self.name = toks[0]
+        self.name: str = cast(str, toks[0])
         self.args = toks[1:]
 
-    def eval(self, ctx: Context) -> Any:
+    def eval(self, ctx: Context) -> ExprValue:
         func = ctx.get_function(self.name)
         args = [arg.eval(ctx) for arg in self.args]
         return func(*args)
@@ -144,7 +148,7 @@ class Number(Expr):
         else:
             self.unit = None
 
-    def eval(self, ctx):
+    def eval(self, ctx: Context) -> ExprValue:
         return self.value
 
     def __repr__(self):
@@ -159,7 +163,7 @@ class String(Expr):
     def __init__(self, s, loc, toks) -> None:
         self.value = toks[0]
 
-    def eval(self, ctx):
+    def eval(self, ctx: Context) -> ExprValue:
         return self.value
 
     def __repr__(self):
@@ -171,7 +175,7 @@ class Variable(Expr):
     def __init__(self, s, loc, toks) -> None:
         self.name = toks[0]
 
-    def eval(self, ctx):
+    def eval(self, ctx: Context) -> ExprValue:
         return ctx.get_variable(self.name)
 
     def __repr__(self):
@@ -185,7 +189,7 @@ class Operator(Expr):
         self.lhs = lhs
         self.rhs = rhs
 
-    def eval(self, ctx):
+    def eval(self, ctx: Context) -> ExprValue:
         return get_operator_fn(self.op)(self.lhs.eval(ctx), self.rhs.eval(ctx))
 
     def __repr__(self):
@@ -198,7 +202,7 @@ class UnaryOperator(Expr):
         self.op = op
         self.lhs = lhs
 
-    def eval(self, ctx):
+    def eval(self, ctx: Context):
         return get_unary_operator_fn(self.op)(self.lhs.eval(ctx))
 
     def __repr__(self):
@@ -327,7 +331,7 @@ class Parser:
         result = self.bnf.parseString(text, parseAll=True)
         return result[0]
 
-    def eval(self, text, ctx):
+    def eval(self, text: str, ctx: Context) -> ExprValue:
         result = self.bnf.parseString(text, parseAll=True)
         return result[0].eval(ctx)
 

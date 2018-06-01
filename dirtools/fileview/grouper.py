@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Dict, cast
 
 from functools import total_ordering
 from datetime import datetime
@@ -71,7 +71,7 @@ class NoGrouper(Grouper):
 class DayGrouper(Grouper):
 
     def __init__(self) -> None:
-        self._groups = {}
+        self._groups: Dict[str, Group] = {}
 
     def __call__(self, fileinfo: 'FileInfo'):
         if fileinfo.isdir():

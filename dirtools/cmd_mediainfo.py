@@ -36,8 +36,6 @@ def parse_args():
 
 
 def format_output(mediainfo: MediaInfo, fmt_str: str):
-    global_vars = {}
-
     parser = Parser()
 
     dt = mediainfo.duration_tuple()
