@@ -39,11 +39,35 @@ def parse_args(args: List[str]) -> argparse.Namespace:
 def main(argv: List[str]) -> int:
     args = parse_args(argv[1:])
 
+    # check if same file
+    if os.path.samefile(args.FILE1[0], args.FILE2[0]):
+        print("error: trying to swap the same file", file=sys.stderr)
+        return 1
+
+    statinfo1 = os.lstat(args.FILE1[0])
+    statinfo2 = os.lstat(args.FILE2[0])
+
+    # check if on different devices
+    if statinfo1.st_dev != statinfo2.st_dev:
+        print("error: cross device swaps are not allowed", file=sys.stderr)
+        return 1
+
+    dir1 = os.path.normpath(os.path.dirname(args.FILE1[0]))
+    dir2 = os.path.normpath(os.path.dirname(args.FILE2[0]))
+
+    if not os.access(dir1, os.W_OK):
+        print("error: cannot rename {}: Permission denied".format(args.FILE1[0]), file=sys.stderr)
+        return 1
+
+    if not os.access(dir2, os.W_OK):
+        print("error: cannot rename {}: Permission denied".format(args.FILE2[0]), file=sys.stderr)
+        return 1
+
+    # perform the swap
     fs = Filesystem()
     fs.verbose = args.verbose
     fs.set_enabled(not args.dry_run)
 
-    dir1 = os.path.dirname(args.FILE1[0])
     tmp1 = ".{}".format(uuid.uuid4())
     tmp1 = os.path.join(dir1, tmp1)
 
@@ -55,7 +79,7 @@ def main(argv: List[str]) -> int:
 
 
 def main_entrypoint():
-    main(sys.argv)
+    sys.exit(main(sys.argv))
 
 
 # EOF #
