@@ -38,6 +38,8 @@ before_script:
     python3-wheel
     python3-numpy
     python3-scipy
+    python3-flake8
+    flake8
     tumbler
   - pip3 install
     bytefmt

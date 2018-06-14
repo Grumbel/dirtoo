@@ -21,6 +21,8 @@ might vary for other distributions.
         python3-wheel \
         python3-numpy \
         python3-scipy \
+        python3-flake8 \
+        flake8 \
         tumbler
 
     sudo -H pip3 install \
