@@ -49,13 +49,15 @@ def fmt_duration(duration: int) -> str:
     return "{:02d}h:{:02d}m:{:02d}s".format(hours, minutes, seconds)
 
 
-def print_time(columns: int, p: float, total: float, countdown: bool):
+def print_time(p: float, total: float, countdown: bool):
+    columns, lines = os.get_terminal_size()
+
     if countdown:
         lhs, rhs = total - p, total
     else:
         lhs, rhs = p, total
 
-    sys.stdout.write(" {} / {}  |{}|\r".format(
+    sys.stdout.write("\r{} / {}  |{}|".format(
         fmt_duration(int(lhs * 1000)),
         fmt_duration(int(rhs * 1000)),
         progressbar(columns - 32, int(p * 1000), int(total * 1000))))
@@ -86,19 +88,17 @@ def main(argv: List[str]) -> None:
     start = current
     end = current + total
 
-    columns, lines = os.get_terminal_size()
-
     while True:
         current = time.time()
         if current >= end:
             break
 
         p = current - start
-        print_time(columns, p, total, args.countdown)
+        print_time(p, total, args.countdown)
 
         time.sleep(0.1)
 
-    print_time(columns, total, total, args.countdown)
+    print_time(total, total, args.countdown)
     print()
 
 
