@@ -98,7 +98,7 @@ class Gui(QObject):
             menu.exec(ev.screenPos())
         self.fake_mouse()
 
-    def show_create_directory_dialog(self, name: Optional[str] = None) -> str:
+    def show_create_directory_dialog(self, name: Optional[str] = None) -> Optional[str]:
         dialog = CreateDialog(CreateDialog.FOLDER, self._window)
         if name is not None:
             dialog.set_name(name)

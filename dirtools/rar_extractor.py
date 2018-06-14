@@ -153,6 +153,8 @@ class RarExtractor(Extractor):
             self._errors.append(line)
 
     def _on_ready_read_stdout(self) -> None:
+        assert self._process is not None
+
         self._process.setCurrentReadChannel(QProcess.StandardOutput)
         while self._process.canReadLine():
             buf: QByteArray = self._process.readLine()
@@ -161,6 +163,8 @@ class RarExtractor(Extractor):
             self._process_stdout(line)
 
     def _on_ready_read_stderr(self) -> None:
+        assert self._process is not None
+
         self._process.setCurrentReadChannel(QProcess.StandardError)
         while self._process.canReadLine():
             buf: QByteArray = self._process.readLine()

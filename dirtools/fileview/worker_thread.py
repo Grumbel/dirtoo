@@ -65,13 +65,17 @@ class WorkerThread(QObject):
 
     def start(self) -> None:
         assert self._worker is not None
+        assert self._thread is not None
 
         self._thread.start()
 
     def is_running(self) -> bool:
+        assert self._thread is not None
+
         return bool(self._thread.isRunning())
 
     def close(self) -> None:
+        assert self._thread is not None
         assert self._worker is not None
         assert self._worker._close is False, "WorkerThread.close() was called twice"
 

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TypeVar, Generic
+from typing import TypeVar, Generic, Optional
 
 from PyQt5.QtCore import QMutex, QWaitCondition
 
@@ -32,7 +32,7 @@ class ReturnValue(Generic[T]):
     def __init__(self) -> None:
         self._mutex = QMutex()
         self._wait_condition = QWaitCondition()
-        self._value: T = None
+        self._value: Optional[T] = None
 
     def receive(self) -> T:
         self._mutex.lock()

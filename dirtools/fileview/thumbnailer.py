@@ -31,7 +31,7 @@ from dirtools.fileview.location import Location
 logger = logging.getLogger(__name__)
 
 
-ThumbnailCallback = Callable[[Location, Optional[str], QImage, int, str], None]
+ThumbnailCallback = Callable[[Location, Optional[str], Optional[QImage], Optional[int], Optional[str]], None]
 
 
 class WorkerDBusThumbnailerListener:

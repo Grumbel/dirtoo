@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Tuple
+from typing import Tuple, Optional
 
 import re
 
@@ -42,7 +42,7 @@ def humanize(duration_sec: int) -> str:
 TIME_HMS_RX = re.compile(r'^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$')
 
 
-def dehumanize_hms(text: str) -> int:
+def dehumanize_hms(text: str) -> Optional[int]:
     m = TIME_HMS_RX.match(text)
     if m is None:
         return None
@@ -57,7 +57,7 @@ def dehumanize_hms(text: str) -> int:
 TIME_DOT_RX = re.compile(r'^(\d+):(\d+)(?::(\d+)|(h))?$', re.IGNORECASE)
 
 
-def dehumanize_dot(text: str) -> int:
+def dehumanize_dot(text: str) -> Optional[int]:
     m = TIME_DOT_RX.match(text)
     if m is None:
         return None
@@ -84,7 +84,7 @@ def dehumanize_dot(text: str) -> int:
 TIME_UNIT_RX = re.compile(r'^(\d+|\d+\.\d*|\d*\.\d+)([hms]?)$', re.IGNORECASE)
 
 
-def dehumanize_unit(text: str) -> int:
+def dehumanize_unit(text: str) -> Optional[int]:
     m = TIME_UNIT_RX.match(text)
     if m is None:
         return None

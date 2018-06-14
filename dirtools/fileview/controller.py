@@ -85,6 +85,8 @@ class Controller(QObject):
         self._apply_settings()
 
     def close_streams(self) -> None:
+        assert self._gui._window._message_area is not None
+
         self._gui._window._message_area.hide()
 
         if self._directory_watcher is not None:

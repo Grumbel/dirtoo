@@ -37,13 +37,13 @@ class LazyFileInfo:
         return fi
 
     def __init__(self, path) -> None:
-        self._abspath: Optional[str] = os.path.abspath(path)
+        self._abspath: str = os.path.abspath(path)
 
         self._location: Optional[Location] = None
 
-        self._dirname: Optional[str] = os.path.dirname(self._abspath)
-        self._basename: Optional[str] = os.path.basename(self._abspath)
-        self._ext: Optional[str] = os.path.splitext(self._abspath)[1]
+        self._dirname: str = os.path.dirname(self._abspath)
+        self._basename: str = os.path.basename(self._abspath)
+        self._ext: str = os.path.splitext(self._abspath)[1]
 
         self._isdir: Optional[bool] = None
         self._isfile: Optional[bool] = None

@@ -66,7 +66,7 @@ class SqlHistory:
         for entry in self.get_entries(1000):
             if entry not in entries:
                 entries.append(entry)
-                if len(entries) >= limit:
+                if limit is not None and len(entries) >= limit:
                     break
         return entries
 

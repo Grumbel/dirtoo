@@ -113,6 +113,7 @@ class FileInfo:
         return self._abspath
 
     def location(self) -> Location:
+        assert self._location is not None
         return self._location
 
     def dirname(self) -> str:

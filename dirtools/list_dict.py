@@ -55,7 +55,7 @@ class ListDict(Generic[KT, VT], Sized, Iterable):
         self._key2idx[idx] = len(self._list)
         self._list.append(value)
 
-    def get(self, key: KT, default: Any=None) -> VT:
+    def get(self, key: KT, default: Any=None) -> Optional[VT]:
         idx = self._key2idx.get(key, default)
         if idx is not None:
             return self._list[idx]

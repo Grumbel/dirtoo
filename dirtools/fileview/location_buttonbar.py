@@ -86,6 +86,9 @@ class LocationButtonBar(QWidget):
             self._build_buttons()
 
     def _build_buttons(self) -> None:
+        if self._location is None:
+            return
+
         self._buttons.clear()
 
         layout = QHBoxLayout()

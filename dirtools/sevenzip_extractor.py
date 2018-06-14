@@ -71,6 +71,8 @@ class SevenZipExtractor(Extractor):
             # self._process.kill()
 
     def extract(self) -> ExtractorResult:
+        assert self._process is None
+
         try:
             self._start_extract(self._outdir)
             self._process.waitForFinished(-1)
@@ -136,6 +138,8 @@ class SevenZipExtractor(Extractor):
                     self._errors.append(line)
 
     def _on_ready_read_stdout(self) -> None:
+        assert self._process is not None
+
         while self._process.canReadLine():
             buf: QByteArray = self._process.readLine()
             line = os.fsdecode(buf.data()).rstrip("\n")
@@ -143,6 +147,8 @@ class SevenZipExtractor(Extractor):
             self._process_stdout(line)
 
     def _on_ready_read_stderr(self) -> None:
+        assert self._process is not None
+
         while self._process.canReadLine():
             # print("stderr:", repr(line))
             buf = self._process.readLine()

@@ -72,7 +72,7 @@ class RootLayout(Layout):
     def __init__(self) -> None:
         super().__init__()
         self.root: Optional[Layout] = None
-        self.append_layout: TileLayout = None
+        self.append_layout: Optional[TileLayout] = None
 
     def set_root(self, root: Layout) -> None:
         assert self.root is None
@@ -83,15 +83,20 @@ class RootLayout(Layout):
         self.append_layout = group
 
     def layout(self, viewport_width: int, viewport_height: int) -> None:
+        assert self.root is not None
+        assert self.root.layout is not None
+
         super().layout(viewport_width, viewport_height)
 
         self.root.set_pos(0, 0)
         self.root.layout(viewport_width, viewport_height)
 
     def get_bounding_rect(self) -> QRectF:
+        assert self.root is not None
         return self.root.get_bounding_rect()
 
     def append_item(self, item) -> None:
+        assert self.root is not None
         self.append_layout.append_item(item)
         self.root.layout(self.width, self.height)
 
