@@ -50,6 +50,7 @@ setup(name='dirtools',
               'dt-metadata = dirtools.cmd_metadata:main_entrypoint',
               'dt-qtthumbnailer = dirtools.cmd_qtthumbnailer:main_entrypoint',
               'dt-guitest = dirtools.cmd_guitest:main_entrypoint',
+              'dt-sleep = dirtools.cmd_sleep:main_entrypoint',
           ],
           'gui_scripts': []
           },
