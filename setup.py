@@ -51,6 +51,7 @@ setup(name='dirtools',
               'dt-qtthumbnailer = dirtools.cmd_qtthumbnailer:main_entrypoint',
               'dt-guitest = dirtools.cmd_guitest:main_entrypoint',
               'dt-sleep = dirtools.cmd_sleep:main_entrypoint',
+              'dt-rmdir = dirtools.cmd_rmdir:main_entrypoint',
           ],
           'gui_scripts': []
           },
