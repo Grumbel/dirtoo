@@ -27,7 +27,7 @@ from dirtools.format import progressbar
 
 def parse_args(args: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Sleep with progressbar")
-    parser.add_argument("TIME", nargs=1, type=float)
+    parser.add_argument("TIME", nargs=1, type=str2seconds)
     parser.add_argument('-q', '--quiet', action='store_true', default=False,
                         help="Don't show the progressbar")
     parser.add_argument('-c', '--countdown', action='store_true', default=False,
@@ -48,7 +48,8 @@ def fmt_duration(duration: int) -> str:
     hours, minutes, seconds = split_duration(duration)
     return "{:02d}h:{:02d}m:{:02d}s".format(hours, minutes, seconds)
 
-def print_time(columns, p, total, countdown: bool):
+
+def print_time(columns: int, p: float, total: float, countdown: bool):
     if countdown:
         lhs, rhs = total - p, total
     else:
@@ -58,6 +59,22 @@ def print_time(columns, p, total, countdown: bool):
         fmt_duration(int(lhs * 1000)),
         fmt_duration(int(rhs * 1000)),
         progressbar(columns - 32, int(p * 1000), int(total * 1000))))
+
+
+def str2seconds(text: str) -> float:
+    if text == "":
+        return 0
+
+    text = text.strip()
+
+    if text[-1] == "s":
+        return float(text[:-1])
+    elif text[-1] == "m":
+        return float(text[:-1]) * 60
+    elif text[-1] == "h":
+        return float(text[:-1]) * 60 * 60
+    else:
+        return float(text)
 
 
 def main(argv: List[str]) -> None:
@@ -76,7 +93,7 @@ def main(argv: List[str]) -> None:
         if current >= end:
             break
 
-        p  = current - start
+        p = current - start
         print_time(columns, p, total, args.countdown)
 
         time.sleep(0.1)
