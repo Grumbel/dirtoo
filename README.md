@@ -29,7 +29,8 @@ might vary for other distributions.
         bytefmt \
         inotify-simple \
         ngram \
-        sortedcollections
+        sortedcollections \
+        mypy
 
 
 dt-fsck

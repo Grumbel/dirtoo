@@ -46,6 +46,7 @@ before_script:
     inotify-simple
     ngram
     sortedcollections
+    mypy
 
 build:
   stage: build
