@@ -21,11 +21,10 @@ import re
 
 
 def split(duration_sec: int) -> Tuple[int, int, int]:
-    hours = duration_sec // 1000 // 60 // 60
-    duration_sec -= 1000 * 60 * 60 * hours
-    minutes = duration_sec // 1000 // 60
-    duration_sec -= 1000 * 60 * minutes
-    seconds = duration_sec // 1000
+    rest = duration_sec
+    hours, rest = divmod(rest, 1000 * 60 * 60)
+    minutes, rest = divmod(rest, 1000 * 60)
+    seconds = rest // 1000
 
     return (hours, minutes, seconds)
 
