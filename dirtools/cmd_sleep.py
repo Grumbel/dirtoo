@@ -55,11 +55,6 @@ def parse_duration(text: str) -> float:
         return result
 
 
-def fmt_duration(duration: int) -> str:
-    hours, minutes, seconds = split_duration(duration)
-    return "{:02d}h:{:02d}m:{:02d}s".format(hours, minutes, seconds)
-
-
 def print_time(p: float, total: float, countdown: bool):
     columns, lines = os.get_terminal_size()
 
@@ -69,9 +64,9 @@ def print_time(p: float, total: float, countdown: bool):
         lhs, rhs = p, total
 
     sys.stdout.write("\r{} / {}  |{}|".format(
-        fmt_duration(int(lhs * 1000)),
-        fmt_duration(int(rhs * 1000)),
-        progressbar(columns - 32, int(p * 1000), int(total * 1000))))
+        duration.humanize(int(lhs * 1000)),
+        duration.humanize(int(rhs * 1000)),
+        progressbar(columns - 24, int(p * 1000), int(total * 1000))))
 
 
 def main(argv: List[str]) -> None:
