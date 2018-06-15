@@ -53,7 +53,7 @@ def dehumanize_hms(text: str) -> Optional[int]:
         return total_seconds(hours, minutes, seconds)
 
 
-TIME_DOT_RX = re.compile(r'^(\d+):(\d+)(?::(\d+)|(h))?$', re.IGNORECASE)
+TIME_DOT_RX = re.compile(r'^(\d+):(\d+)(?::(\d+)|([hm]))?$', re.IGNORECASE)
 
 
 def dehumanize_dot(text: str) -> Optional[int]:
@@ -63,6 +63,10 @@ def dehumanize_dot(text: str) -> Optional[int]:
     else:
         if m.group(3) is None:
             if m.group(4) is None:
+                hours = 0
+                minutes = int(m.group(1))
+                seconds = int(m.group(2))
+            elif m.group(4).lower() == "m":
                 hours = 0
                 minutes = int(m.group(1))
                 seconds = int(m.group(2))
@@ -100,7 +104,7 @@ def dehumanize_unit(text: str) -> Optional[int]:
             return None
 
 
-def dehumanize(text: str) -> int:
+def dehumanize(text: str) -> Optional[int]:
     return (dehumanize_hms(text) or
             dehumanize_dot(text) or
             dehumanize_unit(text))

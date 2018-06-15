@@ -20,7 +20,7 @@ import unittest
 from dirtools.duration import dehumanize, dehumanize_hms, dehumanize_dot, dehumanize_unit
 
 
-class FFProbeTestCase(unittest.TestCase):
+class DurationTestCase(unittest.TestCase):
 
     def setUp(self):
         self.hms_tests = [
@@ -35,6 +35,7 @@ class FFProbeTestCase(unittest.TestCase):
             ("12:00", 720),
             ("12:11h", 43860),
             ("12:11:13", 43873),
+            ("1:11m", 71),
         ]
 
         self.unit_tests = [
@@ -57,8 +58,7 @@ class FFProbeTestCase(unittest.TestCase):
             "12h11",
             " 12:11 ",
             " 12:11",
-            "12:11 ",
-            "0:20m",
+            "12:11 "
         ]
 
     def test_dehumanize_hms(self):
