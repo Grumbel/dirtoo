@@ -33,6 +33,8 @@ def parse_args(args: List[str]) -> argparse.Namespace:
                         help="Don't show the progressbar")
     parser.add_argument('-c', '--countdown', action='store_true', default=False,
                         help="Count down instead of up")
+    parser.add_argument('-s', '--start', metavar="SECONDS", type=parse_duration, default=0.0,
+                        help="Start the countdown at SECONDS")
     return parser.parse_args(args)
 
 
@@ -77,7 +79,7 @@ def main(argv: List[str]) -> None:
 
     total = args.TIME[0]
 
-    current = time.time()
+    current = time.time() - args.start
     start = current
     end = current + total
 
