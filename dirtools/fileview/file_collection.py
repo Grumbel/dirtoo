@@ -99,8 +99,7 @@ class FileCollection(QObject):
 
         self._location2fileinfo[fi.location()].append(fi)
 
-        idx = self._fileinfos.bisect(fi)
-        self._fileinfos.insert(idx, fi)
+        self._fileinfos.add(fi)
 
         self.sig_file_added.emit(idx, fi)
 
