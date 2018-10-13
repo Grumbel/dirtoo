@@ -319,69 +319,71 @@ class FileViewWindow(QMainWindow):
         view_menu.addAction(self.actions.zoom_out)
         view_menu.addSeparator()
 
-        bookmarks_menu = Menu('&Bookmarks')
-        self.menubar.addMenu(bookmarks_menu)
+        self.bookmarks_menu = Menu('&Bookmarks')
+        self.menubar.addMenu(self.bookmarks_menu)
 
         def create_bookmarks_menu():
             bookmarks = self.controller.app.bookmarks
 
             entries = bookmarks.get_entries()
 
-            bookmarks_menu.clear()
+            self.bookmarks_menu.clear()
 
             if self.controller.location is None:
-                action = bookmarks_menu.addAction(QIcon.fromTheme("user-bookmarks"), "Can't bookmark file lists")
+                action = self.bookmarks_menu.addAction(QIcon.fromTheme("user-bookmarks"), "Can't bookmark file lists")
                 action.setEnabled(False)
             elif self.controller.location in entries:
-                bookmarks_menu.addAction(QIcon.fromTheme("edit-delete"), "Remove This Location's Bookmark",
-                                         lambda loc=self.controller.location:
-                                         bookmarks.remove(loc))
+                self.bookmarks_menu.addAction(
+                    QIcon.fromTheme("edit-delete"), "Remove This Location's Bookmark",
+                    lambda loc=self.controller.location:
+                    bookmarks.remove(loc))
             else:
-                bookmarks_menu.addAction(QIcon.fromTheme("bookmark-new"), "Bookmark This Location",
-                                         lambda loc=self.controller.location:
-                                         bookmarks.append(loc))
-            bookmarks_menu.addSeparator()
+                self.bookmarks_menu.addAction(
+                    QIcon.fromTheme("bookmark-new"), "Bookmark This Location",
+                    lambda loc=self.controller.location:
+                    bookmarks.append(loc))
+            self.bookmarks_menu.addSeparator()
 
-            bookmarks_menu.addDoubleAction(
+            self.bookmarks_menu.addDoubleAction(
                 QIcon.fromTheme("folder"), "View Bookmarks",
                 lambda: self.controller.set_location(Location("bookmarks", "/", [])),
                 lambda: self.controller.new_controller().set_location(Location("bookmarks", "/", [])))
 
-            bookmarks_menu.addSeparator()
+            self.bookmarks_menu.addSeparator()
 
             icon = QIcon.fromTheme("folder")
             for entry in entries:
-                action = bookmarks_menu.addDoubleAction(
+                action = self.bookmarks_menu.addDoubleAction(
                     icon, entry.as_url(),
                     lambda entry=entry: self.controller.set_location(entry),
                     lambda entry=entry: self.controller.app.show_location(entry))
 
                 if not entry.exists():
                     action.setEnabled(False)
-        bookmarks_menu.aboutToShow.connect(create_bookmarks_menu)
+        self.bookmarks_menu.aboutToShow.connect(create_bookmarks_menu)
 
-        history_menu = Menu('&History')
-        self.menubar.addMenu(history_menu)
+        self.history_menu = Menu('&History')
+        self.menubar.addMenu(self.history_menu)
 
         def create_history_menu():
             history = self.controller.app.location_history
 
-            history_menu.clear()
-            history_menu.addAction(self.actions.back)
-            history_menu.addAction(self.actions.forward)
-            history_menu.addSeparator()
+            self.history_menu.clear()
+            self.history_menu.addAction(self.actions.back)
+            self.history_menu.addAction(self.actions.forward)
+            self.history_menu.addSeparator()
 
-            history_menu.addDoubleAction(
+            self.history_menu.addDoubleAction(
                 QIcon.fromTheme("folder"), "View File History",
                 self.controller.show_file_history,
                 lambda: self.controller.new_controller().show_file_history())
 
-            history_menu.addSection("Location History")
+            self.history_menu.addSection("Location History")
 
             entries = history.get_unique_entries(35)
-            make_history_menu_entries(self.controller, history_menu, entries)
+            make_history_menu_entries(self.controller, self.history_menu, entries)
 
-        history_menu.aboutToShow.connect(create_history_menu)
+        self.history_menu.aboutToShow.connect(create_history_menu)
 
         help_menu = self.menubar.addMenu('&Help')
         help_menu.addAction(self.actions.about)
