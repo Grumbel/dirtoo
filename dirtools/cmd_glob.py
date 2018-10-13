@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Optional
+from typing import List
 
 import argparse
 import fnmatch
@@ -56,7 +56,7 @@ def main(argv: List[str]) -> None:
                                   args.with_filename)
 
                 if print_filename:
-                    outline += "{}:{}: ".format(filename, line_no+1)
+                    outline += "{}:{}: ".format(filename, line_no + 1)
 
                 outline += "{}".format(line)
 
@@ -73,4 +73,3 @@ def main_entrypoint() -> None:
 
 
 # EOF #
-
