@@ -25,21 +25,19 @@ before_script:
   - lsb_release -a
   - apt-get -qq -y install
     build-essential
-    python3-pip
-    python3-setuptools
-    python3-pyparsing
-    python3-xdg
-    python3-pyqt5
-    python3-mediainfodll
-    python3-pypdf2
+    flake8
+    python3-flake8
     python3-libarchive-c
     python3-mediainfodll
-    python3-pyqt5
-    python3-wheel
     python3-numpy
+    python3-pip
+    python3-pyparsing
+    python3-pypdf2
+    python3-pyqt5
     python3-scipy
-    python3-flake8
-    flake8
+    python3-setuptools
+    python3-wheel
+    python3-xdg
     tumbler
   - pip3 install
     bytefmt
