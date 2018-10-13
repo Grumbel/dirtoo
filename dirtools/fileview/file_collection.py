@@ -101,6 +101,7 @@ class FileCollection(QObject):
 
         self._fileinfos.add(fi)
 
+        idx = self._fileinfos.index(fi)
         self.sig_file_added.emit(idx, fi)
 
     def remove_file(self, location: Location) -> None:
