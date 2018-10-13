@@ -30,7 +30,7 @@ class ListDict(Generic[KT, VT], Sized, Iterable):
 
     def __init__(self,
                  key_func: Callable[[VT], KT],
-                 iterable: Optional[Iterable[VT]]=None) -> None:
+                 iterable: Optional[Iterable[VT]] = None) -> None:
         self._key_func = key_func
 
         if iterable is None:
@@ -55,7 +55,7 @@ class ListDict(Generic[KT, VT], Sized, Iterable):
         self._key2idx[idx] = len(self._list)
         self._list.append(value)
 
-    def get(self, key: KT, default: Any=None) -> Optional[VT]:
+    def get(self, key: KT, default: Any = None) -> Optional[VT]:
         idx = self._key2idx.get(key, default)
         if idx is not None:
             return self._list[idx]
@@ -67,7 +67,7 @@ class ListDict(Generic[KT, VT], Sized, Iterable):
         self._list[idx] = None
         del self._key2idx[key]
 
-    def sort(self, key: Callable[[VT], Any], reverse: bool=False):
+    def sort(self, key: Callable[[VT], Any], reverse: bool = False):
         self._list = [x for x in self._list if x is not None]
         self._list.sort(key=key, reverse=reverse)
         self._rebuild_index()

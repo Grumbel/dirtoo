@@ -49,7 +49,7 @@ class Overwrite(Enum):
     ALWAYS = 2
 
 
-def sha1sum(filename: str, blocksize: int=65536) -> str:
+def sha1sum(filename: str, blocksize: int = 65536) -> str:
     with open(filename, 'rb') as fin:
         hasher = hashlib.sha1()
         buf = fin.read(blocksize)

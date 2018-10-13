@@ -125,7 +125,7 @@ class RegexMatchFunc(MatchFunc):
 
 class FuzzyMatchFunc(MatchFunc):
 
-    def __init__(self, needle: str, n: int=3, threshold: float=0.5) -> None:
+    def __init__(self, needle: str, n: int = 3, threshold: float = 0.5) -> None:
         self.needle = needle
         self.n = n
         self.threshold = threshold

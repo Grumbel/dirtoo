@@ -152,7 +152,7 @@ class Filesystem:
             shutil.copystat(src, dst, follow_symlinks=False)
 
     def _copy_filecontent(self, src: str, dst: str,
-                          progress: CopyProgressCallback=null_progress):
+                          progress: CopyProgressCallback = null_progress):
         assert self.enabled
 
         with open(src, 'rb') as fd_src, open(dst, 'wb') as fd_dst:
@@ -176,8 +176,8 @@ class Filesystem:
                     progress(current_size, total_size)
 
     def copy_file(self, src: str, dst: str,
-                  overwrite: bool=False,
-                  progress: CopyProgressCallback=null_progress) -> None:
+                  overwrite: bool = False,
+                  progress: CopyProgressCallback = null_progress) -> None:
         self._message("copy_file {!r} -> {!r}  overwrite={}".format(src, dst, overwrite))
 
         if not self.enabled:

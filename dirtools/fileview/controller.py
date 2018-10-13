@@ -298,7 +298,7 @@ class Controller(QObject):
         self._sorter.set_key_func(func)
         self.file_collection.set_sorter(self._sorter)
 
-    def new_controller(self, clone: bool=False) -> 'Controller':
+    def new_controller(self, clone: bool = False) -> 'Controller':
         controller = self.app.new_controller()
         if clone and self.location is not None:
             controller.set_location(self.location)
@@ -347,7 +347,7 @@ class Controller(QObject):
     def toggle_timegaps(self) -> None:
         pass
 
-    def parent_directory(self, new_window: bool=False):
+    def parent_directory(self, new_window: bool = False):
         if self.location is not None:
             if new_window:
                 self.app.show_location(self.location.parent())

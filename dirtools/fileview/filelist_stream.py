@@ -81,7 +81,7 @@ class FileListStream(QObject):
         return self.sig_end_of_stream
 
     def __init__(self, vfs: 'VirtualFilesystem',
-                 fp: IO, linesep: str="\n") -> None:
+                 fp: IO, linesep: str = "\n") -> None:
         super().__init__()
 
         self.vfs = vfs

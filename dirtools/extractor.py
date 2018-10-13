@@ -26,14 +26,14 @@ class ExtractorResult:
     WORKING = 2
 
     @staticmethod
-    def success(message: str="") -> 'ExtractorResult':
+    def success(message: str = "") -> 'ExtractorResult':
         return ExtractorResult(ExtractorResult.SUCCESS, message)
 
     @staticmethod
     def failure(message: str) -> 'ExtractorResult':
         return ExtractorResult(ExtractorResult.FAILURE, message)
 
-    def __init__(self, status: int, message: str="") -> None:
+    def __init__(self, status: int, message: str = "") -> None:
         self.status = status
         self.message = message
 
