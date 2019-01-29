@@ -19,8 +19,10 @@ from typing import List, Optional
 
 import logging
 
+import os
 import sys
 import argparse
+import shlex
 
 from dirtools.find.action import Action, MultiAction, PrinterAction, ExecAction, ExprSorterAction
 from dirtools.find.filter import ExprFilter, SimpleFilter, NoFilter
@@ -95,7 +97,10 @@ def create_action(args: argparse.Namespace) -> Action:
     elif args.print:
         action.add(PrinterAction(args.print))
     else:
-        action.add(PrinterAction("{fullpath()}\n"))
+        if sys.stdout.isatty():
+            action.add(PrinterAction("{shlex.quote(fullpath())}\n"))
+        else:
+            action.add(PrinterAction("{fullpath()}\n"))
 
     if args.exec:
         action.add(ExecAction(args.exec))
