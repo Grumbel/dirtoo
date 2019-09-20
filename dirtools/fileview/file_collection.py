@@ -20,7 +20,7 @@ from typing import Iterable, Optional, Iterator, Dict, List, cast
 import logging
 
 from collections import defaultdict
-from sortedcollections import SortedList
+from sortedcontainers import SortedList
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
