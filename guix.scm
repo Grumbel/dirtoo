@@ -15,18 +15,12 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 (set! %load-path
-      (cons* "/ipfs/QmetP3eCAM9q3VPCj9BvjFdWkTA7voycebnXjyfc2zacFE/guix-cocfree_v0.0.0-45-g0fe3c86"
+      (cons* "/ipfs/QmZdLjyRm29uL4Eh4HqkZHvwMMus6zjwQ8EdBtp5JUPT99/guix-cocfree_0.0.0-52-ga8e1798"
              %load-path))
 
-(use-modules (ice-9 popen)
-             (ice-9 rdelim)
-             (guix packages)
-             (guix gexp)
-             (guix git-download)
-             (guix download)
-             (guix build utils)
+(use-modules (guix packages)
              (guix build-system python)
-             (guix licenses)
+             ((guix licenses) #:prefix license:)
              (gnu packages backup)
              (gnu packages compression)
              (gnu packages freedesktop)
@@ -73,7 +67,7 @@
    (synopsis "Python Scripts for directory stuff")
    (description "Python Scripts for directory stuff")
    (home-page "https://gitlab.com/grumbel/dirtool")
-   (license gpl3+)))
+   (license license:gpl3+)))
 
 dirtools
 
