@@ -32,6 +32,7 @@
              (gnu packages freedesktop)
              (gnu packages pdf)
              (gnu packages python)
+             (gnu packages python-science)
              (gnu packages python-xyz)
              (gnu packages qt)
              (gnu packages video)
