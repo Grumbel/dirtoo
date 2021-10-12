@@ -15,13 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Any
+from typing import List, Any, TextIO, BinaryIO
 
 import re
 import os
+import sys
 import collections
 import itertools
-
 
 def expand_file(f: str, recursive: bool):
     if os.path.isdir(f):
@@ -90,6 +90,58 @@ def make_non_existing_filename(path: str, name: str) -> str:
         candidate = "{} ({})".format(name, idx)
 
     assert False, "never reached"
+
+
+def _open_text_file(filename: str) -> TextIO:
+    if filename == '-':
+        return sys.stdin
+    else:
+        return open(filename)
+
+
+def _open_binary_file(filename: str) -> BinaryIO:
+    if filename == '-':
+        return sys.stdin.buffer
+    else:
+        return open(filename, "rb")
+
+
+def read_lines_from_file(filename: str, nul_separated: bool) -> List[str]:
+        if nul_separated:
+            with _open_binary_file(filename) as fin:
+                content = fin.read()
+            lines = content.split(b"\0")
+
+            # split() leaves us with a bogus entry at the end, as
+            # lines are terminated by \0, not separated.
+            if content[-1] == b"\0":
+                lines.pop()
+
+            return lines
+        else:
+            with _open_text_file(filename) as fin:
+                return fin.read().splitlines()
+
+
+def read_lines_from_files(filenames: List[str], nul_separated: bool) -> List[str]:
+    """Read lines from filenames similar to 'cat'"""
+
+    stdout_read = False
+
+    if not filenames:
+        filenames = ["-"]
+
+    lines = []
+    for filename in filenames:
+        if filename == '-':
+            if stdout_read:
+                continue
+            else:
+                stdout_read = True
+
+        lines += read_lines_from_file(filename, nul_separated)
+
+    return lines
 
 
 # EOF #

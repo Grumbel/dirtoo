@@ -53,6 +53,7 @@ setup(name='dirtools',
               'dt-guitest = dirtools.cmd_guitest:main_entrypoint',
               'dt-sleep = dirtools.cmd_sleep:main_entrypoint',
               'dt-rmdir = dirtools.cmd_rmdir:main_entrypoint',
+              'dt-shuffle = dirtools.cmd_shuffle:main_entrypoint',
           ],
           'gui_scripts': []
           },
