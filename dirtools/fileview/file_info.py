@@ -65,7 +65,7 @@ class FileInfo:
                 fi._error = FileInfoError.IO
             else:
                 fi._error = FileInfoError.UNKNOWN
-        except Exception as err:
+        except Exception:
             fi._error = FileInfoError.UNKNOWN
         else:
             fi._isdir = os.path.isdir(fi._abspath)

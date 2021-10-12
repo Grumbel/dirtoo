@@ -15,14 +15,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Optional
+from typing import List
 
 import logging
 
-import os
 import sys
 import argparse
-import shlex
 import random
 
 from dirtools.util import read_lines_from_files
@@ -67,4 +65,3 @@ def main_entrypoint():
 
 
 # EOF #
-

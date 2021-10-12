@@ -72,7 +72,7 @@ for dev in devs:
             print("   ", bytes(b).decode())
 
         print()
-    except Exception as err:
+    except Exception:
         pass  # print(err)
 
 if False:

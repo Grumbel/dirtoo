@@ -23,6 +23,7 @@ import sys
 import collections
 import itertools
 
+
 def expand_file(f: str, recursive: bool):
     if os.path.isdir(f):
         if recursive:
@@ -107,20 +108,20 @@ def _open_binary_file(filename: str) -> BinaryIO:
 
 
 def read_lines_from_file(filename: str, nul_separated: bool) -> List[str]:
-        if nul_separated:
-            with _open_binary_file(filename) as fin:
-                content = fin.read()
-            lines = content.split(b"\0")
+    if nul_separated:
+        with _open_binary_file(filename) as fin:
+            content = fin.read()
+        lines = content.split(b"\0")
 
-            # split() leaves us with a bogus entry at the end, as
-            # lines are terminated by \0, not separated.
-            if content[-1] == b"\0":
-                lines.pop()
+        # split() leaves us with a bogus entry at the end, as
+        # lines are terminated by \0, not separated.
+        if content[-1] == b"\0":
+            lines.pop()
 
-            return lines
-        else:
-            with _open_text_file(filename) as fin:
-                return fin.read().splitlines()
+        return lines
+    else:
+        with _open_text_file(filename) as fin:
+            return fin.read().splitlines()
 
 
 def read_lines_from_files(filenames: List[str], nul_separated: bool) -> List[str]:

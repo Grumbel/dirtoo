@@ -207,7 +207,7 @@ class TransferDialog(QDialog):
         if resolution == ConflictResolution.SKIP:
             self._transfer_log_widget.append("skipping directory {}".format(src))
         else:
-            self._transfer_log_widget.append("copying directory {}".format(src, dst))
+            self._transfer_log_widget.append("copying directory {} -> {}".format(src, dst))
             self._source_widget.setText(src)
             self._dest_widget.setText(dst)
 
@@ -231,7 +231,7 @@ class TransferDialog(QDialog):
         if resolution == ConflictResolution.SKIP:
             self._transfer_log_widget.append("skipping directory {}".format(src))
         else:
-            self._transfer_log_widget.append("linking {}".format(src, dst))
+            self._transfer_log_widget.append("linking {} -> {}".format(src, dst))
             self._source_widget.setText(src)
             self._dest_widget.setText(dst)
 

@@ -64,7 +64,7 @@ class Extractor(QObject):
         pass
 
 
-def make_extractor(filename: str, outdir: str)-> Extractor:
+def make_extractor(filename: str, outdir: str) -> Extractor:
 
     from dirtools.rar_extractor import RarExtractor
     from dirtools.sevenzip_extractor import SevenZipExtractor

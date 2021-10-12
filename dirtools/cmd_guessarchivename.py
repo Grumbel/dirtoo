@@ -92,7 +92,7 @@ def main(argv):
                     if entry.isfile:
                         lst.append(str(entry))
         except libarchive.exception.ArchiveError as err:
-            print("{}: error: couldn't process archive".format(filename))
+            print("{}: error: couldn't process archive: {}".format(filename, err))
             continue
 
         if args.basename:

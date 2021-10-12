@@ -73,7 +73,7 @@ class FileViewApplication:
             try:
                 logging.config.fileConfig(logging_config,
                                           defaults=None, disable_existing_loggers=False)
-            except Exception as err:
+            except Exception:
                 print(traceback.format_exc())
 
         settings.init(self.config_file)

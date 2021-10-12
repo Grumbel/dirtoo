@@ -69,7 +69,7 @@ class RarExtractor(Extractor):
             self._start_extract(self._outdir)
             self._process.waitForFinished(-1)
             return self._result
-        except Exception as err:
+        except Exception:
             message = "{}: failure when extracting archive".format(self._filename)
             logger.exception(message)
             return ExtractorResult.failure(message)

@@ -59,7 +59,7 @@ class LibArchiveExtractor(Extractor):
             self._extract(self._outdir)
             return ExtractorResult.success()
         except Exception as err:
-            msg = "{}: failure when extracting archive".format(self.filename)
+            msg = "{}: failure when extracting archive: {}".format(self.filename, err)
             logger.exception(msg)
             return ExtractorResult.failure(msg)
 

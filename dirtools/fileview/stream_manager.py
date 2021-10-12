@@ -51,7 +51,7 @@ class StreamManager:
         filename = os.path.join(self._cachedir, str(stream_id))
         try:
             fd = open(filename, "r")
-        except Exception as err:
+        except Exception:
             logger.exception("failed to open '%s' for reading", filename)
             return None
         else:
@@ -61,7 +61,7 @@ class StreamManager:
         outfile, stream_id = self._make_outfile()
         try:
             fd_out = open(outfile, "w")
-        except Exception as err:
+        except Exception:
             logger.exception("failed to open '%s' for writing", outfile)
             return None
         else:

@@ -79,7 +79,7 @@ class SevenZipExtractor(Extractor):
             assert self._result is not None
             return self._result
         except Exception as err:
-            message = "{}: failure when extracting archive".format(self._filename)
+            message = "{}: failure when extracting archive: {}".format(self._filename, err)
             logger.exception(message)
             message += "\n\n" + traceback.format_exc()
             return ExtractorResult.failure(message)

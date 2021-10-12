@@ -223,7 +223,7 @@ class Location:
     def has_stdio_name(self) -> bool:
         return not self.has_payload()
 
-    def get_stdio_name(self)-> str:
+    def get_stdio_name(self) -> str:
         assert self.has_stdio_name()
         return self.get_path()
 

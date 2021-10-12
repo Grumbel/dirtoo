@@ -79,7 +79,7 @@ def main(argv):
         for y in range(0, 100000, 150):
             for x in range(0, 2500, 150):
                 for item in items[i]:
-                        item.setPos(x, y)
+                    item.setPos(x, y)
                 i += 1
 
     view.setScene(scene)

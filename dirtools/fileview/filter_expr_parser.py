@@ -58,7 +58,7 @@ class OrKeywordExpr:
         self.keyword = toks[0].upper()
 
     def __repr__(self):
-        return f"OR"
+        return "OR"
 
 
 class AndKeywordExpr:
@@ -67,7 +67,7 @@ class AndKeywordExpr:
         self.keyword = toks[0].upper()
 
     def __repr__(self):
-        return f"AND"
+        return "AND"
 
 
 class FilterExprParser:

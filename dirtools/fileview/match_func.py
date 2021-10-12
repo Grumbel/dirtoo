@@ -158,7 +158,7 @@ class MetadataMatchFunc(MatchFunc):
         if self._field in metadata:
             try:
                 return self._compare(self._type(metadata[self._field]), self._value)
-            except Exception as err:
+            except Exception:
                 logger.exception("metadata comparism failed")
                 return False
         else:

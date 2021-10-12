@@ -19,10 +19,8 @@ from typing import List, Optional
 
 import logging
 
-import os
 import sys
 import argparse
-import shlex
 
 from dirtools.find.action import Action, MultiAction, PrinterAction, ExecAction, ExprSorterAction
 from dirtools.find.filter import ExprFilter, SimpleFilter, NoFilter
@@ -90,15 +88,21 @@ def create_action(args: argparse.Namespace) -> Action:
     elif args.null:
         action.add(PrinterAction("{fullpath()}\0"))
     elif args.list:
-        action.add(PrinterAction("{modehr()}  {owner()}  {group()}  {sizehr():>9}  {iso()} {time()}  {fullpath()}\n",
-                                 finisher=True))
+        if sys.stdout.isatty():
+            action.add(PrinterAction(
+                "{modehr()}  {owner()}  {group()}  {sizehr():>9}  {iso()} {time()}  {qfullpath()}\n",
+                finisher=True))
+        else:
+            action.add(PrinterAction(
+                "{modehr()}  {owner()}  {group()}  {sizehr():>9}  {iso()} {time()}  {fullpath()}\n",
+                finisher=True))
     elif args.println:
         action.add(PrinterAction(args.println + "\n"))
     elif args.print:
         action.add(PrinterAction(args.print))
     else:
         if sys.stdout.isatty():
-            action.add(PrinterAction("{shlex.quote(fullpath())}\n"))
+            action.add(PrinterAction("{qfullpath()}\n"))
         else:
             action.add(PrinterAction("{fullpath()}\n"))
 
