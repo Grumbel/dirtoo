@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import os
 import unittest
 
 from PyQt5.QtCore import QTimer
@@ -28,6 +29,9 @@ from dirtools.fileview.location import Location
 class MetaDataCollectorTestCase(unittest.TestCase):
 
     def test_collector(self):
+        if not os.environ.get('DISPLAY'):
+            return
+
         app = QApplication([])
 
         try:
