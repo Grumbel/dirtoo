@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import os
 import subprocess
 import json
 
@@ -22,8 +23,9 @@ import json
 class FFProbe:
 
     def __init__(self, filename: str) -> None:
+        self._ffprobe = os.environ.get("DIRTOOLS_FFPROBE") or "ffprobe"
         proc = subprocess.Popen(
-            ['ffprobe',
+            [self._ffprobe,
              '-v', 'error',
              '-print_format', 'json',
              '-show_format',

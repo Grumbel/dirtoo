@@ -49,6 +49,8 @@ class RarExtractor(Extractor):
     def __init__(self, filename: str, outdir: str) -> None:
         super().__init__()
 
+        self._rar = os.environ.get("DIRTOOLS_RAR") or "rar"
+
         self._filename = os.path.abspath(filename)
         self._outdir = outdir
 
@@ -79,13 +81,12 @@ class RarExtractor(Extractor):
         # os.mkdir(outdir)
         assert os.path.isdir(outdir)
 
-        program = "rar"
         argv = ["x", "-p-", "-c-", self._filename]
         # "-w" + outdir has no effect
 
-        logger.debug("RarExtractorWorker: launching %s %s", program, argv)
+        logger.debug("RarExtractorWorker: launching %s %s", self._rar, argv)
         self._process = QProcess()
-        self._process.setProgram(program)
+        self._process.setProgram(self._rar)
         self._process.setArguments(argv)
         self._process.setWorkingDirectory(outdir)
         self._process.start()

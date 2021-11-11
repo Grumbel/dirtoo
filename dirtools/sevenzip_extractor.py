@@ -55,6 +55,8 @@ class SevenZipExtractor(Extractor):
     def __init__(self, filename: str, outdir: str) -> None:
         super().__init__()
 
+        self._sevenzip = os.environ.get("DIRTOOLS_7ZIP") or "7z"
+
         self._filename = os.path.abspath(filename)
         self._outdir = outdir
 
@@ -85,12 +87,11 @@ class SevenZipExtractor(Extractor):
             return ExtractorResult.failure(message)
 
     def _start_extract(self, outdir: str) -> None:
-        program = "7z"
         argv = ["x", "-ba", "-bb1", "-bd", "-aos", "-o" + outdir, self._filename]
 
-        logger.debug("SevenZipExtractorWorker: launching %s %s", program, argv)
+        logger.debug("SevenZipExtractorWorker: launching %s %s", self._sevenzip, argv)
         self._process = QProcess()
-        self._process.setProgram(program)
+        self._process.setProgram(self._sevenzip)
         self._process.setArguments(argv)
 
         self._process.readyReadStandardOutput.connect(self._on_ready_read_stdout)
