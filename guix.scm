@@ -31,7 +31,6 @@
              (gnu packages qt)
              (gnu packages video)
              (guix-cocfree packages python-bytefmt)
-             (guix-cocfree packages python-mediainfodll)
              (guix-cocfree packages python-inotify_simple)
              (guix-cocfree packages python-ngram)
              (guix-cocfree utils))
@@ -48,7 +47,7 @@
    (propagated-inputs
     `(("p7zip" ,p7zip)))
    (inputs
-    `(("python-mediainfodll" ,python-mediainfodll)
+    `(("python-pymediainfo" ,python-pymediainfo)
       ("python" ,python-wrapper)
       ("python-bytefmt" ,python-bytefmt)
       ("python-colorama" ,python-colorama)
