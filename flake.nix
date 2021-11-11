@@ -39,6 +39,9 @@
               "--set" "DIRTOOLS_7ZIP" "${pkgs.p7zip}/bin/7z"
               "--set" "DIRTOOLS_FFPROBE" "${pkgs.ffmpeg}/bin/ffprobe"
               "--set" "DIRTOOLS_RAR" "${pkgs.rar}/bin/rar"
+
+              "--set" "LIBGL_DRIVERS_PATH" "${pkgs.mesa.drivers}/lib/dri"
+              "--prefix" "LD_LIBRARY_PATH" ":" "${pkgs.mesa.drivers}/lib"
             ];
             preCheck = ''
               export QT_QPA_PLATFORM_PLUGIN_PATH="${pkgs.qt5.qtbase.bin}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";
