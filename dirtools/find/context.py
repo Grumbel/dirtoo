@@ -44,6 +44,7 @@ class Context:  # pylint: disable=R0904,R0915
             '_': self.basename,
             'p': self.fullpath,
             'fullpath': self.fullpath,
+            'qfullpath': self.qfullpath,
             'abspath': self.fullpath,
             'ext': self.ext,
             'random': self.random,
@@ -138,6 +139,16 @@ class Context:  # pylint: disable=R0904,R0915
 
     def fullpath(self):
         return self.current_file
+
+    def qfullpath(self):
+        def quote_or_pad(text: str) -> str:
+            result = shlex.quote(text)
+            if result[0] == "'":
+                return result
+            else:
+                return " " + result
+
+        return quote_or_pad(self.current_file)
 
     def ext(self):
         _, ext = os.path.splitext(self.current_file)
