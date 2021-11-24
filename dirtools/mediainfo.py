@@ -65,6 +65,8 @@ class MediaInfo:
         self._video_count = 0
         self._audio_count = 0
         self._image_count = 0
+        self._width = 0
+        self._height = 0
 
         for track in minfo.tracks:
             if track.track_type == "General":
@@ -94,9 +96,6 @@ class MediaInfo:
             elif track.track_type == "Image" and self._image_count == 1:
                 self._width = track.width
                 self._height = track.height
-            else:
-                self._width = 0
-                self._height = 0
 
     def filename(self) -> str:
         return self._filename
