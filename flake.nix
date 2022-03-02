@@ -2,18 +2,16 @@
   description = "Python Scripts for directory stuff";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs";
-    nix.inputs.nixpkgs.follows = "nixpkgs";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-21.11";
     flake-utils.url = "github:numtide/flake-utils";
 
-    bytefmt.url = "git+file:///home/ingo/projects/bytefmt/trunk";
-    # bytefmt.url = "github:grumbel/python-bytefmt";
+    bytefmt.url = "github:grumbel/python-bytefmt";
     bytefmt.inputs.nix.follows = "nix";
     bytefmt.inputs.nixpkgs.follows = "nixpkgs";
     bytefmt.inputs.flake-utils.follows = "flake-utils";
   };
 
-  outputs = { self, nix, nixpkgs, flake-utils, bytefmt }:
+  outputs = { self, nixpkgs, flake-utils, bytefmt }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
