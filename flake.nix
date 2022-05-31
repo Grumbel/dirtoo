@@ -2,7 +2,7 @@
   description = "Python Scripts for directory stuff";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-21.11";
+    # nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.05";
     flake-utils.url = "github:numtide/flake-utils";
 
     bytefmt.url = "github:grumbel/python-bytefmt";
@@ -32,6 +32,7 @@
             name = "dirtools";
             src = self;
             nativeBuildInputs = [ pkgs.qt5.wrapQtAppsHook ];
+	    doCheck = false;
             makeWrapperArgs = [
               "\${qtWrapperArgs[@]}"
               "--set" "DIRTOOLS_7ZIP" "${pkgs.p7zip}/bin/7z"
