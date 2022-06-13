@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import os
 
@@ -38,7 +38,7 @@ class PathCompletionWorker(Worker):
         longest, candidates = self.complete(text)
         self.sig_completions_ready.emit(longest, candidates)
 
-    def candidates(self, text) -> List[str]:
+    def candidates(self, text) -> Optional[List[str]]:
         dirname = os.path.dirname(text)
         basename = os.path.basename(text)
 

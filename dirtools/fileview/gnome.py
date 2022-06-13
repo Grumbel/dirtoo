@@ -28,7 +28,7 @@ def parse_gnome_copied_files(data: bytes) -> Tuple[Qt.DropAction, List[QUrl]]:
     elif lines[0] == "cut":
         action = Qt.MoveAction
     else:
-        raise Exception("unknown action: {}".format(lines[0]))
+        raise Exception("unknown action: {!r}".format(lines[0]))
 
     urls = [QUrl.fromEncoded(d) for d in lines[1:]]
 

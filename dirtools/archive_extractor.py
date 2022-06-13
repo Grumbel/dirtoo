@@ -51,9 +51,13 @@ class ArchiveExtractorWorker(Worker):
         self.sig_finished.emit(result)
 
     def interrupt(self) -> None:
+        assert self._extractor is not None
+
         self._extractor.interrupt()
 
     def close(self) -> None:
+        assert self._extractor is not None
+
         self._extractor.interrupt()
 
 

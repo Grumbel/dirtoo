@@ -16,7 +16,6 @@
 
 
 from typing import Tuple
-from ctypes import c_void_p, c_size_t, c_char_p
 
 import pymediainfo
 

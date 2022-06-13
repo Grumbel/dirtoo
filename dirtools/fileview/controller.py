@@ -245,6 +245,7 @@ class Controller(QObject):
         if self._directory_watcher is not None:
             self._directory_watcher.close()
         self._directory_watcher = self.app.vfs.opendir(location)
+        assert self._directory_watcher is not None
 
         if hasattr(self._directory_watcher, 'sig_file_added'):
             self._directory_watcher.sig_file_added.connect(self.file_collection.add_fileinfo)

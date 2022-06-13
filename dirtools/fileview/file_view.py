@@ -582,6 +582,8 @@ class FileView(QGraphicsView):
                 self._controller.on_context_menu(ev.globalPos())
 
     def leap_to(self, text: str, forward: bool, skip: bool) -> None:
+        assert self._file_collection is not None
+
         if text == "":
             item = self._cursor_item
             self._cursor_item = None

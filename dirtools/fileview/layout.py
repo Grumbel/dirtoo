@@ -97,6 +97,8 @@ class RootLayout(Layout):
 
     def append_item(self, item) -> None:
         assert self.root is not None
+        assert self.append_layout is not None
+
         self.append_layout.append_item(item)
         self.root.layout(self.width, self.height)
 

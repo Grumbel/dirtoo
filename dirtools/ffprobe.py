@@ -35,16 +35,16 @@ class FFProbe:
             stderr=subprocess.PIPE)
 
         try:
-            out, err = proc.communicate(timeout=15)
+            out_bytes, err_bytes = proc.communicate(timeout=15)
         except subprocess.TimeoutExpired:
             proc.kill()
-            out, err = proc.communicate()
-            out = out.decode()
-            err = err.decode()
+            out_bytes, err_bytes = proc.communicate()
+            out = out_bytes.decode()
+            err = err_bytes.decode()
             raise Exception("FFProbe: timeout: {}".format(filename))
 
-        out = out.decode()
-        err = err.decode()
+        out = out_bytes.decode()
+        err = err_bytes.decode()
 
         if proc.returncode != 0:
             raise Exception("FFProbe: {}: {}: {}".format(filename, proc.returncode, err))

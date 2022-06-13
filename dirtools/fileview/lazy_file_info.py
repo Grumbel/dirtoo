@@ -101,10 +101,12 @@ class LazyFileInfo:
 
     def uid(self) -> int:
         self._collect_stat()
+        assert self._stat is not None
         return self._stat.st_uid
 
     def gid(self) -> int:
         self._collect_stat()
+        assert self._stat is not None
         return self._stat.st_gid
 
     def ext(self) -> str:
@@ -112,10 +114,12 @@ class LazyFileInfo:
 
     def size(self) -> int:
         self._collect_stat()
+        assert self._stat is not None
         return self._stat.st_size
 
     def mtime(self) -> float:
         self._collect_stat()
+        assert self._stat is not None
         return self._stat.st_mtime
 
     def metadata(self) -> Dict[str, Any]:
