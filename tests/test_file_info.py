@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import os
 import unittest
 
 from dirtools.fileview.file_info import FileInfo
@@ -26,15 +27,15 @@ class FileInfoTestCase(unittest.TestCase):
     def test_file_info_init(self):
         fi_real = FileInfo.from_path("/tmp/")
         fi_lazy = LazyFileInfo.from_path("/tmp/")
+        st = os.stat("/tmp")
 
         for fi in [fi_real, fi_lazy]:
             self.assertEqual(fi.abspath(), "/tmp")
             self.assertEqual(fi.basename(), "tmp")
             self.assertEqual(fi.dirname(), "/")
-            self.assertEqual(fi.uid(), 0)
-            self.assertEqual(fi.gid(), 0)
+            self.assertEqual(fi.uid(), st.st_uid)
+            self.assertEqual(fi.gid(), st.st_gid)
             self.assertEqual(fi.ext(), "")
-            self.assertEqual(fi.gid(), 0)
             self.assertTrue(fi.isdir())
             self.assertFalse(fi.isfile())
             self.assertTrue(fi.have_access())
