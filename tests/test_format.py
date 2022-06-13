@@ -1,4 +1,4 @@
-# dirtool.py - diff tool for directories
+# dirtoo - File and directory manipulation tools for Python
 # Copyright (C) 2018 Ingo Ruhnke <grumbel@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -20,7 +20,7 @@ import unittest
 import os
 import time
 
-from dirtools.format import progressbar
+from dirtoo.format import progressbar
 
 
 class FormatTestCase(unittest.TestCase):

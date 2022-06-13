@@ -1,4 +1,4 @@
-# dirtool.py - diff tool for directories
+# dirtoo - File and directory manipulation tools for Python
 # Copyright (C) 2018 Ingo Ruhnke <grumbel@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -20,7 +20,7 @@ import unittest
 
 from PyQt5.QtWidgets import QApplication, QPushButton
 from PyQt5.QtGui import QIcon
-from dirtools.fileview.thumbnailer import Thumbnailer
+from dirtoo.fileview.thumbnailer import Thumbnailer
 
 
 class FileViewThumbnailerTestCase(unittest.TestCase):

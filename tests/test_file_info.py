@@ -1,4 +1,4 @@
-# dirtool.py - diff tool for directories
+# dirtoo - File and directory manipulation tools for Python
 # Copyright (C) 2017 Ingo Ruhnke <grumbel@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -18,8 +18,8 @@
 import os
 import unittest
 
-from dirtools.fileview.file_info import FileInfo
-from dirtools.fileview.lazy_file_info import LazyFileInfo
+from dirtoo.fileview.file_info import FileInfo
+from dirtoo.fileview.lazy_file_info import LazyFileInfo
 
 
 class FileInfoTestCase(unittest.TestCase):

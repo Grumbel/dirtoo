@@ -1,4 +1,4 @@
-# dirtools - Python Scripts for directory stuff
+# dirtoo - File and directory manipulation tools for Python
 # Copyright (C) 2018 Ingo Ruhnke <grumbel@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -20,7 +20,7 @@ import unittest
 import io
 import contextlib
 
-from dirtools.cmd_metadata import main
+from dirtoo.cmd_metadata import main
 
 
 class CmdMetaDataTestCase(unittest.TestCase):

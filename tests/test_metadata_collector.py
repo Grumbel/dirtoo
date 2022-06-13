@@ -1,4 +1,4 @@
-# dirtool.py - diff tool for directories
+# dirtoo - File and directory manipulation tools for Python
 # Copyright (C) 2018 Ingo Ruhnke <grumbel@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -21,9 +21,9 @@ import unittest
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QApplication
 
-from dirtools.fileview.metadata_collector import MetaDataCollector
-from dirtools.fileview.stdio_filesystem import StdioFilesystem
-from dirtools.fileview.location import Location
+from dirtoo.fileview.metadata_collector import MetaDataCollector
+from dirtoo.fileview.stdio_filesystem import StdioFilesystem
+from dirtoo.fileview.location import Location
 
 
 class MetaDataCollectorTestCase(unittest.TestCase):
@@ -45,7 +45,7 @@ class MetaDataCollectorTestCase(unittest.TestCase):
 
             metadata_collector.sig_metadata_ready.connect(on_metadata)
 
-            metadata_collector.request_metadata(Location.from_path("dirtools/fileview/icons/noun_409399_cc.png"))
+            metadata_collector.request_metadata(Location.from_path("dirtoo/fileview/icons/noun_409399_cc.png"))
 
             QTimer.singleShot(500, metadata_collector.close)
             QTimer.singleShot(1500, app.quit)

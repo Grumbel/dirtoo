@@ -1,4 +1,4 @@
-# dirtool.py - diff tool for directories
+# dirtoo - File and directory manipulation tools for Python
 # Copyright (C) 2018 Ingo Ruhnke <grumbel@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 
 import unittest
 
-from dirtools.mediainfo import MediaInfo
+from dirtoo.mediainfo import MediaInfo
 
 
 class MediaInfoTestCase(unittest.TestCase):

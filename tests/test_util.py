@@ -1,4 +1,4 @@
-# dirtool.py - diff tool for directories
+# dirtoo - File and directory manipulation tools for Python
 # Copyright (C) 2017 Ingo Ruhnke <grumbel@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 
 import unittest
 
-from dirtools.util import numeric_sorted
+from dirtoo.util import numeric_sorted
 
 
 class UtilTestCase(unittest.TestCase):

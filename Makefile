@@ -1,4 +1,4 @@
-# dirtool.py - diff tool for directories
+# dirtoo - File and directory manipulation tools for Python
 # Copyright (C) 2015 Ingo Ruhnke <grumbel@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-SOURCES := $(wildcard dirtools/*.py dirtools/*/*.py experiments/*/*.py)
+SOURCES := $(wildcard dirtoo/*.py dirtoo/*/*.py experiments/*/*.py)
 
 default: flake mypy test
 

@@ -1,4 +1,4 @@
-# dirtool.py - diff tool for directories
+# dirtoo - File and directory manipulation tools for Python
 # Copyright (C) 2018 Ingo Ruhnke <grumbel@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 import unittest
 import pyparsing
 
-from dirtools.expr import Parser, Context
+from dirtoo.expr import Parser, Context
 
 
 class ExprTestCase(unittest.TestCase):

@@ -28,25 +28,24 @@
               sha256 = "BtGAnuL+3dztYGXc0ZgmxhMYeH1Hv08QscAReD1BmqY=";
             };
           };
-          dirtools = pkgs.python3Packages.buildPythonPackage rec {
-            name = "dirtools";
+          dirtoo = pkgs.python3Packages.buildPythonPackage rec {
+            name = "dirtoo";
             src = self;
             nativeBuildInputs = [ pkgs.qt5.wrapQtAppsHook ];
-	    doCheck = false;
             makeWrapperArgs = [
               "\${qtWrapperArgs[@]}"
-              "--set" "DIRTOOLS_7ZIP" "${pkgs.p7zip}/bin/7z"
-              "--set" "DIRTOOLS_FFPROBE" "${pkgs.ffmpeg}/bin/ffprobe"
-              "--set" "DIRTOOLS_RAR" "${pkgs.rar}/bin/rar"
+              "--set" "DIRTOO_7ZIP" "${pkgs.p7zip}/bin/7z"
+              "--set" "DIRTOO_FFPROBE" "${pkgs.ffmpeg}/bin/ffprobe"
+              "--set" "DIRTOO_RAR" "${pkgs.rar}/bin/rar"
 
               "--set" "LIBGL_DRIVERS_PATH" "${pkgs.mesa.drivers}/lib/dri"
               "--prefix" "LD_LIBRARY_PATH" ":" "${pkgs.mesa.drivers}/lib"
             ];
             preCheck = ''
               export QT_QPA_PLATFORM_PLUGIN_PATH="${pkgs.qt5.qtbase.bin}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";
-              export DIRTOOLS_7ZIP='${pkgs.p7zip}/bin/7z'
-              export DIRTOOLS_FFPROBE='${pkgs.ffmpeg}/bin/ffprobe'
-              export DIRTOOLS_RAR='${pkgs.rar}/bin/rar'
+              export DIRTOO_7ZIP='${pkgs.p7zip}/bin/7z'
+              export DIRTOO_FFPROBE='${pkgs.ffmpeg}/bin/ffprobe'
+              export DIRTOO_RAR='${pkgs.rar}/bin/rar'
             '';
             propagatedBuildInputs = [
               python-ngram
@@ -72,6 +71,6 @@
             ];
           };
         };
-        defaultPackage = packages.dirtools;
+        defaultPackage = packages.dirtoo;
       });
 }

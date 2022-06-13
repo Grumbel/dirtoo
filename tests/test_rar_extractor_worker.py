@@ -1,4 +1,4 @@
-# dirtool.py - diff tool for directories
+# dirtoo - File and directory manipulation tools for Python
 # Copyright (C) 2018 Ingo Ruhnke <grumbel@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -21,8 +21,8 @@ import signal
 import tempfile
 import unittest
 
-from dirtools.extractor import ExtractorResult
-from dirtools.rar_extractor import RarExtractor
+from dirtoo.extractor import ExtractorResult
+from dirtoo.rar_extractor import RarExtractor
 
 from PyQt5.QtCore import QCoreApplication, QTimer
 
