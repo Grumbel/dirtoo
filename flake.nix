@@ -47,30 +47,30 @@
               export DIRTOO_FFPROBE='${pkgs.ffmpeg}/bin/ffprobe'
               export DIRTOO_RAR='${pkgs.rar}/bin/rar'
             '';
-            propagatedBuildInputs = [
+            propagatedBuildInputs = with pkgs; [
+              python3Packages.setuptools
+              python3Packages.pyparsing
+              python3Packages.pymediainfo
+              python3Packages.colorama
+              python3Packages.inotify-simple
+              python3Packages.libarchive-c
+              python3Packages.numpy
+              python3Packages.pypdf2
+              python3Packages.pyqt5
+              python3Packages.pyxdg
+              python3Packages.scipy
+              python3Packages.sortedcontainers
+              python3Packages.unidecode
+            ] ++ [
               python-ngram
               bytefmt.defaultPackage.${system}
-
-              pkgs.xorg.libxcb
-              pkgs.p7zip
-              pkgs.rar
-              pkgs.ffmpeg
-              pkgs.python3Packages.setuptools
-              pkgs.python3Packages.pyparsing
-              pkgs.python3Packages.pymediainfo
-              pkgs.python3Packages.colorama
-              pkgs.python3Packages.inotify-simple
-              pkgs.python3Packages.libarchive-c
-              pkgs.python3Packages.numpy
-              pkgs.python3Packages.pypdf2
-              pkgs.python3Packages.pyqt5
-              pkgs.python3Packages.pyxdg
-              pkgs.python3Packages.scipy
-              pkgs.python3Packages.sortedcontainers
-              pkgs.python3Packages.unidecode
             ];
+            shellHook = ''
+              eval $preCheck
+            '';
           };
         };
         defaultPackage = packages.dirtoo;
-      });
+      }
+    );
 }
