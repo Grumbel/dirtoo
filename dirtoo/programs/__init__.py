@@ -1,5 +1,5 @@
-# dirtoo - File and directory manipulation tools for Python
-# Copyright (C) 2018 Ingo Ruhnke <grumbel@gmail.com>
+# dirtoo - Python Scripts for directory stuff
+# Copyright (C) 2022 Ingo Ruhnke <grumbel@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,28 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-
-import unittest
-
-import io
-import contextlib
-
-from dirtoo.programs.metadata import main
-
-
-class CmdMetaDataTestCase(unittest.TestCase):
-
-    def test_main(self):
-        stdout = io.StringIO()
-        stderr = io.StringIO()
-        with contextlib.redirect_stdout(stdout), \
-             contextlib.redirect_stderr(stderr):
-            try:
-                main(['dt-metadata', '--help'])
-                # main(['dt-metadata', '/tmp'])
-            except SystemExit as ex:
-                self.assertEqual(ex.code, 0)
 
 
 # EOF #
