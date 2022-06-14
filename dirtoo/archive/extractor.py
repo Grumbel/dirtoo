@@ -65,10 +65,9 @@ class Extractor(QObject):
 
 
 def make_extractor(filename: str, outdir: str) -> Extractor:
-
-    from dirtoo.rar_extractor import RarExtractor
-    from dirtoo.sevenzip_extractor import SevenZipExtractor
-    from dirtoo.libarchive_extractor import LibArchiveExtractor
+    from dirtoo.archive.rar_extractor import RarExtractor
+    from dirtoo.archive.sevenzip_extractor import SevenZipExtractor
+    from dirtoo.archive.libarchive_extractor import LibArchiveExtractor
 
     # FIXME: Use mime-type to decide proper extractor
     if filename.lower().endswith(".rar"):

@@ -22,7 +22,7 @@ import threading
 
 from PyQt5.QtCore import pyqtSignal
 
-from dirtoo.extractor import Extractor, ExtractorResult
+from dirtoo.archive.extractor import Extractor, ExtractorResult
 
 logger = logging.getLogger(__name__)
 

@@ -23,7 +23,7 @@ import logging
 from PyPDF2 import PdfFileReader
 
 from dirtoo.mediainfo import MediaInfo
-from dirtoo.archiveinfo import ArchiveInfo
+from dirtoo.archive.archiveinfo import ArchiveInfo
 
 logger = logging.getLogger(__name__)
 

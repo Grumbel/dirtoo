@@ -24,10 +24,10 @@ from collections import deque
 
 from PyQt5.QtCore import QTimer
 
-from dirtoo.extractor import ExtractorResult
-from dirtoo.fileview.location import Location, Payload
+from dirtoo.archive.archive_extractor import ArchiveExtractor
+from dirtoo.archive.extractor import ExtractorResult
 from dirtoo.fileview.directory_watcher import DirectoryWatcher
-from dirtoo.archive_extractor import ArchiveExtractor
+from dirtoo.fileview.location import Location, Payload
 
 logger = logging.getLogger(__name__)
 

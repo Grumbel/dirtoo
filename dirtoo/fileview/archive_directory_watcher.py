@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from dirtoo.fileview.directory_watcher import DirectoryWatcher  # noqa: F401
-    from dirtoo.fileview.archive_extractor import ArchiveExtractor  # noqa: F401
+    from dirtoo.archive.archive_extractor import ArchiveExtractor  # noqa: F401
 
 
 class ArchiveDirectoryWatcher:

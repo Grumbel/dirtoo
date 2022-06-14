@@ -21,11 +21,11 @@ import os
 import logging
 import urllib
 
-from dirtoo.fileview.location import Location
-from dirtoo.fileview.directory_watcher import DirectoryWatcher
+from dirtoo.archive.archive_manager import ArchiveManager
 from dirtoo.fileview.archive_directory_watcher import ArchiveDirectoryWatcher
-from dirtoo.archive_manager import ArchiveManager
+from dirtoo.fileview.directory_watcher import DirectoryWatcher
 from dirtoo.fileview.file_info import FileInfo
+from dirtoo.fileview.location import Location
 
 logger = logging.getLogger(__name__)
 

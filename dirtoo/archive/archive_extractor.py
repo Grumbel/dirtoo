@@ -22,7 +22,7 @@ import os
 
 from PyQt5.QtCore import pyqtSignal
 
-from dirtoo.extractor import Extractor, ExtractorResult, make_extractor
+from dirtoo.archive.extractor import Extractor, ExtractorResult, make_extractor
 from dirtoo.fileview.worker_thread import WorkerThread, Worker
 
 logger = logging.getLogger(__name__)

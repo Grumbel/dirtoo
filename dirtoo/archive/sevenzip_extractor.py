@@ -23,7 +23,7 @@ import traceback
 
 from PyQt5.QtCore import QProcess, QByteArray, pyqtSignal
 
-from dirtoo.extractor import Extractor, ExtractorResult
+from dirtoo.archive.extractor import Extractor, ExtractorResult
 
 logger = logging.getLogger(__name__)
 

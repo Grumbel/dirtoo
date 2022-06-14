@@ -22,7 +22,7 @@ import shlex
 import sys
 
 
-from dirtoo.archiveinfo import ArchiveInfo
+from dirtoo.archive.archiveinfo import ArchiveInfo
 
 
 def parse_args(argv):

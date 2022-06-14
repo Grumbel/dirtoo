@@ -22,8 +22,8 @@ import unittest
 import pyparsing
 
 
-from dirtoo.extractor import ExtractorResult
-from dirtoo.sevenzip_extractor import SevenZipExtractor
+from dirtoo.archive.extractor import ExtractorResult
+from dirtoo.archive.sevenzip_extractor import SevenZipExtractor
 
 from PyQt5.QtCore import QCoreApplication, QTimer
 

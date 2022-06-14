@@ -21,8 +21,8 @@ import signal
 import tempfile
 import unittest
 
-from dirtoo.extractor import ExtractorResult
-from dirtoo.rar_extractor import RarExtractor
+from dirtoo.archive.extractor import ExtractorResult
+from dirtoo.archive.rar_extractor import RarExtractor
 
 from PyQt5.QtCore import QCoreApplication, QTimer
 

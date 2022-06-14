@@ -18,7 +18,7 @@
 import argparse
 import sys
 
-from dirtoo.extractor import make_extractor
+from dirtoo.archive.extractor import make_extractor
 
 
 def parse_args(args):
