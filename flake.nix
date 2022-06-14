@@ -34,7 +34,7 @@
             nativeBuildInputs = [ pkgs.qt5.wrapQtAppsHook ];
             makeWrapperArgs = [
               "\${qtWrapperArgs[@]}"
-              "--set" "DIRTOO_7ZIP" "${pkgs.p7zip}/bin/7z"
+              "--set" "DIRTOO_7ZIP" "${pkgs._7zz}/bin/7zz"
               "--set" "DIRTOO_FFPROBE" "${pkgs.ffmpeg}/bin/ffprobe"
               "--set" "DIRTOO_RAR" "${pkgs.rar}/bin/rar"
 
