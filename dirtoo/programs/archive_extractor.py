@@ -16,6 +16,7 @@
 
 
 import argparse
+import logging
 import sys
 
 from dirtoo.archive.extractor import make_extractor
@@ -29,11 +30,16 @@ def parse_args(args):
                         help="Output directory for extraction")
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help="Be verbose")
+    parser.add_argument('--debug', action='store_true', default=False,
+                        help="Be even more verbose")
     return parser.parse_args(args)
 
 
 def main(argv):
     args = parse_args(argv[1:])
+
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
 
     extractor = make_extractor(args.ARCHIVE[0], args.outdir)
 
