@@ -54,6 +54,8 @@ def format_output(mediainfo: MediaInfo, fmt_str: str):
 
     fmt = string.Formatter()
     for (literal_text, field_name, format_spec, _) in fmt.parse(fmt_str):
+        assert format_spec is not None
+
         if literal_text is not None:
             sys.stdout.write(literal_text)
 

@@ -154,9 +154,9 @@ class FilterExprParser:
         tokens = self._grammar.parseString(text, parseAll=True)
         parsed_tokens = self._parse_tokens(tokens)
 
-        or_funcs = []
+        or_funcs: List[MatchFunc] = []
         for tokens in parsed_tokens:
-            and_funcs = []
+            and_funcs: List[MatchFunc] = []
             for token in tokens:
                 and_funcs.append(self._make_func(token))
             and_funcs = sorted(and_funcs, key=lambda x: x.cost())

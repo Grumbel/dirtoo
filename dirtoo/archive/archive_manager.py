@@ -153,6 +153,7 @@ class ArchiveManager:
         assert location._payloads[-1].protocol == "archive"
 
         origin = location.origin()
+        assert origin is not None
         origin._payloads.append(Payload("archive", ""))
 
         loc_hash = hashlib.md5(origin.as_url().encode()).hexdigest()

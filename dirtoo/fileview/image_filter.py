@@ -18,6 +18,7 @@
 
 
 import numpy
+import numpy.typing as npt
 from scipy.ndimage.filters import gaussian_filter
 
 from PyQt5.QtGui import QImage
@@ -33,9 +34,9 @@ def drop_shadow(image: QImage) -> QImage:
     shape = (image.width() * image.height())
     strides = (4,)
 
-    alpha = numpy.ndarray(shape=shape, dtype=numpy.uint8,
-                          buffer=bits, strides=strides, offset=3)
-    color = numpy.ndarray(shape=shape, dtype=numpy.uint8)
+    alpha: npt.NDArray[numpy.uint8] = numpy.ndarray(shape=shape, dtype=numpy.uint8,
+                                                    buffer=bits, strides=strides, offset=3)
+    color: npt.NDArray[numpy.uint8] = numpy.ndarray(shape=shape, dtype=numpy.uint8)
     color.fill(0)
 
     alpha = alpha.reshape((image.width(), image.height()))
@@ -57,13 +58,13 @@ def white_outline(image: QImage, sigma=6, repeat=6) -> QImage:
     shape = (image.width() * image.height())
     strides = (4,)
 
-    alpha = numpy.ndarray(shape=shape, dtype=numpy.uint8,
-                          buffer=bits, strides=strides, offset=3)
-    color = numpy.ndarray(shape=shape, dtype=numpy.uint8)
+    alpha: npt.NDArray[numpy.uint8] = numpy.ndarray(shape=shape, dtype=numpy.uint8,
+                                                    buffer=bits, strides=strides, offset=3)
+    color: npt.NDArray[numpy.uint8] = numpy.ndarray(shape=shape, dtype=numpy.uint8)
     color.fill(255)
 
     alpha = alpha.reshape((image.width(), image.height()))
-    alpha = alpha.astype(numpy.float)
+    alpha = alpha.astype(numpy.single)
     alpha = gaussian_filter(alpha, sigma=sigma)
     alpha *= repeat
     numpy.clip(alpha, 0, 255, out=alpha)

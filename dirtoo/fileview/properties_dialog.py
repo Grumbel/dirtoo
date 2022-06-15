@@ -121,7 +121,9 @@ class PropertiesDialog(QDialog):
                                                 self._fileinfo.gid()))
         group_edit.setReadOnly(True)
 
-        mode = self._fileinfo.stat().st_mode
+        stat_result = self._fileinfo.stat()
+        mode = stat_result.st_mode if stat_result is not None else 0
+
         access_box = QGroupBox("Access Control")
         access_user_label = QLabel("User:")
 

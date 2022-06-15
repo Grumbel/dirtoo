@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import (List, Dict, Any, TypeVar, Generic, Iterable,
+from typing import (cast, List, Dict, Any, TypeVar, Generic, Iterable,
                     Optional, Callable, Sized, Iterator)
 
 
@@ -33,15 +33,16 @@ class ListDict(Generic[KT, VT], Sized, Iterable):
                  iterable: Optional[Iterable[VT]] = None) -> None:
         self._key_func = key_func
 
+        self._list: List[Optional[VT]]
         if iterable is None:
-            self._list: List[VT] = []
+            self._list = []
             self._key2idx: Dict[KT, int] = {}
         else:
-            self._list: List[VT] = list(iterable)
+            self._list = list(iterable)
             self._rebuild_index()
 
     def _rebuild_index(self) -> None:
-        self._key2idx = {self._key_func(x): idx for idx, x in enumerate(self._list)}
+        self._key2idx = {self._key_func(x): idx for idx, x in enumerate(self._list) if x is not None}
 
     def __iter__(self) -> Iterator[VT]:
         return (x for x in self._list if x is not None)
@@ -69,7 +70,8 @@ class ListDict(Generic[KT, VT], Sized, Iterable):
 
     def sort(self, key: Callable[[VT], Any], reverse: bool = False):
         self._list = [x for x in self._list if x is not None]
-        self._list.sort(key=key, reverse=reverse)
+        self._list.sort(key=cast(Callable[[Optional[VT]], Any], key),
+                        reverse=reverse)
         self._rebuild_index()
 
     def clear(self):

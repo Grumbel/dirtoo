@@ -101,6 +101,8 @@ class FileListStream(QObject):
         self.socket_notifier.activated.connect(self._on_activated)
 
     def _on_activated(self, fd: int) -> None:
+        assert self.readliner is not None
+
         while True:
             try:
                 filename: str = next(self.readliner)

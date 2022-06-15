@@ -23,6 +23,11 @@ import operator
 from abc import ABC, abstractmethod
 
 
+ExprValue = Union[int, float, bool, str]
+ExprFunction = Callable[..., ExprValue]
+UnaryExprFunction = Callable[[float], float]
+
+
 # FIXME: these logical and/or operators don't have short circuit
 # semantics, shouldn't matter since we try to stay side effect free,
 # but might still be a worthy optimization
@@ -34,7 +39,7 @@ def logical_or(lhs, rhs):
     return lhs or rhs
 
 
-NAME2BINOP = {
+NAME2BINOP: Dict[str, ExprFunction] = {
     '+': operator.add,
     '-': operator.sub,
     '*': operator.mul,
@@ -66,25 +71,21 @@ NAME2BINOP = {
 }
 
 
-NAME2UNARYOP: Dict[str, Callable[[float], float]] = {
+NAME2UNARYOP: Dict[str, UnaryExprFunction] = {
     '+': lambda x: x,
     '-': operator.neg,
-    '~': operator.invert,
+    '~': cast(UnaryExprFunction, operator.invert),
     '!': operator.not_,
     'not': operator.not_,
 }
 
 
-def get_operator_fn(op):
+def get_operator_fn(op: str) -> ExprFunction:
     return NAME2BINOP[op]
 
 
-def get_unary_operator_fn(op):
+def get_unary_operator_fn(op: str) -> UnaryExprFunction:
     return NAME2UNARYOP[op]
-
-
-ExprValue = Union[int, float, bool, str]
-ExprFunction = Callable[..., ExprValue]
 
 
 class Context:
@@ -142,7 +143,7 @@ class Function(Expr):
 class Number(Expr):
 
     def __init__(self, s: str, loc: int, toks: List) -> None:
-        self.value = toks[0]
+        self.value: ExprValue = toks[0]
         if len(toks) > 1:
             self.unit = toks[1]
         else:
@@ -160,7 +161,7 @@ class Number(Expr):
 
 class String(Expr):
 
-    def __init__(self, s, loc, toks) -> None:
+    def __init__(self, s, loc, toks: List[ExprValue]) -> None:
         self.value = toks[0]
 
     def eval(self, ctx: Context) -> ExprValue:
@@ -172,8 +173,9 @@ class String(Expr):
 
 class Variable(Expr):
 
-    def __init__(self, s, loc, toks) -> None:
-        self.name = toks[0]
+    def __init__(self, s, loc, toks: List[ExprValue]) -> None:
+        assert type(toks[0]) is str
+        self.name: str = toks[0]
 
     def eval(self, ctx: Context) -> ExprValue:
         return ctx.get_variable(self.name)
@@ -333,7 +335,7 @@ class Parser:
 
     def eval(self, text: str, ctx: Context) -> ExprValue:
         result = self.bnf.parseString(text, parseAll=True)
-        return result[0].eval(ctx)
+        return cast(ExprValue, result[0].eval(ctx))
 
 
 # EOF #

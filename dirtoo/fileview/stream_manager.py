@@ -36,7 +36,10 @@ class StreamManager:
 
     def get_stdin(self) -> Optional[Tuple[IO, str]]:
         if self._stdin_id is None:
-            tee_io, stream_id = self.record(sys.stdin)
+            result = self.record(sys.stdin)
+            if result is None:
+                return None
+            tee_io, stream_id = result
             self._stdin_id = stream_id
             return cast(IO, tee_io), stream_id
         else:

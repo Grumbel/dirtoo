@@ -57,7 +57,7 @@ def get_compare_operator(text: str) -> Callable[[Any, Any], bool]:
 class FilterCommandParser:
 
     def __init__(self) -> None:
-        self._commands: Dict[str, Tuple[List[str], Callable, str]] = {}
+        self._commands: Dict[str, Tuple[List[str], Callable, Optional[str]]] = {}
         self._register_commands()
 
     def parse(self, pattern):

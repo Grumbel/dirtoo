@@ -15,23 +15,23 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
-from dirtoo.fileview.settings import settings
+# FIXME: this breaks encapsulation
+# from dirtoo.fileview.settings import settings
+
 from dirtoo.fileview.match_func import MatchFunc
-
-if TYPE_CHECKING:
-    from dirtoo.fileview.file_info import FileInfo  # noqa: F401
+from dirtoo.file_info import FileInfo
 
 
 class Filter:
 
     def __init__(self) -> None:
-        self.show_hidden = settings.value("globals/show_hidden", False, bool)
+        self.show_hidden = True  # settings.value("globals/show_hidden", False, bool)
         self.show_inaccessible = True
         self.match_func: Optional[MatchFunc] = None
 
-    def apply(self, fileinfo: 'FileInfo') -> None:
+    def apply(self, fileinfo: FileInfo) -> None:
         fileinfo.is_excluded = self._is_excluded(fileinfo)
         fileinfo.is_hidden = self._is_hidden(fileinfo)
 

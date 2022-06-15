@@ -77,6 +77,7 @@ class SevenZipExtractor(Extractor):
 
         try:
             self._start_extract(self._outdir)
+            assert self._process is not None
             self._process.waitForFinished(-1)
             assert self._result is not None
             return self._result

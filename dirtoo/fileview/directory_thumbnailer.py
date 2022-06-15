@@ -46,7 +46,6 @@ class DirectoryThumbnailerTask(QObject):
                  location: 'Location', callback: ThumbnailCallback) -> None:
         super().__init__()
 
-        self._stream = None
         self._file_collection = None
 
         self._app = app
@@ -56,7 +55,9 @@ class DirectoryThumbnailerTask(QObject):
         if location.has_stdio_name():
             self._fileinfo = self._app.vfs.get_fileinfo(location)
         else:
-            self._fileinfo = self._app.vfs.get_fileinfo(location.origin())
+            origin = location.origin()
+            assert origin is not None
+            self._fileinfo = self._app.vfs.get_fileinfo(origin)
         self._stream = self._app.vfs.opendir(location)
 
         self._thumbnails: List[QImage] = []
@@ -106,6 +107,8 @@ class DirectoryThumbnailerTask(QObject):
         print("ERROR:", message)
 
     def _request_thumbnails(self) -> bool:
+        assert self._file_collection is not None
+
         # print("_request_thumbnails")
         # print(self._fileinfo_idx, len(self._file_collection))
 
@@ -260,6 +263,8 @@ class DirectoryThumbnailer(WorkerThread):
         self.set_worker(DirectoryThumbnailerWorker(app))
 
     def request_thumbnail(self, location: 'Location', callback: ThumbnailCallback):
+        assert self._worker is not None
+
         print("request_thumbnail", location, callback)
         self._worker.sig_thumbnail_requested.emit(location, callback)
 

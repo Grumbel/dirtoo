@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 import os
 
@@ -38,7 +38,7 @@ class PathCompletionWorker(Worker):
         longest, candidates = self.complete(text)
         self.sig_completions_ready.emit(longest, candidates)
 
-    def candidates(self, text) -> Optional[List[str]]:
+    def candidates(self, text) -> List[str]:
         dirname = os.path.dirname(text)
         basename = os.path.basename(text)
 
@@ -47,7 +47,7 @@ class PathCompletionWorker(Worker):
         try:
             for entry in os.scandir(dirname):
                 if self._close or self._request_interrupted:
-                    return None
+                    return []
 
                 if entry.is_dir():
                     if entry.name.startswith(basename):
@@ -57,7 +57,7 @@ class PathCompletionWorker(Worker):
 
         return sorted(candidates)
 
-    def complete(self, text) -> Tuple[str, List[str]]:
+    def complete(self, text: str) -> Tuple[str, List[str]]:
         candidates = self.candidates(text)
 
         if candidates == []:
@@ -75,6 +75,7 @@ class PathCompletion(WorkerThread):
     def __init__(self) -> None:
         super().__init__()
         self.set_worker(PathCompletionWorker())
+        assert self._worker is not None
         self.sig_request_completions.connect(self._worker._on_request_completions)
 
     def request_completions(self, text) -> None:

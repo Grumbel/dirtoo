@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Dict, List, Any, Hashable
+from typing import Any, Callable, Dict, List, Hashable
 
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QGraphicsItem
@@ -70,9 +70,8 @@ class LayoutBuilder:
         else:
             first_group = None
 
-        sorted_groups = sorted(groups.items(),
-                               key=lambda x: x[0],
-                               reverse=True)
+        key_func: Callable[[List[Any]], Any] = lambda x: x[0]
+        sorted_groups = sorted(groups.items(), key=key_func, reverse=True)
 
         if first_group is not None:
             sorted_groups = [first_group] + sorted_groups

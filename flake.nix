@@ -30,7 +30,10 @@
           };
           dirtoo = pkgs.python3Packages.buildPythonPackage rec {
             name = "dirtoo";
-            src = self;
+            src = ./.;
+            meta = {
+              mainProgram = "dt-fileview";
+            };
             nativeBuildInputs = [ pkgs.qt5.wrapQtAppsHook ];
             makeWrapperArgs = [
               "\${qtWrapperArgs[@]}"

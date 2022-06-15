@@ -137,7 +137,7 @@ class FileInfo:
     def is_archive(self) -> bool:
         return self._ext[1:].lower() in ARCHIVE_EXT
 
-    def stat(self) -> os.stat_result:
+    def stat(self) -> Optional[os.stat_result]:
         return self._stat
 
     def uid(self) -> int:

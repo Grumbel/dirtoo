@@ -60,7 +60,7 @@ class LazyFileInfo:
             self._stat = os.lstat(self._abspath)
             self._have_access = os.access(self._abspath, os.R_OK)
 
-    def have_access(self) -> bool:
+    def have_access(self) -> Optional[bool]:
         self._collect_stat()
         return self._have_access
 
@@ -82,8 +82,9 @@ class LazyFileInfo:
     def isdir(self) -> bool:
         return os.path.isdir(self._abspath)
 
-    def isfile(self) -> bool:
+    def isfile(self) -> Optional[bool]:
         self._collect_stat()
+        assert self._stat is not None
         return stat.S_ISREG(self._stat.st_mode)
 
     def is_video(self) -> bool:
@@ -97,6 +98,7 @@ class LazyFileInfo:
 
     def stat(self) -> os.stat_result:
         self._collect_stat()
+        assert self._stat is not None
         return self._stat
 
     def uid(self) -> int:

@@ -299,6 +299,7 @@ class FileView(QGraphicsView):
 
     def on_file_collection_reordered(self) -> None:
         logger.debug("FileView.on_file_collection_reordered")
+        assert self._file_collection
 
         fileinfos = self._file_collection.get_fileinfos()
 
@@ -334,8 +335,9 @@ class FileView(QGraphicsView):
 
     def on_file_collection_set(self) -> None:
         logger.debug("FileView.on_file_collection_set")
-        self.clear()
+        assert self._file_collection is not None
 
+        self.clear()
         fileinfos = self._file_collection.get_fileinfos()
 
         for fileinfo in fileinfos:
@@ -441,6 +443,8 @@ class FileView(QGraphicsView):
             return
 
         def get_bounding_rect() -> QRectF:
+            assert self._layout is not None
+
             rect = self._layout.get_bounding_rect()
 
             if True:  # self.layout_style == LayoutStyle.ROWS:
@@ -555,8 +559,9 @@ class FileView(QGraphicsView):
 
         if self._cursor_item is not None:
             self._cursor_item.update()
-        self._cursor_item = self._location2item.get(fileinfo.location(), [None])[0]
-        if self._cursor_item is not None:
+
+        if fileinfo.location() in self._location2item:
+            self._cursor_item = self._location2item[fileinfo.location()][0]
             self._cursor_item.setSelected(True)
             self._cursor_item.update()
             if ensure_visible:

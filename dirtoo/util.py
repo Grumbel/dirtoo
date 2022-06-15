@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Any, TextIO, BinaryIO
+from typing import cast, List, Any, Union, TextIO, BinaryIO
 
 import re
 import os
@@ -107,7 +107,8 @@ def _open_binary_file(filename: str) -> BinaryIO:
         return open(filename, "rb")
 
 
-def read_lines_from_file(filename: str, nul_separated: bool) -> List[str]:
+# FIXME: split this into two functions
+def read_lines_from_file(filename: str, nul_separated: bool) -> Union[List[str], List[bytes]]:
     if nul_separated:
         with _open_binary_file(filename) as fin:
             content = fin.read()
@@ -124,7 +125,7 @@ def read_lines_from_file(filename: str, nul_separated: bool) -> List[str]:
             return fin.read().splitlines()
 
 
-def read_lines_from_files(filenames: List[str], nul_separated: bool) -> List[str]:
+def read_lines_from_files(filenames: List[str], nul_separated: bool) -> Union[List[str], List[bytes]]:
     """Read lines from filenames similar to 'cat'"""
 
     stdout_read = False
@@ -132,7 +133,7 @@ def read_lines_from_files(filenames: List[str], nul_separated: bool) -> List[str
     if not filenames:
         filenames = ["-"]
 
-    lines = []
+    lines: Any = []
     for filename in filenames:
         if filename == '-':
             if stdout_read:
@@ -142,7 +143,7 @@ def read_lines_from_files(filenames: List[str], nul_separated: bool) -> List[str
 
         lines += read_lines_from_file(filename, nul_separated)
 
-    return lines
+    return cast(Union[List[str], List[bytes]], lines)
 
 
 # EOF #

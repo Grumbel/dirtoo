@@ -18,6 +18,7 @@
 
 
 from typing import List, Any, Tuple
+import numpy.typing as npt
 
 import signal
 import sys
@@ -49,8 +50,8 @@ def run_facedetect(filename: str) -> Tuple[QImage, List[Any]]:
     bits = image.bits()
     bits.setsize(image.byteCount())
 
-    array = numpy.ndarray(shape=(image.height(), image.bytesPerLine() // 4, 4), dtype=numpy.uint8,
-                          buffer=bits)
+    array: npt.NDArray[numpy.uint8] = numpy.ndarray(shape=(image.height(), image.bytesPerLine() // 4, 4),
+                                                    dtype=numpy.uint8, buffer=bits)
     array = array[:image.height(), :image.width(), :3]
 
     img = cv2.imread(filename, cv2.IMREAD_COLOR)

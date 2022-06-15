@@ -74,6 +74,7 @@ class Gui(QObject):
         self._window.file_view.mouseMoveEvent(ev)
 
     def on_context_menu(self, pos) -> None:
+        assert self._controller.location is not None
         menu = DirectoryContextMenu(self._controller, self._controller.location)
         menu.exec(pos)
         self.fake_mouse()
@@ -108,7 +109,7 @@ class Gui(QObject):
         else:
             return None
 
-    def show_create_file_dialog(self, name: Optional[str] = None) -> str:
+    def show_create_file_dialog(self, name: Optional[str] = None) -> Optional[str]:
         dialog = CreateDialog(CreateDialog.TEXTFILE, self._window)
         if name is not None:
             dialog.set_name(name)

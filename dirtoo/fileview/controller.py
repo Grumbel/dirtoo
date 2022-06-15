@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, List, Dict, Optional
+from typing import TYPE_CHECKING, Any, List, Dict, Optional
 
 import io
 import logging
@@ -28,7 +28,7 @@ import bytefmt
 
 from dirtoo.fileview.file_collection import FileCollection
 from dirtoo.fileview.grouper import (DayGrouper, DirectoryGrouper,
-                                       NoGrouper, DurationGrouper)
+                                     NoGrouper, DurationGrouper)
 from dirtoo.fileview.directory_watcher import DirectoryWatcher
 from dirtoo.fileview.filter_parser import FilterParser
 from dirtoo.fileview.settings import settings
@@ -79,7 +79,7 @@ class Controller(QObject):
 
         self.app.metadata_collector.sig_metadata_ready.connect(self.receive_metadata)
 
-        self._path_completion = PathCompletion()
+        self._path_completion: PathCompletion = PathCompletion()
         self._path_completion.sig_completions_ready.connect(self._on_completions)
         self._path_completion.start()
         self._apply_settings()
@@ -435,8 +435,8 @@ class Controller(QObject):
             fileinfos = (self.app.vfs.get_fileinfo(f.location()) for f in fileinfos)
             self.file_collection.set_fileinfos(fileinfos)
 
-    def receive_thumbnail(self, location: Location, flavor: str,
-                          pixmap, error_code: int, message: str) -> None:
+    def receive_thumbnail(self, location: Location, flavor: Optional[str],
+                          pixmap: Optional[Any], error_code: Optional[int], message: Optional[str]) -> None:
         logger.debug("Controller.receive_thumbnail: %s %s %s %s %s",
                      location, flavor, pixmap, error_code, message)
         if pixmap is None:
@@ -522,6 +522,8 @@ class Controller(QObject):
         self._gui._window.search_lineedit.setFocus()
 
     def hide_search_toolbar(self) -> None:
+        assert self.location is not None
+
         self._gui._window.search_toolbar.hide()
         self._gui._window.file_view.setFocus()
         self.set_location(self.location)

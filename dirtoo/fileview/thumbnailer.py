@@ -117,7 +117,9 @@ class ThumbnailerWorker(QObject):
             for req in reqs:
                 filenames.append(self._vfs.get_stdio_name(req.location))
 
+            assert self._dbus_thumbnailer is not None
             handle = self._dbus_thumbnailer.queue(filenames, flavor)
+            assert handle is not None
             self._queued_requests[handle].append(reqs)
 
         self._thumbnail_requests.clear()

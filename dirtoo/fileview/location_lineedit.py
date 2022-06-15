@@ -165,7 +165,7 @@ class LocationLineEdit(QLineEdit):
         self._show_completion_selection = True
         self._show_popup()
 
-    def _on_location_changed(self, location: Location):
+    def _on_location_changed(self, location: Optional[Location]):
         if location is not None:
             self.bookmark_act.setEnabled(True)
             if self._controller.has_bookmark():

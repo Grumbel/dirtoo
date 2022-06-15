@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, List, Set, Tuple
+from typing import TYPE_CHECKING, cast, List, Set, Tuple, Optional
 
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtGui import QIcon
@@ -102,12 +102,12 @@ class ItemContextMenu(Menu):
             for location in files
         )
 
-        apps_default_sets: List[Set[str]] = [
+        apps_default_sets: List[Set[Optional[str]]] = [
             set(self._controller.app.mime_associations.get_default_apps(mimetype))
             for mimetype in mimetypes
         ]
 
-        apps_other_sets: List[Set[str]] = [
+        apps_other_sets: List[Set[Optional[str]]] = [
             set(self._controller.app.mime_associations.get_associations(mimetype))
             for mimetype in mimetypes
         ]
@@ -124,7 +124,7 @@ class ItemContextMenu(Menu):
         if None in other_apps:
             other_apps.remove(None)
 
-        return default_apps, other_apps
+        return cast(Tuple[Set[str], Set[str]], (default_apps, other_apps))
 
     def _build_open_menu(self):
         files: List[Location] = [fi.location() for fi in self._fileinfos]
