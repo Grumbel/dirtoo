@@ -21,7 +21,7 @@ from dirtoo.util import numeric_sort_key
 from dirtoo.fileview.file_info import FileInfo
 
 if TYPE_CHECKING:
-    from dirtoo.fileview.file_collection import FileCollection  # noqa: F401
+    from dirtoo.filecollection.file_collection import FileCollection  # noqa: F401
 
 
 class Sorter:

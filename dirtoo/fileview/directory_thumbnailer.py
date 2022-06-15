@@ -22,10 +22,10 @@ import logging
 from PyQt5.QtCore import QObject, QSize, QRect, QPoint, pyqtSignal
 from PyQt5.QtGui import QImage, QPainter
 
-from dirtoo.fileview.file_collection import FileCollection
-from dirtoo.fileview.worker_thread import WorkerThread, Worker
-from dirtoo.fileview.scaler import make_cropped_rect
 from dirtoo.dbus_thumbnailer import DBusThumbnailer
+from dirtoo.filecollection.file_collection import FileCollection
+from dirtoo.fileview.scaler import make_cropped_rect
+from dirtoo.fileview.worker_thread import WorkerThread, Worker
 
 if TYPE_CHECKING:
     from dirtoo.fileview.application import FileViewApplication  # noqa: F401

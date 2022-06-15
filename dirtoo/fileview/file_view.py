@@ -28,18 +28,18 @@ from PyQt5.QtGui import (QBrush, QIcon, QColor, QPainter, QImage,
 from PyQt5.QtWidgets import QGraphicsView, QShortcut
 
 from dirtoo.dbus_thumbnailer import DBusThumbnailerError
-from dirtoo.fileview.file_collection import FileCollection
+from dirtoo.filecollection.file_collection import FileCollection
+from dirtoo.fileview.file_graphics_scene import FileGraphicsScene
 from dirtoo.fileview.file_info import FileInfo
+from dirtoo.fileview.file_item import FileItem
+from dirtoo.fileview.file_view_style import FileViewStyle
 from dirtoo.fileview.layout import RootLayout
 from dirtoo.fileview.layout_builder import LayoutBuilder
-from dirtoo.location import Location
+from dirtoo.fileview.leap_widget import LeapWidget
+from dirtoo.fileview.mode import Mode, IconMode, ListMode, DetailMode, FileItemStyle
 from dirtoo.fileview.profiler import profile
 from dirtoo.fileview.settings import settings
-from dirtoo.fileview.mode import Mode, IconMode, ListMode, DetailMode, FileItemStyle
-from dirtoo.fileview.file_item import FileItem
-from dirtoo.fileview.file_graphics_scene import FileGraphicsScene
-from dirtoo.fileview.leap_widget import LeapWidget
-from dirtoo.fileview.file_view_style import FileViewStyle
+from dirtoo.location import Location
 
 if TYPE_CHECKING:
     from dirtoo.fileview.controller import Controller  # noqa: F401
