@@ -32,7 +32,7 @@ from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLineEdit,
 import bytefmt
 
 if TYPE_CHECKING:
-    from dirtoo.fileview.file_info import FileInfo  # noqa: F401
+    from dirtoo.file_info import FileInfo  # noqa: F401
 
 
 class PropertiesDialog(QDialog):

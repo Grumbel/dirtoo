@@ -27,7 +27,7 @@ from PyQt5.QtWidgets import (
     QStyle
 )
 
-from dirtoo.fileview.file_info import FileInfo
+from dirtoo.file_info import FileInfo
 from dirtoo.fileview.settings import settings
 from dirtoo.util import numeric_sort_key
 

@@ -21,7 +21,7 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QGraphicsItem
 
 from dirtoo.fileview.layout import RootLayout, HBoxLayout, TileLayout, ItemLayout, VSpacer
-from dirtoo.fileview.file_info import FileInfo
+from dirtoo.file_info import FileInfo
 from dirtoo.fileview.file_item import FileItem
 
 

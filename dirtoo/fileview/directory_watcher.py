@@ -26,7 +26,7 @@ from PyQt5.QtCore import Qt, QObject, QSocketNotifier, QThread, pyqtSignal
 from inotify_simple import INotify, flags as inotify_flags
 import inotify_simple
 
-from dirtoo.fileview.file_info import FileInfo
+from dirtoo.file_info import FileInfo
 from dirtoo.location import Location
 
 

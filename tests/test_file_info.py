@@ -18,7 +18,7 @@
 import os
 import unittest
 
-from dirtoo.fileview.file_info import FileInfo
+from dirtoo.file_info import FileInfo
 from dirtoo.fileview.lazy_file_info import LazyFileInfo
 
 

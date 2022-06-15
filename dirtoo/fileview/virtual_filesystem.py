@@ -19,13 +19,14 @@ from typing import Any
 
 import logging
 
-from dirtoo.location import Location
-from dirtoo.fileview.file_info import FileInfo
-from dirtoo.fileview.stdio_filesystem import StdioFilesystem
-from dirtoo.fileview.history_provider import HistoryProvider
+from dirtoo.file_info import FileInfo
 from dirtoo.fileview.bookmarks_provider import BookmarksProvider
-from dirtoo.fileview.search_stream import SearchStream
 from dirtoo.fileview.filelist_stream import FileListStream
+from dirtoo.fileview.history_provider import HistoryProvider
+from dirtoo.fileview.search_stream import SearchStream
+from dirtoo.fileview.stdio_filesystem import StdioFilesystem
+from dirtoo.location import Location
+
 
 logger = logging.getLogger(__name__)
 

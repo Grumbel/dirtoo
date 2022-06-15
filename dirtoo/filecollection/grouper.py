@@ -21,7 +21,7 @@ from functools import total_ordering
 from datetime import datetime
 
 if TYPE_CHECKING:
-    from dirtoo.fileview.file_info import FileInfo  # noqa: F401
+    from dirtoo.file_info import FileInfo  # noqa: F401
 
 
 @total_ordering

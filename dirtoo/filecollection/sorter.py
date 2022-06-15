@@ -18,7 +18,7 @@
 from typing import TYPE_CHECKING, Callable, Any
 
 from dirtoo.util import numeric_sort_key
-from dirtoo.fileview.file_info import FileInfo
+from dirtoo.file_info import FileInfo
 
 if TYPE_CHECKING:
     from dirtoo.filecollection.file_collection import FileCollection  # noqa: F401

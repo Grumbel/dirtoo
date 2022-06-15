@@ -17,7 +17,7 @@
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
-from dirtoo.fileview.file_info import FileInfo
+from dirtoo.file_info import FileInfo
 
 
 class BookmarksProvider(QObject):
