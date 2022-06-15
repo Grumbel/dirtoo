@@ -43,7 +43,7 @@
             ];
             preCheck = ''
               export QT_QPA_PLATFORM_PLUGIN_PATH="${pkgs.qt5.qtbase.bin}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";
-              export DIRTOO_7ZIP='${pkgs.p7zip}/bin/7z'
+              export DIRTOO_7ZIP='${pkgs._7zz}/bin/7zz'
               export DIRTOO_FFPROBE='${pkgs.ffmpeg}/bin/ffprobe'
               export DIRTOO_RAR='${pkgs.rar}/bin/rar'
             '';

@@ -55,7 +55,7 @@ class SevenZipExtractor(Extractor):
     def __init__(self, filename: str, outdir: str) -> None:
         super().__init__()
 
-        self._sevenzip = os.environ.get("DIRTOO_7ZIP") or "7z"
+        self._sevenzip = os.environ.get("DIRTOO_7ZIP") or "7zz"
 
         self._filename = os.path.abspath(filename)
         self._outdir = outdir
@@ -128,6 +128,11 @@ class SevenZipExtractor(Extractor):
     def _process_stdout(self, line):
         if line.startswith("- "):
             entry = line[2:]
+
+            # 7zz adds a "/" on folders, older versions do not, strip it for uniformity
+            if entry[-1] == "/":
+                entry = entry[:-1]
+
             self.sig_entry_extracted.emit(entry, os.path.join(self._outdir, entry))
 
     def _process_stderr(self, line):
