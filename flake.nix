@@ -50,6 +50,11 @@
               export DIRTOO_FFPROBE='${pkgs.ffmpeg}/bin/ffprobe'
               export DIRTOO_RAR='${pkgs.rar}/bin/rar'
             '';
+            checkPhase = ''
+              runHook preCheck
+              make
+              runHook postCheck
+            '';
             propagatedBuildInputs = with pkgs; [
               python3Packages.setuptools
               python3Packages.pyparsing
@@ -67,6 +72,11 @@
             ] ++ [
               python-ngram
               bytefmt.defaultPackage.${system}
+            ];
+            checkInputs = with pkgs; [
+              python3Packages.flake8
+              python3Packages.mypy
+              python3Packages.types-setuptools
             ];
             shellHook = ''
               eval $preCheck
