@@ -23,7 +23,7 @@ from dirtoo.fileview.menu import Menu
 
 if TYPE_CHECKING:
     from dirtoo.fileview.controller import Controller  # noqa: F401
-    from dirtoo.fileview.location import Location  # noqa: F401
+    from dirtoo.location import Location  # noqa: F401
 
 
 class DirectoryContextMenu(Menu):

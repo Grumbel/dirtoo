@@ -19,7 +19,7 @@ from typing import Any
 
 import logging
 
-from dirtoo.fileview.location import Location
+from dirtoo.location import Location
 from dirtoo.fileview.file_info import FileInfo
 from dirtoo.fileview.stdio_filesystem import StdioFilesystem
 from dirtoo.fileview.history_provider import HistoryProvider

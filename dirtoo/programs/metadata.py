@@ -27,7 +27,7 @@ from PyQt5.QtCore import QCoreApplication
 
 from dirtoo.fileview.metadata_collector import MetaDataCollector
 from dirtoo.fileview.stdio_filesystem import StdioFilesystem
-from dirtoo.fileview.location import Location
+from dirtoo.location import Location
 
 
 def parse_args(args: List[str]) -> argparse.Namespace:

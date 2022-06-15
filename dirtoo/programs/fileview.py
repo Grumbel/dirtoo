@@ -23,7 +23,7 @@ import sys
 import argparse
 
 from dirtoo.fileview.application import FileViewApplication
-from dirtoo.fileview.location import Location
+from dirtoo.location import Location
 from dirtoo.fileview.profiler import activate_profiler
 from dirtoo.util import expand_directories
 

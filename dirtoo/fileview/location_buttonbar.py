@@ -22,7 +22,7 @@ from PyQt5.QtWidgets import QWidget, QHBoxLayout, QSizePolicy
 from PyQt5.QtGui import QIcon
 import sip
 
-from dirtoo.fileview.location import Location
+from dirtoo.location import Location
 from dirtoo.fileview.push_button import PushButton
 from dirtoo.fileview.item_context_menu import ItemContextMenu
 

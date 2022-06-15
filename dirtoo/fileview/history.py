@@ -21,7 +21,7 @@ import logging
 import sqlite3
 import time
 
-from dirtoo.fileview.location import Location
+from dirtoo.location import Location
 
 logger = logging.getLogger(__name__)
 

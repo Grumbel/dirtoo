@@ -29,7 +29,7 @@ from dirtoo.dbus_thumbnailer import DBusThumbnailer
 
 if TYPE_CHECKING:
     from dirtoo.fileview.application import FileViewApplication  # noqa: F401
-    from dirtoo.fileview.location import Location  # noqa: F401
+    from dirtoo.location import Location  # noqa: F401
 
 logger = logging.getLogger(__name__)
 

@@ -242,7 +242,7 @@ class Location:
     def __hash__(self) -> int:
         # import timeit
         # timeit.timeit('hash(a)',
-        #               "from dirtoo.fileview.location import Location; "
+        #               "from dirtoo.location import Location; "
         #               "a = Location.from_url('file:///home/foo/foo.rar//archive:bar.jpg');")
         # as_url: 3.0
         # tuple (_payloads as list): 0.9

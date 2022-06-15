@@ -27,7 +27,7 @@ from PyQt5.QtCore import QTimer
 from dirtoo.archive.archive_extractor import ArchiveExtractor
 from dirtoo.archive.extractor import ExtractorResult
 from dirtoo.fileview.directory_watcher import DirectoryWatcher
-from dirtoo.fileview.location import Location, Payload
+from dirtoo.location import Location, Payload
 
 logger = logging.getLogger(__name__)
 

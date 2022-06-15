@@ -18,7 +18,7 @@
 from typing import List
 
 import logging
-from dirtoo.fileview.location import Location
+from dirtoo.location import Location
 
 logger = logging.getLogger(__name__)
 

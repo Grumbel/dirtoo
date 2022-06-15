@@ -23,7 +23,7 @@ from PyQt5.QtWidgets import QApplication
 
 from dirtoo.fileview.metadata_collector import MetaDataCollector
 from dirtoo.fileview.stdio_filesystem import StdioFilesystem
-from dirtoo.fileview.location import Location
+from dirtoo.location import Location
 
 
 class MetaDataCollectorTestCase(unittest.TestCase):

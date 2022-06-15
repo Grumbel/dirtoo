@@ -18,7 +18,7 @@
 import unittest
 import os
 
-from dirtoo.fileview.location import Location, Payload
+from dirtoo.location import Location, Payload
 
 
 class LocationTestCase(unittest.TestCase):

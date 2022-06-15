@@ -26,7 +26,7 @@ from PyQt5.QtDBus import QDBusConnection
 from PyQt5.QtGui import QImage
 
 from dirtoo.dbus_thumbnailer import DBusThumbnailer
-from dirtoo.fileview.location import Location
+from dirtoo.location import Location
 
 logger = logging.getLogger(__name__)
 

@@ -24,7 +24,7 @@ from sortedcontainers import SortedList
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
-from dirtoo.fileview.location import Location
+from dirtoo.location import Location
 from dirtoo.fileview.file_info import FileInfo
 from dirtoo.fileview.filter import Filter
 from dirtoo.fileview.grouper import Grouper, NoGrouper

@@ -18,7 +18,7 @@
 from PyQt5.QtCore import QMimeType, QMimeDatabase
 from PyQt5.QtGui import QIcon
 
-from dirtoo.fileview.location import Location
+from dirtoo.location import Location
 from dirtoo.fileview.virtual_filesystem import VirtualFilesystem
 
 

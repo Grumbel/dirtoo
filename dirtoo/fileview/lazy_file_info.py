@@ -21,7 +21,7 @@ import logging
 import os
 import stat
 
-from dirtoo.fileview.location import Location
+from dirtoo.location import Location
 from dirtoo.fileview.match_func_factory import VIDEO_EXT, IMAGE_EXT, ARCHIVE_EXT
 
 logger = logging.getLogger(__name__)

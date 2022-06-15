@@ -24,7 +24,7 @@ from PyQt5.QtGui import QPalette, QIcon, QKeySequence
 from PyQt5.QtWidgets import (QLineEdit, QShortcut, QWidget,
                              QListWidget, QVBoxLayout, QSizePolicy)
 
-from dirtoo.fileview.location import Location
+from dirtoo.location import Location
 
 if TYPE_CHECKING:
     from dirtoo.fileview.controller import Controller  # noqa: F401

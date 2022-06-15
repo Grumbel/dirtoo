@@ -22,7 +22,7 @@ import logging
 from PyQt5.QtCore import Qt, QObject, QThread, pyqtSignal
 from PyQt5.QtWidgets import QWidget
 
-from dirtoo.fileview.location import Location
+from dirtoo.location import Location
 from dirtoo.fileview.rename_operation import RenameOperation
 from dirtoo.fileview.return_value import ReturnValue
 from dirtoo.file_transfer import FileTransfer, Progress, ConflictResolution, Mediator, CancellationException

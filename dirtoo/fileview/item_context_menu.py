@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, List, Set, Tuple
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtGui import QIcon
 
-from dirtoo.fileview.location import Location, Payload
+from dirtoo.location import Location, Payload
 from dirtoo.fileview.menu import Menu
 from dirtoo.xdg_desktop import get_desktop_entry, get_desktop_file
 

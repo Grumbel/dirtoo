@@ -32,7 +32,7 @@ from dirtoo.fileview.file_collection import FileCollection
 from dirtoo.fileview.file_info import FileInfo
 from dirtoo.fileview.layout import RootLayout
 from dirtoo.fileview.layout_builder import LayoutBuilder
-from dirtoo.fileview.location import Location
+from dirtoo.location import Location
 from dirtoo.fileview.profiler import profile
 from dirtoo.fileview.settings import settings
 from dirtoo.fileview.mode import Mode, IconMode, ListMode, DetailMode, FileItemStyle

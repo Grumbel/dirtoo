@@ -38,14 +38,14 @@ from PyQt5.QtWidgets import (
 from dirtoo.fileview.file_view import FileView
 from dirtoo.fileview.filter_line_edit import FilterLineEdit
 from dirtoo.fileview.history_menu import make_history_menu_entries
-from dirtoo.fileview.location import Location
+from dirtoo.fileview.label import Label
 from dirtoo.fileview.location_buttonbar import LocationButtonBar
 from dirtoo.fileview.location_lineedit import LocationLineEdit
 from dirtoo.fileview.menu import Menu
 from dirtoo.fileview.message_area import MessageArea
 from dirtoo.fileview.search_line_edit import SearchLineEdit
 from dirtoo.fileview.tool_button import ToolButton
-from dirtoo.fileview.label import Label
+from dirtoo.location import Location
 
 if TYPE_CHECKING:
     from dirtoo.fileview.controller import Controller  # noqa: F401

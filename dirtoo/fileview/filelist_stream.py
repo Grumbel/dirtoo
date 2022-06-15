@@ -24,7 +24,7 @@ import os
 from PyQt5.QtCore import QObject, QSocketNotifier, pyqtSignal
 
 from dirtoo.fileview.file_info import FileInfo
-from dirtoo.fileview.location import Location
+from dirtoo.location import Location
 
 if TYPE_CHECKING:
     from dirtoo.fileview.virtual_filesystem import VirtualFilesystem  # noqa: F401

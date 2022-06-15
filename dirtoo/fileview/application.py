@@ -33,7 +33,7 @@ from dirtoo.fileview.bookmarks import Bookmarks
 from dirtoo.fileview.executor import Executor
 from dirtoo.fileview.filesystem_operations import FilesystemOperations
 from dirtoo.fileview.history import SqlHistory
-from dirtoo.fileview.location import Location
+from dirtoo.location import Location
 from dirtoo.fileview.metadata_collector import MetaDataCollector
 from dirtoo.fileview.mime_database import MimeDatabase
 from dirtoo.fileview.settings import settings

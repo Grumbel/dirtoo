@@ -32,7 +32,7 @@ from dirtoo.fileview.grouper import (DayGrouper, DirectoryGrouper,
 from dirtoo.fileview.directory_watcher import DirectoryWatcher
 from dirtoo.fileview.filter_parser import FilterParser
 from dirtoo.fileview.settings import settings
-from dirtoo.fileview.location import Location, Payload
+from dirtoo.location import Location, Payload
 from dirtoo.fileview.file_info import FileInfo
 from dirtoo.fileview.file_view import FileItemStyle
 from dirtoo.fileview.gnome import parse_gnome_copied_files, make_gnome_copied_files

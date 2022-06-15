@@ -22,7 +22,7 @@ import subprocess
 import shlex
 
 from dirtoo.xdg_desktop import get_desktop_entry
-from dirtoo.fileview.location import Location
+from dirtoo.location import Location
 
 logger = logging.getLogger(__name__)
 
