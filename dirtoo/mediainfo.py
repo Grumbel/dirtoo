@@ -56,16 +56,16 @@ def split_duration(duration: int) -> Tuple[int, int, int]:
 class MediaInfo:
 
     def __init__(self, filename: str) -> None:
-        self._filename = filename
+        self._filename: str = filename
+        self._general_count: int = 0
+        self._video_count: int = 0
+        self._audio_count: int = 0
+        self._image_count: int = 0
+        self._other_count: int = 0
+        self._width: int = 0
+        self._height: int = 0
 
         minfo = pymediainfo.MediaInfo.parse(filename)
-
-        self._general_count = 0
-        self._video_count = 0
-        self._audio_count = 0
-        self._image_count = 0
-        self._width = 0
-        self._height = 0
 
         for track in minfo.tracks:
             if track.track_type == "General":
@@ -76,8 +76,10 @@ class MediaInfo:
                 self._audio_count += 1
             elif track.track_type == "Image":
                 self._image_count += 1
+            elif track.track_type == "Other":
+                self._other_count += 1
             else:
-                raise Exception("unknown track type: {}".format(track.track_type))
+                raise Exception("{}: unknown track type: {}".format(filename, track.track_type))
 
             # print(repr(minfo.Get(MediaInfoDLL3.Stream.Video, 0, "FrameRate_Mode/String"))) # CFR VFR
             # print(repr(minfo.Get(MediaInfoDLL3.Stream.Video, 0, "FrameRate_Maximum")))
