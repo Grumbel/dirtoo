@@ -17,6 +17,7 @@
 
 from typing import List
 
+import gc
 import logging
 import os
 import sys
@@ -76,7 +77,13 @@ def main(argv: List[str]) -> None:
     else:
         app.show_files([Location.from_human(f) for f in args.FILE])
 
-    sys.exit(app.run())
+    return_value = app.run()
+
+    # force cleanup before program exit
+    del app
+    gc.collect()
+
+    sys.exit(return_value)
 
 
 def main_entrypoint() -> None:
