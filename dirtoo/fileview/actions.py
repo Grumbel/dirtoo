@@ -260,13 +260,13 @@ class Actions(QObject):
         self.sort_by_aspect_ratio = QAction("Sort by Aspect Ratio", checkable=True)
         self.sort_by_aspect_ratio.triggered.connect(lambda: self.controller.set_sort_key_func(aspect_ratio_key))
 
-        def area_key(fileinfo):
+        def resolution_key(fileinfo):
             width = fileinfo.get_metadata_or('width', 0)
             height = fileinfo.get_metadata_or('height', 0)
             return width * height
 
-        self.sort_by_area = QAction("Sort by Area", checkable=True)
-        self.sort_by_area.triggered.connect(lambda: self.controller.set_sort_key_func(area_key))
+        self.sort_by_resolution = QAction("Sort by Resolution", checkable=True)
+        self.sort_by_resolution.triggered.connect(lambda: self.controller.set_sort_key_func(resolution_key))
 
         def duration_key(fileinfo):
             fileinfo.get_metadata_or('duration', 0)
@@ -286,7 +286,7 @@ class Actions(QObject):
         self.sort_group.addAction(self.sort_by_size)
         self.sort_group.addAction(self.sort_by_ext)
         self.sort_group.addAction(self.sort_by_date)
-        self.sort_group.addAction(self.sort_by_area)
+        self.sort_group.addAction(self.sort_by_resolution)
         self.sort_group.addAction(self.sort_by_duration)
         self.sort_group.addAction(self.sort_by_aspect_ratio)
         self.sort_group.addAction(self.sort_by_framerate)
