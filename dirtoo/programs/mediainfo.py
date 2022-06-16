@@ -54,12 +54,10 @@ def format_output(mediainfo: MediaInfo, fmt_str: str):
 
     fmt = string.Formatter()
     for (literal_text, field_name, format_spec, _) in fmt.parse(fmt_str):
-        assert format_spec is not None
-
         if literal_text is not None:
             sys.stdout.write(literal_text)
 
-        if field_name is not None:
+        if field_name is not None and format_spec is not None:
             value = parser.eval(field_name, ctx)
             sys.stdout.write(format(value, format_spec))
 
