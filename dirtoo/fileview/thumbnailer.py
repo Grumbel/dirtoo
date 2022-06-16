@@ -106,6 +106,9 @@ class ThumbnailerWorker(QObject):
     def close(self):
         assert self._close
 
+        if self._timer_id != 0:
+            self.killTimer(self._timer_id)
+
         del self._dbus_thumbnailer
 
     def timerEvent(self, ev) -> None:
