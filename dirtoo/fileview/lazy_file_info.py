@@ -22,7 +22,8 @@ import os
 import stat
 
 from dirtoo.location import Location
-from dirtoo.fileview.match_func_factory import VIDEO_EXT, IMAGE_EXT, ARCHIVE_EXT
+import dirtoo.file_type as file_type
+
 
 logger = logging.getLogger(__name__)
 
@@ -88,13 +89,13 @@ class LazyFileInfo:
         return stat.S_ISREG(self._stat.st_mode)
 
     def is_video(self) -> bool:
-        return self._ext[1:].lower() in VIDEO_EXT
+        return self._ext[1:].lower() in file_type.VIDEO_EXT
 
     def is_image(self) -> bool:
-        return self._ext[1:].lower() in IMAGE_EXT
+        return self._ext[1:].lower() in file_type.IMAGE_EXT
 
     def is_archive(self) -> bool:
-        return self._ext[1:].lower() in ARCHIVE_EXT
+        return self._ext[1:].lower() in file_type.ARCHIVE_EXT
 
     def stat(self) -> os.stat_result:
         self._collect_stat()

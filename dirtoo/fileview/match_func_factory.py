@@ -25,7 +25,7 @@ import logging
 import re
 
 import dirtoo.duration as duration
-
+import dirtoo.file_type as file_type
 from dirtoo.fileview.filter_expr_parser import CommandExpr
 from dirtoo.fuzzy import fuzzy
 from dirtoo.util import is_glob_pattern
@@ -49,24 +49,8 @@ from dirtoo.fileview.match_func import (
     WeekdayMatchFunc,
 )
 
+
 logger = logging.getLogger(__name__)
-
-
-VIDEO_EXT = ['wmv', 'mp4', 'mpg', 'mpeg', 'm2v', 'avi', 'flv', 'mkv', 'wmv',
-             'mov', 'webm', 'f4v', 'flv', 'divx', 'ogv', 'vob', '3gp', '3g2',
-             'qt', 'asf', 'amv', 'm4v']
-
-VIDEO_REGEX = r"\.({})$".format("|".join(VIDEO_EXT))
-
-
-IMAGE_EXT = ['jpg', 'jpeg', 'gif', 'png', 'tif', 'tiff', 'webp', 'bmp', 'xcf']
-
-IMAGE_REGEX = r"\.({})$".format("|".join(IMAGE_EXT))
-
-
-ARCHIVE_EXT = ['zip', 'rar', 'tar', 'gz', 'xz', 'bz2', 'ar', '7z']
-
-ARCHIVE_REGEX = r"\.({})$".format("|".join(ARCHIVE_EXT))
 
 
 CMPTEXT2OP = {
@@ -372,11 +356,11 @@ class MatchFuncFactory:
 
     def make_type(self, argument):
         if argument == "video":
-            return RegexMatchFunc(VIDEO_REGEX, re.IGNORECASE)
+            return RegexMatchFunc(file_type.VIDEO_REGEX, re.IGNORECASE)
         elif argument == "image":
-            return RegexMatchFunc(IMAGE_REGEX, re.IGNORECASE)
+            return RegexMatchFunc(file_type.IMAGE_REGEX, re.IGNORECASE)
         elif argument == "archive":
-            return RegexMatchFunc(ARCHIVE_REGEX, re.IGNORECASE)
+            return RegexMatchFunc(file_type.ARCHIVE_REGEX, re.IGNORECASE)
         elif argument in ["folder", "dir", "directory"]:
             return FolderMatchFunc()
         elif argument in ["file"]:
