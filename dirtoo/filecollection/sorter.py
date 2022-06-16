@@ -15,13 +15,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, Callable, Any
+from typing import Callable, Any
 
 from dirtoo.util import numeric_sort_key
 from dirtoo.file_info import FileInfo
-
-if TYPE_CHECKING:
-    from dirtoo.filecollection.file_collection import FileCollection  # noqa: F401
 
 
 class Sorter:
@@ -45,9 +42,6 @@ class Sorter:
             return lambda fileinfo: (not fileinfo.isdir(), self.key_func(fileinfo))
         else:
             return self.key_func
-
-    # def apply(self, file_collection: 'FileCollection') -> None:
-    #     file_collection.sort(self.get_key_func(), reverse=self.reverse)
 
 
 # EOF #

@@ -34,7 +34,7 @@ from dirtoo.file_transfer import ConflictResolution
 from dirtoo.fileview.settings import settings
 
 if TYPE_CHECKING:
-    from dirtoo.fileview.filesystem_operations import GuiProgress  # noqa: F401
+    from dirtoo.fileview.filesystem_operations import GuiProgress
 
 
 logger = logging.getLogger(__name__)

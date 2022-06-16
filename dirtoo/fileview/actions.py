@@ -32,7 +32,7 @@ from dirtoo.fileview.settings import settings
 from dirtoo.util import numeric_sort_key
 
 if TYPE_CHECKING:
-    from dirtoo.fileview.controller import Controller  # noqa: F401
+    from dirtoo.fileview.controller import Controller
 
 logger = logging.getLogger(__name__)
 

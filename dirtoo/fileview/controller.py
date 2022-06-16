@@ -47,8 +47,8 @@ from dirtoo.location import Location, Payload
 from dirtoo.util import make_non_existing_filename
 
 if TYPE_CHECKING:
-    from dirtoo.fileview.application import FileViewApplication  # noqa: F401
-    from dirtoo.fileview.tool_button import ToolButton  # noqa: F401
+    from dirtoo.fileview.application import FileViewApplication
+    from dirtoo.fileview.tool_button import ToolButton
 
 logger = logging.getLogger(__name__)
 

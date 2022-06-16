@@ -27,7 +27,7 @@ from dirtoo.file_info import FileInfo
 from dirtoo.location import Location
 
 if TYPE_CHECKING:
-    from dirtoo.fileview.virtual_filesystem import VirtualFilesystem  # noqa: F401
+    from dirtoo.fileview.virtual_filesystem import VirtualFilesystem
 
 logger = logging.getLogger(__name__)
 

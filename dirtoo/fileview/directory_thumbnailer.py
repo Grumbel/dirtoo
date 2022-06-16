@@ -28,8 +28,8 @@ from dirtoo.fileview.scaler import make_cropped_rect
 from dirtoo.fileview.worker_thread import WorkerThread, Worker
 
 if TYPE_CHECKING:
-    from dirtoo.fileview.application import FileViewApplication  # noqa: F401
-    from dirtoo.location import Location  # noqa: F401
+    from dirtoo.fileview.application import FileViewApplication
+    from dirtoo.location import Location
 
 logger = logging.getLogger(__name__)
 

@@ -29,7 +29,7 @@ from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLineEdit,
 
 import bytefmt
 
-from dirtoo.file_info import FileInfo  # noqa: F401
+from dirtoo.file_info import FileInfo
 
 
 class PropertiesDialog(QDialog):

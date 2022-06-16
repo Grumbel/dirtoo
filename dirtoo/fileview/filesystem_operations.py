@@ -30,7 +30,7 @@ from dirtoo.fileview.conflict_dialog import ConflictDialog
 from dirtoo.fileview.transfer_dialog import TransferDialog
 
 if TYPE_CHECKING:
-    from dirtoo.filesystem import Filesystem  # noqa: F401
+    from dirtoo.filesystem import Filesystem
 
 logger = logging.getLogger(__name__)
 

@@ -22,7 +22,7 @@ from PyQt5.QtGui import QPalette, QIcon, QKeySequence
 from PyQt5.QtWidgets import QLineEdit, QShortcut
 
 if TYPE_CHECKING:
-    from dirtoo.fileview.controller import Controller   # noqa: F401
+    from dirtoo.fileview.controller import Controller
 
 
 class SearchLineEdit(QLineEdit):

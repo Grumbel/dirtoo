@@ -27,7 +27,7 @@ from dirtoo.fileview.push_button import PushButton
 from dirtoo.fileview.item_context_menu import ItemContextMenu
 
 if TYPE_CHECKING:
-    from dirtoo.fileview.controller import Controller  # noqa: F401
+    from dirtoo.fileview.controller import Controller
 
 
 class LocationButton(PushButton):

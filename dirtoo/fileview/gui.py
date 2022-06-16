@@ -29,8 +29,8 @@ from dirtoo.fileview.about_dialog import AboutDialog
 from dirtoo.fileview.properties_dialog import PropertiesDialog
 
 if TYPE_CHECKING:
-    from dirtoo.file_info import FileInfo  # noqa: F401
-    from dirtoo.fileview.controller import Controller  # noqa: F401
+    from dirtoo.file_info import FileInfo
+    from dirtoo.fileview.controller import Controller
 
 
 class Gui(QObject):

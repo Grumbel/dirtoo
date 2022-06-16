@@ -23,7 +23,7 @@ from enum import Enum
 from PyQt5.QtGui import QPixmap, QImage
 
 if TYPE_CHECKING:
-    from dirtoo.fileview.file_item import FileItem  # noqa: F401
+    from dirtoo.fileview.file_item import FileItem
 
 logger = logging.getLogger(__name__)
 

@@ -42,7 +42,7 @@ from dirtoo.fileview.settings import settings
 from dirtoo.location import Location
 
 if TYPE_CHECKING:
-    from dirtoo.fileview.controller import Controller  # noqa: F401
+    from dirtoo.fileview.controller import Controller
 
 logger = logging.getLogger(__name__)
 

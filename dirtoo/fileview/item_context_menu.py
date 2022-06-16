@@ -25,7 +25,7 @@ from dirtoo.fileview.menu import Menu
 from dirtoo.xdg_desktop import get_desktop_entry, get_desktop_file
 
 if TYPE_CHECKING:
-    from dirtoo.fileview.controller import Controller  # noqa: F401
+    from dirtoo.fileview.controller import Controller
 
 
 class ItemContextMenu(Menu):
