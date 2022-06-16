@@ -113,9 +113,8 @@ class DurationGrouper(Grouper):
         return None
 
     def __call__(self, fileinfo: 'FileInfo'):
-        metadata = fileinfo.metadata()
-        if "duration" in metadata:
-            fileinfo.group = self._find_bucket(metadata["duration"] / 60000)
+        if fileinfo.has_metadata("duration"):
+            fileinfo.group = self._find_bucket(fileinfo.get_metadata("duration") / 60000)
         else:
             fileinfo.group = None
 

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Dict, Any, Optional
+from typing import Dict, List, Any, Optional
 import logging
 
 import os
@@ -44,10 +44,9 @@ class FileInfo:
     def from_path(path: str) -> 'FileInfo':
         logger.debug("FileInfo.from_path: %s", path)
 
-        fi = FileInfo()
+        fi = FileInfo(Location.from_path(path))
 
         fi._abspath = os.path.abspath(path)
-        fi._location = Location.from_path(fi._abspath)
         fi._dirname = os.path.dirname(fi._abspath)
         fi._basename = os.path.basename(fi._abspath)
         fi._ext = os.path.splitext(fi._abspath)[1]
@@ -74,9 +73,9 @@ class FileInfo:
 
         return fi
 
-    def __init__(self) -> None:
+    def __init__(self, location: Location) -> None:
+        self._location = location
         self._abspath: str = ""
-        self._location: Optional[Location] = None
         self._dirname: str = ""
         self._basename: str = ""
         self._ext: str = ""
@@ -113,7 +112,6 @@ class FileInfo:
         return self._abspath
 
     def location(self) -> Location:
-        assert self._location is not None
         return self._location
 
     def dirname(self) -> str:
@@ -161,8 +159,18 @@ class FileInfo:
     def mtime(self) -> float:
         return self._stat.st_mtime if self._stat is not None else 0
 
-    def metadata(self) -> Dict[str, Any]:
-        return self._metadata
+    def get_metadata_keys(self) -> List[str]:
+        return list(self._metadata.keys())
+
+    def get_metadata(self, name: str) -> Any:
+        return self._metadata[name]
+
+    def get_metadata_or(self, name: str, fallback: Any) -> Any:
+        """Retrieve the given metadata or return the fallback value"""
+        return self._metadata.get(name, fallback)
+
+    def has_metadata(self, name: str) -> bool:
+        return name in self._metadata
 
     def __str__(self) -> str:
         return "FileInfo({})".format(self._location)

@@ -290,28 +290,26 @@ class FileItemRenderer:
                 self.paint_icon(painter, self.icon)
 
     def make_text(self):
-        metadata = self.fileinfo.metadata()
-
         top_left_text = ""
         top_right_text = ""
         bottom_left_text = ""
         bottom_right_text = ""
 
-        if 'duration' in metadata:
-            hours, minutes, seconds = split_duration(metadata['duration'])
+        if self.fileinfo.has_metadata('duration'):
+            hours, minutes, seconds = split_duration(self.fileinfo.get_metadata('duration'))
             top_left_text = "{:d}:{:02d}:{:02d}".format(hours, minutes, seconds)
 
-        if 'pages' in metadata:
-            top_left_text = "{:d} pages".format(metadata['pages'])
+        if self.fileinfo.has_metadata('pages'):
+            top_left_text = "{:d} pages".format(self.fileinfo.get_metadata('pages'))
 
-        if 'file_count' in metadata:
-            top_left_text = "{:d} files".format(metadata['file_count'])
+        if self.fileinfo.has_metadata('file_count'):
+            top_left_text = "{:d} files".format(self.fileinfo.get_metadata('file_count'))
 
-        if 'framerate' in metadata:
-            top_right_text = "{:g}fps".format(metadata['framerate'])
+        if self.fileinfo.has_metadata('framerate'):
+            top_right_text = "{:g}fps".format(self.fileinfo.get_metadata('framerate'))
 
-        if 'width' in metadata and 'height' in metadata:
-            bottom_left_text = "{}x{}".format(metadata['width'], metadata['height'])
+        if self.fileinfo.has_metadata('width') and self.fileinfo.has_metadata('height'):
+            bottom_left_text = "{}x{}".format(self.fileinfo.get_metadata('width'), self.fileinfo.get_metadata('height'))
 
         return (top_left_text, top_right_text, bottom_left_text, bottom_right_text)
 
@@ -324,7 +322,7 @@ class FileItemRenderer:
             painter.drawPixmap(QRect(2, 2, 24, 24),
                                self.style.shared_pixmaps.new)
 
-        if "type" in self.fileinfo.metadata() and self.fileinfo.metadata()["type"] == "error":
+        if self.fileinfo.has_metadata('type') and self.fileinfo.get_metadata("type") == "error":
             painter.drawPixmap(QRect(2, 2, 24, 24),
                                self.style.shared_pixmaps.error)
 

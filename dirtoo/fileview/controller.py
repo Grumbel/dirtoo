@@ -411,12 +411,7 @@ class Controller(QObject):
 
     def receive_metadata(self, location: Location, metadata: Dict[str, object]) -> None:
         logger.debug("Controller.receive_metadata: %s %s", location, metadata)
-        fileinfo = self.file_collection.get_fileinfo(location)
-        if fileinfo is None:
-            logger.error("Controller.receive_metadata: not found fileinfo for %s", location)
-        else:
-            fileinfo.metadata().update(metadata)
-            self.file_collection.update_fileinfo(fileinfo)
+        self.file_collection.update_metadata(location, metadata)
 
     def request_thumbnail(self, fileinfo: FileInfo, flavor: str, force: bool) -> None:
         self.app.thumbnailer.request_thumbnail(fileinfo.location(), flavor, force,
@@ -568,6 +563,7 @@ class Controller(QObject):
         self._gui._window.location_lineedit.on_return_pressed()
 
     def close_window(self):
+        logger.debug("Controller.close_window")
         self._gui._window.close()
 
     def set_filter_pin(self, value):

@@ -241,16 +241,19 @@ class Actions(QObject):
         self.sort_by_date.triggered.connect(lambda: self.controller.set_sort_key_func(FileInfo.mtime))
 
         def framerate_key(fileinfo):
-            metadata = fileinfo.metadata()
-            return metadata.get('framerate', 0)
+            return fileinfo.get_metadata_or('framerate', 0)
 
         self.sort_by_framerate = QAction("Sort by Framerate", checkable=True)
         self.sort_by_framerate.triggered.connect(lambda: self.controller.set_sort_key_func(framerate_key))
 
-        def aspect_ratio_key(fileinfo):
-            metadata = fileinfo.metadata()
-            if 'width' in metadata and 'height' in metadata and metadata['height'] != 0:
-                return metadata['width'] / metadata['height']
+        def aspect_ratio_key(fileinfo: FileInfo):
+            if fileinfo.has_metadata('width') and fileinfo.has_metadata('height'):
+                width = fileinfo.get_metadata('width')
+                height = fileinfo.get_metadata('height')
+                if height == 0:
+                    logger.error("{}: height is 0".format(fileinfo))
+                    return 0
+                return width / height
             else:
                 return 0
 
@@ -258,21 +261,15 @@ class Actions(QObject):
         self.sort_by_aspect_ratio.triggered.connect(lambda: self.controller.set_sort_key_func(aspect_ratio_key))
 
         def area_key(fileinfo):
-            metadata = fileinfo.metadata()
-            if 'width' in metadata and 'height' in metadata:
-                return metadata['width'] * metadata['height']
-            else:
-                return 0
+            width = fileinfo.get_metadata_or('width', 0)
+            height = fileinfo.get_metadata_or('height', 0)
+            return width * height
 
         self.sort_by_area = QAction("Sort by Area", checkable=True)
         self.sort_by_area.triggered.connect(lambda: self.controller.set_sort_key_func(area_key))
 
         def duration_key(fileinfo):
-            metadata = fileinfo.metadata()
-            if 'duration' in metadata:
-                return metadata['duration']
-            else:
-                return 0
+            fileinfo.get_metadata_or('duration', 0)
 
         self.sort_by_duration = QAction("Sort by Duration", checkable=True)
         self.sort_by_duration.triggered.connect(lambda: self.controller.set_sort_key_func(duration_key))

@@ -78,13 +78,15 @@ class FileCollection(QObject):
         logger.debug("FileCollection.clear")
 
         self._location2fileinfo.clear()
-
         self._fileinfos.clear()
 
         self.sig_files_set.emit()
 
-    def set_fileinfos(self, fileinfos: Iterable[FileInfo]) -> None:
+    def set_fileinfos(self, fileinfos_iter: Iterable[FileInfo]) -> None:
         logger.debug("FileCollection.set_fileinfos")
+
+        # force to list, as we iterate over it twice
+        fileinfos = list(fileinfos_iter)
 
         for fi in fileinfos:
             self._location2fileinfo[fi.location()].append(fi)
@@ -126,14 +128,20 @@ class FileCollection(QObject):
             logger.debug("FileCollection.modify_file: %s", fileinfo)
             self.sig_file_modified.emit(fileinfo)
 
-    def update_fileinfo(self, fileinfo: FileInfo) -> None:
-        try:
-            self._replace_fileinfo(fileinfo)
-        except KeyError:
-            logger.error("FileCollection.update_fileinfo: %s", fileinfo)
-        else:
-            logger.debug("FileCollection.update_fileinfo: %s: KeyError", fileinfo)
-            self.sig_fileinfo_updated.emit(fileinfo)
+    def update_metadata(self, location: Location, metadata: Dict[str, object]) -> None:
+        fileinfo = self.get_fileinfo(location)
+        if fileinfo is None:
+            logger.error("Controller.receive_metadata: not found fileinfo for %s", location)
+            return
+
+        # FIXME: filedata must not be updated while it is inside
+        # SortedList, as otherwise SortedList corrupts due to the sort
+        # order being invalid. This is an ugly workaround
+        self._fileinfos.remove(fileinfo)
+        fileinfo._metadata.update(metadata)
+        self._fileinfos.add(fileinfo)
+
+        self.sig_fileinfo_updated.emit(fileinfo)
 
     def close_file(self, fileinfo: FileInfo) -> None:
         try:
@@ -213,6 +221,17 @@ class FileCollection(QObject):
                 self._fileinfos.remove(fi)
 
             self._fileinfos.add(fileinfo)
+
+    def verify(self):
+        for item in self._fileinfos:
+            print(item)
+        print("------------------")
+        for k, v in self._location2fileinfo.items():
+            print(f"{k} {v}")
+        print("------------------")
+        for loc, fis in self._location2fileinfo.items():
+            for fi in fis:
+                self._fileinfos.index(fi)
 
     # def shuffle(self) -> None:
     #     logger.debug("FileCollection.sort")

@@ -15,8 +15,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING
-
 from datetime import datetime
 import grp
 import pwd
@@ -31,16 +29,15 @@ from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLineEdit,
 
 import bytefmt
 
-if TYPE_CHECKING:
-    from dirtoo.file_info import FileInfo  # noqa: F401
+from dirtoo.file_info import FileInfo  # noqa: F401
 
 
 class PropertiesDialog(QDialog):
 
-    def __init__(self, fileinfo: 'FileInfo', parent: QWidget) -> None:
+    def __init__(self, fileinfo: FileInfo, parent: QWidget) -> None:
         super().__init__(parent)
 
-        self._fileinfo = fileinfo
+        self._fileinfo: FileInfo = fileinfo
 
         self._make_gui()
 
@@ -79,8 +76,8 @@ class PropertiesDialog(QDialog):
         # textedit.setLineWrapMode(QPlainTextEdit.NoWrap)
 
         out = io.StringIO()
-        for k, v in self._fileinfo.metadata().items():
-            print("{}:\n{!r}\n".format(k, v), file=out)
+        for key in self._fileinfo.get_metadata_keys():
+            print("{}:\n{!r}\n".format(key, self._fileinfo.get_metadata(key)), file=out)
         textedit.setPlainText(out.getvalue())
 
         # Layout
@@ -106,7 +103,7 @@ class PropertiesDialog(QDialog):
         size_edit.setReadOnly(True)
 
         mimetype_label = QLabel("MimeType:")
-        mimetype_edit = QLineEdit(self._fileinfo.metadata().get("mime-type", "<unknown>"))
+        mimetype_edit = QLineEdit(self._fileinfo.get_metadata_or("mime-type", "<unknown>"))
         mimetype_edit.setReadOnly(True)
 
         ownership_box = QGroupBox("Ownership")

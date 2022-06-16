@@ -154,10 +154,9 @@ class MetadataMatchFunc(MatchFunc):
         self._compare = compare
 
     def __call__(self, fileinfo: 'FileInfo') -> bool:
-        metadata = fileinfo.metadata()
-        if self._field in metadata:
+        if fileinfo.has_metadata(self._field):
             try:
-                return self._compare(self._type(metadata[self._field]), self._value)
+                return self._compare(self._type(fileinfo.get_metadata(self._field)), self._value)
             except Exception:
                 logger.exception("metadata comparism failed")
                 return False
