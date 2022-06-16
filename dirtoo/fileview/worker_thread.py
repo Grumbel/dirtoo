@@ -53,7 +53,7 @@ class WorkerThread(QObject):
         assert self._worker is None
 
         self._worker = worker
-        self._thread = QThread()
+        self._thread = QThread(self)
         self._worker.moveToThread(self._thread)
 
         self._thread.started.connect(self._worker.on_thread_started)

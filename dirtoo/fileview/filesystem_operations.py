@@ -148,7 +148,7 @@ class GuiFileTransfer(QObject):
 
         self._app = app
 
-        thread = QThread()
+        thread = QThread(self)
 
         mediator = GuiMediator(None)
         mediator.sig_file_conflict.connect(self._on_file_conflict)

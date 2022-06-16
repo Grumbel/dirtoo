@@ -124,7 +124,7 @@ class MetaDataCollector(QObject):
         super().__init__()
 
         self._worker = MetaDataCollectorWorker(vfs)
-        self._thread = QThread()
+        self._thread = QThread(self)
         self._worker.moveToThread(self._thread)
 
         self._thread.started.connect(self._worker.init)
