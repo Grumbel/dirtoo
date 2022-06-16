@@ -91,6 +91,9 @@ class ThumbnailerWorker(QObject):
             "application/zip"
         ])
 
+    def __del__(self):
+        logger.debug("Thumbnailer.__del__")
+
     def init(self):
         self._dbus_thumbnailer = DBusThumbnailer(QDBusConnection.sessionBus(),
                                                  WorkerDBusThumbnailerListener(self))

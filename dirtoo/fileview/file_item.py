@@ -69,6 +69,9 @@ class FileItem(QGraphicsObject):
         self._file_is_final = True
         self._dropable = False
 
+    def __del__(self):
+        logger.debug("FileItem.__del__")
+
     def on_file_modified(self, fileinfo: FileInfo, final=False):
         self.fileinfo = fileinfo
         self._file_is_final = final

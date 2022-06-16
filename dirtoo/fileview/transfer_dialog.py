@@ -17,6 +17,7 @@
 
 from typing import TYPE_CHECKING
 
+import logging
 import time
 
 from PyQt5.QtCore import Qt
@@ -36,6 +37,9 @@ if TYPE_CHECKING:
     from dirtoo.fileview.filesystem_operations import GuiProgress  # noqa: F401
 
 
+logger = logging.getLogger(__name__)
+
+
 class TransferDialog(QDialog):
 
     def __init__(self, target_directory: str, parent: QWidget) -> None:
@@ -49,6 +53,9 @@ class TransferDialog(QDialog):
 
         self._timer = self.startTimer(500)
         self._time = time.time()
+
+    def __del__(self):
+        logger.debug("TransferDialog.__del__")
 
     def _on_close_checkbox_toggled(self, state):
         settings.set_value("globals/close_on_transfer_completed", state)

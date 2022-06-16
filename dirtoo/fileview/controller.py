@@ -84,6 +84,9 @@ class Controller(QObject):
         self._path_completion.start()
         self._apply_settings()
 
+    def __del__(self):
+        logger.debug("Controller.__del__")
+
     def close_streams(self) -> None:
         assert self._gui._window._message_area is not None
 

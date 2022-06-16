@@ -17,6 +17,8 @@
 
 from typing import TYPE_CHECKING, Optional
 
+import logging
+
 from pkg_resources import resource_filename
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence, QIcon, QCursor, QMovie
@@ -51,6 +53,9 @@ if TYPE_CHECKING:
     from dirtoo.fileview.controller import Controller  # noqa: F401
 
 
+logger = logging.getLogger(__name__)
+
+
 class FileViewWindow(QMainWindow):
 
     def __init__(self, controller: 'Controller') -> None:
@@ -77,6 +82,9 @@ class FileViewWindow(QMainWindow):
                   QCursor.pos().y() - self.height() / 2)
 
         self.addAction(self.actions.rename)
+
+    def __del__(self):
+        logger.debug("FileViewWindow.__del__")
 
     def closeEvent(self, ev):
         self.controller.on_exit()

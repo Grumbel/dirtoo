@@ -115,6 +115,9 @@ class FileView(QGraphicsView):
         self.verticalScrollBar().sliderReleased.connect(self._on_vertical_scrollbar_slider_released)
         self.verticalScrollBar().valueChanged.connect(self._on_vertical_scrollbar_slider_value_changed)
 
+    def __del__(self):
+        logger.debug("FileView.__del__")
+
     def _on_vertical_scrollbar_slider_released(self) -> None:
         self._is_scrolling = False
 

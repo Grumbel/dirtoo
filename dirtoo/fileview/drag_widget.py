@@ -17,9 +17,14 @@
 
 from typing import Optional
 
+import logging
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QApplication
 from PyQt5.QtGui import QCursor, QPainter, QFontMetrics
+
+
+logger = logging.getLogger(__name__)
 
 
 class DragWidget(QWidget):
@@ -40,6 +45,9 @@ class DragWidget(QWidget):
         self.resize(48, 20)
         self._mouse_move_timer = self.startTimer(1000 / 60)
         self._text: Optional[str] = None
+
+    def __del__(self):
+        logger.debug("DragWidget.__del__")
 
     def timerEvent(self, ev) -> None:
         if ev.timerId() == self._mouse_move_timer:
