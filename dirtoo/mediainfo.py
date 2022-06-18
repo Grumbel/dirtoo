@@ -15,20 +15,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Tuple
+from typing import Optional, Tuple
 
 import pymediainfo
 
 
-def _to_float(text: str, default: float = 0.0) -> float:
-    if text == "":
+def _to_float(text: Optional[str], default: float = 0.0) -> float:
+    if text == "" or text is None:
         return default
     else:
         return float(text)
 
 
-def _to_int(text: str, default: int = 0) -> int:
-    if text == "":
+def _to_int(text: Optional[str], default: int = 0) -> int:
+    if text == "" or text is None:
         return default
     else:
         try:
