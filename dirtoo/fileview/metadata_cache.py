@@ -29,13 +29,13 @@ logger = logging.getLogger(__name__)
 
 class MetaDataCache:
 
-    def __init__(self):
-        self._directory: str = os.path.join(xdg.BaseDirectory.xdg_cache_home, "dt-fileview", "metadata")
+    def __init__(self) -> None:
+        self._directory: str = os.path.join(xdg.BaseDirectory.xdg_state_home, "dt-fileview", "metadata")
         logger.info("MetaDataCache.__init__: %s", self._directory)
 
         try:
             for i in range(0, 256):
-                os.makedirs(os.join(self._directory, f"{i:02x}"))
+                os.makedirs(os.path.join(self._directory, f"{i:02x}"))
         except FileExistsError:
             pass
 
