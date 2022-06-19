@@ -16,9 +16,12 @@
 
 
 import argparse
-import bytefmt
+import errno
+import os
 import string
 import sys
+
+import bytefmt
 
 from dirtoo.mediainfo import MediaInfo
 from dirtoo.expr import Parser, Context
@@ -78,8 +81,15 @@ def main():
         try:
             mediainfo = MediaInfo(filename)
             format_output(mediainfo, fmt)
+        except FileNotFoundError as err:
+            if err.strerror is None:
+                print(f"{filename}: error: {os.strerror(errno.ENOENT)}", file=sys.stderr)
+            else:
+                print(f"{filename}: error: {err.strerror}", file=sys.stderr)
+        except OSError as err:
+            print(f"{filename}: error: {type(err).__name__}: {err.strerror}", file=sys.stderr)
         except Exception as err:
-            print(err, file=sys.stderr)
+            print(f"{filename}: {err}: error: {type(err).__name__}", file=sys.stderr)
 
 
 # EOF #
