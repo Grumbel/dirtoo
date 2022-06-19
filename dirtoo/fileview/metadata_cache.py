@@ -34,14 +34,15 @@ class MetaDataCache:
         logger.info("MetaDataCache.__init__: %s", self._directory)
 
         try:
-            os.makedirs(self._directory)
+            for i in range(0, 256):
+                os.makedirs(os.join(self._directory, f"{i:02x}"))
         except FileExistsError:
             pass
 
     def _make_filename(self, abspath: str) -> str:
         url = "file://" + urllib.parse.quote(abspath)
         digest = hashlib.md5(os.fsencode(url)).hexdigest()
-        filename = os.path.join(self._directory, digest + ".json")
+        filename = os.path.join(self._directory, digest[:2], digest[2:] + ".json")
         return filename
 
     def retrieve_metadata(self, abspath: str) -> Any:
