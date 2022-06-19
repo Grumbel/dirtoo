@@ -28,6 +28,14 @@
               sha256 = "BtGAnuL+3dztYGXc0ZgmxhMYeH1Hv08QscAReD1BmqY=";
             };
           };
+          pyxdg = pkgs.python3Packages.buildPythonPackage rec {
+            pname = "pyxdg";
+            version = "0.28";
+            src = pkgs.python3Packages.fetchPypi {
+              inherit pname version;
+              sha256 = "sha256-Mme7MHTpNN8gKvLuCGhXVIQQhYHm88sAavHaNTleiLQ=";
+            };
+          };
           dirtoo = pkgs.python3Packages.buildPythonPackage rec {
             name = "dirtoo";
             src = ./.;
@@ -65,15 +73,16 @@
               python3Packages.numpy
               python3Packages.pypdf2
               python3Packages.pyqt5
-              python3Packages.pyxdg
               python3Packages.scipy
               python3Packages.sortedcontainers
               python3Packages.unidecode
             ] ++ [
+              pyxdg
               python-ngram
               bytefmt.defaultPackage.${system}
             ];
             checkInputs = with pkgs; [
+              pylint
               python3Packages.flake8
               python3Packages.mypy
               python3Packages.types-setuptools
