@@ -61,6 +61,8 @@ class MediaInfo:
         self._video_count: int = 0
         self._audio_count: int = 0
         self._image_count: int = 0
+        self._text_count: int = 0
+        self._menu_count: int = 0
         self._other_count: int = 0
         self._width: int = 0
         self._height: int = 0
@@ -76,6 +78,10 @@ class MediaInfo:
                 self._audio_count += 1
             elif track.track_type == "Image":
                 self._image_count += 1
+            elif track.track_type == "Text":
+                self._other_count += 1
+            elif track.track_type == "Menu":
+                self._menu_count += 1
             elif track.track_type == "Other":
                 self._other_count += 1
             else:
