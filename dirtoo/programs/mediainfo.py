@@ -74,8 +74,11 @@ def main():
         fmt = args.println + "\n"
 
     for filename in args.PATH:
-        mediainfo = MediaInfo(filename)
-        format_output(mediainfo, fmt)
+        try:
+            mediainfo = MediaInfo(filename)
+            format_output(mediainfo, fmt)
+        except Exception as err:
+            print(err, file=sys.stderr)
 
 
 # EOF #
