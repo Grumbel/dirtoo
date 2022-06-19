@@ -49,6 +49,7 @@ def format_output(mediainfo: MediaInfo, fmt_str: str):
     ctx.set_variable('framerate', mediainfo.framerate())
     ctx.set_variable('width', mediainfo.width())
     ctx.set_variable('height', mediainfo.height())
+    ctx.set_variable('resolution', f"{mediainfo.width()}x{mediainfo.height()}")
     ctx.set_variable('filesize', bytefmt.humanize(mediainfo.filesize(), compact=True))
     ctx.set_variable('filename', mediainfo.filename())
 
@@ -66,7 +67,7 @@ def main():
     args = parse_args()
 
     fmt = ("{hours:02d}h:{minutes:02d}m:{seconds:02d}s  {filesize:>9}  "
-           "{framerate:>6.2f}fps  {width}x{height}  {filename}\n")
+           "{framerate:>6.2f}fps  {resolution:>9}  {filename}\n")
 
     if args.print:
         fmt = args.print
