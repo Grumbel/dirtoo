@@ -15,19 +15,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Set, Dict
+from typing import Any, List, Set, Dict
 
 from xdg.IniFile import IniFile
 import os
 import collections
 
 
-def unique(lst):
+def unique(lst: List[Any]) -> List[Any]:
     """Remove duplicate elements from a list."""
     return list(collections.OrderedDict.fromkeys(lst))
 
 
-def generate_mimeapps_filenames():
+def generate_mimeapps_filenames() -> List[str]:
     from xdg.BaseDirectory import (xdg_config_home, xdg_config_dirs,
                                    xdg_data_dirs)
 
@@ -56,7 +56,7 @@ def generate_mimeapps_filenames():
     return results
 
 
-def generate_mimeinfo_filenames():
+def generate_mimeinfo_filenames() -> List[str]:
     from xdg.BaseDirectory import xdg_data_dirs
 
     results = []
@@ -73,20 +73,20 @@ def generate_mimeinfo_filenames():
 class XdgMimeAssociations:
 
     @staticmethod
-    def system():
+    def system() -> 'XdgMimeAssociations':
         """Load the systems mime database"""
         db = XdgMimeAssociations()
         db._read_mimeinfos()
         db._read_mimeapps()
         return db
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.default_mime2desktop: Dict[str, List[str]] = {}
         self.mime2desktop: Dict[str, Set[str]] = {}
         self.mimeinfos: List[str] = []
         self.mimeapps: List[str] = []
 
-    def _read_mimeinfos(self):
+    def _read_mimeinfos(self) -> None:
         assert not self.mimeinfos
         self.mimeinfos = generate_mimeinfo_filenames()
 
@@ -97,7 +97,7 @@ class XdgMimeAssociations:
                 for app in ini.getList(apps):
                     self.add_association(mime, app)
 
-    def _read_mimeapps(self):
+    def _read_mimeapps(self) -> None:
         assert not self.mimeapps
         self.mimeapps = generate_mimeapps_filenames()
 
@@ -120,7 +120,7 @@ class XdgMimeAssociations:
                 for app in reversed(ini.getList(apps)):
                     self.add_default_app(mime, app)
 
-    def add_default_app(self, mime, app):
+    def add_default_app(self, mime: str, app: str) -> None:
         self.add_association(mime, app)
 
         if mime not in self.default_mime2desktop:
@@ -132,7 +132,7 @@ class XdgMimeAssociations:
             lst.remove(app)
         lst.insert(0, app)
 
-    def add_association(self, mime, app):
+    def add_association(self, mime: str, app: str) -> None:
         if mime not in self.mime2desktop:
             self.mime2desktop[mime] = set()
 
@@ -140,15 +140,15 @@ class XdgMimeAssociations:
         if app not in s:
             s.add(app)
 
-    def remove_association(self, mime, app):
+    def remove_association(self, mime: str, app: str) -> None:
         s = self.mime2desktop.get(mime, None)
-        if app and app in s:
+        if s and app in s:
             s.remove(app)
 
-    def get_default_apps(self, mimetype):
+    def get_default_apps(self, mimetype: str) -> List[str]:
         return self.default_mime2desktop.get(mimetype, [])
 
-    def get_associations(self, mimetype):
+    def get_associations(self, mimetype: str) -> List[str]:
         return list(self.mime2desktop.get(mimetype, []))
 
 

@@ -31,7 +31,7 @@ from dirtoo.util import expand_directories
 logger = logging.getLogger(__name__)
 
 
-def parse_args(args: List[str]) -> argparse.Namespace:
+def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Display files graphically")
     parser.add_argument("FILE", nargs='*')
     parser.add_argument("-t", "--timespace", action='store_true',
@@ -46,11 +46,11 @@ def parse_args(args: List[str]) -> argparse.Namespace:
                         help="Print lots of debugging output")
     parser.add_argument("-p", "--profile", action='store_true', default=False,
                         help="Print profiling information")
-    return parser.parse_args(args)
+    return parser.parse_args(argv[1:])
 
 
 def main(argv: List[str]) -> None:
-    args = parse_args(argv[1:])
+    args = parse_args(argv)
 
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)

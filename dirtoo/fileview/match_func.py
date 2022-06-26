@@ -16,6 +16,7 @@
 
 
 from typing import TYPE_CHECKING, Callable, Any
+from abc import ABC, abstractmethod
 
 import logging
 import random
@@ -34,10 +35,11 @@ logger = logging.getLogger(__name__)
 CompareCallable = Callable[[Any, Any], bool]
 
 
-class MatchFunc:
+class MatchFunc(ABC):
 
+    @abstractmethod
     def __call__(self, fileinfo: 'FileInfo') -> bool:
-        assert False, "MatchFunc.__call__() not implemented"
+        pass
 
     def cost(self) -> float:
         return 1

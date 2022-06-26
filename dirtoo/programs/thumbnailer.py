@@ -29,7 +29,7 @@ from dirtoo.dbus_thumbnailer import DBusThumbnailer, DBusThumbnailerListener
 from dirtoo.dbus_thumbnail_cache import DBusThumbnailCache
 
 
-def parse_args(args: List[str]) -> argparse.Namespace:
+def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Make thumbnails for files")
     parser.add_argument("FILE", nargs='*')
     parser.add_argument('-f', '--flavor', metavar="FLAVOR", type=str, default="all",
@@ -50,12 +50,12 @@ def parse_args(args: List[str]) -> argparse.Namespace:
                         help="List supported URI types")
     parser.add_argument('-S', '--list-schedulers', action='store_true', default=False,
                         help="List supported schedulers")
-    return parser.parse_args(args)
+    return parser.parse_args(argv[1:])
 
 
 class ThumbnailerProgressListener(DBusThumbnailerListener):
 
-    def __init__(self, app, verbose: bool) -> None:
+    def __init__(self, app: QCoreApplication, verbose: bool) -> None:
         super().__init__()
 
         self.app = app
@@ -104,8 +104,8 @@ def request_thumbnails(thumbnailer, paths, flavor, recursive):
         thumbnailer.queue(paths, flavor)
 
 
-def main(argv):
-    args = parse_args(argv[1:])
+def main(argv: List[str]) -> int:
+    args = parse_args(argv)
 
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     app = QCoreApplication([])
@@ -153,7 +153,7 @@ def main(argv):
     return rc
 
 
-def main_entrypoint():
+def main_entrypoint() -> None:
     exit(main(sys.argv))
 
 

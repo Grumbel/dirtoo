@@ -42,12 +42,12 @@ from dirtoo.fileview.transfer_request_dialog import TransferRequestDialog
 logger = logging.getLogger(__name__)
 
 
-def parse_args(args: List[str]) -> argparse.Namespace:
+def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Test GUI Widgets")
     parser.add_argument("DIALOG", nargs='?')
     parser.add_argument("-l", "--list", action='store_true', default=False,
                         help="List available dialogs")
-    return parser.parse_args(args)
+    return parser.parse_args(argv[1:])
 
 
 def make_transfer_request_dialog() -> TransferRequestDialog:
@@ -131,7 +131,7 @@ def make_transfer_dialog() -> TransferDialog:
 def main(argv: List[str]) -> None:
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-    args = parse_args(argv[1:])
+    args = parse_args(argv)
     app = QApplication([])  # noqa: F841
 
     dialog_spec = args.DIALOG

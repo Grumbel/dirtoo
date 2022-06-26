@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Callable, Optional, Tuple, Any, Dict
+from typing import List, Callable, Optional, Tuple, Any, Dict, Union
 
 
 import datetime
@@ -30,6 +30,7 @@ from dirtoo.fileview.filter_expr_parser import CommandExpr
 from dirtoo.fuzzy import fuzzy
 from dirtoo.util import is_glob_pattern
 from dirtoo.fileview.match_func import (
+    MatchFunc,
     FalseMatchFunc,
     ExcludeMatchFunc,
     RegexMatchFunc,
@@ -82,11 +83,10 @@ class MatchFuncFactory:
         self._docs: List[Tuple[List[str], str]] = []
         self._register_defaults()
 
-    def get_docs(self):
+    def get_docs(self) -> List[Tuple[List[str], str]]:
         return self._docs
 
-    def register_function(self, aliases: List[str], func: Callable,
-                          doc=Optional[str]):
+    def register_function(self, aliases: List[str], func: Callable, doc: Optional[str]) -> None:
         self._docs.append((aliases, doc))
 
         for alias in aliases:
@@ -95,7 +95,7 @@ class MatchFuncFactory:
 
             self._functions[alias] = func
 
-    def make_match_func(self, child):
+    def make_match_func(self, child: Union[str, CommandExpr]) -> MatchFunc:
         if isinstance(child, str):
             # If the pattern doesn't contain special characters
             # perform a basic substring search instead of a glob
@@ -114,7 +114,7 @@ class MatchFuncFactory:
         else:
             assert False, "unknown child: {}".format(child)
 
-    def _register_defaults(self):
+    def _register_defaults(self) -> None:
         self.register_function(["charset", "encoding"], self.make_charset,
                                """\
                                {CHARSET}
@@ -348,13 +348,13 @@ class MatchFuncFactory:
                                Example: 'width:=640'
                                """)
 
-    def make_glob(self, argument):
+    def make_glob(self, argument: str) -> GlobMatchFunc:
         return GlobMatchFunc(argument, case_sensitive=False)
 
-    def make_Glob(self, argument):
+    def make_Glob(self, argument: str) -> GlobMatchFunc:
         return GlobMatchFunc(argument, case_sensitive=True)
 
-    def make_type(self, argument):
+    def make_type(self, argument: str) -> MatchFunc:
         if argument == "video":
             return RegexMatchFunc(file_type.VIDEO_REGEX, re.IGNORECASE)
         elif argument == "image":
@@ -369,10 +369,10 @@ class MatchFuncFactory:
             logger.error("unknown type: %s", argument)
             return FalseMatchFunc()
 
-    def make_fuzzy(self, argument):
+    def make_fuzzy(self, argument: str) -> FuzzyMatchFunc:
         return FuzzyMatchFunc(argument)
 
-    def make_date(self, argument):
+    def make_date(self, argument: str) -> MatchFunc:
         if argument == "today":
             return DateOpMatchFunc(datetime.date.today().strftime("%Y-%m-%d"),
                                    operator.ge)
@@ -383,18 +383,18 @@ class MatchFuncFactory:
                 op, rest = parse_op(argument)
                 return DateOpMatchFunc(rest, op)
 
-    def make_weekday(self, argument):
+    def make_weekday(self, argument: str) -> MatchFunc:
         op, rest = parse_op(argument)
         return WeekdayMatchFunc(rest, op)
 
-    def make_time(self, argument):
+    def make_time(self, argument: str) -> MatchFunc:
         if is_glob_pattern(argument):
             return TimeMatchFunc(argument)
         else:
             op, rest = parse_op(argument)
             return TimeOpMatchFunc(rest, op)
 
-    def make_charset(self, argument):
+    def make_charset(self, argument: str) -> MatchFunc:
         try:
             "".encode(argument)  # test if argument is a valid charset
             return CharsetMatchFunc(argument)
@@ -402,7 +402,7 @@ class MatchFuncFactory:
             logger.error("unknown charset in command: %s: %s", argument, err)
             return FalseMatchFunc()
 
-    def make_contains(self, argument):
+    def make_contains(self, argument: str) -> MatchFunc:
         needle = argument.lower()
 
         def line_match_func(line, needle=needle):
@@ -410,7 +410,7 @@ class MatchFuncFactory:
 
         return ContainsMatchFunc(line_match_func)
 
-    def make_Contains(self, argument):
+    def make_Contains(self, argument: str) -> MatchFunc:
         needle = argument
 
         def line_match_func(line, needle=needle):
@@ -418,7 +418,7 @@ class MatchFuncFactory:
 
         return ContainsMatchFunc(line_match_func)
 
-    def make_contains_regex(self, argument):
+    def make_contains_regex(self, argument: str) -> MatchFunc:
         rx = re.compile(argument, re.IGNORECASE)
 
         def line_match_func(line, rx=rx):
@@ -426,7 +426,7 @@ class MatchFuncFactory:
 
         return ContainsMatchFunc(line_match_func)
 
-    def make_Contains_Regex(self, argument):
+    def make_Contains_Regex(self, argument: str) -> MatchFunc:
         rx = re.compile(argument)
 
         def line_match_func(line, rx=rx):
@@ -434,7 +434,7 @@ class MatchFuncFactory:
 
         return ContainsMatchFunc(line_match_func)
 
-    def make_contains_fuzzy(self, argument):
+    def make_contains_fuzzy(self, argument: str) -> MatchFunc:
         needle = argument
         n = 3
         threshold = 0.5
@@ -444,24 +444,24 @@ class MatchFuncFactory:
 
         return ContainsMatchFunc(line_match_func)
 
-    def make_regex(self, argument):
+    def make_regex(self, argument: str) -> MatchFunc:
         return RegexMatchFunc(argument, re.IGNORECASE)
 
-    def make_Regex(self, argument):
+    def make_Regex(self, argument: str) -> MatchFunc:
         return RegexMatchFunc(argument, 0)
 
-    def make_length(self, argument):
+    def make_length(self, argument: str) -> MatchFunc:
         op, rest = parse_op(argument)
         return LengthMatchFunc(int(rest), op)
 
-    def make_size(self, argument):
+    def make_size(self, argument: str) -> MatchFunc:
         op, rest = parse_op(argument)
         return SizeMatchFunc(bytefmt.dehumanize(rest), op)
 
-    def make_random(self, argument):
+    def make_random(self, argument: str) -> MatchFunc:
         return RandomMatchFunc(float(argument))
 
-    def make_duration(self, argument):
+    def make_duration(self, argument: str) -> MatchFunc:
         op, rest = parse_op(argument)
         seconds = duration.dehumanize(rest)
 
@@ -471,23 +471,23 @@ class MatchFuncFactory:
         else:
             return MetadataMatchFunc("duration", float, 1000 * seconds, op)
 
-    def make_width(self, argument):
+    def make_width(self, argument: str) -> MatchFunc:
         op, rest = parse_op(argument)
         return MetadataMatchFunc("width", float, float(rest), op)
 
-    def make_height(self, argument):
+    def make_height(self, argument: str) -> MatchFunc:
         op, rest = parse_op(argument)
         return MetadataMatchFunc("height", float, float(rest), op)
 
-    def make_framerate(self, argument):
+    def make_framerate(self, argument: str) -> MatchFunc:
         op, rest = parse_op(argument)
         return MetadataMatchFunc("framerate", float, float(rest), op)
 
-    def make_pages(self, argument):
+    def make_pages(self, argument: str) -> MatchFunc:
         op, rest = parse_op(argument)
         return MetadataMatchFunc("pages", int, int(rest), op)
 
-    def make_filecount(self, argument):
+    def make_filecount(self, argument: str) -> MatchFunc:
         op, rest = parse_op(argument)
         return MetadataMatchFunc("file_count", int, int(rest), op)
 

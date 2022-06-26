@@ -21,7 +21,6 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QGraphicsItem
 
 from dirtoo.fileview.layout import RootLayout, HBoxLayout, TileLayout, ItemLayout, VSpacer
-from dirtoo.file_info import FileInfo
 from dirtoo.fileview.file_item import FileItem
 
 
@@ -32,8 +31,8 @@ class LayoutBuilder:
         self._style = style
         self._show_filtered = False
 
-    def _group_items(self, items):
-        groups: Dict[Hashable, List[FileInfo]] = {}
+    def _group_items(self, items: List[FileItem]) -> Dict[Hashable, List[FileItem]]:
+        groups: Dict[Hashable, List[FileItem]] = {}
         for item in items:
             if item.fileinfo.group not in groups:
                 groups[item.fileinfo.group] = []
@@ -46,12 +45,12 @@ class LayoutBuilder:
         group_title.set_item(text_item)
         return group_title
 
-    def _build_tile_grid(self, items: List[QGraphicsItem], group) -> TileLayout:
+    def _build_tile_grid(self, items: List[QGraphicsItem], group: bool) -> TileLayout:
         tile_layout = TileLayout(self._style, group=group)
         tile_layout.set_items(items)
         return tile_layout
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         # FileItem's are recycled between layouts
         for item in self._scene.items():
             if not isinstance(item, FileItem):

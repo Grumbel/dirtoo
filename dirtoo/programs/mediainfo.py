@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 import argparse
 import errno
 import os
@@ -27,7 +29,7 @@ from dirtoo.mediainfo import MediaInfo
 from dirtoo.expr import Parser, Context
 
 
-def parse_args():
+def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Wrapper around MediaInfo")
     parser.add_argument('PATH', action='store', nargs='+',
                         help='Files to scan')
@@ -66,7 +68,7 @@ def format_output(mediainfo: MediaInfo, fmt_str: str):
             sys.stdout.write(format(value, format_spec))
 
 
-def main():
+def main() -> None:
     args = parse_args()
 
     fmt = ("{hours:02d}h:{minutes:02d}m:{seconds:02d}s  {filesize:>9}  "

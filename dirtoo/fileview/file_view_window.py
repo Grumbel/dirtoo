@@ -15,13 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, List
 
 import logging
 
 from pkg_resources import resource_filename
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QKeySequence, QIcon, QCursor, QMovie
+from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtGui import QKeySequence, QIcon, QCursor, QMovie, QCloseEvent
 from PyQt5.QtWidgets import (
     QMenu,
     QHBoxLayout,
@@ -83,18 +83,18 @@ class FileViewWindow(QMainWindow):
 
         self.addAction(self.actions.rename)
 
-    def __del__(self):
+    def __del__(self) -> None:
         logger.debug("FileViewWindow.__del__")
 
-    def closeEvent(self, ev):
+    def closeEvent(self, ev: QCloseEvent) -> None:
         self.controller.on_exit()
 
-    def make_shortcut(self):
+    def make_shortcut(self) -> None:
         shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_L), self)
         shortcut.setContext(Qt.WindowShortcut)
         shortcut.activated.connect(self.controller.show_location_toolbar)
 
-        def show_filter():
+        def show_filter() -> None:
             self.file_filter.setFocus(Qt.ShortcutFocusReason)
             self.filter_toolbar.show()
 
@@ -136,7 +136,7 @@ class FileViewWindow(QMainWindow):
         shortcut.setContext(Qt.WindowShortcut)
         shortcut.activated.connect(lambda: self.file_view.scroll_by(0, self.file_view.viewport().height()))
 
-    def make_window(self):
+    def make_window(self) -> None:
         self.setWindowTitle("dt-fileview")
         self.setWindowIcon(QIcon(resource_filename("dirtoo", "fileview/dt-fileview.svg")))
         self.vbox = QVBoxLayout()
@@ -165,10 +165,10 @@ class FileViewWindow(QMainWindow):
         vbox_widget.setLayout(self.vbox)
         self.setCentralWidget(vbox_widget)
 
-    def hide_filter(self):
+    def hide_filter(self) -> None:
         self.filter_toolbar.hide()
 
-    def make_filter_toolbar(self):
+    def make_filter_toolbar(self) -> None:
         hbox = QHBoxLayout()
 
         form = QFormLayout()
@@ -191,7 +191,7 @@ class FileViewWindow(QMainWindow):
         self.addToolBar(Qt.BottomToolBarArea, self.filter_toolbar)
         self.filter_toolbar.hide()
 
-    def make_search_toolbar(self):
+    def make_search_toolbar(self) -> None:
         hbox = QHBoxLayout()
 
         form = QFormLayout()
@@ -214,14 +214,14 @@ class FileViewWindow(QMainWindow):
         self.addToolBar(Qt.TopToolBarArea, self.search_toolbar)
         self.search_toolbar.hide()
 
-    def make_location_toolbar(self):
+    def make_location_toolbar(self) -> None:
         self.location_toolbar = self.addToolBar("Location")
         widget = QWidget()
         form = QFormLayout()
         label = Label("Location:")
         label.clicked.connect(self.controller.show_location_toolbar)
 
-        def show_location_menu(pos):
+        def show_location_menu(pos: QPoint) -> None:
             self.controller.on_context_menu(label.mapToGlobal(pos))
 
         label.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -238,7 +238,7 @@ class FileViewWindow(QMainWindow):
 
         self.addToolBarBreak(Qt.TopToolBarArea)
 
-    def make_group_menu(self):
+    def make_group_menu(self) -> QMenu:
         menu = QMenu("Group Options")
         menu.addAction(self.actions.group_by_none)
         menu.addAction(self.actions.group_by_day)
@@ -246,7 +246,7 @@ class FileViewWindow(QMainWindow):
         menu.addAction(self.actions.group_by_duration)
         return menu
 
-    def make_sort_menu(self):
+    def make_sort_menu(self) -> QMenu:
         menu = QMenu("Sort Options")
         menu.addSeparator().setText("Sort Options")
         menu.addAction(self.actions.sort_directories_first)
@@ -266,7 +266,7 @@ class FileViewWindow(QMainWindow):
         menu.addAction(self.actions.sort_by_random)
         return menu
 
-    def make_view_menu(self):
+    def make_view_menu(self) -> QMenu:
         menu = QMenu("View Options")
         menu.addSeparator().setText("View Options")
         menu.addAction(self.actions.show_abspath)
@@ -275,7 +275,7 @@ class FileViewWindow(QMainWindow):
         menu.addAction(self.actions.toggle_timegaps)
         return menu
 
-    def make_menubar(self):
+    def make_menubar(self) -> None:
         self.menubar = self.menuBar()
         file_menu = self.menubar.addMenu('&File')
         file_menu.addAction(self.actions.new_window)
@@ -330,10 +330,10 @@ class FileViewWindow(QMainWindow):
         self.bookmarks_menu = Menu('&Bookmarks')
         self.menubar.addMenu(self.bookmarks_menu)
 
-        def create_bookmarks_menu():
+        def create_bookmarks_menu() -> None:
             bookmarks = self.controller.app.bookmarks
 
-            entries = bookmarks.get_entries()
+            entries: List[Location] = bookmarks.get_entries()
 
             self.bookmarks_menu.clear()
 
@@ -373,7 +373,7 @@ class FileViewWindow(QMainWindow):
         self.history_menu = Menu('&History')
         self.menubar.addMenu(self.history_menu)
 
-        def create_history_menu():
+        def create_history_menu() -> None:
             history = self.controller.app.location_history
 
             self.history_menu.clear()
@@ -396,7 +396,7 @@ class FileViewWindow(QMainWindow):
         help_menu = self.menubar.addMenu('&Help')
         help_menu.addAction(self.actions.about)
 
-    def make_toolbar(self):
+    def make_toolbar(self) -> None:
         self.toolbar = self.addToolBar("FileView")
 
         button = ToolButton()
@@ -477,36 +477,36 @@ class FileViewWindow(QMainWindow):
         self.loading_label = QLabel()
         self.toolbar.addWidget(self.loading_label)
 
-    def show_loading(self):
+    def show_loading(self) -> None:
         self.show_info("Loading...")
         self.loading_label.setMovie(self.loading_movie)
         self.loading_movie.start()
         self.loading_label.show()
 
-    def hide_loading(self):
+    def hide_loading(self) -> None:
         self.show_info("")
         self.loading_movie.stop()
         self.loading_label.setMovie(None)
         self.loading_label.setVisible(False)
 
-    def zoom_in(self):
+    def zoom_in(self) -> None:
         self.file_view.zoom_in()
 
-    def zoom_out(self):
+    def zoom_out(self) -> None:
         self.file_view.zoom_out()
 
-    def set_location(self, location: Location):
+    def set_location(self, location: Location) -> None:
         self.location_lineedit.set_location(location)
         self.location_buttonbar.set_location(location)
         self.setWindowTitle("{} - dt-fileview".format(location.as_human()))
 
-    def set_file_list(self):
+    def set_file_list(self) -> None:
         self.location_lineedit.set_unused_text()
 
-    def show_info(self, text):
+    def show_info(self, text) -> None:
         self.info.setText("  " + text)
 
-    def show_current_filename(self, filename):
+    def show_current_filename(self, filename: str) -> None:
         # FIXME: this causes quite substantial keyboard lag when
         # scrolling with PageUp/Down
         self.status_bar.showMessage(filename)

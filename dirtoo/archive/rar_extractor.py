@@ -61,7 +61,7 @@ class RarExtractor(Extractor):
 
         self._output_state = State.HEADER
 
-    def interrupt(self):
+    def interrupt(self) -> None:
         if self._process is not None:
             self._process.terminate()
             # self._process.kill()
@@ -99,7 +99,9 @@ class RarExtractor(Extractor):
         self._process.errorOccurred.connect(self._on_error_occured)
         self._process.finished.connect(self._on_process_finished)
 
-    def _on_process_finished(self, exit_code, exit_status):
+    def _on_process_finished(self, exit_code: int, exit_status: QProcess.ExitStatus) -> None:
+        assert self._process is not None
+
         self._process.setCurrentReadChannel(QProcess.StandardOutput)
         for line in os.fsdecode(self._process.readAll().data()).splitlines():
             self._process_stdout(line)
@@ -120,11 +122,11 @@ class RarExtractor(Extractor):
             logger.debug("RarExtractorWorker: finished successfully: %s  %s", exit_code, exit_status)
             self._result = ExtractorResult.success(message)
 
-    def _on_error_occured(self, error) -> None:
+    def _on_error_occured(self, error: QProcess.ProcessError) -> None:
         logger.error("RarExtractorWorker: an error occured: %s", error)
         self._result = ExtractorResult.failure("RarExtractorWorker: an error occured: {}".format(error))
 
-    def _process_stdout(self, line):
+    def _process_stdout(self, line: str) -> None:
         # print("stdout:", repr(line))
 
         if self._output_state == State.HEADER:
@@ -150,7 +152,7 @@ class RarExtractor(Extractor):
             # self._errors.append(line)
             pass
 
-    def _process_stderr(self, line):
+    def _process_stderr(self, line: str) -> None:
         # print("stderr:", repr(line))
         if line:
             self._errors.append(line)

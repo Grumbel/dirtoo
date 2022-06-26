@@ -222,7 +222,7 @@ class FileCollection(QObject):
 
             self._fileinfos.add(fileinfo)
 
-    def verify(self):
+    def verify(self) -> None:
         for item in self._fileinfos:
             print(item)
         print("------------------")

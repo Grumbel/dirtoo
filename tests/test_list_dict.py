@@ -71,5 +71,4 @@ class ListDictTestCase(unittest.TestCase):
         self.assertEqual(len(listdict), 7)
 
 
-
 # EOF #

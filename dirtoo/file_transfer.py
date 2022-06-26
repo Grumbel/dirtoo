@@ -207,7 +207,7 @@ class Progress(ABC):
 
 class ConsoleProgress(Progress):
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.verbose: bool = False
 
     def copy_file(self, src: str, dst: str, resolution: ConflictResolution) -> None:

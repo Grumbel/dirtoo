@@ -23,7 +23,7 @@ import argparse
 from dirtoo.fuzzy import fuzzy
 
 
-def parse_args(args: List[str]) -> argparse.Namespace:
+def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Seach for fuzzily file content")
     parser.add_argument("QUERY", nargs=1)
     parser.add_argument("FILE", nargs='*')
@@ -31,14 +31,14 @@ def parse_args(args: List[str]) -> argparse.Namespace:
                         help="Size of the N-grams")
     parser.add_argument("-n", "--line-number", action='store_true', default=False,
                         help="Prefix the output with line numbers")
-    parser.add_argument("-t", "--threshold", metavar="INT", type=float, default=0.5,
+    parser.add_argument("-t", "--threshold", metavar="FLOAT", type=float, default=0.5,
                         help="Threshold for fuzzy matched")
-    return parser.parse_args(args)
+    return parser.parse_args(argv[1:])
 
 
 def process_stream(query: str, filename: Optional[str], fin: IO,
-                   fuzzy_options,
-                   args) -> None:
+                   fuzzy_options: 'FuzzyOptions',
+                   args: argparse.Namespace) -> None:
     for idx, line in enumerate(fin):
         line_no = idx + 1
 
@@ -53,13 +53,13 @@ def process_stream(query: str, filename: Optional[str], fin: IO,
 
 class FuzzyOptions:
 
-    def __init__(self, n, threshold):
+    def __init__(self, n: int, threshold: float) -> None:
         self.n = n
         self.threshold = threshold
 
 
 def main(argv: List[str]) -> None:
-    args = parse_args(argv[1:])
+    args = parse_args(argv)
 
     query = args.QUERY[0]
     files = args.FILE

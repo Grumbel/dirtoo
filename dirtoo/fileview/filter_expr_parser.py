@@ -24,12 +24,17 @@ from dirtoo.fileview.match_func import MatchFunc, AndMatchFunc, OrMatchFunc, Exc
 logger = logging.getLogger(__name__)
 
 
+class Expr:
+
+    pass
+
+
 class IncludeExpr:
 
     def __init__(self, s: str, loc: int, toks: List[Any]) -> None:
         self.child = toks[0]
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Include({self.child})"
 
 
@@ -38,7 +43,7 @@ class ExcludeExpr:
     def __init__(self, s: str, loc: int, toks: List[Any]) -> None:
         self.child = toks[0]
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Exclude({self.child})"
 
 
@@ -48,7 +53,7 @@ class CommandExpr:
         self.command = toks[0]
         self.arg = toks[1]
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Command({self.command}:{self.arg})"
 
 
@@ -57,7 +62,7 @@ class OrKeywordExpr:
     def __init__(self, s: str, loc: int, toks: List[Any]) -> None:
         self.keyword = toks[0].upper()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "OR"
 
 
@@ -66,7 +71,7 @@ class AndKeywordExpr:
     def __init__(self, s: str, loc: int, toks: List[Any]) -> None:
         self.keyword = toks[0].upper()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "AND"
 
 

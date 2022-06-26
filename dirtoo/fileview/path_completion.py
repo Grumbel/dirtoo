@@ -33,12 +33,12 @@ class PathCompletionWorker(Worker):
 
         self._request_interrupted = False
 
-    def _on_request_completions(self, text) -> None:
+    def _on_request_completions(self, text: str) -> None:
         self._request_interrupted = False
         longest, candidates = self.complete(text)
         self.sig_completions_ready.emit(longest, candidates)
 
-    def candidates(self, text) -> List[str]:
+    def candidates(self, text: str) -> List[str]:
         dirname = os.path.dirname(text)
         basename = os.path.basename(text)
 
@@ -78,12 +78,13 @@ class PathCompletion(WorkerThread):
         assert self._worker is not None
         self.sig_request_completions.connect(self._worker._on_request_completions)
 
-    def request_completions(self, text) -> None:
+    def request_completions(self, text: str) -> None:
         self._request_interrupted = True
         self.sig_request_completions.emit(text)
 
     @property
-    def sig_completions_ready(self):
+    def sig_completions_ready(self) -> pyqtSignal:
+        assert self._worker is not None
         return self._worker.sig_completions_ready
 
 

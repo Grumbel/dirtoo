@@ -24,14 +24,14 @@ import sys
 logger = logging.getLogger(__name__)
 
 
-def parse_args(args: List[str]) -> argparse.Namespace:
+def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Remove trailing newline")
     parser.add_argument("FILE", nargs='*')
-    return parser.parse_args(args)
+    return parser.parse_args(argv[1:])
 
 
 def main(argv: List[str]) -> None:
-    args = parse_args(argv[1:])
+    args = parse_args(argv)
 
     content = ""
     if not args.FILE:
@@ -49,7 +49,7 @@ def main(argv: List[str]) -> None:
     sys.stdout.write(content)
 
 
-def main_entrypoint():
+def main_entrypoint() -> None:
     main(sys.argv)
 
 

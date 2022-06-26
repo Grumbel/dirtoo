@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 import os
 import argparse
 import sys
@@ -26,7 +28,7 @@ import sys
 # filename: ~200 chars?
 
 
-def check_utf8(text, verbose):
+def check_utf8(text: str, verbose: bool) -> None:
     try:
         text.encode("utf-8")
         valid_utf8 = True
@@ -44,27 +46,27 @@ def check_utf8(text, verbose):
         sys.stdout.buffer.write(b"\n")
 
 
-def check_length(text, verbose):
+def check_length(text: str, verbose: bool) -> None:
     if len(text) > 200:
         sys.stdout.buffer.write(b"LENGTH FAIL ")
         sys.stdout.buffer.write(os.fsencode(text))
         sys.stdout.buffer.write(b"\n")
 
 
-def check_newline(text, verbose):
+def check_newline(text: str, verbose: bool) -> None:
     if "\n" in text:
         sys.stdout.buffer.write(b"NEWLINE FAIL ")
         sys.stdout.buffer.write(os.fsencode(text))
         sys.stdout.buffer.write(b"\n")
 
 
-def check_file(text, verbose):
+def check_file(text: str, verbose: bool) -> None:
     check_length(text, verbose)
     check_utf8(text, verbose)
     check_newline(text, verbose)
 
 
-def check_utf8_path(path, recursive, verbose):
+def check_utf8_path(path: str, recursive: bool, verbose: bool) -> None:
     if recursive and os.path.isdir(path):
         for root, dirs, files in os.walk(path):
             if len(dirs) > 1000:
@@ -81,7 +83,7 @@ def check_utf8_path(path, recursive, verbose):
         check_file(path, verbose)
 
 
-def parse_args():
+def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Check filenames for invalid UTF-8")
     parser.add_argument('PATH', action='store', nargs='+',
                         help='File or directories to check')
@@ -90,11 +92,11 @@ def parse_args():
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help="Be verbose")
     # option for absolute path
-    return parser.parse_args()
+    return parser.parse_args(argv[1:])
 
 
-def main():
-    args = parse_args()
+def main() -> None:
+    args = parse_args(sys.argv)
 
     for p in args.PATH:
         check_utf8_path(p, args.recursive, args.verbose)

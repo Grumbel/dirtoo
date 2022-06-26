@@ -42,7 +42,7 @@ class MetaDataCollectorWorker(QObject):
         self.vfs = vfs
         self._close = False
 
-    def init(self):
+    def init(self) -> None:
         self.mimedb = QMimeDatabase()
         self.cache = MetaDataCache()
 
@@ -134,7 +134,7 @@ class MetaDataCollector(QObject):
 
         self._thread.start()
 
-    def close(self):
+    def close(self) -> None:
         self._worker._close = True
         self._thread.quit()
         self._thread.wait()
@@ -145,7 +145,7 @@ class MetaDataCollector(QObject):
     def request_delete_metadatas(self, locations: List[Location]) -> None:
         self.sig_delete_metadatas.emit(locations)
 
-    def _on_metadata_ready(self, location: Location, metadata: Any):
+    def _on_metadata_ready(self, location: Location, metadata: Any) -> None:
         self.sig_metadata_ready.emit(location, metadata)
 
 

@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Tuple
+
 import logging
 from datetime import datetime
 
@@ -289,7 +291,7 @@ class FileItemRenderer:
             if (self.fileinfo.is_archive() or self.fileinfo.isdir()) and not self.hovering:
                 self.paint_icon(painter, self.icon)
 
-    def make_text(self):
+    def make_text(self) -> Tuple[str, str, str, str]:
         top_left_text = ""
         top_right_text = ""
         bottom_left_text = ""

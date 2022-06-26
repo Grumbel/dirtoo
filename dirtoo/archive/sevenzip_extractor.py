@@ -66,7 +66,7 @@ class SevenZipExtractor(Extractor):
         self._error_summary = False
         self._result: Optional[ExtractorResult] = None
 
-    def interrupt(self):
+    def interrupt(self) -> None:
         if self._process is not None:
             self._process.terminate()
             # self._process.waitForBytesWritten(int msecs = 30000)
@@ -102,7 +102,7 @@ class SevenZipExtractor(Extractor):
         self._process.start()
         self._process.closeWriteChannel()
 
-    def _on_process_finished(self, exit_code, exit_status):
+    def _on_process_finished(self, exit_code: int, exit_status: QProcess.ExitStatus) -> None:
         self._process.setCurrentReadChannel(QProcess.StandardOutput)
         for line in os.fsdecode(self._process.readAll().data()).splitlines():
             self._process_stdout(line)
@@ -126,7 +126,7 @@ class SevenZipExtractor(Extractor):
             logger.debug("SevenZipExtractorWorker: finished successfully: %s  %s", exit_code, exit_status)
             self._result = ExtractorResult.success()
 
-    def _process_stdout(self, line):
+    def _process_stdout(self, line: str) -> None:
         if line.startswith("- "):
             entry = line[2:]
 
@@ -136,7 +136,7 @@ class SevenZipExtractor(Extractor):
 
             self.sig_entry_extracted.emit(entry, os.path.join(self._outdir, entry))
 
-    def _process_stderr(self, line):
+    def _process_stderr(self, line: str) -> None:
         if line == "ERRORS:":
             self._error_summary = True
         else:

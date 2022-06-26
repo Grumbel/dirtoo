@@ -48,12 +48,12 @@ class Extractor(QObject):
 
     @property
     @abstractmethod
-    def sig_entry_extracted(self):
+    def sig_entry_extracted(self) -> None:
         pass
 
     @property
     @abstractmethod
-    def sig_finished(self):
+    def sig_finished(self) -> None:
         pass
 
     @abstractmethod

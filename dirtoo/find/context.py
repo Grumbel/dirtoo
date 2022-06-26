@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Callable, Dict, Optional
+
 import os
 import time
 import shlex
@@ -37,9 +39,9 @@ from dirtoo.find.util import replace_item, size_in_bytes, name_match
 class Context:  # pylint: disable=R0904,R0915
 
     def __init__(self) -> None:
-        self.current_file = None
+        self.current_file: Optional[str] = None
 
-    def get_hash(self):
+    def get_hash(self) -> Dict[str, Callable]:
         return {
             '_': self.basename,
             'p': self.fullpath,
@@ -131,16 +133,20 @@ class Context:  # pylint: disable=R0904,R0915
             'md5': self.md5,
         }
 
-    def random(self, p=0.5):
+    def random(self, p: float = 0.5) -> bool:
         return random.random() < p
 
-    def basename(self):
+    def basename(self) -> str:
+        assert self.current_file is not None
         return os.path.basename(self.current_file)
 
-    def fullpath(self):
+    def fullpath(self) -> str:
+        assert self.current_file is not None
         return self.current_file
 
-    def qfullpath(self):
+    def qfullpath(self) -> str:
+        assert self.current_file is not None
+
         def quote_or_pad(text: str) -> str:
             result = shlex.quote(text)
             if result[0] == "'":
@@ -150,11 +156,15 @@ class Context:  # pylint: disable=R0904,R0915
 
         return quote_or_pad(self.current_file)
 
-    def ext(self):
+    def ext(self) -> str:
+        assert self.current_file is not None
+
         _, ext = os.path.splitext(self.current_file)
         return ext
 
-    def sha1(self):
+    def sha1(self) -> str:
+        assert self.current_file is not None
+
         sha1 = hashlib.sha1()
         with open(self.current_file, 'rb') as fin:
             data = fin.read(65536)
@@ -164,7 +174,9 @@ class Context:  # pylint: disable=R0904,R0915
 
         return sha1.hexdigest()
 
-    def md5(self):
+    def md5(self) -> str:
+        assert self.current_file is not None
+
         md5 = hashlib.md5()
         with open(self.current_file, 'rb') as fin:
             data = fin.read(65536)
@@ -174,27 +186,29 @@ class Context:  # pylint: disable=R0904,R0915
 
         return md5.hexdigest()
 
-    def age(self):
+    def age(self) -> int:
+        assert self.current_file is not None
+
         a = os.path.getmtime(self.current_file)
         b = time.time()
         return b - a
 
-    def iso(self, t=None):
+    def iso(self, t: Optional[int] = None) -> str:
         if t is None:
             t = self.mtime()
         return datetime.datetime.fromtimestamp(t).strftime("%F")
 
-    def time(self, t=None):
+    def time(self, t: Optional[int] = None) -> str:
         if t is None:
             t = self.mtime()
         return datetime.datetime.fromtimestamp(t).strftime("%H:%M")
 
-    def strftime(self, fmt, t=None):
+    def strftime(self, fmt: str, t: Optional[int] = None) -> str:
         if t is None:
             t = self.mtime()
         return datetime.datetime.fromtimestamp(t).strftime(fmt)
 
-    def stdout(self, exec_str):
+    def stdout(self, exec_str: str) -> str:
         cmd = shlex.split(exec_str)
 
         # FIXME: can't use {} inside format str: unexpected '{' in field name
@@ -202,54 +216,56 @@ class Context:  # pylint: disable=R0904,R0915
 
         return subprocess.check_output(cmd).decode('utf-8').strip()
 
-    def sec(self, s):
+    def sec(self, s: float) -> float:
         return s
 
-    def min(self, m):
+    def min(self, m: float) -> float:
         return m * 60
 
-    def hour(self, h):
+    def hour(self, h: float) -> float:
         return h * 60 * 60
 
-    def day(self, days):
+    def day(self, days: float) -> float:
         return days * 60 * 60 * 24
 
-    def week(self, weeks):
+    def week(self, weeks: float) -> float:
         return weeks * 60 * 60 * 24 * 7
 
-    def month(self, month):
+    def month(self, month: float) -> float:
         return month * 60 * 60 * 24 * 7 * 30.4368
 
-    def year(self, years):
+    def year(self, years: float) -> float:
         return years * 60 * 60 * 24 * 7 * 30.4368 * 12
 
-    def in_sec(self, sec):
+    def in_sec(self, sec: float) -> float:
         return sec
 
-    def in_mins(self, sec):
+    def in_mins(self, sec: float) -> float:
         return sec / 60
 
-    def in_hours(self, sec):
+    def in_hours(self, sec: float) -> float:
         return sec / 60 / 60
 
-    def in_days(self, sec):
+    def in_days(self, sec: float) -> float:
         return sec / 60 / 60 / 24
 
-    def in_weeks(self, sec):
+    def in_weeks(self, sec: float) -> float:
         return sec / 60 / 60 / 24 / 7
 
-    def in_month(self, sec):
+    def in_month(self, sec: float) -> float:
         return sec / 60 / 60 / 24 / 7 / 30.4368
 
-    def in_years(self, sec):
+    def in_years(self, sec: float) -> float:
         return sec / 60 / 60 / 24 / 7 / 30.4368 / 12
 
-    def daysago(self):
+    def daysago(self) -> float:
+        assert self.current_file is not None
+
         a = os.path.getmtime(self.current_file)
         b = time.time()
         return (b - a) / (60 * 60 * 24)
 
-    def sizehr(self, s=None, style="decimal", compact=False):
+    def sizehr(self, s: int = None, style: str = "decimal", compact: bool = False) -> str:
         """Returns size() formated a human readable string"""
 
         if s is None:
@@ -257,34 +273,34 @@ class Context:  # pylint: disable=R0904,R0915
 
         return bytefmt.humanize(s, style=style, compact=compact)
 
-    def size(self):
+    def size(self) -> int:
         return size_in_bytes(self.current_file)
 
-    def name(self, glob):
+    def name(self, glob: str) -> bool:
         return name_match(self.current_file, glob)
 
-    def regex(self, regex, path=None):
+    def regex(self, regex: str, path: Optional[str] = None) -> bool:
         if path is None:
             path = self.basename()
         return re.search(regex, path)
 
-    def iregex(self, regex, path=None):
+    def iregex(self, regex: str, path: Optional[str] = None) -> bool:
         if path is None:
             path = self.basename()
         return re.search(regex, path, flags=re.IGNORECASE)
 
-    def iname(self, glob):
+    def iname(self, glob: str) -> bool:
         return name_match(self.current_file.lower(), glob.lower())
 
-    def ngram(self, text, threshold=0.15):
+    def ngram(self, text: str, threshold: float = 0.15) -> bool:
         return ngram.NGram.compare(os.path.basename(self.current_file).lower(), text.lower()) >= threshold
 
-    def fuzzy(self, text, threshold=0.5, n=3):
+    def fuzzy(self, text: str, threshold: float = 0.5, n: int = 3) -> bool:
         neddle = text.lower()
         haystack = os.path.basename(self.current_file).lower()
         return fuzzy(neddle, haystack, n=n) >= threshold
 
-    def ascii(self):
+    def ascii(self) -> bool:
         filename = os.path.basename(self.current_file)
         try:
             filename.encode("ascii")
@@ -292,49 +308,63 @@ class Context:  # pylint: disable=R0904,R0915
             return False
         return True
 
-    def atime(self):
+    def atime(self) -> int:
+        assert self.current_file is not None
         return os.lstat(self.current_file).st_atime
 
-    def ctime(self):
+    def ctime(self) -> int:
+        assert self.current_file is not None
         return os.lstat(self.current_file).st_ctime
 
-    def mtime(self):
+    def mtime(self) -> int:
+        assert self.current_file is not None
         return os.lstat(self.current_file).st_mtime
 
-    def uid(self):
+    def uid(self) -> int:
         return os.lstat(self.current_file).st_uid
 
-    def gid(self):
+    def gid(self) -> int:
+        assert self.current_file is not None
         return os.lstat(self.current_file).st_gid
 
-    def owner(self):
+    def owner(self) -> str:
+        assert self.current_file is not None
         return pwd.getpwuid(os.lstat(self.current_file).st_uid).pw_name
 
-    def group(self):
+    def group(self) -> str:
+        assert self.current_file is not None
         return grp.getgrgid(os.lstat(self.current_file).st_gid).gr_name
 
-    def isblk(self):
+    def isblk(self) -> bool:
+        assert self.current_file is not None
         return stat.S_ISBLK(os.lstat(self.current_file).st_mode)
 
-    def islnk(self):
+    def islnk(self) -> bool:
+        assert self.current_file is not None
         return stat.S_ISLNK(os.lstat(self.current_file).st_mode)
 
-    def isdir(self):
+    def isdir(self) -> bool:
+        assert self.current_file is not None
         return stat.S_ISDIR(os.lstat(self.current_file).st_mode)
 
-    def ischr(self):
+    def ischr(self) -> bool:
+        assert self.current_file is not None
         return stat.S_ISCHR(os.lstat(self.current_file).st_mode)
 
-    def isfifo(self):
+    def isfifo(self) -> bool:
+        assert self.current_file is not None
         return stat.S_ISFIFO(os.lstat(self.current_file).st_mode)
 
-    def isreg(self):
+    def isreg(self) -> bool:
+        assert self.current_file is not None
         return stat.S_ISREG(os.lstat(self.current_file).st_mode)
 
-    def mode(self):
+    def mode(self) -> int:
+        assert self.current_file is not None
         return stat.S_IMODE(os.lstat(self.current_file).st_mode)
 
-    def modehr(self):  # pylint: disable=R0912
+    def modehr(self) -> str:  # pylint: disable=R0912
+        assert self.current_file is not None
         mode = os.lstat(self.current_file).st_mode
 
         s = ""
@@ -402,69 +432,70 @@ class Context:  # pylint: disable=R0904,R0915
 
         return s
 
-    def ino(self):
+    def ino(self) -> int:
+        assert self.current_file is not None
         return os.lstat(self.current_file).st_ino
 
-    def kB(self, s):  # noqa: N802
+    def kB(self, s: int) -> int:  # noqa: N802
         return s * 1000
 
-    def KiB(self, s):  # noqa: N802
+    def KiB(self, s: int) -> int:  # noqa: N802
         return s * 1024
 
-    def MB(self, s):  # noqa: N802
+    def MB(self, s: int) -> int:  # noqa: N802
         return s * 1000 ** 2
 
-    def MiB(self, s):  # noqa: N802
+    def MiB(self, s: int) -> int:  # noqa: N802
         return s * 1024 ** 2
 
-    def GB(self, s):  # noqa: N802
+    def GB(self, s: int) -> int:  # noqa: N802
         return s * 1000 ** 3
 
-    def GiB(self, s):  # noqa: N802
+    def GiB(self, s: int) -> int:  # noqa: N802
         return s * 1024 ** 3
 
-    def TB(self, s):  # noqa: N802
+    def TB(self, s: int) -> int:  # noqa: N802
         return s * 1000 ** 4
 
-    def TiB(self, s):  # noqa: N802
+    def TiB(self, s: int) -> int:  # noqa: N802
         return s * 1024 ** 4
 
-    def in_kB(self, s=None):  # noqa: N802
+    def in_kB(self, s: Optional[int] = None) -> float:  # noqa: N802
         if s is None:
             s = self.size()
         return s / 1000
 
-    def in_KiB(self, s=None):  # noqa: N802
+    def in_KiB(self, s: Optional[int] = None) -> float:  # noqa: N802
         if s is None:
             s = self.size()
         return s / 1024
 
-    def in_MB(self, s=None):  # noqa: N802
+    def in_MB(self, s: Optional[int] = None) -> float:  # noqa: N802
         if s is None:
             s = self.size()
         return s / 1000 ** 2
 
-    def in_MiB(self, s=None):  # noqa: N802
+    def in_MiB(self, s: Optional[int] = None) -> float:  # noqa: N802
         if s is None:
             s = self.size()
         return s / 1024 ** 2
 
-    def in_GB(self, s=None):  # noqa: N802
+    def in_GB(self, s: Optional[int] = None) -> float:  # noqa: N802
         if s is None:
             s = self.size()
         return s / 1000 ** 3
 
-    def in_GiB(self, s=None):  # noqa: N802
+    def in_GiB(self, s: Optional[int] = None) -> float:  # noqa: N802
         if s is None:
             s = self.size()
         return s / 1024 ** 3
 
-    def in_TB(self, s=None):  # noqa: N802
+    def in_TB(self, s: Optional[int] = None) -> float:  # noqa: N802
         if s is None:
             s = self.size()
         return s / 1000 ** 4
 
-    def in_TiB(self, s=None):  # noqa: N802
+    def in_TiB(self, s: Optional[int] = None) -> float:  # noqa: N802
         if s is None:
             s = self.size()
         return s / 1024 ** 4

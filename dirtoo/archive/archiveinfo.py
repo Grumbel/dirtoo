@@ -37,7 +37,7 @@ class ArchiveInfo:
 
         self.process_entries(entries)
 
-    def process_entries(self, entries):
+    def process_entries(self, entries: libarchive.read.ArchiveRead) -> None:
         for entry in entries:
             if entry.isdir:
                 self.process_dir(entry)
@@ -46,7 +46,7 @@ class ArchiveInfo:
             else:
                 pass  # ignore other file types for now
 
-    def process_file(self, entry):
+    def process_file(self, entry: libarchive.ArchiveEntry) -> None:
         path = str(entry)
         dirname = os.path.dirname(path)
         basename = os.path.basename(path)
@@ -58,17 +58,17 @@ class ArchiveInfo:
         self.file_count += 1
         self.total_size += entry.size
 
-    def process_dir(self, entry):
+    def process_dir(self, entry: libarchive.ArchiveEntry) -> None:
         self.process_dirname(str(entry))
 
-    def process_dirname(self, path):
+    def process_dirname(self, path: str) -> None:
         if path != "" and path != "/":
             path = os.path.normpath(path)
             while path != "":
                 self.directories.add(path)
                 path = os.path.dirname(path)
 
-    def print_summary(self):
+    def print_summary(self) -> None:
         print("  Directories ({}):".format(len(self.directories)))
         if len(self.directories) == 0:
             print("    .")

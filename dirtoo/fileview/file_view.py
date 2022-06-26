@@ -15,16 +15,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, List, Dict, Optional, Set
+from typing import TYPE_CHECKING, cast, List, Dict, Optional, Set
 
 import logging
 
 import itertools
 from collections import defaultdict
 
-from PyQt5.QtCore import Qt, QRectF
+from PyQt5.QtCore import Qt, QRectF, QTimerEvent
 from PyQt5.QtGui import (QBrush, QIcon, QColor, QPainter, QImage,
-                         QKeySequence, QContextMenuEvent)
+                         QKeySequence, QContextMenuEvent, QPaintEvent,
+                         QMouseEvent, QKeyEvent, QResizeEvent)
 from PyQt5.QtWidgets import QGraphicsView, QShortcut
 
 from dirtoo.dbus_thumbnailer import DBusThumbnailerError
@@ -110,12 +111,12 @@ class FileView(QGraphicsView):
         self._leap_widget = LeapWidget(self)
         self._leap_widget.sig_leap.connect(self.leap_to)
 
-        self._scroll_timer = None
-        self._is_scrolling = False
+        self._scroll_timer: Optional[int] = None
+        self._is_scrolling: bool = False
         self.verticalScrollBar().sliderReleased.connect(self._on_vertical_scrollbar_slider_released)
         self.verticalScrollBar().valueChanged.connect(self._on_vertical_scrollbar_slider_value_changed)
 
-    def __del__(self):
+    def __del__(self) -> None:
         logger.debug("FileView.__del__")
 
     def _on_vertical_scrollbar_slider_released(self) -> None:
@@ -146,7 +147,7 @@ class FileView(QGraphicsView):
     def is_scrolling(self) -> bool:
         return self._is_scrolling
 
-    def _on_reset(self):
+    def _on_reset(self) -> None:
         self._controller.hide_all()
 
     def prepare(self) -> None:
@@ -157,12 +158,12 @@ class FileView(QGraphicsView):
         self._controller._update_info()
 
     def cursor_move(self, dx: int, dy: int) -> None:
-        def best_item(items, rect):
+        def best_item(items: List[FileItem], rect: QRectF) -> FileItem:
             """Select the most top/left and fully visible item"""
-            def contains(item):
+            def contains(item: FileItem) -> bool:
                 r = QRectF(item.tile_rect)
                 r.moveTo(item.pos())
-                return rect.contains(r)
+                return cast(bool, rect.contains(r))
 
             items = sorted(items, key=lambda item: (not contains(item),
                                                     item.pos().x(),
@@ -171,7 +172,7 @@ class FileView(QGraphicsView):
 
         if self._cursor_item is None:
             rect = self.mapToScene(self.rect()).boundingRect()
-            items = [item for item in self._scene.items(rect) if isinstance(item, FileItem)]
+            items: List[FileItem] = [item for item in self._scene.items(rect) if isinstance(item, FileItem)]
             if not items:
                 return
             else:
@@ -194,7 +195,7 @@ class FileView(QGraphicsView):
         self._cursor_item.update()
         self.ensureVisible(self._cursor_item)
 
-    def keyPressEvent(self, ev) -> None:
+    def keyPressEvent(self, ev: QKeyEvent) -> None:
         if ev.key() == Qt.Key_Escape:
             self._scene.clearSelection()
             item = self._cursor_item
@@ -230,7 +231,7 @@ class FileView(QGraphicsView):
         else:
             super().keyPressEvent(ev)
 
-    def set_crop_thumbnails(self, v) -> None:
+    def set_crop_thumbnails(self, v: bool) -> None:
         self._crop_thumbnails = v
         for item in self._items:
             item.update()
@@ -352,7 +353,7 @@ class FileView(QGraphicsView):
         self.style_items()
         self.layout_items()
 
-    def resizeEvent(self, ev) -> None:
+    def resizeEvent(self, ev: QResizeEvent) -> None:
         logger.debug("FileView.resizeEvent: %s", ev)
 
         super().resizeEvent(ev)
@@ -368,11 +369,11 @@ class FileView(QGraphicsView):
 
         self._leap_widget.place_widget()
 
-    def moveEvent(self, ev):
+    def moveEvent(self, ev: QMouseEvent) -> None:
         super().moveEvent(ev)
         self._leap_widget.place_widget()
 
-    def timerEvent(self, ev) -> None:
+    def timerEvent(self, ev: QTimerEvent) -> None:
         if ev.timerId() == self._resize_timer:
             self.killTimer(self._resize_timer)
             self._resize_timer = None
@@ -388,7 +389,7 @@ class FileView(QGraphicsView):
         else:
             assert False, "timer foobar: {}".format(ev.timerId())
 
-    def style_item(self, item) -> None:
+    def style_item(self, item: FileItem) -> None:
         if self._show_filtered:
             if item.fileinfo.is_hidden:
                 item.setVisible(False)
@@ -406,19 +407,19 @@ class FileView(QGraphicsView):
         for item in self._items:
             self.style_item(item)
 
-    def initPainter(self, painter):
+    def initPainter(self, painter: QPainter) -> None:
         # logger.debug("FileView.initPainter:")
         pass
 
     @profile
-    def paintEvent(self, ev) -> None:
+    def paintEvent(self, ev: QPaintEvent) -> None:
         if self._needs_layout:
             self._layout_items()
             self._needs_layout = False
 
         super().paintEvent(ev)
 
-    def layout_items(self):
+    def layout_items(self) -> None:
         self._needs_layout = True
         self.invalidateScene()
         self.update()
@@ -470,11 +471,11 @@ class FileView(QGraphicsView):
         self._mode.zoom_out()
         self.apply_zoom()
 
-    def less_details(self):
+    def less_details(self) -> None:
         self._mode.less_details()
         self.apply_zoom()
 
-    def more_details(self):
+    def more_details(self) -> None:
         self._mode.more_details()
         self.apply_zoom()
 
@@ -512,7 +513,8 @@ class FileView(QGraphicsView):
             self.receive_thumbnail_for_item(item, flavor, image, error_code, message)
             item.set_thumbnail_image(image, flavor)
 
-    def receive_thumbnail_for_item(self, item, flavor: str, image: QImage, error_code: int, message: str) -> None:
+    def receive_thumbnail_for_item(self, item: FileItem, flavor: str, image: QImage,
+                                   error_code: Optional[int], message: str) -> None:
         if image is not None:
             item.set_thumbnail_image(image, flavor)
         else:
@@ -532,32 +534,32 @@ class FileView(QGraphicsView):
             elif error_code == DBusThumbnailerError.UNSUPPORTED_FLAVOR:
                 pass
 
-    def request_thumbnail(self, item, fileinfo: FileInfo, flavor: str, force: bool):
+    def request_thumbnail(self, item: FileItem, fileinfo: FileInfo, flavor: str, force: bool) -> None:
         self._controller.request_thumbnail(fileinfo, flavor, force)
 
-    def reload_thumbnails(self):
+    def reload_thumbnails(self) -> None:
         for item in self._items:
             item.reload_thumbnail()
 
-    def set_show_filtered(self, show_filtered):
+    def set_show_filtered(self, show_filtered: bool) -> None:
         self._show_filtered = show_filtered
         self.style_items()
         self.layout_items()
 
-    def set_filtered(self, filtered):
+    def set_filtered(self, filtered: bool) -> None:
         if filtered:
             self.setBackgroundBrush(QBrush(QColor(220, 220, 255), Qt.SolidPattern))
         else:
             self.setBackgroundBrush(QBrush())
 
-    def scroll_by(self, x, y):
+    def scroll_by(self, x: int, y: int) -> None:
         scrollbar = self.verticalScrollBar()
         scrollbar.setValue(scrollbar.value() + y)
 
         scrollbar = self.horizontalScrollBar()
         scrollbar.setValue(scrollbar.value() + x)
 
-    def set_cursor_to_fileinfo(self, fileinfo: 'FileInfo', ensure_visible: bool):
+    def set_cursor_to_fileinfo(self, fileinfo: 'FileInfo', ensure_visible: bool) -> None:
         self._scene.clearSelection()
 
         if self._cursor_item is not None:
@@ -570,7 +572,7 @@ class FileView(QGraphicsView):
             if ensure_visible:
                 self.ensureVisible(self._cursor_item)
 
-    def mousePressEvent(self, ev):
+    def mousePressEvent(self, ev: 'QMouseEvent') -> None:
         super().mousePressEvent(ev)
 
         item = self._cursor_item
@@ -578,7 +580,7 @@ class FileView(QGraphicsView):
             self._cursor_item = None
             item.update()
 
-    def contextMenuEvent(self, ev):
+    def contextMenuEvent(self, ev: QContextMenuEvent) -> None:
         if ev.reason() == QContextMenuEvent.Keyboard:
             if self._cursor_item is None:
                 self._controller.on_context_menu(ev.globalPos())

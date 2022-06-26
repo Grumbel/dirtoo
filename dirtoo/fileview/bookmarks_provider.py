@@ -31,10 +31,10 @@ class BookmarksProvider(QObject):
 
         self._app = app
 
-    def close(self):
+    def close(self) -> None:
         pass
 
-    def start(self):
+    def start(self) -> None:
         entries = self._app.bookmarks.get_entries()
         for location in entries:
             fileinfo = self._app.vfs.get_fileinfo(location)

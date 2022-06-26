@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import cast, List
+
 import os
 import urllib.parse
 
@@ -22,34 +24,34 @@ from PyQt5.Qt import QVariant
 from PyQt5.QtDBus import QDBusInterface, QDBusReply
 
 
-def dbus_as(value):
+def dbus_as(value: List[str]) -> QVariant:
     var = QVariant(value)
     ret = var.convert(QVariant.StringList)
     assert ret, "QVariant conversion failure: {}".format(value)
     return var
 
 
-def dbus_uint(value):
+def dbus_uint(value: int) -> QVariant:
     var = QVariant(value)
     ret = var.convert(QVariant.UInt)
     assert ret, "QVariant conversion failure: {}".format(value)
     return var
 
 
-def url_from_path(path):
+def url_from_path(path: str) -> str:
     return "file://{}".format(urllib.parse.quote(os.path.abspath(path)))
 
 
 class DBusThumbnailCache:
 
-    def __init__(self, bus):
+    def __init__(self, bus: str) -> None:
         self.cache = QDBusInterface(
             'org.freedesktop.thumbnails.Cache1',
             '/org/freedesktop/thumbnails/Cache1',
             'org.freedesktop.thumbnails.Cache1',
             bus)
 
-    def _call(self, method, *args):
+    def _call(self, method: str, *args: QVariant) -> List[QVariant]:
         msg = self.cache.call(method, *args)
         reply = QDBusReply(msg)
         if not reply.isValid():
@@ -57,23 +59,23 @@ class DBusThumbnailCache:
                 method,
                 reply.error().name(),
                 reply.error().message()))
-        else:
-            return msg.arguments()
 
-    def delete(self, files):
+        return cast(List[QVariant], msg.arguments())
+
+    def delete(self, files: List[str]) -> None:
         urls = [url_from_path(f) for f in files]
         self._call("Delete", dbus_as(urls))
 
-    def cleanup(self, files, mtime_threshold=0):
+    def cleanup(self, files: List[str], mtime_threshold: int = 0) -> None:
         urls = ["file://" + urllib.parse.quote(os.path.abspath(f)) for f in files]
         self._call("Cleanup", dbus_as(urls), mtime_threshold)
 
-    def copy(self, from_files, to_files):
+    def copy(self, from_files: List[str], to_files: List[str]) -> None:
         from_uris = [url_from_path(f) for f in from_files]
         to_uris = [url_from_path(f) for f in to_files]
         self._call("Copy", dbus_as(from_uris), dbus_as(to_uris))
 
-    def move(self, from_files, to_files):
+    def move(self, from_files: List[str], to_files: List[str]) -> None:
         from_uris = [url_from_path(f) for f in from_files]
         to_uris = [url_from_path(f) for f in to_files]
         self._call("Move", dbus_as(from_uris), dbus_as(to_uris))

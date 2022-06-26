@@ -25,7 +25,7 @@ import uuid
 from dirtoo.filesystem import Filesystem
 
 
-def parse_args(args: List[str]) -> argparse.Namespace:
+def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Swap the names of files around")
     parser.add_argument("FILE1", nargs=1)
     parser.add_argument("FILE2", nargs=1)
@@ -33,11 +33,11 @@ def parse_args(args: List[str]) -> argparse.Namespace:
                         help="Be more verbose")
     parser.add_argument('-n', '--dry-run', action='store_true', default=False,
                         help="Don't acutally execute")
-    return parser.parse_args(args)
+    return parser.parse_args(argv[1:])
 
 
 def main(argv: List[str]) -> int:
-    args = parse_args(argv[1:])
+    args = parse_args(argv)
 
     # check if same file
     if os.path.samefile(args.FILE1[0], args.FILE2[0]):
@@ -78,7 +78,7 @@ def main(argv: List[str]) -> int:
     return 0
 
 
-def main_entrypoint():
+def main_entrypoint() -> None:
     sys.exit(main(sys.argv))
 
 

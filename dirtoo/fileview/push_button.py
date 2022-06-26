@@ -15,18 +15,23 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import TYPE_CHECKING, Any
+
 from PyQt5.QtCore import pyqtSignal, Qt
 from PyQt5.QtWidgets import QPushButton
+
+if TYPE_CHECKING:
+    from PyQt5.QtGui import QMouseEvent
 
 
 class PushButton(QPushButton):
 
     middle_clicked = pyqtSignal()
 
-    def __init__(self, *args) -> None:
+    def __init__(self, *args: Any) -> None:
         super().__init__(*args)
 
-    def mouseMoveEvent(self, ev) -> None:
+    def mouseMoveEvent(self, ev: 'QMouseEvent') -> None:
         super().mouseMoveEvent(ev)
 
         if not ev.isAccepted():
@@ -40,7 +45,7 @@ class PushButton(QPushButton):
 
                 self.repaint()
 
-    def mousePressEvent(self, ev) -> None:
+    def mousePressEvent(self, ev: 'QMouseEvent') -> None:
         super().mousePressEvent(ev)
 
         if not ev.isAccepted():
@@ -49,7 +54,7 @@ class PushButton(QPushButton):
                 self.setDown(True)
                 self.repaint()
 
-    def mouseReleaseEvent(self, ev) -> None:
+    def mouseReleaseEvent(self, ev: 'QMouseEvent') -> None:
         super().mouseReleaseEvent(ev)
 
         if not ev.isAccepted():

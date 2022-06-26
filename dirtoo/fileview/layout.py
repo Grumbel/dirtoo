@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 import math
 from enum import Enum
@@ -23,6 +23,9 @@ from PyQt5.QtCore import QRectF
 from PyQt5.QtWidgets import QGraphicsItem
 
 from dirtoo.fileview.profiler import profile
+
+if TYPE_CHECKING:
+    from dirtoo.fileview.file_item import FileItem
 
 
 class Layout:
@@ -36,11 +39,11 @@ class Layout:
         self.width: int = 0
         self.height: int = 0
 
-    def layout(self, width: int, height: int):
+    def layout(self, width: int, height: int) -> None:
         self.width = width
         self.height = height
 
-    def set_pos(self, x: int, y: int):
+    def set_pos(self, x: int, y: int) -> None:
         self.x = x
         self.y = y
 
@@ -95,7 +98,7 @@ class RootLayout(Layout):
         assert self.root is not None
         return self.root.get_bounding_rect()
 
-    def append_item(self, item) -> None:
+    def append_item(self, item: 'FileItem') -> None:
         assert self.root is not None
         assert self.append_layout is not None
 
@@ -172,7 +175,7 @@ class TileStyle:
 
         self.arrangement = TileStyle.Arrangement.ROWS
 
-    def set_arrangement(self, arrangement) -> None:
+    def set_arrangement(self, arrangement: 'TileStyle.Arrangement') -> None:
         self.arrangement = arrangement
 
     def set_tile_size(self, tile_w: int, tile_h: int) -> None:

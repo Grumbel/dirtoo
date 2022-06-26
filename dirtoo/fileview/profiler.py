@@ -15,13 +15,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Any, Optional, Type, Callable, Union
+from types import TracebackType
+
 import time
 
 
 _profiler_active = False
 
 
-def activate_profiler(active: bool):
+def activate_profiler(active: bool) -> None:
     print("PROFILER", active)
     global _profiler_active
     _profiler_active = active
@@ -29,30 +32,38 @@ def activate_profiler(active: bool):
 
 class RealProfiler:
 
-    def __init__(self, name):
+    def __init__(self, name: str) -> None:
         self.name = name
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         self.start_time = time.time()
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self,  # pylint: disable=useless-return
+                 exc_type: Optional[Type[BaseException]],
+                 exc_value: Optional[BaseException],
+                 traceback: Optional[TracebackType]) -> Optional[bool]:
         self.stop_time = time.time()
         print("executing {} took {:3.0f}msec".format(
             self.name, (self.stop_time - self.start_time) * 1000))
+        return None
 
 
 class DummyProfiler:
-    def __init__(self):
+
+    def __init__(self) -> None:
         pass
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         pass
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
+    def __exit__(self,  # pylint: disable=useless-return
+                 exc_type: Optional[Type[BaseException]],
+                 exc_value: Optional[BaseException],
+                 traceback: Optional[TracebackType]) -> Optional[bool]:
+        return None
 
 
-def Profiler(name: str):
+def Profiler(name: str) -> Union[RealProfiler, DummyProfiler]:
     global _profiler_active
     if _profiler_active:
         return RealProfiler(name)
@@ -60,8 +71,8 @@ def Profiler(name: str):
         return DummyProfiler()
 
 
-def profile(func):
-    def wrap(*args, **kwargs):
+def profile(func: Callable) -> Callable:
+    def wrap(*args: Any, **kwargs: Any) -> Any:
         if _profiler_active:
             with RealProfiler(func.__qualname__):
                 result = func(*args, **kwargs)

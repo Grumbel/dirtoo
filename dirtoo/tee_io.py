@@ -15,7 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import IO
+from typing import IO, List, Optional, Type
+from types import TracebackType
 
 
 class TeeIO:
@@ -25,57 +26,61 @@ class TeeIO:
         self._input_fd = input_fd
         self._output_fd = output_fd
 
-    def close(self):
+    def close(self) -> None:
         self._input_fd.close()
         self._output_fd.close()
 
     @property
-    def closed(self):
+    def closed(self) -> bool:
         return self._input_fd.closed
 
-    def fileno(self):
+    def fileno(self) -> int:
         return self._input_fd.fileno()
 
-    def flush(self):
+    def flush(self) -> None:
         self._input_fd.flush()
         self._output_fd.flush()
 
-    def isatty(self):
+    def isatty(self) -> bool:
         return self._input_fd.isatty()
 
-    def readable(self):
+    def readable(self) -> bool:
         return self._input_fd.readable()
 
-    def readline(self, size=-1):
-        line = self._input_fd.readline(size)
+    def readline(self, size: int = -1) -> str:
+        line: str = self._input_fd.readline(size)
         self._output_fd.write(line)
         return line
 
-    def readlines(self, hint=-1):
-        lines = self._input_fd.readline(hint)
+    def readlines(self, hint: int = -1) -> List[str]:
+        lines: List[str] = self._input_fd.readline(hint)
         for line in lines:
             self._output_fd.write(line)
-        return line
+        return lines
 
-    def read(self, n=-1):
-        buf = self._input_fd.read(n)
+    def read(self, n: int = -1) -> str:
+        buf: str = self._input_fd.read(n)
         self._output_fd.write(buf)
         return buf
 
-    def tell(self):
+    def tell(self) -> int:
         return self._input_fd.tell()
 
-    def writable(self):
+    def writable(self) -> bool:
         return False
 
-    def __enter__(self):
+    def __enter__(self) -> 'TeeIO':
         self._input_fd.__enter__()
         self._output_fd.__enter__()
         return self
 
-    def __exit__(self, exc_type, value, tb):
-        self._input_fd.__exit__(exc_type, value, tb)
-        self._output_fd.__exit__(exc_type, value, tb)
+    def __exit__(self,  # pylint: disable=useless-return
+                 exc_type: Optional[Type[BaseException]],
+                 exc_value: Optional[BaseException],
+                 traceback: Optional[TracebackType]) -> Optional[bool]:
+        self._input_fd.__exit__(exc_type, exc_value, traceback)
+        self._output_fd.__exit__(exc_type, exc_value, traceback)
+        return None
 
 
 # EOF #

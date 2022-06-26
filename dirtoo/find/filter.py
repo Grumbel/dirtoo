@@ -16,6 +16,7 @@
 
 
 from typing import Dict
+from abc import ABC, abstractmethod
 
 import os
 
@@ -24,16 +25,23 @@ from dirtoo.fileview.filter_expr_parser import FilterExprParser
 from dirtoo.fileview.lazy_file_info import LazyFileInfo
 
 
-class NoFilter:
+class Filter(ABC):
 
-    def __init__(self):
+    @abstractmethod
+    def match_file(self, root: str, filename: str) -> bool:
         pass
 
-    def match_file(self, root, filename):
+
+class NoFilter(Filter):
+
+    def __init__(self) -> None:
+        pass
+
+    def match_file(self, root: str, filename: str) -> bool:
         return True
 
 
-class ExprFilter:
+class ExprFilter(Filter):
 
     def __init__(self, expr):
         self.expr = expr
@@ -42,7 +50,7 @@ class ExprFilter:
         self.global_vars = globals().copy()
         self.global_vars.update(self.ctx.get_hash())
 
-    def match_file(self, root, filename):
+    def match_file(self, root: str, filename: str) -> bool:
         fullpath = os.path.join(root, filename)
 
         self.ctx.current_file = fullpath
@@ -54,18 +62,18 @@ class ExprFilter:
         return result
 
 
-class SimpleFilter:
+class SimpleFilter(Filter):
 
     @staticmethod
-    def from_string(text: str):
+    def from_string(text: str) -> 'SimpleFilter':
         parser = FilterExprParser()
         filter_expr = parser.parse(text)
         return SimpleFilter(filter_expr)
 
-    def __init__(self, expr):
+    def __init__(self, expr) -> None:
         self._expr = expr
 
-    def match_file(self, root, filename):
+    def match_file(self, root: str, filename: str) -> bool:
         path = os.path.join(root, filename)
 
         fileinfo = LazyFileInfo.from_path(path)

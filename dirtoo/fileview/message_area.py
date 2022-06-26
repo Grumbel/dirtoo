@@ -31,7 +31,7 @@ class MessageSeverity(Enum):
 
 class MessageArea(QWidget):
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
         # self.setStyleSheet("background-color: #fcf7b6;")
@@ -71,7 +71,7 @@ class MessageArea(QWidget):
 
         self.setLayout(self._hbox)
 
-    def _on_close_btn_triggerd(self):
+    def _on_close_btn_triggerd(self) -> None:
         self.hide()
 
     def show_message(self, severity: MessageSeverity, message: str) -> None:

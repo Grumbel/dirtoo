@@ -44,7 +44,7 @@ class Action:
 
 class PrinterAction(Action):
 
-    def __init__(self, fmt_str, finisher=False):
+    def __init__(self, fmt_str: str, finisher: bool = False) -> None:
         super().__init__()
 
         self.fmt_str = fmt_str
@@ -57,7 +57,7 @@ class PrinterAction(Action):
         self.global_vars = globals().copy()
         self.global_vars.update(self.ctx.get_hash())
 
-    def file(self, root, filename):
+    def file(self, root: str, filename: str) -> None:
         self.file_count += 1
 
         fullpath = os.path.join(root, filename)
@@ -86,7 +86,7 @@ class PrinterAction(Action):
                 value = eval(field_name, self.global_vars, local_vars)  # pylint: disable=W0123
                 sys.stdout.write(format(value, format_spec))
 
-    def finish(self):
+    def finish(self) -> None:
         if self.finisher:
             print("-" * 72)
             print("{:>12}  {} files in total".format(self.ctx.sizehr(self.size_total), self.file_count))
@@ -94,30 +94,30 @@ class PrinterAction(Action):
 
 class MultiAction(Action):
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
         self.actions: List[Action] = []
 
-    def add(self, action):
+    def add(self, action: Action) -> None:
         self.actions.append(action)
 
-    def file(self, root, filename):
+    def file(self, root: str, filename: str) -> None:
         for action in self.actions:
             action.file(root, filename)
 
-    def directory(self, root, filename):
+    def directory(self, root: str, filename: str) -> None:
         for action in self.actions:
             action.directory(root, filename)
 
-    def finish(self):
+    def finish(self) -> None:
         for action in self.actions:
             action.finish()
 
 
 class ExecAction(Action):
 
-    def __init__(self, exec_str):
+    def __init__(self, exec_str: str):
         super().__init__()
 
         self.on_file_cmd = None
@@ -133,7 +133,7 @@ class ExecAction(Action):
         else:
             pass  # FIXME
 
-    def file(self, root, name):
+    def file(self, root: str, name: str) -> None:
         if self.on_file_cmd:
             cmd = replace_item(self.on_file_cmd, "{}", [os.path.join(root, name)])
             subprocess.call(cmd)
@@ -141,10 +141,10 @@ class ExecAction(Action):
         if self.on_multi_cmd:
             self.all_files.append(os.path.join(root, name))
 
-    def directory(self, root, name):
+    def directory(self, root: str, name: str) -> None:
         pass
 
-    def finish(self):
+    def finish(self) -> None:
         if self.on_multi_cmd:
             multi_cmd = replace_item(self.on_multi_cmd, "{}+", self.all_files)
             subprocess.call(multi_cmd)
@@ -164,13 +164,13 @@ class ExprSorterAction(Action):
         self.global_vars = globals().copy()
         self.global_vars.update(self.ctx.get_hash())
 
-    def file(self, root, filename):
+    def file(self, root: str, filename: str) -> None:
         self.files.append((root, filename))
 
-    def directory(self, root, filename):
+    def directory(self, root: str, filename: str) -> None:
         pass
 
-    def finish(self):
+    def finish(self) -> None:
         files3: List[Tuple[str, str, str]] = []
         if self.expr:
             for root, filename in self.files:

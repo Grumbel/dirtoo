@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Optional
+
 import logging
 import os
 import libarchive
@@ -27,7 +29,7 @@ from dirtoo.archive.extractor import Extractor, ExtractorResult
 logger = logging.getLogger(__name__)
 
 
-def sanitize(pathname):
+def sanitize(pathname: str) -> Optional[str]:
     normpath = os.path.normpath(pathname)
     if os.path.isabs(normpath):
         return None
@@ -50,7 +52,7 @@ class LibArchiveExtractor(Extractor):
     def interrupt(self) -> None:
         self._interruption_event.set()
 
-    def interruption_point(self):
+    def interruption_point(self) -> None:
         if self._interruption_event.is_set():
             raise Exception("{}: archive extraction was interrupted".format(self.filename))
 

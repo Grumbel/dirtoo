@@ -22,7 +22,7 @@ from PyQt5.QtCore import QObject, pyqtSignal, Qt, QThread
 
 class Worker(QObject):
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
         self._close = False
@@ -44,7 +44,7 @@ class WorkerThread(QObject):
         self._worker: Optional[Worker] = None
         self._thread: Optional[QThread] = None
 
-    def set_worker(self, worker: Worker):
+    def set_worker(self, worker: Worker) -> None:
         """Sets the Worker associated with this thread. Note this function has
         to be called before connecting any signals, otherwise the
         signals won't be associated with the right thread.

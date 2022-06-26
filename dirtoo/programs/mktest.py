@@ -22,7 +22,7 @@ import sys
 import os
 
 
-def parse_args(args: List[str]) -> argparse.Namespace:
+def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Create create a file hierachy for testing")
     parser.add_argument("DIRECTORY", nargs=1, help="Create files in DIRECTORY")
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
@@ -33,7 +33,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
                         help="Create N files per directory")
     parser.add_argument('-d', '--directories', metavar="N", type=int, default=3,
                         help="Create N directories per directory")
-    return parser.parse_args(args)
+    return parser.parse_args(argv[1:])
 
 
 def make_test(path: str, depth: int, args: argparse.Namespace) -> None:
@@ -57,8 +57,8 @@ def make_test(path: str, depth: int, args: argparse.Namespace) -> None:
             make_test(outdir, depth - 1, args)
 
 
-def main(argv):
-    args = parse_args(argv[1:])
+def main(argv: List[str]) -> int:
+    args = parse_args(argv)
 
     directory = args.DIRECTORY[0]
 
@@ -70,7 +70,7 @@ def main(argv):
     return 0
 
 
-def main_entrypoint():
+def main_entrypoint() -> None:
     sys.exit(main(sys.argv))
 
 

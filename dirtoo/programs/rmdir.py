@@ -39,18 +39,18 @@ def remove_directory(directory: str, verbose: bool) -> None:
         raise Exception("failed to remove '{}': {}".format(directory, err))
 
 
-def parse_args(args: List[str]) -> argparse.Namespace:
+def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Remove empty directories")
     parser.add_argument("DIRECTORY", nargs="+", type=str)
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help="Be verbose")
     parser.add_argument("-r", "--recursive", action='store_true', default=False,
                         help="Remove directories recursively")
-    return parser.parse_args(args)
+    return parser.parse_args(argv[1:])
 
 
 def main(argv: List[str]) -> None:
-    args = parse_args(argv[1:])
+    args = parse_args(argv)
 
     for directory in args.DIRECTORY:
         try:

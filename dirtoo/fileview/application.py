@@ -154,7 +154,7 @@ class FileViewApplication:
         controller._gui._window.show()
         self.controllers.append(controller)
 
-    def set_filesystem_enabled(self, value):
+    def set_filesystem_enabled(self, value: bool) -> None:
         self.fs.set_enabled(value)
 
 

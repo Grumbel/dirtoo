@@ -25,7 +25,7 @@ from dirtoo.file_transfer import FileTransfer, ConsoleMediator, ConsoleProgress,
 from dirtoo.filesystem import Filesystem
 
 
-def parse_args(action: str, args: List[str]) -> argparse.Namespace:
+def parse_args(action: str, argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="{} files and directories.".format(action.capitalize()))
 
     parser.add_argument('FILE', action='store', nargs='+',
@@ -42,11 +42,11 @@ def parse_args(action: str, args: List[str]) -> argparse.Namespace:
                         help="NEVER overwrite any files")
     parser.add_argument('-Y', '--always', action='store_true', default=False,
                         help="ALWAYS overwrite files on conflict")
-    return parser.parse_args(args)
+    return parser.parse_args(argv[1:])
 
 
 def main(action: str, argv: List[str]) -> None:
-    args = parse_args(action, argv[1:])
+    args = parse_args(action, argv)
 
     sources = [os.path.normpath(p) for p in args.FILE]
     destdir = os.path.normpath(args.target_directory)

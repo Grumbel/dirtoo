@@ -15,17 +15,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 import argparse
 import libarchive
 import os
 import shlex
 import sys
 
-
 from dirtoo.archive.archiveinfo import ArchiveInfo
 
 
-def parse_args(argv):
+def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Print Archive Information")
     parser.add_argument('FILE', metavar='FILE', type=str, nargs='+', help='Archive files to process')
     parser.add_argument('--file-count', action='store_true', default=False,
@@ -33,7 +34,7 @@ def parse_args(argv):
     return parser.parse_args(argv[1:])
 
 
-def main(argv):
+def main(argv: List[str]) -> int:
     args = parse_args(argv)
     for filename in args.FILE:
         _, ext = os.path.splitext(filename)
@@ -50,9 +51,10 @@ def main(argv):
         except libarchive.exception.ArchiveError as err:
             print("{}: error: couldn't process archive: {}".format(filename, err))
             continue
+    return 0
 
 
-def main_entrypoint():
+def main_entrypoint() -> None:
     main(sys.argv)
 
 

@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Iterable, List, Optional
+
 import argparse
 import libarchive
 import itertools
@@ -30,7 +32,7 @@ def rename_safe(src: str, dst: str) -> None:
         os.rename(src, dst)
 
 
-def most_common(lst, threshold):
+def most_common(lst: List[str], threshold: float) -> Optional[str]:
     el = max(set(lst), key=lst.count)
     if lst.count(el) < len(lst) * threshold:
         return None
@@ -38,22 +40,23 @@ def most_common(lst, threshold):
         return el
 
 
-def common_prefix(lst, threshold):
+def common_prefix(lst: List[str], threshold: float) -> str:
     m: defaultdict = defaultdict(list)
     for text in lst:
         for i, c in enumerate(text):
             m[i].append(c)
 
-    result = [most_common(m[cs], threshold) for cs in sorted(m)]
-    result = list(itertools.takewhile(lambda x: x is not None and x != "/", result))
+    result: Iterable[str] = filter(None, [most_common(m[cs], threshold)
+                                          for cs in sorted(m)])
+    result = itertools.takewhile(lambda x: x is not None and x != "/", result)
     return "".join(result)
 
 
-def strip_unimportant(text: str):
+def strip_unimportant(text: str) -> str:
     return text.rstrip("-_0.")
 
 
-def parse_args(argv):
+def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Find common prefix from archive content")
     parser.add_argument('FILE', metavar='FILE', type=str, nargs='+', help='Archive file to search')
     parser.add_argument('-t', '--threshold', type=float, default=0.8,
@@ -77,7 +80,7 @@ def parse_args(argv):
     return parser.parse_args(argv[1:])
 
 
-def main(argv):
+def main(argv: List[str]) -> int:
     args = parse_args(argv)
 
     for filename in args.FILE:
@@ -133,8 +136,10 @@ def main(argv):
         else:
             print(common)
 
+    return 0
 
-def main_entrypoint():
+
+def main_entrypoint() -> None:
     main(sys.argv)
 
 

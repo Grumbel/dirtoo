@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Optional
+from typing import Any, Optional
 
 import logging
 import os
@@ -24,7 +24,7 @@ from PyQt5.QtCore import QObject, pyqtSignal, QThread, Qt
 
 from dirtoo.file_info import FileInfo
 from dirtoo.find.action import Action
-from dirtoo.find.filter import SimpleFilter
+from dirtoo.find.filter import Filter, SimpleFilter
 from dirtoo.find.walk import walk
 
 logger = logging.getLogger(__name__)
@@ -46,7 +46,7 @@ class SearchStreamWorker(QObject):
         self._action: Optional[SearchStreamAction] = None
         self._filter: Optional[SimpleFilter] = None
 
-    def close(self):
+    def close(self) -> None:
         pass
 
     def init(self) -> None:
@@ -63,7 +63,8 @@ class SearchStreamWorker(QObject):
 
         self.sig_finished.emit()
 
-    def _find_files(self, directory, recursive, filter_op, action, topdown, maxdepth):
+    def _find_files(self, directory: str, recursive: bool, filter_op: Filter, action: Action,
+                    topdown: bool, maxdepth: int) -> None:
         for root, dirs, files in walk(directory, topdown=topdown, maxdepth=maxdepth):
             for f in files:
                 if filter_op.match_file(root, f):
@@ -131,19 +132,19 @@ class SearchStream(QObject):
         self._thread.wait()
 
     @property
-    def sig_file_added(self):
+    def sig_file_added(self) -> Any:
         return self._worker.sig_file_added
 
     @property
-    def sig_finished(self):
+    def sig_finished(self) -> Any:
         return self._worker.sig_finished
 
     @property
-    def sig_message(self):
+    def sig_message(self) -> Any:
         return self._worker.sig_message
 
     @property
-    def sig_error(self):
+    def sig_error(self) -> Any:
         return self._worker.sig_error
 
 

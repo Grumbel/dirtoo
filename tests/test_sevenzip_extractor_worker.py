@@ -19,13 +19,10 @@ import os
 import tempfile
 import signal
 import unittest
-import pyparsing
 
 
 from dirtoo.archive.extractor import ExtractorResult
 from dirtoo.archive.sevenzip_extractor import SevenZipExtractor
-
-from PyQt5.QtCore import QCoreApplication, QTimer
 
 
 DATADIR = os.path.dirname(__file__)

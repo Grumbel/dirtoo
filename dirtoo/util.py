@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import cast, List, Any, Union, TextIO, BinaryIO
+from typing import cast, List, Any, Union, TextIO, Tuple, BinaryIO
 
 import re
 import os
@@ -24,7 +24,7 @@ import collections
 import itertools
 
 
-def expand_file(f: str, recursive: bool):
+def expand_file(f: str, recursive: bool) -> List[str]:
     if os.path.isdir(f):
         if recursive:
             lst = [expand_file(os.path.join(f, x), recursive) for x in os.listdir(f)]
@@ -35,7 +35,7 @@ def expand_file(f: str, recursive: bool):
         return [f]
 
 
-def expand_directories(files: List[str], recursive: bool):
+def expand_directories(files: List[str], recursive: bool) -> List[str]:
     results: List[str] = []
     for f in files:
         results += expand_file(f, recursive)
@@ -45,7 +45,7 @@ def expand_directories(files: List[str], recursive: bool):
 NUMERIC_SORT_RX = re.compile(r'(\d+)')
 
 
-def numeric_sort_key(text):
+def numeric_sort_key(text: str) -> Tuple[Union[int, str], ...]:
     # For numbers this will return ('', 999, ''), the empty strings
     # must not be filtered out of the tuple, as they ensure that 'int'
     # isn't compared to a 'str'. With the empty strings in place all
@@ -78,7 +78,7 @@ def remove_duplicates(lst: List[Any]) -> List[Any]:
 GLOB_PATTERN_RX = re.compile(r"[\*\?\[\]]")
 
 
-def is_glob_pattern(text):
+def is_glob_pattern(text: str) -> bool:
     return bool(GLOB_PATTERN_RX.search(text))
 
 

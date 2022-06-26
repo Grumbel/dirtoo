@@ -19,7 +19,7 @@ from typing import cast
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import (QDialog, QPushButton, QLineEdit,
+from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLineEdit,
                              QHBoxLayout, QVBoxLayout,
                              QDialogButtonBox, QLabel)
 
@@ -29,13 +29,13 @@ class CreateDialog(QDialog):
     FOLDER = 0
     TEXTFILE = 1
 
-    def __init__(self, kind, parent) -> None:
+    def __init__(self, kind: int, parent: QWidget) -> None:
         super().__init__(parent)
 
         self._kind = kind
         self._build_gui()
 
-    def _build_gui(self):
+    def _build_gui(self) -> None:
         self.resize(400, 100)
 
         self.setWindowModality(Qt.WindowModal)
@@ -84,7 +84,7 @@ class CreateDialog(QDialog):
         self.btn_create.clicked.connect(self._on_create_clicked)
         self.btn_cancel.clicked.connect(self._on_cancel_clicked)
 
-    def _on_text_edited(self, text):
+    def _on_text_edited(self, text: str) -> None:
         if text == "" or "/" in text:
             self.btn_create.setEnabled(False)
         else:

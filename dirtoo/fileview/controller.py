@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, Any, List, Dict, Optional
+from typing import TYPE_CHECKING, Any, List, Dict, Optional, Callable
 
 import io
 import logging
@@ -84,7 +84,7 @@ class Controller(QObject):
         self._path_completion.start()
         self._apply_settings()
 
-    def __del__(self):
+    def __del__(self) -> None:
         logger.debug("Controller.__del__")
 
     def close_streams(self) -> None:
@@ -206,16 +206,16 @@ class Controller(QObject):
         logger.info("Controller._on_finished")
         self._gui._window.hide_loading()
 
-    def _on_scandir_finished(self, fileinfos) -> None:
+    def _on_scandir_finished(self, fileinfos: List[FileInfo]) -> None:
         logger.info("Controller._on_scandir_extractor_finished")
         self._gui._window.hide_loading()
 
         self.file_collection.set_fileinfos(fileinfos)
 
-    def _on_directory_watcher_message(self, message):
+    def _on_directory_watcher_message(self, message: str) -> None:
         self._gui._window._message_area.show_error(message)
 
-    def set_location(self, location: Location, track_history=True) -> None:
+    def set_location(self, location: Location, track_history: bool = True) -> None:
         self.close_streams()
 
         self._gui._window.location_lineedit.hide()
@@ -298,7 +298,7 @@ class Controller(QObject):
         self._sorter.set_sort_reversed(reversed)
         self.file_collection.set_sorter(self._sorter)
 
-    def set_sort_key_func(self, func) -> None:
+    def set_sort_key_func(self, func: Callable[[FileInfo], Any]) -> None:
         self._sorter.set_key_func(func)
         self.file_collection.set_sorter(self._sorter)
 
@@ -351,14 +351,14 @@ class Controller(QObject):
     def toggle_timegaps(self) -> None:
         pass
 
-    def parent_directory(self, new_window: bool = False):
+    def parent_directory(self, new_window: bool = False) -> None:
         if self.location is not None:
             if new_window:
                 self.app.show_location(self.location.parent())
             else:
                 self.set_location(self.location.parent())
 
-    def on_click(self, fileinfo: FileInfo, new_window=False) -> None:
+    def on_click(self, fileinfo: FileInfo, new_window: bool = False) -> None:
         self._gui._window.file_view.set_cursor_to_fileinfo(fileinfo, False)
 
         if not fileinfo.isdir():
@@ -392,7 +392,7 @@ class Controller(QObject):
         scene.blockSignals(oldstate)
         scene.selectionChanged.emit()
 
-    def on_context_menu(self, pos) -> None:
+    def on_context_menu(self, pos: QPoint) -> None:
         self._gui.on_context_menu(pos)
 
     def on_item_context_menu(self, ev, item) -> None:
@@ -507,7 +507,6 @@ class Controller(QObject):
             else:
                 self.app.bookmarks.append(self.location)
                 return True
-            True
         else:
             return False
 
@@ -530,7 +529,7 @@ class Controller(QObject):
         self._gui._window.location_lineedit.hide()
         self._gui._window.location_buttonbar.show()
 
-    def show_location_toolbar(self, selectall=True) -> None:
+    def show_location_toolbar(self, selectall: bool = True) -> None:
         self._gui._window.location_lineedit.show()
         self._gui._window.location_buttonbar.hide()
 
@@ -545,11 +544,11 @@ class Controller(QObject):
         else:
             self._gui._window.location_lineedit.selectAll()
 
-    def hide_all(self):
+    def hide_all(self) -> None:
         self._gui._window.search_toolbar.hide()
         self._gui._window.filter_toolbar.hide()
 
-    def start_search(self, query):
+    def start_search(self, query: str) -> None:
         if self.location is None:
             abspath = "/tmp"
         else:
@@ -560,24 +559,24 @@ class Controller(QObject):
 
         self._gui._window.file_view.setFocus()
 
-    def close_search(self):
+    def close_search(self) -> None:
         self._gui._window.search_toolbar.hide()
         self._gui._window.file_view.setFocus()
         self._gui._window.location_lineedit.on_return_pressed()
 
-    def close_window(self):
+    def close_window(self) -> None:
         logger.debug("Controller.close_window")
         self._gui._window.close()
 
-    def set_filter_pin(self, value):
+    def set_filter_pin(self, value: bool) -> None:
         # logic is handled in Controller.set_location()
         pass
 
-    def show_preferences(self):
+    def show_preferences(self) -> None:
         self.app._preferences_dialog.show()
         self.app._preferences_dialog.raise_()
 
-    def on_edit_cut(self):
+    def on_edit_cut(self) -> None:
         logger.debug("cut data to clipboard")
 
         mime_data = self.selection_to_mimedata(action=Qt.MoveAction)
@@ -585,7 +584,7 @@ class Controller(QObject):
         clipboard = self.app.qapp.clipboard()
         clipboard.setMimeData(mime_data, QClipboard.Clipboard)
 
-    def on_edit_copy(self):
+    def on_edit_copy(self) -> None:
         logger.debug("copying data to clipboard")
 
         mime_data = self.selection_to_mimedata(action=Qt.CopyAction)
@@ -593,26 +592,21 @@ class Controller(QObject):
         clipboard = self.app.qapp.clipboard()
         clipboard.setMimeData(mime_data, QClipboard.Clipboard)
 
-    def on_edit_paste(self):
+    def on_edit_paste(self) -> None:
         if self.location is not None:
             self.on_edit_paste_into(self.location)
 
-    def on_edit_paste_into(self, location: Location):
+    def on_edit_paste_into(self, location: Location) -> None:
         logger.debug("pasting data into folder from clipboard")
-
-        if location is None:
-            logger.error("trying to paste into None")
-            return
 
         clipboard = self.app.qapp.clipboard()
         mime_data = clipboard.mimeData(QClipboard.Clipboard)
 
-        if False:
-            for fmt in mime_data.formats():
-                print("Format:", fmt)
-                print(mime_data.data(fmt))
-                print()
-            print()
+        # for fmt in mime_data.formats():
+        #     print("Format:", fmt)
+        #     print(mime_data.data(fmt))
+        #     print()
+        # print()
 
         destination_path = location.get_path()
 
@@ -641,12 +635,12 @@ class Controller(QObject):
 
         # https://www.uninformativ.de/blog/postings/2017-04-02/0/POSTING-en.html
 
-    def selected_fileinfos(self):
+    def selected_fileinfos(self) -> List[FileInfo]:
         selected_items = self._gui._window.file_view._scene.selectedItems()
         return [item.fileinfo
                 for item in selected_items]
 
-    def selection_to_mimedata(self, uri_only=False, action: Qt.DropActions = None):
+    def selection_to_mimedata(self, uri_only: bool = False, action: Qt.DropActions = None) -> QMimeData:
         mime_data = QMimeData()
 
         fileinfos = self.selected_fileinfos()
@@ -666,7 +660,7 @@ class Controller(QObject):
 
         return mime_data
 
-    def on_files_drop(self, action, urls, destination):
+    def on_files_drop(self, action: Qt.DropActions, urls: List[QUrl], destination: Optional[Location]) -> None:
         if destination is None:
             destination = self.location
 
@@ -708,7 +702,7 @@ class Controller(QObject):
             else:
                 pass
 
-    def create_directory(self):
+    def create_directory(self) -> None:
         if self.location is None:
             return
 
@@ -728,7 +722,7 @@ class Controller(QObject):
                 self._gui.show_error("Error on file creation",
                                      "Error while trying to create directory:\n\n" + str(err))
 
-    def create_file(self):
+    def create_file(self) -> None:
         if self.location is None or not self.location.has_stdio_name():
             return
 
@@ -754,13 +748,13 @@ class Controller(QObject):
     def show_properties_dialog(self, fileinfo: FileInfo) -> None:
         self._gui.show_properties_dialog(fileinfo)
 
-    def request_completions(self, text):
+    def request_completions(self, text: str) -> None:
         self._path_completion.request_completions(text)
 
-    def _on_completions(self, longest: str, candidates: List[str]):
+    def _on_completions(self, longest: str, candidates: List[str]) -> None:
         self._gui._window.location_lineedit.on_completions(longest, candidates)
 
-    def show_history_context_menu(self, button: 'ToolButton', forward: bool):
+    def show_history_context_menu(self, button: 'ToolButton', forward: bool) -> None:
         pos = button.mapToGlobal(QPoint(0, button.height()))
 
         entries = self.app.location_history.get_unique_entries(20)

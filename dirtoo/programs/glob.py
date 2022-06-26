@@ -25,7 +25,7 @@ import sys
 logger = logging.getLogger(__name__)
 
 
-def parse_args(args: List[str]) -> argparse.Namespace:
+def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Print lines matching glob pattern")
     parser.add_argument("PATTERN", nargs=1, help="Glob pattern")
     parser.add_argument("FILE", nargs="*", help="Files to search")
@@ -43,7 +43,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
 
 
 def main(argv: List[str]) -> None:
-    args = parse_args(argv[1:])
+    args = parse_args(argv)
 
     pattern = args.PATTERN[0]
 

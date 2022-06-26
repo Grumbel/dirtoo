@@ -15,22 +15,24 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 import argparse
 import sys
 import os
 import shlex
 
 
-def parse_args(args):
+def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Create files with unusual filenames for testing")
     parser.add_argument("DIRECTORY", nargs=1, help="Create files in DIRECTORY")
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help="Be verbose")
-    return parser.parse_args(args)
+    return parser.parse_args(argv[1:])
 
 
-def main(argv):
-    args = parse_args(argv[1:])
+def main(argv: List[str]) -> int:
+    args = parse_args(argv)
 
     files = [
         b'HelloWorld.txt',
@@ -47,7 +49,7 @@ def main(argv):
         outfile = os.path.join(args.DIRECTORY[0], filename)
 
         if args.verbose:
-            print("Creating {}".format(shlex.quote(filename).encode("utf-8", errors="ignore")))
+            print("Creating {!r}".format(shlex.quote(filename).encode("utf-8", errors="ignore")))
 
         with open(outfile, "wb") as fout:
             fout.write(os.fsencode(shlex.quote(filename)) + b'\n')
@@ -55,7 +57,7 @@ def main(argv):
     return 0
 
 
-def main_entrypoint():
+def main_entrypoint() -> None:
     sys.exit(main(sys.argv))
 
 

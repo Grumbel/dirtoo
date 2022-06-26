@@ -17,15 +17,16 @@
 # https://wiki.gnome.org/action/show/DraftSpecs/ThumbnailerSpec
 
 
-from typing import Dict, Tuple, Optional, cast
+from typing import Dict, List, Tuple, Optional, cast
+from abc import ABC, abstractmethod
 
 import logging
 import os
 import hashlib
 import urllib.parse
 import mimetypes
-import xdg.BaseDirectory
 from enum import Enum
+import xdg.BaseDirectory
 
 from PyQt5.QtDBus import QDBusReply, QDBusMessage, QDBusInterface
 from PyQt5.QtCore import QObject, pyqtSlot, QVariant
@@ -59,38 +60,40 @@ class DBusThumbnailerError(Enum):
     UNSUPPORTED_FLAVOR = 5
 
 
-def dbus_as(value):
+def dbus_as(value: List[str]) -> QVariant:
     var = QVariant(value)
     ret = var.convert(QVariant.StringList)
     assert ret, "QVariant conversion failure: {}".format(value)
     return var
 
 
-def dbus_uint(value):
+def dbus_uint(value: int) -> QVariant:
     var = QVariant(value)
     ret = var.convert(QVariant.UInt)
     assert ret, "QVariant conversion failure: {}".format(value)
     return var
 
 
-class DBusThumbnailerListener:
+class DBusThumbnailerListener(ABC):
 
-    def __init__(self):
+    @abstractmethod
+    def started(self, handle) -> None:
         pass
 
-    def started(self, handle):
-        pass
-
+    @abstractmethod
     def ready(self, handle, urls, flavor):
         pass
 
+    @abstractmethod
     def error(self, handle, failed_uris, error_code, message):
         pass
 
+    @abstractmethod
     def finished(self, handle):
         pass
 
-    def idle(self):
+    @abstractmethod
+    def idle(self) -> None:
         pass
 
 
@@ -122,7 +125,7 @@ class DBusThumbnailer(QObject):
         self.bus.connect('', '', 'org.freedesktop.thumbnails.Thumbnailer1',
                          'Error', self._receive_error)
 
-    def close(self):
+    def close(self) -> None:
         self.bus.unregisterObject('/')
 
     def _add_request(self, handle, data):
@@ -165,8 +168,8 @@ class DBusThumbnailer(QObject):
                 method,
                 reply.error().name(),
                 reply.error().message()))
-        else:
-            return msg.arguments()
+
+        return msg.arguments()
 
     def queue(self, files, flavor="default") -> Optional[int]:
         logger.debug("DBusThumbnailer.queue: %s  %s", files, flavor)

@@ -68,7 +68,7 @@ class MetaDataCache:
         with open(json_filename, "w") as fout:
             json.dump(metadata, fout)
 
-    def clear_metadata(self, abspath: str):
+    def clear_metadata(self, abspath: str) -> None:
         logger.info("MetaDataCache.clear_metadata: %s", abspath)
 
         json_filename = self._make_filename(abspath)

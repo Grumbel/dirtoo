@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 import argparse
 import logging
 import sys
@@ -22,7 +24,7 @@ import sys
 from dirtoo.archive.extractor import make_extractor
 
 
-def parse_args(args):
+def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Extract archive files")
     parser.add_argument("ARCHIVE", nargs=1,
                         help="Archive to extract")
@@ -32,11 +34,11 @@ def parse_args(args):
                         help="Be verbose")
     parser.add_argument('--debug', action='store_true', default=False,
                         help="Be even more verbose")
-    return parser.parse_args(args)
+    return parser.parse_args(argv[1:])
 
 
-def main(argv):
-    args = parse_args(argv[1:])
+def main(argv: List[str]) -> 0:
+    args = parse_args(argv)
 
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
@@ -47,9 +49,10 @@ def main(argv):
         extractor.sig_entry_extracted.connect(lambda x, y: print(y))
 
     extractor.extract()
+    return 0
 
 
-def main_entrypoint():
+def main_entrypoint() -> None:
     main(sys.argv)
 
 

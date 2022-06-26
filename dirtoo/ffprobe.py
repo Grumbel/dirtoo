@@ -36,12 +36,12 @@ class FFProbe:
 
         try:
             out_bytes, err_bytes = proc.communicate(timeout=15)
-        except subprocess.TimeoutExpired:
+        except subprocess.TimeoutExpired as exc:
             proc.kill()
             out_bytes, err_bytes = proc.communicate()
             out = out_bytes.decode()
             err = err_bytes.decode()
-            raise Exception("FFProbe: timeout: {}".format(filename))
+            raise Exception("FFProbe: timeout: {}".format(filename)) from exc
 
         out = out_bytes.decode()
         err = err_bytes.decode()
@@ -53,16 +53,16 @@ class FFProbe:
         self.streams = self.js['streams']
         self.format = self.js['format']
 
-    def duration(self):
+    def duration(self) -> float:
         return float(self.format['duration']) * 1000
 
-    def width(self):
+    def width(self) -> int:
         return int(self.streams[0]['width'])
 
-    def height(self):
+    def height(self) -> int:
         return int(self.streams[0]['height'])
 
-    def framerate(self):
+    def framerate(self) -> float:
         text = self.streams[0]['avg_frame_rate']
         numerator, denominator = text.split("/")
         return int(numerator) / int(denominator)

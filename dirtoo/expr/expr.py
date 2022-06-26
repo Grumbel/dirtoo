@@ -31,11 +31,11 @@ UnaryExprFunction = Callable[[float], float]
 # FIXME: these logical and/or operators don't have short circuit
 # semantics, shouldn't matter since we try to stay side effect free,
 # but might still be a worthy optimization
-def logical_and(lhs, rhs):
+def logical_and(lhs: ExprValue, rhs: ExprValue) -> bool:
     return lhs and rhs
 
 
-def logical_or(lhs, rhs):
+def logical_or(lhs: ExprValue, rhs: ExprValue) -> bool:
     return lhs or rhs
 
 
@@ -136,7 +136,7 @@ class Function(Expr):
         args = [arg.eval(ctx) for arg in self.args]
         return func(*args)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Function({}, {})".format(self.name, ", ".join([repr(x) for x in self.args]))
 
 
@@ -152,7 +152,7 @@ class Number(Expr):
     def eval(self, ctx: Context) -> ExprValue:
         return self.value
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.unit is None:
             return str(self.value)
         else:
@@ -167,7 +167,7 @@ class String(Expr):
     def eval(self, ctx: Context) -> ExprValue:
         return self.value
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr(self.value)
 
 
@@ -180,7 +180,7 @@ class Variable(Expr):
     def eval(self, ctx: Context) -> ExprValue:
         return ctx.get_variable(self.name)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Variable({})".format(self.name)
 
 
@@ -194,7 +194,7 @@ class Operator(Expr):
     def eval(self, ctx: Context) -> ExprValue:
         return get_operator_fn(self.op)(self.lhs.eval(ctx), self.rhs.eval(ctx))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Operator({}, {}, {})".format(self.op, self.lhs, self.rhs)
 
 
@@ -207,7 +207,7 @@ class UnaryOperator(Expr):
     def eval(self, ctx: Context):
         return get_unary_operator_fn(self.op)(self.lhs.eval(ctx))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "UnaryOperator({}, {})".format(self.op, self.lhs)
 
 

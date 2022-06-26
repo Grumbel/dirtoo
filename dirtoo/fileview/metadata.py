@@ -21,6 +21,7 @@ import os
 import logging
 
 from PyPDF2 import PdfFileReader
+from PyQt5.QtCore import QMimeDatabase
 
 from dirtoo.mediainfo import MediaInfo
 from dirtoo.archive.archiveinfo import ArchiveInfo
@@ -31,7 +32,7 @@ logger = logging.getLogger(__name__)
 class MetaData:
 
     @staticmethod
-    def from_path(abspath: str, mimedb) -> Dict:
+    def from_path(abspath: str, mimedb: QMimeDatabase) -> Dict:
         mimetype = mimedb.mimeTypeForFile(abspath)
 
         metadata: Dict[str, Any] = {}

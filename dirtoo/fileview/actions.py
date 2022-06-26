@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import logging
 
@@ -52,7 +52,7 @@ class Actions(QObject):
         self.save_as.setStatusTip('Save the current file selection')
         self.save_as.triggered.connect(self.controller.save_as)
 
-        def on_debug(enabled):
+        def on_debug(enabled: bool) -> None:
             if enabled:
                 logging.getLogger().setLevel(logging.DEBUG)
             else:
@@ -240,16 +240,16 @@ class Actions(QObject):
         self.sort_by_date = QAction("Sort by Date", checkable=True)
         self.sort_by_date.triggered.connect(lambda: self.controller.set_sort_key_func(FileInfo.mtime))
 
-        def framerate_key(fileinfo):
-            return fileinfo.get_metadata_or('framerate', 0)
+        def framerate_key(fileinfo: FileInfo) -> float:
+            return cast(float, fileinfo.get_metadata_or('framerate', 0.0))
 
         self.sort_by_framerate = QAction("Sort by Framerate", checkable=True)
         self.sort_by_framerate.triggered.connect(lambda: self.controller.set_sort_key_func(framerate_key))
 
-        def aspect_ratio_key(fileinfo: FileInfo):
+        def aspect_ratio_key(fileinfo: FileInfo) -> float:
             if fileinfo.has_metadata('width') and fileinfo.has_metadata('height'):
-                width = fileinfo.get_metadata('width')
-                height = fileinfo.get_metadata('height')
+                width = int(fileinfo.get_metadata('width'))
+                height = int(fileinfo.get_metadata('height'))
                 if height == 0:
                     logger.error("{}: height is 0".format(fileinfo))
                     return 0
@@ -260,16 +260,16 @@ class Actions(QObject):
         self.sort_by_aspect_ratio = QAction("Sort by Aspect Ratio", checkable=True)
         self.sort_by_aspect_ratio.triggered.connect(lambda: self.controller.set_sort_key_func(aspect_ratio_key))
 
-        def resolution_key(fileinfo):
-            width = fileinfo.get_metadata_or('width', 0)
-            height = fileinfo.get_metadata_or('height', 0)
+        def resolution_key(fileinfo: FileInfo) -> int:
+            width = cast(int, fileinfo.get_metadata_or('width', 0))
+            height = cast(int, fileinfo.get_metadata_or('height', 0))
             return width * height
 
         self.sort_by_resolution = QAction("Sort by Resolution", checkable=True)
         self.sort_by_resolution.triggered.connect(lambda: self.controller.set_sort_key_func(resolution_key))
 
-        def duration_key(fileinfo):
-            fileinfo.get_metadata_or('duration', 0)
+        def duration_key(fileinfo: FileInfo) -> int:
+            return cast(int, fileinfo.get_metadata_or('duration', 0))
 
         self.sort_by_duration = QAction("Sort by Duration", checkable=True)
         self.sort_by_duration.triggered.connect(lambda: self.controller.set_sort_key_func(duration_key))
@@ -322,7 +322,7 @@ class Actions(QObject):
         self.show_preferences = QAction(QIcon.fromTheme("preferences-system"), "Preferencs...")
         self.show_preferences.triggered.connect(self.controller.show_preferences)
 
-        def on_filter_pin(checked) -> None:
+        def on_filter_pin(checked: bool) -> None:
             # FIXME: Could use icon state for this
             if checked:
                 self.filter_pin.setIcon(QIcon.fromTheme("remmina-pin-down"))

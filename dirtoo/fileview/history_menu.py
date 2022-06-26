@@ -15,10 +15,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import TYPE_CHECKING
+
 from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QMenu
+
+if TYPE_CHECKING:
+    from dirtoo.fileview.controller import Controller
+    from dirtoo.location import Location
 
 
-def make_history_menu_entries(controller, history_menu, entries):
+def make_history_menu_entries(controller: 'Controller', history_menu: QMenu, entries: 'Location') -> None:
     icon = QIcon.fromTheme("folder")
     for entry in entries:
         action = history_menu.addDoubleAction(

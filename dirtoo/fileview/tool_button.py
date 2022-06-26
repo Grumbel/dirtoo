@@ -15,8 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import TYPE_CHECKING
+
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QToolButton
+
+if TYPE_CHECKING:
+    from PyQt5.QtGui import QMouseEvent
 
 
 class ToolButton(QToolButton):
@@ -29,7 +34,7 @@ class ToolButton(QToolButton):
         super().__init__()
         self._middle_pressed = False
 
-    def mousePressEvent(self, ev):
+    def mousePressEvent(self, ev: 'QMouseEvent') -> None:
         if ev.button() != Qt.MiddleButton:
             if self._middle_pressed:
                 ev.ignore()
@@ -39,7 +44,7 @@ class ToolButton(QToolButton):
             self.setDown(True)
             self._middle_pressed = True
 
-    def mouseReleaseEvent(self, ev):
+    def mouseReleaseEvent(self, ev: 'QMouseEvent') -> None:
         if ev.button() != Qt.MiddleButton:
             if self._middle_pressed:
                 ev.ignore()
@@ -52,7 +57,7 @@ class ToolButton(QToolButton):
             self.setDown(False)
             self._middle_pressed = False
 
-    def mouseMoveEvent(self, ev):
+    def mouseMoveEvent(self, ev: 'QMouseEvent') -> None:
         if self._middle_pressed:
             if not self.rect().contains(ev.pos()):
                 self.setDown(False)

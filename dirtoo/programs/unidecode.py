@@ -24,7 +24,7 @@ from unidecode import unidecode
 from colorama import Fore, Back, Style
 
 
-def parse_args(args: List[str]) -> argparse.Namespace:
+def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Highlight or transliterate non-ASCII characters")
     parser.add_argument("-c", "--color", action='store_true',
                         help="Highlight non-ASCII characters")
@@ -32,11 +32,11 @@ def parse_args(args: List[str]) -> argparse.Namespace:
                         help="Convert Unicode characters into equivalent ASCII")
     parser.add_argument("-q", "--quiet", action='store_true',
                         help="Only output lines containing non-ASCII characters")
-    return parser.parse_args(args)
+    return parser.parse_args(argv[1:])
 
 
-def main():
-    args = parse_args(sys.argv[1:])
+def main() -> None:
+    args = parse_args(sys.argv)
 
     for line in sys.stdin.readlines():
         line_contains_unicode = bool(re.search(r'([^\x00-\x7F])', line))

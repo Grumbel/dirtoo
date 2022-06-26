@@ -60,10 +60,10 @@ class TransferDialog(QDialog):
     def _on_close_checkbox_toggled(self, state):
         settings.set_value("globals/close_on_transfer_completed", state)
 
-    def _on_transfer_canceled(self):
+    def _on_transfer_canceled(self) -> None:
         self._transfer_log_widget.append("transfer canceled")
 
-    def _on_pause_button(self):
+    def _on_pause_button(self) -> None:
         print("transfer pause not implemented")
 
         if self._paused:
@@ -195,7 +195,7 @@ class TransferDialog(QDialog):
         progress.sig_transfer_canceled.connect(self._on_transfer_canceled)
         progress.sig_transfer_completed.connect(self._on_transfer_completed)
 
-    def _on_copy_file(self, src: str, dst: str, resolution: ConflictResolution):
+    def _on_copy_file(self, src: str, dst: str, resolution: ConflictResolution) -> None:
         if resolution == ConflictResolution.SKIP:
             self._transfer_log_widget.append("skipping file {}".format(src))
         else:
@@ -203,14 +203,14 @@ class TransferDialog(QDialog):
             self._source_widget.setText(src)
             self._dest_widget.setText(dst)
 
-    def _on_copy_progress(self, src: str, current: int, total: int):
+    def _on_copy_progress(self, src: str, current: int, total: int) -> None:
         self._progress_bar.setMinimum(0)
         self._progress_bar.setMaximum(total)
         self._progress_bar.setValue(current)
 
         self._transfered.setText("{} / {}".format(bytefmt.humanize(current), bytefmt.humanize(total)))
 
-    def _on_copy_directory(self, src: str, dst: str, resolution: ConflictResolution):
+    def _on_copy_directory(self, src: str, dst: str, resolution: ConflictResolution) -> None:
         if resolution == ConflictResolution.SKIP:
             self._transfer_log_widget.append("skipping directory {}".format(src))
         else:
@@ -218,7 +218,7 @@ class TransferDialog(QDialog):
             self._source_widget.setText(src)
             self._dest_widget.setText(dst)
 
-    def _on_move_file(self, src: str, dst: str, resolution: ConflictResolution):
+    def _on_move_file(self, src: str, dst: str, resolution: ConflictResolution) -> None:
         if resolution == ConflictResolution.SKIP:
             self._transfer_log_widget.append("skipping file {}".format(src))
         else:
@@ -226,7 +226,7 @@ class TransferDialog(QDialog):
             self._source_widget.setText(src)
             self._dest_widget.setText(dst)
 
-    def _on_move_directory(self, src: str, dst: str, resolution: ConflictResolution):
+    def _on_move_directory(self, src: str, dst: str, resolution: ConflictResolution) -> None:
         if resolution == ConflictResolution.SKIP:
             self._transfer_log_widget.append("skipping directory {}".format(src))
         else:
@@ -234,7 +234,7 @@ class TransferDialog(QDialog):
             self._source_widget.setText(src)
             self._dest_widget.setText(dst)
 
-    def _on_link_file(self, src: str, dst: str, resolution: ConflictResolution):
+    def _on_link_file(self, src: str, dst: str, resolution: ConflictResolution) -> None:
         if resolution == ConflictResolution.SKIP:
             self._transfer_log_widget.append("skipping directory {}".format(src))
         else:
@@ -242,14 +242,14 @@ class TransferDialog(QDialog):
             self._source_widget.setText(src)
             self._dest_widget.setText(dst)
 
-    def _on_remove_file(self, src: str):
+    def _on_remove_file(self, src: str) -> None:
         self._transfer_log_widget.append("removing file {}".format(src))
         self._source_widget.setText(src)
 
-    def _on_remove_directory(self, src: str):
+    def _on_remove_directory(self, src: str) -> None:
         self._transfer_log_widget.append("removing directory {}".format(src))
 
-    def _on_transfer_completed(self):
+    def _on_transfer_completed(self) -> None:
         self._transfer_log_widget.append("transfer completed")
 
         self._btn_cancel.setVisible(False)

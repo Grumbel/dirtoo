@@ -29,18 +29,18 @@ from PyQt5.QtWidgets import QApplication
 logger = logging.getLogger(__name__)
 
 
-def parse_args(args: List[str], simple) -> argparse.Namespace:
+def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Find icons")
     parser.add_argument("ICON", nargs='*')
     parser.add_argument("-l", "--list", action='store_true', default=False,
                         help="List available icons")
     parser.add_argument("-m", "--mime-type", action='store_true', default=False,
                         help="Lookup icons by mime-type")
-    return parser.parse_args(args)
+    return parser.parse_args(argv[1:])
 
 
-def main(argv, simple) -> None:
-    args = parse_args(argv[1:], simple)
+def main(argv: List[str]) -> None:
+    args = parse_args(argv)
 
     app = QApplication([])  # noqa: F841
 
@@ -76,8 +76,8 @@ def main(argv, simple) -> None:
                     print("{}: {}".format(iconname, "OK" if QIcon.hasThemeIcon(iconname) else "FAILED"))
 
 
-def main_entrypoint():
-    main(sys.argv, simple=False)
+def main_entrypoint() -> None:
+    main(sys.argv)
 
 
 # EOF #

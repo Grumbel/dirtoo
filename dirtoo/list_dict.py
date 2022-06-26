@@ -47,7 +47,7 @@ class ListDict(Generic[KT, VT], Sized, Iterable):
     def __iter__(self) -> Iterator[VT]:
         return (x for x in self._list if x is not None)
 
-    def replace(self, key: KT, value: VT):
+    def replace(self, key: KT, value: VT) -> None:
         idx = self._key2idx[key]
         self._list[idx] = value
 
@@ -68,20 +68,20 @@ class ListDict(Generic[KT, VT], Sized, Iterable):
         self._list[idx] = None
         del self._key2idx[key]
 
-    def sort(self, key: Callable[[VT], Any], reverse: bool = False):
+    def sort(self, key: Callable[[VT], Any], reverse: bool = False) -> None:
         self._list = [x for x in self._list if x is not None]
         self._list.sort(key=cast(Callable[[Optional[VT]], Any], key),
                         reverse=reverse)
         self._rebuild_index()
 
-    def clear(self):
+    def clear(self) -> None:
         self._list.clear()
         self._key2idx.clear()
 
     def __contains__(self, key: KT) -> bool:
         return key in self._key2idx
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._key2idx)
 
     def __str__(self) -> str:

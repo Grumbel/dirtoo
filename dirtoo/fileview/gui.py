@@ -17,8 +17,8 @@
 
 from typing import TYPE_CHECKING, Optional, cast
 
-from PyQt5.QtCore import QObject, Qt, QEvent
-from PyQt5.QtWidgets import QFileDialog, QTextEdit, QDialog, QMessageBox
+from PyQt5.QtCore import QObject, Qt, QEvent, QPoint
+from PyQt5.QtWidgets import (QFileDialog, QTextEdit, QDialog, QMessageBox)
 from PyQt5.QtGui import QCursor, QMouseEvent, QContextMenuEvent
 
 from dirtoo.fileview.file_view_window import FileViewWindow
@@ -30,6 +30,7 @@ from dirtoo.fileview.properties_dialog import PropertiesDialog
 
 if TYPE_CHECKING:
     from dirtoo.file_info import FileInfo
+    from dirtoo.fileview.file_item import FileItem
     from dirtoo.fileview.controller import Controller
 
 
@@ -73,13 +74,13 @@ class Gui(QObject):
                          Qt.NoModifier)
         self._window.file_view.mouseMoveEvent(ev)
 
-    def on_context_menu(self, pos) -> None:
+    def on_context_menu(self, pos: QPoint) -> None:
         assert self._controller.location is not None
         menu = DirectoryContextMenu(self._controller, self._controller.location)
         menu.exec(pos)
         self.fake_mouse()
 
-    def on_item_context_menu(self, ev, item) -> None:
+    def on_item_context_menu(self, ev: QContextMenuEvent, item: 'FileItem') -> None:
         if item.isSelected():
             selected_items = self._window.file_view._scene.selectedItems()
         else:
@@ -119,7 +120,7 @@ class Gui(QObject):
         else:
             return None
 
-    def show_error(self, title, message) -> None:
+    def show_error(self, title: str, message: str) -> None:
         msg = QMessageBox(self._window)
         msg.setIcon(QMessageBox.Critical)
         msg.setWindowTitle(title)
@@ -131,7 +132,7 @@ class Gui(QObject):
         dialog = AboutDialog()
         dialog.exec()
 
-    def show_properties_dialog(self, fileinfo: 'FileInfo'):
+    def show_properties_dialog(self, fileinfo: 'FileInfo') -> None:
         dialog = PropertiesDialog(fileinfo, self._window)
         dialog.exec()
 

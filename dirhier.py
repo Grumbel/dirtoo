@@ -52,7 +52,7 @@ def process_directory(directory):
             else:
                 logging.info("ignore %s", filename)
 
-            statinfo = os.lstat(filename)
+            # statinfo = os.lstat(filename)
         print("}")
 
 
@@ -66,5 +66,6 @@ if __name__ == "__main__":
 
     for directory in args.DIRECTORY:
         process_directory(directory)
+
 
 # EOF #

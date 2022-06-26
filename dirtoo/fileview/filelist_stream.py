@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, Optional, IO
+from typing import TYPE_CHECKING, Optional, IO, Generator
 
 import logging
 import fcntl
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def non_blocking_readline(fp, linesep):
+def non_blocking_readline(fp: IO, linesep: str) -> Generator[str, None, None]:
     flag = fcntl.fcntl(fp, fcntl.F_GETFL)
     fcntl.fcntl(fp.fileno(), fcntl.F_SETFL, flag | os.O_NONBLOCK)
 
@@ -68,7 +68,7 @@ class FileListStream(QObject):
     sig_error = pyqtSignal()
 
     @staticmethod
-    def from_location(app, linesep, location):
+    def from_location(app, linesep: str, location: Location) -> 'FileListStream':
         if location.get_path() in ["/stdin", "stdin"]:
             tee_fd, stream_id = app.stream_manager.get_stdin()
         else:
@@ -91,10 +91,10 @@ class FileListStream(QObject):
         self.readliner = None
         self.socket_notifier: Optional[QSocketNotifier] = None
 
-    def close(self):
+    def close(self) -> None:
         self.fp.close()
 
-    def start(self):
+    def start(self) -> None:
         self.readliner = non_blocking_readline(self.fp, self.linesep)
 
         self.socket_notifier = QSocketNotifier(self.fp.fileno(), QSocketNotifier.Read)

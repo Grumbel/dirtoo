@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List, Optional
+
 import argparse
 import os
 import sys
@@ -28,7 +30,7 @@ from dirtoo.xdg_desktop import get_desktop_file
 # https://standards.freedesktop.org/desktop-entry-spec/latest/
 
 
-def parse_args(args):
+def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Query the systems .desktop files")
 
     group = parser.add_mutually_exclusive_group(required=True)
@@ -40,11 +42,11 @@ def parse_args(args):
 
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help="Be verbose")
-    return parser.parse_args(args)
+    return parser.parse_args(argv[1:])
 
 
-def main(argv):
-    args = parse_args(argv[1:])
+def main(argv: List[str]) -> int:
+    args = parse_args(argv)
 
     if args.list_dirs:
         for directory in xdg_data_dirs:
@@ -56,24 +58,29 @@ def main(argv):
                 for entry in os.listdir(path):
                     if entry.endswith(".desktop"):
                         if args.verbose:
-                            filename = os.path.join(path, entry)
-                            desktop = DesktopEntry(filename)
-                            print("{:70}  {:40}  {:40}".format(filename, desktop.getName(), desktop.getExec()))
+                            desktop_filename = os.path.join(path, entry)
+                            desktop = DesktopEntry(desktop_filename)
+                            print("{:70}  {:40}  {:40}".format(desktop_filename, desktop.getName(), desktop.getExec()))
                         else:
                             print(os.path.join(path, entry))
             except FileNotFoundError:
                 pass
     else:
-        filename = get_desktop_file(args.DESKTOP)
-        print(filename)
-        desktop = DesktopEntry(filename)
-        print("Name: {}".format(desktop.getName()))
-        print("Exec: {}".format(desktop.getExec()))
-        print("TryExec: {}".format(desktop.getTryExec()))
-        print("Mime-Types: {}".format(desktop.getMimeTypes()))
+        filename: Optional[str] = get_desktop_file(args.DESKTOP)
+        if not filename:
+            pass
+        else:
+            print(filename)
+            desktop = DesktopEntry(filename)
+            print("Name: {}".format(desktop.getName()))
+            print("Exec: {}".format(desktop.getExec()))
+            print("TryExec: {}".format(desktop.getTryExec()))
+            print("Mime-Types: {}".format(desktop.getMimeTypes()))
+
+    return 0
 
 
-def main_entrypoint():
+def main_entrypoint() -> None:
     exit(main(sys.argv))
 
 

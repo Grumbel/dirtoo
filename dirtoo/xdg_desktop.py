@@ -15,12 +15,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Optional
+
 import os
 
 from xdg.DesktopEntry import DesktopEntry
 
 
-def get_desktop_file(desktop_file):
+def get_desktop_file(desktop_file: str) -> Optional[str]:
     from xdg.BaseDirectory import xdg_data_dirs
 
     if not desktop_file:
@@ -34,7 +36,7 @@ def get_desktop_file(desktop_file):
     return None
 
 
-def get_desktop_entry(desktop_file):
+def get_desktop_entry(desktop_file: str) -> Optional[DesktopEntry]:
     if os.path.isabs(desktop_file):
         return DesktopEntry(desktop_file)
     else:

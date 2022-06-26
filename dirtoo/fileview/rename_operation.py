@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 class RenameOperation:
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     def _rename(self, oldpath: str, newpath: str) -> None:
@@ -41,7 +41,7 @@ class RenameOperation:
                     oldpath, newpath)
         os.rename(oldpath, newpath)
 
-    def _show_rename_error_has_payload(self, location: Location, parent: Optional[QWidget]):
+    def _show_rename_error_has_payload(self, location: Location, parent: Optional[QWidget]) -> None:
         msg = QMessageBox(parent)
         msg.setIcon(QMessageBox.Warning)
         msg.setWindowTitle("Rename Error")
@@ -51,7 +51,7 @@ class RenameOperation:
         msg.exec()
 
     def _show_rename_error_os_error(self, location: Location, err: OSError, tb: str,
-                                    parent: Optional[QWidget]):
+                                    parent: Optional[QWidget]) -> None:
         msg = QMessageBox(parent)
         msg.setIcon(QMessageBox.Critical)
         msg.setWindowTitle("Rename Error")
@@ -66,7 +66,7 @@ class RenameOperation:
         msg.setStandardButtons(QMessageBox.Ok)
         msg.exec()
 
-    def _show_rename_error_file_exists(self, location: Location, parent: Optional[QWidget]):
+    def _show_rename_error_file_exists(self, location: Location, parent: Optional[QWidget]) -> None:
         msg = QMessageBox(parent)
         msg.setIcon(QMessageBox.Critical)
         msg.setWindowTitle("Rename Error")

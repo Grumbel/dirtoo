@@ -82,7 +82,7 @@ class FilterCommandParser:
         else:
             self._commands[aliases] = ([aliases], func, help)
 
-    def _register_commands(self):
+    def _register_commands(self) -> None:
         pass
         # self.register_command(
         #     ["video", "videos", "vid", "vids"],

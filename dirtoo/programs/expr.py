@@ -25,16 +25,16 @@ import sys
 from dirtoo.expr import Parser, Context
 
 
-def parse_args(args: List[str]) -> argparse.Namespace:
+def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate expressions")
     parser.add_argument("EXPRESSION", nargs='+')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help="Be verbose")
-    return parser.parse_args(args)
+    return parser.parse_args(argv[1:])
 
 
 def main(argv: List[str]) -> None:
-    args = parse_args(argv[1:])
+    args = parse_args(argv)
 
     parser = Parser()
     ctx = Context()

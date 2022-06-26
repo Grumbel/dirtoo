@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import cast, List
 
 import logging
 
@@ -28,7 +28,7 @@ from dirtoo.util import read_lines_from_files
 logger = logging.getLogger(__name__)
 
 
-def parse_args(args: List[str]) -> argparse.Namespace:
+def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Shuffle lines")
 
     parser.add_argument("FILE", nargs='*')
@@ -38,13 +38,13 @@ def parse_args(args: List[str]) -> argparse.Namespace:
     parser.add_argument("-s", "--seed", type=int, default=None,
                         help="Random seed")
 
-    return parser.parse_args(args)
+    return parser.parse_args(argv[1:])
 
 
-def main(argv):
+def main(argv: List[str]) -> None:
     logging.basicConfig(level=logging.WARNING)
 
-    args = parse_args(argv[1:])
+    args = parse_args(argv)
 
     rnd = random.Random(args.seed)
 
@@ -53,14 +53,14 @@ def main(argv):
 
     if args.null:
         for line in lines:
-            sys.stdout.buffer.write(line)
+            sys.stdout.buffer.write(cast(bytes, line))
             sys.stdout.buffer.write(b"\0")
     else:
         for line in lines:
             print(line)
 
 
-def main_entrypoint():
+def main_entrypoint() -> None:
     main(sys.argv)
 
 

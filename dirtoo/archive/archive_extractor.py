@@ -123,7 +123,7 @@ class ArchiveExtractor(WorkerThread):
         self.sig_started.emit(self)
 
     @property
-    def sig_entry_extracted(self):
+    def sig_entry_extracted(self) -> pyqtSignal:
         return self._worker.sig_entry_extracted
 
 

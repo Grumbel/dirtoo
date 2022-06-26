@@ -15,7 +15,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import gc
 import unittest
 
 from PyQt5.QtWidgets import QApplication, QPushButton

@@ -16,15 +16,12 @@
 
 
 import os
-import pyparsing
 import signal
 import tempfile
 import unittest
 
 from dirtoo.archive.extractor import ExtractorResult
 from dirtoo.archive.rar_extractor import RarExtractor
-
-from PyQt5.QtCore import QCoreApplication, QTimer
 
 
 DATADIR = os.path.dirname(__file__)

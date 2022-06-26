@@ -39,8 +39,6 @@ def _to_int(text: Optional[str], default: int = 0) -> int:
                 return int(float(text))
             except ValueError:
                 return default
-        else:
-            return default
 
 
 def split_duration(duration: int) -> Tuple[int, int, int]:

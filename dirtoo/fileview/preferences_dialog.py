@@ -24,13 +24,13 @@ from dirtoo.fileview.settings import settings
 
 class PreferencesDialog(QDialog):
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
         self.setWindowTitle("dt-fileview Preferences")
         self._make_gui()
 
-    def _make_gui(self):
+    def _make_gui(self) -> None:
         self._vbox = QVBoxLayout()
 
         self._vbox.addWidget(self._make_applications_box())
@@ -44,7 +44,7 @@ class PreferencesDialog(QDialog):
 
         self.setLayout(self._vbox)
 
-    def _make_applications_box(self):
+    def _make_applications_box(self) -> QGroupBox:
         self._applications_group_box = QGroupBox("Applications")
         vbox = QVBoxLayout()
 
@@ -57,7 +57,7 @@ class PreferencesDialog(QDialog):
 
         return self._applications_group_box
 
-    def _make_layout_group_box(self):
+    def _make_layout_group_box(self) -> QGroupBox:
         # Layout Box
         self._layout_group_box = QGroupBox("Layout")
         vbox = QVBoxLayout()
@@ -77,7 +77,7 @@ class PreferencesDialog(QDialog):
         self._layout_group_box.setLayout(vbox)
         return self._layout_group_box
 
-    def _make_cache_group_box(self):
+    def _make_cache_group_box(self) -> QGroupBox:
         self._cache_group_box = QGroupBox("Cache")
         vbox = QVBoxLayout()
         label = QLabel("Maximum Cache Size")
@@ -93,7 +93,7 @@ class PreferencesDialog(QDialog):
         self._cache_group_box.setLayout(vbox)
         return self._cache_group_box
 
-    def _make_transfer_group_box(self):
+    def _make_transfer_group_box(self) -> QGroupBox:
         self._transfer_group_box = QGroupBox("Transfer")
         vbox = QVBoxLayout()
 

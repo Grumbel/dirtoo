@@ -26,7 +26,7 @@ from dirtoo.format import progressbar
 import dirtoo.duration as duration
 
 
-def parse_args(args: List[str]) -> argparse.Namespace:
+def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Sleep with progressbar")
     parser.add_argument("TIME", nargs=1, type=parse_duration)
     parser.add_argument('-q', '--quiet', action='store_true', default=False,
@@ -35,7 +35,7 @@ def parse_args(args: List[str]) -> argparse.Namespace:
                         help="Count down instead of up")
     parser.add_argument('-s', '--start', metavar="SECONDS", type=parse_duration, default=0.0,
                         help="Start the countdown at SECONDS")
-    return parser.parse_args(args)
+    return parser.parse_args(argv[1:])
 
 
 def split_duration(duration: int) -> Tuple[int, int, int]:
@@ -55,7 +55,7 @@ def parse_duration(text: str) -> float:
         return result
 
 
-def print_time(p: float, total: float, countdown: bool):
+def print_time(p: float, total: float, countdown: bool) -> None:
     columns, lines = os.get_terminal_size()
 
     if countdown:
@@ -70,7 +70,7 @@ def print_time(p: float, total: float, countdown: bool):
 
 
 def main(argv: List[str]) -> None:
-    args = parse_args(argv[1:])
+    args = parse_args(argv)
 
     total = args.TIME[0]
 

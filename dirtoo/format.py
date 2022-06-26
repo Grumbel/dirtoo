@@ -32,10 +32,10 @@ def progressbar(width: int, current: int, total: int) -> str:
     full = p // segments_per_block
 
     if full == width:
-        return ((full * fullblock) + (width - full) * emptyblock)
+        return (full * fullblock) + (width - full) * emptyblock
     else:
         partial = p % segments_per_block
-        return ((full * fullblock) + blocks[partial] + (width - full - 1) * emptyblock)
+        return (full * fullblock) + blocks[partial] + (width - full - 1) * emptyblock
 
 
 # EOF #

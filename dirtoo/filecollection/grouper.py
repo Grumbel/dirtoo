@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, Any, Dict, cast
+from typing import TYPE_CHECKING, cast, Any, Dict, Optional
 
 from functools import total_ordering
 from datetime import datetime
@@ -43,10 +43,10 @@ class Group:
     def __lt__(self, other: 'Group') -> bool:
         return cast(bool, self.value < other.value)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.value)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.label
 
 
@@ -55,7 +55,7 @@ class Grouper:
     def __init__(self) -> None:
         pass
 
-    def __call__(self, fileinfo: 'FileInfo'):
+    def __call__(self, fileinfo: 'FileInfo') -> None:
         pass
 
 
@@ -64,7 +64,7 @@ class NoGrouper(Grouper):
     def __init__(self) -> None:
         pass
 
-    def __call__(self, fileinfo: 'FileInfo'):
+    def __call__(self, fileinfo: 'FileInfo') -> None:
         fileinfo.group = None
 
 
@@ -73,7 +73,7 @@ class DayGrouper(Grouper):
     def __init__(self) -> None:
         self._groups: Dict[str, Group] = {}
 
-    def __call__(self, fileinfo: 'FileInfo'):
+    def __call__(self, fileinfo: 'FileInfo') -> None:
         if fileinfo.isdir():
             fileinfo.group = None
         else:
@@ -91,7 +91,7 @@ class DirectoryGrouper(Grouper):
     def __init__(self) -> None:
         pass
 
-    def __call__(self, fileinfo: 'FileInfo'):
+    def __call__(self, fileinfo: 'FileInfo') -> None:
         fileinfo.group = fileinfo.dirname()
 
 
@@ -106,13 +106,13 @@ class DurationGrouper(Grouper):
             (lambda x: True, Group("Very Short (< 5 minutes)", 0)),
         ]
 
-    def _find_bucket(self, x):
+    def _find_bucket(self, x: float) -> Optional[Group]:
         for (bucket, group) in self._buckets:
             if bucket(x):
                 return group
         return None
 
-    def __call__(self, fileinfo: 'FileInfo'):
+    def __call__(self, fileinfo: 'FileInfo') -> None:
         if fileinfo.has_metadata("duration"):
             fileinfo.group = self._find_bucket(fileinfo.get_metadata("duration") / 60000)
         else:

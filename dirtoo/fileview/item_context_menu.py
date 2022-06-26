@@ -38,7 +38,7 @@ class ItemContextMenu(Menu):
         self._fileinfo = self._fileinfos[0]
         self._build_menu()
 
-    def _build_menu(self):
+    def _build_menu(self) -> None:
         if self._fileinfo.is_archive():
             self._build_archive_menu()
         elif self._fileinfo.isdir():
@@ -52,8 +52,8 @@ class ItemContextMenu(Menu):
         self._build_rename_menu()
         self._build_properties_entry()
 
-    def _build_archive_menu(self):
-        def make_extract(archive_location):
+    def _build_archive_menu(self) -> None:
+        def make_extract(archive_location: Location) -> Location:
             location = archive_location.copy()
             location._payloads.append(Payload("archive", ""))
             return location
@@ -70,11 +70,11 @@ class ItemContextMenu(Menu):
             left_func, middle_func)
         self.addSeparator()
 
-    def _build_directory_menu(self):
-        def left_func(location=self._fileinfo.location()):
+    def _build_directory_menu(self) -> None:
+        def left_func(location: Location = self._fileinfo.location()) -> None:
             self._controller.set_location(location)
 
-        def middle_func(location=self._fileinfo.location()):
+        def middle_func(location: Location = self._fileinfo.location()) -> None:
             self._controller.new_controller().set_location(location)
 
         self.addDoubleAction(
@@ -83,11 +83,11 @@ class ItemContextMenu(Menu):
             left_func, middle_func)
         self.addSeparator()
 
-    def _build_open_containing_folder(self):
-        def left_func(location=self._fileinfo.location().parent()):
+    def _build_open_containing_folder(self) -> None:
+        def left_func(location: Location = self._fileinfo.location().parent()) -> None:
             self._controller.set_location(location)
 
-        def middle_func(location=self._fileinfo.location().parent()):
+        def middle_func(location: Location = self._fileinfo.location().parent()) -> None:
             self._controller.new_controller().set_location(location)
 
         self.addDoubleAction(
@@ -131,7 +131,7 @@ class ItemContextMenu(Menu):
 
         default_apps, other_apps = self._get_supported_apps(files)
 
-        def make_launcher_menu(menu, apps):
+        def make_launcher_menu(menu: QMenu, apps):
             entries = [get_desktop_entry(app) for app in apps]
             entries = sorted(entries, key=lambda x: x.getName())
             for entry in entries:
@@ -155,7 +155,7 @@ class ItemContextMenu(Menu):
 
         self.addSeparator()
 
-    def _build_actions_menu(self):
+    def _build_actions_menu(self) -> None:
         actions_menu = QMenu("Actions", self)
         actions_menu.addAction(self._controller.actions.reload_thumbnails)
         actions_menu.addAction(self._controller.actions.reload_metadata)
@@ -169,7 +169,7 @@ class ItemContextMenu(Menu):
         self.addMenu(actions_menu)
         self.addSeparator()
 
-    def _build_open_terminal_menu(self):
+    def _build_open_terminal_menu(self) -> None:
         if len(self._fileinfos) > 1:
             return
 
@@ -180,7 +180,7 @@ class ItemContextMenu(Menu):
                            self._controller.app.executor.launch_terminal(location))
             self.addSeparator()
 
-    def _build_edit_menu(self):
+    def _build_edit_menu(self) -> None:
         self.addAction(self._controller.actions.edit_cut)
         self.addAction(self._controller.actions.edit_copy)
 
@@ -197,7 +197,7 @@ class ItemContextMenu(Menu):
         self.addAction("Move To Trash")
         self.addSeparator()
 
-    def _build_rename_menu(self):
+    def _build_rename_menu(self) -> None:
         rename = self.addAction(
             QIcon.fromTheme('rename'), 'Rename',
             lambda location=self._fileinfo.location():
@@ -207,7 +207,7 @@ class ItemContextMenu(Menu):
         self.addAction(rename)
         self.addSeparator()
 
-    def _build_properties_entry(self):
+    def _build_properties_entry(self) -> None:
         self.addAction("Properties...", lambda: self._controller.show_properties_dialog(self._fileinfo))
 
 

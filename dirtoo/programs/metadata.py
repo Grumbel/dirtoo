@@ -30,7 +30,7 @@ from dirtoo.fileview.stdio_filesystem import StdioFilesystem
 from dirtoo.location import Location
 
 
-def parse_args(args: List[str]) -> argparse.Namespace:
+def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate and show file metadata")
     parser.add_argument("FILE", nargs='+')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
@@ -39,11 +39,11 @@ def parse_args(args: List[str]) -> argparse.Namespace:
                         help="Recurse into directories")
     parser.add_argument('-d', '--delete', action='store_true', default=False,
                         help="Delete metadata for the given files")
-    return parser.parse_args(args)
+    return parser.parse_args(argv[1:])
 
 
 def main(argv: List[str]) -> int:
-    args = parse_args(argv[1:])
+    args = parse_args(argv)
 
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     app = QCoreApplication([])

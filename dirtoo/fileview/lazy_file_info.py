@@ -37,7 +37,7 @@ class LazyFileInfo:
         fi = LazyFileInfo(path)
         return fi
 
-    def __init__(self, path) -> None:
+    def __init__(self, path: str) -> None:
         self._abspath: str = os.path.abspath(path)
 
         self._location: Optional[Location] = None

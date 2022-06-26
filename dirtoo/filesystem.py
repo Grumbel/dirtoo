@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Callable
+from typing import Any, List, Callable
 
 import logging
 import os
@@ -28,8 +28,9 @@ logger = logging.getLogger(__name__)
 CopyProgressCallback = Callable[[int, int], None]
 
 
-def null_progress(current: int, total: int):
-    pass
+def null_progress(current: int, total: int) -> None:
+    del current
+    del total
 
 
 class Filesystem:
@@ -69,7 +70,7 @@ class Filesystem:
     def listdir(self, path: str) -> List[str]:
         return os.listdir(path)
 
-    def scandir(self, path: str):
+    def scandir(self, path: str) -> Any:
         return os.scandir(path)
 
     def symlink(self, src: str, dst: str) -> None:
@@ -103,7 +104,7 @@ class Filesystem:
             with open(path, "xb"):
                 pass
 
-    def remove_file(self, path: str):
+    def remove_file(self, path: str) -> None:
         self._message("remove_file {!r}".format(path))
 
         if self.enabled:
@@ -152,7 +153,7 @@ class Filesystem:
             shutil.copystat(src, dst, follow_symlinks=False)
 
     def _copy_filecontent(self, src: str, dst: str,
-                          progress: CopyProgressCallback = null_progress):
+                          progress: CopyProgressCallback = null_progress) -> None:
         assert self.enabled
 
         with open(src, 'rb') as fd_src, open(dst, 'wb') as fd_dst:

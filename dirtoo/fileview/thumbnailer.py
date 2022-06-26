@@ -51,7 +51,7 @@ class WorkerDBusThumbnailerListener:
     def finished(self, handle):
         self._worker.on_thumbnail_finished(handle)
 
-    def idle(self):
+    def idle(self) -> None:
         pass
 
 
@@ -94,7 +94,7 @@ class ThumbnailerWorker(QObject):
     def __del__(self):
         logger.debug("Thumbnailer.__del__")
 
-    def init(self):
+    def init(self) -> None:
         self._dbus_thumbnailer = DBusThumbnailer(QDBusConnection.sessionBus(),
                                                  WorkerDBusThumbnailerListener(self))
 
@@ -103,7 +103,7 @@ class ThumbnailerWorker(QObject):
         self._supported_uri_types.update(result[0])
         self._supported_mime_types.update(result[1])
 
-    def close(self):
+    def close(self) -> None:
         assert self._close
 
         if self._timer_id != 0:
@@ -218,7 +218,7 @@ class Thumbnailer(QObject):
 
         self._thread.start()
 
-    def close(self):
+    def close(self) -> None:
         self._worker._close = True
         self.sig_close_requested.emit()
         self._thread.quit()
@@ -231,16 +231,16 @@ class Thumbnailer(QObject):
         return self._worker._supported_mime_types
 
     def request_thumbnail(self, location: Location, flavor: str, force: bool,
-                          callback: ThumbnailCallback):
+                          callback: ThumbnailCallback) -> None:
         logger.debug("Thumbnailer.request_thumbnail: %s  %s", location, flavor)
         self.sig_thumbnail_requested.emit(location, flavor, force, callback)
 
-    def delete_thumbnails(self, files: List[str]):
+    def delete_thumbnails(self, files: List[str]) -> None:
         logger.warning("Thumbnailer.delete_thumbnail (not implemented): %s", files)
 
     def on_thumbnail_ready(self, location: Location, flavor: str,
                            callback: ThumbnailCallback,
-                           image: QImage):
+                           image: QImage) -> None:
         if image.isNull():
             callback(location, flavor, None, None, None)
         else:
@@ -248,7 +248,7 @@ class Thumbnailer(QObject):
 
     def on_thumbnail_error(self, location: Location, flavor: str,
                            callback: ThumbnailCallback,
-                           error_code, message):
+                           error_code, message) -> None:
         callback(location, flavor, None, error_code, message)
 
 

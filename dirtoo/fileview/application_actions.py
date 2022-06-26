@@ -15,17 +15,22 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import TYPE_CHECKING
+
 from PyQt5.QtWidgets import QAction
 from PyQt5.QtGui import QIcon
+
+if TYPE_CHECKING:
+    from dirtoo.fileview.application import Application
 
 
 class ApplicationActions:
 
-    def __init__(self, app) -> None:
+    def __init__(self, app: 'Application') -> None:
         self._app = app
         self._make_actions()
 
-    def _make_actions(self):
+    def _make_actions(self) -> None:
         self.enable_filesystem = QAction(QIcon.fromTheme("drive-harddisk"),
                                          "Allow file manipulation", checkable=True)
         self.enable_filesystem.setChecked(False)

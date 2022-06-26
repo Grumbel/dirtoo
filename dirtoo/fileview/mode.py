@@ -48,11 +48,11 @@ class Mode:
 
         self._tile_style = TileStyle()
 
-    def restore(self):
+    def restore(self) -> None:
         self._level_of_detail = settings.value("globals/{}_level_of_detail".format(self._item_style), 3, int)
         self._zoom_index = settings.value("globals/{}_zoom_index".format(self._item_style), 5, int)
 
-    def update(self):
+    def update(self) -> None:
         pass
 
     def zoom_in(self) -> None:
@@ -69,14 +69,14 @@ class Mode:
 
         settings.set_value("globals/{}_zoom_index".format(self._item_style), self._zoom_index)
 
-    def less_details(self):
+    def less_details(self) -> None:
         self._level_of_detail -= 1
         if self._level_of_detail < self._level_of_detail_min:
             self._level_of_detail = self._level_of_detail_min
 
         settings.set_value("globals/{}_level_of_detail".format(self._item_style), self._level_of_detail)
 
-    def more_details(self):
+    def more_details(self) -> None:
         self._level_of_detail += 1
         if self._level_of_detail > self._level_of_detail_max:
             self._level_of_detail = self._level_of_detail_max
@@ -100,7 +100,7 @@ class IconMode(Mode):
         self.restore()
         self.update()
 
-    def update(self):
+    def update(self) -> None:
         self._tile_style.set_arrangement(TileStyle.Arrangement.ROWS)
         self._tile_style.set_padding(16, 16)
         self._tile_style.set_spacing(16, 16)
@@ -124,7 +124,7 @@ class ListMode(Mode):
         self.restore()
         self.update()
 
-    def update(self):
+    def update(self) -> None:
         self._tile_style.set_arrangement(TileStyle.Arrangement.COLUMNS)
         # self._tile_style.set_arrangement(TileStyle.Arrangement.ROWS)
         self._tile_style.set_padding(8, 8)
@@ -166,7 +166,7 @@ class DetailMode(Mode):
         self.restore()
         self.update()
 
-    def update(self):
+    def update(self) -> None:
         self._tile_style.set_arrangement(TileStyle.Arrangement.ROWS)
         self._tile_style.set_padding(24, 8)
         self._tile_style.set_spacing(16, 8)

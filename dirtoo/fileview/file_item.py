@@ -19,17 +19,19 @@ from typing import TYPE_CHECKING, Dict, Any, Optional
 
 import logging
 
-from PyQt5.QtCore import Qt, QRectF, QRect
-from PyQt5.QtGui import QColor, QPainter, QPainterPath, QImage, QDrag, QPixmap
-from PyQt5.QtWidgets import QGraphicsObject, QGraphicsItem
+from PyQt5.QtCore import Qt, QRectF, QRect, QTimerEvent, QEvent
+from PyQt5.QtGui import (QColor, QPainter, QPainterPath, QImage, QDrag, QPixmap,
+                         QMouseEvent, QIcon, QEnterEvent, QContextMenuEvent)
+from PyQt5.QtWidgets import (QGraphicsObject, QGraphicsItem, QWidget,
+                             QStyleOptionGraphicsItem)
 
 from dirtoo.file_info import FileInfo
 from dirtoo.fileview.thumbnail import Thumbnail, ThumbnailStatus
 from dirtoo.fileview.file_item_renderer import FileItemRenderer
 from dirtoo.fileview.drag_widget import DragWidget
 
-
 if TYPE_CHECKING:
+    from dirtoo.fileview.file_view import FileView
     from dirtoo.fileview.controller import Controller
 
 logger = logging.getLogger(__name__)
@@ -37,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 class FileItem(QGraphicsObject):
 
-    def __init__(self, fileinfo: 'FileInfo', controller: 'Controller', file_view) -> None:
+    def __init__(self, fileinfo: 'FileInfo', controller: 'Controller', file_view: 'FileView') -> None:
         logger.debug("FileItem.__init__: %s", fileinfo)
         super().__init__()
 
@@ -69,10 +71,10 @@ class FileItem(QGraphicsObject):
         self._file_is_final = True
         self._dropable = False
 
-    def __del__(self):
+    def __del__(self) -> None:
         logger.debug("FileItem.__del__")
 
-    def on_file_modified(self, fileinfo: FileInfo, final=False):
+    def on_file_modified(self, fileinfo: FileInfo, final: bool = False) -> None:
         self.fileinfo = fileinfo
         self._file_is_final = final
         self._new = True
@@ -81,7 +83,7 @@ class FileItem(QGraphicsObject):
             thumbnail = self._get_thumbnail()
             thumbnail.reset()
 
-    def on_fileinfo_updated(self, fileinfo: FileInfo):
+    def on_fileinfo_updated(self, fileinfo: FileInfo) -> None:
         self.fileinfo = fileinfo
 
     def set_tile_size(self, tile_width: int, tile_height: int) -> None:
@@ -112,7 +114,7 @@ class FileItem(QGraphicsObject):
             if thumbnail.status == ThumbnailStatus.INITIAL:
                 thumbnail.request()
 
-    def paint(self, painter, option, widget) -> None:
+    def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: QWidget) -> None:
         # logger.debug("FileItem.paint: %s", self.fileinfo)
 
         if not self.file_view.is_scrolling():
@@ -157,11 +159,11 @@ class FileItem(QGraphicsObject):
         renderer = FileItemRenderer(self)
         renderer.render(painter)
 
-    def make_icon(self):
+    def make_icon(self) -> QIcon:
         icon = self.file_view.icon_from_fileinfo(self.fileinfo)
         return icon
 
-    def hoverEnterEvent(self, ev):
+    def hoverEnterEvent(self, ev: QEnterEvent) -> None:
         # logger.debug("FileItem.hoverEnterEvent: %s", self.fileinfo)
         self.hovering = True
 
@@ -170,7 +172,7 @@ class FileItem(QGraphicsObject):
 
         self.update()
 
-    def hoverLeaveEvent(self, ev):
+    def hoverLeaveEvent(self, ev: QEvent) -> None:
         # logger.debug("FileItem.hoverLeaveEvent: %s", self.fileinfo)
         self.hovering = False
 
@@ -179,12 +181,12 @@ class FileItem(QGraphicsObject):
 
         self.update()
 
-    def set_thumbnail_image(self, image: QImage, flavor) -> None:
+    def set_thumbnail_image(self, image: QImage, flavor: Optional[str]) -> None:
         thumbnail = self._get_thumbnail(flavor)
         thumbnail.set_thumbnail_image(image)
         self.update()
 
-    def set_icon(self, icon) -> None:
+    def set_icon(self, icon: QIcon) -> None:
         self.icon = icon
 
     def boundingRect(self) -> QRectF:
@@ -212,7 +214,7 @@ class FileItem(QGraphicsObject):
         self.animation_count = 10
         self.update()
 
-    def timerEvent(self, ev) -> None:
+    def timerEvent(self, ev: QTimerEvent) -> None:
         # logger.debug("FileItem.timerEvent: %s", self.fileinfo)
         if ev.timerId() == self.animation_timer:
             self.animation_count -= 1
@@ -234,11 +236,11 @@ class FileItem(QGraphicsObject):
         else:
             return self.large_thumbnail
 
-    def set_dropable(self, value):
+    def set_dropable(self, value: bool) -> None:
         self._dropable = value
         self.update()
 
-    def mousePressEvent(self, ev):
+    def mousePressEvent(self, ev: 'QMouseEvent') -> None:
         if not self.shape().contains(ev.scenePos() - self.pos()):
             # Qt is sending events that are outside the item. This
             # happens when opening a context menu on an item, moving
@@ -265,7 +267,7 @@ class FileItem(QGraphicsObject):
         elif ev.button() == Qt.RightButton:
             pass
 
-    def mouseMoveEvent(self, ev):
+    def mouseMoveEvent(self, ev: 'QMouseEvent') -> None:
         if (ev.pos() - self.press_pos).manhattanLength() > 16:
             # print("drag start")
 
@@ -300,23 +302,23 @@ class FileItem(QGraphicsObject):
             # this will eat up the mouseReleaseEvent
             drag.exec(Qt.CopyAction | Qt.MoveAction | Qt.LinkAction | 0x40, 0x40)
 
-    def mouseReleaseEvent(self, ev):
+    def mouseReleaseEvent(self, ev: 'QMouseEvent') -> None:
         if ev.button() == Qt.LeftButton and self.press_pos is not None:
             self.click_action(new_window=False)
         elif ev.button() == Qt.MiddleButton:
             self.click_action(new_window=True)
 
-    def click_action(self, new_window=False):
+    def click_action(self, new_window: bool = False) -> None:
         self.on_click_animation()
         self.controller.on_click(self.fileinfo, new_window=new_window)
 
-    def contextMenuEvent(self, ev):
+    def contextMenuEvent(self, ev: QContextMenuEvent) -> None:
         self.controller.on_item_context_menu(ev, self)
 
-    def show_basename(self):
+    def show_basename(self) -> None:
         pass
 
-    def show_abspath(self):
+    def show_abspath(self) -> None:
         pass
 
 

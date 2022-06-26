@@ -15,11 +15,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, Optional, List, Tuple
+from typing import TYPE_CHECKING, Any, Optional, List, Tuple
 
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QSizePolicy
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QDragEnterEvent, QDropEvent, QDragLeaveEvent
+
 import sip
 
 from dirtoo.location import Location
@@ -32,7 +33,7 @@ if TYPE_CHECKING:
 
 class LocationButton(PushButton):
 
-    def __init__(self, controller: 'Controller', location: Location, *args) -> None:
+    def __init__(self, controller: 'Controller', location: Location, *args: Any) -> None:
         super().__init__(*args)
 
         self._controller = controller
@@ -40,16 +41,16 @@ class LocationButton(PushButton):
 
         self.setAcceptDrops(True)
 
-    def dragEnterEvent(self, ev) -> None:
+    def dragEnterEvent(self, ev: QDragEnterEvent) -> None:
         if ev.mimeData().hasUrls():
             ev.accept()
         else:
             ev.ignore()
 
-    def dragLeaveEvent(self, ev) -> None:
+    def dragLeaveEvent(self, ev: QDragLeaveEvent) -> None:
         ev.accept()
 
-    def dropEvent(self, ev):
+    def dropEvent(self, ev: QDropEvent) -> None:
         ev.accept()
 
         mime_data = ev.mimeData()
@@ -135,7 +136,7 @@ class LocationButtonBar(QWidget):
         menu = ItemContextMenu(self._controller, [fileinfo])
         menu.exec(button.mapToGlobal(pos))
 
-    def _clearLayout(self):
+    def _clearLayout(self) -> None:
         # See: https://stackoverflow.com/questions/4528347/clear-all-widgets-in-a-layout-in-pyqt
         if self.layout() is not None:
             old_layout = self.layout()

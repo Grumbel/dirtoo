@@ -17,6 +17,7 @@
 
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import (QLineEdit, QVBoxLayout, QWidget)
+from PyQt5.QtGui import QFocusEvent, QKeyEvent, QShowEvent, QHideEvent
 
 
 class LeapWidget(QWidget):
@@ -32,7 +33,7 @@ class LeapWidget(QWidget):
 
         self._build_gui()
 
-    def _build_gui(self):
+    def _build_gui(self) -> None:
         self._line_edit = QLineEdit(self)
         vbox = QVBoxLayout()
         vbox.addWidget(self._line_edit)
@@ -43,26 +44,26 @@ class LeapWidget(QWidget):
         self._line_edit.editingFinished.connect(self.hide)
         self._line_edit.textChanged.connect(self.on_text_changed)
 
-    def showEvent(self, ev):
+    def showEvent(self, ev: QShowEvent) -> None:
         super().showEvent(ev)
         self.place_widget()
 
-    def place_widget(self):
+    def place_widget(self) -> None:
         parent = self.parentWidget()
         pos = parent.mapToGlobal(self.parentWidget().viewport().geometry().bottomRight())
 
         self.move(pos.x() - self.width(),
                   pos.y() - self.height())
 
-    def focusOutEvent(self, ev) -> None:
+    def focusOutEvent(self, ev: QFocusEvent) -> None:
         print("focus out")
         super().focusOutEvent(ev)
         self.hide()
 
-    def hideEvent(self, ev):
+    def hideEvent(self, ev: QHideEvent) -> None:
         super().hideEvent(ev)
 
-    def keyPressEvent(self, ev) -> None:
+    def keyPressEvent(self, ev: QKeyEvent) -> None:
         if ev.key() in (Qt.Key_Return, Qt.Key_Enter):
             self.parentWidget().keyPressEvent(ev)
         else:

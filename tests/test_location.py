@@ -92,7 +92,7 @@ class LocationTestCase(unittest.TestCase):
         ]
 
         for text in fail_texts:
-            with self.assertRaises(Exception) as context:
+            with self.assertRaises(Exception) as _:
                 Location.from_string(text)
 
     def test_location_parent(self):

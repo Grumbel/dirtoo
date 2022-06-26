@@ -92,7 +92,7 @@ class DirectoryThumbnailerTask(QObject):
     def close(self) -> None:
         self._stream.close()
 
-    def _on_finished(self):
+    def _on_finished(self) -> None:
         # print("_on_finished")
         pass
 
@@ -124,7 +124,7 @@ class DirectoryThumbnailerTask(QObject):
             return False
 
     def _on_thumbnail_ready(self, location: 'Location', flavor: str, image: QImage,
-                            error_code: int, message: str):
+                            error_code: int, message: str) -> None:
         # print("_on_thumbnail_ready")
         if image is not None:
             self._thumbnails.append(image)
@@ -135,7 +135,7 @@ class DirectoryThumbnailerTask(QObject):
             if not self._request_thumbnails():
                 self._build_directory_thumbnail()
 
-    def _build_directory_thumbnail(self):
+    def _build_directory_thumbnail(self) -> None:
         # print("_build_directory_thumbnail: ", len(self._thumbnails))
         output = QImage(QSize(256, 256), QImage.Format_ARGB32)
         output.fill(0)
@@ -231,7 +231,7 @@ class DirectoryThumbnailerWorker(Worker):
             self._task.close()
             self._task = None
 
-    def _on_thumbnail_requested(self, location: 'Location', callback: ThumbnailCallback):
+    def _on_thumbnail_requested(self, location: 'Location', callback: ThumbnailCallback) -> None:
         # print("_on_thumbnail_requested")
         logger.debug("DirectoryThumbnailer.request_thumbnail: %s", location)
 
@@ -240,12 +240,12 @@ class DirectoryThumbnailerWorker(Worker):
         else:
             self._queue.append((location, callback))
 
-    def _start_task(self, location: 'Location', callback: ThumbnailCallback):
+    def _start_task(self, location: 'Location', callback: ThumbnailCallback) -> None:
         assert self._task is None
         self._task = DirectoryThumbnailerTask(self._app, location, callback)
         self._task.sig_done.connect(self._on_task_done)
 
-    def _on_task_done(self):
+    def _on_task_done(self) -> None:
         print("DONE")
 
         self._task.close()

@@ -23,13 +23,13 @@ import sys
 import argparse
 
 from dirtoo.find.action import Action, MultiAction, PrinterAction, ExecAction, ExprSorterAction
-from dirtoo.find.filter import ExprFilter, SimpleFilter, NoFilter
+from dirtoo.find.filter import Filter, ExprFilter, SimpleFilter, NoFilter
 from dirtoo.find.util import find_files
 
 logger = logging.getLogger(__name__)
 
 
-def parse_args(args: List[str], simple) -> argparse.Namespace:
+def parse_args(argv: List[str], simple: bool) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Find files")
 
     if simple:
@@ -77,7 +77,7 @@ def parse_args(args: List[str], simple) -> argparse.Namespace:
     action_grp.add_argument("--exec", metavar="CMD",
                             help="Execute CMD")
 
-    return parser.parse_args(args)
+    return parser.parse_args(argv[1:])
 
 
 def create_action(args: argparse.Namespace) -> Action:
@@ -112,29 +112,29 @@ def create_action(args: argparse.Namespace) -> Action:
     return action
 
 
-def create_filter(filter_text: Optional[str]):
+def create_filter(filter_text: Optional[str]) -> Filter:
     if filter_text:
         return ExprFilter(filter_text)
     else:
         return NoFilter()
 
 
-def create_simple_filter(filter_text: Optional[str]):
+def create_simple_filter(filter_text: Optional[str]) -> Filter:
     if filter_text:
         return ExprFilter(filter_text)
     else:
         return NoFilter()
 
 
-def create_sorter_wrapper(args: argparse.Namespace, find_action):
+def create_sorter_wrapper(args: argparse.Namespace, find_action) -> Filter:
     if args.sort is None and not args.reverse:
         return find_action
     else:
         return ExprSorterAction(args.sort, args.reverse, find_action)
 
 
-def main(argv, simple):
-    args = parse_args(argv[1:], simple)
+def main(argv: List[str], simple: bool) -> None:
+    args = parse_args(argv, simple)
 
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
@@ -157,11 +157,11 @@ def main(argv, simple):
     find_action.finish()
 
 
-def search_entrypoint():
+def search_entrypoint() -> None:
     main(sys.argv, simple=True)
 
 
-def find_entrypoint():
+def find_entrypoint() -> None:
     main(sys.argv, simple=False)
 
 

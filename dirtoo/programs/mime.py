@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
+
 import argparse
 import sys
 
@@ -25,16 +27,16 @@ from dirtoo.xdg_desktop import get_desktop_file
 # https://specifications.freedesktop.org/mime-apps-spec/mime-apps-spec-1.0.html
 
 
-def parse_args(args):
+def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Query the systems mime associations")
     parser.add_argument("MIMETYPE", nargs='?')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help="Be verbose")
-    return parser.parse_args(args)
+    return parser.parse_args(argv[1:])
 
 
-def main(argv):
-    args = parse_args(argv[1:])
+def main(argv: List[str]) -> int:
+    args = parse_args(argv)
     mimeasc = XdgMimeAssociations.system()
 
     if args.MIMETYPE is None:
@@ -76,8 +78,10 @@ def main(argv):
             print("  {}".format(get_desktop_file(desktop) or "{} (file not found)".format(desktop)))
         print()
 
+    return 0
 
-def main_entrypoint():
+
+def main_entrypoint() -> None:
     exit(main(sys.argv))
 
 

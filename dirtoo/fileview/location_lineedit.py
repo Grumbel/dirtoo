@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Optional, List, cast
 import logging
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPalette, QIcon, QKeySequence
+from PyQt5.QtGui import QPalette, QIcon, QKeySequence, QFocusEvent, QKeyEvent, QHideEvent
 from PyQt5.QtWidgets import (QLineEdit, QShortcut, QWidget,
                              QListWidget, QVBoxLayout, QSizePolicy)
 
@@ -28,6 +28,7 @@ from dirtoo.location import Location
 
 if TYPE_CHECKING:
     from dirtoo.fileview.controller import Controller
+    from dirtoo.fileview.file_item import FileItem
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +118,7 @@ class LocationLineEditPopup(QWidget):
             item = self.listwidget.item(row)
             return cast(str, item.text())
 
-    def _on_item_clicked(self, item):
+    def _on_item_clicked(self, item: 'FileItem') -> None:
         self._parent.setText(item.text())
         self._parent.on_return_pressed()
 
@@ -176,13 +177,13 @@ class LocationLineEdit(QLineEdit):
             self.bookmark_act.setEnabled(False)
             self.bookmark_act.setIcon(QIcon())
 
-    def _on_bookmark_triggered(self, checked):
+    def _on_bookmark_triggered(self, checked) -> None:
         if self._controller.toggle_bookmark():
             self.bookmark_act.setIcon(QIcon.fromTheme("user-bookmarks"))
         else:
             self.bookmark_act.setIcon(QIcon.fromTheme("bookmark-missing"))
 
-    def _on_escape_press(self):
+    def _on_escape_press(self) -> None:
         if self._controller.location is None:
             self.setText("")
         elif self._popup._previous_text is not None:
@@ -199,7 +200,7 @@ class LocationLineEdit(QLineEdit):
         self._controller.show_location_buttonbar()
         self._hide_popup()
 
-    def focusInEvent(self, ev) -> None:
+    def focusInEvent(self, ev: QFocusEvent) -> None:
         super().focusInEvent(ev)
 
         if ev.reason() != Qt.ActiveWindowFocusReason and self.is_unused:
@@ -209,7 +210,7 @@ class LocationLineEdit(QLineEdit):
         p.setColor(QPalette.Text, Qt.black)
         self.setPalette(p)
 
-    def focusOutEvent(self, ev) -> None:
+    def focusOutEvent(self, ev: QFocusEvent) -> None:
         super().focusOutEvent(ev)
 
         self._hide_popup()
@@ -220,7 +221,7 @@ class LocationLineEdit(QLineEdit):
             if self.is_unused:
                 self.set_unused_text()
 
-    def on_text_edited(self, text) -> None:
+    def on_text_edited(self, text: str) -> None:
         p = self.palette()
 
         try:
@@ -236,7 +237,7 @@ class LocationLineEdit(QLineEdit):
 
         self._controller._path_completion.request_completions(text)
 
-    def set_cursor_to_end(self):
+    def set_cursor_to_end(self) -> None:
         length = len(self.text())
         self.setCursorPosition(length)
 
@@ -268,7 +269,7 @@ class LocationLineEdit(QLineEdit):
         self.setPalette(p)
         self.setText("no location selected, file list mode is active")
 
-    def keyPressEvent(self, ev):
+    def keyPressEvent(self, ev: QKeyEvent):
         if ev.key() == Qt.Key_Backspace or ev.key() == Qt.Key_Delete:
             self._show_completion_selection = False
         else:
@@ -276,7 +277,7 @@ class LocationLineEdit(QLineEdit):
 
         super().keyPressEvent(ev)
 
-    def _show_popup(self):
+    def _show_popup(self) -> None:
         pos = self.parentWidget().mapToGlobal(self.geometry().topLeft())
         self._popup.move(pos.x(),
                          pos.y() + self.height() - 2)
@@ -285,7 +286,7 @@ class LocationLineEdit(QLineEdit):
         if not self._popup.isVisible():
             self._popup.show()
 
-    def _hide_popup(self):
+    def _hide_popup(self) -> None:
         self._popup.hide()
 
     def on_completions(self, longest: str, candidate: List[str]) -> None:
@@ -297,7 +298,7 @@ class LocationLineEdit(QLineEdit):
         self._popup.set_completions(longest, candidate)
         self._show_popup()
 
-    def hideEvent(self, ev) -> None:
+    def hideEvent(self, ev: QHideEvent) -> None:
         super().hideEvent(ev)
         self._hide_popup()
 

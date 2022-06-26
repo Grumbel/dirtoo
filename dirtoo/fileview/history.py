@@ -33,11 +33,11 @@ class SqlHistory:
         self._db = sqlite3.connect(self._db_filename, isolation_level=None)
         self._init_db()
 
-    def close(self):
+    def close(self) -> None:
         self._db.commit()
         self._db.close()
 
-    def _init_db(self):
+    def _init_db(self) -> None:
         self._db.execute("CREATE TABLE IF NOT EXISTS history ("
                          "group_id INTEGER, "
                          "date REAL, "

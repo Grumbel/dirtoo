@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Tuple, List, Optional
+
 import os
 import sys
 import argparse
@@ -29,15 +31,7 @@ from itertools import chain
 # MD5SUM uid gid atime mtime ctime btime
 
 
-def hashfile(afile, hasher, blocksize=65536):
-    buf = afile.read(blocksize)
-    while len(buf) > 0:
-        hasher.update(buf)
-        buf = afile.read(blocksize)
-        return hasher.digest()
-
-
-def get_hierachy(filename):
+def get_hierachy(filename: str) -> List[str]:
     p = None
     np = os.path.dirname(filename)
     lst = []
@@ -48,14 +42,14 @@ def get_hierachy(filename):
     return lst
 
 
-def get_directory_list(files):
+def get_directory_list(files: List[str]) -> List[str]:
     """
     Returns the directory structure that holds files
     """
     return sorted(list(set(chain.from_iterable([get_hierachy(f) for f in files]))))
 
 
-def move_files(sourcedir, targetdir, files, ignore_case):
+def move_files(sourcedir: str, targetdir: str, files: List[str], ignore_case: bool) -> None:
     """
     Moves files from sourcedir to targetdir while preserving their path structure, similar to 'rsync -R'
     """
@@ -94,21 +88,27 @@ def move_files(sourcedir, targetdir, files, ignore_case):
 
 class FileDataId:
 
-    def __init__(self, size, md5sum):
+    def __init__(self, size: int, md5sum: str) -> None:
         self.size = size
         self.md5sum = md5sum
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, FileDataId):
+            return False
+
         return (self.size == other.size and
                 self.md5sum == other.md5sum)
 
-    def __lt__(self, other):
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, FileDataId):
+            return False
+
         return (self.size, self.md5sum) < (other.size, other.md5sum)
 
 
 class FileObject:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.mtime = 0
         self.ctime = 0
         self.birth = 0
@@ -120,29 +120,32 @@ class FileObject:
 @functools.total_ordering
 class FileInfo:
 
-    def __init__(self, md5sum, filename):
+    def __init__(self, md5sum: Optional[str], filename: str) -> None:
         self.md5sum = md5sum
         self.filename = os.path.normpath(filename)
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, FileInfo):
+            return False
+
         # return (self.md5sum, self.filename) == (other.md5sum, other.filename)
         return self.filename == other.filename
 
-    def __lt__(self, other):
+    def __lt__(self, other: 'FileInfo') -> bool:
         # return (self.md5sum, self.filename) < (other.md5sum, other.filename)
         return self.filename < other.filename
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.filename)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "FileInfo(%s, %s)" % (repr(self.md5sum), repr(self.filename))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.filename
 
 
-def fileinfo_from_path(path):
+def fileinfo_from_path(path: str) -> List[FileInfo]:
     if os.path.isdir(path):
         return fileinfo_from_directory(path)
     elif os.path.isfile(path):
@@ -151,20 +154,24 @@ def fileinfo_from_path(path):
         raise Exception("%s: error: unknown file type" % path)
 
 
-def fileinfo_from_md5sums(filename):
+def fileinfo_from_md5sums(filename: str) -> List[FileInfo]:
     with open(filename, "r") as fin:
         return [FileInfo(*e.split(None, 1)) for e in fin.read().splitlines()]
 
 
-def fileinfo_from_directory(directory):
-    lst = []
+def fileinfo_from_directory(directory: str) -> List[FileInfo]:
+    lst: List[FileInfo] = []
     for path, dirs, files in os.walk(directory):
         for fname in files:
             lst.append(FileInfo(None, os.path.relpath(os.path.join(path, fname), directory)))
     return lst
 
 
-def compare_directories(finfo1, finfo2, ignore_case=False):
+def compare_directories(finfo1: List[FileInfo],
+                        finfo2: List[FileInfo],
+                        ignore_case: bool = False) -> Tuple[List[FileInfo],
+                                                            List[FileInfo],
+                                                            List[FileInfo]]:
     if ignore_case:
         finfo1_set = set([FileInfo(f.md5sum, f.filename.lower()) for f in finfo1])
         finfo2_set = set([FileInfo(f.md5sum, f.filename.lower()) for f in finfo2])
@@ -179,7 +186,7 @@ def compare_directories(finfo1, finfo2, ignore_case=False):
     )
 
 
-def compare_command(path1, path2, ignore_case):
+def compare_command(path1: str, path2: str, ignore_case: bool) -> None:
     finfo1 = fileinfo_from_path(path1)
     finfo2 = fileinfo_from_path(path2)
 
@@ -195,7 +202,7 @@ def compare_command(path1, path2, ignore_case):
         print("~%s" % f)
 
 
-def extract_diff_command(path1, path2, target, dry_run, ignore_case):
+def extract_diff_command(path1: str, path2: str, target: str, dry_run: bool, ignore_case: bool) -> None:
     """Run a diff between path1 and path2 and move all additions to target"""
 
     if not os.path.isdir(path2):
@@ -223,7 +230,7 @@ def extract_diff_command(path1, path2, target, dry_run, ignore_case):
         move_files(path2, target, files, ignore_case)
 
 
-def merge_command(source, target, dry_run, force):
+def merge_command(source: str, target: str, dry_run: bool, force: bool) -> None:
     if not os.path.isdir(source):
         raise Exception("%s: must be a directory" % source)
     if not os.path.isdir(target):
@@ -275,7 +282,7 @@ def merge_command(source, target, dry_run, force):
         os.rmdir(source)
 
 
-def main(argv):
+def main(argv: List[str]) -> int:
     parser = argparse.ArgumentParser(description='dirtoo')
     parser.add_argument('COMMAND', action='store', type=str,
                         help='diff, extract-diff, merge')
@@ -304,8 +311,10 @@ def main(argv):
     else:
         raise Exception("unknown command: %s" % args.COMMAND)
 
+    return 0
 
-def main_entrypoint():
+
+def main_entrypoint() -> None:
     main(sys.argv)
 
 
