@@ -18,28 +18,29 @@
           inherit system;
           config = { allowUnfree = true; };  # for 'rar'
         };
+        pythonPackages = pkgs.python310Packages;
       in rec {
         packages = flake-utils.lib.flattenTree rec {
 
-          python-ngram = pkgs.python3Packages.buildPythonPackage rec {
+          python-ngram = pythonPackages.buildPythonPackage rec {
             pname = "ngram";
             version = "4.0.3";
-            src = pkgs.python3Packages.fetchPypi {
+            src = pythonPackages.fetchPypi {
               inherit pname version;
               sha256 = "BtGAnuL+3dztYGXc0ZgmxhMYeH1Hv08QscAReD1BmqY=";
             };
           };
 
-          pyxdg = pkgs.python3Packages.buildPythonPackage rec {
+          pyxdg = pythonPackages.buildPythonPackage rec {
             pname = "pyxdg";
             version = "0.28";
-            src = pkgs.python3Packages.fetchPypi {
+            src = pythonPackages.fetchPypi {
               inherit pname version;
               sha256 = "sha256-Mme7MHTpNN8gKvLuCGhXVIQQhYHm88sAavHaNTleiLQ=";
             };
           };
 
-          dirtoo = pkgs.python3Packages.buildPythonPackage rec {
+          dirtoo = pythonPackages.buildPythonPackage rec {
             name = "dirtoo";
             src = ./.;
             meta = {
@@ -67,7 +68,7 @@
               make
               runHook postCheck
             '';
-            propagatedBuildInputs = with pkgs.python3Packages; [
+            propagatedBuildInputs = with pythonPackages; [
               setuptools
               pyparsing
               pymediainfo
@@ -83,17 +84,16 @@
             ] ++ [
               pyxdg
               python-ngram
-              bytefmt.defaultPackage.${system}
+              (bytefmt.lib.bytefmtWithPythonPackages pythonPackages)
             ];
-            checkInputs = with pkgs; [
+            checkInputs = (with pkgs; [
+              pyright
+            ]) ++ (with pythonPackages; [
+              flake8
+              mypy
               pylint
-              python3Packages.flake8
-              python3Packages.mypy
-              python3Packages.types-setuptools
-            ];
-            shellHook = ''
-              eval $preCheck
-            '';
+              types-setuptools
+            ]);
           };
 
           dirtoo-check = dirtoo.override {
@@ -106,6 +106,7 @@
         apps = rec {
           dirtoo = flake-utils.lib.mkApp {
             drv = packages.dirtoo;
+            exePath = "/bin/dt-fileview";
           };
           default = dirtoo;
         };
@@ -113,6 +114,10 @@
         devShells = rec {
           dirtoo = pkgs.mkShell {
             inputsFrom = [ packages.dirtoo-check ];
+            shellHook = ''
+              export QT_QPA_PLATFORM_PLUGIN_PATH="${pkgs.qt5.qtbase.bin}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";
+              runHook setuptoolsShellHook
+            '';
           };
           default = dirtoo;
         };
