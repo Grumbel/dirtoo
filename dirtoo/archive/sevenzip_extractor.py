@@ -78,7 +78,7 @@ class SevenZipExtractor(Extractor):
         try:
             self._start_extract(self._outdir)
             assert self._process is not None
-            self._process.waitForFinished(-1)
+            self._process.waitForFinished(-1)  # type: ignore
             assert self._result is not None
             return self._result
         except Exception as err:
@@ -103,6 +103,8 @@ class SevenZipExtractor(Extractor):
         self._process.closeWriteChannel()
 
     def _on_process_finished(self, exit_code: int, exit_status: QProcess.ExitStatus) -> None:
+        assert self._process is not None
+
         self._process.setCurrentReadChannel(QProcess.StandardOutput)
         for line in os.fsdecode(self._process.readAll().data()).splitlines():
             self._process_stdout(line)

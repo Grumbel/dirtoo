@@ -22,7 +22,7 @@ import argparse
 import sys
 import os
 
-from PyQt5.QtCore import QCoreApplication
+from PyQt5.QtCore import QCoreApplication, QVariant
 from PyQt5.QtDBus import QDBusConnection
 
 from dirtoo.dbus_thumbnailer import DBusThumbnailer, DBusThumbnailerListener
@@ -61,34 +61,34 @@ class ThumbnailerProgressListener(DBusThumbnailerListener):
         self.app = app
         self.verbose = verbose
 
-    def started(self, handle) -> None:
+    def started(self, handle: QVariant) -> None:
         # print("[Started]", handle)
         pass
 
-    def ready(self, handle, urls, flavor) -> None:
+    def ready(self, handle: QVariant, urls: List[str], flavor: str) -> None:
         if self.verbose:
             for url in urls:
                 print(url, "->", DBusThumbnailer.thumbnail_from_url(url, flavor))
 
-    def error(self, handle, failed_uris, error_code, message) -> None:
+    def error(self, handle: QVariant, failed_uris: List[str], error_code: int, message: str) -> None:
         for uri in failed_uris:
             print("[Error {}] {}: {}".format(error_code, uri, message), file=sys.stderr)
 
-    def finished(self, handle) -> None:
+    def finished(self, handle: QVariant) -> None:
         pass
 
     def idle(self) -> None:
         self.app.quit()
 
 
-def request_thumbnails_recursive(thumbnailer, directory, flavor):
+def request_thumbnails_recursive(thumbnailer: DBusThumbnailer, directory: str, flavor: str) -> None:
     for root, dirs, files in os.walk(directory):
         thumbnailer.queue([os.path.join(root, f) for f in files], flavor)
         for d in dirs:
             request_thumbnails_recursive(thumbnailer, os.path.join(root, d), flavor)
 
 
-def request_thumbnails(thumbnailer, paths, flavor, recursive):
+def request_thumbnails(thumbnailer: DBusThumbnailer, paths: List[str], flavor: str, recursive: bool) -> None:
     if recursive:
         files = []
         dirs = []

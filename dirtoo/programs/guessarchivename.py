@@ -46,8 +46,10 @@ def common_prefix(lst: List[str], threshold: float) -> str:
         for i, c in enumerate(text):
             m[i].append(c)
 
-    result: Iterable[str] = filter(None, [most_common(m[cs], threshold)
-                                          for cs in sorted(m)])
+    result: Iterable[str] = [x
+                             for x in (most_common(m[cs], threshold)
+                                       for cs in sorted(m))
+                             if x is not None]
     result = itertools.takewhile(lambda x: x is not None and x != "/", result)
     return "".join(result)
 

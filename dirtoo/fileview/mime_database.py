@@ -24,7 +24,7 @@ from dirtoo.fileview.virtual_filesystem import VirtualFilesystem
 
 class MimeDatabase:
 
-    def __init__(self, vfs: VirtualFilesystem) -> None:
+    def __init__(self, vfs: 'VirtualFilesystem') -> None:
         self.vfs = vfs
         self.mime_db = QMimeDatabase()
 

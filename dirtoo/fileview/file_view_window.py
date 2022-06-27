@@ -120,13 +120,11 @@ class FileViewWindow(QMainWindow):
 
         shortcut = QShortcut(Qt.Key_Home, self)
         shortcut.setContext(Qt.WindowShortcut)
-        shortcut.activated.connect(lambda: self.file_view.ensureVisible(0, 0, 1, 1))
+        shortcut.activated.connect(lambda: self.file_view.top())
 
         shortcut = QShortcut(Qt.Key_End, self)
         shortcut.setContext(Qt.WindowShortcut)
-        shortcut.activated.connect(
-            lambda: self.file_view.ensureVisible(
-                0, self.file_view._layout.get_bounding_rect().height(), 1, 1))
+        shortcut.activated.connect(lambda: self.file_view.scroll_bottom())
 
         shortcut = QShortcut(Qt.Key_PageUp, self)
         shortcut.setContext(Qt.WindowShortcut)
@@ -363,8 +361,8 @@ class FileViewWindow(QMainWindow):
             for entry in entries:
                 action = self.bookmarks_menu.addDoubleAction(
                     icon, entry.as_url(),
-                    lambda entry=entry: self.controller.set_location(entry),
-                    lambda entry=entry: self.controller.app.show_location(entry))
+                    lambda entry=entry: self.controller.set_location(entry),  # type: ignore
+                    lambda entry=entry: self.controller.app.show_location(entry))  # type: ignore
 
                 if not entry.exists():
                     action.setEnabled(False)
@@ -503,7 +501,7 @@ class FileViewWindow(QMainWindow):
     def set_file_list(self) -> None:
         self.location_lineedit.set_unused_text()
 
-    def show_info(self, text) -> None:
+    def show_info(self, text: str) -> None:
         self.info.setText("  " + text)
 
     def show_current_filename(self, filename: str) -> None:

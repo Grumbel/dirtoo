@@ -126,7 +126,7 @@ def create_simple_filter(filter_text: Optional[str]) -> Filter:
         return NoFilter()
 
 
-def create_sorter_wrapper(args: argparse.Namespace, find_action) -> Filter:
+def create_sorter_wrapper(args: argparse.Namespace, find_action: Action) -> Action:
     if args.sort is None and not args.reverse:
         return find_action
     else:
@@ -144,6 +144,7 @@ def main(argv: List[str], simple: bool) -> None:
     find_action = create_action(args)
     find_action = create_sorter_wrapper(args, find_action)
 
+    find_filter: Filter
     if simple:
         find_filter = SimpleFilter.from_string(" ".join(args.QUERY))
         directories = args.directory or ["."]

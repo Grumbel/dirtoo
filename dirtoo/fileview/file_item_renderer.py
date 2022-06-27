@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Tuple
+from typing import TYPE_CHECKING, Tuple
 
 import logging
 from datetime import datetime
@@ -30,12 +30,16 @@ from dirtoo.mediainfo import split_duration
 from dirtoo.fileview.mode import FileItemStyle
 from dirtoo.fileview.scaler import make_unscaled_rect, make_scaled_rect, make_cropped_rect
 
+if TYPE_CHECKING:
+    from dirtoo.fileview.file_item import FileItem
+
+
 logger = logging.getLogger(__name__)
 
 
 class FileItemRenderer:
 
-    def __init__(self, item):
+    def __init__(self, item: 'FileItem') -> None:
         self.fileinfo = item.fileinfo
         self.icon = item.icon
         self.thumbnail = item._get_thumbnail()
@@ -388,7 +392,7 @@ class FileItemRenderer:
                                self.style.shared_pixmaps.loading)
             painter.setOpacity(1.0)
         elif thumbnail.status == ThumbnailStatus.THUMBNAIL_ERROR:
-            self.paint_icon(painter, self.style.shared_icons.image_error)
+            self.paint_icon(painter, self.style.shared_icons.image_missing)
 
     def paint_tiny_icon(self, painter: QPainter, icon: QIcon) -> None:
         painter.setOpacity(0.5)

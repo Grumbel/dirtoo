@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from PyQt5.QtCore import QObject
+from PyQt5.QtCore import QObject, pyqtSignal
 from abc import abstractmethod
 
 
@@ -48,12 +48,12 @@ class Extractor(QObject):
 
     @property
     @abstractmethod
-    def sig_entry_extracted(self) -> None:
+    def sig_entry_extracted(self) -> pyqtSignal:
         pass
 
     @property
     @abstractmethod
-    def sig_finished(self) -> None:
+    def sig_finished(self) -> pyqtSignal:
         pass
 
     @abstractmethod
@@ -75,7 +75,7 @@ def make_extractor(filename: str, outdir: str) -> Extractor:
     elif True:  # pylint: disable=using-constant-test
         extractor = SevenZipExtractor(filename, outdir)
     else:
-        extractor = LibArchiveExtractor(filename, outdir)
+        extractor = LibArchiveExtractor(filename, outdir)  # type: ignore
 
     return extractor
 

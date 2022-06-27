@@ -64,11 +64,11 @@ class SharedScaleable:
         self.image_missing = self.load_icon("image-missing")
         self.locked = self.load_icon("locked")
 
-    def load_icon(self, name: str, outline=False) -> QPixmap:
+    def load_icon(self, name: str, outline: bool = False) -> QPixmap:
         icon = QIcon.fromTheme(name)
         return self.load_icon_icon(icon, outline)
 
-    def load_icon_icon(self, icon: QIcon, outline=False) -> QPixmap:
+    def load_icon_icon(self, icon: QIcon, outline: bool = False) -> QPixmap:
         pixmap = self._cached_icon_pixmaps.get(icon, None)
         if pixmap is not None:
             return pixmap
@@ -77,7 +77,7 @@ class SharedScaleable:
             self._cached_icon_pixmaps[icon] = pixmap
             return pixmap
 
-    def _load_icon_icon(self, icon: QIcon, outline=False) -> QPixmap:
+    def _load_icon_icon(self, icon: QIcon, outline: bool = False) -> QPixmap:
         pixmap = icon.pixmap(self.width * 3 // 4, self.height * 3 // 4)
 
         if outline:

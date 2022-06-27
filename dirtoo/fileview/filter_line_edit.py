@@ -18,7 +18,7 @@
 from typing import TYPE_CHECKING, List
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPalette, QIcon, QKeySequence
+from PyQt5.QtGui import QPalette, QIcon, QKeySequence, QFocusEvent
 from PyQt5.QtWidgets import QLineEdit, QShortcut
 
 if TYPE_CHECKING:
@@ -78,7 +78,7 @@ class FilterLineEdit(QLineEdit):
         self.history.append(self.text())
         self.history_idx = 0
 
-    def focusInEvent(self, ev) -> None:
+    def focusInEvent(self, ev: QFocusEvent) -> None:
         super().focusInEvent(ev)
 
         if self.is_unused:
@@ -88,7 +88,7 @@ class FilterLineEdit(QLineEdit):
         p.setColor(QPalette.Text, Qt.black)
         self.setPalette(p)
 
-    def focusOutEvent(self, ev) -> None:
+    def focusOutEvent(self, ev: QFocusEvent) -> None:
         super().focusOutEvent(ev)
 
         if self.text() == "":

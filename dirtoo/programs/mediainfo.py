@@ -18,8 +18,6 @@
 from typing import List
 
 import argparse
-import errno
-import os
 import string
 import sys
 
@@ -37,10 +35,10 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
                         help="Print FMT (with newline)")
     parser.add_argument("-P", "--print", metavar="FMT",
                         help="Print FMT (without newline)")
-    return parser.parse_args()
+    return parser.parse_args(argv[1:])
 
 
-def format_output(mediainfo: MediaInfo, fmt_str: str):
+def format_output(mediainfo: MediaInfo, fmt_str: str) -> None:
     parser = Parser()
 
     dt = mediainfo.duration_tuple()
@@ -69,7 +67,7 @@ def format_output(mediainfo: MediaInfo, fmt_str: str):
 
 
 def main() -> None:
-    args = parse_args()
+    args = parse_args(sys.argv)
 
     fmt = ("{hours:02d}h:{minutes:02d}m:{seconds:02d}s  {filesize:>9}  "
            "{framerate:>6.2f}fps  {resolution:>9}  {filename}\n")
@@ -84,10 +82,7 @@ def main() -> None:
             mediainfo = MediaInfo(filename)
             format_output(mediainfo, fmt)
         except FileNotFoundError as err:
-            if err.strerror is None:
-                print(f"{filename}: error: {os.strerror(errno.ENOENT)}", file=sys.stderr)
-            else:
-                print(f"{filename}: error: {err.strerror}", file=sys.stderr)
+            print(f"{filename}: error: {err.strerror}", file=sys.stderr)
         except OSError as err:
             print(f"{filename}: error: {type(err).__name__}: {err.strerror}", file=sys.stderr)
         except Exception as err:

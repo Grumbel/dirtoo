@@ -25,6 +25,7 @@ from dirtoo.fileview.menu import Menu
 from dirtoo.xdg_desktop import get_desktop_entry, get_desktop_file
 
 if TYPE_CHECKING:
+    from xdg.DesktopEntry import DesktopEntry
     from dirtoo.fileview.controller import Controller
 
 
@@ -58,10 +59,10 @@ class ItemContextMenu(Menu):
             location._payloads.append(Payload("archive", ""))
             return location
 
-        def left_func(location=self._fileinfo.location()):
+        def left_func(location: 'Location' = self._fileinfo.location()) -> None:
             self._controller.set_location(make_extract(location))
 
-        def middle_func(location=self._fileinfo.location()):
+        def middle_func(location: 'Location' = self._fileinfo.location()) -> None:
             self._controller.new_controller().set_location(make_extract(location))
 
         self.addDoubleAction(
@@ -115,29 +116,30 @@ class ItemContextMenu(Menu):
         default_apps = set.intersection(*apps_default_sets)
         other_apps = set.intersection(*apps_other_sets)
 
-        default_apps = {get_desktop_file(app) for app in default_apps}
-        other_apps = {get_desktop_file(app) for app in other_apps}
-
-        if None in default_apps:
-            default_apps.remove(None)
-
-        if None in other_apps:
-            other_apps.remove(None)
+        default_apps = {el for el in (get_desktop_file(app)
+                                      for app in default_apps
+                                      if app is not None)
+                        if el is not None}
+        other_apps = {el for el in (get_desktop_file(app)
+                                    for app in other_apps
+                                    if app is not None)
+                      if el is not None}
 
         return cast(Tuple[Set[str], Set[str]], (default_apps, other_apps))
 
-    def _build_open_menu(self):
+    def _build_open_menu(self) -> None:
         files: List[Location] = [fi.location() for fi in self._fileinfos]
 
         default_apps, other_apps = self._get_supported_apps(files)
 
-        def make_launcher_menu(menu: QMenu, apps):
-            entries = [get_desktop_entry(app) for app in apps]
-            entries = sorted(entries, key=lambda x: x.getName())
+        def make_launcher_menu(menu: QMenu, apps: Set[str]) -> None:
+            entries: List[DesktopEntry] = [get_desktop_entry(app)
+                                           for app in apps]
+            entries = sorted(entries, key=lambda x: cast(str, x.getName()))
             for entry in entries:
                 action = menu.addAction(QIcon.fromTheme(entry.getIcon()), "Open With {}".format(entry.getName()))
 
-                def on_action(checked, exe=entry.getExec(), files=files):
+                def on_action(checked: bool, exe: str = entry.getExec(), files: List[Location] = files) -> None:
                     self._controller.app.file_history.append_group(files)
                     self._controller.app.executor.launch_multi_from_exec(exe, files)
 
@@ -157,9 +159,9 @@ class ItemContextMenu(Menu):
 
     def _build_actions_menu(self) -> None:
         actions_menu = QMenu("Actions", self)
-        actions_menu.addAction(self._controller.actions.reload_thumbnails)
-        actions_menu.addAction(self._controller.actions.reload_metadata)
-        actions_menu.addAction(self._controller.actions.make_directory_thumbnails)
+        actions_menu.addAction(self._controller.actions.reload_thumbnails)  # type: ignore
+        actions_menu.addAction(self._controller.actions.reload_metadata)  # type: ignore
+        actions_menu.addAction(self._controller.actions.make_directory_thumbnails)  # type: ignore
 
         actions_menu.addAction("Stack Selection...")
         actions_menu.addAction("Tag Selection...")

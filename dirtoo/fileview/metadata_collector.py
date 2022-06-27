@@ -20,6 +20,7 @@ from typing import Dict, List, Any
 import traceback
 import logging
 import os
+import sys
 
 from PyQt5.QtCore import QObject, pyqtSignal, QThread
 from PyQt5.QtCore import QMimeDatabase
@@ -36,7 +37,7 @@ class MetaDataCollectorWorker(QObject):
 
     sig_metadata_ready = pyqtSignal(Location, dict)
 
-    def __init__(self, vfs: StdioFilesystem) -> None:
+    def __init__(self, vfs: 'StdioFilesystem') -> None:
         super().__init__()
 
         self.vfs = vfs
@@ -62,10 +63,9 @@ class MetaDataCollectorWorker(QObject):
             stat = os.lstat(abspath)
             metadata: Dict[str, Any] = {}
 
-        except FileNotFoundError as err:
-            error_message = "".join(traceback.format_exception(etype=type(err),
-                                                               value=err,
-                                                               tb=err.__traceback__))
+        except FileNotFoundError:
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            error_message = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
             metadata = {
                 'location': location.as_url(),
                 'path': abspath,
@@ -83,10 +83,9 @@ class MetaDataCollectorWorker(QObject):
                 try:
                     metadata.update(self._create_generic_metadata(location, abspath))
                     metadata.update(self._create_type_specific_metadata(location, abspath))
-                except Exception as err:
-                    error_message = "".join(traceback.format_exception(etype=type(err),
-                                                                       value=err,
-                                                                       tb=err.__traceback__))
+                except Exception:
+                    exc_type, exc_value, exc_traceback = sys.exc_info()
+                    error_message = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
                     metadata = {
                         'location': location.as_url(),
                         'path': abspath,
@@ -120,7 +119,7 @@ class MetaDataCollector(QObject):
     sig_request_metadata = pyqtSignal(Location)
     sig_delete_metadatas = pyqtSignal(list)
 
-    def __init__(self, vfs: StdioFilesystem) -> None:
+    def __init__(self, vfs: 'StdioFilesystem') -> None:
         super().__init__()
 
         self._worker = MetaDataCollectorWorker(vfs)

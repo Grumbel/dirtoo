@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Callable, Optional, Tuple, Any, Dict, Union
+from typing import List, Callable, Tuple, Any, Dict, Union
 
 
 import datetime
@@ -79,14 +79,14 @@ def parse_op(text: str) -> Tuple[Callable[[Any, Any], bool], str]:
 class MatchFuncFactory:
 
     def __init__(self) -> None:
-        self._functions: Dict[str, Callable] = {}
+        self._functions: Dict[str, Callable[[str], MatchFunc]] = {}
         self._docs: List[Tuple[List[str], str]] = []
         self._register_defaults()
 
     def get_docs(self) -> List[Tuple[List[str], str]]:
         return self._docs
 
-    def register_function(self, aliases: List[str], func: Callable, doc: Optional[str]) -> None:
+    def register_function(self, aliases: List[str], func: Callable[[str], MatchFunc], doc: str = "") -> None:
         self._docs.append((aliases, doc))
 
         for alias in aliases:
@@ -405,7 +405,7 @@ class MatchFuncFactory:
     def make_contains(self, argument: str) -> MatchFunc:
         needle = argument.lower()
 
-        def line_match_func(line, needle=needle):
+        def line_match_func(line: str, needle: str = needle) -> bool:
             return needle in line.lower()
 
         return ContainsMatchFunc(line_match_func)
@@ -413,7 +413,7 @@ class MatchFuncFactory:
     def make_Contains(self, argument: str) -> MatchFunc:
         needle = argument
 
-        def line_match_func(line, needle=needle):
+        def line_match_func(line: str, needle: str = needle) -> bool:
             return needle in line
 
         return ContainsMatchFunc(line_match_func)
@@ -421,7 +421,7 @@ class MatchFuncFactory:
     def make_contains_regex(self, argument: str) -> MatchFunc:
         rx = re.compile(argument, re.IGNORECASE)
 
-        def line_match_func(line, rx=rx):
+        def line_match_func(line: str, rx: re.Pattern = rx) -> bool:
             return bool(rx.search(line))
 
         return ContainsMatchFunc(line_match_func)
@@ -429,7 +429,7 @@ class MatchFuncFactory:
     def make_Contains_Regex(self, argument: str) -> MatchFunc:
         rx = re.compile(argument)
 
-        def line_match_func(line, rx=rx):
+        def line_match_func(line: str, rx: re.Pattern[str] = rx) -> bool:
             return bool(rx.search(line))
 
         return ContainsMatchFunc(line_match_func)
@@ -439,7 +439,7 @@ class MatchFuncFactory:
         n = 3
         threshold = 0.5
 
-        def line_match_func(line, needle=needle, n=n, threshold=threshold):
+        def line_match_func(line: str, needle: str = needle, n: int = n, threshold: float = threshold) -> bool:
             return fuzzy(needle, line, n) > threshold
 
         return ContainsMatchFunc(line_match_func)
@@ -447,18 +447,18 @@ class MatchFuncFactory:
     def make_regex(self, argument: str) -> MatchFunc:
         return RegexMatchFunc(argument, re.IGNORECASE)
 
-    def make_Regex(self, argument: str) -> MatchFunc:
-        return RegexMatchFunc(argument, 0)
+    def make_Regex(self, argument: str) -> RegexMatchFunc:
+        return RegexMatchFunc(argument, re.RegexFlag(0))
 
-    def make_length(self, argument: str) -> MatchFunc:
+    def make_length(self, argument: str) -> LengthMatchFunc:
         op, rest = parse_op(argument)
         return LengthMatchFunc(int(rest), op)
 
-    def make_size(self, argument: str) -> MatchFunc:
+    def make_size(self, argument: str) -> SizeMatchFunc:
         op, rest = parse_op(argument)
         return SizeMatchFunc(bytefmt.dehumanize(rest), op)
 
-    def make_random(self, argument: str) -> MatchFunc:
+    def make_random(self, argument: str) -> RandomMatchFunc:
         return RandomMatchFunc(float(argument))
 
     def make_duration(self, argument: str) -> MatchFunc:
@@ -475,19 +475,19 @@ class MatchFuncFactory:
         op, rest = parse_op(argument)
         return MetadataMatchFunc("width", float, float(rest), op)
 
-    def make_height(self, argument: str) -> MatchFunc:
+    def make_height(self, argument: str) -> MetadataMatchFunc:
         op, rest = parse_op(argument)
         return MetadataMatchFunc("height", float, float(rest), op)
 
-    def make_framerate(self, argument: str) -> MatchFunc:
+    def make_framerate(self, argument: str) -> MetadataMatchFunc:
         op, rest = parse_op(argument)
         return MetadataMatchFunc("framerate", float, float(rest), op)
 
-    def make_pages(self, argument: str) -> MatchFunc:
+    def make_pages(self, argument: str) -> MetadataMatchFunc:
         op, rest = parse_op(argument)
         return MetadataMatchFunc("pages", int, int(rest), op)
 
-    def make_filecount(self, argument: str) -> MatchFunc:
+    def make_filecount(self, argument: str) -> MetadataMatchFunc:
         op, rest = parse_op(argument)
         return MetadataMatchFunc("file_count", int, int(rest), op)
 

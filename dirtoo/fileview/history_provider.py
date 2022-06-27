@@ -15,9 +15,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import TYPE_CHECKING
+
 from PyQt5.QtCore import QObject, pyqtSignal
 
 from dirtoo.file_info import FileInfo
+
+if TYPE_CHECKING:
+    from dirtoo.fileview.application import FileViewApplication
 
 
 class HistoryProvider(QObject):
@@ -26,7 +31,7 @@ class HistoryProvider(QObject):
     sig_finished = pyqtSignal()
     sig_message = pyqtSignal(str)
 
-    def __init__(self, app):
+    def __init__(self, app: 'FileViewApplication') -> None:
         super().__init__()
 
         self._app = app

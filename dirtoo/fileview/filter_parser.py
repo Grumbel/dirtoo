@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Optional
+from typing import Optional, IO
 
 import logging
 import sys
@@ -34,7 +34,7 @@ class FilterParser:
         self._command_parser = FilterCommandParser()
         self._expr_parser = FilterExprParser()
 
-    def print_help(self, fout=sys.stdout) -> None:
+    def print_help(self, fout: IO = sys.stdout) -> None:
         for aliases, doc in self._expr_parser._func_factory.get_docs():
             fout.write("{}:{}".format(aliases[0],
                                       textwrap.dedent(doc or "")))

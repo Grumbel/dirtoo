@@ -38,14 +38,14 @@ class Filter:
     def set_match_func(self, match_func: Optional[MatchFunc]) -> None:
         self.match_func = match_func
 
-    def _is_hidden(self, fileinfo) -> bool:
+    def _is_hidden(self, fileinfo: FileInfo) -> bool:
         if not self.show_hidden:
             if fileinfo.basename().startswith("."):
                 return True
 
         return False
 
-    def _is_excluded(self, fileinfo) -> bool:
+    def _is_excluded(self, fileinfo: FileInfo) -> bool:
         if self.match_func is None:
             return False
         else:

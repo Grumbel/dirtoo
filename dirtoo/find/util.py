@@ -48,7 +48,7 @@ def replace_item(lst: List[Any], needle: Any, replacements: List[Any]) -> List[A
 def find_files(directory: str, filter_op: 'Filter', action: 'Action', topdown: bool, maxdepth: int) -> None:
     for root, dirs, files in walk(directory, topdown=topdown, maxdepth=maxdepth):
         for f in files:
-            if filter_op.match_file(root, f):
+            if filter_op.match_file(cast(str, root), cast(str, f)):
                 action.file(cast(str, root), cast(str, f))
 
 

@@ -39,7 +39,7 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     parser.add_argument("--no-filename", action='store_true',
                         help="Suppress  the  prefixing  of file names on output", default=False)  # -h
 
-    return parser.parse_args()
+    return parser.parse_args(argv[1:])
 
 
 def main(argv: List[str]) -> None:

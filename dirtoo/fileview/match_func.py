@@ -15,14 +15,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, Callable, Any
+from typing import TYPE_CHECKING, Callable, Any, List, Union, Tuple
 from abc import ABC, abstractmethod
 
 import logging
 import random
 import re
 from fnmatch import fnmatchcase
-from datetime import datetime
+import datetime
 
 from dirtoo.fuzzy import fuzzy
 
@@ -59,7 +59,7 @@ class TrueMatchFunc(MatchFunc):
 
 class OrMatchFunc(MatchFunc):
 
-    def __init__(self, funcs) -> None:
+    def __init__(self, funcs: List[MatchFunc]) -> None:
         self._funcs = funcs
 
     def __call__(self, fileinfo: 'FileInfo') -> bool:
@@ -71,7 +71,7 @@ class OrMatchFunc(MatchFunc):
 
 class AndMatchFunc(MatchFunc):
 
-    def __init__(self, funcs) -> None:
+    def __init__(self, funcs: List[MatchFunc]) -> None:
         self._funcs = funcs
 
     def __call__(self, fileinfo: 'FileInfo') -> bool:
@@ -83,7 +83,7 @@ class AndMatchFunc(MatchFunc):
 
 class ExcludeMatchFunc(MatchFunc):
 
-    def __init__(self, func) -> None:
+    def __init__(self, func: MatchFunc) -> None:
         self._func = func
 
     def __call__(self, fileinfo: 'FileInfo') -> bool:
@@ -101,7 +101,7 @@ class FolderMatchFunc(MatchFunc):
 
 class GlobMatchFunc(MatchFunc):
 
-    def __init__(self, pattern, case_sensitive=False):
+    def __init__(self, pattern: str, case_sensitive: bool = False) -> None:
         self.case_sensitive = case_sensitive
         if self.case_sensitive:
             self.pattern = pattern
@@ -118,7 +118,7 @@ class GlobMatchFunc(MatchFunc):
 
 class RegexMatchFunc(MatchFunc):
 
-    def __init__(self, pattern, flags) -> None:
+    def __init__(self, pattern: str, flags: re.RegexFlag) -> None:
         self.rx = re.compile(pattern, flags)
 
     def __call__(self, fileinfo: 'FileInfo') -> bool:
@@ -139,7 +139,7 @@ class FuzzyMatchFunc(MatchFunc):
 
 class SizeMatchFunc(MatchFunc):
 
-    def __init__(self, size, compare: CompareCallable) -> None:
+    def __init__(self, size: int, compare: CompareCallable) -> None:
         self.size = size
         self.compare = compare
 
@@ -149,7 +149,7 @@ class SizeMatchFunc(MatchFunc):
 
 class MetadataMatchFunc(MatchFunc):
 
-    def __init__(self, field, type, value, compare: CompareCallable) -> None:
+    def __init__(self, field: str, type: Callable[[Any], Any], value: Any, compare: CompareCallable) -> None:
         self._field = field
         self._type = type
         self._value = value
@@ -235,7 +235,7 @@ class DateMatchFunc(MatchFunc):
 
     def __call__(self, fileinfo: 'FileInfo') -> bool:
         mtime = fileinfo.mtime()
-        dt = datetime.fromtimestamp(mtime)
+        dt = datetime.datetime.fromtimestamp(mtime)
         dtstr = dt.strftime("%Y-%m-%d")
         return fnmatchcase(dtstr, self._pattern)
 
@@ -247,7 +247,7 @@ class TimeMatchFunc(MatchFunc):
 
     def __call__(self, fileinfo: 'FileInfo') -> bool:
         mtime = fileinfo.mtime()
-        dt = datetime.fromtimestamp(mtime)
+        dt = datetime.datetime.fromtimestamp(mtime)
         dtstr = dt.strftime("%H:%M:%S")
         return fnmatchcase(dtstr, self._pattern)
 
@@ -258,7 +258,7 @@ class TimeOpMatchFunc(MatchFunc):
         self._compare = compare
         for idx, fmt in enumerate(["%H:%M:%S", "%H:%M", "%H"]):
             try:
-                self._time = datetime.strptime(text, fmt).time()
+                self._time = datetime.datetime.strptime(text, fmt).time()
                 self._snip = idx
                 break
             except ValueError:
@@ -266,7 +266,7 @@ class TimeOpMatchFunc(MatchFunc):
         else:
             raise Exception("TimeOpMatchFunc: couldn't parse text: {}".format(text))
 
-    def _snip_it(self, time):
+    def _snip_it(self, time: datetime.time) -> Union[datetime.time, Tuple[int, int], int]:
         if self._snip == 0:
             return time
         elif self._snip == 1:
@@ -278,7 +278,7 @@ class TimeOpMatchFunc(MatchFunc):
 
     def __call__(self, fileinfo: 'FileInfo') -> bool:
         mtime = fileinfo.mtime()
-        dt = datetime.fromtimestamp(mtime)
+        dt = datetime.datetime.fromtimestamp(mtime)
         return self._compare(self._snip_it(dt.time()), self._snip_it(self._time))
 
 
@@ -288,7 +288,7 @@ class DateOpMatchFunc(MatchFunc):
         self._compare = compare
         for idx, fmt in enumerate(["%Y-%m-%d", "%Y-%m", "%Y"]):
             try:
-                self._date = datetime.strptime(text, fmt).date()
+                self._date = datetime.datetime.strptime(text, fmt).date()
                 self._snip = idx
                 break
             except ValueError:
@@ -296,7 +296,7 @@ class DateOpMatchFunc(MatchFunc):
         else:
             raise Exception("DateOpMatchFunc: couldn't parse text: {}".format(text))
 
-    def _snip_it(self, date):
+    def _snip_it(self, date: datetime.date) -> Union[datetime.date, Tuple[int, int], int]:
         if self._snip == 0:
             return date
         elif self._snip == 1:
@@ -308,14 +308,14 @@ class DateOpMatchFunc(MatchFunc):
 
     def __call__(self, fileinfo: 'FileInfo') -> bool:
         mtime = fileinfo.mtime()
-        dt = datetime.fromtimestamp(mtime)
+        dt = datetime.datetime.fromtimestamp(mtime)
         return self._compare(self._snip_it(dt.date()), self._snip_it(self._date))
 
 
 WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
 
-def text2weekday(text: str):
+def text2weekday(text: str) -> int:
     try:
         return int(text)
     except ValueError:
@@ -337,13 +337,13 @@ class WeekdayMatchFunc(MatchFunc):
 
     def __call__(self, fileinfo: 'FileInfo') -> bool:
         mtime = fileinfo.mtime()
-        dt = datetime.fromtimestamp(mtime)
+        dt = datetime.datetime.fromtimestamp(mtime)
         return self._compare(dt.weekday(), self._weekday)
 
 
 class ContainsMatchFunc(MatchFunc):
 
-    def __init__(self, line_match_func) -> None:
+    def __init__(self, line_match_func: Callable[[str], bool]) -> None:
         self._line_match_func = line_match_func
 
     def __call__(self, fileinfo: 'FileInfo') -> bool:

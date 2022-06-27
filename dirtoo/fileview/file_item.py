@@ -136,7 +136,7 @@ class FileItem(QGraphicsObject):
                               192 + 32 - 10 * self.animation_count)
 
         # background rectangle
-        if True or self.animation_timer is not None:
+        if True or self.animation_timer is not None:  # type: ignore
             painter.fillRect(0, 0,
                              self.tile_rect.width(),
                              self.tile_rect.height(),
@@ -276,7 +276,7 @@ class FileItem(QGraphicsObject):
 
             # Create the drag thumbnail
             if False:
-                pix = QPixmap(self.tile_rect.width(), self.tile_rect.height())
+                pix = QPixmap(self.tile_rect.width(), self.tile_rect.height())  # type: ignore
                 painter = QPainter(pix)
                 self.paint(painter, None, None)
                 painter.end()

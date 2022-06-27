@@ -17,9 +17,9 @@
 
 from typing import TYPE_CHECKING, Any, Optional, List, Tuple
 
-from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtCore import Qt, QPoint, QSize
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QSizePolicy
-from PyQt5.QtGui import QIcon, QDragEnterEvent, QDropEvent, QDragLeaveEvent
+from PyQt5.QtGui import QIcon, QDragEnterEvent, QDropEvent, QDragLeaveEvent, QMouseEvent
 
 import sip
 
@@ -131,7 +131,7 @@ class LocationButtonBar(QWidget):
         self._clearLayout()
         self.setLayout(layout)
 
-    def _on_button_context_menu(self, button: LocationButton, location: Location, pos) -> None:
+    def _on_button_context_menu(self, button: LocationButton, location: Location, pos: QPoint) -> None:
         fileinfo = self._controller.app.vfs.get_fileinfo(location.pure())
         menu = ItemContextMenu(self._controller, [fileinfo])
         menu.exec(button.mapToGlobal(pos))
@@ -146,7 +146,7 @@ class LocationButtonBar(QWidget):
                     w.setParent(None)
             sip.delete(old_layout)
 
-    def mousePressEvent(self, ev):
+    def mousePressEvent(self, ev: QMouseEvent) -> None:
         print("LocationButtonBar: press event", ev)
         self._controller.show_location_toolbar()
 

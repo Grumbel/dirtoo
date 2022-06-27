@@ -456,7 +456,7 @@ class FileView(QGraphicsView):
                 w = rect.right()
             else:
                 # top/center alignment
-                w = max(self.viewport().width(), rect.right())
+                w = max(self.viewport().width(), rect.right())  # type: ignore
             h = max(self.viewport().height(), rect.bottom())
 
             return QRectF(0, 0, w, h)
@@ -504,8 +504,9 @@ class FileView(QGraphicsView):
         mimetype = self._controller.app.mime_database.get_mime_type(fileinfo.location())
         return self._controller.app.mime_database.get_icon_from_mime_type(mimetype)
 
-    def receive_thumbnail(self, location: Location, flavor: str,
-                          image: QImage, error_code: int, message: str) -> None:
+    def receive_thumbnail(self, location: Location,
+                          flavor: Optional[str], image: Optional[QImage],
+                          error_code: Optional[int], message: Optional[str]) -> None:
         # receiving thumbnail for item that no longer exists is normal
         # when switching directories quickly
         items = self._location2item.get(location, [])
@@ -513,8 +514,9 @@ class FileView(QGraphicsView):
             self.receive_thumbnail_for_item(item, flavor, image, error_code, message)
             item.set_thumbnail_image(image, flavor)
 
-    def receive_thumbnail_for_item(self, item: FileItem, flavor: str, image: QImage,
-                                   error_code: Optional[int], message: str) -> None:
+    def receive_thumbnail_for_item(self, item: FileItem,
+                                   flavor: Optional[str], image: Optional[QImage],
+                                   error_code: Optional[int], message: Optional[str]) -> None:
         if image is not None:
             item.set_thumbnail_image(image, flavor)
         else:
@@ -633,6 +635,13 @@ class FileView(QGraphicsView):
                     if fi.basename().lower().startswith(text):
                         self.set_cursor_to_fileinfo(fi, True)
                         break
+
+    def scroll_top(self) -> None:
+        self.file_view.ensureVisible(0, 0, 1, 1)
+
+    def scroll_bottom(self) -> None:
+        assert self.file_view._layout is not None
+        self.file_view.ensureVisible(0, self.file_view._layout.get_bounding_rect().height(), 1, 1)
 
 
 # EOF #

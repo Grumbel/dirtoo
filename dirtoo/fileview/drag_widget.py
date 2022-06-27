@@ -19,9 +19,9 @@ from typing import Optional
 
 import logging
 
-from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtCore import Qt, QPoint, QTimerEvent
 from PyQt5.QtWidgets import QWidget, QApplication
-from PyQt5.QtGui import QCursor, QPainter, QFontMetrics
+from PyQt5.QtGui import QCursor, QPainter, QFontMetrics, QPaintEvent
 
 
 logger = logging.getLogger(__name__)
@@ -46,10 +46,10 @@ class DragWidget(QWidget):
         self._mouse_move_timer = self.startTimer(1000 // 60)
         self._text: Optional[str] = None
 
-    def __del__(self):
+    def __del__(self) -> None:
         logger.debug("DragWidget.__del__")
 
-    def timerEvent(self, ev) -> None:
+    def timerEvent(self, ev: QTimerEvent) -> None:
         if ev.timerId() == self._mouse_move_timer:
             buttons = QApplication.mouseButtons()
             if not buttons & Qt.LeftButton:
@@ -91,7 +91,7 @@ class DragWidget(QWidget):
                         self.show()
                         self.repaint()
 
-    def paintEvent(self, ev) -> None:
+    def paintEvent(self, ev: QPaintEvent) -> None:
         if self._text is not None:
             painter = QPainter(self)
             font = painter.font()

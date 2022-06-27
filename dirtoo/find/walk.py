@@ -101,7 +101,7 @@ def _walk(top: Union[str, PathLike[str]], topdown: bool,
     # minor reason when (say) a thousand readable directories are still
     # left to visit.  That logic is copied here.
     try:
-        if name == 'nt' and isinstance(top, bytes):
+        if name == 'nt' and isinstance(top, bytes):  # type: ignore
             scandir_it = _dummy_scandir(top)
         else:
             # Note that scandir is global in this module due

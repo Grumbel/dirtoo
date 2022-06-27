@@ -17,10 +17,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Dict, List, Callable, Union, cast
+from typing import cast, Any, Dict, List, Callable, Union
 
 import operator
 from abc import ABC, abstractmethod
+from pyparsing import ParserElement, ParseResults
 
 
 ExprValue = Union[int, float, bool, str]
@@ -32,11 +33,11 @@ UnaryExprFunction = Callable[[float], float]
 # semantics, shouldn't matter since we try to stay side effect free,
 # but might still be a worthy optimization
 def logical_and(lhs: ExprValue, rhs: ExprValue) -> bool:
-    return lhs and rhs
+    return bool(lhs and rhs)
 
 
 def logical_or(lhs: ExprValue, rhs: ExprValue) -> bool:
-    return lhs or rhs
+    return bool(lhs or rhs)
 
 
 NAME2BINOP: Dict[str, ExprFunction] = {
@@ -127,7 +128,7 @@ class Expr(ABC):
 
 class Function(Expr):
 
-    def __init__(self, s: str, loc: int, toks: List[Expr]) -> None:
+    def __init__(self, s: str, loc: int, toks: ParseResults) -> None:
         self.name: str = cast(str, toks[0])
         self.args = toks[1:]
 
@@ -142,7 +143,7 @@ class Function(Expr):
 
 class Number(Expr):
 
-    def __init__(self, s: str, loc: int, toks: List) -> None:
+    def __init__(self, s: str, loc: int, toks: ParseResults) -> None:
         self.value: ExprValue = toks[0]
         if len(toks) > 1:
             self.unit = toks[1]
@@ -161,8 +162,8 @@ class Number(Expr):
 
 class String(Expr):
 
-    def __init__(self, s, loc, toks: List[ExprValue]) -> None:
-        self.value = toks[0]
+    def __init__(self, s: str, loc: int, toks: ParseResults) -> None:
+        self.value: str = toks[0]
 
     def eval(self, ctx: Context) -> ExprValue:
         return self.value
@@ -173,7 +174,7 @@ class String(Expr):
 
 class Variable(Expr):
 
-    def __init__(self, s, loc, toks: List[ExprValue]) -> None:
+    def __init__(self, s: str, loc: int, toks: ParseResults) -> None:
         assert type(toks[0]) is str
         self.name: str = toks[0]
 
@@ -186,7 +187,7 @@ class Variable(Expr):
 
 class Operator(Expr):
 
-    def __init__(self, op, lhs, rhs) -> None:
+    def __init__(self, op: str, lhs: Expr, rhs: Expr) -> None:
         self.op = op
         self.lhs = lhs
         self.rhs = rhs
@@ -200,19 +201,19 @@ class Operator(Expr):
 
 class UnaryOperator(Expr):
 
-    def __init__(self, op, lhs) -> None:
+    def __init__(self, op: str, lhs: Expr) -> None:
         self.op = op
         self.lhs = lhs
 
-    def eval(self, ctx: Context):
-        return get_unary_operator_fn(self.op)(self.lhs.eval(ctx))
+    def eval(self, ctx: Context) -> ExprValue:
+        return get_unary_operator_fn(self.op)(cast(float, self.lhs.eval(ctx)))
 
     def __repr__(self) -> str:
         return "UnaryOperator({}, {})".format(self.op, self.lhs)
 
 
-def make_grammar():
-    from pyparsing import (ParserElement, Literal, Word, Forward,
+def make_grammar() -> ParserElement:
+    from pyparsing import (Literal, Word, Forward,
                            Optional, QuotedString, Combine,
                            ZeroOrMore, Keyword, alphas, alphanums,
                            nums)
@@ -265,19 +266,22 @@ def make_grammar():
     string = (QuotedString('"') | QuotedString("'"))
     primary_expr = ident | number | string | (lparent + expr + rparent)
 
-    def make_op(s, loc, toks):
+    def make_op(s: str, loc: int, toks: ParseResults) -> Any:
         if len(toks) == 1:
             return toks[0]
         else:
-            def loop(lhs, rest):
+            def loop(lhs: Operator, rest: List[ParserElement]) -> Operator:
                 if len(rest) == 0:
                     return lhs
                 else:
-                    return loop(Operator(rest[0], lhs, rest[1]), rest[2:])
+                    return loop(Operator(cast(str, rest[0]),
+                                         lhs,
+                                         cast(Expr, rest[1])),
+                                rest[2:])
 
             return loop(Operator(toks[1], toks[0], toks[2]), toks[3:])
 
-    def make_unary(s, loc, toks):
+    def make_unary(s: str, loc: int, toks: ParseResults) -> Any:
         if len(toks) == 1:
             return toks[0]
         else:
@@ -329,7 +333,7 @@ class Parser:
     def __init__(self) -> None:
         self.bnf = make_grammar()
 
-    def parse(self, text):
+    def parse(self, text: str) -> Any:
         result = self.bnf.parseString(text, parseAll=True)
         return result[0]
 

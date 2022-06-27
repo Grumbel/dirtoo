@@ -15,13 +15,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import logging
 from enum import Enum
 
 from dirtoo.fileview.layout import TileStyle
 from dirtoo.fileview.settings import settings
+
+if TYPE_CHECKING:
+    from dirtoo.fileview.file_view import FileView
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +38,7 @@ class FileItemStyle(Enum):
 
 class Mode:
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent: 'FileView') -> None:
         self._parent = parent
 
         self._item_style: Optional[FileItemStyle] = None
@@ -86,7 +89,7 @@ class Mode:
 
 class IconMode(Mode):
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent: 'FileView') -> None:
         super().__init__(parent)
 
         self._item_style = FileItemStyle.ICON
@@ -113,7 +116,7 @@ class IconMode(Mode):
 
 class ListMode(Mode):
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent: 'FileView') -> None:
         super().__init__(parent)
 
         self._item_style = FileItemStyle.SMALLICON
@@ -158,7 +161,7 @@ class ListMode(Mode):
 
 class DetailMode(Mode):
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent: 'FileView') -> None:
         super().__init__(parent)
 
         self._item_style = FileItemStyle.DETAIL

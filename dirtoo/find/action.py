@@ -83,6 +83,7 @@ class PrinterAction(Action):
                 sys.stdout.write(literal_text)
 
             if field_name is not None:
+                assert format_spec is not None
                 value = eval(field_name, self.global_vars, local_vars)  # pylint: disable=W0123
                 sys.stdout.write(format(value, format_spec))
 
@@ -152,7 +153,7 @@ class ExecAction(Action):
 
 class ExprSorterAction(Action):
 
-    def __init__(self, expr, reverse, find_action):
+    def __init__(self, expr: str, reverse: bool, find_action: Action) -> None:
         super().__init__()
         self.expr = expr
         self.find_action = find_action

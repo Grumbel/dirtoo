@@ -177,7 +177,7 @@ class PropertiesDialog(QDialog):
         access_special_sticky.setCheckable(True)
         access_special_sticky.setChecked(bool(stat.S_ISVTX & mode))
 
-        def timestamp2str(time):
+        def timestamp2str(time: float) -> str:
             dt = datetime.fromtimestamp(time)
             dtstr = dt.strftime("%Y-%m-%d %H:%M:%S")
             return dtstr

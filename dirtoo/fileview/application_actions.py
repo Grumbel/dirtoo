@@ -21,12 +21,12 @@ from PyQt5.QtWidgets import QAction
 from PyQt5.QtGui import QIcon
 
 if TYPE_CHECKING:
-    from dirtoo.fileview.application import Application
+    from dirtoo.fileview.application import FileViewApplication
 
 
 class ApplicationActions:
 
-    def __init__(self, app: 'Application') -> None:
+    def __init__(self, app: 'FileViewApplication') -> None:
         self._app = app
         self._make_actions()
 

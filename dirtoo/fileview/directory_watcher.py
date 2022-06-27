@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Optional
+from typing import TYPE_CHECKING, Optional, Union
 
 import logging
 import traceback
@@ -28,6 +28,10 @@ import inotify_simple
 
 from dirtoo.file_info import FileInfo
 from dirtoo.location import Location
+
+if TYPE_CHECKING:
+    from dirtoo.fileview.virtual_filesystem import VirtualFilesystem
+    from dirtoo.fileview.stdio_filesystem import StdioFilesystem
 
 
 logger = logging.getLogger(__name__)
@@ -58,7 +62,7 @@ class INotifyQt(QObject):
         self.qnotifier.activated.connect(self._on_activated)
         self.wd = None
 
-    def add_watch(self, path: str, flags=DEFAULT_FLAGS) -> None:
+    def add_watch(self, path: str, flags: inotify_flags = DEFAULT_FLAGS) -> None:
         self.wd = self.inotify.add_watch(path, flags)
 
     def _on_activated(self, fd: int) -> None:
@@ -82,7 +86,7 @@ class DirectoryWatcherWorker(QObject):
     sig_scandir_finished = pyqtSignal(list)
     sig_message = pyqtSignal(str)
 
-    def __init__(self, vfs, location: Location) -> None:
+    def __init__(self, vfs: Union['StdioFilesystem', 'VirtualFilesystem'], location: Location) -> None:
         super().__init__()
 
         self.vfs = vfs
@@ -117,7 +121,7 @@ class DirectoryWatcherWorker(QObject):
 
         self.sig_scandir_finished.emit(fileinfos)
 
-    def on_inotify_event(self, ev) -> None:
+    def on_inotify_event(self, ev: inotify_simple.Event) -> None:
         try:
             logger.debug("inotify-event: name: '%s'  mask: %s",
                          ev.name,
@@ -156,7 +160,7 @@ class DirectoryWatcher(QObject):
 
     sig_close_requested = pyqtSignal()
 
-    def __init__(self, vfs, location: Location) -> None:
+    def __init__(self, vfs: Union['StdioFilesystem', 'VirtualFilesystem'], location: Location) -> None:
         super().__init__()
         self._worker = DirectoryWatcherWorker(vfs, location)
         self._thread = QThread(self)

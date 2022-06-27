@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Iterable, Optional, Iterator, Dict, List, cast
+from typing import cast, overload, Iterable, Optional, Dict, List, Union
 
 import logging
 
@@ -152,11 +152,11 @@ class FileCollection(QObject):
             logger.debug("FileCollection.close_file: %s: KeyError", fileinfo)
             self.sig_file_closed.emit(fileinfo)
 
-    def get_fileinfos(self) -> Iterator[FileInfo]:
+    def get_fileinfos(self) -> List[FileInfo]:
         if self._sorter.reverse:
-            return cast(Iterator[FileInfo], reversed(self._fileinfos))
+            return list(reversed(self._fileinfos))
         else:
-            return cast(Iterator[FileInfo], iter(self._fileinfos))
+            return list(self._fileinfos)
 
     def get_fileinfo(self, location: Location) -> Optional[FileInfo]:
         if location not in self._location2fileinfo:
@@ -165,11 +165,20 @@ class FileCollection(QObject):
             fis = self._location2fileinfo[location]
             return fis[0]  # FIXME: this is fishy
 
-    def index(self, fileinfo: FileInfo):
-        return self._fileinfos.index(fileinfo)
+    def index(self, fileinfo: FileInfo) -> int:
+        return cast(int, self._fileinfos.index(fileinfo))
 
-    def __getitem__(self, key):
-        return self._fileinfos[key]
+    @overload
+    def __getitem__(self, i: int) -> FileInfo:
+        ...
+
+    @overload
+    def __getitem__(self, s: slice) -> list[FileInfo]:
+        ...
+
+    def __getitem__(self, key: Union[int, slice]) -> Union[FileInfo, list[FileInfo]]:
+        return cast(Union[FileInfo, list[FileInfo]],
+                    self._fileinfos[key])
 
     def __len__(self) -> int:
         return len(self._fileinfos)

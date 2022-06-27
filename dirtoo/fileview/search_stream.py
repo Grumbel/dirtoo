@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Any, Optional
+from typing import cast, Any, Optional
 
 import logging
 import os
@@ -64,11 +64,11 @@ class SearchStreamWorker(QObject):
         self.sig_finished.emit()
 
     def _find_files(self, directory: str, recursive: bool, filter_op: Filter, action: Action,
-                    topdown: bool, maxdepth: int) -> None:
+                    topdown: bool, maxdepth: Optional[int]) -> None:
         for root, dirs, files in walk(directory, topdown=topdown, maxdepth=maxdepth):
             for f in files:
-                if filter_op.match_file(root, f):
-                    action.file(root, f)
+                if filter_op.match_file(cast(str, root), cast(str, f)):
+                    action.file(cast(str, root), cast(str, f))
 
                 if self._close:
                     return

@@ -82,7 +82,7 @@ class Thumbnail:
 
         self.request(force=True)
 
-    def request(self, force=False) -> None:
+    def request(self, force: bool = False) -> None:
         assert self.status != ThumbnailStatus.LOADING
 
         thumbnailer = self.file_item.controller.app.thumbnailer

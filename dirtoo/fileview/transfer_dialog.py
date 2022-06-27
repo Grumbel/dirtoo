@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 import logging
 import time
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimerEvent
 from PyQt5.QtGui import QIcon, QTextOption
 from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QCheckBox,
                              QHBoxLayout, QVBoxLayout, QSizePolicy,
@@ -54,10 +54,10 @@ class TransferDialog(QDialog):
         self._timer = self.startTimer(500)
         self._time = time.time()
 
-    def __del__(self):
+    def __del__(self) -> None:
         logger.debug("TransferDialog.__del__")
 
-    def _on_close_checkbox_toggled(self, state):
+    def _on_close_checkbox_toggled(self, state: bool) -> None:
         settings.set_value("globals/close_on_transfer_completed", state)
 
     def _on_transfer_canceled(self) -> None:
@@ -75,7 +75,7 @@ class TransferDialog(QDialog):
             self._paused = True
             self._btn_pause.setText("Continue")
 
-    def timerEvent(self, ev) -> None:
+    def timerEvent(self, ev: QTimerEvent) -> None:
         if ev.timerId() == self._timer:
             if self._paused:
                 msec = int(self._time * 1000)

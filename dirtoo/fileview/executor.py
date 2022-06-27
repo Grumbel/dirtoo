@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 import logging
 import subprocess
@@ -24,12 +24,15 @@ import shlex
 from dirtoo.xdg_desktop import get_desktop_entry
 from dirtoo.location import Location
 
+if TYPE_CHECKING:
+    from dirtoo.fileview.application import FileViewApplication
+
 logger = logging.getLogger(__name__)
 
 
 class Executor:
 
-    def __init__(self, app) -> None:
+    def __init__(self, app: 'FileViewApplication') -> None:
         self.app = app
 
     def launch_terminal(self, working_directory: Optional[Location] = None) -> None:
@@ -62,7 +65,7 @@ class Executor:
     def launch_single_from_exec(self, exec_str: str, location: Location) -> None:
         filename = self.app.vfs.get_stdio_name(location)
 
-        def replace(lst: List[str], filename):
+        def replace(lst: List[str], filename: str) -> List[str]:
             result: List[str] = []
             for x in lst:
                 if x in ["%f", "%u", "%F", "%U"]:

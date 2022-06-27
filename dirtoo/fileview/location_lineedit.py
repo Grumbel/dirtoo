@@ -161,12 +161,12 @@ class LocationLineEdit(QLineEdit):
         shortcut.setContext(Qt.WidgetShortcut)
         shortcut.activated.connect(self._popup.on_key_down)
 
-    def _on_completions(self, longest, candidate) -> None:
-        self._popup.on_completions(longest, candidate)
+    def _on_completions(self, longest: str, candidates: List[str]) -> None:
+        self._popup.on_completions(longest, candidates)
         self._show_completion_selection = True
         self._show_popup()
 
-    def _on_location_changed(self, location: Optional[Location]):
+    def _on_location_changed(self, location: Optional[Location]) -> None:
         if location is not None:
             self.bookmark_act.setEnabled(True)
             if self._controller.has_bookmark():
@@ -177,7 +177,7 @@ class LocationLineEdit(QLineEdit):
             self.bookmark_act.setEnabled(False)
             self.bookmark_act.setIcon(QIcon())
 
-    def _on_bookmark_triggered(self, checked) -> None:
+    def _on_bookmark_triggered(self, checked: bool) -> None:
         if self._controller.toggle_bookmark():
             self.bookmark_act.setIcon(QIcon.fromTheme("user-bookmarks"))
         else:
@@ -269,7 +269,7 @@ class LocationLineEdit(QLineEdit):
         self.setPalette(p)
         self.setText("no location selected, file list mode is active")
 
-    def keyPressEvent(self, ev: QKeyEvent):
+    def keyPressEvent(self, ev: QKeyEvent) -> None:
         if ev.key() == Qt.Key_Backspace or ev.key() == Qt.Key_Delete:
             self._show_completion_selection = False
         else:
@@ -289,13 +289,13 @@ class LocationLineEdit(QLineEdit):
     def _hide_popup(self) -> None:
         self._popup.hide()
 
-    def on_completions(self, longest: str, candidate: List[str]) -> None:
+    def on_completions(self, longest: str, candidates: List[str]) -> None:
         text = self.text()
         if longest != text and self._show_completion_selection:
             self.setText(longest)
             self.setSelection(len(text), len(longest) - len(text))
 
-        self._popup.set_completions(longest, candidate)
+        self._popup.set_completions(longest, candidates)
         self._show_popup()
 
     def hideEvent(self, ev: QHideEvent) -> None:

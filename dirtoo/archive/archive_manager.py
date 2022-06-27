@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Dict, Deque, Optional
+from typing import TYPE_CHECKING, Dict, Deque, Optional
 
 import json
 import os
@@ -28,6 +28,10 @@ from dirtoo.archive.archive_extractor import ArchiveExtractor
 from dirtoo.archive.extractor import ExtractorResult
 from dirtoo.fileview.directory_watcher import DirectoryWatcher
 from dirtoo.location import Location, Payload
+
+if TYPE_CHECKING:
+    from dirtoo.fileview.stdio_filesystem import StdioFilesystem
+
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +102,8 @@ class ArchiveManager:
         for location, extractor in self._extractors.items():
             extractor.close()
 
-    def extract(self, location: Location, directory_watcher, stdio) -> Optional[ArchiveExtractor]:
+    def extract(self, location: Location, directory_watcher: DirectoryWatcher,
+                stdio: 'StdioFilesystem') -> Optional[ArchiveExtractor]:
         extractor = self._extractors.get(location, None)
         if extractor is not None:
             return extractor  # extraction already running or queued
@@ -106,7 +111,9 @@ class ArchiveManager:
         outdir = self._make_extractor_outdir(location)
 
         if not os.path.isdir(outdir):
-            extractor = ArchiveExtractor(stdio.get_stdio_name(location.origin()), outdir)
+            location_origin = location.origin()
+            assert location_origin is not None
+            extractor = ArchiveExtractor(stdio.get_stdio_name(location_origin), outdir)
             self._extractors[location] = extractor
             extractor.sig_started.connect(lambda extractor:
                                           self._on_archive_extractor_started(extractor))
@@ -124,8 +131,8 @@ class ArchiveManager:
             status = ExtractorStatus.from_file(status_file)
 
             if status.status() == ExtractorResult.FAILURE:
-                def send_message(dw=directory_watcher, message=status.message()):
-                    dw.sig_message.emit(status.message())
+                def send_message(dw: DirectoryWatcher = directory_watcher, message: str = status.message()) -> None:
+                    dw.sig_message.emit(message)
 
                 # FIXME: this is a bit of a crude hack to
                 # communicate the message to the user
@@ -160,7 +167,7 @@ class ArchiveManager:
         outdir = os.path.join(self._extractor_dir, loc_hash)
         return outdir
 
-    def _on_archive_extractor_started(self, extractor: ArchiveExtractor):
+    def _on_archive_extractor_started(self, extractor: ArchiveExtractor) -> None:
         print("ArchiveManager: starting extractor: {}".format(extractor.get_archive_path()))
         status = ExtractorStatus.working(extractor)
         status.save(extractor.get_status_file())

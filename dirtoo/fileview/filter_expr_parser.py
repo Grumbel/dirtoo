@@ -15,9 +15,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Any, List
+from typing import cast, List
 
 import logging
+from pyparsing import ParserElement, ParseResults
 
 from dirtoo.fileview.match_func import MatchFunc, AndMatchFunc, OrMatchFunc, ExcludeMatchFunc
 
@@ -29,27 +30,27 @@ class Expr:
     pass
 
 
-class IncludeExpr:
+class IncludeExpr(Expr):
 
-    def __init__(self, s: str, loc: int, toks: List[Any]) -> None:
+    def __init__(self, s: str, loc: int, toks: ParseResults) -> None:
         self.child = toks[0]
 
     def __repr__(self) -> str:
         return f"Include({self.child})"
 
 
-class ExcludeExpr:
+class ExcludeExpr(Expr):
 
-    def __init__(self, s: str, loc: int, toks: List[Any]) -> None:
+    def __init__(self, s: str, loc: int, toks: ParseResults) -> None:
         self.child = toks[0]
 
     def __repr__(self) -> str:
         return f"Exclude({self.child})"
 
 
-class CommandExpr:
+class CommandExpr(Expr):
 
-    def __init__(self, s: str, loc: int, toks: List[Any]) -> None:
+    def __init__(self, s: str, loc: int, toks: ParseResults) -> None:
         self.command = toks[0]
         self.arg = toks[1]
 
@@ -57,18 +58,18 @@ class CommandExpr:
         return f"Command({self.command}:{self.arg})"
 
 
-class OrKeywordExpr:
+class OrKeywordExpr(Expr):
 
-    def __init__(self, s: str, loc: int, toks: List[Any]) -> None:
+    def __init__(self, s: str, loc: int, toks: ParseResults) -> None:
         self.keyword = toks[0].upper()
 
     def __repr__(self) -> str:
         return "OR"
 
 
-class AndKeywordExpr:
+class AndKeywordExpr(Expr):
 
-    def __init__(self, s: str, loc: int, toks: List[Any]) -> None:
+    def __init__(self, s: str, loc: int, toks: ParseResults) -> None:
         self.keyword = toks[0].upper()
 
     def __repr__(self) -> str:
@@ -83,12 +84,12 @@ class FilterExprParser:
         self._grammar = self._make_grammar()
         self._func_factory = MatchFuncFactory()
 
-    def _make_grammar(self):
+    def _make_grammar(self) -> ParserElement:
         from pyparsing import (QuotedString, ZeroOrMore, Combine,
                                Literal, Optional, OneOrMore,
                                Regex, CaselessKeyword)
 
-        def escape_handler(s, loc, toks):
+        def escape_handler(s: str, loc: int, toks: ParseResults) -> str:
             if toks[0] == '\\\\':
                 return "\\"
             elif toks[0] == '\\\'':
@@ -106,7 +107,7 @@ class FilterExprParser:
             elif toks[0] == '\\ ':
                 return " "
             else:
-                return toks[0][1:]
+                return cast(str, toks[0][1:])
 
         escape = Combine(Regex(r'\\.')).setParseAction(escape_handler)
         word = Combine(OneOrMore(escape | Regex(r'[^\s\\]+')))
@@ -137,21 +138,21 @@ class FilterExprParser:
 
         return expr
 
-    def _parse_tokens(self, tokens):
-        result: List = [[]]
+    def _parse_tokens(self, tokens: ParseResults) -> List[ParseResults]:
+        result: List[ParseResults] = [ParseResults()]
 
         for token in tokens:
             if isinstance(token, AndKeywordExpr):
                 pass  # ignore
             elif isinstance(token, OrKeywordExpr):
-                result.append([])
+                result.append(ParseResults())
             elif isinstance(token, (IncludeExpr, ExcludeExpr, CommandExpr)):
                 result[-1].append(token)
             else:
                 assert False, "unknown token: {}".format(token)
 
         # Remove empty lists that result from unterminated OR keywords
-        result = list(filter(bool, result))
+        result = [x for x in result if x]
 
         return result
 
@@ -170,7 +171,7 @@ class FilterExprParser:
         or_funcs = sorted(or_funcs, key=lambda x: x.cost())
         return OrMatchFunc(or_funcs)
 
-    def _make_func(self, token):
+    def _make_func(self, token: Expr) -> MatchFunc:
         if isinstance(token, IncludeExpr):
             return self._func_factory.make_match_func(token.child)
         elif isinstance(token, ExcludeExpr):

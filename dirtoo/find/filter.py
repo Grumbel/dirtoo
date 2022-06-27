@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Dict
+from typing import cast, Dict, Callable
 from abc import ABC, abstractmethod
 
 import os
@@ -23,6 +23,7 @@ import os
 from dirtoo.find.context import Context
 from dirtoo.fileview.filter_expr_parser import FilterExprParser
 from dirtoo.fileview.lazy_file_info import LazyFileInfo
+from dirtoo.file_info import FileInfo
 
 
 class Filter(ABC):
@@ -43,7 +44,7 @@ class NoFilter(Filter):
 
 class ExprFilter(Filter):
 
-    def __init__(self, expr):
+    def __init__(self, expr: str) -> None:
         self.expr = expr
         self.local_vars: Dict[str, str] = {}
         self.ctx = Context()
@@ -59,7 +60,7 @@ class ExprFilter(Filter):
             '_': filename
         }
         result = eval(self.expr, self.global_vars, local_vars)  # pylint: disable=W0123
-        return result
+        return bool(result)
 
 
 class SimpleFilter(Filter):
@@ -70,14 +71,14 @@ class SimpleFilter(Filter):
         filter_expr = parser.parse(text)
         return SimpleFilter(filter_expr)
 
-    def __init__(self, expr) -> None:
+    def __init__(self, expr: Callable[[FileInfo], bool]) -> None:
         self._expr = expr
 
     def match_file(self, root: str, filename: str) -> bool:
         path = os.path.join(root, filename)
 
         fileinfo = LazyFileInfo.from_path(path)
-        return self._expr(fileinfo)
+        return bool(self._expr(cast(FileInfo, fileinfo)))
 
 
 # EOF #

@@ -22,7 +22,7 @@ import logging
 import os
 
 from PyQt5.QtCore import QObject, Qt, pyqtSignal, QUrl, QMimeData, QPoint
-from PyQt5.QtGui import QClipboard
+from PyQt5.QtGui import QClipboard, QContextMenuEvent
 
 import bytefmt
 
@@ -34,6 +34,7 @@ from dirtoo.filecollection.filter import Filter
 from dirtoo.filecollection.sorter import Sorter
 from dirtoo.fileview.actions import Actions
 from dirtoo.fileview.directory_watcher import DirectoryWatcher
+from dirtoo.fileview.file_item import FileItem
 from dirtoo.fileview.file_view import FileItemStyle
 from dirtoo.fileview.filter_parser import FilterParser
 from dirtoo.fileview.gnome import parse_gnome_copied_files, make_gnome_copied_files
@@ -213,6 +214,7 @@ class Controller(QObject):
         self.file_collection.set_fileinfos(fileinfos)
 
     def _on_directory_watcher_message(self, message: str) -> None:
+        assert self._gui._window._message_area is not None
         self._gui._window._message_area.show_error(message)
 
     def set_location(self, location: Location, track_history: bool = True) -> None:
@@ -395,7 +397,7 @@ class Controller(QObject):
     def on_context_menu(self, pos: QPoint) -> None:
         self._gui.on_context_menu(pos)
 
-    def on_item_context_menu(self, ev, item) -> None:
+    def on_item_context_menu(self, ev: QContextMenuEvent, item: FileItem) -> None:
         self._gui.on_item_context_menu(ev, item)
 
     def show_current_filename(self, filename: str) -> None:
@@ -430,17 +432,18 @@ class Controller(QObject):
             self._gui._window.set_file_list()
 
             fileinfos = self.file_collection.get_fileinfos()
-            fileinfos = (self.app.vfs.get_fileinfo(f.location()) for f in fileinfos)
+            fileinfos = [self.app.vfs.get_fileinfo(f.location()) for f in fileinfos]
             self.file_collection.set_fileinfos(fileinfos)
 
-    def receive_thumbnail(self, location: Location, flavor: Optional[str],
-                          pixmap: Optional[Any], error_code: Optional[int], message: Optional[str]) -> None:
+    def receive_thumbnail(self, location: Location,
+                          flavor: Optional[str], image: Optional[Any],
+                          error_code: Optional[int], message: Optional[str]) -> None:
         logger.debug("Controller.receive_thumbnail: %s %s %s %s %s",
-                     location, flavor, pixmap, error_code, message)
-        if pixmap is None:
+                     location, flavor, image, error_code, message)
+        if image is None:
             logger.error("Controller.receive_thumbnail: error: %s  %s  %s", location, error_code, message)
 
-        self._gui._window.file_view.receive_thumbnail(location, flavor, pixmap, error_code, message)
+        self._gui._window.file_view.receive_thumbnail(location, flavor, image, error_code, message)
 
     def reload_thumbnails(self) -> None:
         selected_items = self._gui._window.file_view._scene.selectedItems()

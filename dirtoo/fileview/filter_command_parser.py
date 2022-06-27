@@ -60,7 +60,7 @@ class FilterCommandParser:
         self._commands: Dict[str, Tuple[List[str], Callable, Optional[str]]] = {}
         self._register_commands()
 
-    def parse(self, pattern):
+    def parse(self, pattern: str) -> None:
         command, *rest = pattern[1:].split(" ", 1)
         args = shlex.split(rest[0]) if rest else []
         print("Args:", args)

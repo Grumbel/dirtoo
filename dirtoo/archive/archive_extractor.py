@@ -124,6 +124,7 @@ class ArchiveExtractor(WorkerThread):
 
     @property
     def sig_entry_extracted(self) -> pyqtSignal:
+        assert self._worker is not None
         return self._worker.sig_entry_extracted
 
 

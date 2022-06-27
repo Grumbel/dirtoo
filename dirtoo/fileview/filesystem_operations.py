@@ -31,6 +31,8 @@ from dirtoo.fileview.transfer_dialog import TransferDialog
 
 if TYPE_CHECKING:
     from dirtoo.filesystem import Filesystem
+    from dirtoo.application import FileViewApplication
+
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +121,7 @@ class GuiMediator(QObject):
     sig_file_conflict = pyqtSignal(ReturnValue)
     sig_directory_conflict = pyqtSignal(ReturnValue)
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent: QObject) -> None:
         super().__init__(parent)
 
     def cancel_transfer(self) -> bool:
@@ -143,7 +145,7 @@ class GuiFileTransfer(QObject):
     sig_finished = pyqtSignal()
     sig_close_requested = pyqtSignal()
 
-    def __init__(self, app, action: Callable, sources: List[str], destination: str) -> None:
+    def __init__(self, app: 'FileViewApplication', action: Callable, sources: List[str], destination: str) -> None:
         super().__init__()
 
         self._app = app
@@ -180,7 +182,7 @@ class GuiFileTransfer(QObject):
         self._thread.quit()
         self._thread.wait()
 
-    def _on_finished(self, result: int):
+    def _on_finished(self, result: int) -> None:
         self.sig_finished.emit()
 
     def _on_file_conflict(self, retval: ReturnValue[ConflictResolution]) -> None:
@@ -199,7 +201,7 @@ class FilesystemOperations:
     """Filesystem operations for the GUI. Messageboxes and dialogs will be
     shown on errors and conflicts."""
 
-    def __init__(self, app) -> None:
+    def __init__(self, app: 'FileViewApplication') -> None:
         self._app = app
         self._rename_op = RenameOperation()
         self._transfers: List[GuiFileTransfer] = []

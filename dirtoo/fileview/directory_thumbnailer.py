@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, Callable, Optional, List, Tuple
+from typing import TYPE_CHECKING, Callable, Optional, Dict, List, Tuple
 
 import logging
 
@@ -30,6 +30,7 @@ from dirtoo.fileview.worker_thread import WorkerThread, Worker
 if TYPE_CHECKING:
     from dirtoo.fileview.application import FileViewApplication
     from dirtoo.location import Location
+    from dirtoo.file_info import FileInfo
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ class DirectoryThumbnailerTask(QObject):
                  location: 'Location', callback: ThumbnailCallback) -> None:
         super().__init__()
 
-        self._file_collection = None
+        self._file_collection: Optional[FileCollection] = None
 
         self._app = app
         self.sig_thumbnail_ready.connect(self._on_thumbnail_ready)
@@ -96,14 +97,15 @@ class DirectoryThumbnailerTask(QObject):
         # print("_on_finished")
         pass
 
-    def _on_scandir_finished(self, fileinfos):
+    def _on_scandir_finished(self, fileinfos: List['FileInfo']) -> None:
         # print("_on_scandir_finished:")
+        assert self._file_collection is not None
         self._file_collection.set_fileinfos(fileinfos)
         if not self._request_thumbnails():
             print("directory seems empty, no thumbnails to generate (might be archive, see file_collection.add_file)")
             self.sig_done.emit()
 
-    def _on_directory_watcher_message(self, message):
+    def _on_directory_watcher_message(self, message: str) -> None:
         print("ERROR:", message)
 
     def _request_thumbnails(self) -> bool:
@@ -114,7 +116,7 @@ class DirectoryThumbnailerTask(QObject):
 
         if self._fileinfo_idx < len(self._file_collection):
             # print("requesting...")
-            fi = self._file_collection[self._fileinfo_idx]
+            fi: FileInfo = self._file_collection[self._fileinfo_idx]
             self._app.thumbnailer.request_thumbnail(fi.location(), "large", False,
                                                     lambda *args: self.sig_thumbnail_ready.emit(*args))
             self._fileinfo_idx += 1
@@ -144,7 +146,7 @@ class DirectoryThumbnailerTask(QObject):
                                QPainter.Antialiasing)
 
         # (x1, y1, x2, y2) coordinates normalized to [0 - 1] for thumbnail arrangement
-        specs = {
+        specs: Dict[int, List[Tuple]] = {
             0: [],
 
             1: [(0, 0, 1, 1)],
@@ -247,7 +249,7 @@ class DirectoryThumbnailerWorker(Worker):
 
     def _on_task_done(self) -> None:
         print("DONE")
-
+        assert self._task is not None
         self._task.close()
         self._task = None
 
@@ -262,7 +264,7 @@ class DirectoryThumbnailer(WorkerThread):
         super().__init__()
         self.set_worker(DirectoryThumbnailerWorker(app))
 
-    def request_thumbnail(self, location: 'Location', callback: ThumbnailCallback):
+    def request_thumbnail(self, location: 'Location', callback: ThumbnailCallback) -> None:
         assert self._worker is not None
 
         print("request_thumbnail", location, callback)

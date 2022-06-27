@@ -38,7 +38,7 @@ class FileGraphicsScene(QGraphicsScene):
         # print("FileGraphicsScene.dragEnterEvent()")
 
         if False:
-            data = ev.mimeData()
+            data = ev.mimeData()  # type: ignore
             for fmt in data.formats():
                 print("Format:", fmt)
                 print(data.data(fmt))

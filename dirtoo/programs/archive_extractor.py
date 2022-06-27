@@ -37,7 +37,7 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     return parser.parse_args(argv[1:])
 
 
-def main(argv: List[str]) -> 0:
+def main(argv: List[str]) -> None:
     args = parse_args(argv)
 
     if args.debug:
@@ -49,7 +49,6 @@ def main(argv: List[str]) -> 0:
         extractor.sig_entry_extracted.connect(lambda x, y: print(y))
 
     extractor.extract()
-    return 0
 
 
 def main_entrypoint() -> None:

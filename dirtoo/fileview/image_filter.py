@@ -48,7 +48,7 @@ def drop_shadow(image: QImage) -> QImage:
     return QImage(arr, image.width(), image.height(), QImage.Format_ARGB32)
 
 
-def white_outline(image: QImage, sigma=6, repeat=6) -> QImage:
+def white_outline(image: QImage, sigma: int = 6, repeat: int = 6) -> QImage:
     if image.format() != QImage.Format_ARGB32:
         image = image.convertToFormat(QImage.Format_ARGB32)
 
@@ -66,7 +66,7 @@ def white_outline(image: QImage, sigma=6, repeat=6) -> QImage:
     alpha = alpha.reshape((image.width(), image.height()))
     alpha = alpha.astype(numpy.single)
     alpha = gaussian_filter(alpha, sigma=sigma)
-    alpha *= repeat
+    alpha *= numpy.uint8(repeat)
     numpy.clip(alpha, 0, 255, out=alpha)
     alpha = alpha.astype(numpy.uint8)
     alpha = alpha.reshape(shape)

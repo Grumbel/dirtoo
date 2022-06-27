@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Callable, Dict, Optional
+from typing import cast, Callable, Dict, Optional
 
 import os
 import time
@@ -186,24 +186,24 @@ class Context:  # pylint: disable=R0904,R0915
 
         return md5.hexdigest()
 
-    def age(self) -> int:
+    def age(self) -> float:
         assert self.current_file is not None
 
         a = os.path.getmtime(self.current_file)
         b = time.time()
         return b - a
 
-    def iso(self, t: Optional[int] = None) -> str:
+    def iso(self, t: Optional[float] = None) -> str:
         if t is None:
             t = self.mtime()
         return datetime.datetime.fromtimestamp(t).strftime("%F")
 
-    def time(self, t: Optional[int] = None) -> str:
+    def time(self, t: Optional[float] = None) -> str:
         if t is None:
             t = self.mtime()
         return datetime.datetime.fromtimestamp(t).strftime("%H:%M")
 
-    def strftime(self, fmt: str, t: Optional[int] = None) -> str:
+    def strftime(self, fmt: str, t: Optional[float] = None) -> str:
         if t is None:
             t = self.mtime()
         return datetime.datetime.fromtimestamp(t).strftime(fmt)
@@ -271,36 +271,42 @@ class Context:  # pylint: disable=R0904,R0915
         if s is None:
             s = self.size()
 
-        return bytefmt.humanize(s, style=style, compact=compact)
+        return cast(str, bytefmt.humanize(s, style=style, compact=compact))  # FIXME: why is the cast necessary?
 
     def size(self) -> int:
+        assert self.current_file is not None
         return size_in_bytes(self.current_file)
 
     def name(self, glob: str) -> bool:
+        assert self.current_file is not None
         return name_match(self.current_file, glob)
 
     def regex(self, regex: str, path: Optional[str] = None) -> bool:
         if path is None:
             path = self.basename()
-        return re.search(regex, path)
+        return bool(re.search(regex, path))
 
     def iregex(self, regex: str, path: Optional[str] = None) -> bool:
         if path is None:
             path = self.basename()
-        return re.search(regex, path, flags=re.IGNORECASE)
+        return bool(re.search(regex, path, flags=re.IGNORECASE))
 
     def iname(self, glob: str) -> bool:
+        assert self.current_file is not None
         return name_match(self.current_file.lower(), glob.lower())
 
     def ngram(self, text: str, threshold: float = 0.15) -> bool:
-        return ngram.NGram.compare(os.path.basename(self.current_file).lower(), text.lower()) >= threshold
+        assert self.current_file is not None
+        return bool(ngram.NGram.compare(os.path.basename(self.current_file).lower(), text.lower()) >= threshold)
 
     def fuzzy(self, text: str, threshold: float = 0.5, n: int = 3) -> bool:
+        assert self.current_file is not None
         neddle = text.lower()
         haystack = os.path.basename(self.current_file).lower()
         return fuzzy(neddle, haystack, n=n) >= threshold
 
     def ascii(self) -> bool:
+        assert self.current_file is not None
         filename = os.path.basename(self.current_file)
         try:
             filename.encode("ascii")
@@ -308,19 +314,20 @@ class Context:  # pylint: disable=R0904,R0915
             return False
         return True
 
-    def atime(self) -> int:
+    def atime(self) -> float:
         assert self.current_file is not None
         return os.lstat(self.current_file).st_atime
 
-    def ctime(self) -> int:
+    def ctime(self) -> float:
         assert self.current_file is not None
         return os.lstat(self.current_file).st_ctime
 
-    def mtime(self) -> int:
+    def mtime(self) -> float:
         assert self.current_file is not None
         return os.lstat(self.current_file).st_mtime
 
     def uid(self) -> int:
+        assert self.current_file is not None
         return os.lstat(self.current_file).st_uid
 
     def gid(self) -> int:

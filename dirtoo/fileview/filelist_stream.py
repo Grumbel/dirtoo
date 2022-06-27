@@ -27,12 +27,13 @@ from dirtoo.file_info import FileInfo
 from dirtoo.location import Location
 
 if TYPE_CHECKING:
+    from dirtoo.fileview.application import FileViewApplication
     from dirtoo.fileview.virtual_filesystem import VirtualFilesystem
 
 logger = logging.getLogger(__name__)
 
 
-def non_blocking_readline(fp: IO, linesep: str) -> Generator[str, None, None]:
+def non_blocking_readline(fp: IO, linesep: str) -> Generator[Optional[str], None, None]:
     flag = fcntl.fcntl(fp, fcntl.F_GETFL)
     fcntl.fcntl(fp.fileno(), fcntl.F_SETFL, flag | os.O_NONBLOCK)
 
@@ -68,16 +69,20 @@ class FileListStream(QObject):
     sig_error = pyqtSignal()
 
     @staticmethod
-    def from_location(app, linesep: str, location: Location) -> 'FileListStream':
+    def from_location(app: 'FileViewApplication', linesep: str, location: Location) -> 'FileListStream':
         if location.get_path() in ["/stdin", "stdin"]:
-            tee_fd, stream_id = app.stream_manager.get_stdin()
+            tee_fd: IO
+            stream_id: str
+            result = app.stream_manager.get_stdin()
+            assert result is not None
+            tee_fd, stream_id = result
         else:
             raise Exception("FileListStream: unknown location: %s", location)
 
         return FileListStream(app.vfs, tee_fd, linesep)
 
     @property
-    def sig_finished(self):
+    def sig_finished(self) -> pyqtSignal:
         return self.sig_end_of_stream
 
     def __init__(self, vfs: 'VirtualFilesystem',
@@ -88,7 +93,7 @@ class FileListStream(QObject):
         self.fp = fp
         self.linesep = linesep
 
-        self.readliner = None
+        self.readliner: Optional[Generator[Optional[str], None, None]] = None
         self.socket_notifier: Optional[QSocketNotifier] = None
 
     def close(self) -> None:
@@ -102,10 +107,11 @@ class FileListStream(QObject):
 
     def _on_activated(self, fd: int) -> None:
         assert self.readliner is not None
+        assert self.socket_notifier is not None
 
         while True:
             try:
-                filename: str = next(self.readliner)
+                filename: Optional[str] = next(self.readliner)
             except StopIteration:
                 self.socket_notifier.setEnabled(False)
                 self.socket_notifier = None
