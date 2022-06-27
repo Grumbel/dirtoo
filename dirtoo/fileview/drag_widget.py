@@ -19,7 +19,7 @@ from typing import Optional
 
 import logging
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QPoint
 from PyQt5.QtWidgets import QWidget, QApplication
 from PyQt5.QtGui import QCursor, QPainter, QFontMetrics
 
@@ -43,7 +43,7 @@ class DragWidget(QWidget):
                          Qt.FramelessWindowHint)
 
         self.resize(48, 20)
-        self._mouse_move_timer = self.startTimer(1000 / 60)
+        self._mouse_move_timer = self.startTimer(1000 // 60)
         self._text: Optional[str] = None
 
     def __del__(self):
@@ -97,7 +97,7 @@ class DragWidget(QWidget):
             font = painter.font()
             fm = QFontMetrics(font)
             width = fm.width(self._text)
-            painter.drawText(self.width() // 2 - width // 2, 14, self._text)
+            painter.drawText(QPoint(self.width() // 2 - width // 2, 14), self._text)
             painter.end()
 
 

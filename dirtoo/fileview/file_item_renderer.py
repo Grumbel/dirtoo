@@ -18,7 +18,7 @@
 import logging
 from datetime import datetime
 
-from PyQt5.QtCore import Qt, QRect, QRectF, QPoint, QMargins
+from PyQt5.QtCore import Qt, QRect, QRectF, QPoint, QPointF, QMargins
 from PyQt5.QtGui import QColor, QPainter, QIcon, QTextOption, QBrush
 
 import bytefmt
@@ -254,8 +254,8 @@ class FileItemRenderer:
         painter.setFont(font)
 
         k = [0, 1, 1, 2, 3][self.level_of_detail]
-        painter.drawText(self.tile_rect.width() / 2 - fm.width(text) / 2,
-                         self.tile_rect.height() - 2 + 16 * row - 16 * k + 14,
+        painter.drawText(QPointF(self.tile_rect.width() / 2 - fm.width(text) / 2,
+                                 self.tile_rect.height() - 2 + 16 * row - 16 * k + 14),
                          text)
 
     def paint_thumbnail(self, painter: QPainter) -> None:

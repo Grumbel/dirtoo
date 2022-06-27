@@ -78,8 +78,8 @@ class FileViewWindow(QMainWindow):
         self.file_view.setFocus()
 
         self.resize(1024, 768)
-        self.move(QCursor.pos().x() - self.width() / 2,
-                  QCursor.pos().y() - self.height() / 2)
+        self.move(QCursor.pos().x() - self.width() // 2,
+                  QCursor.pos().y() - self.height() // 2)
 
         self.addAction(self.actions.rename)
 
