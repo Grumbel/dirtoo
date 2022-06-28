@@ -634,11 +634,11 @@ class FileView(QGraphicsView):
                         break
 
     def scroll_top(self) -> None:
-        self.file_view.ensureVisible(0, 0, 1, 1)
+        self.ensureVisible(0, 0, 1, 1)
 
     def scroll_bottom(self) -> None:
-        assert self.file_view._layout is not None
-        self.file_view.ensureVisible(0, self.file_view._layout.get_bounding_rect().height(), 1, 1)
+        assert self._layout is not None
+        self.ensureVisible(0, self._layout.get_bounding_rect().height(), 1, 1)
 
 
 # EOF #

@@ -120,7 +120,7 @@ class FileViewWindow(QMainWindow):
 
         shortcut = QShortcut(Qt.Key_Home, self)
         shortcut.setContext(Qt.WindowShortcut)
-        shortcut.activated.connect(lambda: self.file_view.top())
+        shortcut.activated.connect(lambda: self.file_view.scroll_top())
 
         shortcut = QShortcut(Qt.Key_End, self)
         shortcut.setContext(Qt.WindowShortcut)
