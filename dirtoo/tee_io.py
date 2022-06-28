@@ -22,7 +22,7 @@ from types import TracebackType
 class TeeIO:
     """TeeIO wraps 'input_fd' and records all data read from it to 'output_fd'"""
 
-    def __init__(self, input_fd: IO, output_fd: IO) -> None:
+    def __init__(self, input_fd: IO[str], output_fd: IO[str]) -> None:
         self._input_fd = input_fd
         self._output_fd = output_fd
 
@@ -53,7 +53,7 @@ class TeeIO:
         return line
 
     def readlines(self, hint: int = -1) -> List[str]:
-        lines: List[str] = self._input_fd.readline(hint)
+        lines: List[str] = self._input_fd.readlines(hint)
         for line in lines:
             self._output_fd.write(line)
         return lines

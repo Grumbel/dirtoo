@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import cast, Callable, Dict, Optional
+from typing import cast, Any, Callable, Dict, Optional, Union
 
 import os
 import time
@@ -41,7 +41,8 @@ class Context:  # pylint: disable=R0904,R0915
     def __init__(self) -> None:
         self.current_file: Optional[str] = None
 
-    def get_hash(self) -> Dict[str, Callable]:
+    def get_hash(self) -> Dict[str, Union[Callable[[], Any],
+                                          Callable[[Any], Any]]]:
         return {
             '_': self.basename,
             'p': self.fullpath,
@@ -265,13 +266,13 @@ class Context:  # pylint: disable=R0904,R0915
         b = time.time()
         return (b - a) / (60 * 60 * 24)
 
-    def sizehr(self, s: int = None, style: str = "decimal", compact: bool = False) -> str:
+    def sizehr(self, s: Optional[int] = None, style: str = "decimal", compact: bool = False) -> str:
         """Returns size() formated a human readable string"""
 
         if s is None:
             s = self.size()
 
-        return cast(str, bytefmt.humanize(s, style=style, compact=compact))  # FIXME: why is the cast necessary?
+        return cast(str, bytefmt.humanize(s, style=style, compact=compact))  # Why does this fail?
 
     def size(self) -> int:
         assert self.current_file is not None

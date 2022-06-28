@@ -36,7 +36,7 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     return parser.parse_args(argv[1:])
 
 
-def process_stream(query: str, filename: Optional[str], fin: IO,
+def process_stream(query: str, filename: Optional[str], fin: IO[str],
                    fuzzy_options: 'FuzzyOptions',
                    args: argparse.Namespace) -> None:
     for idx, line in enumerate(fin):

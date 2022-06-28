@@ -85,7 +85,7 @@ class DBusThumbnailerListener(ABC):
         pass
 
     @abstractmethod
-    def error(self, handle: QVariant, failed_uris: List[str], error_code: int, message: str) -> None:
+    def error(self, handle: QVariant, failed_uris: List[str], error_code: 'DBusThumbnailerError', message: str) -> None:
         pass
 
     @abstractmethod
@@ -138,24 +138,24 @@ class DBusThumbnailer(QObject):
         if not self.requests:
             self.listener.idle()
 
-    @pyqtSlot(QDBusMessage)
+    @pyqtSlot(QDBusMessage)  # type: ignore
     def _receive_started(self, msg: QDBusMessage) -> None:
         handle, = msg.arguments()
         self.listener.started(handle)
 
-    @pyqtSlot(QDBusMessage)
+    @pyqtSlot(QDBusMessage)  # type: ignore
     def _receive_ready(self, msg: QDBusMessage) -> None:
         handle, uris = msg.arguments()
         data = self.requests[handle]
         self.listener.ready(handle, uris, data[2])
 
-    @pyqtSlot(QDBusMessage)
+    @pyqtSlot(QDBusMessage)  # type: ignore
     def _receive_finished(self, msg: QDBusMessage) -> None:
         handle, = msg.arguments()
         self.listener.finished(handle)
         self._remove_request(handle)
 
-    @pyqtSlot(QDBusMessage)
+    @pyqtSlot(QDBusMessage)  # type: ignore
     def _receive_error(self, msg: QDBusMessage) -> None:
         handle, failed_uris, error_code, message = msg.arguments()
         self.listener.error(handle, failed_uris, error_code, message)

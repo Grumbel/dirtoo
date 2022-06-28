@@ -116,7 +116,7 @@ def read_lines_from_file(filename: str, nul_separated: bool) -> Union[List[str],
 
         # split() leaves us with a bogus entry at the end, as
         # lines are terminated by \0, not separated.
-        if content[-1] == b"\0":
+        if lines[-1] == b"\0":
             lines.pop()
 
         return lines

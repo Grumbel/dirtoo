@@ -146,7 +146,7 @@ class DirectoryThumbnailerTask(QObject):
                                QPainter.Antialiasing)
 
         # (x1, y1, x2, y2) coordinates normalized to [0 - 1] for thumbnail arrangement
-        specs: Dict[int, List[Tuple]] = {
+        specs: Dict[int, List[Tuple[float, ...]]] = {
             0: [],
 
             1: [(0, 0, 1, 1)],
@@ -190,8 +190,8 @@ class DirectoryThumbnailerTask(QObject):
             dstrect = QRect(QPoint(s[0] * 256, s[1] * 256),
                             QPoint(s[2] * 256, s[3] * 256))
             srcrect = make_cropped_rect(thumbnail.width(), thumbnail.height(),
-                                        (s[2] - s[0]) * 256,
-                                        (s[3] - s[1]) * 256)
+                                        int((s[2] - s[0]) * 256),
+                                        int((s[3] - s[1]) * 256))
             painter.drawImage(dstrect, thumbnail, srcrect)
 
         painter.end()

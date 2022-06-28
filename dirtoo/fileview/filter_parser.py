@@ -34,7 +34,7 @@ class FilterParser:
         self._command_parser = FilterCommandParser()
         self._expr_parser = FilterExprParser()
 
-    def print_help(self, fout: IO = sys.stdout) -> None:
+    def print_help(self, fout: IO[str] = sys.stdout) -> None:
         for aliases, doc in self._expr_parser._func_factory.get_docs():
             fout.write("{}:{}".format(aliases[0],
                                       textwrap.dedent(doc or "")))

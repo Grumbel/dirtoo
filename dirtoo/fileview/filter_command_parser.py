@@ -57,7 +57,7 @@ def get_compare_operator(text: str) -> Callable[[Any, Any], bool]:
 class FilterCommandParser:
 
     def __init__(self) -> None:
-        self._commands: Dict[str, Tuple[List[str], Callable, Optional[str]]] = {}
+        self._commands: Dict[str, Tuple[List[str], Callable[[Any], Any], Optional[str]]] = {}
         self._register_commands()
 
     def parse(self, pattern: str) -> None:
@@ -73,7 +73,7 @@ class FilterCommandParser:
 
     def register_command(self,
                          aliases: Union[str, List[str]],
-                         func: Callable,
+                         func: Callable[[Any], Any],
                          help: Optional[str] = None) -> None:
         if isinstance(aliases, list):
             for name in aliases:

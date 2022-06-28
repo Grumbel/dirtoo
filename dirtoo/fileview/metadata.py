@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 class MetaData:
 
     @staticmethod
-    def from_path(abspath: str, mimedb: QMimeDatabase) -> Dict:
+    def from_path(abspath: str, mimedb: QMimeDatabase) -> Dict[str, Any]:
         mimetype = mimedb.mimeTypeForFile(abspath)
 
         metadata: Dict[str, Any] = {}

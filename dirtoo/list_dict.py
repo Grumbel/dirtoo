@@ -23,7 +23,7 @@ KT = TypeVar('KT')
 VT = TypeVar('VT')
 
 
-class ListDict(Generic[KT, VT], Sized, Iterable):
+class ListDict(Generic[KT, VT], Sized, Iterable[VT]):
     """A data structure that preserves ordering as well as allow fast
     replacement of objects. 'None' values can't be stored as they are
     used internally to allow fast removal."""
@@ -56,7 +56,7 @@ class ListDict(Generic[KT, VT], Sized, Iterable):
         self._key2idx[idx] = len(self._list)
         self._list.append(value)
 
-    def get(self, key: KT, default: Any = None) -> Optional[VT]:
+    def get(self, key: KT, default: Optional[Any] = None) -> Optional[VT]:
         idx = self._key2idx.get(key, default)
         if idx is not None:
             return self._list[idx]

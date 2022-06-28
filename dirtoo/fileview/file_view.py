@@ -38,7 +38,6 @@ from dirtoo.fileview.layout import RootLayout
 from dirtoo.fileview.layout_builder import LayoutBuilder
 from dirtoo.fileview.leap_widget import LeapWidget
 from dirtoo.fileview.mode import Mode, IconMode, ListMode, DetailMode, FileItemStyle
-from dirtoo.fileview.profiler import profile
 from dirtoo.fileview.settings import settings
 from dirtoo.location import Location
 
@@ -411,7 +410,6 @@ class FileView(QGraphicsView):
         # logger.debug("FileView.initPainter:")
         pass
 
-    @profile
     def paintEvent(self, ev: QPaintEvent) -> None:
         if self._needs_layout:
             self._layout_items()
@@ -424,7 +422,6 @@ class FileView(QGraphicsView):
         self.invalidateScene()
         self.update()
 
-    @profile
     def _layout_items(self) -> None:
         logger.debug("FileView._layout_items")
 
@@ -506,7 +503,7 @@ class FileView(QGraphicsView):
 
     def receive_thumbnail(self, location: Location,
                           flavor: Optional[str], image: Optional[QImage],
-                          error_code: Optional[int], message: Optional[str]) -> None:
+                          error_code: Optional[DBusThumbnailerError], message: Optional[str]) -> None:
         # receiving thumbnail for item that no longer exists is normal
         # when switching directories quickly
         items = self._location2item.get(location, [])
@@ -516,7 +513,7 @@ class FileView(QGraphicsView):
 
     def receive_thumbnail_for_item(self, item: FileItem,
                                    flavor: Optional[str], image: Optional[QImage],
-                                   error_code: Optional[int], message: Optional[str]) -> None:
+                                   error_code: Optional[DBusThumbnailerError], message: Optional[str]) -> None:
         if image is not None:
             item.set_thumbnail_image(image, flavor)
         else:

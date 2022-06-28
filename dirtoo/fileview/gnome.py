@@ -23,9 +23,9 @@ from PyQt5.QtCore import Qt, QUrl
 def parse_gnome_copied_files(data: bytes) -> Tuple[Qt.DropAction, List[QUrl]]:
     lines = data.split(b'\n')
 
-    if lines[0] == "copy":
+    if lines[0] == b"copy":
         action = Qt.CopyAction
-    elif lines[0] == "cut":
+    elif lines[0] == b"cut":
         action = Qt.MoveAction
     else:
         raise Exception("unknown action: {!r}".format(lines[0]))

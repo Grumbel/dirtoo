@@ -22,8 +22,6 @@ from enum import Enum
 from PyQt5.QtCore import QRectF
 from PyQt5.QtWidgets import QGraphicsItem
 
-from dirtoo.fileview.profiler import profile
-
 if TYPE_CHECKING:
     from dirtoo.fileview.file_item import FileItem
 
@@ -259,16 +257,15 @@ class TileLayout(Layout):
     def set_pos(self, x: int, y: int) -> None:
         super().set_pos(x, y)
 
-    @profile
-    def layout(self, viewport_width: int, viewport_height: int) -> None:
-        super().layout(viewport_width, viewport_height)
+    def layout(self, width: int, height: int) -> None:
+        super().layout(width, height)
 
-        new_columns = self._calc_num_columns(viewport_width)
+        new_columns = self._calc_num_columns(width)
         grid_width = self._calc_grid_width(new_columns)
 
-        self.center_x_off = (viewport_width - grid_width) // 2
+        self.center_x_off = (width - grid_width) // 2
         self.columns = new_columns
-        self.rows = self._calc_num_rows(viewport_height)
+        self.rows = self._calc_num_rows(height)
 
         if len(self.items) > (self.columns * self.rows) or self.group:
             self.rows = math.ceil(len(self.items) / self.columns)

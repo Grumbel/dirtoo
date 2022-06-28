@@ -39,7 +39,9 @@ logger = logging.getLogger(__name__)
 
 class TransferWorker(QObject):
 
-    def __init__(self, fs: 'Filesystem', action: Callable, sources: List[str], destination: str,
+    def __init__(self, fs: 'Filesystem',
+                 action: Callable[[FileTransfer, str, str], None],
+                 sources: List[str], destination: str,
                  mediator: Mediator, progress: Progress) -> None:
         super().__init__()
 
@@ -145,7 +147,8 @@ class GuiFileTransfer(QObject):
     sig_finished = pyqtSignal()
     sig_close_requested = pyqtSignal()
 
-    def __init__(self, app: 'FileViewApplication', action: Callable, sources: List[str], destination: str) -> None:
+    def __init__(self, app: 'FileViewApplication', action: Callable[[FileTransfer, str, str], None],
+                 sources: List[str], destination: str) -> None:
         super().__init__()
 
         self._app = app
@@ -222,7 +225,8 @@ class FilesystemOperations:
     def link_files(self, sources: List[str], destination: str) -> None:
         self._transfer_files(FileTransfer.link, sources, destination)
 
-    def _transfer_files(self, action: Callable, sources: List[str], destination: str) -> None:
+    def _transfer_files(self, action: Callable[[FileTransfer, str, str], None],
+                        sources: List[str], destination: str) -> None:
         transfer = GuiFileTransfer(self._app, action, sources, destination)
         transfer.sig_finished.connect(lambda transfer=transfer: self._cleanup_transfer(transfer))
         self._transfers.append(transfer)

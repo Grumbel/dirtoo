@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import TYPE_CHECKING, Dict, Deque, Optional
+from typing import TYPE_CHECKING, Any, Dict, Deque, Optional
 
 import json
 import os
@@ -25,7 +25,7 @@ from collections import deque
 from PyQt5.QtCore import QTimer
 
 from dirtoo.archive.archive_extractor import ArchiveExtractor
-from dirtoo.archive.extractor import ExtractorResult
+from dirtoo.archive.extractor import ExtractorResultStatus
 from dirtoo.fileview.directory_watcher import DirectoryWatcher
 from dirtoo.location import Location, Payload
 
@@ -46,7 +46,7 @@ class ExtractorStatus:
                 return ExtractorStatus(js)
         except Exception as err:
             return ExtractorStatus({
-                'status': ExtractorResult.FAILURE,
+                'status': ExtractorResultStatus.FAILURE,
                 'message': "{}: exception while loading: {}".format(filename, err)
             })
 
@@ -66,17 +66,17 @@ class ExtractorStatus:
         js = {
             "path": extractor.get_archive_path(),
             "mtime": extractor.get_mtime(),
-            "status": ExtractorResult.WORKING,
+            "status": ExtractorResultStatus.WORKING,
             "message": "Extraction in progress",
             "entries": []
         }
         return ExtractorStatus(js)
 
-    def __init__(self, js: Dict) -> None:
+    def __init__(self, js: Dict[str, Any]) -> None:
         self._js = js
 
-    def status(self) -> ExtractorResult:
-        return self._js.get("status", ExtractorResult.FAILURE)
+    def status(self) -> ExtractorResultStatus:
+        return ExtractorResultStatus(self._js.get("status", ExtractorResultStatus.FAILURE))
 
     def message(self) -> str:
         return self._js.get("message", "<no message>")
@@ -130,7 +130,7 @@ class ArchiveManager:
             status_file = os.path.join(outdir, "status.json")
             status = ExtractorStatus.from_file(status_file)
 
-            if status.status() == ExtractorResult.FAILURE:
+            if status.status() == ExtractorResultStatus.FAILURE:
                 def send_message(dw: DirectoryWatcher = directory_watcher, message: str = status.message()) -> None:
                     dw.sig_message.emit(message)
 
@@ -179,7 +179,7 @@ class ArchiveManager:
         self._extractors = {k: v for k, v in self._extractors.items() if v != extractor}
 
         result = extractor.get_result()
-        if result.status != 0:
+        if result.status != ExtractorResultStatus.SUCCESS:
             directory_watcher.sig_message.emit(result.message)
 
         status = ExtractorStatus.finished(extractor)

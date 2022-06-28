@@ -107,7 +107,7 @@ def _walk(top: Union[str, PathLike[str]], topdown: bool,
             # Note that scandir is global in this module due
             # to earlier import-*.
             scandir_it = scandir(top)
-        entries: List[DirEntry] = list(scandir_it)
+        entries: List[DirEntry[str]] = list(scandir_it)
     except OSError as error:
         if onerror is not None:
             onerror(error)
@@ -148,7 +148,7 @@ def _walk(top: Union[str, PathLike[str]], topdown: bool,
 
     # Yield before recursion if going top down
     if topdown:
-        yield top, dirs, nondirs
+        yield top, dirs, nondirs  # type: ignore
 
         # Recurse into sub-directories
         islink, join = path.islink, path.join
@@ -163,7 +163,7 @@ def _walk(top: Union[str, PathLike[str]], topdown: bool,
                     yield from _walk(new_path, topdown, onerror, followlinks, maxdepth, depth + 1)
     else:
         # Yield after recursion if going bottom up
-        yield top, dirs, nondirs
+        yield top, dirs, nondirs  # type: ignore
 
 
 class _DummyDirEntry:

@@ -31,8 +31,8 @@ class ArchiveInfo:
 
     def __init__(self, entries: libarchive.read.ArchiveRead) -> None:
         self.file_count = 0
-        self.file_types: defaultdict = defaultdict(int)
-        self.directories: set = set()
+        self.file_types: defaultdict[str, int] = defaultdict(int)
+        self.directories: set[str] = set()
         self.total_size = 0
 
         self.process_entries(entries)

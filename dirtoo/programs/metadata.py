@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Dict, List, cast
+from typing import Any, Dict, List, cast
 
 import argparse
 import os
@@ -54,7 +54,7 @@ def main(argv: List[str]) -> int:
 
     num_requests = 0
 
-    def on_metadata_ready(filename: str, metadata: Dict) -> None:
+    def on_metadata_ready(filename: str, metadata: Dict[str, Any]) -> None:
         nonlocal num_requests, app
         print(filename)
         for k, v in metadata.items():

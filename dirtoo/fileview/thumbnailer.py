@@ -25,7 +25,7 @@ from PyQt5.QtCore import Qt, QObject, pyqtSignal, QThread, QVariant, QTimerEvent
 from PyQt5.QtDBus import QDBusConnection
 from PyQt5.QtGui import QImage
 
-from dirtoo.dbus_thumbnailer import DBusThumbnailer
+from dirtoo.dbus_thumbnailer import DBusThumbnailer, DBusThumbnailerError
 from dirtoo.location import Location
 from dirtoo.dbus_thumbnailer import DBusThumbnailerListener
 
@@ -36,7 +36,10 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-ThumbnailCallback = Callable[[Location, Optional[str], Optional[QImage], Optional[int], Optional[str]], None]
+ThumbnailCallback = Callable[[Location, Optional[str],
+                              Optional[QImage],
+                              Optional[DBusThumbnailerError], Optional[str]],
+                             None]
 
 
 class WorkerDBusThumbnailerListener(DBusThumbnailerListener):
@@ -50,7 +53,7 @@ class WorkerDBusThumbnailerListener(DBusThumbnailerListener):
     def ready(self, handle: QVariant, urls: List[str], flavor: str) -> None:
         self._worker.on_thumbnail_ready(handle, urls, flavor)
 
-    def error(self, handle: QVariant, uris: List[str], error_code: int, message: str) -> None:
+    def error(self, handle: QVariant, uris: List[str], error_code: DBusThumbnailerError, message: str) -> None:
         self._worker.on_thumbnail_error(handle, uris, error_code, message)
 
     def finished(self, handle: QVariant) -> None:
@@ -117,7 +120,7 @@ class ThumbnailerWorker(QObject):
         del self._dbus_thumbnailer
 
     def timerEvent(self, ev: QTimerEvent) -> None:
-        req_by_flavor: defaultdict = defaultdict(list)
+        req_by_flavor: defaultdict[str, List[ThumbnailRequest]] = defaultdict(list)
         for req in self._thumbnail_requests:
             req_by_flavor[req.flavor].append(req)
 
@@ -131,7 +134,7 @@ class ThumbnailerWorker(QObject):
             assert self._dbus_thumbnailer is not None
             handle = self._dbus_thumbnailer.queue(filenames, flavor)
             assert handle is not None
-            self._queued_requests[handle].append(reqs)
+            self._queued_requests[handle] += reqs
 
         self._thumbnail_requests.clear()
 
@@ -167,11 +170,10 @@ class ThumbnailerWorker(QObject):
 
     def _find_requests(self, handle: QVariant, urls: List[str]) -> List[ThumbnailRequest]:
         results = []
-        for reqs in self._queued_requests.get(handle, []):
-            for req in reqs:
-                req_url = self._vfs.get_stdio_url(req.location)
-                if req_url in urls:
-                    results.append(req)
+        for req in self._queued_requests.get(handle, []):
+            req_url = self._vfs.get_stdio_url(req.location)
+            if req_url in urls:
+                results.append(req)
         return results
 
     def on_thumbnail_ready(self, handle: int, urls: List[str], flavor: str) -> None:
@@ -187,7 +189,7 @@ class ThumbnailerWorker(QObject):
 
             self.sig_thumbnail_ready.emit(req.location, req.flavor, req.callback, image)
 
-    def on_thumbnail_error(self, handle: int, urls: List[str], error_code: int, message: str) -> None:
+    def on_thumbnail_error(self, handle: int, urls: List[str], error_code: DBusThumbnailerError, message: str) -> None:
         reqs = self._find_requests(handle, urls)
         for req in reqs:
             self.sig_thumbnail_error.emit(req.location, req.flavor, req.callback, error_code, message)
@@ -253,7 +255,7 @@ class Thumbnailer(QObject):
 
     def on_thumbnail_error(self, location: Location, flavor: str,
                            callback: ThumbnailCallback,
-                           error_code: int, message: str) -> None:
+                           error_code: 'DBusThumbnailerError', message: str) -> None:
         callback(location, flavor, None, error_code, message)
 
 

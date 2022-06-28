@@ -421,7 +421,7 @@ class MatchFuncFactory:
     def make_contains_regex(self, argument: str) -> MatchFunc:
         rx = re.compile(argument, re.IGNORECASE)
 
-        def line_match_func(line: str, rx: re.Pattern = rx) -> bool:
+        def line_match_func(line: str, rx: re.Pattern[str] = rx) -> bool:
             return bool(rx.search(line))
 
         return ContainsMatchFunc(line_match_func)

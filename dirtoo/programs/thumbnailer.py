@@ -25,7 +25,7 @@ import os
 from PyQt5.QtCore import QCoreApplication, QVariant
 from PyQt5.QtDBus import QDBusConnection
 
-from dirtoo.dbus_thumbnailer import DBusThumbnailer, DBusThumbnailerListener
+from dirtoo.dbus_thumbnailer import DBusThumbnailer, DBusThumbnailerListener, DBusThumbnailerError
 from dirtoo.dbus_thumbnail_cache import DBusThumbnailCache
 
 
@@ -70,7 +70,7 @@ class ThumbnailerProgressListener(DBusThumbnailerListener):
             for url in urls:
                 print(url, "->", DBusThumbnailer.thumbnail_from_url(url, flavor))
 
-    def error(self, handle: QVariant, failed_uris: List[str], error_code: int, message: str) -> None:
+    def error(self, handle: QVariant, failed_uris: List[str], error_code: 'DBusThumbnailerError', message: str) -> None:
         for uri in failed_uris:
             print("[Error {}] {}: {}".format(error_code, uri, message), file=sys.stderr)
 

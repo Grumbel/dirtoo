@@ -71,7 +71,7 @@ def Profiler(name: str) -> Union[RealProfiler, DummyProfiler]:
         return DummyProfiler()
 
 
-def profile(func: Callable) -> Callable:
+def profile(func: Callable[[Any], Any]) -> Callable[[Any], Any]:
     def wrap(*args: Any, **kwargs: Any) -> Any:
         if _profiler_active:
             with RealProfiler(func.__qualname__):

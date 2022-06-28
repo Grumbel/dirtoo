@@ -60,7 +60,7 @@ class MetaDataCache:
             logger.exception("MetaDataCache: unexpected exception:")
             return None
 
-    def store_metadata(self, abspath: str, metadata: Dict) -> None:
+    def store_metadata(self, abspath: str, metadata: Dict[str, Any]) -> None:
         logger.info("MetaDataCache.store_metadata: %s", abspath)
 
         json_filename = self._make_filename(abspath)

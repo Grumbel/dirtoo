@@ -34,14 +34,14 @@ class StreamManager:
         self._cachedir: str = cachedir
         self._stdin_id: Optional[str] = None
 
-    def get_stdin(self) -> Optional[Tuple[IO, str]]:
+    def get_stdin(self) -> Optional[Tuple[IO[str], str]]:
         if self._stdin_id is None:
             result = self.record(sys.stdin)
             if result is None:
                 return None
             tee_io, stream_id = result
             self._stdin_id = stream_id
-            return cast(IO, tee_io), stream_id
+            return cast(IO[str], tee_io), stream_id
         else:
             fd = self.lookup(self._stdin_id)
             if fd is not None:
@@ -49,7 +49,7 @@ class StreamManager:
             else:
                 return None
 
-    def lookup(self, stream_id_text: str) -> Optional[IO]:
+    def lookup(self, stream_id_text: str) -> Optional[IO[str]]:
         stream_id = uuid.UUID(stream_id_text)
         filename = os.path.join(self._cachedir, str(stream_id))
         try:

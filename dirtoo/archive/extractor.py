@@ -17,23 +17,27 @@
 
 from PyQt5.QtCore import QObject, pyqtSignal
 from abc import abstractmethod
+from enum import Enum
 
 
-class ExtractorResult:
+class ExtractorResultStatus(Enum):
 
     SUCCESS = 0
     FAILURE = 1
     WORKING = 2
 
+
+class ExtractorResult:
+
     @staticmethod
     def success(message: str = "") -> 'ExtractorResult':
-        return ExtractorResult(ExtractorResult.SUCCESS, message)
+        return ExtractorResult(ExtractorResultStatus.SUCCESS, message)
 
     @staticmethod
     def failure(message: str) -> 'ExtractorResult':
-        return ExtractorResult(ExtractorResult.FAILURE, message)
+        return ExtractorResult(ExtractorResultStatus.FAILURE, message)
 
-    def __init__(self, status: int, message: str = "") -> None:
+    def __init__(self, status: ExtractorResultStatus, message: str = "") -> None:
         self.status = status
         self.message = message
 

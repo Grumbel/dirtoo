@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def non_blocking_readline(fp: IO, linesep: str) -> Generator[Optional[str], None, None]:
+def non_blocking_readline(fp: IO[str], linesep: str) -> Generator[Optional[str], None, None]:
     flag = fcntl.fcntl(fp, fcntl.F_GETFL)
     fcntl.fcntl(fp.fileno(), fcntl.F_SETFL, flag | os.O_NONBLOCK)
 
@@ -71,7 +71,7 @@ class FileListStream(QObject):
     @staticmethod
     def from_location(app: 'FileViewApplication', linesep: str, location: Location) -> 'FileListStream':
         if location.get_path() in ["/stdin", "stdin"]:
-            tee_fd: IO
+            tee_fd: IO[str]
             stream_id: str
             result = app.stream_manager.get_stdin()
             assert result is not None
@@ -86,7 +86,7 @@ class FileListStream(QObject):
         return self.sig_end_of_stream
 
     def __init__(self, vfs: 'VirtualFilesystem',
-                 fp: IO, linesep: str = "\n") -> None:
+                 fp: IO[str], linesep: str = "\n") -> None:
         super().__init__()
 
         self.vfs = vfs

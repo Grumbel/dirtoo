@@ -35,7 +35,7 @@ from dirtoo.filecollection.sorter import Sorter
 from dirtoo.fileview.actions import Actions
 from dirtoo.fileview.directory_watcher import DirectoryWatcher
 from dirtoo.fileview.file_item import FileItem
-from dirtoo.fileview.file_view import FileItemStyle
+from dirtoo.fileview.mode import FileItemStyle
 from dirtoo.fileview.filter_parser import FilterParser
 from dirtoo.fileview.gnome import parse_gnome_copied_files, make_gnome_copied_files
 from dirtoo.fileview.gui import Gui
@@ -50,6 +50,7 @@ from dirtoo.util import make_non_existing_filename
 if TYPE_CHECKING:
     from dirtoo.fileview.application import FileViewApplication
     from dirtoo.fileview.tool_button import ToolButton
+    from dirtoo.dbus_thumbnailer import DBusThumbnailerError
 
 logger = logging.getLogger(__name__)
 
@@ -437,7 +438,7 @@ class Controller(QObject):
 
     def receive_thumbnail(self, location: Location,
                           flavor: Optional[str], image: Optional[Any],
-                          error_code: Optional[int], message: Optional[str]) -> None:
+                          error_code: Optional['DBusThumbnailerError'], message: Optional[str]) -> None:
         logger.debug("Controller.receive_thumbnail: %s %s %s %s %s",
                      location, flavor, image, error_code, message)
         if image is None:
