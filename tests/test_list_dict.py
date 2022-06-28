@@ -22,24 +22,24 @@ from dirtoo.list_dict import ListDict
 
 class ListDictTestCase(unittest.TestCase):
 
-    def test_listdict_iter(self):
+    def test_listdict_iter(self) -> None:
         listdict = ListDict(lambda x: x,
                             iterable=[11, 22, 33, 44, 55, 66])
         self.assertEqual(list(listdict), [11, 22, 33, 44, 55, 66])
 
-    def test_listdict_remove(self):
+    def test_listdict_remove(self) -> None:
         listdict = ListDict(lambda x: x,
                             iterable=[11, 22, 33, 44, 55, 66])
         listdict.remove(33)
         self.assertEqual(list(listdict), [11, 22, 44, 55, 66])
 
-    def test_listdict_replace(self):
+    def test_listdict_replace(self) -> None:
         listdict = ListDict(lambda x: x,
                             iterable=[11, 22, 33, 44, 55, 66])
         listdict.replace(22, 99)
         self.assertEqual(list(listdict), [11, 99, 33, 44, 55, 66])
 
-    def test_listdict_sort(self):
+    def test_listdict_sort(self) -> None:
         listdict = ListDict(lambda x: x,
                             iterable=[22, 11, 77, 66, 44, 55, 33])
         listdict.sort(key=lambda x: x)
@@ -48,24 +48,24 @@ class ListDictTestCase(unittest.TestCase):
         listdict.sort(key=lambda x: x, reverse=True)
         self.assertEqual(list(listdict), [77, 66, 55, 44, 33, 22, 11])
 
-    def test_listdict_get_by_key(self):
+    def test_listdict_get_by_key(self) -> None:
         listdict = ListDict(lambda x: x,
                             iterable=[22, 11, 77, 66, 44, 55, 33])
         self.assertEqual(listdict.get(55), 55)
 
-    def test_listdict_append(self):
+    def test_listdict_append(self) -> None:
         listdict = ListDict(lambda x: x,
                             iterable=[22, 11, 77, 66, 44, 55, 33])
         listdict.append(99)
         self.assertEqual(list(listdict), [22, 11, 77, 66, 44, 55, 33, 99])
 
-    def test_listdict_clear(self):
+    def test_listdict_clear(self) -> None:
         listdict = ListDict(lambda x: x,
                             iterable=[22, 11, 77, 66, 44, 55, 33])
         listdict.clear()
         self.assertEqual(list(listdict), [])
 
-    def test_listdict_len(self):
+    def test_listdict_len(self) -> None:
         listdict = ListDict(lambda x: x,
                             iterable=[22, 11, 77, 66, 44, 55, 33])
         self.assertEqual(len(listdict), 7)

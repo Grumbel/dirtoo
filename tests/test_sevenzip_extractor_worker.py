@@ -21,7 +21,7 @@ import signal
 import unittest
 
 
-from dirtoo.archive.extractor import ExtractorResult
+from dirtoo.archive.extractor import ExtractorResultStatus
 from dirtoo.archive.sevenzip_extractor import SevenZipExtractor
 
 
@@ -30,7 +30,7 @@ DATADIR = os.path.dirname(__file__)
 
 class SevenZipExtractorWorkerTestCase(unittest.TestCase):
 
-    def test_sevenzip(self):
+    def test_sevenzip(self) -> None:
         signal.signal(signal.SIGINT, signal.SIG_DFL)
 
         archive_file = os.path.join(DATADIR, "test.7z")
@@ -54,7 +54,7 @@ class SevenZipExtractorWorkerTestCase(unittest.TestCase):
         worker.sig_entry_extracted.connect(lambda lhs, rhs: results.append(lhs))
         result = worker.extract()
 
-        self.assertEqual(result.status, ExtractorResult.SUCCESS)
+        self.assertEqual(result.status, ExtractorResultStatus.SUCCESS)
         self.assertEqual(sorted(results), sorted(expected))
 
 

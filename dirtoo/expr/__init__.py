@@ -15,10 +15,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from dirtoo.expr.expr import Parser, Context
+from dirtoo.expr.expr import Parser, Context, Expr
 
 
-__all__ = ['Parser', 'Context']
+__all__ = ['Parser', 'Context', 'Expr']
 
 
 # EOF #

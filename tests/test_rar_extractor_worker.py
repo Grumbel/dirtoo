@@ -20,7 +20,7 @@ import signal
 import tempfile
 import unittest
 
-from dirtoo.archive.extractor import ExtractorResult
+from dirtoo.archive.extractor import ExtractorResultStatus
 from dirtoo.archive.rar_extractor import RarExtractor
 
 
@@ -29,7 +29,7 @@ DATADIR = os.path.dirname(__file__)
 
 class RarExtractorWorkerTestCase(unittest.TestCase):
 
-    def test_rar(self):
+    def test_rar(self) -> None:
         signal.signal(signal.SIGINT, signal.SIG_DFL)
 
         archive_file = os.path.join(DATADIR, "test.rar")
@@ -54,7 +54,7 @@ class RarExtractorWorkerTestCase(unittest.TestCase):
         worker = RarExtractor(archive_file, outdir)
         worker.sig_entry_extracted.connect(lambda lhs, rhs: results.append(lhs))
         result = worker.extract()
-        self.assertEqual(result.status, ExtractorResult.SUCCESS)
+        self.assertEqual(result.status, ExtractorResultStatus.SUCCESS)
         self.assertEqual(sorted(results), sorted(expected))
 
         results_inc = []
@@ -73,7 +73,7 @@ class RarExtractorWorkerTestCase(unittest.TestCase):
         worker_inc.sig_entry_extracted.connect(lambda lhs, rhs: results_inc.append(lhs))
         result = worker_inc.extract()
 
-        self.assertEqual(result.status, ExtractorResult.FAILURE)
+        self.assertEqual(result.status, ExtractorResultStatus.FAILURE)
         self.assertEqual(sorted(results_inc), sorted(expected_inc))
 
 

@@ -17,6 +17,7 @@
 
 import os
 import unittest
+from typing import Any, Dict, Optional
 
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QApplication
@@ -28,17 +29,19 @@ from dirtoo.location import Location
 
 class MetaDataCollectorTestCase(unittest.TestCase):
 
-    def test_collector(self):
+    def test_collector(self) -> None:
         if not os.environ.get('DISPLAY'):
             return
 
         app = QApplication([])
 
+        vfs: Optional[StdioFilesystem] = None
+        metadata_collector: Optional[MetaDataCollector] = None
         try:
             vfs = StdioFilesystem("/tmp")
             metadata_collector = MetaDataCollector(vfs)
 
-            def on_metadata(filename, metadata):
+            def on_metadata(filename: str, metadata: Dict[str, Any]) -> None:
                 print(filename)
                 print(metadata)
                 print()
@@ -54,8 +57,10 @@ class MetaDataCollectorTestCase(unittest.TestCase):
         except Exception as err:
             print(err)
         finally:
-            metadata_collector.close()
-            vfs.close()
+            if metadata_collector is not None:
+                metadata_collector.close()
+            if vfs is not None:
+                vfs.close()
 
 
 # EOF #

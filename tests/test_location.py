@@ -23,7 +23,7 @@ from dirtoo.location import Location, Payload
 
 class LocationTestCase(unittest.TestCase):
 
-    def test_from_human(self):
+    def test_from_human(self) -> None:
         humans = [
             ("/",
              "file:///"),
@@ -48,7 +48,7 @@ class LocationTestCase(unittest.TestCase):
             location = Location.from_human(human)
             self.assertEqual(location.as_url(), expected)
 
-    def test_from_human_path(self):
+    def test_from_human_path(self) -> None:
         result = Location.from_human(".")
         expected = Location.from_path(os.getcwd())
         self.assertEqual(result, expected)
@@ -57,7 +57,7 @@ class LocationTestCase(unittest.TestCase):
         expected = Location.from_path(os.getcwd())
         self.assertEqual(result, expected)
 
-    def test_location_init(self):
+    def test_location_init(self) -> None:
         ok_texts = [
             ("file:///home/juser/test.rar//rar:file_inside.rar",
              ("file", "/home/juser/test.rar", [Payload("rar", "file_inside.rar")])),
@@ -95,7 +95,7 @@ class LocationTestCase(unittest.TestCase):
             with self.assertRaises(Exception) as _:
                 Location.from_string(text)
 
-    def test_location_parent(self):
+    def test_location_parent(self) -> None:
         parent_texts = [
             ("file:///home/juser/test.rar//rar:file_inside.rar",
              ("file", "/home/juser/test.rar", [Payload("rar", "")])),
@@ -126,7 +126,7 @@ class LocationTestCase(unittest.TestCase):
             self.assertEqual(location._path, abspath, text)
             self.assertEqual(location._payloads, payloads, text)
 
-    def test_location_join(self):
+    def test_location_join(self) -> None:
         join_texts = [
             ("file:///home/juser/test.rar//rar",
              "foobar",
@@ -149,7 +149,7 @@ class LocationTestCase(unittest.TestCase):
             self.assertEqual(result._path, abspath, base_text)
             self.assertEqual(result._payloads, payloads, base_text)
 
-    def test_ancestry(self):
+    def test_ancestry(self) -> None:
         location = Location.from_url("file:///home/juser/test.rar//rar:bar/foo.zip//zip:bar.png")
         result = location.ancestry()
         expected = [
@@ -163,7 +163,7 @@ class LocationTestCase(unittest.TestCase):
         ]
         self.assertEqual(result, expected)
 
-    def test_pure(self):
+    def test_pure(self) -> None:
         testcases = [
             ("file:///home/juser/test.rar//rar:bar/foo.zip//zip:bar.png",
              "file:///home/juser/test.rar//rar:bar/foo.zip//zip:bar.png"),
@@ -186,7 +186,7 @@ class LocationTestCase(unittest.TestCase):
             result = location.pure()
             self.assertEqual(result.as_url(), expected)
 
-    def test_origin(self):
+    def test_origin(self) -> None:
         testcases = [
             (Location.from_url("file:///home/juser/test.rar//rar:bar/foo1.zip//zip:bar.png"),
              Location.from_url("file:///home/juser/test.rar//rar:bar/foo1.zip")),
@@ -208,7 +208,7 @@ class LocationTestCase(unittest.TestCase):
             result = location.origin()
             self.assertEqual(result, expected)
 
-    def test_basename(self):
+    def test_basename(self) -> None:
         testcases = [
             ("file:///home/juser/test.rar//rar:bar/foo.zip//zip:bar.png",
              "bar.png"),

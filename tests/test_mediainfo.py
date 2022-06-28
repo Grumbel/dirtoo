@@ -22,7 +22,7 @@ from dirtoo.mediainfo import MediaInfo
 
 class MediaInfoTestCase(unittest.TestCase):
 
-    def test_mediainfo(self):
+    def test_mediainfo(self) -> None:
         minfo = MediaInfo("tests/test.mkv")
 
         self.assertEqual(minfo.width(), 514)

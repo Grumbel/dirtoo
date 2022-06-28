@@ -22,7 +22,7 @@ from dirtoo.util import numeric_sorted
 
 class UtilTestCase(unittest.TestCase):
 
-    def test_numeric_sorted(self):
+    def test_numeric_sorted(self) -> None:
         tests = [
             (['2', '22', '10', '1'],
              ['1', '2', '10', '22']),

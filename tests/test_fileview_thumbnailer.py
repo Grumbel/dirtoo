@@ -17,41 +17,40 @@
 
 import unittest
 
-from PyQt5.QtWidgets import QApplication, QPushButton
-from PyQt5.QtGui import QIcon
-from dirtoo.fileview.thumbnailer import Thumbnailer
+# from PyQt5.QtWidgets import QApplication, QPushButton
+# from PyQt5.QtGui import QIcon
+# from dirtoo.fileview.thumbnailer import Thumbnailer
 
 
 class FileViewThumbnailerTestCase(unittest.TestCase):
 
-    def test_thumbnailer(self):
-        return
+    def test_thumbnailer(self) -> None:
+        pass
+        # try:
+        #     app = QApplication([])
+        #     thumbnailer = Thumbnailer()
 
-        try:
-            app = QApplication([])
-            thumbnailer = Thumbnailer()
+        #     button = QPushButton()
+        #     button.resize(256, 256)
+        #     button.show()
 
-            button = QPushButton()
-            button.resize(256, 256)
-            button.show()
+        #     def quit():
+        #         thumbnailer.close()
+        #         app.quit()
+        #     button.clicked.connect(quit)
 
-            def quit():
-                thumbnailer.close()
-                app.quit()
-            button.clicked.connect(quit)
+        #     def cb(filename, flavor, pixmap):
+        #         icon = QIcon(pixmap)
+        #         button.setIcon(icon)
+        #         button.setIconSize(pixmap.rect().size())
 
-            def cb(filename, flavor, pixmap):
-                icon = QIcon(pixmap)
-                button.setIcon(icon)
-                button.setIconSize(pixmap.rect().size())
+        #         button.repaint()
 
-                button.repaint()
+        #     thumbnailer.request_thumbnail("/tmp/test2.png", "large", cb)
 
-            thumbnailer.request_thumbnail("/tmp/test2.png", "large", cb)
+        #     app.exec()
 
-            app.exec()
-
-        except Exception as err:
-            print(err)
+        # except Exception as err:
+        #     print(err)
 
 # EOF #

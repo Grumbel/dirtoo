@@ -17,13 +17,14 @@
 
 import unittest
 import pyparsing
+from typing import Any, Optional
 
-from dirtoo.expr import Parser, Context
+from dirtoo.expr import Parser, Context, Expr
 
 
 class ExprTestCase(unittest.TestCase):
 
-    def test_expr(self):
+    def test_expr(self) -> None:
         expressions = [
             "5+5*7",
             "True and not False",
@@ -46,6 +47,8 @@ class ExprTestCase(unittest.TestCase):
         ctx = Context()
 
         for text in expressions:
+            tree: Optional[Expr] = None
+            result: Any
             try:
                 tree = parser.parse(text)
                 result = tree.eval(ctx)

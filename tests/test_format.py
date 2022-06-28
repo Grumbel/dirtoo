@@ -22,7 +22,7 @@ from dirtoo.format import progressbar
 
 class FormatTestCase(unittest.TestCase):
 
-    def test_format(self):
+    def test_format(self) -> None:
         self.assertEqual(progressbar(10, 0, 10), "          ")
         self.assertEqual(progressbar(10, 10, 10), "██████████")
         self.assertEqual(progressbar(10, 5, 10), "█████     ")

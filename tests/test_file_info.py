@@ -17,6 +17,7 @@
 
 import os
 import unittest
+from typing import Union, List
 
 from dirtoo.file_info import FileInfo
 from dirtoo.fileview.lazy_file_info import LazyFileInfo
@@ -24,12 +25,14 @@ from dirtoo.fileview.lazy_file_info import LazyFileInfo
 
 class FileInfoTestCase(unittest.TestCase):
 
-    def test_file_info_init(self):
+    def test_file_info_init(self) -> None:
         fi_real = FileInfo.from_path("/tmp/")
         fi_lazy = LazyFileInfo.from_path("/tmp/")
         st = os.stat("/tmp")
 
-        for fi in [fi_real, fi_lazy]:
+        fi: Union[FileInfo, LazyFileInfo]
+        fis: List[Union[FileInfo, LazyFileInfo]] = [fi_real, fi_lazy]
+        for fi in fis:
             self.assertEqual(fi.abspath(), "/tmp")
             self.assertEqual(fi.basename(), "tmp")
             self.assertEqual(fi.dirname(), "/")

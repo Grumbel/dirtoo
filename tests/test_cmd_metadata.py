@@ -25,7 +25,7 @@ from dirtoo.programs.metadata import main
 
 class CmdMetaDataTestCase(unittest.TestCase):
 
-    def test_main(self):
+    def test_main(self) -> None:
         stdout = io.StringIO()
         stderr = io.StringIO()
         with contextlib.redirect_stdout(stdout), \

@@ -334,9 +334,9 @@ class Parser:
     def __init__(self) -> None:
         self.bnf = make_grammar()
 
-    def parse(self, text: str) -> Any:
+    def parse(self, text: str) -> Expr:
         result: ParseResults = self.bnf.parseString(text, parseAll=True)
-        return result[0]
+        return cast(Expr, result[0])
 
     def eval(self, text: str, ctx: Context) -> ExprValue:
         result: ParseResults = self.bnf.parseString(text, parseAll=True)

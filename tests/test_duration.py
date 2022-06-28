@@ -22,7 +22,7 @@ from dirtoo.duration import dehumanize, dehumanize_hms, dehumanize_dot, dehumani
 
 class DurationTestCase(unittest.TestCase):
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.hms_tests = [
             ("12s", 12),
             ("1m12s", 72),
@@ -61,23 +61,23 @@ class DurationTestCase(unittest.TestCase):
             "12:11 "
         ]
 
-    def test_dehumanize_hms(self):
+    def test_dehumanize_hms(self) -> None:
         for text, expected in self.hms_tests:
             self.assertEqual(dehumanize_hms(text), expected)
 
-    def test_dehumanize_dot(self):
+    def test_dehumanize_dot(self) -> None:
         for text, expected in self.dot_tests:
             self.assertEqual(dehumanize_dot(text), expected)
 
-    def test_dehumanize_unit(self):
+    def test_dehumanize_unit(self) -> None:
         for text, expected in self.unit_tests:
             self.assertEqual(dehumanize_unit(text), expected)
 
-    def test_dehumanize(self):
+    def test_dehumanize(self) -> None:
         for text, expected in self.unit_tests + self.dot_tests + self.hms_tests:
             self.assertEqual(dehumanize(text), expected)
 
-    def test_dehumanize_fail(self):
+    def test_dehumanize_fail(self) -> None:
         for text in self.fail_tests:
             self.assertEqual(dehumanize(text), None)
 

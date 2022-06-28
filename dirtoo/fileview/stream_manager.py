@@ -60,7 +60,7 @@ class StreamManager:
         else:
             return fd
 
-    def record(self, fd: IO[str]) -> Optional[Tuple[TeeIO, str]]:
+    def record(self, fd: IO[str]) -> Optional[Tuple[TeeIO[str], str]]:
         outfile, stream_id = self._make_outfile()
         try:
             fd_out = open(outfile, "w")

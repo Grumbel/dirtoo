@@ -22,8 +22,9 @@ from dirtoo.fileview.filter_expr_parser import FilterExprParser
 
 class UtilTestCase(unittest.TestCase):
 
-    def test_filter_parser(self):
-        grammar = FilterExprParser._make_grammar(None)
+    def test_filter_parser(self) -> None:
+        parser = FilterExprParser()
+        grammar = parser._grammar
         # grammar.leaveWhitespace()
 
         test_strings = [
@@ -64,8 +65,8 @@ class UtilTestCase(unittest.TestCase):
 
         parser = FilterExprParser()
         for text, expected in test_strings:
-            result = grammar.parseString(text, parseAll=True)
-            result = str(result)
+            parse_results = grammar.parseString(text, parseAll=True)
+            result = str(parse_results)
             self.assertEqual(result, expected)
             parser.parse(text)
 

@@ -22,7 +22,7 @@ from dirtoo.ffprobe import FFProbe
 
 class FFProbeTestCase(unittest.TestCase):
 
-    def test_ffprobe(self):
+    def test_ffprobe(self) -> None:
         minfo = FFProbe("tests/test.mkv")
 
         self.assertEqual(minfo.width(), 514)

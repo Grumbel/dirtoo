@@ -34,7 +34,7 @@ lorem_ipsum = (
 
 class TeeIOTestCase(unittest.TestCase):
 
-    def test_text_tee_io(self):
+    def test_text_tee_io(self) -> None:
         input_io = StringIO(lorem_ipsum)
         output_io = StringIO()
 
@@ -46,7 +46,7 @@ class TeeIOTestCase(unittest.TestCase):
 
             self.assertEqual(lorem_ipsum, output_io.getvalue())
 
-    def test_bytes_tee_io(self):
+    def test_bytes_tee_io(self) -> None:
         input_io = BytesIO(lorem_ipsum.encode())
         output_io = BytesIO()
 
