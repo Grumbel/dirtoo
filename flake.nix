@@ -65,7 +65,10 @@
             '';
             checkPhase = ''
               runHook preCheck
-              make
+              flake8
+              pyright dirtoo tests
+              mypy -p dirtoo -p tests
+              python3 -m unittest discover -v -s tests/
               runHook postCheck
             '';
             propagatedBuildInputs = with pythonPackages; [
