@@ -17,10 +17,10 @@
 
 from PyQt5.QtCore import QObject, pyqtSignal
 from abc import abstractmethod
-from enum import Enum
+from enum import IntEnum
 
 
-class ExtractorResultStatus(Enum):
+class ExtractorResultStatus(IntEnum):
 
     SUCCESS = 0
     FAILURE = 1
