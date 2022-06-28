@@ -169,11 +169,11 @@ class FileCollection(QObject):
         return cast(int, self._fileinfos.index(fileinfo))
 
     @overload
-    def __getitem__(self, i: int) -> FileInfo:
+    def __getitem__(self, key: int) -> FileInfo:
         ...
 
     @overload
-    def __getitem__(self, s: slice) -> list[FileInfo]:
+    def __getitem__(self, key: slice) -> list[FileInfo]:
         ...
 
     def __getitem__(self, key: Union[int, slice]) -> Union[FileInfo, list[FileInfo]]:

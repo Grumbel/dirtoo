@@ -66,15 +66,19 @@ def dehumanize_dot(text: str) -> Optional[int]:
                 hours = 0
                 minutes = int(m.group(1))
                 seconds = int(m.group(2))
+                return total_seconds(hours, minutes, seconds)
             elif m.group(4).lower() == "m":
                 hours = 0
                 minutes = int(m.group(1))
                 seconds = int(m.group(2))
+                return total_seconds(hours, minutes, seconds)
             elif m.group(4).lower() == "h":
                 hours = int(m.group(1))
                 minutes = int(m.group(2))
                 seconds = 0
-            return total_seconds(hours, minutes, seconds)
+                return total_seconds(hours, minutes, seconds)
+            else:
+                return None
         elif m.group(4) is None:
             hours = int(m.group(1))
             minutes = int(m.group(2))

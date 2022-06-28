@@ -18,7 +18,8 @@
 from typing import cast, List
 
 import logging
-from pyparsing import ParserElement, ParseResults
+from pyparsing import ParserElement
+from pyparsing.results import ParseResults
 
 from dirtoo.fileview.match_func import MatchFunc, AndMatchFunc, OrMatchFunc, ExcludeMatchFunc
 
@@ -61,7 +62,8 @@ class CommandExpr(Expr):
 class OrKeywordExpr(Expr):
 
     def __init__(self, s: str, loc: int, toks: ParseResults) -> None:
-        self.keyword = toks[0].upper()
+        assert isinstance(toks[0], str)
+        self.keyword = cast(str, toks[0]).upper()
 
     def __repr__(self) -> str:
         return "OR"
@@ -70,7 +72,8 @@ class OrKeywordExpr(Expr):
 class AndKeywordExpr(Expr):
 
     def __init__(self, s: str, loc: int, toks: ParseResults) -> None:
-        self.keyword = toks[0].upper()
+        assert isinstance(toks[0], str)
+        self.keyword = cast(str, toks[0]).upper()
 
     def __repr__(self) -> str:
         return "AND"

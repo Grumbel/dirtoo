@@ -17,11 +17,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import cast, Any, Dict, List, Callable, Union
+from typing import cast, Any, Dict, List, Callable, Optional, Union
 
 import operator
 from abc import ABC, abstractmethod
-from pyparsing import ParserElement, ParseResults
+from pyparsing import ParserElement
+from pyparsing.results import ParseResults
+import pyparsing as pp
 
 
 ExprValue = Union[int, float, bool, str]
@@ -93,9 +95,9 @@ class Context:
 
     def __init__(self) -> None:
         self._functions: Dict[str, ExprFunction] = {
-            'abs': abs,
-            'int': int,
-            'float': float,
+            'abs': cast(ExprFunction, abs),
+            'int': cast(ExprFunction, int),
+            'float': cast(ExprFunction, float),
         }
 
         self._variables: Dict[str, ExprValue] = {
@@ -144,9 +146,11 @@ class Function(Expr):
 class Number(Expr):
 
     def __init__(self, s: str, loc: int, toks: ParseResults) -> None:
-        self.value: ExprValue = toks[0]
+        self.value: Union[int, float] = cast(Union[int, float], toks[0])
+        self.unit: Optional[str]
         if len(toks) > 1:
-            self.unit = toks[1]
+            assert isinstance(toks[1], str)
+            self.unit = cast(str, toks[1])
         else:
             self.unit = None
 
@@ -163,7 +167,8 @@ class Number(Expr):
 class String(Expr):
 
     def __init__(self, s: str, loc: int, toks: ParseResults) -> None:
-        self.value: str = toks[0]
+        assert isinstance(toks[0], str)
+        self.value: str = cast(str, toks[0])
 
     def eval(self, ctx: Context) -> ExprValue:
         return self.value
@@ -176,7 +181,7 @@ class Variable(Expr):
 
     def __init__(self, s: str, loc: int, toks: ParseResults) -> None:
         assert type(toks[0]) is str
-        self.name: str = toks[0]
+        self.name: str = cast(str, toks[0])
 
     def eval(self, ctx: Context) -> ExprValue:
         return ctx.get_variable(self.name)
@@ -213,57 +218,53 @@ class UnaryOperator(Expr):
 
 
 def make_grammar() -> ParserElement:
-    from pyparsing import (Literal, Word, Forward,
-                           Optional, QuotedString, Combine,
-                           ZeroOrMore, Keyword, alphas, alphanums,
-                           nums)
     ParserElement.enablePackrat()
 
-    plus = Literal("+")
-    minus = Literal("-")
+    plus = pp.Literal("+")
+    minus = pp.Literal("-")
 
-    mul = Literal("*")
-    div = Literal("/")
-    floordiv = Literal("//")
-    mod = Literal("%")
+    mul = pp.Literal("*")
+    div = pp.Literal("/")
+    floordiv = pp.Literal("//")
+    mod = pp.Literal("%")
 
-    lt = Literal("<")
-    le = Literal("<=")
+    lt = pp.Literal("<")
+    le = pp.Literal("<=")
 
-    gt = Literal(">")
-    ge = Literal(">=")
+    gt = pp.Literal(">")
+    ge = pp.Literal(">=")
 
-    lshift = Literal("<<")
-    rshift = Literal(">>")
+    lshift = pp.Literal("<<")
+    rshift = pp.Literal(">>")
 
-    equal = Literal("==") | Literal("=") | Literal("!=")
+    equal = pp.Literal("==") | pp.Literal("=") | pp.Literal("!=")
 
-    bitwise_not = Literal("~")
-    bitwise_and = Literal("&")
-    bitwise_or = Literal("|")
-    bitwise_xor = Literal("^")
+    bitwise_not = pp.Literal("~")
+    bitwise_and = pp.Literal("&")
+    bitwise_or = pp.Literal("|")
+    bitwise_xor = pp.Literal("^")
 
-    logical_not = Literal("!") | Keyword("not")
-    logical_and = Literal("&&") | Literal("and") | Keyword("AND")
-    logical_or = Literal("||") | Keyword("or") | Keyword("OR")
+    logical_not = pp.Literal("!") | pp.Keyword("not")
+    logical_and = pp.Literal("&&") | pp.Literal("and") | pp.Keyword("AND")
+    logical_or = pp.Literal("||") | pp.Keyword("or") | pp.Keyword("OR")
 
-    ident = Word(alphas + "_", alphanums + "_")
-    functionname = Word(alphas + "_", alphanums + "_")
-    unit = Word(alphas)
-    int_number = Word(nums)
-    float_number = Combine(Word(nums) + Optional(Literal(".") + Word(nums)))
-    number = (float_number | int_number) + Optional(unit)
+    ident = pp.Word(pp.alphas + "_", pp.alphanums + "_")
+    functionname = pp.Word(pp.alphas + "_", pp.alphanums + "_")
+    unit = pp.Word(pp.alphas)
+    int_number = pp.Word(pp.nums)
+    float_number = pp.Combine(pp.Word(pp.nums) + pp.Optional(pp.Literal(".") + pp.Word(pp.nums)))
+    number = (float_number | int_number) + pp.Optional(unit)
 
-    lparent = Literal("(").suppress()
-    rparent = Literal(")").suppress()
+    lparent = pp.Literal("(").suppress()
+    rparent = pp.Literal(")").suppress()
 
     relational_op = (lt | le | gt | ge)
     shift = (lshift | rshift)
     add_op = (plus | minus)
     mul_op = (mul | floordiv | div | mod)
 
-    expr = Forward()
-    string = (QuotedString('"') | QuotedString("'"))
+    expr = pp.Forward()
+    string = (pp.QuotedString('"') | pp.QuotedString("'"))
     primary_expr = ident | number | string | (lparent + expr + rparent)
 
     def make_op(s: str, loc: int, toks: ParseResults) -> Any:
@@ -287,22 +288,22 @@ def make_grammar() -> ParserElement:
         else:
             return UnaryOperator(toks[0], make_unary(s, loc, toks[1:]))
 
-    argument_expression_list = expr + ZeroOrMore(Literal(",").suppress() + expr)
+    argument_expression_list = expr + pp.ZeroOrMore(pp.Literal(",").suppress() + expr)
     function_expression = (functionname + lparent + argument_expression_list + rparent)
     postfix_expression = function_expression | primary_expr
-    unary_expr = ZeroOrMore(bitwise_not | logical_not | minus | plus) + postfix_expression
+    unary_expr = pp.ZeroOrMore(bitwise_not | logical_not | minus | plus) + postfix_expression
     cast_expresion = unary_expr | postfix_expression
 
-    mult_expr        = cast_expresion   + ZeroOrMore(mul_op        + cast_expresion)  # noqa: E221
-    add_expr         = mult_expr        + ZeroOrMore(add_op        + mult_expr)  # noqa: E221
-    shift_expr       = add_expr         + ZeroOrMore(shift         + add_expr)  # noqa: E221
-    relational_expr  = shift_expr       + ZeroOrMore(relational_op + shift_expr)  # noqa: E221
-    equality_expr    = relational_expr  + ZeroOrMore(equal         + relational_expr)  # noqa: E221
-    bitwise_and_expr = equality_expr    + ZeroOrMore(bitwise_and   + equality_expr)  # noqa: E221
-    bitwise_xor_expr = bitwise_and_expr + ZeroOrMore(bitwise_xor   + bitwise_and_expr)  # noqa: E221
-    bitwise_or_expr  = bitwise_xor_expr + ZeroOrMore(bitwise_or    + bitwise_xor_expr)  # noqa: E221
-    logical_and_expr = bitwise_or_expr  + ZeroOrMore(logical_and   + bitwise_or_expr)  # noqa: E221
-    logical_or_expr  = logical_and_expr + ZeroOrMore(logical_or    + logical_and_expr)  # noqa: E221
+    mult_expr        = cast_expresion   + pp.ZeroOrMore(mul_op        + cast_expresion)  # noqa: E221
+    add_expr         = mult_expr        + pp.ZeroOrMore(add_op        + mult_expr)  # noqa: E221
+    shift_expr       = add_expr         + pp.ZeroOrMore(shift         + add_expr)  # noqa: E221
+    relational_expr  = shift_expr       + pp.ZeroOrMore(relational_op + shift_expr)  # noqa: E221
+    equality_expr    = relational_expr  + pp.ZeroOrMore(equal         + relational_expr)  # noqa: E221
+    bitwise_and_expr = equality_expr    + pp.ZeroOrMore(bitwise_and   + equality_expr)  # noqa: E221
+    bitwise_xor_expr = bitwise_and_expr + pp.ZeroOrMore(bitwise_xor   + bitwise_and_expr)  # noqa: E221
+    bitwise_or_expr  = bitwise_xor_expr + pp.ZeroOrMore(bitwise_or    + bitwise_xor_expr)  # noqa: E221
+    logical_and_expr = bitwise_or_expr  + pp.ZeroOrMore(logical_and   + bitwise_or_expr)  # noqa: E221
+    logical_or_expr  = logical_and_expr + pp.ZeroOrMore(logical_or    + logical_and_expr)  # noqa: E221
     expr <<= logical_or_expr
 
     function_expression.setParseAction(Function)
@@ -334,12 +335,12 @@ class Parser:
         self.bnf = make_grammar()
 
     def parse(self, text: str) -> Any:
-        result = self.bnf.parseString(text, parseAll=True)
+        result: ParseResults = self.bnf.parseString(text, parseAll=True)
         return result[0]
 
     def eval(self, text: str, ctx: Context) -> ExprValue:
-        result = self.bnf.parseString(text, parseAll=True)
-        return cast(ExprValue, result[0].eval(ctx))
+        result: ParseResults = self.bnf.parseString(text, parseAll=True)
+        return cast(Expr, result[0]).eval(ctx)
 
 
 # EOF #

@@ -64,11 +64,13 @@ def white_outline(image: QImage, sigma: int = 6, repeat: int = 6) -> QImage:
     color.fill(255)
 
     alpha = alpha.reshape((image.width(), image.height()))
-    alpha = alpha.astype(numpy.single)
-    alpha = gaussian_filter(alpha, sigma=sigma)
-    alpha *= numpy.uint8(repeat)
-    numpy.clip(alpha, 0, 255, out=alpha)
-    alpha = alpha.astype(numpy.uint8)
+
+    alpha_f: npt.NDArray[numpy.single] = alpha.astype(numpy.single)
+    alpha_f = gaussian_filter(alpha_f, sigma=sigma)
+    alpha_f *= numpy.single(repeat)
+    numpy.clip(alpha_f, 0, 255, out=alpha_f)
+    alpha = alpha_f.astype(numpy.uint8)
+
     alpha = alpha.reshape(shape)
 
     arr = numpy.dstack((color, color, color, alpha))

@@ -31,7 +31,7 @@ from dirtoo.fileview.transfer_dialog import TransferDialog
 
 if TYPE_CHECKING:
     from dirtoo.filesystem import Filesystem
-    from dirtoo.application import FileViewApplication
+    from dirtoo.fileview.application import FileViewApplication
 
 
 logger = logging.getLogger(__name__)

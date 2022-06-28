@@ -19,7 +19,7 @@ from typing import Union
 
 import os
 import logging
-import urllib
+import urllib.parse
 
 from dirtoo.archive.archive_manager import ArchiveManager
 from dirtoo.file_info import FileInfo

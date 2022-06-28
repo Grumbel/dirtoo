@@ -134,8 +134,10 @@ class ItemContextMenu(Menu):
         default_apps, other_apps = self._get_supported_apps(files)
 
         def make_launcher_menu(menu: QMenu, apps: Set[str]) -> None:
-            entries: List[DesktopEntry] = [get_desktop_entry(app)
-                                           for app in apps]
+            entries: List[DesktopEntry] = [x
+                                           for x in (get_desktop_entry(app)
+                                                     for app in apps)
+                                           if x is not None]
             entries = sorted(entries, key=lambda x: cast(str, x.getName()))
             for entry in entries:
                 action = menu.addAction(QIcon.fromTheme(entry.getIcon()), "Open With {}".format(entry.getName()))

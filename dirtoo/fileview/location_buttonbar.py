@@ -21,8 +21,6 @@ from PyQt5.QtCore import Qt, QPoint, QSize
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QSizePolicy
 from PyQt5.QtGui import QIcon, QDragEnterEvent, QDropEvent, QDragLeaveEvent, QMouseEvent
 
-import sip
-
 from dirtoo.location import Location
 from dirtoo.fileview.push_button import PushButton
 from dirtoo.fileview.item_context_menu import ItemContextMenu
@@ -97,6 +95,7 @@ class LocationButtonBar(QWidget):
         layout.setSpacing(0)
         ancestry = self._location.ancestry()
 
+        button: Optional[LocationButton] = None
         for location in ancestry:
             basename = location.basename()
             if basename == "":
@@ -124,7 +123,8 @@ class LocationButtonBar(QWidget):
 
             layout.addWidget(button, Qt.AlignCenter)
 
-        button.setDown(True)
+        if button is not None:
+            button.setDown(True)
 
         layout.addStretch()
 
@@ -144,6 +144,7 @@ class LocationButtonBar(QWidget):
                 w = old_layout.itemAt(i).widget()
                 if w is not None:
                     w.setParent(None)
+            from PyQt5 import sip
             sip.delete(old_layout)
 
     def mousePressEvent(self, ev: QMouseEvent) -> None:
