@@ -43,9 +43,6 @@
           dirtoo = pythonPackages.buildPythonPackage rec {
             name = "dirtoo";
             src = ./.;
-            meta = {
-              mainProgram = "dt-fileview";
-            };
             nativeBuildInputs = [ pkgs.qt5.wrapQtAppsHook ];
             makeWrapperArgs = [
               "\${qtWrapperArgs[@]}"
@@ -109,7 +106,7 @@
         apps = rec {
           dirtoo = flake-utils.lib.mkApp {
             drv = packages.dirtoo;
-            exePath = "/bin/dt-fileview";
+            exePath = "/bin/dirtoo";
           };
           default = dirtoo;
         };

@@ -24,7 +24,7 @@ ApplicationWindow {
     width: 1024
     height: 768
 
-    title: "dt-fileview - Qml edition"
+    title: "dirtoo - Qml edition"
 
     menuBar: MenuBar {
         Menu {

@@ -135,8 +135,8 @@ class FileViewWindow(QMainWindow):
         shortcut.activated.connect(lambda: self.file_view.scroll_by(0, self.file_view.viewport().height()))
 
     def make_window(self) -> None:
-        self.setWindowTitle("dt-fileview")
-        self.setWindowIcon(QIcon(resource_filename("dirtoo", "fileview/dt-fileview.svg")))
+        self.setWindowTitle("dirtoo")
+        self.setWindowIcon(QIcon(resource_filename("dirtoo", "fileview/dirtoo.svg")))
         self.vbox = QVBoxLayout()
         self.vbox.setContentsMargins(0, 0, 0, 0)
 
@@ -496,7 +496,7 @@ class FileViewWindow(QMainWindow):
     def set_location(self, location: Location) -> None:
         self.location_lineedit.set_location(location)
         self.location_buttonbar.set_location(location)
-        self.setWindowTitle("{} - dt-fileview".format(location.as_human()))
+        self.setWindowTitle("{} - dirtoo".format(location.as_human()))
 
     def set_file_list(self) -> None:
         self.location_lineedit.set_unused_text()

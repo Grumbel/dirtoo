@@ -48,7 +48,7 @@ def main(argv: List[str]) -> int:
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     app = QCoreApplication([])
 
-    cache_dir = os.path.join(xdg.BaseDirectory.xdg_cache_home, "dt-fileview")
+    cache_dir = os.path.join(xdg.BaseDirectory.xdg_cache_home, "dirtoo")
     vfs = StdioFilesystem(cache_dir)
     metadata_collector = MetaDataCollector(vfs)
 

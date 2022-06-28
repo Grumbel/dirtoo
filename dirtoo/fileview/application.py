@@ -57,8 +57,8 @@ class FileViewApplication:
         # http://stackoverflow.com/questions/4938723/
         signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-        self.cache_dir = os.path.join(xdg.BaseDirectory.xdg_cache_home, "dt-fileview")
-        self.config_dir = os.path.join(xdg.BaseDirectory.xdg_config_home, "dt-fileview")
+        self.cache_dir = os.path.join(xdg.BaseDirectory.xdg_cache_home, "dirtoo")
+        self.config_dir = os.path.join(xdg.BaseDirectory.xdg_config_home, "dirtoo")
         self.config_file = os.path.join(self.config_dir, "config.ini")
         if not os.path.isdir(self.config_dir):
             os.makedirs(self.config_dir)

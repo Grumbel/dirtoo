@@ -314,7 +314,7 @@ class Actions(QObject):
         self.group_group.addAction(self.group_by_directory)
         self.group_group.addAction(self.group_by_duration)
 
-        self.about = QAction(QIcon.fromTheme('help-about'), 'About dt-fileview', self)
+        self.about = QAction(QIcon.fromTheme('help-about'), 'About dirtoo', self)
         self.about.setStatusTip('Show About dialog')
 
         self.about.triggered.connect(self.controller.show_about_dialog)

@@ -34,12 +34,12 @@ class AboutDialog(QDialog):
         icon_label = QLabel()
         icon_label.setAlignment(Qt.AlignHCenter | Qt.AlignBottom)
         icon_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        icon_label.setPixmap(QPixmap(resource_filename("dirtoo", "fileview/dt-fileview.svg")))
+        icon_label.setPixmap(QPixmap(resource_filename("dirtoo", "fileview/dirtoo.svg")))
 
         text_label = QLabel(
             """
             <center>
-            <h1>dt-fileview</h1>
+            <h1>dirtoo</h1>
             <p>A file viewer and manager application.</p>
             <p><a href="https://github.com/Grumbel/dirtoo">https://github.com/Grumbel/dirtoo</a></p>
             <p>Copyright (C) 2018\nIngo Ruhnke &lt;<a href="mail:grumbel@gmail.com">grumbel@gmail.com</a>&gt;</p>

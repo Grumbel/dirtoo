@@ -283,7 +283,7 @@ class FileItem(QGraphicsObject):
                 drag.setPixmap(pix)
                 drag.setHotSpot(ev.pos().toPoint() - self.tile_rect.topLeft())
             else:
-                pix = QPixmap(resource_filename("dirtoo", "fileview/dt-fileview.svg")).scaled(48, 48)
+                pix = QPixmap(resource_filename("dirtoo", "fileview/dirtoo.svg")).scaled(48, 48)
                 drag.setPixmap(pix)
 
             if not self.isSelected():

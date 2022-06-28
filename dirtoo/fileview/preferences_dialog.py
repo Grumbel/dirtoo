@@ -27,7 +27,7 @@ class PreferencesDialog(QDialog):
     def __init__(self) -> None:
         super().__init__()
 
-        self.setWindowTitle("dt-fileview Preferences")
+        self.setWindowTitle("dirtoo Preferences")
         self._make_gui()
 
     def _make_gui(self) -> None:

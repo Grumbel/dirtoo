@@ -1,8 +1,8 @@
 [Desktop Entry]
-Name=dt-fileview
+Name=dirtoo
 Comment=Browse the filesystem with the file manager
 GenericName=File Manager
-Exec=dt-fileview %U
+Exec=dirtoo %U
 Icon=fileview
 Terminal=false
 StartupNotify=true

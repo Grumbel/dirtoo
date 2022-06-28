@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 class MetaDataCache:
 
     def __init__(self) -> None:
-        self._directory: str = os.path.join(xdg.BaseDirectory.xdg_state_home, "dt-fileview", "metadata")
+        self._directory: str = os.path.join(xdg.BaseDirectory.xdg_state_home, "dirtoo", "metadata")
         logger.info("MetaDataCache.__init__: %s", self._directory)
 
         try:
