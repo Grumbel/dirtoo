@@ -114,9 +114,15 @@
         devShells = rec {
           dirtoo = pkgs.mkShell {
             inputsFrom = [ packages.dirtoo-check ];
-            shellHook = ''
+            shellHook = packages.dirtoo-check.preCheck + ''
               export QT_QPA_PLATFORM_PLUGIN_PATH="${pkgs.qt5.qtbase.bin}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";
               runHook setuptoolsShellHook
+            '';
+          };
+          dirtoo-check = pkgs.mkShell {
+            inputsFrom = [ packages.dirtoo-check ];
+            shellHook = packages.dirtoo-check.preCheck + ''
+              export QT_QPA_PLATFORM_PLUGIN_PATH="${pkgs.qt5.qtbase.bin}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";
             '';
           };
           default = dirtoo;
