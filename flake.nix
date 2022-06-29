@@ -12,7 +12,7 @@
   };
 
   outputs = { self, nixpkgs, flake-utils, bytefmt }:
-    flake-utils.lib.eachDefaultSystem (system:
+    flake-utils.lib.eachSystem [ "i686-linux" "x86_64-linux" ] (system:
       let
         pkgs = import nixpkgs {
           inherit system;
