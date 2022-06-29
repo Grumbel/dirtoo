@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 def parse_args(argv: List[str]) -> argparse.Namespace:
+
     parser = argparse.ArgumentParser(description="Display files graphically")
     parser.add_argument("FILE", nargs='*')
     parser.add_argument("-t", "--timespace", action='store_true',
@@ -49,33 +50,44 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     return parser.parse_args(argv[1:])
 
 
-def main(argv: List[str]) -> None:
-    args = parse_args(argv)
+def setup_logging(opts: argparse.Namespace) -> None:
 
-    if args.debug:
+    if opts.debug:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.WARNING)
 
-    if args.profile:
+    if opts.profile:
         activate_profiler(True)
+
+
+def setup_app(opts: argparse.Namespace) -> FileViewApplication:
 
     app = FileViewApplication()
 
-    if args.FILE == []:
+    if opts.FILE == []:
         app.show_location(Location.from_path(os.getcwd()))
-    elif args.FILE == ["-"]:
-        if args.null:
+    elif opts.FILE == ["-"]:
+        if opts.null:
             app.show_location(Location.from_url("stream0:///stdin"))
         else:
             app.show_location(Location.from_url("stream:///stdin"))
-    elif len(args.FILE) == 1 and os.path.isdir(args.FILE[0]):
-        app.show_location(Location.from_human(args.FILE[0]))
-    elif args.recursive:
-        files = expand_directories(args.FILE, args.recursive)
+    elif len(opts.FILE) == 1 and os.path.isdir(opts.FILE[0]):
+        app.show_location(Location.from_human(opts.FILE[0]))
+    elif opts.recursive:
+        files = expand_directories(opts.FILE, opts.recursive)
         app.show_files([Location.from_path(f) for f in files])
     else:
-        app.show_files([Location.from_human(f) for f in args.FILE])
+        app.show_files([Location.from_human(f) for f in opts.FILE])
+
+    return app
+
+
+def main(argv: List[str]) -> None:
+    opts = parse_args(argv)
+
+    setup_logging(opts)
+    app = setup_app(opts)
 
     return_value = app.run()
 
