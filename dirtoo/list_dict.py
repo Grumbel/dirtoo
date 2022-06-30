@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import (cast, List, Dict, Any, TypeVar, Generic, Iterable,
+from typing import (cast, Dict, Any, TypeVar, Generic, Iterable,
                     Optional, Callable, Sized, Iterator)
 
 
@@ -33,7 +33,7 @@ class ListDict(Generic[KT, VT], Sized, Iterable[VT]):
                  iterable: Optional[Iterable[VT]] = None) -> None:
         self._key_func = key_func
 
-        self._list: List[Optional[VT]]
+        self._list: list[Optional[VT]]
         if iterable is None:
             self._list = []
             self._key2idx: Dict[KT, int] = {}

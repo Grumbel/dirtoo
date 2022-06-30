@@ -17,7 +17,7 @@
 # https://wiki.gnome.org/action/show/DraftSpecs/ThumbnailerSpec
 
 
-from typing import cast, Any, Dict, List, Tuple
+from typing import cast, Any, Dict, Sequence, Tuple
 from abc import ABC, abstractmethod
 
 import logging
@@ -60,7 +60,7 @@ class DBusThumbnailerError(Enum):
     UNSUPPORTED_FLAVOR = 5
 
 
-def dbus_as(value: List[str]) -> QVariant:
+def dbus_as(value: Sequence[str]) -> QVariant:
     var = QVariant(value)
     ret = var.convert(QVariant.StringList)
     assert ret, "QVariant conversion failure: {}".format(value)
@@ -81,11 +81,12 @@ class DBusThumbnailerListener(ABC):
         pass
 
     @abstractmethod
-    def ready(self, handle: QVariant, urls: List[str], flavor: str) -> None:
+    def ready(self, handle: QVariant, urls: Sequence[str], flavor: str) -> None:
         pass
 
     @abstractmethod
-    def error(self, handle: QVariant, failed_uris: List[str], error_code: 'DBusThumbnailerError', message: str) -> None:
+    def error(self, handle: QVariant, failed_uris: Sequence[str],
+              error_code: 'DBusThumbnailerError', message: str) -> None:
         pass
 
     @abstractmethod
@@ -105,7 +106,7 @@ class DBusThumbnailer(QObject):
         self.bus = bus
 
         self.bus.registerObject('/', self)
-        self.requests: Dict[str, Tuple[List[str], List[str], str]] = {}
+        self.requests: Dict[str, Tuple[Sequence[str], Sequence[str], str]] = {}
         self.thumbnailer = QDBusInterface(
             'org.freedesktop.thumbnails.Thumbnailer1',
             '/org/freedesktop/thumbnails/Thumbnailer1',
@@ -128,7 +129,7 @@ class DBusThumbnailer(QObject):
     def close(self) -> None:
         self.bus.unregisterObject('/')
 
-    def _add_request(self, handle: QVariant, data: Tuple[List[str], List[str], str]) -> None:
+    def _add_request(self, handle: QVariant, data: Tuple[Sequence[str], Sequence[str], str]) -> None:
         self.requests[handle] = data
 
     def _remove_request(self, handle: QVariant) -> None:
@@ -160,7 +161,7 @@ class DBusThumbnailer(QObject):
         handle, failed_uris, error_code, message = msg.arguments()
         self.listener.error(handle, failed_uris, error_code, message)
 
-    def _call(self, method: str, *args: Any) -> List[QVariant]:
+    def _call(self, method: str, *args: Any) -> Sequence[QVariant]:
         msg = self.thumbnailer.call(method, *args)
         reply = QDBusReply(msg)
         if not reply.isValid():
@@ -169,9 +170,9 @@ class DBusThumbnailer(QObject):
                 reply.error().name(),
                 reply.error().message()))
 
-        return cast(List[QVariant], msg.arguments())
+        return cast(Sequence[QVariant], msg.arguments())
 
-    def queue(self, files: List[str], flavor: str = "default") -> QVariant:
+    def queue(self, files: Sequence[str], flavor: str = "default") -> QVariant:
         logger.debug("DBusThumbnailer.queue: %s  %s", files, flavor)
 
         if files == []:
@@ -206,13 +207,13 @@ class DBusThumbnailer(QObject):
         uri_schemes, mime_types = self._call("GetSupported")
         return (uri_schemes, mime_types)
 
-    def get_schedulers(self) -> List[str]:
+    def get_schedulers(self) -> Sequence[str]:
         schedulers = self._call("GetSchedulers")[0]
-        return cast(List[str], schedulers)
+        return cast(Sequence[str], schedulers)
 
-    def get_flavors(self) -> List[str]:
+    def get_flavors(self) -> Sequence[str]:
         flavors, = self._call("GetFlavors")
-        return cast(List[str], flavors)
+        return cast(Sequence[str], flavors)
 
     @staticmethod
     def thumbnail_from_filename(filename: str, flavor: str = "normal") -> str:

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import cast, Any, Callable, Dict, List, Hashable, Tuple, Optional
+from typing import cast, Any, Callable, Dict, Sequence, Hashable, Tuple, Optional
 
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QGraphicsItem, QGraphicsScene
@@ -31,8 +31,8 @@ class LayoutBuilder:
         self._style = style
         self._show_filtered = False
 
-    def _group_items(self, items: List[FileItem]) -> Dict[Hashable, List[FileItem]]:
-        groups: Dict[Hashable, List[FileItem]] = {}
+    def _group_items(self, items: Sequence[FileItem]) -> Dict[Hashable, list[FileItem]]:
+        groups: Dict[Hashable, list[FileItem]] = {}
         for item in items:
             if item.fileinfo.group not in groups:
                 groups[item.fileinfo.group] = []
@@ -45,7 +45,7 @@ class LayoutBuilder:
         group_title.set_item(text_item)
         return group_title
 
-    def _build_tile_grid(self, items: List[QGraphicsItem], group: bool) -> TileLayout:
+    def _build_tile_grid(self, items: Sequence[QGraphicsItem], group: bool) -> TileLayout:
         tile_layout = TileLayout(self._style, group=group)
         tile_layout.set_items(items)
         return tile_layout
@@ -56,14 +56,14 @@ class LayoutBuilder:
             if not isinstance(item, FileItem):
                 self._scene.removeItem(item)
 
-    def build_layout(self, items: List[FileItem]) -> RootLayout:
+    def build_layout(self, items: Sequence[FileItem]) -> RootLayout:
         self.cleanup()
 
         hbox = HBoxLayout()
 
         groups = self._group_items(items)
 
-        first_group: Optional[Tuple[Optional[Hashable], List[FileItem]]]
+        first_group: Optional[Tuple[Optional[Hashable], Sequence[FileItem]]]
         if None in groups:
             first_group = (None, groups[None])
             del groups[None]
@@ -71,11 +71,11 @@ class LayoutBuilder:
             first_group = None
 
         key_func: Callable[[Any], Any] = lambda x: x[0]
-        sorted_groups: List[Tuple[Optional[Hashable], List[FileItem]]]
+        sorted_groups: list[Tuple[Optional[Hashable], Sequence[FileItem]]]
         sorted_groups = sorted(groups.items(), key=key_func, reverse=True)
 
         if first_group is not None:
-            sorted_groups = cast(List[Tuple[Optional[Hashable], List[FileItem]]], [first_group]) + sorted_groups
+            sorted_groups = cast(list[Tuple[Optional[Hashable], Sequence[FileItem]]], [first_group]) + sorted_groups
 
         grid = None
         for idx, (group, items) in enumerate(sorted_groups):

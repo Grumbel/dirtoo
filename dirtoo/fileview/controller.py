@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, Any, List, Dict, Optional, Callable
+from typing import TYPE_CHECKING, Any, Sequence, Dict, Optional, Callable
 
 import io
 import logging
@@ -72,7 +72,7 @@ class Controller(QObject):
         self._filter = Filter()
         self._sorter = Sorter()
 
-        self._location_history: List[Location] = []
+        self._location_history: list[Location] = []
         self._location_history_index = 0
 
         self._directory_watcher: Optional[DirectoryWatcher] = None
@@ -208,7 +208,7 @@ class Controller(QObject):
         logger.info("Controller._on_finished")
         self._gui._window.hide_loading()
 
-    def _on_scandir_finished(self, fileinfos: List[FileInfo]) -> None:
+    def _on_scandir_finished(self, fileinfos: Sequence[FileInfo]) -> None:
         logger.info("Controller._on_scandir_extractor_finished")
         self._gui._window.hide_loading()
 
@@ -287,7 +287,7 @@ class Controller(QObject):
             self.location = location
             self._gui._window.set_location(self.location)
 
-    def set_files(self, files: List[Location]) -> None:
+    def set_files(self, files: Sequence[Location]) -> None:
         self._gui._window.set_file_list()
 
         self.location = None
@@ -404,7 +404,7 @@ class Controller(QObject):
     def show_current_filename(self, filename: str) -> None:
         self._gui._window.show_current_filename(filename)
 
-    def add_files(self, files: List[Location]) -> None:
+    def add_files(self, files: Sequence[Location]) -> None:
         for location in files:
             self.file_collection.add_fileinfo(self.app.vfs.get_fileinfo(location))
 
@@ -639,7 +639,7 @@ class Controller(QObject):
 
         # https://www.uninformativ.de/blog/postings/2017-04-02/0/POSTING-en.html
 
-    def selected_fileinfos(self) -> List[FileInfo]:
+    def selected_fileinfos(self) -> Sequence[FileInfo]:
         selected_items = self._gui._window.file_view._scene.selectedItems()
         return [item.fileinfo
                 for item in selected_items]
@@ -664,7 +664,7 @@ class Controller(QObject):
 
         return mime_data
 
-    def on_files_drop(self, action: Qt.DropActions, urls: List[QUrl], destination: Optional[Location]) -> None:
+    def on_files_drop(self, action: Qt.DropActions, urls: Sequence[QUrl], destination: Optional[Location]) -> None:
         if destination is None:
             destination = self.location
 
@@ -755,7 +755,7 @@ class Controller(QObject):
     def request_completions(self, text: str) -> None:
         self._path_completion.request_completions(text)
 
-    def _on_completions(self, longest: str, candidates: List[str]) -> None:
+    def _on_completions(self, longest: str, candidates: Sequence[str]) -> None:
         self._gui._window.location_lineedit.on_completions(longest, candidates)
 
     def show_history_context_menu(self, button: 'ToolButton', forward: bool) -> None:

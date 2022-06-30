@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import cast, List
+from typing import cast, Sequence
 
 import os
 import urllib.parse
@@ -24,7 +24,7 @@ from PyQt5.Qt import QVariant
 from PyQt5.QtDBus import QDBusInterface, QDBusReply
 
 
-def dbus_as(value: List[str]) -> QVariant:
+def dbus_as(value: Sequence[str]) -> QVariant:
     var = QVariant(value)
     ret = var.convert(QVariant.StringList)
     assert ret, "QVariant conversion failure: {}".format(value)
@@ -51,7 +51,7 @@ class DBusThumbnailCache:
             'org.freedesktop.thumbnails.Cache1',
             bus)
 
-    def _call(self, method: str, *args: QVariant) -> List[QVariant]:
+    def _call(self, method: str, *args: QVariant) -> Sequence[QVariant]:
         msg = self.cache.call(method, *args)
         reply = QDBusReply(msg)
         if not reply.isValid():
@@ -60,22 +60,22 @@ class DBusThumbnailCache:
                 reply.error().name(),
                 reply.error().message()))
 
-        return cast(List[QVariant], msg.arguments())
+        return cast(Sequence[QVariant], msg.arguments())
 
-    def delete(self, files: List[str]) -> None:
+    def delete(self, files: Sequence[str]) -> None:
         urls = [url_from_path(f) for f in files]
         self._call("Delete", dbus_as(urls))
 
-    def cleanup(self, files: List[str], mtime_threshold: int = 0) -> None:
+    def cleanup(self, files: Sequence[str], mtime_threshold: int = 0) -> None:
         urls = ["file://" + urllib.parse.quote(os.path.abspath(f)) for f in files]
         self._call("Cleanup", dbus_as(urls), mtime_threshold)
 
-    def copy(self, from_files: List[str], to_files: List[str]) -> None:
+    def copy(self, from_files: Sequence[str], to_files: Sequence[str]) -> None:
         from_uris = [url_from_path(f) for f in from_files]
         to_uris = [url_from_path(f) for f in to_files]
         self._call("Copy", dbus_as(from_uris), dbus_as(to_uris))
 
-    def move(self, from_files: List[str], to_files: List[str]) -> None:
+    def move(self, from_files: Sequence[str], to_files: Sequence[str]) -> None:
         from_uris = [url_from_path(f) for f in from_files]
         to_uris = [url_from_path(f) for f in to_files]
         self._call("Move", dbus_as(from_uris), dbus_as(to_uris))

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, Optional, List, cast
+from typing import TYPE_CHECKING, Optional, Sequence, cast
 
 import logging
 
@@ -62,7 +62,7 @@ class LocationLineEditPopup(QWidget):
 
         self.setLayout(vbox)
 
-    def set_completions(self, longest: str, candidates: List[str]) -> None:
+    def set_completions(self, longest: str, candidates: Sequence[str]) -> None:
         self.listwidget.clear()
         for candidate in candidates:
             self.listwidget.addItem(candidate)
@@ -161,7 +161,7 @@ class LocationLineEdit(QLineEdit):
         shortcut.setContext(Qt.WidgetShortcut)
         shortcut.activated.connect(self._popup.on_key_down)
 
-    def _on_completions(self, longest: str, candidates: List[str]) -> None:
+    def _on_completions(self, longest: str, candidates: Sequence[str]) -> None:
         self._popup.on_completions(longest, candidates)
         self._show_completion_selection = True
         self._show_popup()
@@ -289,7 +289,7 @@ class LocationLineEdit(QLineEdit):
     def _hide_popup(self) -> None:
         self._popup.hide()
 
-    def on_completions(self, longest: str, candidates: List[str]) -> None:
+    def on_completions(self, longest: str, candidates: Sequence[str]) -> None:
         text = self.text()
         if longest != text and self._show_completion_selection:
             self.setText(longest)

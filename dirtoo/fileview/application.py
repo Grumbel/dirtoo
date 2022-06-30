@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, cast
+from typing import Sequence, cast
 
 import traceback
 import os
@@ -103,7 +103,7 @@ class FileViewApplication:
         self.directory_thumbnailer = DirectoryThumbnailer(self)
         self.directory_thumbnailer.start()
 
-        self.controllers: List[Controller] = []
+        self.controllers: list[Controller] = []
 
         self.actions = ApplicationActions(self)
         self._preferences_dialog = PreferencesDialog()
@@ -140,7 +140,7 @@ class FileViewApplication:
         self.controllers.append(controller)
         return controller
 
-    def show_files(self, files: List[Location]) -> None:
+    def show_files(self, files: Sequence[Location]) -> None:
         controller = Controller(self)
         controller.set_files(files)
         controller._gui._window.show()

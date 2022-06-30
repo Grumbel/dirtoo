@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import Sequence
 
 import gc
 import logging
@@ -31,7 +31,7 @@ from dirtoo.util import expand_directories
 logger = logging.getLogger(__name__)
 
 
-def parse_args(argv: List[str]) -> argparse.Namespace:
+def parse_args(argv: Sequence[str]) -> argparse.Namespace:
 
     parser = argparse.ArgumentParser(description="Display files graphically")
     parser.add_argument("FILE", nargs='*')
@@ -83,7 +83,7 @@ def setup_app(opts: argparse.Namespace) -> FileViewApplication:
     return app
 
 
-def main(argv: List[str]) -> None:
+def main(argv: Sequence[str]) -> None:
     opts = parse_args(argv)
 
     setup_logging(opts)

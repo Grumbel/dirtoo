@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import cast, Any, Dict, List, Callable, Optional, Union
+from typing import cast, Any, Dict, Sequence, Callable, Optional, Union
 
 import operator
 from abc import ABC, abstractmethod
@@ -271,7 +271,7 @@ def make_grammar() -> ParserElement:
         if len(toks) == 1:
             return toks[0]
         else:
-            def loop(lhs: Operator, rest: List[ParserElement]) -> Operator:
+            def loop(lhs: Operator, rest: Sequence[ParserElement]) -> Operator:
                 if len(rest) == 0:
                     return lhs
                 else:

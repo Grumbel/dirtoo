@@ -15,12 +15,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Tuple
+from typing import Sequence, Tuple
 
 from PyQt5.QtCore import Qt, QUrl
 
 
-def parse_gnome_copied_files(data: bytes) -> Tuple[Qt.DropAction, List[QUrl]]:
+def parse_gnome_copied_files(data: bytes) -> Tuple[Qt.DropAction, Sequence[QUrl]]:
     lines = data.split(b'\n')
 
     if lines[0] == b"copy":
@@ -35,7 +35,7 @@ def parse_gnome_copied_files(data: bytes) -> Tuple[Qt.DropAction, List[QUrl]]:
     return action, urls
 
 
-def make_gnome_copied_files(action: Qt.DropActions, urls: List[QUrl]) -> bytes:
+def make_gnome_copied_files(action: Qt.DropActions, urls: Sequence[QUrl]) -> bytes:
     if action == Qt.CopyAction:
         gnome_action = b'copy'
     elif action == Qt.MoveAction:

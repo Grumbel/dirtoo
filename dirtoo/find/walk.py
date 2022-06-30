@@ -2,7 +2,7 @@
 
 # See https://docs.python.org/3/license.html for license information
 
-from typing import Any, Callable, Generator, Optional, List, Tuple, Union
+from typing import Any, Callable, Generator, Optional, Sequence, Tuple, Union
 
 import sys
 
@@ -15,8 +15,8 @@ def walk(top: Union[str, PathLike[str]], topdown: bool = True,
          onerror: Optional[Callable[[OSError], None]] = None,
          followlinks: bool = False,
          maxdepth: Optional[int] = None) -> Generator[Tuple[Union[str, PathLike[str]],
-                                                            List[Union[str, PathLike[str]]],
-                                                            List[Union[str, PathLike[str]]]],
+                                                            list[Union[str, PathLike[str]]],
+                                                            list[Union[str, PathLike[str]]]],
                                                       None, None]:
     if maxdepth is None:
         maxdepth = sys.maxsize
@@ -31,8 +31,8 @@ def _walk(top: Union[str, PathLike[str]], topdown: bool,
           followlinks: bool,
           maxdepth: int,
           depth: int) -> Generator[Tuple[Union[str, PathLike[str]],
-                                         List[Union[str, PathLike[str]]],
-                                         List[Union[str, PathLike[str]]]],
+                                         list[Union[str, PathLike[str]]],
+                                         list[Union[str, PathLike[str]]]],
                                    None, None]:
     """Directory tree generator.
 
@@ -107,7 +107,7 @@ def _walk(top: Union[str, PathLike[str]], topdown: bool,
             # Note that scandir is global in this module due
             # to earlier import-*.
             scandir_it = scandir(top)
-        entries: List[DirEntry[str]] = list(scandir_it)
+        entries: Sequence[DirEntry[str]] = list(scandir_it)
     except OSError as error:
         if onerror is not None:
             onerror(error)

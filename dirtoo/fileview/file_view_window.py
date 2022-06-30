@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, Optional, List
+from typing import TYPE_CHECKING, Optional, Sequence
 
 import logging
 
@@ -331,7 +331,7 @@ class FileViewWindow(QMainWindow):
         def create_bookmarks_menu() -> None:
             bookmarks = self.controller.app.bookmarks
 
-            entries: List[Location] = bookmarks.get_entries()
+            entries: Sequence[Location] = bookmarks.get_entries()
 
             self.bookmarks_menu.clear()
 

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import Sequence
 
 import os
 import argparse
@@ -83,7 +83,7 @@ def check_utf8_path(path: str, recursive: bool, verbose: bool) -> None:
         check_file(path, verbose)
 
 
-def parse_args(argv: List[str]) -> argparse.Namespace:
+def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Check filenames for invalid UTF-8")
     parser.add_argument('PATH', action='store', nargs='+',
                         help='File or directories to check')

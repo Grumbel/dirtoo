@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Tuple, List, Optional
+from typing import Tuple, Sequence, Optional
 
 import os
 import sys
@@ -31,7 +31,7 @@ from itertools import chain
 # MD5SUM uid gid atime mtime ctime btime
 
 
-def get_hierachy(filename: str) -> List[str]:
+def get_hierachy(filename: str) -> Sequence[str]:
     p = None
     np = os.path.dirname(filename)
     lst = []
@@ -42,14 +42,14 @@ def get_hierachy(filename: str) -> List[str]:
     return lst
 
 
-def get_directory_list(files: List[str]) -> List[str]:
+def get_directory_list(files: Sequence[str]) -> Sequence[str]:
     """
     Returns the directory structure that holds files
     """
     return sorted(list(set(chain.from_iterable([get_hierachy(f) for f in files]))))
 
 
-def move_files(sourcedir: str, targetdir: str, files: List[str], ignore_case: bool) -> None:
+def move_files(sourcedir: str, targetdir: str, files: Sequence[str], ignore_case: bool) -> None:
     """
     Moves files from sourcedir to targetdir while preserving their path structure, similar to 'rsync -R'
     """
@@ -145,7 +145,7 @@ class FileInfo:
         return self.filename
 
 
-def fileinfo_from_path(path: str) -> List[FileInfo]:
+def fileinfo_from_path(path: str) -> Sequence[FileInfo]:
     if os.path.isdir(path):
         return fileinfo_from_directory(path)
     elif os.path.isfile(path):
@@ -154,24 +154,22 @@ def fileinfo_from_path(path: str) -> List[FileInfo]:
         raise Exception("%s: error: unknown file type" % path)
 
 
-def fileinfo_from_md5sums(filename: str) -> List[FileInfo]:
+def fileinfo_from_md5sums(filename: str) -> Sequence[FileInfo]:
     with open(filename, "r") as fin:
         return [FileInfo(*e.split(None, 1)) for e in fin.read().splitlines()]
 
 
-def fileinfo_from_directory(directory: str) -> List[FileInfo]:
-    lst: List[FileInfo] = []
+def fileinfo_from_directory(directory: str) -> Sequence[FileInfo]:
+    lst: list[FileInfo] = []
     for path, dirs, files in os.walk(directory):
         for fname in files:
             lst.append(FileInfo(None, os.path.relpath(os.path.join(path, fname), directory)))
     return lst
 
 
-def compare_directories(finfo1: List[FileInfo],
-                        finfo2: List[FileInfo],
-                        ignore_case: bool = False) -> Tuple[List[FileInfo],
-                                                            List[FileInfo],
-                                                            List[FileInfo]]:
+def compare_directories(finfo1: Sequence[FileInfo],
+                        finfo2: Sequence[FileInfo],
+                        ignore_case: bool = False) -> Tuple[list[FileInfo], list[FileInfo], list[FileInfo]]:
     if ignore_case:
         finfo1_set = set([FileInfo(f.md5sum, f.filename.lower()) for f in finfo1])
         finfo2_set = set([FileInfo(f.md5sum, f.filename.lower()) for f in finfo2])
@@ -282,7 +280,7 @@ def merge_command(source: str, target: str, dry_run: bool, force: bool) -> None:
         os.rmdir(source)
 
 
-def main(argv: List[str]) -> int:
+def main(argv: Sequence[str]) -> int:
     parser = argparse.ArgumentParser(description='dirtoo')
     parser.add_argument('COMMAND', action='store', type=str,
                         help='diff, extract-diff, merge')

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import Sequence
 
 import logging
 from dirtoo.location import Location
@@ -28,7 +28,7 @@ class Bookmarks:
     def __init__(self, filename: str) -> None:
         self.config_filename = filename
 
-    def get_entries(self) -> List[Location]:
+    def get_entries(self) -> Sequence[Location]:
         try:
             with open(self.config_filename, "r") as fin:
                 lines = fin.read().splitlines()

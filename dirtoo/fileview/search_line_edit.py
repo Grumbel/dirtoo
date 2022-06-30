@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPalette, QIcon, QKeySequence, QFocusEvent
@@ -33,7 +33,7 @@ class SearchLineEdit(QLineEdit):
         self.is_unused = True
         self.set_unused_text()
         self.returnPressed.connect(self.on_return_pressed)
-        self.history: List[str] = []
+        self.history: list[str] = []
         self.history_idx = 0
 
         action = self.addAction(QIcon.fromTheme("window-close"), QLineEdit.TrailingPosition)

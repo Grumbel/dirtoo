@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import Sequence
 
 import argparse
 import sys
@@ -23,7 +23,7 @@ import os
 import shlex
 
 
-def parse_args(argv: List[str]) -> argparse.Namespace:
+def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Create files with unusual filenames for testing")
     parser.add_argument("DIRECTORY", nargs=1, help="Create files in DIRECTORY")
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
@@ -31,7 +31,7 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     return parser.parse_args(argv[1:])
 
 
-def main(argv: List[str]) -> int:
+def main(argv: Sequence[str]) -> int:
     args = parse_args(argv)
 
     files = [

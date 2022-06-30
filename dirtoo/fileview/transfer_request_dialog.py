@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import Sequence
 
 import html
 
@@ -34,7 +34,7 @@ class TransferRequestDialog(QDialog):
     Copy = 3
     Link = 4
 
-    def __init__(self, source_files: List[str], target_directory: str, parent: QWidget) -> None:
+    def __init__(self, source_files: Sequence[str], target_directory: str, parent: QWidget) -> None:
         super().__init__()
 
         self._source_files = source_files

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Sequence, Optional
 
 import logging
 import subprocess
@@ -65,8 +65,8 @@ class Executor:
     def launch_single_from_exec(self, exec_str: str, location: Location) -> None:
         filename = self.app.vfs.get_stdio_name(location)
 
-        def replace(lst: List[str], filename: str) -> List[str]:
-            result: List[str] = []
+        def replace(lst: Sequence[str], filename: str) -> list[str]:
+            result: list[str] = []
             for x in lst:
                 if x in ["%f", "%u", "%F", "%U"]:
                     result.append(filename)
@@ -79,11 +79,11 @@ class Executor:
         argv = replace(argv, filename)
         self.launch(argv)
 
-    def launch_multi_from_exec(self, exec_str: str, locations: List[Location]) -> None:
+    def launch_multi_from_exec(self, exec_str: str, locations: Sequence[Location]) -> None:
         files = [self.app.vfs.get_stdio_name(location) for location in locations]
 
-        def expand_multi(exe: List[str], files: List[str]) -> List[str]:
-            result: List[str] = []
+        def expand_multi(exe: Sequence[str], files: Sequence[str]) -> list[str]:
+            result: list[str] = []
             for x in exe:
                 if x == "%F" or x == "%U":
                     result += files
@@ -91,8 +91,8 @@ class Executor:
                     result.append(x)
             return result
 
-        def expand_single(exe: List[str], filename: str) -> List[str]:
-            result: List[str] = []
+        def expand_single(exe: Sequence[str], filename: str) -> list[str]:
+            result: list[str] = []
             for x in exe:
                 if x == "%f" or x == "%u":
                     result.append(filename)
@@ -112,7 +112,7 @@ class Executor:
         else:
             logger.error("unhandled .desktop Exec: %s", exec_str)
 
-    def launch(self, argv: List[str]) -> None:
+    def launch(self, argv: Sequence[str]) -> None:
         logger.info("Launching: %s", argv)
         subprocess.Popen(argv)
 

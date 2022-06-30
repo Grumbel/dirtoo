@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Optional, List, Callable, TYPE_CHECKING
+from typing import Optional, Sequence, Callable, TYPE_CHECKING
 
 import logging
 
@@ -41,7 +41,7 @@ class TransferWorker(QObject):
 
     def __init__(self, fs: 'Filesystem',
                  action: Callable[[FileTransfer, str, str], None],
-                 sources: List[str], destination: str,
+                 sources: Sequence[str], destination: str,
                  mediator: Mediator, progress: Progress) -> None:
         super().__init__()
 
@@ -148,7 +148,7 @@ class GuiFileTransfer(QObject):
     sig_close_requested = pyqtSignal()
 
     def __init__(self, app: 'FileViewApplication', action: Callable[[FileTransfer, str, str], None],
-                 sources: List[str], destination: str) -> None:
+                 sources: Sequence[str], destination: str) -> None:
         super().__init__()
 
         self._app = app
@@ -207,7 +207,7 @@ class FilesystemOperations:
     def __init__(self, app: 'FileViewApplication') -> None:
         self._app = app
         self._rename_op = RenameOperation()
-        self._transfers: List[GuiFileTransfer] = []
+        self._transfers: list[GuiFileTransfer] = []
 
     def close(self) -> None:
         pass
@@ -215,18 +215,18 @@ class FilesystemOperations:
     def rename_location(self, location: Location, parent: Optional[QWidget] = None) -> None:
         self._rename_op.rename_location(location, parent)
 
-    def move_files(self, sources: List[str], destination: str) -> None:
+    def move_files(self, sources: Sequence[str], destination: str) -> None:
         self._transfer_files(FileTransfer.move, sources, destination)
         # transfer_dialog = TransferDialog(destination)
 
-    def copy_files(self, sources: List[str], destination: str) -> None:
+    def copy_files(self, sources: Sequence[str], destination: str) -> None:
         self._transfer_files(FileTransfer.copy, sources, destination)
 
-    def link_files(self, sources: List[str], destination: str) -> None:
+    def link_files(self, sources: Sequence[str], destination: str) -> None:
         self._transfer_files(FileTransfer.link, sources, destination)
 
     def _transfer_files(self, action: Callable[[FileTransfer, str, str], None],
-                        sources: List[str], destination: str) -> None:
+                        sources: Sequence[str], destination: str) -> None:
         transfer = GuiFileTransfer(self._app, action, sources, destination)
         transfer.sig_finished.connect(lambda transfer=transfer: self._cleanup_transfer(transfer))
         self._transfers.append(transfer)

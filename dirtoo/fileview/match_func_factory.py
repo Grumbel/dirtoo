@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Callable, Tuple, Any, Dict, Union
+from typing import Sequence, Callable, Tuple, Any, Dict, Union
 
 
 import datetime
@@ -80,13 +80,13 @@ class MatchFuncFactory:
 
     def __init__(self) -> None:
         self._functions: Dict[str, Callable[[str], MatchFunc]] = {}
-        self._docs: List[Tuple[List[str], str]] = []
+        self._docs: list[Tuple[Sequence[str], str]] = []
         self._register_defaults()
 
-    def get_docs(self) -> List[Tuple[List[str], str]]:
+    def get_docs(self) -> Sequence[Tuple[Sequence[str], str]]:
         return self._docs
 
-    def register_function(self, aliases: List[str], func: Callable[[str], MatchFunc], doc: str = "") -> None:
+    def register_function(self, aliases: Sequence[str], func: Callable[[str], MatchFunc], doc: str = "") -> None:
         self._docs.append((aliases, doc))
 
         for alias in aliases:

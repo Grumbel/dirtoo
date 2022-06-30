@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import Sequence
 
 import signal
 import argparse
@@ -29,7 +29,7 @@ from dirtoo.dbus_thumbnailer import DBusThumbnailer, DBusThumbnailerListener, DB
 from dirtoo.dbus_thumbnail_cache import DBusThumbnailCache
 
 
-def parse_args(argv: List[str]) -> argparse.Namespace:
+def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Make thumbnails for files")
     parser.add_argument("FILE", nargs='*')
     parser.add_argument('-f', '--flavor', metavar="FLAVOR", type=str, default="all",
@@ -65,12 +65,13 @@ class ThumbnailerProgressListener(DBusThumbnailerListener):
         # print("[Started]", handle)
         pass
 
-    def ready(self, handle: QVariant, urls: List[str], flavor: str) -> None:
+    def ready(self, handle: QVariant, urls: Sequence[str], flavor: str) -> None:
         if self.verbose:
             for url in urls:
                 print(url, "->", DBusThumbnailer.thumbnail_from_url(url, flavor))
 
-    def error(self, handle: QVariant, failed_uris: List[str], error_code: 'DBusThumbnailerError', message: str) -> None:
+    def error(self, handle: QVariant, failed_uris: Sequence[str],
+              error_code: 'DBusThumbnailerError', message: str) -> None:
         for uri in failed_uris:
             print("[Error {}] {}: {}".format(error_code, uri, message), file=sys.stderr)
 
@@ -88,7 +89,7 @@ def request_thumbnails_recursive(thumbnailer: DBusThumbnailer, directory: str, f
             request_thumbnails_recursive(thumbnailer, os.path.join(root, d), flavor)
 
 
-def request_thumbnails(thumbnailer: DBusThumbnailer, paths: List[str], flavor: str, recursive: bool) -> None:
+def request_thumbnails(thumbnailer: DBusThumbnailer, paths: Sequence[str], flavor: str, recursive: bool) -> None:
     if recursive:
         files = []
         dirs = []
@@ -104,7 +105,7 @@ def request_thumbnails(thumbnailer: DBusThumbnailer, paths: List[str], flavor: s
         thumbnailer.queue(paths, flavor)
 
 
-def main(argv: List[str]) -> int:
+def main(argv: Sequence[str]) -> int:
     args = parse_args(argv)
 
     signal.signal(signal.SIGINT, signal.SIG_DFL)

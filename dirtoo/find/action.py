@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Tuple
+from typing import Tuple
 
 import os
 import shlex
@@ -98,7 +98,7 @@ class MultiAction(Action):
     def __init__(self) -> None:
         super().__init__()
 
-        self.actions: List[Action] = []
+        self.actions: list[Action] = []
 
     def add(self, action: Action) -> None:
         self.actions.append(action)
@@ -123,7 +123,7 @@ class ExecAction(Action):
 
         self.on_file_cmd = None
         self.on_multi_cmd = None
-        self.all_files: List[str] = []
+        self.all_files: list[str] = []
 
         cmd = shlex.split(exec_str)
 
@@ -159,7 +159,7 @@ class ExprSorterAction(Action):
         self.find_action = find_action
         self.reverse = reverse
 
-        self.files: List[Tuple[str, str]] = []
+        self.files: list[Tuple[str, str]] = []
 
         self.ctx = Context()
         self.global_vars = globals().copy()
@@ -172,7 +172,7 @@ class ExprSorterAction(Action):
         pass
 
     def finish(self) -> None:
-        files3: List[Tuple[str, str, str]] = []
+        files3: list[Tuple[str, str, str]] = []
         if self.expr:
             for root, filename in self.files:
                 fullpath = os.path.join(root, filename)

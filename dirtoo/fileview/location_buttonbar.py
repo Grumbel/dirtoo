@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, Any, Optional, List, Tuple
+from typing import TYPE_CHECKING, Any, Optional, Tuple
 
 from PyQt5.QtCore import Qt, QPoint, QSize
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QSizePolicy
@@ -68,7 +68,7 @@ class LocationButtonBar(QWidget):
 
         self._controller = controller
         self._location: Optional[Location] = None
-        self._buttons: List[Tuple[Location, LocationButton]] = []
+        self._buttons: list[Tuple[Location, LocationButton]] = []
 
     def set_location(self, location: Location) -> None:
         self._location = location

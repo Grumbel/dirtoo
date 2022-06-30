@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Dict, List, Any, Optional
+from typing import Dict, Sequence, Any, Optional
 import logging
 
 import os
@@ -160,7 +160,7 @@ class FileInfo:
     def mtime(self) -> float:
         return self._stat.st_mtime if self._stat is not None else 0
 
-    def get_metadata_keys(self) -> List[str]:
+    def get_metadata_keys(self) -> Sequence[str]:
         return list(self._metadata.keys())
 
     def get_metadata(self, name: str) -> Any:

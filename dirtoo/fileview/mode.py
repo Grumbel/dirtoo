@@ -114,7 +114,7 @@ class IconMode(Mode):
         self._tile_style.set_tile_size(tn_width, tn_height + 16 * k)
 
 
-class ListMode(Mode):
+class SequenceMode(Mode):
 
     def __init__(self, parent: 'FileView') -> None:
         super().__init__(parent)

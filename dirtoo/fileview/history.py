@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Optional
+from typing import Sequence, Optional
 
 import logging
 import sqlite3
@@ -43,14 +43,14 @@ class SqlHistory:
                          "date REAL, "
                          "location TEXT)")
 
-    def get_entries(self, limit: Optional[int] = None) -> List[Location]:
+    def get_entries(self, limit: Optional[int] = None) -> Sequence[Location]:
         c = self._db.cursor()
         c.execute("SELECT group_id, date, location "
                   "FROM history "
                   "ORDER BY date DESC" +
                   (" LIMIT {}".format(limit) if limit is not None else ""))
 
-        results: List[Location] = []
+        results: list[Location] = []
         for group_id, date, location_url in c.fetchall():
             try:
                 loc = Location.from_url(location_url)
@@ -61,8 +61,8 @@ class SqlHistory:
 
         return results
 
-    def get_unique_entries(self, limit: Optional[int] = None) -> List[Location]:
-        entries: List[Location] = []
+    def get_unique_entries(self, limit: Optional[int] = None) -> Sequence[Location]:
+        entries: list[Location] = []
         for entry in self.get_entries(1000):
             if entry not in entries:
                 entries.append(entry)
@@ -80,7 +80,7 @@ class SqlHistory:
         c.execute("COMMIT")
         self._db.commit()
 
-    def append_group(self, locations: List[Location]) -> None:
+    def append_group(self, locations: Sequence[Location]) -> None:
         insertion_time = time.time()
 
         c = self._db.cursor()

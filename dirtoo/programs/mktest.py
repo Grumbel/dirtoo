@@ -15,14 +15,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import Sequence
 
 import argparse
 import sys
 import os
 
 
-def parse_args(argv: List[str]) -> argparse.Namespace:
+def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Create create a file hierachy for testing")
     parser.add_argument("DIRECTORY", nargs=1, help="Create files in DIRECTORY")
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
@@ -57,7 +57,7 @@ def make_test(path: str, depth: int, args: argparse.Namespace) -> None:
             make_test(outdir, depth - 1, args)
 
 
-def main(argv: List[str]) -> int:
+def main(argv: Sequence[str]) -> int:
     args = parse_args(argv)
 
     directory = args.DIRECTORY[0]

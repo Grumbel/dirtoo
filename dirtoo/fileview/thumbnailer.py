@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, List, Callable, Dict, Optional, Set
+from typing import TYPE_CHECKING, Sequence, Callable, Dict, Optional, Set
 
 import logging
 import os
@@ -50,10 +50,10 @@ class WorkerDBusThumbnailerListener(DBusThumbnailerListener):
     def started(self, handle: QVariant) -> None:
         self._worker.on_thumbnail_started(handle)
 
-    def ready(self, handle: QVariant, urls: List[str], flavor: str) -> None:
+    def ready(self, handle: QVariant, urls: Sequence[str], flavor: str) -> None:
         self._worker.on_thumbnail_ready(handle, urls, flavor)
 
-    def error(self, handle: QVariant, uris: List[str], error_code: DBusThumbnailerError, message: str) -> None:
+    def error(self, handle: QVariant, uris: Sequence[str], error_code: DBusThumbnailerError, message: str) -> None:
         self._worker.on_thumbnail_error(handle, uris, error_code, message)
 
     def finished(self, handle: QVariant) -> None:
@@ -83,10 +83,10 @@ class ThumbnailerWorker(QObject):
         self._close = False
 
         self._dbus_thumbnailer: Optional[DBusThumbnailer] = None
-        self._queued_requests: Dict[int, List[ThumbnailRequest]] = defaultdict(list)
+        self._queued_requests: Dict[int, list[ThumbnailRequest]] = defaultdict(list)
 
         self._timer_id = 0
-        self._thumbnail_requests: List[ThumbnailRequest] = []
+        self._thumbnail_requests: list[ThumbnailRequest] = []
 
         self._supported_uri_types: Set[str] = set()
         self._supported_mime_types: Set[str] = set([
@@ -120,7 +120,7 @@ class ThumbnailerWorker(QObject):
         del self._dbus_thumbnailer
 
     def timerEvent(self, ev: QTimerEvent) -> None:
-        req_by_flavor: defaultdict[str, List[ThumbnailRequest]] = defaultdict(list)
+        req_by_flavor: defaultdict[str, list[ThumbnailRequest]] = defaultdict(list)
         for req in self._thumbnail_requests:
             req_by_flavor[req.flavor].append(req)
 
@@ -168,7 +168,7 @@ class ThumbnailerWorker(QObject):
     def on_thumbnail_finished(self, handle: int) -> None:
         del self._queued_requests[handle]
 
-    def _find_requests(self, handle: QVariant, urls: List[str]) -> List[ThumbnailRequest]:
+    def _find_requests(self, handle: QVariant, urls: Sequence[str]) -> Sequence[ThumbnailRequest]:
         results = []
         for req in self._queued_requests.get(handle, []):
             req_url = self._vfs.get_stdio_url(req.location)
@@ -176,7 +176,7 @@ class ThumbnailerWorker(QObject):
                 results.append(req)
         return results
 
-    def on_thumbnail_ready(self, handle: int, urls: List[str], flavor: str) -> None:
+    def on_thumbnail_ready(self, handle: int, urls: Sequence[str], flavor: str) -> None:
         reqs = self._find_requests(handle, urls)
 
         for req in reqs:
@@ -189,7 +189,8 @@ class ThumbnailerWorker(QObject):
 
             self.sig_thumbnail_ready.emit(req.location, req.flavor, req.callback, image)
 
-    def on_thumbnail_error(self, handle: int, urls: List[str], error_code: DBusThumbnailerError, message: str) -> None:
+    def on_thumbnail_error(self, handle: int, urls: Sequence[str],
+                           error_code: DBusThumbnailerError, message: str) -> None:
         reqs = self._find_requests(handle, urls)
         for req in reqs:
             self.sig_thumbnail_error.emit(req.location, req.flavor, req.callback, error_code, message)
@@ -242,7 +243,7 @@ class Thumbnailer(QObject):
         logger.debug("Thumbnailer.request_thumbnail: %s  %s", location, flavor)
         self.sig_thumbnail_requested.emit(location, flavor, force, callback)
 
-    def delete_thumbnails(self, files: List[str]) -> None:
+    def delete_thumbnails(self, files: Sequence[str]) -> None:
         logger.warning("Thumbnailer.delete_thumbnail (not implemented): %s", files)
 
     def on_thumbnail_ready(self, location: Location, flavor: str,

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Optional
+from typing import Sequence, Optional
 
 import argparse
 import os
@@ -30,7 +30,7 @@ from dirtoo.xdg_desktop import get_desktop_file
 # https://standards.freedesktop.org/desktop-entry-spec/latest/
 
 
-def parse_args(argv: List[str]) -> argparse.Namespace:
+def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Query the systems .desktop files")
 
     group = parser.add_mutually_exclusive_group(required=True)
@@ -45,7 +45,7 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     return parser.parse_args(argv[1:])
 
 
-def main(argv: List[str]) -> int:
+def main(argv: Sequence[str]) -> int:
     args = parse_args(argv)
 
     if args.list_dirs:

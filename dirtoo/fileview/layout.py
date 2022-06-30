@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Sequence, Optional
 
 import math
 from enum import Enum
@@ -109,7 +109,7 @@ class HBoxLayout(Layout):
     def __init__(self) -> None:
         super().__init__()
 
-        self.children: List[Layout] = []
+        self.children: list[Layout] = []
 
     def add(self, child: Layout) -> None:
         self.children.append(child)
@@ -197,7 +197,7 @@ class TileLayout(Layout):
         self.style = style
         self.group = group
 
-        self.items: List[QGraphicsItem] = []
+        self.items: list[QGraphicsItem] = []
 
         self.rows = 0
         self.columns = 0
@@ -207,8 +207,8 @@ class TileLayout(Layout):
 
         self.center_x_off = 0
 
-    def set_items(self, items: List[QGraphicsItem]) -> None:
-        self.items = items
+    def set_items(self, items: Sequence[QGraphicsItem]) -> None:
+        self.items = list(items)
 
     def append_item(self, item: QGraphicsItem) -> None:
         self.items.append(item)

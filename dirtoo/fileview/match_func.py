@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, Callable, Any, List, Union, Tuple
+from typing import TYPE_CHECKING, Callable, Any, Sequence, Union, Tuple
 from abc import ABC, abstractmethod
 
 import logging
@@ -59,7 +59,7 @@ class TrueMatchFunc(MatchFunc):
 
 class OrMatchFunc(MatchFunc):
 
-    def __init__(self, funcs: List[MatchFunc]) -> None:
+    def __init__(self, funcs: Sequence[MatchFunc]) -> None:
         self._funcs = funcs
 
     def __call__(self, fileinfo: 'FileInfo') -> bool:
@@ -71,7 +71,7 @@ class OrMatchFunc(MatchFunc):
 
 class AndMatchFunc(MatchFunc):
 
-    def __init__(self, funcs: List[MatchFunc]) -> None:
+    def __init__(self, funcs: Sequence[MatchFunc]) -> None:
         self._funcs = funcs
 
     def __call__(self, fileinfo: 'FileInfo') -> bool:

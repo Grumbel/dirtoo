@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, cast, List, Set, Tuple, Optional
+from typing import TYPE_CHECKING, cast, Sequence, Set, Tuple, Optional
 
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtGui import QIcon
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 
 class ItemContextMenu(Menu):
 
-    def __init__(self, controller: 'Controller', fileinfos: List['FileInfo']) -> None:
+    def __init__(self, controller: 'Controller', fileinfos: Sequence['FileInfo']) -> None:
         super().__init__()
 
         self._controller = controller
@@ -98,18 +98,18 @@ class ItemContextMenu(Menu):
             left_func, middle_func)
         self.addSeparator()
 
-    def _get_supported_apps(self, files: List[Location]) -> Tuple[Set[str], Set[str]]:
+    def _get_supported_apps(self, files: Sequence[Location]) -> Tuple[Set[str], Set[str]]:
         mimetypes: Set[str] = set(
             self._controller.app.mime_database.get_mime_type(location).name()
             for location in files
         )
 
-        apps_default_sets: List[Set[Optional[str]]] = [
+        apps_default_sets: Sequence[Set[Optional[str]]] = [
             set(self._controller.app.mime_associations.get_default_apps(mimetype))
             for mimetype in mimetypes
         ]
 
-        apps_other_sets: List[Set[Optional[str]]] = [
+        apps_other_sets: Sequence[Set[Optional[str]]] = [
             set(self._controller.app.mime_associations.get_associations(mimetype))
             for mimetype in mimetypes
         ]
@@ -129,20 +129,20 @@ class ItemContextMenu(Menu):
         return cast(Tuple[Set[str], Set[str]], (default_apps, other_apps))
 
     def _build_open_menu(self) -> None:
-        files: List[Location] = [fi.location() for fi in self._fileinfos]
+        files: Sequence[Location] = [fi.location() for fi in self._fileinfos]
 
         default_apps, other_apps = self._get_supported_apps(files)
 
         def make_launcher_menu(menu: QMenu, apps: Set[str]) -> None:
-            entries: List[DesktopEntry] = [x
-                                           for x in (get_desktop_entry(app)
-                                                     for app in apps)
-                                           if x is not None]
+            entries: Sequence[DesktopEntry] = [x
+                                               for x in (get_desktop_entry(app)
+                                                         for app in apps)
+                                               if x is not None]
             entries = sorted(entries, key=lambda x: cast(str, x.getName()))
             for entry in entries:
                 action = menu.addAction(QIcon.fromTheme(entry.getIcon()), "Open With {}".format(entry.getName()))
 
-                def on_action(checked: bool, exe: str = entry.getExec(), files: List[Location] = files) -> None:
+                def on_action(checked: bool, exe: str = entry.getExec(), files: Sequence[Location] = files) -> None:
                     self._controller.app.file_history.append_group(files)
                     self._controller.app.executor.launch_multi_from_exec(exe, files)
 

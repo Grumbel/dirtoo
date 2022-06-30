@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Optional
+from typing import Sequence, Optional
 
 import logging
 
@@ -29,7 +29,7 @@ from dirtoo.find.util import find_files
 logger = logging.getLogger(__name__)
 
 
-def parse_args(argv: List[str], simple: bool) -> argparse.Namespace:
+def parse_args(argv: Sequence[str], simple: bool) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Find files")
 
     if simple:
@@ -133,7 +133,7 @@ def create_sorter_wrapper(args: argparse.Namespace, find_action: Action) -> Acti
         return ExprSorterAction(args.sort, args.reverse, find_action)
 
 
-def main(argv: List[str], simple: bool) -> None:
+def main(argv: Sequence[str], simple: bool) -> None:
     args = parse_args(argv, simple)
 
     if args.debug:

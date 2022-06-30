@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, Sequence, cast
 
 import argparse
 import os
@@ -30,7 +30,7 @@ from dirtoo.fileview.stdio_filesystem import StdioFilesystem
 from dirtoo.location import Location
 
 
-def parse_args(argv: List[str]) -> argparse.Namespace:
+def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate and show file metadata")
     parser.add_argument("FILE", nargs='+')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
@@ -42,7 +42,7 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     return parser.parse_args(argv[1:])
 
 
-def main(argv: List[str]) -> int:
+def main(argv: Sequence[str]) -> int:
     args = parse_args(argv)
 
     signal.signal(signal.SIGINT, signal.SIG_DFL)

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Dict, Callable, Any
+from typing import Sequence, Dict, Callable, Any
 
 import logging
 import signal
@@ -42,7 +42,7 @@ from dirtoo.fileview.transfer_request_dialog import TransferRequestDialog
 logger = logging.getLogger(__name__)
 
 
-def parse_args(argv: List[str]) -> argparse.Namespace:
+def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Test GUI Widgets")
     parser.add_argument("DIALOG", nargs='?')
     parser.add_argument("-l", "--list", action='store_true', default=False,
@@ -110,7 +110,7 @@ class TransferDialogTest(QObject):
         self.sig_transfer_completed.emit()
 
 
-g_keep_alive: List[Any] = []
+g_keep_alive: list[Any] = []
 
 
 def make_transfer_dialog() -> TransferDialog:
@@ -128,7 +128,7 @@ def make_transfer_dialog() -> TransferDialog:
     return dialog
 
 
-def main(argv: List[str]) -> None:
+def main(argv: Sequence[str]) -> None:
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
     args = parse_args(argv)

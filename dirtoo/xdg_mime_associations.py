@@ -15,19 +15,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Any, List, Set, Dict
+from typing import Any, Sequence, Set, Dict
 
 from xdg.IniFile import IniFile
 import os
 import collections
 
 
-def unique(lst: List[Any]) -> List[Any]:
+def unique(lst: Sequence[Any]) -> list[Any]:
     """Remove duplicate elements from a list."""
     return list(collections.OrderedDict.fromkeys(lst))
 
 
-def generate_mimeapps_filenames() -> List[str]:
+def generate_mimeapps_filenames() -> Sequence[str]:
     from xdg.BaseDirectory import (xdg_config_home, xdg_config_dirs,
                                    xdg_data_dirs)
 
@@ -56,7 +56,7 @@ def generate_mimeapps_filenames() -> List[str]:
     return results
 
 
-def generate_mimeinfo_filenames() -> List[str]:
+def generate_mimeinfo_filenames() -> Sequence[str]:
     from xdg.BaseDirectory import xdg_data_dirs
 
     results = []
@@ -81,10 +81,10 @@ class XdgMimeAssociations:
         return db
 
     def __init__(self) -> None:
-        self.default_mime2desktop: Dict[str, List[str]] = {}
+        self.default_mime2desktop: Dict[str, list[str]] = {}
         self.mime2desktop: Dict[str, Set[str]] = {}
-        self.mimeinfos: List[str] = []
-        self.mimeapps: List[str] = []
+        self.mimeinfos: Sequence[str] = []
+        self.mimeapps: Sequence[str] = []
 
     def _read_mimeinfos(self) -> None:
         assert not self.mimeinfos
@@ -145,10 +145,10 @@ class XdgMimeAssociations:
         if s and app in s:
             s.remove(app)
 
-    def get_default_apps(self, mimetype: str) -> List[str]:
+    def get_default_apps(self, mimetype: str) -> Sequence[str]:
         return self.default_mime2desktop.get(mimetype, [])
 
-    def get_associations(self, mimetype: str) -> List[str]:
+    def get_associations(self, mimetype: str) -> Sequence[str]:
         return list(self.mime2desktop.get(mimetype, []))
 
 

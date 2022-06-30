@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import Sequence
 
 import argparse
 import logging
@@ -29,7 +29,7 @@ from PyQt5.QtWidgets import QApplication
 logger = logging.getLogger(__name__)
 
 
-def parse_args(argv: List[str]) -> argparse.Namespace:
+def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Find icons")
     parser.add_argument("ICON", nargs='*')
     parser.add_argument("-l", "--list", action='store_true', default=False,
@@ -39,7 +39,7 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     return parser.parse_args(argv[1:])
 
 
-def main(argv: List[str]) -> None:
+def main(argv: Sequence[str]) -> None:
     args = parse_args(argv)
 
     app = QApplication([])  # noqa: F841

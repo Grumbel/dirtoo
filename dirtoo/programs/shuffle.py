@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import cast, List
+from typing import cast, Sequence
 
 import logging
 
@@ -28,7 +28,7 @@ from dirtoo.util import read_lines_from_files
 logger = logging.getLogger(__name__)
 
 
-def parse_args(argv: List[str]) -> argparse.Namespace:
+def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Shuffle lines")
 
     parser.add_argument("FILE", nargs='*')
@@ -41,7 +41,7 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     return parser.parse_args(argv[1:])
 
 
-def main(argv: List[str]) -> None:
+def main(argv: Sequence[str]) -> None:
     logging.basicConfig(level=logging.WARNING)
 
     args = parse_args(argv)

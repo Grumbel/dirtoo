@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Tuple, Optional
+from typing import Sequence, Tuple, Optional
 
 import logging
 import os
@@ -71,7 +71,7 @@ class ArchiveExtractor(WorkerThread):
 
         self._archive_path = archive_path
         self._outdir = outdir
-        self._extracted_entries: List[Tuple[str, str]] = []
+        self._extracted_entries: list[Tuple[str, str]] = []
         self._result: Optional[ExtractorResult] = None
 
         stat = os.stat(self._archive_path)
@@ -104,7 +104,7 @@ class ArchiveExtractor(WorkerThread):
         assert self._result is not None
         return self._result
 
-    def get_entries(self) -> List[str]:
+    def get_entries(self) -> Sequence[str]:
         return [i[0] for i in self._extracted_entries]
 
     # FIXME: this doesn't really belong in this class

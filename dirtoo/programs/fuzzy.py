@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, IO, Optional
+from typing import Sequence, IO, Optional
 
 import sys
 import argparse
@@ -23,7 +23,7 @@ import argparse
 from dirtoo.fuzzy import fuzzy
 
 
-def parse_args(argv: List[str]) -> argparse.Namespace:
+def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Seach for fuzzily file content")
     parser.add_argument("QUERY", nargs=1)
     parser.add_argument("FILE", nargs='*')
@@ -58,7 +58,7 @@ class FuzzyOptions:
         self.threshold = threshold
 
 
-def main(argv: List[str]) -> None:
+def main(argv: Sequence[str]) -> None:
     args = parse_args(argv)
 
     query = args.QUERY[0]

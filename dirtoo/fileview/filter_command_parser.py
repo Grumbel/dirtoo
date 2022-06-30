@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Any, Dict, Callable, List, Union, Tuple, Optional
+from typing import Any, Dict, Callable, Sequence, Union, Tuple, Optional
 
 import logging
 import operator
@@ -57,7 +57,7 @@ def get_compare_operator(text: str) -> Callable[[Any, Any], bool]:
 class FilterCommandParser:
 
     def __init__(self) -> None:
-        self._commands: Dict[str, Tuple[List[str], Callable[[Any], Any], Optional[str]]] = {}
+        self._commands: Dict[str, Tuple[Sequence[str], Callable[[Any], Any], Optional[str]]] = {}
         self._register_commands()
 
     def parse(self, pattern: str) -> None:
@@ -72,7 +72,7 @@ class FilterCommandParser:
             func(args)
 
     def register_command(self,
-                         aliases: Union[str, List[str]],
+                         aliases: Union[str, Sequence[str]],
                          func: Callable[[Any], Any],
                          help: Optional[str] = None) -> None:
         if isinstance(aliases, list):
@@ -80,6 +80,7 @@ class FilterCommandParser:
                 assert name not in self._commands
                 self._commands[name] = (aliases, func, help)
         else:
+            assert isinstance(aliases, str)
             self._commands[aliases] = ([aliases], func, help)
 
     def _register_commands(self) -> None:

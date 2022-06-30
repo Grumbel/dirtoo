@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, Callable, Optional, Dict, List, Tuple
+from typing import TYPE_CHECKING, Callable, Optional, Dict, Sequence, Tuple
 
 import logging
 
@@ -61,7 +61,7 @@ class DirectoryThumbnailerTask(QObject):
             self._fileinfo = self._app.vfs.get_fileinfo(origin)
         self._stream = self._app.vfs.opendir(location)
 
-        self._thumbnails: List[QImage] = []
+        self._thumbnails: list[QImage] = []
         self._fileinfo_idx = 0
 
         self._file_collection = FileCollection()
@@ -97,7 +97,7 @@ class DirectoryThumbnailerTask(QObject):
         # print("_on_finished")
         pass
 
-    def _on_scandir_finished(self, fileinfos: List['FileInfo']) -> None:
+    def _on_scandir_finished(self, fileinfos: Sequence['FileInfo']) -> None:
         # print("_on_scandir_finished:")
         assert self._file_collection is not None
         self._file_collection.set_fileinfos(fileinfos)
@@ -146,7 +146,7 @@ class DirectoryThumbnailerTask(QObject):
                                QPainter.Antialiasing)
 
         # (x1, y1, x2, y2) coordinates normalized to [0 - 1] for thumbnail arrangement
-        specs: Dict[int, List[Tuple[float, ...]]] = {
+        specs: Dict[int, Sequence[Tuple[float, ...]]] = {
             0: [],
 
             1: [(0, 0, 1, 1)],
@@ -224,7 +224,7 @@ class DirectoryThumbnailerWorker(Worker):
         self._app = app
 
         self._task: Optional[DirectoryThumbnailerTask] = None
-        self._queue: List[Tuple[Location, ThumbnailCallback]] = []
+        self._queue: list[Tuple[Location, ThumbnailCallback]] = []
 
         self.sig_thumbnail_requested.connect(self._on_thumbnail_requested)
 

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import IO, List, Optional, Type, Generic, TypeVar
+from typing import IO, Sequence, Optional, Type, Generic, TypeVar
 from types import TracebackType
 
 
@@ -55,8 +55,8 @@ class TeeIO(Generic[T]):
         self._output_fd.write(line)
         return line
 
-    def readlines(self, hint: int = -1) -> List[T]:
-        lines: List[T] = self._input_fd.readlines(hint)
+    def readlines(self, hint: int = -1) -> Sequence[T]:
+        lines: Sequence[T] = self._input_fd.readlines(hint)
         for line in lines:
             self._output_fd.write(line)
         return lines

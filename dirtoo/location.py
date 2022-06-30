@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, NamedTuple, Optional, Tuple
+from typing import Sequence, NamedTuple, Optional, Tuple
 
 import urllib.parse
 import logging
@@ -88,7 +88,7 @@ class Location:
 
             abspath = os.path.normpath(abspath)
 
-            payloads: List[Payload] = []
+            payloads: list[Payload] = []
             for payload_spec in payload_specs:
                 payload = payload_spec.split(":", 1)
                 if len(payload) == 1:
@@ -98,12 +98,13 @@ class Location:
 
             return Location(protocol, abspath, payloads)
 
-    def __init__(self, protocol: str, abspath: str, payloads: List[Payload]) -> None:
+    def __init__(self, protocol: str, abspath: str, payloads: Sequence[Payload]) -> None:
         assert os.path.isabs(abspath)
 
+        # FIXME: make this Final and Sequence
         self._protocol: str = protocol
         self._path: str = abspath
-        self._payloads: List[Payload] = payloads
+        self._payloads: list[Payload] = list(payloads)
 
     def has_payload(self) -> bool:
         return self._payloads != []
@@ -139,11 +140,11 @@ class Location:
         else:
             return "{}".format(os.path.basename(self._payloads[-1].path))
 
-    def ancestry(self) -> List['Location']:
+    def ancestry(self) -> Sequence['Location']:
         """Return a list of parents of this Location as well as the Location
         itself."""
 
-        ancestry: List['Location'] = [self]
+        ancestry: list['Location'] = [self]
 
         last_parent = self
         while True:

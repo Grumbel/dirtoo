@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Tuple
+from typing import Sequence, Tuple
 
 import argparse
 import sys
@@ -26,7 +26,7 @@ from dirtoo.format import progressbar
 import dirtoo.duration as duration
 
 
-def parse_args(argv: List[str]) -> argparse.Namespace:
+def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Sleep with progressbar")
     parser.add_argument("TIME", nargs=1, type=parse_duration)
     parser.add_argument('-q', '--quiet', action='store_true', default=False,
@@ -69,7 +69,7 @@ def print_time(p: float, total: float, countdown: bool) -> None:
         progressbar(columns - 24, int(p * 1000), int(total * 1000))))
 
 
-def main(argv: List[str]) -> None:
+def main(argv: Sequence[str]) -> None:
     args = parse_args(argv)
 
     total = args.TIME[0]

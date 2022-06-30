@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import Sequence
 
 import argparse
 import os
@@ -25,7 +25,7 @@ from dirtoo.file_transfer import FileTransfer, ConsoleMediator, ConsoleProgress,
 from dirtoo.filesystem import Filesystem
 
 
-def parse_args(action: str, argv: List[str]) -> argparse.Namespace:
+def parse_args(action: str, argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="{} files and directories.".format(action.capitalize()))
 
     parser.add_argument('FILE', action='store', nargs='+',
@@ -45,7 +45,7 @@ def parse_args(action: str, argv: List[str]) -> argparse.Namespace:
     return parser.parse_args(argv[1:])
 
 
-def main(action: str, argv: List[str]) -> None:
+def main(action: str, argv: Sequence[str]) -> None:
     args = parse_args(action, argv)
 
     sources = [os.path.normpath(p) for p in args.FILE]

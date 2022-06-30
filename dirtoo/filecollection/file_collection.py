@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import cast, overload, Iterable, Optional, Dict, List, Union
+from typing import cast, overload, Iterable, Optional, Dict, Sequence, Union
 
 import logging
 
@@ -71,7 +71,7 @@ class FileCollection(QObject):
         self._filter: Filter = Filter()
         self._sorter: Sorter = Sorter()
 
-        self._location2fileinfo: Dict[Location, List[FileInfo]] = defaultdict(list)
+        self._location2fileinfo: Dict[Location, list[FileInfo]] = defaultdict(list)
         self._fileinfos: SortedList[FileInfo] = SortedList(key=self._sorter.get_key_func())
 
     def clear(self) -> None:
@@ -152,7 +152,7 @@ class FileCollection(QObject):
             logger.debug("FileCollection.close_file: %s: KeyError", fileinfo)
             self.sig_file_closed.emit(fileinfo)
 
-    def get_fileinfos(self) -> List[FileInfo]:
+    def get_fileinfos(self) -> Sequence[FileInfo]:
         if self._sorter.reverse:
             return list(reversed(self._fileinfos))
         else:

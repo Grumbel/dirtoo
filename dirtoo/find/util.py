@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, cast, List, Any
+from typing import TYPE_CHECKING, cast, Sequence, Any
 
 import os
 import fnmatch
@@ -35,8 +35,8 @@ def name_match(filename: str, glob: str) -> bool:
     return fnmatch.fnmatch(filename, glob)
 
 
-def replace_item(lst: List[Any], needle: Any, replacements: List[Any]) -> List[Any]:
-    result: List[Any] = []
+def replace_item(lst: Sequence[Any], needle: Any, replacements: Sequence[Any]) -> list[Any]:
+    result: list[Any] = []
     for i in lst:
         if i == needle:
             result += replacements

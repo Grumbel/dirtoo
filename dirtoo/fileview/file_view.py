@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, cast, List, Dict, Optional, Set
+from typing import TYPE_CHECKING, cast, Sequence, Dict, Optional, Set
 
 import logging
 
@@ -37,7 +37,7 @@ from dirtoo.fileview.file_view_style import FileViewStyle
 from dirtoo.fileview.layout import RootLayout
 from dirtoo.fileview.layout_builder import LayoutBuilder
 from dirtoo.fileview.leap_widget import LeapWidget
-from dirtoo.fileview.mode import Mode, IconMode, ListMode, DetailMode, FileItemStyle
+from dirtoo.fileview.mode import Mode, IconMode, SequenceMode, DetailMode, FileItemStyle
 from dirtoo.fileview.settings import settings
 from dirtoo.location import Location
 
@@ -61,7 +61,7 @@ class FileView(QGraphicsView):
 
         self._show_filtered = False
 
-        self._location2item: Dict[Location, List[FileItem]] = defaultdict(list)
+        self._location2item: Dict[Location, list[FileItem]] = defaultdict(list)
         self.setAcceptDrops(True)
 
         self._scene = FileGraphicsScene()
@@ -72,16 +72,15 @@ class FileView(QGraphicsView):
 
         self._style = FileViewStyle()
 
-        self._modes: List[Mode] = [
-            IconMode(self),
-            ListMode(self),
+        self._modes: Sequence[Mode] = [
+            IconMode(self), SequenceMode(self),
             DetailMode(self)
         ]
         self._mode = self._modes[FileItemStyle.ICON.value]
 
         self._layout: Optional[RootLayout] = None
 
-        self._items: List[FileItem] = []
+        self._items: list[FileItem] = []
 
         self._file_collection: Optional[FileCollection] = None
 
@@ -157,7 +156,7 @@ class FileView(QGraphicsView):
         self._controller._update_info()
 
     def cursor_move(self, dx: int, dy: int) -> None:
-        def best_item(items: List[FileItem], rect: QRectF) -> FileItem:
+        def best_item(items: Sequence[FileItem], rect: QRectF) -> FileItem:
             """Select the most top/left and fully visible item"""
             def contains(item: FileItem) -> bool:
                 r = QRectF(item.tile_rect)
@@ -171,7 +170,7 @@ class FileView(QGraphicsView):
 
         if self._cursor_item is None:
             rect = self.mapToScene(self.rect()).boundingRect()
-            items: List[FileItem] = [item for item in self._scene.items(rect) if isinstance(item, FileItem)]
+            items: Sequence[FileItem] = [item for item in self._scene.items(rect) if isinstance(item, FileItem)]
             if not items:
                 return
             else:

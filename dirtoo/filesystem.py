@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Any, List, Callable
+from typing import Any, Sequence, Callable
 
 import logging
 import os
@@ -67,7 +67,7 @@ class Filesystem:
     def lexists(self, path: str) -> bool:
         return os.path.lexists(path)
 
-    def listdir(self, path: str) -> List[str]:
+    def listdir(self, path: str) -> Sequence[str]:
         return os.listdir(path)
 
     def scandir(self, path: str) -> Any:

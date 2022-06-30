@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Dict, List, Any
+from typing import Dict, Sequence, Any
 
 import traceback
 import logging
@@ -47,7 +47,7 @@ class MetaDataCollectorWorker(QObject):
         self.mimedb = QMimeDatabase()
         self.cache = MetaDataCache()
 
-    def on_delete_metadata_requested(self, locations: List[Location]) -> None:
+    def on_delete_metadata_requested(self, locations: Sequence[Location]) -> None:
         for location in locations:
             abspath = self.vfs.get_stdio_name(location)
             self.cache.clear_metadata(abspath)
@@ -141,7 +141,7 @@ class MetaDataCollector(QObject):
     def request_metadata(self, location: Location) -> None:
         self.sig_request_metadata.emit(location)
 
-    def request_delete_metadatas(self, locations: List[Location]) -> None:
+    def request_delete_metadatas(self, locations: Sequence[Location]) -> None:
         self.sig_delete_metadatas.emit(locations)
 
     def _on_metadata_ready(self, location: Location, metadata: Any) -> None:

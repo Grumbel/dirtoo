@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import Sequence
 
 import argparse
 import sys
@@ -25,7 +25,7 @@ import sys
 from dirtoo.expr import Parser, Context
 
 
-def parse_args(argv: List[str]) -> argparse.Namespace:
+def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate expressions")
     parser.add_argument("EXPRESSION", nargs='+')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
@@ -33,7 +33,7 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     return parser.parse_args(argv[1:])
 
 
-def main(argv: List[str]) -> None:
+def main(argv: Sequence[str]) -> None:
     args = parse_args(argv)
 
     parser = Parser()

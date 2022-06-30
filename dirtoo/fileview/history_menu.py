@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Sequence
 
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QMenu
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from dirtoo.location import Location
 
 
-def make_history_menu_entries(controller: 'Controller', history_menu: QMenu, entries: List['Location']) -> None:
+def make_history_menu_entries(controller: 'Controller', history_menu: QMenu, entries: Sequence['Location']) -> None:
     icon = QIcon.fromTheme("folder")
     for entry in entries:
         action = history_menu.addDoubleAction(

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import cast, List
+from typing import cast
 
 import logging
 from pyparsing import ParserElement
@@ -141,8 +141,8 @@ class FilterExprParser:
 
         return expr
 
-    def _parse_tokens(self, tokens: ParseResults) -> List[ParseResults]:
-        result: List[ParseResults] = [ParseResults()]
+    def _parse_tokens(self, tokens: ParseResults) -> list[ParseResults]:
+        result: list[ParseResults] = [ParseResults()]
 
         for token in tokens:
             if isinstance(token, AndKeywordExpr):
@@ -163,9 +163,9 @@ class FilterExprParser:
         tokens = self._grammar.parseString(text, parseAll=True)
         parsed_tokens = self._parse_tokens(tokens)
 
-        or_funcs: List[MatchFunc] = []
+        or_funcs: list[MatchFunc] = []
         for tokens in parsed_tokens:
-            and_funcs: List[MatchFunc] = []
+            and_funcs: list[MatchFunc] = []
             for token in tokens:
                 and_funcs.append(self._make_func(token))
             and_funcs = sorted(and_funcs, key=lambda x: x.cost())

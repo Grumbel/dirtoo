@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Tuple
+from typing import Sequence, Tuple
 
 import os
 
@@ -38,7 +38,7 @@ class PathCompletionWorker(Worker):
         longest, candidates = self.complete(text)
         self.sig_completions_ready.emit(longest, candidates)
 
-    def candidates(self, text: str) -> List[str]:
+    def candidates(self, text: str) -> Sequence[str]:
         dirname = os.path.dirname(text)
         basename = os.path.basename(text)
 
@@ -57,7 +57,7 @@ class PathCompletionWorker(Worker):
 
         return sorted(candidates)
 
-    def complete(self, text: str) -> Tuple[str, List[str]]:
+    def complete(self, text: str) -> Tuple[str, Sequence[str]]:
         candidates = self.candidates(text)
 
         if candidates == []:

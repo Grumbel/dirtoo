@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List, Optional
+from typing import Optional
 
 import logging
 import os
@@ -61,7 +61,7 @@ class SevenZipExtractor(Extractor):
         self._outdir = outdir
 
         self._process: Optional[QProcess] = None
-        self._errors: List[str] = []
+        self._errors: list[str] = []
 
         self._error_summary = False
         self._result: Optional[ExtractorResult] = None

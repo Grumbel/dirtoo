@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
+from typing import Sequence
 
 import argparse
 import string
@@ -27,7 +27,7 @@ from dirtoo.mediainfo import MediaInfo
 from dirtoo.expr import Parser, Context
 
 
-def parse_args(argv: List[str]) -> argparse.Namespace:
+def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Wrapper around MediaInfo")
     parser.add_argument('PATH', action='store', nargs='+',
                         help='Files to scan')
