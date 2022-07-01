@@ -23,8 +23,8 @@ import urllib.parse
 
 from dirtoo.archive.archive_manager import ArchiveManager
 from dirtoo.file_info import FileInfo
-from dirtoo.fileview.archive_directory_watcher import ArchiveDirectoryWatcher
-from dirtoo.fileview.directory_watcher import DirectoryWatcher
+from dirtoo.watcher.archive_directory_watcher import ArchiveDirectoryWatcher
+from dirtoo.watcher.directory_watcher import DirectoryWatcher
 from dirtoo.location import Location
 
 logger = logging.getLogger(__name__)

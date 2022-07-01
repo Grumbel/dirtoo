@@ -26,7 +26,7 @@ from PyQt5.QtCore import QTimer
 
 from dirtoo.archive.archive_extractor import ArchiveExtractor
 from dirtoo.archive.extractor import ExtractorResultStatus
-from dirtoo.fileview.directory_watcher import DirectoryWatcher
+from dirtoo.watcher.directory_watcher import DirectoryWatcher
 from dirtoo.location import Location, Payload
 
 if TYPE_CHECKING:

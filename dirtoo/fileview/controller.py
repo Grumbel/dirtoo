@@ -33,7 +33,7 @@ from dirtoo.file_info import FileInfo
 from dirtoo.filecollection.filter import Filter
 from dirtoo.filecollection.sorter import Sorter
 from dirtoo.fileview.actions import Actions
-from dirtoo.fileview.directory_watcher import DirectoryWatcher
+from dirtoo.watcher.directory_watcher import DirectoryWatcher
 from dirtoo.fileview.file_item import FileItem
 from dirtoo.fileview.mode import FileItemStyle
 from dirtoo.fileview.filter_parser import FilterParser

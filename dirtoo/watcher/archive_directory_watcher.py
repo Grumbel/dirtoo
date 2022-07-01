@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 from PyQt5.QtCore import pyqtSignal
 
 if TYPE_CHECKING:
-    from dirtoo.fileview.directory_watcher import DirectoryWatcher
+    from dirtoo.watcher.directory_watcher import DirectoryWatcher
     from dirtoo.archive.archive_extractor import ArchiveExtractor
 
 

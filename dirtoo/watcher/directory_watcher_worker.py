@@ -1,5 +1,5 @@
 # dirtoo - File and directory manipulation tools for Python
-# Copyright (C) 2018 Ingo Ruhnke <grumbel@gmail.com>
+# Copyright (C) 2018-2022 Ingo Ruhnke <grumbel@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,19 +15,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Union
 
 import logging
 import traceback
 import os
 
-from PyQt5.QtCore import Qt, QObject, QSocketNotifier, QThread, pyqtSignal
-
-from inotify_simple import INotify, flags as inotify_flags
+from PyQt5.QtCore import QObject, pyqtSignal
+from inotify_simple import flags as inotify_flags
 import inotify_simple
 
 from dirtoo.file_info import FileInfo
 from dirtoo.location import Location
+from dirtoo.watcher.inotify_qt import INotifyQt
 
 if TYPE_CHECKING:
     from dirtoo.fileview.virtual_filesystem import VirtualFilesystem
@@ -35,45 +35,6 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
-
-
-DEFAULT_FLAGS = (
-    inotify_flags.CREATE |
-    inotify_flags.DELETE |
-    inotify_flags.DELETE_SELF |
-    inotify_flags.MOVE_SELF |
-    inotify_flags.MODIFY |
-    inotify_flags.ATTRIB |
-    inotify_flags.MOVED_FROM |
-    inotify_flags.MOVED_TO |
-    inotify_flags.CLOSE_WRITE
-)
-
-
-class INotifyQt(QObject):
-
-    sig_event = pyqtSignal(inotify_simple.Event)
-
-    def __init__(self, parent: Optional[QObject] = None) -> None:
-        super().__init__(parent)
-
-        self.inotify = INotify()
-        self.qnotifier = QSocketNotifier(self.inotify.fd, QSocketNotifier.Read)
-        self.qnotifier.activated.connect(self._on_activated)
-        self.wd = None
-
-    def add_watch(self, path: str, flags: inotify_flags = DEFAULT_FLAGS) -> None:
-        self.wd = self.inotify.add_watch(path, flags)
-
-    def _on_activated(self, fd: int) -> None:
-        assert fd == self.inotify.fd
-
-        for ev in self.inotify.read():
-            self.sig_event.emit(ev)
-
-    def close(self) -> None:
-        del self.qnotifier
-        self.inotify.close()
 
 
 class DirectoryWatcherWorker(QObject):
@@ -154,58 +115,6 @@ class DirectoryWatcherWorker(QObject):
         except Exception as err:
             print(traceback.format_exc())
             print("DirectoryWatcher:", err)
-
-
-class DirectoryWatcher(QObject):
-
-    sig_close_requested = pyqtSignal()
-
-    def __init__(self, vfs: Union['StdioFilesystem', 'VirtualFilesystem'], location: Location) -> None:
-        super().__init__()
-        self._worker = DirectoryWatcherWorker(vfs, location)
-        self._thread = QThread(self)
-        self._worker.moveToThread(self._thread)
-
-        self._thread.started.connect(self._worker.init)
-
-        # close() is a blocking connection so the thread is properly
-        # done after the signal was emit'ed and we don't have to fuss
-        # around with sig_finished() and other stuff
-        self.sig_close_requested.connect(self._worker.close, type=Qt.BlockingQueuedConnection)
-
-    def start(self) -> None:
-        self._thread.start()
-
-    def close(self) -> None:
-        assert self._worker._close is False
-        self._worker._close = True
-        self.sig_close_requested.emit()
-        self._thread.quit()
-        self._thread.wait()
-
-    @property
-    def sig_file_added(self) -> pyqtSignal:
-        return self._worker.sig_file_added
-
-    @property
-    def sig_file_removed(self) -> pyqtSignal:
-        return self._worker.sig_file_removed
-
-    @property
-    def sig_file_modified(self) -> pyqtSignal:
-        return self._worker.sig_file_modified
-
-    @property
-    def sig_file_closed(self) -> pyqtSignal:
-        return self._worker.sig_file_closed
-
-    @property
-    def sig_scandir_finished(self) -> pyqtSignal:
-        return self._worker.sig_scandir_finished
-
-    @property
-    def sig_message(self) -> pyqtSignal:
-        return self._worker.sig_message
 
 
 # EOF #
