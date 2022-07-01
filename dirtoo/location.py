@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Sequence, NamedTuple, Optional, Tuple
+from typing import Final, Sequence, NamedTuple, Optional, Tuple
 
 import urllib.parse
 import logging
@@ -45,14 +45,17 @@ class Location:
     @staticmethod
     def join(location: 'Location', path: str) -> 'Location':
         if len(location._payloads) == 0:
-            result = location.copy()
-            result._path = os.path.join(result._path, path)
+            result = Location(location._protocol,
+                              os.path.join(location._path, path),
+                              [])
             return result
         else:
-            result = location.copy()
-            result._payloads[-1] = Payload(result._payloads[-1].protocol,
-                                           os.path.join(result._payloads[-1].path, path))
-            return result
+            new_payloads = list(location._payloads[:-1])
+            new_payloads.append(Payload(location._payloads[-1].protocol,
+                                        os.path.join(location._payloads[-1].path, path)))
+            return Location(location._protocol,
+                            location._path,
+                            new_payloads)
 
     @staticmethod
     def from_search_query(path: str, query: str) -> 'Location':
@@ -101,16 +104,15 @@ class Location:
     def __init__(self, protocol: str, abspath: str, payloads: Sequence[Payload]) -> None:
         assert os.path.isabs(abspath)
 
-        # FIXME: make this Final and Sequence
-        self._protocol: str = protocol
-        self._path: str = abspath
-        self._payloads: list[Payload] = list(payloads)
+        self._protocol: Final[str] = protocol
+        self._path: Final[str] = abspath
+        self._payloads: Final[Sequence[Payload]] = payloads
 
     def has_payload(self) -> bool:
         return self._payloads != []
 
     def parent(self) -> 'Location':
-        """The parent directory. Archives are threated like directories as well."""
+        """The parent directory. Archives are treated like directories as well."""
 
         if self._payloads == [] or (len(self._payloads) == 1 and self._payloads[0].path == ""):
             path = os.path.dirname(self._path)
@@ -118,12 +120,12 @@ class Location:
         else:
             path = os.path.dirname(self._payloads[-1].path)
             if path == self._payloads[-1].path:  # path is ""
-                payloads = self._payloads[:-1]
+                payloads: list[Payload] = list(self._payloads[:-1])
                 payloads[-1] = Payload(payloads[-1].protocol,
                                        os.path.dirname(payloads[-1].path))
                 return Location(self._protocol, self._path, payloads)
             else:
-                payloads = self._payloads[:-1] + [Payload(self._payloads[-1].protocol, path)]
+                payloads = list(self._payloads[:-1]) + [Payload(self._payloads[-1].protocol, path)]
                 return Location(self._protocol, self._path, payloads)
 
     def basename(self) -> str:
@@ -165,20 +167,22 @@ class Location:
         if self._payloads == []:
             return None
         else:
-            location = self.copy()
-            location._payloads.pop()
-            return location
+            return Location(self._protocol,
+                            self._path,
+                            self._payloads[:-1])
 
     def pure(self) -> 'Location':
         """Returns Location with the last payload stripped if the payload path
         is empty, i.e. strip the '//archive' part if it exist."""
 
         if self._payloads == [] or self._payloads[-1].path != "":
-            return self.copy()
+            return Location(self._protocol,
+                            self._path,
+                            self._payloads)
         else:
-            location = self.copy()
-            location._payloads.pop()
-            return location
+            return Location(self._protocol,
+                            self._path,
+                            self._payloads[:-1])
 
     def as_url(self) -> str:
         payload_text = "".join(["//{}{}".format(prot, (":" + urllib.parse.quote(path)) if path else "")
@@ -210,9 +214,6 @@ class Location:
                 return os.path.exists(self._path)
         else:
             return os.path.exists(self._path)
-
-    def copy(self) -> 'Location':
-        return Location(self._protocol, self._path, list(self._payloads))
 
     def protocol(self) -> str:
         return self._protocol

@@ -56,9 +56,9 @@ class ItemContextMenu(Menu):
 
     def _build_archive_menu(self) -> None:
         def make_extract(archive_location: Location) -> Location:
-            location = archive_location.copy()
-            location._payloads.append(Payload("archive", ""))
-            return location
+            return Location(archive_location._protocol,
+                            archive_location._path,
+                            list(archive_location._payloads[:]) + [Payload("archive", "")])
 
         def left_func(location: 'Location' = self._fileinfo.location()) -> None:
             self._controller.set_location(make_extract(location))

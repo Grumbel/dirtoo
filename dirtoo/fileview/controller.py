@@ -366,8 +366,9 @@ class Controller(QObject):
 
         if not fileinfo.isdir():
             if fileinfo.is_archive() and settings.value("globals/open_archives", True, bool):
-                location = fileinfo.location().copy()
-                location._payloads.append(Payload("archive", ""))
+                location = Location(fileinfo.location()._protocol,
+                                    fileinfo.location()._path,
+                                    list(fileinfo.location()._payloads) + [Payload("archive", "")])
 
                 if new_window:
                     self.new_controller().set_location(location)

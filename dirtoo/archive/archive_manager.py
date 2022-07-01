@@ -161,7 +161,9 @@ class ArchiveManager:
 
         origin = location.origin()
         assert origin is not None
-        origin._payloads.append(Payload("archive", ""))
+        origin = Location(origin._protocol,
+                          origin._path,
+                          list(origin._payloads) + [Payload("archive", "")])
 
         loc_hash = hashlib.md5(origin.as_url().encode()).hexdigest()
         outdir = os.path.join(self._extractor_dir, loc_hash)
