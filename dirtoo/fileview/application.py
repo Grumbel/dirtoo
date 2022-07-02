@@ -36,7 +36,7 @@ from dirtoo.fileview.controller import Controller
 from dirtoo.fileview.executor import Executor
 from dirtoo.fileview.filesystem_operations import FilesystemOperations
 from dirtoo.fileview.settings import settings
-from dirtoo.fileview.stream_manager import StreamManager
+from dirtoo.stream.stream_manager import StreamManager
 from dirtoo.fileview.virtual_filesystem import VirtualFilesystem
 from dirtoo.gui.preferences_dialog import PreferencesDialog
 from dirtoo.history.history import SqlHistory
