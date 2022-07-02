@@ -22,7 +22,7 @@ import os
 import sys
 
 from dirtoo.file_transfer import FileTransfer, ConsoleMediator, ConsoleProgress, Overwrite
-from dirtoo.filesystem import Filesystem
+from dirtoo.posix.filesystem import Filesystem
 
 
 def parse_args(action: str, argv: Sequence[str]) -> argparse.Namespace:

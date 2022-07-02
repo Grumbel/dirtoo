@@ -29,7 +29,7 @@ import bytefmt
 from dirtoo.filecollection.file_collection import FileCollection
 from dirtoo.filecollection.grouper import (DayGrouper, DirectoryGrouper,
                                            NoGrouper, DurationGrouper)
-from dirtoo.file.file_info import FileInfo
+from dirtoo.filesystem.file_info import FileInfo
 from dirtoo.filecollection.filter import Filter
 from dirtoo.filecollection.sorter import Sorter
 from dirtoo.fileview.actions import Actions
@@ -43,7 +43,7 @@ from dirtoo.fileview.file_item import FileItem
 from dirtoo.gui.history_menu import make_history_menu_entries
 from dirtoo.gui.menu import Menu
 from dirtoo.gui.transfer_request_dialog import TransferRequestDialog
-from dirtoo.location import Location, Payload
+from dirtoo.filesystem.location import Location, Payload
 from dirtoo.util import make_non_existing_filename
 from dirtoo.watcher.directory_watcher import DirectoryWatcher
 

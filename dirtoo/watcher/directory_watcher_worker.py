@@ -25,13 +25,13 @@ from PyQt5.QtCore import QObject, pyqtSignal
 from inotify_simple import flags as inotify_flags
 import inotify_simple
 
-from dirtoo.file.file_info import FileInfo
-from dirtoo.location import Location
+from dirtoo.filesystem.file_info import FileInfo
+from dirtoo.filesystem.location import Location
 from dirtoo.watcher.inotify_qt import INotifyQt
 
 if TYPE_CHECKING:
     from dirtoo.fileview.virtual_filesystem import VirtualFilesystem
-    from dirtoo.fileview.stdio_filesystem import StdioFilesystem
+    from dirtoo.filesystem.stdio_filesystem import StdioFilesystem
 
 
 logger = logging.getLogger(__name__)

@@ -24,7 +24,7 @@ import sys
 import argparse
 
 from dirtoo.fileview.application import FileViewApplication
-from dirtoo.location import Location
+from dirtoo.filesystem.location import Location
 from dirtoo.profiler.profiler import activate_profiler
 from dirtoo.util import expand_directories
 

@@ -24,7 +24,7 @@ from enum import Enum
 from abc import ABC, abstractmethod
 import bytefmt
 
-from dirtoo.filesystem import Filesystem
+from dirtoo.posix.filesystem import Filesystem
 from dirtoo.format import progressbar
 
 

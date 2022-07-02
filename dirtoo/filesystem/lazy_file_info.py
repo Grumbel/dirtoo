@@ -21,7 +21,7 @@ import logging
 import os
 import stat
 
-from dirtoo.location import Location
+from dirtoo.filesystem.location import Location
 import dirtoo.file_type as file_type
 
 

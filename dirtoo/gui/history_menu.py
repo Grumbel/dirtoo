@@ -22,7 +22,7 @@ from PyQt5.QtWidgets import QMenu
 
 if TYPE_CHECKING:
     from dirtoo.fileview.controller import Controller
-    from dirtoo.location import Location
+    from dirtoo.filesystem.location import Location
 
 
 def make_history_menu_entries(controller: 'Controller', history_menu: QMenu, entries: Sequence['Location']) -> None:

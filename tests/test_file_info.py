@@ -19,8 +19,8 @@ import os
 import unittest
 from typing import Union, Sequence
 
-from dirtoo.file.file_info import FileInfo
-from dirtoo.file.lazy_file_info import LazyFileInfo
+from dirtoo.filesystem.file_info import FileInfo
+from dirtoo.filesystem.lazy_file_info import LazyFileInfo
 
 
 class FileInfoTestCase(unittest.TestCase):

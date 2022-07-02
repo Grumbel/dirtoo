@@ -26,15 +26,15 @@ import tempfile
 from PyQt5.QtCore import QThread, QObject, pyqtSignal
 from PyQt5.QtWidgets import QApplication, QDialog
 
-from dirtoo.file.file_info import FileInfo
 from dirtoo.file_transfer import ConflictResolution
+from dirtoo.filesystem.file_info import FileInfo
+from dirtoo.fileview.settings import settings
 from dirtoo.gui.about_dialog import AboutDialog
 from dirtoo.gui.conflict_dialog import ConflictDialog
 from dirtoo.gui.create_dialog import CreateDialog
 from dirtoo.gui.preferences_dialog import PreferencesDialog
 from dirtoo.gui.properties_dialog import PropertiesDialog
 from dirtoo.gui.rename_dialog import RenameDialog
-from dirtoo.fileview.settings import settings
 from dirtoo.gui.transfer_dialog import TransferDialog
 from dirtoo.gui.transfer_error_dialog import TransferErrorDialog
 from dirtoo.gui.transfer_request_dialog import TransferRequestDialog

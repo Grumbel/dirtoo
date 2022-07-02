@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
-from dirtoo.file.file_info import FileInfo
+from dirtoo.filesystem.file_info import FileInfo
 
 if TYPE_CHECKING:
     from dirtoo.fileview.application import FileViewApplication

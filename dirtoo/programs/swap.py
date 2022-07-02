@@ -22,7 +22,7 @@ import os
 import sys
 import uuid
 
-from dirtoo.filesystem import Filesystem
+from dirtoo.posix.filesystem import Filesystem
 
 
 def parse_args(argv: Sequence[str]) -> argparse.Namespace:

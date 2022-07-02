@@ -20,14 +20,14 @@ from typing import TYPE_CHECKING, cast, Sequence, Set, Tuple, Optional
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtGui import QIcon
 
-from dirtoo.location import Location, Payload
+from dirtoo.filesystem.location import Location, Payload
 from dirtoo.gui.menu import Menu
 from dirtoo.xdg_desktop import get_desktop_entry, get_desktop_file
 
 if TYPE_CHECKING:
     from xdg.DesktopEntry import DesktopEntry
     from dirtoo.fileview.controller import Controller
-    from dirtoo.file.file_info import FileInfo
+    from dirtoo.filesystem.file_info import FileInfo
 
 
 class ItemContextMenu(Menu):

@@ -23,7 +23,7 @@ from dirtoo.gui.menu import Menu
 
 if TYPE_CHECKING:
     from dirtoo.fileview.controller import Controller
-    from dirtoo.location import Location
+    from dirtoo.filesystem.location import Location
 
 
 class DirectoryContextMenu(Menu):

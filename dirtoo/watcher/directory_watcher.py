@@ -19,13 +19,13 @@ from typing import TYPE_CHECKING, Union
 
 from PyQt5.QtCore import Qt, QObject, QThread, pyqtSignal
 
-from dirtoo.location import Location
+from dirtoo.filesystem.location import Location
 from dirtoo.watcher.directory_watcher_worker import DirectoryWatcherWorker
 
 
 if TYPE_CHECKING:
     from dirtoo.fileview.virtual_filesystem import VirtualFilesystem
-    from dirtoo.fileview.stdio_filesystem import StdioFilesystem
+    from dirtoo.filesystem.stdio_filesystem import StdioFilesystem
 
 
 class DirectoryWatcher(QObject):

@@ -24,7 +24,7 @@ from PyQt5.QtGui import QPalette, QIcon, QKeySequence, QFocusEvent, QKeyEvent, Q
 from PyQt5.QtWidgets import (QLineEdit, QShortcut, QWidget,
                              QListWidget, QVBoxLayout, QSizePolicy)
 
-from dirtoo.location import Location
+from dirtoo.filesystem.location import Location
 
 if TYPE_CHECKING:
     from dirtoo.fileview.controller import Controller

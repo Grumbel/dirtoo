@@ -30,7 +30,7 @@ from PyQt5.QtDBus import QDBusConnection
 
 from dirtoo.bookmark.bookmarks import Bookmarks
 from dirtoo.dbus_thumbnail_cache import DBusThumbnailCache
-from dirtoo.filesystem import Filesystem
+from dirtoo.posix.filesystem import Filesystem
 from dirtoo.fileview.application_actions import ApplicationActions
 from dirtoo.fileview.controller import Controller
 from dirtoo.fileview.executor import Executor
@@ -40,7 +40,7 @@ from dirtoo.fileview.stream_manager import StreamManager
 from dirtoo.fileview.virtual_filesystem import VirtualFilesystem
 from dirtoo.gui.preferences_dialog import PreferencesDialog
 from dirtoo.history.history import SqlHistory
-from dirtoo.location import Location
+from dirtoo.filesystem.location import Location
 from dirtoo.metadata.metadata_collector import MetaDataCollector
 from dirtoo.mime.mime_database import MimeDatabase
 from dirtoo.thumbnail.directory_thumbnailer import DirectoryThumbnailer

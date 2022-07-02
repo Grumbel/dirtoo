@@ -19,13 +19,13 @@ from typing import Any, TYPE_CHECKING
 
 import logging
 
-from dirtoo.file.file_info import FileInfo
 from dirtoo.bookmark.bookmarks_provider import BookmarksProvider
+from dirtoo.filesystem.file_info import FileInfo
+from dirtoo.filesystem.location import Location
+from dirtoo.filesystem.stdio_filesystem import StdioFilesystem
 from dirtoo.fileview.filelist_stream import FileListStream
-from dirtoo.history.history_provider import HistoryProvider
 from dirtoo.fileview.search_stream import SearchStream
-from dirtoo.fileview.stdio_filesystem import StdioFilesystem
-from dirtoo.location import Location
+from dirtoo.history.history_provider import HistoryProvider
 
 if TYPE_CHECKING:
     from dirtoo.fileview.application import FileViewApplication

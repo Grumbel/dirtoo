@@ -47,7 +47,7 @@ from dirtoo.gui.menu import Menu
 from dirtoo.gui.message_area import MessageArea
 from dirtoo.gui.search_line_edit import SearchLineEdit
 from dirtoo.gui.tool_button import ToolButton
-from dirtoo.location import Location
+from dirtoo.filesystem.location import Location
 
 if TYPE_CHECKING:
     from dirtoo.fileview.controller import Controller

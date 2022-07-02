@@ -27,10 +27,10 @@ from PyQt5.QtCore import QTimer
 from dirtoo.archive.archive_extractor import ArchiveExtractor
 from dirtoo.archive.extractor import ExtractorResultStatus
 from dirtoo.watcher.directory_watcher import DirectoryWatcher
-from dirtoo.location import Location, Payload
+from dirtoo.filesystem.location import Location, Payload
 
 if TYPE_CHECKING:
-    from dirtoo.fileview.stdio_filesystem import StdioFilesystem
+    from dirtoo.filesystem.stdio_filesystem import StdioFilesystem
 
 
 logger = logging.getLogger(__name__)

@@ -23,8 +23,8 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QApplication
 
 from dirtoo.metadata.metadata_collector import MetaDataCollector
-from dirtoo.fileview.stdio_filesystem import StdioFilesystem
-from dirtoo.location import Location
+from dirtoo.filesystem.stdio_filesystem import StdioFilesystem
+from dirtoo.filesystem.location import Location
 
 
 class MetaDataCollectorTestCase(unittest.TestCase):

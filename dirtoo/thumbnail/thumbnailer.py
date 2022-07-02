@@ -26,7 +26,7 @@ from PyQt5.QtDBus import QDBusConnection
 from PyQt5.QtGui import QImage
 
 from dirtoo.dbus_thumbnailer import DBusThumbnailer, DBusThumbnailerError
-from dirtoo.location import Location
+from dirtoo.filesystem.location import Location
 from dirtoo.dbus_thumbnailer import DBusThumbnailerListener
 
 if TYPE_CHECKING:

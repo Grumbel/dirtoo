@@ -27,7 +27,7 @@ import datetime
 from dirtoo.fuzzy import fuzzy
 
 if TYPE_CHECKING:
-    from dirtoo.file.file_info import FileInfo
+    from dirtoo.filesystem.file_info import FileInfo
 
 logger = logging.getLogger(__name__)
 

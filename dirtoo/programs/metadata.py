@@ -26,8 +26,8 @@ import xdg.BaseDirectory
 from PyQt5.QtCore import QCoreApplication
 
 from dirtoo.metadata.metadata_collector import MetaDataCollector
-from dirtoo.fileview.stdio_filesystem import StdioFilesystem
-from dirtoo.location import Location
+from dirtoo.filesystem.stdio_filesystem import StdioFilesystem
+from dirtoo.filesystem.location import Location
 
 
 def parse_args(argv: Sequence[str]) -> argparse.Namespace:

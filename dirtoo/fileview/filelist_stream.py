@@ -23,8 +23,8 @@ import os
 
 from PyQt5.QtCore import QObject, QSocketNotifier, pyqtSignal
 
-from dirtoo.file.file_info import FileInfo
-from dirtoo.location import Location
+from dirtoo.filesystem.file_info import FileInfo
+from dirtoo.filesystem.location import Location
 
 if TYPE_CHECKING:
     from dirtoo.fileview.application import FileViewApplication

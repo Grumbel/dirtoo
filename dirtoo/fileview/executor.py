@@ -22,7 +22,7 @@ import subprocess
 import shlex
 
 from dirtoo.xdg_desktop import get_desktop_entry
-from dirtoo.location import Location
+from dirtoo.filesystem.location import Location
 
 if TYPE_CHECKING:
     from dirtoo.fileview.application import FileViewApplication

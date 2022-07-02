@@ -18,7 +18,8 @@
 from typing import Sequence
 
 import logging
-from dirtoo.location import Location
+
+from dirtoo.filesystem.location import Location
 
 logger = logging.getLogger(__name__)
 

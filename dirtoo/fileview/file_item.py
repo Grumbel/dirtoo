@@ -26,7 +26,7 @@ from PyQt5.QtGui import (QColor, QPainter, QPainterPath, QImage, QDrag, QPixmap,
 from PyQt5.QtWidgets import (QGraphicsObject, QGraphicsItem, QWidget,
                              QStyleOptionGraphicsItem)
 
-from dirtoo.file.file_info import FileInfo
+from dirtoo.filesystem.file_info import FileInfo
 from dirtoo.thumbnail.thumbnail import Thumbnail, ThumbnailStatus
 from dirtoo.fileview.file_item_renderer import FileItemRenderer
 from dirtoo.gui.drag_widget import DragWidget

@@ -27,8 +27,8 @@ from PyQt5.QtCore import QMimeDatabase
 
 from dirtoo.metadata.metadata_cache import MetaDataCache
 from dirtoo.metadata.metadata import MetaData
-from dirtoo.fileview.stdio_filesystem import StdioFilesystem
-from dirtoo.location import Location
+from dirtoo.filesystem.stdio_filesystem import StdioFilesystem
+from dirtoo.filesystem.location import Location
 
 logger = logging.getLogger(__name__)
 

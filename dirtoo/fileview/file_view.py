@@ -31,7 +31,7 @@ from PyQt5.QtWidgets import QGraphicsView, QShortcut
 from dirtoo.dbus_thumbnailer import DBusThumbnailerError
 from dirtoo.filecollection.file_collection import FileCollection
 from dirtoo.fileview.file_graphics_scene import FileGraphicsScene
-from dirtoo.file.file_info import FileInfo
+from dirtoo.filesystem.file_info import FileInfo
 from dirtoo.fileview.file_item import FileItem
 from dirtoo.fileview.file_view_style import FileViewStyle
 from dirtoo.fileview.layout import RootLayout
@@ -39,7 +39,7 @@ from dirtoo.fileview.layout_builder import LayoutBuilder
 from dirtoo.gui.leap_widget import LeapWidget
 from dirtoo.fileview.mode import Mode, IconMode, SequenceMode, DetailMode, FileItemStyle
 from dirtoo.fileview.settings import settings
-from dirtoo.location import Location
+from dirtoo.filesystem.location import Location
 
 if TYPE_CHECKING:
     from dirtoo.fileview.controller import Controller

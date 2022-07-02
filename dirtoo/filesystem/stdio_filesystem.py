@@ -22,10 +22,10 @@ import logging
 import urllib.parse
 
 from dirtoo.archive.archive_manager import ArchiveManager
-from dirtoo.file.file_info import FileInfo
+from dirtoo.filesystem.file_info import FileInfo
 from dirtoo.watcher.archive_directory_watcher import ArchiveDirectoryWatcher
 from dirtoo.watcher.directory_watcher import DirectoryWatcher
-from dirtoo.location import Location
+from dirtoo.filesystem.location import Location
 
 logger = logging.getLogger(__name__)
 

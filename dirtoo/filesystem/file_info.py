@@ -23,7 +23,7 @@ import stat
 import errno
 from enum import Enum
 
-from dirtoo.location import Location
+from dirtoo.filesystem.location import Location
 import dirtoo.file_type as file_type
 
 

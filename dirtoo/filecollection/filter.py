@@ -21,7 +21,7 @@ from typing import Optional
 # from dirtoo.fileview.settings import settings
 
 from dirtoo.filter.match_func import MatchFunc
-from dirtoo.file.file_info import FileInfo
+from dirtoo.filesystem.file_info import FileInfo
 
 
 class Filter:
