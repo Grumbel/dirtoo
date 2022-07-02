@@ -26,8 +26,8 @@ from dirtoo.location import Location
 from dirtoo.fileview.rename_operation import RenameOperation
 from dirtoo.fileview.return_value import ReturnValue
 from dirtoo.file_transfer import FileTransfer, Progress, ConflictResolution, Mediator, CancellationException
-from dirtoo.fileview.conflict_dialog import ConflictDialog
-from dirtoo.fileview.transfer_dialog import TransferDialog
+from dirtoo.gui.conflict_dialog import ConflictDialog
+from dirtoo.gui.transfer_dialog import TransferDialog
 
 if TYPE_CHECKING:
     from dirtoo.filesystem import Filesystem

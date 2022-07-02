@@ -26,7 +26,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QDialog, QMessageBox
 
 from dirtoo.location import Location
-from dirtoo.fileview.rename_dialog import RenameDialog
+from dirtoo.gui.rename_dialog import RenameDialog
 
 logger = logging.getLogger(__name__)
 

@@ -29,7 +29,7 @@ from PyQt5.QtWidgets import (QGraphicsObject, QGraphicsItem, QWidget,
 from dirtoo.file_info import FileInfo
 from dirtoo.fileview.thumbnail import Thumbnail, ThumbnailStatus
 from dirtoo.fileview.file_item_renderer import FileItemRenderer
-from dirtoo.fileview.drag_widget import DragWidget
+from dirtoo.gui.drag_widget import DragWidget
 
 if TYPE_CHECKING:
     from dirtoo.fileview.file_view import FileView

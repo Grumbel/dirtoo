@@ -22,8 +22,8 @@ from PyQt5.QtWidgets import QWidget, QHBoxLayout, QSizePolicy
 from PyQt5.QtGui import QIcon, QDragEnterEvent, QDropEvent, QDragLeaveEvent, QMouseEvent
 
 from dirtoo.location import Location
-from dirtoo.fileview.push_button import PushButton
-from dirtoo.fileview.item_context_menu import ItemContextMenu
+from dirtoo.gui.push_button import PushButton
+from dirtoo.gui.item_context_menu import ItemContextMenu
 
 if TYPE_CHECKING:
     from dirtoo.fileview.controller import Controller

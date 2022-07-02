@@ -36,7 +36,7 @@ from dirtoo.fileview.file_item import FileItem
 from dirtoo.fileview.file_view_style import FileViewStyle
 from dirtoo.fileview.layout import RootLayout
 from dirtoo.fileview.layout_builder import LayoutBuilder
-from dirtoo.fileview.leap_widget import LeapWidget
+from dirtoo.gui.leap_widget import LeapWidget
 from dirtoo.fileview.mode import Mode, IconMode, SequenceMode, DetailMode, FileItemStyle
 from dirtoo.fileview.settings import settings
 from dirtoo.location import Location

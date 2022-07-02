@@ -28,16 +28,16 @@ from PyQt5.QtWidgets import QApplication, QDialog
 
 from dirtoo.file_info import FileInfo
 from dirtoo.file_transfer import ConflictResolution
-from dirtoo.fileview.about_dialog import AboutDialog
-from dirtoo.fileview.conflict_dialog import ConflictDialog
-from dirtoo.fileview.create_dialog import CreateDialog
-from dirtoo.fileview.preferences_dialog import PreferencesDialog
-from dirtoo.fileview.properties_dialog import PropertiesDialog
-from dirtoo.fileview.rename_dialog import RenameDialog
+from dirtoo.gui.about_dialog import AboutDialog
+from dirtoo.gui.conflict_dialog import ConflictDialog
+from dirtoo.gui.create_dialog import CreateDialog
+from dirtoo.gui.preferences_dialog import PreferencesDialog
+from dirtoo.gui.properties_dialog import PropertiesDialog
+from dirtoo.gui.rename_dialog import RenameDialog
 from dirtoo.fileview.settings import settings
-from dirtoo.fileview.transfer_dialog import TransferDialog
-from dirtoo.fileview.transfer_error_dialog import TransferErrorDialog
-from dirtoo.fileview.transfer_request_dialog import TransferRequestDialog
+from dirtoo.gui.transfer_dialog import TransferDialog
+from dirtoo.gui.transfer_error_dialog import TransferErrorDialog
+from dirtoo.gui.transfer_request_dialog import TransferRequestDialog
 
 logger = logging.getLogger(__name__)
 

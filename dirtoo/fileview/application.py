@@ -41,7 +41,7 @@ from dirtoo.fileview.thumbnailer import Thumbnailer
 from dirtoo.fileview.virtual_filesystem import VirtualFilesystem
 from dirtoo.fileview.stream_manager import StreamManager
 from dirtoo.xdg_mime_associations import XdgMimeAssociations
-from dirtoo.fileview.preferences_dialog import PreferencesDialog
+from dirtoo.gui.preferences_dialog import PreferencesDialog
 from dirtoo.filesystem import Filesystem
 from dirtoo.fileview.application_actions import ApplicationActions
 from dirtoo.fileview.controller import Controller

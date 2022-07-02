@@ -22,11 +22,11 @@ from PyQt5.QtWidgets import (QFileDialog, QTextEdit, QDialog, QMessageBox)
 from PyQt5.QtGui import QCursor, QMouseEvent, QContextMenuEvent
 
 from dirtoo.fileview.file_view_window import FileViewWindow
-from dirtoo.fileview.item_context_menu import ItemContextMenu
-from dirtoo.fileview.directory_context_menu import DirectoryContextMenu
-from dirtoo.fileview.create_dialog import CreateDialog
-from dirtoo.fileview.about_dialog import AboutDialog
-from dirtoo.fileview.properties_dialog import PropertiesDialog
+from dirtoo.gui.item_context_menu import ItemContextMenu
+from dirtoo.gui.directory_context_menu import DirectoryContextMenu
+from dirtoo.gui.create_dialog import CreateDialog
+from dirtoo.gui.about_dialog import AboutDialog
+from dirtoo.gui.properties_dialog import PropertiesDialog
 
 if TYPE_CHECKING:
     from dirtoo.file_info import FileInfo
@@ -101,22 +101,24 @@ class Gui(QObject):
         self.fake_mouse()
 
     def show_create_directory_dialog(self, name: Optional[str] = None) -> Optional[str]:
-        dialog = CreateDialog(CreateDialog.FOLDER, self._window)
+        dialog: CreateDialog = CreateDialog(CreateDialog.FOLDER, self._window)
         if name is not None:
-            dialog.set_name(name)
+            dialog.set_filename(name)
         dialog.exec()
         if dialog.result() == QDialog.Accepted:
-            return dialog.get_name()
+            result: str = dialog.get_filename()
+            return result
         else:
             return None
 
     def show_create_file_dialog(self, name: Optional[str] = None) -> Optional[str]:
         dialog = CreateDialog(CreateDialog.TEXTFILE, self._window)
         if name is not None:
-            dialog.set_name(name)
+            dialog.set_filename(name)
         dialog.exec()
         if dialog.result() == QDialog.Accepted:
-            return dialog.get_name()
+            result: str = dialog.get_filename()
+            return result
         else:
             return None
 

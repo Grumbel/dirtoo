@@ -33,23 +33,23 @@ from dirtoo.file_info import FileInfo
 from dirtoo.filecollection.filter import Filter
 from dirtoo.filecollection.sorter import Sorter
 from dirtoo.fileview.actions import Actions
-from dirtoo.watcher.directory_watcher import DirectoryWatcher
-from dirtoo.fileview.file_item import FileItem
-from dirtoo.fileview.mode import FileItemStyle
 from dirtoo.fileview.filter_parser import FilterParser
 from dirtoo.fileview.gnome import parse_gnome_copied_files, make_gnome_copied_files
 from dirtoo.fileview.gui import Gui
-from dirtoo.fileview.history_menu import make_history_menu_entries
-from dirtoo.fileview.menu import Menu
+from dirtoo.fileview.mode import FileItemStyle
 from dirtoo.fileview.path_completion import PathCompletion
 from dirtoo.fileview.settings import settings
-from dirtoo.fileview.transfer_request_dialog import TransferRequestDialog
+from dirtoo.fileview.file_item import FileItem
+from dirtoo.gui.history_menu import make_history_menu_entries
+from dirtoo.gui.menu import Menu
+from dirtoo.gui.transfer_request_dialog import TransferRequestDialog
 from dirtoo.location import Location, Payload
 from dirtoo.util import make_non_existing_filename
+from dirtoo.watcher.directory_watcher import DirectoryWatcher
 
 if TYPE_CHECKING:
     from dirtoo.fileview.application import FileViewApplication
-    from dirtoo.fileview.tool_button import ToolButton
+    from dirtoo.gui.tool_button import ToolButton
     from dirtoo.dbus_thumbnailer import DBusThumbnailerError
 
 logger = logging.getLogger(__name__)
