@@ -32,7 +32,8 @@ def make_history_menu_entries(controller: 'Controller', history_menu: QMenu, ent
             icon, entry.as_url(),
             lambda entry=entry: controller.set_location(entry),
             lambda entry=entry: controller.app.show_location(entry))
-        if not entry.exists():
+        # FIXME: exists() checks must be done asynchronously
+        if False and not entry.exists():
             action.setEnabled(False)
 
 

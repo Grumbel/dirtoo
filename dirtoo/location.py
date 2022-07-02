@@ -205,16 +205,6 @@ class Location:
         else:
             return self.as_url()
 
-    def exists(self) -> bool:
-        if self.has_payload():
-            if len(self._payloads) != 1:
-                logger.error("Location.exists: not implemented for multiple payloads")
-                return False
-            else:
-                return os.path.exists(self._path)
-        else:
-            return os.path.exists(self._path)
-
     def protocol(self) -> str:
         return self._protocol
 
