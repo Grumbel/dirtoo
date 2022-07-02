@@ -2,6 +2,7 @@
 .mypy_cache/
 /.pylint/
 /build/
-/dirtools.egg-info/
+/dirtoo.egg-info/
 /dist/
+/result
 __pycache__/
