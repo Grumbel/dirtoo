@@ -136,7 +136,7 @@ class FileViewWindow(QMainWindow):
 
     def make_window(self) -> None:
         self.setWindowTitle("dirtoo")
-        self.setWindowIcon(QIcon(resource_filename("dirtoo", "fileview/dirtoo.svg")))
+        self.setWindowIcon(QIcon(resource_filename("dirtoo", "icons/dirtoo.svg")))
         self.vbox = QVBoxLayout()
         self.vbox.setContentsMargins(0, 0, 0, 0)
 
@@ -472,7 +472,7 @@ class FileViewWindow(QMainWindow):
         self.toolbar.addAction(self.controller.app.actions.enable_filesystem)
 
         # Loading icon
-        self.loading_movie = QMovie(resource_filename("dirtoo", "fileview/icons/gears.gif"))
+        self.loading_movie = QMovie(resource_filename("dirtoo", "icons/gears.gif"))
         self.loading_label = QLabel()
         self.toolbar.addWidget(self.loading_label)
 

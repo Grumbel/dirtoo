@@ -40,12 +40,12 @@ class SharedIcons:
 class SharedPixmaps:
 
     def __init__(self) -> None:
-        self.video = QPixmap(resource_filename("dirtoo", "fileview/icons/noun_36746_cc.png"))
-        self.image = QPixmap(resource_filename("dirtoo", "fileview/icons/noun_386758_cc.png"))  # noun_757280_cc.png
-        self.loading = QPixmap(resource_filename("dirtoo", "fileview/icons/noun_409399_cc.png"))
-        self.error = QPixmap(resource_filename("dirtoo", "fileview/icons/noun_175057_cc.png"))
-        self.locked = QPixmap(resource_filename("dirtoo", "fileview/icons/noun_236873_cc.png"))
-        self.new = QPixmap(resource_filename("dirtoo", "fileview/icons/noun_258297_cc.png"))
+        self.video = QPixmap(resource_filename("dirtoo", "icons/noun_36746_cc.png"))
+        self.image = QPixmap(resource_filename("dirtoo", "icons/noun_386758_cc.png"))  # noun_757280_cc.png
+        self.loading = QPixmap(resource_filename("dirtoo", "icons/noun_409399_cc.png"))
+        self.error = QPixmap(resource_filename("dirtoo", "icons/noun_175057_cc.png"))
+        self.locked = QPixmap(resource_filename("dirtoo", "icons/noun_236873_cc.png"))
+        self.new = QPixmap(resource_filename("dirtoo", "icons/noun_258297_cc.png"))
 
 
 class SharedScaleable:
