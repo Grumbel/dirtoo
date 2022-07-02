@@ -22,7 +22,7 @@ from typing import Any, Dict, Optional
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QApplication
 
-from dirtoo.fileview.metadata_collector import MetaDataCollector
+from dirtoo.metadata.metadata_collector import MetaDataCollector
 from dirtoo.fileview.stdio_filesystem import StdioFilesystem
 from dirtoo.location import Location
 

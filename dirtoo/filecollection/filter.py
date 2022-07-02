@@ -20,8 +20,8 @@ from typing import Optional
 # FIXME: this breaks encapsulation
 # from dirtoo.fileview.settings import settings
 
-from dirtoo.fileview.match_func import MatchFunc
-from dirtoo.file_info import FileInfo
+from dirtoo.filter.match_func import MatchFunc
+from dirtoo.file.file_info import FileInfo
 
 
 class Filter:

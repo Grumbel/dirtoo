@@ -21,9 +21,9 @@ import logging
 import sys
 import textwrap
 
-from dirtoo.fileview.filter_command_parser import FilterCommandParser
-from dirtoo.fileview.filter_expr_parser import FilterExprParser
-from dirtoo.fileview.match_func import MatchFunc
+from dirtoo.filter.filter_command_parser import FilterCommandParser
+from dirtoo.filter.filter_expr_parser import FilterExprParser
+from dirtoo.filter.match_func import MatchFunc
 
 logger = logging.getLogger(__name__)
 

@@ -26,10 +26,10 @@ import re
 
 import dirtoo.duration as duration
 import dirtoo.file_type as file_type
-from dirtoo.fileview.filter_expr_parser import CommandExpr
+from dirtoo.filter.filter_expr_parser import CommandExpr
 from dirtoo.fuzzy import fuzzy
 from dirtoo.glob import is_glob_pattern
-from dirtoo.fileview.match_func import (
+from dirtoo.filter.match_func import (
     MatchFunc,
     FalseMatchFunc,
     ExcludeMatchFunc,

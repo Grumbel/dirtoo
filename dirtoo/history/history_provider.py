@@ -19,19 +19,19 @@ from typing import TYPE_CHECKING
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
-from dirtoo.file_info import FileInfo
+from dirtoo.file.file_info import FileInfo
 
 if TYPE_CHECKING:
     from dirtoo.fileview.application import FileViewApplication
 
 
-class BookmarksProvider(QObject):
+class HistoryProvider(QObject):
 
     sig_file_added = pyqtSignal(FileInfo)
     sig_finished = pyqtSignal()
     sig_message = pyqtSignal(str)
 
-    def __init__(self, app: 'FileViewApplication'):
+    def __init__(self, app: 'FileViewApplication') -> None:
         super().__init__()
 
         self._app = app
@@ -40,7 +40,7 @@ class BookmarksProvider(QObject):
         pass
 
     def start(self) -> None:
-        entries = self._app.bookmarks.get_entries()
+        entries = self._app.file_history.get_entries()
         for location in entries:
             fileinfo = self._app.vfs.get_fileinfo(location)
             self.sig_file_added.emit(fileinfo)

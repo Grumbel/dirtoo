@@ -25,7 +25,7 @@ from PyQt5.QtGui import QColor, QPainter, QIcon, QTextOption, QBrush
 
 import bytefmt
 
-from dirtoo.fileview.thumbnail import ThumbnailStatus
+from dirtoo.thumbnail.thumbnail import ThumbnailStatus
 from dirtoo.mediainfo import split_duration
 from dirtoo.fileview.mode import FileItemStyle
 from dirtoo.fileview.scaler import make_unscaled_rect, make_scaled_rect, make_cropped_rect

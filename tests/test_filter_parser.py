@@ -17,7 +17,7 @@
 
 import unittest
 
-from dirtoo.fileview.filter_expr_parser import FilterExprParser
+from dirtoo.filter.filter_expr_parser import FilterExprParser
 
 
 class UtilTestCase(unittest.TestCase):

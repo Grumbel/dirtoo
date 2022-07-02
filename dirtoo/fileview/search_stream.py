@@ -22,7 +22,7 @@ import os
 
 from PyQt5.QtCore import QObject, pyqtSignal, QThread, Qt
 
-from dirtoo.file_info import FileInfo
+from dirtoo.file.file_info import FileInfo
 from dirtoo.find.action import Action
 from dirtoo.find.filter import Filter, SimpleFilter
 from dirtoo.find.walk import walk

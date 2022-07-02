@@ -29,7 +29,7 @@ from dirtoo.gui.about_dialog import AboutDialog
 from dirtoo.gui.properties_dialog import PropertiesDialog
 
 if TYPE_CHECKING:
-    from dirtoo.file_info import FileInfo
+    from dirtoo.file.file_info import FileInfo
     from dirtoo.fileview.file_item import FileItem
     from dirtoo.fileview.controller import Controller
 

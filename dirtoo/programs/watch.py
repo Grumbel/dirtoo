@@ -26,7 +26,7 @@ import xdg.BaseDirectory
 from PyQt5.QtCore import QCoreApplication
 
 from dirtoo.location import Location
-from dirtoo.file_info import FileInfo
+from dirtoo.file.file_info import FileInfo
 from dirtoo.watcher.directory_watcher import DirectoryWatcher
 from dirtoo.fileview.stdio_filesystem import StdioFilesystem
 

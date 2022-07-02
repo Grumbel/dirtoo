@@ -27,7 +27,7 @@ from dirtoo.xdg_desktop import get_desktop_entry, get_desktop_file
 if TYPE_CHECKING:
     from xdg.DesktopEntry import DesktopEntry
     from dirtoo.fileview.controller import Controller
-    from dirtoo.file_info import FileInfo
+    from dirtoo.file.file_info import FileInfo
 
 
 class ItemContextMenu(Menu):

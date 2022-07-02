@@ -29,11 +29,11 @@ import bytefmt
 from dirtoo.filecollection.file_collection import FileCollection
 from dirtoo.filecollection.grouper import (DayGrouper, DirectoryGrouper,
                                            NoGrouper, DurationGrouper)
-from dirtoo.file_info import FileInfo
+from dirtoo.file.file_info import FileInfo
 from dirtoo.filecollection.filter import Filter
 from dirtoo.filecollection.sorter import Sorter
 from dirtoo.fileview.actions import Actions
-from dirtoo.fileview.filter_parser import FilterParser
+from dirtoo.filter.filter_parser import FilterParser
 from dirtoo.fileview.gnome import parse_gnome_copied_files, make_gnome_copied_files
 from dirtoo.fileview.gui import Gui
 from dirtoo.fileview.mode import FileItemStyle

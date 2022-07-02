@@ -19,10 +19,10 @@ from typing import Any, TYPE_CHECKING
 
 import logging
 
-from dirtoo.file_info import FileInfo
-from dirtoo.fileview.bookmarks_provider import BookmarksProvider
+from dirtoo.file.file_info import FileInfo
+from dirtoo.bookmark.bookmarks_provider import BookmarksProvider
 from dirtoo.fileview.filelist_stream import FileListStream
-from dirtoo.fileview.history_provider import HistoryProvider
+from dirtoo.history.history_provider import HistoryProvider
 from dirtoo.fileview.search_stream import SearchStream
 from dirtoo.fileview.stdio_filesystem import StdioFilesystem
 from dirtoo.location import Location

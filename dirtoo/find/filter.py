@@ -21,9 +21,9 @@ from abc import ABC, abstractmethod
 import os
 
 from dirtoo.find.context import Context
-from dirtoo.fileview.filter_expr_parser import FilterExprParser
-from dirtoo.fileview.lazy_file_info import LazyFileInfo
-from dirtoo.file_info import FileInfo
+from dirtoo.filter.filter_expr_parser import FilterExprParser
+from dirtoo.file.lazy_file_info import LazyFileInfo
+from dirtoo.file.file_info import FileInfo
 
 
 class Filter(ABC):

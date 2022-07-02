@@ -230,7 +230,7 @@ class LocationLineEdit(QLineEdit):
             if True or location.exists():  # type: ignore
                 p.setColor(QPalette.Text, Qt.black)
             else:
-                p.setColor(QPalette.Text, Qt.red)
+                p.setColor(QPalette.Text, Qt.red)  # type: ignore
         except Exception:
             p.setColor(QPalette.Text, Qt.red)
 

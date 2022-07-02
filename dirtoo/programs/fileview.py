@@ -25,7 +25,7 @@ import argparse
 
 from dirtoo.fileview.application import FileViewApplication
 from dirtoo.location import Location
-from dirtoo.fileview.profiler import activate_profiler
+from dirtoo.profiler.profiler import activate_profiler
 from dirtoo.util import expand_directories
 
 logger = logging.getLogger(__name__)

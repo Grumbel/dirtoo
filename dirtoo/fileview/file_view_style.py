@@ -21,7 +21,7 @@ from pkg_resources import resource_filename
 
 from PyQt5.QtGui import QIcon, QPixmap, QFont, QFontMetrics, QImage, QPainter
 
-from dirtoo.fileview.image_filter import white_outline
+from dirtoo.image.image_filter import white_outline
 from dirtoo.fileview.scaler import make_unscaled_rect
 
 

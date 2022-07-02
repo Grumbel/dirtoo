@@ -30,7 +30,7 @@ from dirtoo.fileview.worker_thread import WorkerThread, Worker
 if TYPE_CHECKING:
     from dirtoo.fileview.application import FileViewApplication
     from dirtoo.location import Location
-    from dirtoo.file_info import FileInfo
+    from dirtoo.file.file_info import FileInfo
 
 logger = logging.getLogger(__name__)
 

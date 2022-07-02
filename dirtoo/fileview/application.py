@@ -28,24 +28,24 @@ from PyQt5.QtGui import QPixmapCache
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtDBus import QDBusConnection
 
+from dirtoo.bookmark.bookmarks import Bookmarks
 from dirtoo.dbus_thumbnail_cache import DBusThumbnailCache
-from dirtoo.fileview.bookmarks import Bookmarks
-from dirtoo.fileview.executor import Executor
-from dirtoo.fileview.filesystem_operations import FilesystemOperations
-from dirtoo.fileview.history import SqlHistory
-from dirtoo.location import Location
-from dirtoo.fileview.metadata_collector import MetaDataCollector
-from dirtoo.fileview.mime_database import MimeDatabase
-from dirtoo.fileview.settings import settings
-from dirtoo.fileview.thumbnailer import Thumbnailer
-from dirtoo.fileview.virtual_filesystem import VirtualFilesystem
-from dirtoo.fileview.stream_manager import StreamManager
-from dirtoo.xdg_mime_associations import XdgMimeAssociations
-from dirtoo.gui.preferences_dialog import PreferencesDialog
 from dirtoo.filesystem import Filesystem
 from dirtoo.fileview.application_actions import ApplicationActions
 from dirtoo.fileview.controller import Controller
-from dirtoo.fileview.directory_thumbnailer import DirectoryThumbnailer
+from dirtoo.fileview.executor import Executor
+from dirtoo.fileview.filesystem_operations import FilesystemOperations
+from dirtoo.fileview.settings import settings
+from dirtoo.fileview.stream_manager import StreamManager
+from dirtoo.fileview.virtual_filesystem import VirtualFilesystem
+from dirtoo.gui.preferences_dialog import PreferencesDialog
+from dirtoo.history.history import SqlHistory
+from dirtoo.location import Location
+from dirtoo.metadata.metadata_collector import MetaDataCollector
+from dirtoo.mime.mime_database import MimeDatabase
+from dirtoo.thumbnail.directory_thumbnailer import DirectoryThumbnailer
+from dirtoo.thumbnail.thumbnailer import Thumbnailer
+from dirtoo.xdg_mime_associations import XdgMimeAssociations
 
 logger = logging.getLogger(__name__)
 

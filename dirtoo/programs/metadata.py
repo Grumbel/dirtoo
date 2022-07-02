@@ -25,7 +25,7 @@ import xdg.BaseDirectory
 
 from PyQt5.QtCore import QCoreApplication
 
-from dirtoo.fileview.metadata_collector import MetaDataCollector
+from dirtoo.metadata.metadata_collector import MetaDataCollector
 from dirtoo.fileview.stdio_filesystem import StdioFilesystem
 from dirtoo.location import Location
 
