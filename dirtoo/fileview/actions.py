@@ -29,7 +29,7 @@ from PyQt5.QtWidgets import (
 
 from dirtoo.file_info import FileInfo
 from dirtoo.fileview.settings import settings
-from dirtoo.util import numeric_sort_key
+from dirtoo.sort import numeric_sort_key
 
 if TYPE_CHECKING:
     from dirtoo.fileview.controller import Controller

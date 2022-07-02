@@ -15,30 +15,25 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import unittest
+from typing import Any, Sequence
 
-from dirtoo.sort import numeric_sorted
+import collections
 
 
-class UtilTestCase(unittest.TestCase):
+def unique(lst: Sequence[object]) -> Sequence[object]:
+    """Remove duplicate elements from a list. List can be unsorted."""
+    return list(collections.OrderedDict.fromkeys(lst))
 
-    def test_numeric_sorted(self) -> None:
-        tests = [
-            (['2', '22', '10', '1'],
-             ['1', '2', '10', '22']),
 
-            (['a9', 'a999', 'a99', 'a9999'],
-             ['a9', 'a99', 'a999', 'a9999']),
-
-            (['aaa', '999'],
-             ['999', 'aaa']),
-
-            (['a9a', 'a9z', 'a9d', 'a9m3', 'a9m5', 'a9m1'],
-             ['a9a', 'a9d', 'a9m1', 'a9m3', 'a9m5', 'a9z']),
-        ]
-
-        for lhs, rhs in tests:
-            self.assertEqual(numeric_sorted(lhs), rhs)
+def remove_duplicates(lst: Sequence[Any]) -> Sequence[Any]:
+    """Remove duplicate elements from a list if they follow on each
+    other."""
+    result = []
+    for idx, x in enumerate(lst):
+        if idx != 0 and lst[idx - 1] == x:
+            continue
+        result.append(x)
+    return result
 
 
 # EOF #

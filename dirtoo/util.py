@@ -15,12 +15,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import cast, Sequence, Any, Union, TextIO, Tuple, BinaryIO
+from typing import cast, Sequence, Any, TextIO, BinaryIO, Union
 
-import re
 import os
 import sys
-import collections
 import itertools
 
 
@@ -40,46 +38,6 @@ def expand_directories(files: Sequence[str], recursive: bool) -> list[str]:
     for f in files:
         results += expand_file(f, recursive)
     return results
-
-
-NUMERIC_SORT_RX = re.compile(r'(\d+)')
-
-
-def numeric_sort_key(text: str) -> Tuple[Union[int, str], ...]:
-    # For numbers this will return ('', 999, ''), the empty strings
-    # must not be filtered out of the tuple, as they ensure that 'int'
-    # isn't compared to a 'str'. With the empty strings in place all
-    # odd positions are 'str' and all even ones are 'int'.
-
-    return tuple(int(sub) if sub.isdigit() else sub
-                 for sub in NUMERIC_SORT_RX.split(text))
-
-
-def numeric_sorted(lst: Sequence[str]) -> Sequence[str]:
-    return sorted(lst, key=numeric_sort_key)
-
-
-def unique(lst: Sequence[object]) -> Sequence[object]:
-    """Remove duplicate elements from a list. List can be unsorted."""
-    return list(collections.OrderedDict.fromkeys(lst))
-
-
-def remove_duplicates(lst: Sequence[Any]) -> Sequence[Any]:
-    """Remove duplicate elements from a list if they follow on each
-    other."""
-    result = []
-    for idx, x in enumerate(lst):
-        if idx != 0 and lst[idx - 1] == x:
-            continue
-        result.append(x)
-    return result
-
-
-GLOB_PATTERN_RX = re.compile(r"[\*\?\[\]]")
-
-
-def is_glob_pattern(text: str) -> bool:
-    return bool(GLOB_PATTERN_RX.search(text))
 
 
 def make_non_existing_filename(path: str, name: str) -> str:

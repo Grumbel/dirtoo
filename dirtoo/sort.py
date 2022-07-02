@@ -15,30 +15,26 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import unittest
+from typing import Tuple, Union, Sequence
 
-from dirtoo.sort import numeric_sorted
+import re
 
 
-class UtilTestCase(unittest.TestCase):
+NUMERIC_SORT_RX = re.compile(r'(\d+)')
 
-    def test_numeric_sorted(self) -> None:
-        tests = [
-            (['2', '22', '10', '1'],
-             ['1', '2', '10', '22']),
 
-            (['a9', 'a999', 'a99', 'a9999'],
-             ['a9', 'a99', 'a999', 'a9999']),
+def numeric_sort_key(text: str) -> Tuple[Union[int, str], ...]:
+    # For numbers this will return ('', 999, ''), the empty strings
+    # must not be filtered out of the tuple, as they ensure that 'int'
+    # isn't compared to a 'str'. With the empty strings in place all
+    # odd positions are 'str' and all even ones are 'int'.
 
-            (['aaa', '999'],
-             ['999', 'aaa']),
+    return tuple(int(sub) if sub.isdigit() else sub
+                 for sub in NUMERIC_SORT_RX.split(text))
 
-            (['a9a', 'a9z', 'a9d', 'a9m3', 'a9m5', 'a9m1'],
-             ['a9a', 'a9d', 'a9m1', 'a9m3', 'a9m5', 'a9z']),
-        ]
 
-        for lhs, rhs in tests:
-            self.assertEqual(numeric_sorted(lhs), rhs)
+def numeric_sorted(lst: Sequence[str]) -> Sequence[str]:
+    return sorted(lst, key=numeric_sort_key)
 
 
 # EOF #

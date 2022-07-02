@@ -17,7 +17,7 @@
 
 from typing import Callable, Any
 
-from dirtoo.util import numeric_sort_key
+from dirtoo.sort import numeric_sort_key
 from dirtoo.file_info import FileInfo
 
 
