@@ -84,22 +84,25 @@ class Location:
         m = LOCATION_REGEX.match(url)
         if m is None:
             raise Exception("Location.from_url: failed to decode: {}".format(url))
-        else:
-            protocol = m.group(1)
-            rest = m.group(2)
-            abspath, *payload_specs = rest.split("//")
 
-            abspath = os.path.normpath(abspath)
+        protocol = m.group(1)
+        rest = m.group(2)
+        abspath, *payload_specs = rest.split("//")
 
-            payloads: list[Payload] = []
-            for payload_spec in payload_specs:
-                payload = payload_spec.split(":", 1)
-                if len(payload) == 1:
-                    payloads.append(Payload(payload[0], ""))
-                else:
-                    payloads.append(Payload(payload[0], payload[1]))
+        abspath = urllib.parse.unquote(abspath)
+        abspath = os.path.normpath(abspath)
 
-            return Location(protocol, abspath, payloads)
+        payloads: list[Payload] = []
+        for payload_spec in payload_specs:
+            payload = payload_spec.split(":", 1)
+            if len(payload) == 1:
+                payloads.append(Payload(payload[0], ""))
+            else:
+                payload_protocol: str = payload[0]
+                payload_path: str = urllib.parse.unquote(payload[1])
+                payloads.append(Payload(payload_protocol, payload_path))
+
+        return Location(protocol, abspath, payloads)
 
     def __init__(self, protocol: str, abspath: str, payloads: Sequence[Payload]) -> None:
         assert os.path.isabs(abspath)

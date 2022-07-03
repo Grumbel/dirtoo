@@ -57,13 +57,16 @@ class LocationTestCase(unittest.TestCase):
         expected = Location.from_path(os.getcwd())
         self.assertEqual(result, expected)
 
-    def test_location_init(self) -> None:
+    def test_from_url(self) -> None:
         ok_texts = [
             ("file:///home/juser/test.rar//rar:file_inside.rar",
              ("file", "/home/juser/test.rar", [Payload("rar", "file_inside.rar")])),
 
             ("file:///home/juser/test.rar",
              ("file", "/home/juser/test.rar", [])),
+
+            ("file:///home/juser/test%20test.rar",
+             ("file", "/home/juser/test test.rar", [])),
 
             ("file:///home/juser/test.rar//rar",
              ("file", "/home/juser/test.rar", [Payload("rar", "")])),
@@ -222,6 +225,9 @@ class LocationTestCase(unittest.TestCase):
 
             ("file:///home/juser/test.rar",
              "test.rar"),
+
+            ("file:///home/juser/test%20test.rar",
+             "test test.rar"),
         ]
 
         for url, expected in testcases:
