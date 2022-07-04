@@ -443,7 +443,7 @@ class Controller(QObject):
         logger.debug("Controller.receive_thumbnail: %s %s %s %s %s",
                      location, flavor, image, error_code, message)
         if image is None:
-            logger.error("Controller.receive_thumbnail: error: %s  %s  %s", location, error_code, message)
+            logger.info("Controller.receive_thumbnail: error: %s  %s  %s", location, error_code, message)
 
         self._gui._window.file_view.receive_thumbnail(location, flavor, image, error_code, message)
 
