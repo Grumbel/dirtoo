@@ -66,6 +66,10 @@ class FileItem(QGraphicsObject):
         self.large_thumbnail: Thumbnail = Thumbnail("large", self)
         self.metadata: Optional[Dict[str, Any]] = None
 
+        self.tile_rect: QRect
+        self.thumbnail_rect: QRect
+        self.bounding_rect: QRect
+        self.qpainter_path: QPainterPath
         self.set_tile_size(self.file_view._mode._tile_style.tile_width, self.file_view._mode._tile_style.tile_height)
         self.animation_timer: Optional[int] = None
 
@@ -89,10 +93,10 @@ class FileItem(QGraphicsObject):
 
     def set_tile_size(self, tile_width: int, tile_height: int) -> None:
         # the size of the base tile
-        self.tile_rect = QRect(0, 0, tile_width, tile_height)
+        self.tile_rect = QRect(0, 0, int(tile_width), int(tile_height))
 
         # the size of the base tile
-        self.thumbnail_rect = QRect(0, 0, tile_width, tile_width)
+        self.thumbnail_rect = QRect(0, 0, int(tile_width), int(tile_width))
 
         # the bounding rect for drawing, it's a little bigger to allow
         # border effects and such

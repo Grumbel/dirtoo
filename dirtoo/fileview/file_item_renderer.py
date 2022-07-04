@@ -97,7 +97,7 @@ class FileItemRenderer:
         if self.zoom_index in [0, 1]:
             text_option = QTextOption(Qt.AlignLeft | Qt.AlignVCenter)
             text_option.setWrapMode(QTextOption.NoWrap)
-            text_rect = QRect(QPoint(self.tile_rect.height() + 4,
+            text_rect = QRect(QPoint(int(self.tile_rect.height()) + 4,
                                      0),
                               QPoint(self.tile_rect.width(),
                                      self.tile_rect.height()))
@@ -134,9 +134,9 @@ class FileItemRenderer:
             row1_rect = QRect(QPoint(self.tile_rect.left() + self.tile_rect.height() + 8,
                                      self.tile_rect.top()),
                               QPoint(self.tile_rect.right() - 8,
-                                     self.tile_rect.top() + self.tile_rect.height() / 2))
+                                     self.tile_rect.top() + self.tile_rect.height() // 2))
             row2_rect = QRect(QPoint(self.tile_rect.left() + self.tile_rect.height() + 8,
-                                     self.tile_rect.top() + self.tile_rect.height() / 2),
+                                     self.tile_rect.top() + self.tile_rect.height() // 2),
                               QPoint(self.tile_rect.right() - 8,
                                      self.tile_rect.bottom()))
 

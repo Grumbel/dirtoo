@@ -760,7 +760,7 @@ class Controller(QObject):
         self._gui._window.location_lineedit.on_completions(longest, candidates)
 
     def show_history_context_menu(self, button: 'ToolButton', forward: bool) -> None:
-        pos = button.mapToGlobal(QPoint(0, button.height()))
+        pos = button.mapToGlobal(QPoint(0, int(button.height())))
 
         entries = self.app.location_history.get_unique_entries(20)
 
