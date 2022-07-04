@@ -36,6 +36,8 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
                         help="List available icons")
     parser.add_argument("-m", "--mime-type", action='store_true', default=False,
                         help="Lookup icons by mime-type")
+    parser.add_argument("--list-mime", action='store_true', default=False,
+                        help="List all mime types")
     return parser.parse_args(argv[1:])
 
 
@@ -50,6 +52,10 @@ def main(argv: Sequence[str]) -> None:
                 for name in files:
                     if name.endswith(".png") or name.endswith(".svg"):
                         print(os.path.join(root, name))
+    elif args.list_mime:
+        mimedb = QMimeDatabase()
+        for mt in mimedb.allMimeTypes():
+            print(f"{mt.name():50}  {mt.iconName()}")
     else:
         if args.ICON == []:
             print("{:>17} : {}".format("Theme", QIcon.themeName()))
