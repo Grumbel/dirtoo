@@ -52,10 +52,17 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
 
 def setup_logging(opts: argparse.Namespace) -> None:
 
+    logging_format = "%(asctime)s - %(name)s:%(lineno)s - %(levelname)s: %(message)s"
+    logging_datefmt = "%Y-%m-%dT%H:%M:%S%z"
+
     if opts.debug:
-        logging.basicConfig(level=logging.DEBUG)
+        logging.basicConfig(level=logging.DEBUG,
+                            format=logging_format,
+                            datefmt=logging_datefmt)
     else:
-        logging.basicConfig(level=logging.WARNING)
+        logging.basicConfig(level=logging.WARNING,
+                            format=logging_format,
+                            datefmt=logging_datefmt)
 
     if opts.profile:
         activate_profiler(True)
