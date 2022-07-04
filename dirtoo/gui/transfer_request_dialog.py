@@ -20,11 +20,12 @@ from typing import Sequence
 import html
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLayout,
                              QHBoxLayout, QVBoxLayout, QSizePolicy,
                              QDialogButtonBox, QLabel, QListWidget,
                              QAbstractScrollArea, QGroupBox)
+
+from dirtoo.image.icon import load_icon
 
 
 class TransferRequestDialog(QDialog):
@@ -45,7 +46,7 @@ class TransferRequestDialog(QDialog):
     def _make_file_info(self, filename: str) -> QLayout:
         # Widgets
         file_icon = QLabel()
-        file_icon.setPixmap(QIcon.fromTheme("folder").pixmap(48))
+        file_icon.setPixmap(load_icon("folder").pixmap(48))
         file_icon.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
         file_info = QLabel("Filename: <b>{}</b><br>"
@@ -66,7 +67,7 @@ class TransferRequestDialog(QDialog):
 
         # Widgets
         move_icon = QLabel()
-        move_icon.setPixmap(QIcon.fromTheme("stock_folder-move").pixmap(48))
+        move_icon.setPixmap(load_icon("stock_folder-move").pixmap(48))
         move_icon.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
 
         header = QLabel("<big>A file transfer was requested.</big>")
@@ -84,7 +85,7 @@ class TransferRequestDialog(QDialog):
         source_files_widget.setLayout(box)
 
         arrow_label = QLabel()
-        arrow_label.setPixmap(QIcon.fromTheme("down").pixmap(24))
+        arrow_label.setPixmap(load_icon("down").pixmap(24))
         arrow_label.setAlignment(Qt.AlignCenter)
 
         target_directory_layout = self._make_file_info(self._target_directory)
@@ -97,9 +98,9 @@ class TransferRequestDialog(QDialog):
 
         btn_cancel = button_box.addButton(QDialogButtonBox.Cancel)
 
-        btn_copy = QPushButton(QIcon.fromTheme("stock_folder-copy"), "Copy Files")
-        btn_move = QPushButton(QIcon.fromTheme("stock_folder-move"), "Move Files")
-        btn_link = QPushButton(QIcon.fromTheme("stock_folder-move"), "Link Files")
+        btn_copy = QPushButton(load_icon("stock_folder-copy"), "Copy Files")
+        btn_move = QPushButton(load_icon("stock_folder-move"), "Move Files")
+        btn_link = QPushButton(load_icon("stock_folder-move"), "Link Files")
         button_box.addButton(btn_move, QDialogButtonBox.AcceptRole)
         button_box.addButton(btn_copy, QDialogButtonBox.AcceptRole)
         button_box.addButton(btn_link, QDialogButtonBox.AcceptRole)

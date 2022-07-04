@@ -21,7 +21,7 @@ import logging
 import time
 
 from PyQt5.QtCore import Qt, QTimerEvent
-from PyQt5.QtGui import QIcon, QTextOption
+from PyQt5.QtGui import QTextOption
 from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QCheckBox,
                              QHBoxLayout, QVBoxLayout, QSizePolicy,
                              QDialogButtonBox, QLabel, QGroupBox,
@@ -32,6 +32,7 @@ import bytefmt
 from dirtoo.mediainfo import split_duration
 from dirtoo.file_transfer import ConflictResolution
 from dirtoo.fileview.settings import settings
+from dirtoo.image.icon import load_icon
 
 if TYPE_CHECKING:
     from dirtoo.fileview.filesystem_operations import GuiProgress
@@ -91,7 +92,7 @@ class TransferDialog(QDialog):
 
         # Widgets
         move_icon = QLabel()
-        move_icon.setPixmap(QIcon.fromTheme("stock_folder-move").pixmap(48))
+        move_icon.setPixmap(load_icon("stock_folder-move").pixmap(48))
         move_icon.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
 
         header = QLabel("<big>File transfer in progress:</big>")
@@ -150,7 +151,7 @@ class TransferDialog(QDialog):
         button_box = QDialogButtonBox(self)
         button_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
-        btn_pause = QPushButton(QIcon.fromTheme("media-pause"), "Pause")
+        btn_pause = QPushButton(load_icon("media-pause"), "Pause")
         button_box.addButton(btn_pause, QDialogButtonBox.ActionRole)
         self._btn_pause = btn_pause
 

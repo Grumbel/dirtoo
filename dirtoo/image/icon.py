@@ -1,5 +1,5 @@
 # dirtoo - File and directory manipulation tools for Python
-# Copyright (C) 2018 Ingo Ruhnke <grumbel@gmail.com>
+# Copyright (C) 2022 Ingo Ruhnke <grumbel@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,27 +15,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING
+import logging
 
-from PyQt5.QtWidgets import QAction
-
-from dirtoo.image.icon import load_icon
-
-if TYPE_CHECKING:
-    from dirtoo.fileview.application import FileViewApplication
+from PyQt5.QtGui import QIcon
 
 
-class ApplicationActions:
+logger = logging.getLogger(__name__)
 
-    def __init__(self, app: 'FileViewApplication') -> None:
-        self._app = app
-        self._make_actions()
 
-    def _make_actions(self) -> None:
-        self.enable_filesystem = QAction(load_icon("drive-harddisk"),
-                                         "Allow file manipulation", checkable=True)
-        self.enable_filesystem.setChecked(False)
-        self.enable_filesystem.triggered.connect(self._app.set_filesystem_enabled)
+def load_icon(name: str) -> QIcon:
+    icon = QIcon.fromTheme(name)
+    if icon.isNull():
+        logger.error(f"could not find icon '{name}`")
+
+    return icon
 
 
 # EOF #

@@ -18,11 +18,11 @@
 from typing import TYPE_CHECKING, cast, Sequence, Set, Tuple, Optional
 
 from PyQt5.QtWidgets import QMenu
-from PyQt5.QtGui import QIcon
 
 from dirtoo.filesystem.location import Location, Payload
 from dirtoo.gui.menu import Menu
 from dirtoo.xdg_desktop import get_desktop_entry, get_desktop_file
+from dirtoo.image.icon import load_icon
 
 if TYPE_CHECKING:
     from xdg.DesktopEntry import DesktopEntry
@@ -67,7 +67,7 @@ class ItemContextMenu(Menu):
             self._controller.new_controller().set_location(make_extract(location))
 
         self.addDoubleAction(
-            QIcon.fromTheme("package-x-generic"),
+            load_icon("package-x-generic"),
             "Open Archive",
             left_func, middle_func)
         self.addSeparator()
@@ -80,7 +80,7 @@ class ItemContextMenu(Menu):
             self._controller.new_controller().set_location(location)
 
         self.addDoubleAction(
-            QIcon.fromTheme("folder"),
+            load_icon("folder"),
             "Open Folder",
             left_func, middle_func)
         self.addSeparator()
@@ -93,7 +93,7 @@ class ItemContextMenu(Menu):
             self._controller.new_controller().set_location(location)
 
         self.addDoubleAction(
-            QIcon.fromTheme("folder"),
+            load_icon("folder"),
             "Open Containing Folder",
             left_func, middle_func)
         self.addSeparator()
@@ -140,7 +140,7 @@ class ItemContextMenu(Menu):
                                                if x is not None]
             entries = sorted(entries, key=lambda x: cast(str, x.getName()))
             for entry in entries:
-                action = menu.addAction(QIcon.fromTheme(entry.getIcon()), "Open With {}".format(entry.getName()))
+                action = menu.addAction(load_icon(entry.getIcon()), "Open With {}".format(entry.getName()))
 
                 def on_action(checked: bool, exe: str = entry.getExec(), files: Sequence[Location] = files) -> None:
                     self._controller.app.file_history.append_group(files)
@@ -180,7 +180,7 @@ class ItemContextMenu(Menu):
 
         mimetype = self._controller.app.mime_database.get_mime_type(self._fileinfo.location()).name()
         if mimetype == "inode/directory":
-            self.addAction(QIcon.fromTheme('utilities-terminal'), "Open Terminal Here",
+            self.addAction(load_icon('utilities-terminal'), "Open Terminal Here",
                            lambda location=self._fileinfo.location():
                            self._controller.app.executor.launch_terminal(location))
             self.addSeparator()
@@ -189,7 +189,7 @@ class ItemContextMenu(Menu):
         self.addAction(self._controller.actions.edit_cut)
         self.addAction(self._controller.actions.edit_copy)
 
-        act = self.addAction(QIcon.fromTheme('edit-paste'), "Paste Into Folder")
+        act = self.addAction(load_icon('edit-paste'), "Paste Into Folder")
         if self._fileinfo.isdir():
             act.triggered.connect(
                 lambda: self._controller.on_edit_paste_into(self._fileinfo.location()))
@@ -204,7 +204,7 @@ class ItemContextMenu(Menu):
 
     def _build_rename_menu(self) -> None:
         rename = self.addAction(
-            QIcon.fromTheme('rename'), 'Rename',
+            load_icon('rename'), 'Rename',
             lambda location=self._fileinfo.location():
             self._controller.show_rename_dialog(location))
         rename.setShortcut('F2')

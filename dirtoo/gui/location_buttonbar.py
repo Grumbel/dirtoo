@@ -19,11 +19,12 @@ from typing import TYPE_CHECKING, Any, Optional, Tuple
 
 from PyQt5.QtCore import Qt, QPoint, QSize
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QSizePolicy
-from PyQt5.QtGui import QIcon, QDragEnterEvent, QDropEvent, QDragLeaveEvent, QMouseEvent
+from PyQt5.QtGui import QDragEnterEvent, QDropEvent, QDragLeaveEvent, QMouseEvent
 
 from dirtoo.filesystem.location import Location
 from dirtoo.gui.push_button import PushButton
 from dirtoo.gui.item_context_menu import ItemContextMenu
+from dirtoo.image.icon import load_icon
 
 if TYPE_CHECKING:
     from dirtoo.fileview.controller import Controller
@@ -100,7 +101,7 @@ class LocationButtonBar(QWidget):
             basename = location.basename()
             if basename == "":
                 if location.protocol() == "file":
-                    button = LocationButton(self._controller, location, QIcon.fromTheme("drive-harddisk"), "")
+                    button = LocationButton(self._controller, location, load_icon("drive-harddisk"), "")
                     button.setIconSize(QSize(16, 16))
                 else:
                     button = LocationButton(self._controller, location, location.protocol() + "://")

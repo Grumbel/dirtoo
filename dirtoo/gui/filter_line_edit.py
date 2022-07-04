@@ -18,8 +18,10 @@
 from typing import TYPE_CHECKING
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPalette, QIcon, QKeySequence, QFocusEvent
+from PyQt5.QtGui import QPalette, QKeySequence, QFocusEvent
 from PyQt5.QtWidgets import QLineEdit, QShortcut
+
+from dirtoo.image.icon import load_icon
 
 if TYPE_CHECKING:
     from dirtoo.fileview.controller import Controller
@@ -36,7 +38,7 @@ class FilterLineEdit(QLineEdit):
         self.history: list[str] = []
         self.history_idx = 0
 
-        action = self.addAction(QIcon.fromTheme("window-close"), QLineEdit.TrailingPosition)
+        action = self.addAction(load_icon("window-close"), QLineEdit.TrailingPosition)
         action.triggered.connect(self.on_delete_button)
         action.setToolTip("Clear the filter and hide it")
 

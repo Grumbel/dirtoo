@@ -16,10 +16,11 @@
 
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLineEdit,
                              QHBoxLayout, QVBoxLayout,
                              QDialogButtonBox, QLabel)
+
+from dirtoo.image.icon import load_icon
 
 
 class CreateDialog(QDialog):
@@ -45,19 +46,19 @@ class CreateDialog(QDialog):
         if self._kind == CreateDialog.FOLDER:
             self.setWindowTitle("Create a folder")
             self.label = QLabel("Enter the name for the folder:")
-            self.icon.setPixmap(QIcon.fromTheme("folder-new").pixmap(48))
+            self.icon.setPixmap(load_icon("folder-new").pixmap(48))
             self.name_edit.setText("New Folder")
             self.name_edit.selectAll()
         elif self._kind == CreateDialog.TEXTFILE:
             self.setWindowTitle("Create an empty file")
             self.label = QLabel("Enter the name for the file:")
-            self.icon.setPixmap(QIcon.fromTheme("document-new").pixmap(48))
+            self.icon.setPixmap(load_icon("document-new").pixmap(48))
             self.name_edit.setText("New File")
             self.name_edit.selectAll()
 
         self.button_box = QDialogButtonBox(self)
 
-        self.btn_create = QPushButton(QIcon.fromTheme("document-save-as"), "Create")
+        self.btn_create = QPushButton(load_icon("document-save-as"), "Create")
         self.button_box.addButton(self.btn_create, QDialogButtonBox.AcceptRole)
         self.btn_cancel = self.button_box.addButton(QDialogButtonBox.Cancel)
         self.btn_create.setDefault(True)

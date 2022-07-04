@@ -23,18 +23,19 @@ from PyQt5.QtGui import QIcon, QPixmap, QFont, QFontMetrics, QImage, QPainter
 
 from dirtoo.image.image_filter import white_outline
 from dirtoo.fileview.scaler import make_unscaled_rect
+from dirtoo.image.icon import load_icon
 
 
 class SharedIcons:
 
     def __init__(self) -> None:
-        self.folder = QIcon.fromTheme("folder")
-        self.rar = QIcon.fromTheme("rar")
-        self.zip = QIcon.fromTheme("zip")
-        self.txt = QIcon.fromTheme("txt")
-        self.image_loading = QIcon.fromTheme("image-loading")
-        self.image_missing = QIcon.fromTheme("image-missing")
-        self.locked = QIcon.fromTheme("locked")
+        self.folder = load_icon("folder")
+        self.rar = load_icon("rar")
+        self.zip = load_icon("zip")
+        self.txt = load_icon("txt")
+        self.image_loading = load_icon("image-loading")
+        self.image_missing = load_icon("image-missing")
+        self.locked = load_icon("locked")
 
 
 class SharedPixmaps:
@@ -65,7 +66,7 @@ class SharedScaleable:
         self.locked = self.load_icon("locked")
 
     def load_icon(self, name: str, outline: bool = False) -> QPixmap:
-        icon = QIcon.fromTheme(name)
+        icon = load_icon(name)
         return self.load_icon_icon(icon, outline)
 
     def load_icon_icon(self, icon: QIcon, outline: bool = False) -> QPixmap:

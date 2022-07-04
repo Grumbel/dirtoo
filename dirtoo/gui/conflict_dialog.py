@@ -20,12 +20,12 @@ from typing import cast
 import html
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLayout,
                              QHBoxLayout, QVBoxLayout, QSizePolicy,
                              QDialogButtonBox, QLabel, QCheckBox, QGroupBox)
 
 from dirtoo.file_transfer import ConflictResolution
+from dirtoo.image.icon import load_icon
 
 
 class ConflictDialog(QDialog):
@@ -46,7 +46,7 @@ class ConflictDialog(QDialog):
     def _make_file_info(self, filename: str) -> QLayout:
         # Widgets
         file_icon = QLabel()
-        file_icon.setPixmap(QIcon.fromTheme("document").pixmap(48))
+        file_icon.setPixmap(load_icon("document").pixmap(48))
         file_icon.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
         file_info = QLabel("Filename: <b>{}</b><br>"
@@ -76,7 +76,7 @@ class ConflictDialog(QDialog):
 
         # Widgets
         move_icon = QLabel()
-        move_icon.setPixmap(QIcon.fromTheme("stock_folder-move").pixmap(48))
+        move_icon.setPixmap(load_icon("stock_folder-move").pixmap(48))
         move_icon.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
 
         header = QLabel("<big>This folder already contains a file named <b>{}</b></big>".format(self._source_filename))
@@ -89,7 +89,7 @@ class ConflictDialog(QDialog):
         source_file_widget.setLayout(source_file_layout)
 
         arrow_label = QLabel()
-        arrow_label.setPixmap(QIcon.fromTheme("down").pixmap(24))
+        arrow_label.setPixmap(load_icon("down").pixmap(24))
         arrow_label.setAlignment(Qt.AlignCenter)
 
         # subheader2 = QLabel("to overwrite:")

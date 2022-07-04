@@ -18,8 +18,10 @@
 from enum import Enum
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon, QPalette, QColor
+from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QHBoxLayout, QSizePolicy
+
+from dirtoo.image.icon import load_icon
 
 
 class MessageSeverity(Enum):
@@ -41,9 +43,9 @@ class MessageArea(QWidget):
         self.setAutoFillBackground(True)
 
         self._icons = [
-            QIcon.fromTheme("dialog-information"),
-            QIcon.fromTheme("dialog-warning"),
-            QIcon.fromTheme("dialog-error")
+            load_icon("dialog-information"),
+            load_icon("dialog-warning"),
+            load_icon("dialog-error")
         ]
 
         self._icon_label = QLabel()
@@ -57,7 +59,7 @@ class MessageArea(QWidget):
         self._label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self._label.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
-        self._close_btn = QPushButton(QIcon.fromTheme("window-close"), "")
+        self._close_btn = QPushButton(load_icon("window-close"), "")
         self._close_btn.setFlat(True)
         self._close_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self._close_btn.clicked.connect(self._on_close_btn_triggerd)

@@ -25,6 +25,7 @@ from PyQt5.QtWidgets import (QLineEdit, QShortcut, QWidget,
                              QListWidget, QVBoxLayout, QSizePolicy)
 
 from dirtoo.filesystem.location import Location
+from dirtoo.image.icon import load_icon
 
 if TYPE_CHECKING:
     from dirtoo.fileview.controller import Controller
@@ -135,7 +136,7 @@ class LocationLineEdit(QLineEdit):
         self.returnPressed.connect(self.on_return_pressed)
         self.textEdited.connect(self.on_text_edited)
 
-        self.bookmark_act = self.addAction(QIcon.fromTheme("user-bookmarks"), QLineEdit.TrailingPosition)
+        self.bookmark_act = self.addAction(load_icon("user-bookmarks"), QLineEdit.TrailingPosition)
         self.bookmark_act.setCheckable(True)
         self.bookmark_act.triggered.connect(self._on_bookmark_triggered)
         self.bookmark_act.setToolTip("Toggle bookmark for this location")
@@ -170,18 +171,18 @@ class LocationLineEdit(QLineEdit):
         if location is not None:
             self.bookmark_act.setEnabled(True)
             if self._controller.has_bookmark():
-                self.bookmark_act.setIcon(QIcon.fromTheme("user-bookmarks"))
+                self.bookmark_act.setIcon(load_icon("user-bookmarks"))
             else:
-                self.bookmark_act.setIcon(QIcon.fromTheme("bookmark-missing"))
+                self.bookmark_act.setIcon(load_icon("bookmark-missing"))
         else:
             self.bookmark_act.setEnabled(False)
             self.bookmark_act.setIcon(QIcon())
 
     def _on_bookmark_triggered(self, checked: bool) -> None:
         if self._controller.toggle_bookmark():
-            self.bookmark_act.setIcon(QIcon.fromTheme("user-bookmarks"))
+            self.bookmark_act.setIcon(load_icon("user-bookmarks"))
         else:
-            self.bookmark_act.setIcon(QIcon.fromTheme("bookmark-missing"))
+            self.bookmark_act.setIcon(load_icon("bookmark-missing"))
 
     def _on_escape_press(self) -> None:
         if self._controller.location is None:

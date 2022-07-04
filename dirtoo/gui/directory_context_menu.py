@@ -17,9 +17,8 @@
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtGui import QIcon
-
 from dirtoo.gui.menu import Menu
+from dirtoo.image.icon import load_icon
 
 if TYPE_CHECKING:
     from dirtoo.fileview.controller import Controller
@@ -37,22 +36,22 @@ class DirectoryContextMenu(Menu):
         self._build_menu()
 
     def _build_menu(self) -> None:
-        self.addAction(QIcon.fromTheme('folder-new'), "Create Directory",
+        self.addAction(load_icon('folder-new'), "Create Directory",
                        self._controller.create_directory)
-        self.addAction(QIcon.fromTheme('document-new'), "Create Empty File",
+        self.addAction(load_icon('document-new'), "Create Empty File",
                        self._controller.create_file)
         self.addSeparator()
         self.addAction(self._controller.actions.edit_paste)
         self.addSeparator()
 
         if self._location is not None:
-            self.addAction(QIcon.fromTheme('utilities-terminal'), "Open Terminal Here",
+            self.addAction(load_icon('utilities-terminal'), "Open Terminal Here",
                            lambda location=self._location: self._controller.app.executor.launch_terminal(location))
             self.addSeparator()
 
         self.addAction(self._controller.actions.edit_select_all)
         self.addSeparator()
-        self.addAction(QIcon.fromTheme('document-properties'), "Properties...")
+        self.addAction(load_icon('document-properties'), "Properties...")
 
 
 # EOF #

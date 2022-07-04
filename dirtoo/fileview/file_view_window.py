@@ -48,6 +48,7 @@ from dirtoo.gui.message_area import MessageArea
 from dirtoo.gui.search_line_edit import SearchLineEdit
 from dirtoo.gui.tool_button import ToolButton
 from dirtoo.filesystem.location import Location
+from dirtoo.image.icon import load_icon
 
 if TYPE_CHECKING:
     from dirtoo.fileview.controller import Controller
@@ -336,28 +337,28 @@ class FileViewWindow(QMainWindow):
             self.bookmarks_menu.clear()
 
             if self.controller.location is None:
-                action = self.bookmarks_menu.addAction(QIcon.fromTheme("user-bookmarks"), "Can't bookmark file lists")
+                action = self.bookmarks_menu.addAction(load_icon("user-bookmarks"), "Can't bookmark file lists")
                 action.setEnabled(False)
             elif self.controller.location in entries:
                 self.bookmarks_menu.addAction(
-                    QIcon.fromTheme("edit-delete"), "Remove This Location's Bookmark",
+                    load_icon("edit-delete"), "Remove This Location's Bookmark",
                     lambda loc=self.controller.location:
                     bookmarks.remove(loc))
             else:
                 self.bookmarks_menu.addAction(
-                    QIcon.fromTheme("bookmark-new"), "Bookmark This Location",
+                    load_icon("bookmark-new"), "Bookmark This Location",
                     lambda loc=self.controller.location:
                     bookmarks.append(loc))
             self.bookmarks_menu.addSeparator()
 
             self.bookmarks_menu.addDoubleAction(
-                QIcon.fromTheme("folder"), "View Bookmarks",
+                load_icon("folder"), "View Bookmarks",
                 lambda: self.controller.set_location(Location("bookmarks", "/", [])),
                 lambda: self.controller.new_controller().set_location(Location("bookmarks", "/", [])))
 
             self.bookmarks_menu.addSeparator()
 
-            icon = QIcon.fromTheme("folder")
+            icon = load_icon("folder")
             for entry in entries:
                 action = self.bookmarks_menu.addDoubleAction(
                     icon, entry.as_url(),
@@ -381,7 +382,7 @@ class FileViewWindow(QMainWindow):
             self.history_menu.addSeparator()
 
             self.history_menu.addDoubleAction(
-                QIcon.fromTheme("folder"), "View File History",
+                load_icon("folder"), "View File History",
                 self.controller.show_file_history,
                 lambda: self.controller.new_controller().show_file_history())
 
@@ -432,19 +433,19 @@ class FileViewWindow(QMainWindow):
         self.toolbar.addAction(self.actions.show_hidden)
 
         button = QToolButton()
-        button.setIcon(QIcon.fromTheme("view-restore"))
+        button.setIcon(load_icon("view-restore"))
         button.setMenu(self.make_view_menu())
         button.setPopupMode(QToolButton.InstantPopup)
         self.toolbar.addWidget(button)
 
         button = QToolButton()
-        button.setIcon(QIcon.fromTheme("view-sort-ascending"))
+        button.setIcon(load_icon("view-sort-ascending"))
         button.setMenu(self.make_sort_menu())
         button.setPopupMode(QToolButton.InstantPopup)
         self.toolbar.addWidget(button)
 
         button = QToolButton()
-        button.setIcon(QIcon.fromTheme("view-sort-ascending"))
+        button.setIcon(load_icon("view-sort-ascending"))
         button.setMenu(self.make_group_menu())
         button.setPopupMode(QToolButton.InstantPopup)
         self.toolbar.addWidget(button)

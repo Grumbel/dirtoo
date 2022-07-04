@@ -20,10 +20,11 @@ from typing import cast
 import os
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLineEdit,
                              QHBoxLayout, QVBoxLayout,
                              QDialogButtonBox, QLabel)
+
+from dirtoo.image.icon import load_icon
 
 
 class RenameDialog(QDialog):
@@ -42,20 +43,20 @@ class RenameDialog(QDialog):
 
         # Widgets
         icon_label = QLabel()
-        icon_label.setPixmap(QIcon.fromTheme("accessories-text-editor").pixmap(48))
+        icon_label.setPixmap(load_icon("accessories-text-editor").pixmap(48))
         icon_label.setAlignment(Qt.AlignTop)
 
         self.label = QLabel("Rename ...")
         self.label.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.name_edit = QLineEdit(self)
 
-        self.name_reload = self.name_edit.addAction(QIcon.fromTheme("reload"), QLineEdit.TrailingPosition)
+        self.name_reload = self.name_edit.addAction(load_icon("reload"), QLineEdit.TrailingPosition)
         self.name_reload.setShortcut("F5")
         self.name_reload.setToolTip("Reset the filename to it's original name")
 
         self.button_box = QDialogButtonBox(self)
 
-        self.btn_rename = QPushButton(QIcon.fromTheme("document-save-as"), "Rename")
+        self.btn_rename = QPushButton(load_icon("document-save-as"), "Rename")
         self.button_box.addButton(self.btn_rename, QDialogButtonBox.AcceptRole)
         self.btn_cancel = self.button_box.addButton(QDialogButtonBox.Cancel)
         self.btn_rename.setDefault(True)

@@ -18,10 +18,11 @@
 import html
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton,
                              QHBoxLayout, QVBoxLayout, QSizePolicy,
                              QDialogButtonBox, QLabel, QPlainTextEdit)
+
+from dirtoo.image.icon import load_icon
 
 
 class TransferErrorDialog(QDialog):
@@ -44,7 +45,7 @@ class TransferErrorDialog(QDialog):
 
         # Widgets
         move_icon = QLabel()
-        move_icon.setPixmap(QIcon.fromTheme("error").pixmap(48))
+        move_icon.setPixmap(load_icon("error").pixmap(48))
         move_icon.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
 
         header = QLabel("<big>An error occured while accessing '{}'</big>".format(html.escape(self._source_file)))

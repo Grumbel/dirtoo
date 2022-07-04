@@ -17,8 +17,9 @@
 
 from typing import TYPE_CHECKING, Sequence
 
-from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QMenu
+
+from dirtoo.image.icon import load_icon
 
 if TYPE_CHECKING:
     from dirtoo.fileview.controller import Controller
@@ -26,7 +27,7 @@ if TYPE_CHECKING:
 
 
 def make_history_menu_entries(controller: 'Controller', history_menu: QMenu, entries: Sequence['Location']) -> None:
-    icon = QIcon.fromTheme("folder")
+    icon = load_icon("folder")
     for entry in entries:
         action = history_menu.addDoubleAction(
             icon, entry.as_url(),

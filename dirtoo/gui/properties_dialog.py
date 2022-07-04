@@ -22,7 +22,6 @@ import stat
 import io
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLineEdit,
                              QGroupBox, QGridLayout, QVBoxLayout, QDialogButtonBox,
                              QLabel, QTabWidget, QPlainTextEdit)
@@ -30,6 +29,7 @@ from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLineEdit,
 import bytefmt
 
 from dirtoo.filesystem.file_info import FileInfo
+from dirtoo.image.icon import load_icon
 
 
 class PropertiesDialog(QDialog):
@@ -46,7 +46,7 @@ class PropertiesDialog(QDialog):
 
         # Widgets
         icon_label = QLabel()
-        icon_label.setPixmap(QIcon.fromTheme("document").pixmap(48))
+        icon_label.setPixmap(load_icon("document").pixmap(48))
         icon_label.setAlignment(Qt.AlignHCenter)
         name_label = QLabel(self._fileinfo.basename())
         name_label.setAlignment(Qt.AlignHCenter)
