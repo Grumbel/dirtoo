@@ -24,30 +24,28 @@ class FFProbe:
 
     def __init__(self, filename: str) -> None:
         self._ffprobe = os.environ.get("DIRTOO_FFPROBE") or "ffprobe"
-        proc = subprocess.Popen(
-            [self._ffprobe,
-             '-v', 'error',
-             '-print_format', 'json',
-             '-show_format',
-             '-show_streams',
-             filename],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
+        with subprocess.Popen([self._ffprobe,
+                               '-v', 'error',
+                               '-print_format', 'json',
+                               '-show_format',
+                               '-show_streams',
+                               filename],
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE) as proc:
+            try:
+                out_bytes, err_bytes = proc.communicate(timeout=15)
+            except subprocess.TimeoutExpired as exc:
+                proc.kill()
+                out_bytes, err_bytes = proc.communicate()
+                out = out_bytes.decode()
+                err = err_bytes.decode()
+                raise Exception("FFProbe: timeout: {}".format(filename)) from exc
 
-        try:
-            out_bytes, err_bytes = proc.communicate(timeout=15)
-        except subprocess.TimeoutExpired as exc:
-            proc.kill()
-            out_bytes, err_bytes = proc.communicate()
             out = out_bytes.decode()
             err = err_bytes.decode()
-            raise Exception("FFProbe: timeout: {}".format(filename)) from exc
 
-        out = out_bytes.decode()
-        err = err_bytes.decode()
-
-        if proc.returncode != 0:
-            raise Exception("FFProbe: {}: {}: {}".format(filename, proc.returncode, err))
+            if proc.returncode != 0:
+                raise Exception("FFProbe: {}: {}: {}".format(filename, proc.returncode, err))
 
         self.js = json.loads(out)
         self.streams = self.js['streams']

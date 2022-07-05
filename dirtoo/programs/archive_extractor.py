@@ -21,7 +21,7 @@ import argparse
 import logging
 import sys
 
-from dirtoo.archive.extractor import make_extractor
+from dirtoo.archive.extractor_factory import make_extractor
 
 
 def parse_args(argv: Sequence[str]) -> argparse.Namespace:

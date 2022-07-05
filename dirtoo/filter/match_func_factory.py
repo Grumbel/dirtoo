@@ -15,18 +15,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Sequence, Callable, Tuple, Any, Dict, Union
-
+from typing import TYPE_CHECKING, Sequence, Callable, Tuple, Any, Dict, Union
 
 import datetime
-import bytefmt
-import operator
 import logging
+import operator
 import re
+
+import bytefmt
 
 import dirtoo.duration as duration
 import dirtoo.file_type as file_type
-from dirtoo.filter.filter_expr_parser import CommandExpr
 from dirtoo.fuzzy import fuzzy
 from dirtoo.glob import is_glob_pattern
 from dirtoo.filter.match_func import (
@@ -49,6 +48,9 @@ from dirtoo.filter.match_func import (
     TimeOpMatchFunc,
     WeekdayMatchFunc,
 )
+
+if TYPE_CHECKING:
+    from dirtoo.filter.filter_expr_parser import CommandExpr
 
 
 logger = logging.getLogger(__name__)
@@ -95,7 +97,9 @@ class MatchFuncFactory:
 
             self._functions[alias] = func
 
-    def make_match_func(self, child: Union[str, CommandExpr]) -> MatchFunc:
+    def make_match_func(self, child: Union[str, 'CommandExpr']) -> MatchFunc:
+        from dirtoo.filter.filter_expr_parser import CommandExpr
+
         if isinstance(child, str):
             # If the pattern doesn't contain special characters
             # perform a basic substring search instead of a glob

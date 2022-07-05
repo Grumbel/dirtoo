@@ -85,7 +85,7 @@ class DBusThumbnailerListener(ABC):
         pass
 
     @abstractmethod
-    def error(self, handle: QVariant, failed_uris: Sequence[str],
+    def error(self, handle: QVariant, uris: Sequence[str],
               error_code: 'DBusThumbnailerError', message: str) -> None:
         pass
 
@@ -158,8 +158,8 @@ class DBusThumbnailer(QObject):
 
     @pyqtSlot(QDBusMessage)  # type: ignore
     def _receive_error(self, msg: QDBusMessage) -> None:
-        handle, failed_uris, error_code, message = msg.arguments()
-        self.listener.error(handle, failed_uris, error_code, message)
+        handle, uris, error_code, message = msg.arguments()
+        self.listener.error(handle, uris, error_code, message)
 
     def _call(self, method: str, *args: Any) -> Sequence[QVariant]:
         msg = self.thumbnailer.call(method, *args)

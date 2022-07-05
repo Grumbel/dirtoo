@@ -15,9 +15,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from PyQt5.QtCore import QObject, pyqtSignal
 from abc import abstractmethod
 from enum import IntEnum
+
+from PyQt5.QtCore import QObject, pyqtSignal
 
 
 class ExtractorResultStatus(IntEnum):
@@ -55,33 +56,13 @@ class Extractor(QObject):
     def sig_entry_extracted(self) -> pyqtSignal:
         pass
 
-    @property
-    @abstractmethod
-    def sig_finished(self) -> pyqtSignal:
-        pass
-
     @abstractmethod
     def extract(self) -> ExtractorResult:
         pass
 
+    @abstractmethod
     def interrupt(self) -> None:
         pass
-
-
-def make_extractor(filename: str, outdir: str) -> Extractor:
-    from dirtoo.archive.rar_extractor import RarExtractor
-    from dirtoo.archive.sevenzip_extractor import SevenZipExtractor
-    from dirtoo.archive.libarchive_extractor import LibArchiveExtractor
-
-    # FIXME: Use mime-type to decide proper extractor
-    if filename.lower().endswith(".rar"):
-        extractor = RarExtractor(filename, outdir)
-    elif True:  # pylint: disable=using-constant-test
-        extractor = SevenZipExtractor(filename, outdir)
-    else:
-        extractor = LibArchiveExtractor(filename, outdir)  # type: ignore
-
-    return extractor
 
 
 # EOF #

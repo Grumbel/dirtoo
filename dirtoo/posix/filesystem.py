@@ -122,8 +122,8 @@ class Filesystem:
         if self.enabled:
             if os.path.lexists(dst):
                 raise FileExistsError(dst)
-            else:
-                os.rename(src, dst)
+
+            os.rename(src, dst)
 
     def rename_unique(self, path: str) -> str:
         new_path = self.generate_unique(path)
@@ -197,15 +197,15 @@ class Filesystem:
         if self.enabled:
             if not overwrite and os.path.lexists(dst):
                 raise FileExistsError(dst)
-            else:
-                if self.islink(dst):
-                    os.unlink(dst)
 
-                if self.islink(src):
-                    os.symlink(os.readlink(src), dst)
-                else:
-                    self._copy_filecontent(src, dst, progress)
-                    shutil.copystat(src, dst, follow_symlinks=False)
+            if self.islink(dst):
+                os.unlink(dst)
+
+            if self.islink(src):
+                os.symlink(os.readlink(src), dst)
+            else:
+                self._copy_filecontent(src, dst, progress)
+                shutil.copystat(src, dst, follow_symlinks=False)
 
     def makedirs(self, path: str) -> None:
         self._message("makedirs: {!r}".format(path))

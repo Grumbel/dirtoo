@@ -16,9 +16,10 @@
 
 
 import os
-import libarchive
 import shlex
 from collections import defaultdict
+
+import libarchive
 
 
 class ArchiveInfo:

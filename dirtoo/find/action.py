@@ -134,15 +134,15 @@ class ExecAction(Action):
         else:
             pass  # FIXME
 
-    def file(self, root: str, name: str) -> None:
+    def file(self, root: str, filename: str) -> None:
         if self.on_file_cmd:
-            cmd = replace_item(self.on_file_cmd, "{}", [os.path.join(root, name)])
+            cmd = replace_item(self.on_file_cmd, "{}", [os.path.join(root, filename)])
             subprocess.call(cmd)
 
         if self.on_multi_cmd:
-            self.all_files.append(os.path.join(root, name))
+            self.all_files.append(os.path.join(root, filename))
 
-    def directory(self, root: str, name: str) -> None:
+    def directory(self, root: str, filename: str) -> None:
         pass
 
     def finish(self) -> None:

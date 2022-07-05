@@ -74,14 +74,14 @@ class FilterCommandParser:
     def register_command(self,
                          aliases: Union[str, Sequence[str]],
                          func: Callable[[Any], Any],
-                         help: Optional[str] = None) -> None:
+                         doc: Optional[str] = None) -> None:
         if isinstance(aliases, list):
             for name in aliases:
                 assert name not in self._commands
-                self._commands[name] = (aliases, func, help)
+                self._commands[name] = (aliases, func, doc)
         else:
             assert isinstance(aliases, str)
-            self._commands[aliases] = ([aliases], func, help)
+            self._commands[aliases] = ([aliases], func, doc)
 
     def _register_commands(self) -> None:
         pass
@@ -125,28 +125,28 @@ class FilterCommandParser:
         # self.register_command(
         #     ["G", "Glob"],
         #     lambda args: self._filter.set_pattern(args[0], case_sensitive=True),
-        #     help="Case-sensitive glob matching")
+        #     doc="Case-sensitive glob matching")
 
         # self.register_command(
         #     ["g", "glob"],
         #     lambda args: self._filter.set_pattern(args[0], case_sensitive=False),
-        #     help="Case-insensitive glob matching")
+        #     doc="Case-insensitive glob matching")
 
         # self.register_command(
         #     ["f", "fuz", "fuzz", "fuzzy"],
 
         #     lambda args: self._filter.set_fuzzy(args[0]),
-        #     help="Fuzzy match the filename")
+        #     doc="Fuzzy match the filename")
 
         # self.register_command(
         #     ["ascii"],
         #     lambda args: self._filter.set_ascii(True),
-        #     help="filenames with only ASCII character")
+        #     doc="filenames with only ASCII character")
 
         # self.register_command(
         #     ["nonascii"],
         #     lambda args: self._filter.set_ascii(False),
-        #     help="filenames with some non-ASCII character")
+        #     doc="filenames with some non-ASCII character")
 
         # self.register_command(
         #     ["help", "h"],

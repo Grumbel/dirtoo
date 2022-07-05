@@ -114,7 +114,7 @@ class Executor:
 
     def launch(self, argv: Sequence[str]) -> None:
         logger.info("Launching: %s", argv)
-        subprocess.Popen(argv)
+        subprocess.Popen(argv)  # pylint: disable=R1732
 
 
 # EOF #

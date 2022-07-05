@@ -65,6 +65,7 @@
               flake8
               pyright dirtoo tests
               mypy -p dirtoo -p tests
+              pylint dirtoo tests
               python3 -m unittest discover -v -s tests/
               runHook postCheck
             '';

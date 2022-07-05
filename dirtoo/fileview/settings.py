@@ -24,15 +24,16 @@ class Settings(QObject):
 
     def __init__(self) -> None:
         super().__init__()
+        self.settings: QSettings
 
     def init(self, filename: str) -> None:
         self.settings = QSettings(filename, QSettings.IniFormat)
 
-    def value(self, name: str, default: Optional[Any] = None, type: Optional[Any] = None) -> Any:
-        if type is None:
+    def value(self, name: str, default: Optional[Any] = None, kind: Optional[Any] = None) -> Any:
+        if kind is None:
             return self.settings.value(name, default)
         else:
-            return self.settings.value(name, default, type)
+            return self.settings.value(name, default, kind)
 
     def set_value(self, name: str, value: object) -> None:
         self.settings.setValue(name, value)

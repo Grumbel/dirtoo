@@ -17,9 +17,10 @@
 
 from typing import Any, Sequence, Set, Dict
 
-from xdg.IniFile import IniFile
 import os
 import collections
+
+from xdg.IniFile import IniFile
 
 
 def unique(lst: Sequence[Any]) -> list[Any]:

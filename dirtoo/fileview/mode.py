@@ -43,11 +43,13 @@ class Mode:
 
         self._item_style: Optional[FileItemStyle] = None
 
-        self._zoom_min = 0
-        self._zoom_max = 0
+        self._zoom_min: int = 0
+        self._zoom_max: int = 0
+        self._zoom_index: int = 3
 
-        self._level_of_detail_min = 0
-        self._level_of_detail_max = 0
+        self._level_of_detail_min: int = 0
+        self._level_of_detail_max: int = 0
+        self._level_of_detail: int = 5
 
         self._tile_style = TileStyle()
 

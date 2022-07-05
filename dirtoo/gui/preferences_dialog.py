@@ -27,6 +27,11 @@ class PreferencesDialog(QDialog):
     def __init__(self) -> None:
         super().__init__()
 
+        self._applications_group_box: QGroupBox
+        self._layout_group_box: QGroupBox
+        self._cache_group_box: QGroupBox
+        self._transfer_group_box: QGroupBox
+
         self.setWindowTitle("dirtoo Preferences")
         self._make_gui()
 

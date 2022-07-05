@@ -54,19 +54,20 @@ class DirectoryWatcherWorker(QObject):
         self.location = location
         self.path = self.vfs.get_stdio_name(location)
         self._close = False
+        self._inotify: INotifyQt
 
     def init(self) -> None:
         try:
-            self.inotify = INotifyQt(self)
-            self.inotify.add_watch(self.path)
-            self.inotify.sig_event.connect(self.on_inotify_event)
+            self._inotify = INotifyQt(self)
+            self._inotify.add_watch(self.path)
+            self._inotify.sig_event.connect(self.on_inotify_event)
             self.process()
         except Exception as err:
             self.sig_message.emit(str(err))
 
     def close(self) -> None:
-        self.inotify.close()
-        del self.inotify
+        self._inotify.close()
+        del self._inotify
 
     def process(self) -> None:
         fileinfos = []

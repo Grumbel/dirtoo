@@ -16,8 +16,9 @@
 
 
 import unittest
-import pyparsing
 from typing import Any, Optional
+
+import pyparsing
 
 from dirtoo.expr import Parser, Context, Expr
 
@@ -56,7 +57,7 @@ class ExprTestCase(unittest.TestCase):
                 result = err
 
             try:
-                expected = eval(text)
+                expected = eval(text)  # pylint: disable=W0123
             except SyntaxError as err:
                 expected = err
 

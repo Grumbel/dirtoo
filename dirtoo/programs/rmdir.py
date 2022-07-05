@@ -36,7 +36,7 @@ def remove_directory(directory: str, verbose: bool) -> None:
     try:
         os.rmdir(directory)
     except Exception as err:
-        raise Exception("failed to remove '{}': {}".format(directory, err))
+        raise Exception("failed to remove '{}': {}".format(directory, err)) from err
 
 
 def parse_args(argv: Sequence[str]) -> argparse.Namespace:

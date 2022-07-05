@@ -53,7 +53,7 @@ class StreamManager:
         stream_id = uuid.UUID(stream_id_text)
         filename = os.path.join(self._cachedir, str(stream_id))
         try:
-            fd = open(filename, "r")
+            fd = open(filename, "r")  # pylint: disable=R1732
         except Exception:
             logger.exception("failed to open '%s' for reading", filename)
             return None
@@ -63,7 +63,7 @@ class StreamManager:
     def record(self, fd: IO[str]) -> Optional[Tuple[TeeIO[str], str]]:
         outfile, stream_id = self._make_outfile()
         try:
-            fd_out = open(outfile, "w")
+            fd_out = open(outfile, "w")  # pylint: disable=R1732
         except Exception:
             logger.exception("failed to open '%s' for writing", outfile)
             return None

@@ -34,10 +34,10 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
                         help="Ignore case", default=False)
     parser.add_argument("-v", "--invert-match", action='store_true',
                         help="Invert the sense of matching", default=False)
-    parser.add_argument("-H", "--with-filename", action='store_true',
+    parser.add_argument("-H", "--with-filename", action='store_true', dest='print_filename',
                         help="Print the file name for each match", default=False)
-    parser.add_argument("--no-filename", action='store_true',
-                        help="Suppress  the  prefixing  of file names on output", default=False)  # -h
+    parser.add_argument("--no-filename", action='store_false', dest='print_filename',
+                        help="Suppress the prefixing of file names on output", default=False)  # -h
 
     return parser.parse_args(argv[1:])
 
@@ -52,8 +52,10 @@ def main(argv: Sequence[str]) -> None:
             for line in fin:
                 outline = ""
 
-                print_filename = ((len(args.FILE) > 1 and not args.no_filename) or
-                                  args.with_filename)
+                if args.print_filename is None:
+                    print_filename = len(args.FILE) > 1
+                else:
+                    print_filename = args.print_filename
 
                 if print_filename:
                     outline += "{}:{}: ".format(filename, line_no + 1)

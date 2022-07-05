@@ -74,6 +74,9 @@ class PathCompletion(WorkerThread):
 
     def __init__(self) -> None:
         super().__init__()
+
+        self._request_interrupted: bool = False
+
         self.set_worker(PathCompletionWorker())
         assert self._worker is not None
         self.sig_request_completions.connect(self._worker._on_request_completions)

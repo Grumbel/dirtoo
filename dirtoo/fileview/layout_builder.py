@@ -78,11 +78,11 @@ class LayoutBuilder:
             sorted_groups = cast(list[Tuple[Optional[Hashable], Sequence[FileItem]]], [first_group]) + sorted_groups
 
         grid = None
-        for idx, (group, items) in enumerate(sorted_groups):
+        for idx, (group, group_items) in enumerate(sorted_groups):
             if self._show_filtered:
-                visible_items = [item for item in items if not item.fileinfo.is_hidden]
+                visible_items = [item for item in group_items if not item.fileinfo.is_hidden]
             else:
-                visible_items = [item for item in items if item.fileinfo.is_visible]
+                visible_items = [item for item in group_items if item.fileinfo.is_visible]
 
             if visible_items == []:
                 continue

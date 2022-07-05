@@ -83,14 +83,14 @@ class RootLayout(Layout):
     def set_append_layout(self, group: 'TileLayout') -> None:
         self.append_layout = group
 
-    def layout(self, viewport_width: int, viewport_height: int) -> None:
+    def layout(self, width: int, height: int) -> None:
         assert self.root is not None
         assert self.root.layout is not None
 
-        super().layout(viewport_width, viewport_height)
+        super().layout(width, height)
 
         self.root.set_pos(0, 0)
-        self.root.layout(viewport_width, viewport_height)
+        self.root.layout(width, height)
 
     def get_bounding_rect(self) -> QRectF:
         assert self.root is not None
@@ -115,13 +115,13 @@ class HBoxLayout(Layout):
         self.children.append(child)
         child.parent = self
 
-    def layout(self, viewport_width: int, viewport_height: int) -> None:
-        super().layout(viewport_width, viewport_height)
+    def layout(self, width: int, height: int) -> None:
+        super().layout(width, height)
 
         y = 0
         for child in self.children:
             child.set_pos(0, self.y + y)
-            child.layout(viewport_width, viewport_height)
+            child.layout(width, height)
             y += child.height
 
         self.height = y
@@ -142,8 +142,8 @@ class ItemLayout(Layout):
     def set_item(self, item: QGraphicsItem) -> None:
         self.item = item
 
-    def layout(self, viewport_width: int, viewport_height: int) -> None:
-        super().layout(viewport_width, viewport_height)
+    def layout(self, width: int, height: int) -> None:
+        super().layout(width, height)
 
         if self.item is not None:
             self.height = int(self.item.boundingRect().height())

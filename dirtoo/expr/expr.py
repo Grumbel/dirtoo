@@ -34,11 +34,11 @@ UnaryExprFunction = Callable[[float], float]
 # FIXME: these logical and/or operators don't have short circuit
 # semantics, shouldn't matter since we try to stay side effect free,
 # but might still be a worthy optimization
-def logical_and(lhs: ExprValue, rhs: ExprValue) -> bool:
+def op_logical_and(lhs: ExprValue, rhs: ExprValue) -> bool:
     return bool(lhs and rhs)
 
 
-def logical_or(lhs: ExprValue, rhs: ExprValue) -> bool:
+def op_logical_or(lhs: ExprValue, rhs: ExprValue) -> bool:
     return bool(lhs or rhs)
 
 
@@ -58,10 +58,10 @@ NAME2BINOP: Dict[str, ExprFunction] = {
     '&': operator.and_,
     '|': operator.or_,
 
-    'and': logical_and,
-    'or': logical_or,
-    '&&': logical_and,
-    '||': logical_or,
+    'and': op_logical_and,
+    'or': op_logical_or,
+    '&&': op_logical_and,
+    '||': op_logical_or,
 
     '<=': operator.le,
     '>=': operator.ge,
@@ -180,7 +180,7 @@ class String(Expr):
 class Variable(Expr):
 
     def __init__(self, s: str, loc: int, toks: ParseResults) -> None:
-        assert type(toks[0]) is str
+        assert isinstance(toks[0], str)
         self.name: str = cast(str, toks[0])
 
     def eval(self, ctx: Context) -> ExprValue:

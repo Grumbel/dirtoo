@@ -18,10 +18,11 @@
 from typing import Sequence
 
 import argparse
-import libarchive
 import os
 import shlex
 import sys
+
+import libarchive
 
 from dirtoo.archive.archiveinfo import ArchiveInfo
 

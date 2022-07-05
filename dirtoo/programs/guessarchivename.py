@@ -18,18 +18,19 @@
 from typing import Iterable, Sequence, Optional
 
 import argparse
-import libarchive
 import itertools
 import os
 import sys
 from collections import defaultdict
 
+import libarchive
+
 
 def rename_safe(src: str, dst: str) -> None:
     if os.path.exists(dst):
         raise FileExistsError(dst)
-    else:
-        os.rename(src, dst)
+
+    os.rename(src, dst)
 
 
 def most_common(lst: Sequence[str], threshold: float) -> Optional[str]:

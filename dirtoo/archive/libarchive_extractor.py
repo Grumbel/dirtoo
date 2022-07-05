@@ -19,8 +19,9 @@ from typing import Optional
 
 import logging
 import os
-import libarchive
 import threading
+
+import libarchive
 
 from PyQt5.QtCore import pyqtSignal
 

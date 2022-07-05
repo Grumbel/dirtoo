@@ -96,8 +96,7 @@ def read_lines_from_files(filenames: Sequence[str], nul_separated: bool) -> Unio
         if filename == '-':
             if stdout_read:
                 continue
-            else:
-                stdout_read = True
+            stdout_read = True
 
         lines += read_lines_from_file(filename, nul_separated)
 

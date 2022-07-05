@@ -149,9 +149,9 @@ class SizeMatchFunc(MatchFunc):
 
 class MetadataMatchFunc(MatchFunc):
 
-    def __init__(self, field: str, type: Callable[[Any], Any], value: Any, compare: CompareCallable) -> None:
+    def __init__(self, field: str, ctor: Callable[[Any], Any], value: Any, compare: CompareCallable) -> None:
         self._field = field
-        self._type = type
+        self._type = ctor
         self._value = value
         self._compare = compare
 
@@ -318,15 +318,16 @@ WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", 
 def text2weekday(text: str) -> int:
     try:
         return int(text)
-    except ValueError:
+    except ValueError as exc:
         text = text.lower()
         results = [idx for idx, weekday in enumerate(WEEKDAYS) if weekday.startswith(text)]
         if len(results) == 0:
-            raise Exception("failed to parse text: {}".format(text))
-        elif len(results) == 1:
-            return results[0]
-        else:
-            raise Exception("ambiguous weekday: {}".format(text))
+            raise Exception("failed to parse text: {}".format(text)) from exc
+
+        if len(results) != 1:
+            raise Exception("ambiguous weekday: {}".format(text)) from exc
+
+        return results[0]
 
 
 class WeekdayMatchFunc(MatchFunc):

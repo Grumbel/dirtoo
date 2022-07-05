@@ -38,8 +38,8 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     return parser.parse_args(argv[1:])
 
 
-def split_duration(duration: int) -> Tuple[int, int, int]:
-    rest = duration
+def split_duration(msec: int) -> Tuple[int, int, int]:
+    rest = msec
     hours, rest = divmod(rest, 1000 * 60 * 60)
     minutes, rest = divmod(rest, 1000 * 60)
     seconds, rest = divmod(rest, 1000)

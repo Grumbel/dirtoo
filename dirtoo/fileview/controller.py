@@ -182,7 +182,7 @@ class Controller(QObject):
     def go_forward(self) -> None:
         if self._location_history != []:
             self._location_history_index = min(self._location_history_index + 1, len(self._location_history) - 1)
-            self._location_history[self._location_history_index]
+
             self.set_location(self._location_history[self._location_history_index], track_history=False)
             if self._location_history_index == len(self._location_history) - 1:
                 self.actions.forward.setEnabled(False)
@@ -191,6 +191,7 @@ class Controller(QObject):
     def go_back(self) -> None:
         if self._location_history != []:
             self._location_history_index = max(self._location_history_index - 1, 0)
+
             self.set_location(self._location_history[self._location_history_index], track_history=False)
             if self._location_history_index == 0:
                 self.actions.back.setEnabled(False)
@@ -297,8 +298,8 @@ class Controller(QObject):
 
         self.sig_location_changed_to_none.emit()
 
-    def set_sort_reversed(self, reversed: bool) -> None:
-        self._sorter.set_sort_reversed(reversed)
+    def set_sort_reversed(self, sort_reversed: bool) -> None:
+        self._sorter.set_sort_reversed(sort_reversed)
         self.file_collection.set_sorter(self._sorter)
 
     def set_sort_key_func(self, func: Callable[[FileInfo], Any]) -> None:

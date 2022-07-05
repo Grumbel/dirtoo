@@ -140,7 +140,7 @@ class FileItem(QGraphicsObject):
                               192 + 32 - 10 * self.animation_count)
 
         # background rectangle
-        if True or self.animation_timer is not None:  # type: ignore
+        if True or self.animation_timer is not None:  # type: ignore  # pylint: disable=R1727
             painter.fillRect(0, 0,
                              self.tile_rect.width(),
                              self.tile_rect.height(),
@@ -245,7 +245,7 @@ class FileItem(QGraphicsObject):
         self._dropable = value
         self.update()
 
-    def mousePressEvent(self, ev: 'QMouseEvent') -> None:
+    def mousePressEvent(self, ev: QMouseEvent) -> None:
         if not self.shape().contains(ev.scenePos() - self.pos()):
             # Qt is sending events that are outside the item. This
             # happens when opening a context menu on an item, moving
@@ -272,7 +272,7 @@ class FileItem(QGraphicsObject):
         elif ev.button() == Qt.RightButton:
             pass
 
-    def mouseMoveEvent(self, ev: 'QMouseEvent') -> None:
+    def mouseMoveEvent(self, ev: QMouseEvent) -> None:
         if (ev.pos() - self.press_pos).manhattanLength() > 16:
             # print("drag start")
 
@@ -307,7 +307,7 @@ class FileItem(QGraphicsObject):
             # this will eat up the mouseReleaseEvent
             drag.exec(Qt.CopyAction | Qt.MoveAction | Qt.LinkAction | 0x40, 0x40)
 
-    def mouseReleaseEvent(self, ev: 'QMouseEvent') -> None:
+    def mouseReleaseEvent(self, ev: QMouseEvent) -> None:
         if ev.button() == Qt.LeftButton and self.press_pos is not None:
             self.click_action(new_window=False)
         elif ev.button() == Qt.MiddleButton:

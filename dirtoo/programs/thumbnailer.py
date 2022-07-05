@@ -70,9 +70,9 @@ class ThumbnailerProgressListener(DBusThumbnailerListener):
             for url in urls:
                 print(url, "->", DBusThumbnailer.thumbnail_from_url(url, flavor))
 
-    def error(self, handle: QVariant, failed_uris: Sequence[str],
-              error_code: 'DBusThumbnailerError', message: str) -> None:
-        for uri in failed_uris:
+    def error(self, handle: QVariant, uris: Sequence[str],
+              error_code: DBusThumbnailerError, message: str) -> None:
+        for uri in uris:
             print("[Error {}] {}: {}".format(error_code, uri, message), file=sys.stderr)
 
     def finished(self, handle: QVariant) -> None:
@@ -155,7 +155,7 @@ def main(argv: Sequence[str]) -> int:
 
 
 def main_entrypoint() -> None:
-    exit(main(sys.argv))
+    sys.exit(main(sys.argv))
 
 
 # EOF #

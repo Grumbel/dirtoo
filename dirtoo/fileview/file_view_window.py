@@ -366,7 +366,7 @@ class FileViewWindow(QMainWindow):
                     lambda entry=entry: self.controller.app.show_location(entry))  # type: ignore
 
                 # FIXME: exists() checks must be done asynchronously
-                if False and not entry.exists():  # type: ignore
+                if False and not entry.exists():  # type: ignore  # pylint: disable=R1727
                     action.setEnabled(False)  # type: ignore
         self.bookmarks_menu.aboutToShow.connect(create_bookmarks_menu)
 

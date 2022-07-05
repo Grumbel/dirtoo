@@ -226,9 +226,10 @@ class LocationLineEdit(QLineEdit):
         p = self.palette()
 
         try:
-            location = Location.from_human(text)
+            # location = Location.from_human(text)
             # FIXME: exists() checks must be done asynchronously
-            if True or location.exists():  # type: ignore
+            # if location.exists()
+            if True:  # pylint: disable=R1727
                 p.setColor(QPalette.Text, Qt.black)
             else:
                 p.setColor(QPalette.Text, Qt.red)  # type: ignore

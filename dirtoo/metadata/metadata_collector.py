@@ -37,11 +37,13 @@ class MetaDataCollectorWorker(QObject):
 
     sig_metadata_ready = pyqtSignal(Location, dict)
 
-    def __init__(self, vfs: 'StdioFilesystem') -> None:
+    def __init__(self, vfs: StdioFilesystem) -> None:
         super().__init__()
 
         self.vfs = vfs
         self._close = False
+        self.mimedb: QMimeDatabase
+        self.cache: MetaDataCache
 
     def init(self) -> None:
         self.mimedb = QMimeDatabase()

@@ -110,10 +110,7 @@ class TransferDialogTest(QObject):
         self.sig_transfer_completed.emit()
 
 
-g_keep_alive: list[Any] = []
-
-
-def make_transfer_dialog() -> TransferDialog:
+def make_transfer_dialog(keep_alive: list[Any]) -> TransferDialog:
     dialog = TransferDialog("/home/juser/Target Directory", None)
 
     thread = QThread(dialog)
@@ -122,8 +119,7 @@ def make_transfer_dialog() -> TransferDialog:
     thread.started.connect(worker.on_started)
     thread.start()
 
-    global g_keep_alive
-    g_keep_alive += [worker, thread]
+    keep_alive += [worker, thread]
 
     return dialog
 
@@ -139,6 +135,8 @@ def main(argv: Sequence[str]) -> None:
     tmpfile = tempfile.mkstemp()[1]
     settings.init(tmpfile)
 
+    keep_alive: list[Any] = []
+
     dialog_factory: Dict[str, Callable[[], QDialog]] = {
         'AboutDialog': lambda: AboutDialog(),
         'ConflictDialog': lambda: ConflictDialog(None),
@@ -151,7 +149,7 @@ def main(argv: Sequence[str]) -> None:
                                                             "Lengthy error message\n"
                                                             "Lengthy error message"),
                                                            None),
-        'TransferDialog': make_transfer_dialog,
+        'TransferDialog': lambda: make_transfer_dialog(keep_alive),
         'PreferencesDialog': lambda: PreferencesDialog(),
         'PropertiesDialog': lambda: PropertiesDialog(FileInfo.from_path("/tmp/"), None),
         'RenameDialog': lambda: RenameDialog(None),

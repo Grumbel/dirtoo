@@ -82,7 +82,7 @@ def main(argv: Sequence[str]) -> int:
 
 
 def main_entrypoint() -> None:
-    exit(main(sys.argv))
+    sys.exit(main(sys.argv))
 
 
 # EOF #

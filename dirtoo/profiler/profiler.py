@@ -21,19 +21,21 @@ from types import TracebackType
 import time
 
 
-_profiler_active = False
+g_profiler_active = False
 
 
 def activate_profiler(active: bool) -> None:
     print("PROFILER", active)
-    global _profiler_active
-    _profiler_active = active
+    global g_profiler_active  # pylint: disable=W0603
+    g_profiler_active = active
 
 
 class RealProfiler:
 
     def __init__(self, name: str) -> None:
         self.name = name
+        self.start_time: float
+        self.stop_time: float
 
     def __enter__(self) -> None:
         self.start_time = time.time()
@@ -64,8 +66,7 @@ class DummyProfiler:
 
 
 def Profiler(name: str) -> Union[RealProfiler, DummyProfiler]:
-    global _profiler_active
-    if _profiler_active:
+    if g_profiler_active:
         return RealProfiler(name)
     else:
         return DummyProfiler()
@@ -73,7 +74,7 @@ def Profiler(name: str) -> Union[RealProfiler, DummyProfiler]:
 
 def profile(func: Callable[[Any], Any]) -> Callable[[Any], Any]:
     def wrap(*args: Any, **kwargs: Any) -> Any:
-        if _profiler_active:
+        if g_profiler_active:
             with RealProfiler(func.__qualname__):
                 result = func(*args, **kwargs)
                 return result

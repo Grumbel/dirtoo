@@ -171,8 +171,8 @@ def compare_directories(finfo1: Sequence[FileInfo],
                         finfo2: Sequence[FileInfo],
                         ignore_case: bool = False) -> Tuple[list[FileInfo], list[FileInfo], list[FileInfo]]:
     if ignore_case:
-        finfo1_set = set([FileInfo(f.md5sum, f.filename.lower()) for f in finfo1])
-        finfo2_set = set([FileInfo(f.md5sum, f.filename.lower()) for f in finfo2])
+        finfo1_set = {FileInfo(f.md5sum, f.filename.lower()) for f in finfo1}
+        finfo2_set = {FileInfo(f.md5sum, f.filename.lower()) for f in finfo2}
     else:
         finfo1_set = set(finfo1)
         finfo2_set = set(finfo2)

@@ -18,6 +18,7 @@
 from typing import TYPE_CHECKING, cast, Sequence, Set, Tuple, Optional
 
 from PyQt5.QtWidgets import QMenu
+from xdg.DesktopEntry import DesktopEntry
 
 from dirtoo.filesystem.location import Location, Payload
 from dirtoo.gui.menu import Menu
@@ -25,7 +26,6 @@ from dirtoo.xdg_desktop import get_desktop_entry, get_desktop_file
 from dirtoo.image.icon import load_icon
 
 if TYPE_CHECKING:
-    from xdg.DesktopEntry import DesktopEntry
     from dirtoo.fileview.controller import Controller
     from dirtoo.filesystem.file_info import FileInfo
 
@@ -44,7 +44,7 @@ class ItemContextMenu(Menu):
         if self._fileinfo.is_archive():
             self._build_archive_menu()
         elif self._fileinfo.isdir():
-            self._build_directory_menu
+            self._build_directory_menu()
 
         self._build_open_menu()
         self._build_open_containing_folder()

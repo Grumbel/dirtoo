@@ -191,8 +191,8 @@ class FileCollection(QObject):
 
         self.sig_files_grouped.emit()
 
-    def set_filter(self, filter: Filter) -> None:
-        self._filter = filter
+    def set_filter(self, filt: Filter) -> None:
+        self._filter = filt
 
         for fi in self._fileinfos:
             self._filter.apply(fi)
@@ -221,15 +221,15 @@ class FileCollection(QObject):
 
         if location not in self._location2fileinfo:
             raise KeyError("location not in location2fileinfo: {}".format(location))
-        else:
-            fis = self._location2fileinfo[location]
 
-            self._location2fileinfo[location] = [fileinfo]
+        fis = self._location2fileinfo[location]
 
-            for fi in fis:
-                self._fileinfos.remove(fi)
+        self._location2fileinfo[location] = [fileinfo]
 
-            self._fileinfos.add(fileinfo)
+        for fi in fis:
+            self._fileinfos.remove(fi)
+
+        self._fileinfos.add(fileinfo)
 
     def verify(self) -> None:
         for item in self._fileinfos:

@@ -24,13 +24,13 @@ from PyQt5.QtGui import QImage, QPainter
 
 from dirtoo.dbus_thumbnailer import DBusThumbnailer
 from dirtoo.filecollection.file_collection import FileCollection
+from dirtoo.filesystem.file_info import FileInfo
+from dirtoo.filesystem.location import Location
 from dirtoo.fileview.scaler import make_cropped_rect
 from dirtoo.fileview.worker_thread import WorkerThread, Worker
 
 if TYPE_CHECKING:
     from dirtoo.fileview.application import FileViewApplication
-    from dirtoo.filesystem.location import Location
-    from dirtoo.filesystem.file_info import FileInfo
 
 logger = logging.getLogger(__name__)
 

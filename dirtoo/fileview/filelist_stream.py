@@ -77,7 +77,7 @@ class FileListStream(QObject):
             assert result is not None
             tee_fd, stream_id = result
         else:
-            raise Exception("FileListStream: unknown location: %s", location)
+            raise RuntimeError(f"FileListStream: unknown location: {location}")
 
         return FileListStream(app.vfs, tee_fd, linesep)
 

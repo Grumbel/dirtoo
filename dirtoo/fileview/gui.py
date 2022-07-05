@@ -39,7 +39,7 @@ class Gui(QObject):
     def __init__(self, controller: 'Controller') -> None:
         super().__init__()
 
-        self._controller: Controller = controller
+        self._controller: 'Controller' = controller
         self._window = FileViewWindow(self._controller)
         self._filter_help = QTextEdit()
 
