@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Optional
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLineEdit,
                              QHBoxLayout, QVBoxLayout,
@@ -28,7 +30,7 @@ class CreateDialog(QDialog):
     FOLDER = 0
     TEXTFILE = 1
 
-    def __init__(self, kind: int, parent: QWidget) -> None:
+    def __init__(self, kind: int, parent: Optional[QWidget]) -> None:
         super().__init__(parent)
 
         self._kind = kind

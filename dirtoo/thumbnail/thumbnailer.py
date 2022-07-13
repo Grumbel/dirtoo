@@ -21,7 +21,7 @@ import logging
 import os
 from collections import defaultdict, namedtuple
 
-from PyQt5.QtCore import Qt, QObject, pyqtSignal, QThread, QVariant, QTimerEvent
+from PyQt5.QtCore import Qt, QObject, pyqtSignal, QThread, QTimerEvent
 from PyQt5.QtDBus import QDBusConnection
 from PyQt5.QtGui import QImage
 
@@ -47,16 +47,16 @@ class WorkerDBusThumbnailerListener(DBusThumbnailerListener):
     def __init__(self, worker: 'ThumbnailerWorker') -> None:
         self._worker = worker
 
-    def started(self, handle: QVariant) -> None:
+    def started(self, handle: int) -> None:
         self._worker.on_thumbnail_started(handle)
 
-    def ready(self, handle: QVariant, urls: Sequence[str], flavor: str) -> None:
+    def ready(self, handle: int, urls: Sequence[str], flavor: str) -> None:
         self._worker.on_thumbnail_ready(handle, urls, flavor)
 
-    def error(self, handle: QVariant, uris: Sequence[str], error_code: DBusThumbnailerError, message: str) -> None:
+    def error(self, handle: int, uris: Sequence[str], error_code: DBusThumbnailerError, message: str) -> None:
         self._worker.on_thumbnail_error(handle, uris, error_code, message)
 
-    def finished(self, handle: QVariant) -> None:
+    def finished(self, handle: int) -> None:
         self._worker.on_thumbnail_finished(handle)
 
     def idle(self) -> None:
@@ -74,7 +74,7 @@ class ThumbnailerWorker(QObject):
     # location, flavor, callback, error_code, error_message
     sig_thumbnail_error = pyqtSignal(Location, str, object, int, str)
 
-    def __init__(self, vfs: 'VirtualFilesystem', parent: QObject = None) -> None:
+    def __init__(self, vfs: 'VirtualFilesystem', parent: Optional[QObject] = None) -> None:
         super().__init__(parent)
         # This function is called from the main thread, leave
         # construction to init() and deinit()
@@ -168,7 +168,7 @@ class ThumbnailerWorker(QObject):
     def on_thumbnail_finished(self, handle: int) -> None:
         del self._queued_requests[handle]
 
-    def _find_requests(self, handle: QVariant, urls: Sequence[str]) -> Sequence[ThumbnailRequest]:
+    def _find_requests(self, handle: int, urls: Sequence[str]) -> Sequence[ThumbnailRequest]:
         results = []
         for req in self._queued_requests.get(handle, []):
             req_url = self._vfs.get_stdio_url(req.location)
@@ -206,7 +206,7 @@ class Thumbnailer(QObject):
 
     sig_close_requested = pyqtSignal()
 
-    def __init__(self, vfs: 'VirtualFilesystem', parent: QObject = None) -> None:
+    def __init__(self, vfs: 'VirtualFilesystem', parent: Optional[QObject] = None) -> None:
         super().__init__(parent)
 
         self._worker = ThumbnailerWorker(vfs)
@@ -215,7 +215,7 @@ class Thumbnailer(QObject):
 
         # startup and shutdown
         self._thread.started.connect(self._worker.init)
-        self.sig_close_requested.connect(self._worker.close, type=Qt.BlockingQueuedConnection)
+        self.sig_close_requested.connect(self._worker.close, type=Qt.BlockingQueuedConnection)  # type: ignore
 
         # requests to the worker
         self.sig_thumbnail_requested.connect(self._worker.on_thumbnail_requested)

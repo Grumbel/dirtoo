@@ -17,7 +17,7 @@
 # https://wiki.gnome.org/action/show/DraftSpecs/ThumbnailerSpec
 
 
-from typing import cast, Any, Dict, Sequence, Tuple
+from typing import cast, Any, Dict, Sequence, Tuple, Optional
 from abc import ABC, abstractmethod
 
 import logging
@@ -28,7 +28,7 @@ import mimetypes
 from enum import Enum
 import xdg.BaseDirectory
 
-from PyQt5.QtDBus import QDBus, QDBusReply, QDBusMessage, QDBusInterface
+from PyQt5.QtDBus import QDBusConnection, QDBusReply, QDBusMessage, QDBusInterface
 from PyQt5.QtCore import QObject, pyqtSlot, QVariant
 
 logger = logging.getLogger(__name__)
@@ -77,20 +77,20 @@ def dbus_uint(value: int) -> QVariant:
 class DBusThumbnailerListener(ABC):
 
     @abstractmethod
-    def started(self, handle: QVariant) -> None:
+    def started(self, handle: int) -> None:
         pass
 
     @abstractmethod
-    def ready(self, handle: QVariant, urls: Sequence[str], flavor: str) -> None:
+    def ready(self, handle: int, urls: Sequence[str], flavor: str) -> None:
         pass
 
     @abstractmethod
-    def error(self, handle: QVariant, uris: Sequence[str],
+    def error(self, handle: int, uris: Sequence[str],
               error_code: 'DBusThumbnailerError', message: str) -> None:
         pass
 
     @abstractmethod
-    def finished(self, handle: QVariant) -> None:
+    def finished(self, handle: int) -> None:
         pass
 
     @abstractmethod
@@ -100,13 +100,13 @@ class DBusThumbnailerListener(ABC):
 
 class DBusThumbnailer(QObject):
 
-    def __init__(self, bus: QDBus, listener: DBusThumbnailerListener) -> None:
+    def __init__(self, bus: QDBusConnection, listener: DBusThumbnailerListener) -> None:
         super().__init__()
 
         self.bus = bus
 
         self.bus.registerObject('/', self)
-        self.requests: Dict[str, Tuple[Sequence[str], Sequence[str], str]] = {}
+        self.requests: Dict[int, Tuple[Sequence[str], Sequence[str], str]] = {}
         self.thumbnailer = QDBusInterface(
             'org.freedesktop.thumbnails.Thumbnailer1',
             '/org/freedesktop/thumbnails/Thumbnailer1',
@@ -129,39 +129,39 @@ class DBusThumbnailer(QObject):
     def close(self) -> None:
         self.bus.unregisterObject('/')
 
-    def _add_request(self, handle: QVariant, data: Tuple[Sequence[str], Sequence[str], str]) -> None:
+    def _add_request(self, handle: int, data: Tuple[Sequence[str], Sequence[str], str]) -> None:
         self.requests[handle] = data
 
-    def _remove_request(self, handle: QVariant) -> None:
+    def _remove_request(self, handle: int) -> None:
         if handle in self.requests:
             del self.requests[handle]
 
         if not self.requests:
             self.listener.idle()
 
-    @pyqtSlot(QDBusMessage)  # type: ignore
+    @pyqtSlot(QDBusMessage)
     def _receive_started(self, msg: QDBusMessage) -> None:
         handle, = msg.arguments()
         self.listener.started(handle)
 
-    @pyqtSlot(QDBusMessage)  # type: ignore
+    @pyqtSlot(QDBusMessage)
     def _receive_ready(self, msg: QDBusMessage) -> None:
         handle, uris = msg.arguments()
         data = self.requests[handle]
         self.listener.ready(handle, uris, data[2])
 
-    @pyqtSlot(QDBusMessage)  # type: ignore
+    @pyqtSlot(QDBusMessage)
     def _receive_finished(self, msg: QDBusMessage) -> None:
         handle, = msg.arguments()
         self.listener.finished(handle)
         self._remove_request(handle)
 
-    @pyqtSlot(QDBusMessage)  # type: ignore
+    @pyqtSlot(QDBusMessage)
     def _receive_error(self, msg: QDBusMessage) -> None:
         handle, uris, error_code, message = msg.arguments()
         self.listener.error(handle, uris, error_code, message)
 
-    def _call(self, method: str, *args: Any) -> Sequence[QVariant]:
+    def _call(self, method: str, *args: Any) -> Sequence[Any]:
         msg = self.thumbnailer.call(method, *args)
         reply = QDBusReply(msg)
         if not reply.isValid():
@@ -170,9 +170,10 @@ class DBusThumbnailer(QObject):
                 reply.error().name(),
                 reply.error().message()))
 
-        return cast(Sequence[QVariant], msg.arguments())
+        print("-------", repr(msg.arguments()))
+        return msg.arguments()
 
-    def queue(self, files: Sequence[str], flavor: str = "default") -> QVariant:
+    def queue(self, files: Sequence[str], flavor: str = "default") -> Optional[int]:
         logger.debug("DBusThumbnailer.queue: %s  %s", files, flavor)
 
         if files == []:
@@ -195,9 +196,10 @@ class DBusThumbnailer(QObject):
         )
 
         self._add_request(handle, (urls, mime_types, flavor))
+        assert isinstance(handle, int)
         return handle
 
-    def dequeue(self, handle: QVariant) -> None:
+    def dequeue(self, handle: int) -> None:
         logger.debug("DBusThumbnailer.dequeue: %s", handle)
 
         handle, = self._call("Dequeue", handle)

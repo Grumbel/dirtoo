@@ -21,7 +21,7 @@ import logging
 import os
 import traceback
 
-from PyQt5.QtCore import QProcess, QByteArray, pyqtSignal
+from PyQt5.QtCore import QProcess
 
 from dirtoo.archive.extractor import Extractor, ExtractorResult
 
@@ -49,8 +49,6 @@ logger = logging.getLogger(__name__)
 
 
 class SevenZipExtractor(Extractor):
-
-    sig_entry_extracted = pyqtSignal(str, str)
 
     def __init__(self, filename: str, outdir: str) -> None:
         super().__init__()
@@ -150,8 +148,8 @@ class SevenZipExtractor(Extractor):
         assert self._process is not None
 
         while self._process.canReadLine():
-            buf: QByteArray = self._process.readLine()
-            line = os.fsdecode(buf.data()).rstrip("\n")
+            buf: bytes = self._process.readLine().data()  # type: ignore
+            line = os.fsdecode(buf).rstrip("\n")
             # print("stdout:", repr(line))
             self._process_stdout(line)
 
@@ -160,8 +158,8 @@ class SevenZipExtractor(Extractor):
 
         while self._process.canReadLine():
             # print("stderr:", repr(line))
-            buf = self._process.readLine()
-            line = os.fsdecode(buf.data()).rstrip("\n")
+            buf: bytes = self._process.readLine().data()  # type: ignore
+            line = os.fsdecode(buf).rstrip("\n")
             self._process_stderr(line)
 
 

@@ -46,14 +46,14 @@ class Thumbnail:
         self.flavor: str = flavor
         self.mtime: float = 0
 
-    def get_pixmap(self) -> QPixmap:
+    def get_pixmap(self) -> Optional[QPixmap]:
         if self.status == ThumbnailStatus.THUMBNAIL_READY:
             assert self.pixmap is not None
             return self.pixmap
         else:
             return None
 
-    def set_thumbnail_image(self, image: QImage) -> None:
+    def set_thumbnail_image(self, image: Optional[QImage]) -> None:
         if image is None:
             self.status = ThumbnailStatus.THUMBNAIL_UNAVAILABLE
             self.pixmap = None

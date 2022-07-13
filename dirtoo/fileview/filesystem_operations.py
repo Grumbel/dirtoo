@@ -69,7 +69,7 @@ class TransferWorker(QObject):
             self._progress.transfer_completed()
 
 
-class GuiProgress(QObject):
+class GuiProgress(QObject, Progress):
 
     sig_copy_file = pyqtSignal(str, str, ConflictResolution)
     sig_copy_progress = pyqtSignal(int, int)
@@ -116,14 +116,14 @@ class GuiProgress(QObject):
         self.sig_transfer_completed.emit()
 
 
-class GuiMediator(QObject):
+class GuiMediator(QObject, Mediator):
     """Whenever a filesystem operation would result in the destruction of data,
     the Mediator is called to decide which action should be taken."""
 
     sig_file_conflict = pyqtSignal(ReturnValue)
     sig_directory_conflict = pyqtSignal(ReturnValue)
 
-    def __init__(self, parent: QObject) -> None:
+    def __init__(self, parent: Optional[QObject]) -> None:
         super().__init__(parent)
 
     def cancel_transfer(self) -> bool:
@@ -172,7 +172,7 @@ class GuiFileTransfer(QObject):
         thread.started.connect(worker.on_started)
         thread.start()
 
-        self.sig_close_requested.connect(worker.close, type=Qt.BlockingQueuedConnection)
+        self.sig_close_requested.connect(worker.close, type=Qt.BlockingQueuedConnection)  # type: ignore
 
         self._thread = thread
         self._worker = worker

@@ -25,7 +25,7 @@ from collections import defaultdict
 from PyQt5.QtCore import Qt, QRectF, QTimerEvent
 from PyQt5.QtGui import (QBrush, QIcon, QColor, QPainter, QImage,
                          QKeySequence, QContextMenuEvent, QPaintEvent,
-                         QMouseEvent, QKeyEvent, QResizeEvent)
+                         QMouseEvent, QMoveEvent, QKeyEvent, QResizeEvent)
 from PyQt5.QtWidgets import QGraphicsView, QShortcut
 
 from dirtoo.dbus_thumbnailer import DBusThumbnailerError
@@ -221,7 +221,7 @@ class FileView(QGraphicsView):
             self.cursor_move(0, +1)
         elif ev.key() == Qt.Key_Return:
             if self._cursor_item is not None:
-                self._cursor_item.click_action(new_window=ev.modifiers() & Qt.ShiftModifier)
+                self._cursor_item.click_action(new_window=bool(ev.modifiers() & Qt.ShiftModifier))
         elif ev.text() != "":
             self._leap_widget.show()
             self._leap_widget._line_edit.setText(ev.text())
@@ -367,12 +367,13 @@ class FileView(QGraphicsView):
 
         self._leap_widget.place_widget()
 
-    def moveEvent(self, ev: QMouseEvent) -> None:
+    def moveEvent(self, ev: QMoveEvent) -> None:
         super().moveEvent(ev)
         self._leap_widget.place_widget()
 
     def timerEvent(self, ev: QTimerEvent) -> None:
         if ev.timerId() == self._resize_timer:
+            assert self._resize_timer is not None
             self.killTimer(self._resize_timer)
             self._resize_timer = None
 
@@ -380,6 +381,7 @@ class FileView(QGraphicsView):
                 self._layout.layout(self.viewport().width(), self.viewport().height())
             self.layout_items()
         elif ev.timerId() == self._scroll_timer:
+            assert self._scroll_timer is not None
             self.killTimer(self._scroll_timer)
             self._is_scrolling = False
             self._scroll_timer = None
@@ -570,7 +572,7 @@ class FileView(QGraphicsView):
             if ensure_visible:
                 self.ensureVisible(self._cursor_item)
 
-    def mousePressEvent(self, ev: 'QMouseEvent') -> None:
+    def mousePressEvent(self, ev: QMouseEvent) -> None:
         super().mousePressEvent(ev)
 
         item = self._cursor_item
@@ -583,7 +585,7 @@ class FileView(QGraphicsView):
             if self._cursor_item is None:
                 self._controller.on_context_menu(ev.globalPos())
             else:
-                self._controller.on_item_context_menu(ev, self._cursor_item)
+                self._controller.show_item_context_menu(self._cursor_item, None)
         else:
             super().contextMenuEvent(ev)
             if not ev.isAccepted():

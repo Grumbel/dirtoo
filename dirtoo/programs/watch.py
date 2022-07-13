@@ -65,7 +65,7 @@ def main(argv: Sequence[str]) -> None:
 
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-    app = QCoreApplication(argv)
+    app = QCoreApplication(list(argv))
 
     cachedir: Final[str] = os.path.join(xdg.BaseDirectory.xdg_cache_home, "dirtoo")
     stdio_fs: Final[StdioFilesystem] = StdioFilesystem(cachedir)

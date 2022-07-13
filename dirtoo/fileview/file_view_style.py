@@ -112,7 +112,7 @@ class FileViewStyle:
         self.shared_pixmaps = SharedPixmaps()
         self._shared_scalable: Dict[Tuple[int, int], SharedScaleable] = {}
 
-    def shared_scalable(self, width: int, height: int) -> QPixmap:
+    def shared_scalable(self, width: int, height: int) -> SharedScaleable:
         key = (width, height)
         scalable = self._shared_scalable.get(key, None)
         if scalable is None:

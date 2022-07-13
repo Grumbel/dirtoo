@@ -20,11 +20,12 @@ from typing import TYPE_CHECKING, Dict, Any, Optional
 import logging
 from pkg_resources import resource_filename
 
-from PyQt5.QtCore import Qt, QRectF, QRect, QTimerEvent, QEvent
+from PyQt5.QtCore import Qt, QPoint, QPointF, QRectF, QRect, QTimerEvent
 from PyQt5.QtGui import (QColor, QPainter, QPainterPath, QImage, QDrag, QPixmap,
-                         QMouseEvent, QIcon, QEnterEvent, QContextMenuEvent)
+                         QIcon)
 from PyQt5.QtWidgets import (QGraphicsObject, QGraphicsItem, QWidget,
-                             QStyleOptionGraphicsItem)
+                             QStyleOptionGraphicsItem, QGraphicsSceneMouseEvent,
+                             QGraphicsSceneHoverEvent, QGraphicsSceneContextMenuEvent)
 
 from dirtoo.filesystem.file_info import FileInfo
 from dirtoo.thumbnail.thumbnail import Thumbnail, ThumbnailStatus
@@ -47,7 +48,7 @@ class FileItem(QGraphicsObject):
         self.fileinfo = fileinfo
         self.controller = controller
 
-        self.press_pos = None
+        self.press_pos: Optional[QPoint] = None
         self.setFlags(QGraphicsItem.ItemIsSelectable)
         self.setAcceptHoverEvents(True)
 
@@ -119,7 +120,8 @@ class FileItem(QGraphicsObject):
             if thumbnail.status == ThumbnailStatus.INITIAL:
                 thumbnail.request()
 
-    def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: QWidget) -> None:
+    def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem,  # type: ignore
+              widget: Optional[QWidget]) -> None:
         # logger.debug("FileItem.paint: %s", self.fileinfo)
 
         if not self.file_view.is_scrolling():
@@ -168,7 +170,7 @@ class FileItem(QGraphicsObject):
         icon = self.file_view.icon_from_fileinfo(self.fileinfo)
         return icon
 
-    def hoverEnterEvent(self, ev: QEnterEvent) -> None:
+    def hoverEnterEvent(self, ev: QGraphicsSceneHoverEvent) -> None:
         # logger.debug("FileItem.hoverEnterEvent: %s", self.fileinfo)
         self.hovering = True
 
@@ -177,7 +179,7 @@ class FileItem(QGraphicsObject):
 
         self.update()
 
-    def hoverLeaveEvent(self, ev: QEvent) -> None:
+    def hoverLeaveEvent(self, ev: QGraphicsSceneHoverEvent) -> None:
         # logger.debug("FileItem.hoverLeaveEvent: %s", self.fileinfo)
         self.hovering = False
 
@@ -186,7 +188,7 @@ class FileItem(QGraphicsObject):
 
         self.update()
 
-    def set_thumbnail_image(self, image: QImage, flavor: Optional[str]) -> None:
+    def set_thumbnail_image(self, image: Optional[QImage], flavor: Optional[str]) -> None:
         thumbnail = self._get_thumbnail(flavor)
         thumbnail.set_thumbnail_image(image)
         self.update()
@@ -225,6 +227,7 @@ class FileItem(QGraphicsObject):
             self.animation_count -= 1
             self.update()
             if self.animation_count <= 0:
+                assert self.animation_timer is not None
                 self.killTimer(self.animation_timer)
                 self.animation_timer = None
         else:
@@ -245,7 +248,7 @@ class FileItem(QGraphicsObject):
         self._dropable = value
         self.update()
 
-    def mousePressEvent(self, ev: QMouseEvent) -> None:
+    def mousePressEvent(self, ev: QGraphicsSceneMouseEvent) -> None:
         if not self.shape().contains(ev.scenePos() - self.pos()):
             # Qt is sending events that are outside the item. This
             # happens when opening a context menu on an item, moving
@@ -268,12 +271,14 @@ class FileItem(QGraphicsObject):
             if ev.modifiers() & Qt.ControlModifier:
                 self.setSelected(not self.isSelected())
             else:
-                self.press_pos = ev.pos()
+                self.press_pos = ev.pos().toPoint()
         elif ev.button() == Qt.RightButton:
             pass
 
-    def mouseMoveEvent(self, ev: QMouseEvent) -> None:
-        if (ev.pos() - self.press_pos).manhattanLength() > 16:
+    def mouseMoveEvent(self, ev: QGraphicsSceneMouseEvent) -> None:
+        assert self.press_pos is not None
+
+        if (ev.pos() - QPointF(self.press_pos)).manhattanLength() > 16:
             # print("drag start")
 
             drag = QDrag(self.controller._gui._window)
@@ -305,9 +310,9 @@ class FileItem(QGraphicsObject):
             drag_widget = DragWidget(None)  # noqa: F841
 
             # this will eat up the mouseReleaseEvent
-            drag.exec(Qt.CopyAction | Qt.MoveAction | Qt.LinkAction | 0x40, 0x40)
+            drag.exec(Qt.CopyAction | Qt.MoveAction | Qt.LinkAction | Qt.DropAction(0x40), Qt.DropAction(0x40))
 
-    def mouseReleaseEvent(self, ev: QMouseEvent) -> None:
+    def mouseReleaseEvent(self, ev: QGraphicsSceneMouseEvent) -> None:
         if ev.button() == Qt.LeftButton and self.press_pos is not None:
             self.click_action(new_window=False)
         elif ev.button() == Qt.MiddleButton:
@@ -317,8 +322,8 @@ class FileItem(QGraphicsObject):
         self.on_click_animation()
         self.controller.on_click(self.fileinfo, new_window=new_window)
 
-    def contextMenuEvent(self, ev: QContextMenuEvent) -> None:
-        self.controller.on_item_context_menu(ev, self)
+    def contextMenuEvent(self, ev: QGraphicsSceneContextMenuEvent) -> None:
+        self.controller.show_item_context_menu(self, ev.screenPos())
 
     def show_basename(self) -> None:
         pass

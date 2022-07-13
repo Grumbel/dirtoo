@@ -17,9 +17,9 @@
 
 from typing import Optional
 
-from PyQt5.QtCore import pyqtSignal, QEvent
-from PyQt5.QtGui import QTransform, QDragEnterEvent, QDragMoveEvent
-from PyQt5.QtWidgets import QGraphicsScene
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtGui import QTransform
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsSceneDragDropEvent
 
 from dirtoo.fileview.file_item import FileItem
 
@@ -34,7 +34,7 @@ class FileGraphicsScene(QGraphicsScene):
 
         self._drag_drop_item: Optional[FileItem] = None
 
-    def dragEnterEvent(self, ev: QDragEnterEvent) -> None:
+    def dragEnterEvent(self, ev: QGraphicsSceneDragDropEvent) -> None:
         # print("FileGraphicsScene.dragEnterEvent()")
 
         if False:
@@ -52,7 +52,7 @@ class FileGraphicsScene(QGraphicsScene):
         else:
             ev.ignore()
 
-    def dragMoveEvent(self, ev: QDragMoveEvent) -> None:
+    def dragMoveEvent(self, ev: QGraphicsSceneDragDropEvent) -> None:
         # print("FileGraphicsScene.dragMoveEvent()")
         ev.acceptProposedAction()
 
@@ -68,7 +68,7 @@ class FileGraphicsScene(QGraphicsScene):
             else:
                 self._drag_drop_item = None
 
-    def dragLeaveEvent(self, ev: QEvent) -> None:
+    def dragLeaveEvent(self, ev: QGraphicsSceneDragDropEvent) -> None:
         # print("FileGraphicsScene.dragLeaveEvent()")
         ev.accept()
 
@@ -76,7 +76,7 @@ class FileGraphicsScene(QGraphicsScene):
             self._drag_drop_item.set_dropable(False)
             self._drag_drop_item = None
 
-    def dropEvent(self, ev: QEvent) -> None:
+    def dropEvent(self, ev: QGraphicsSceneDragDropEvent) -> None:
         # print("FileGraphicsScene.dropEvent()")
         ev.accept()
 

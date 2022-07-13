@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, Callable, Optional, Dict, Sequence, Tuple
+from typing import TYPE_CHECKING, cast, Callable, Optional, Dict, Sequence, Tuple
 
 import logging
 
@@ -187,8 +187,8 @@ class DirectoryThumbnailerTask(QObject):
 
         for idx, thumbnail in enumerate(thumbnails):
             s = spec[idx]
-            dstrect = QRect(QPoint(s[0] * 256, s[1] * 256),
-                            QPoint(s[2] * 256, s[3] * 256))
+            dstrect = QRect(QPoint(int(s[0] * 256), int(s[1] * 256)),
+                            QPoint(int(s[2] * 256), int(s[3] * 256)))
             srcrect = make_cropped_rect(thumbnail.width(), thumbnail.height(),
                                         int((s[2] - s[0]) * 256),
                                         int((s[3] - s[1]) * 256))
@@ -268,7 +268,7 @@ class DirectoryThumbnailer(WorkerThread):
         assert self._worker is not None
 
         print("request_thumbnail", location, callback)
-        self._worker.sig_thumbnail_requested.emit(location, callback)
+        cast(DirectoryThumbnailerWorker, self._worker).sig_thumbnail_requested.emit(location, callback)
 
 
 # EOF #

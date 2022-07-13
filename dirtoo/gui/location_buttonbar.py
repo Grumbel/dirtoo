@@ -144,8 +144,8 @@ class LocationButtonBar(QWidget):
             for i in reversed(range(old_layout.count())):
                 w = old_layout.itemAt(i).widget()
                 if w is not None:
-                    w.setParent(None)
-            from PyQt5 import sip
+                    w.setParent(None)  # type: ignore
+            from PyQt5 import sip  # pyright: ignore
             sip.delete(old_layout)
 
     def mousePressEvent(self, ev: QMouseEvent) -> None:

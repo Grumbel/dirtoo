@@ -21,7 +21,7 @@ import os
 import urllib.parse
 
 from PyQt5.Qt import QVariant
-from PyQt5.QtDBus import QDBusInterface, QDBusReply
+from PyQt5.QtDBus import QDBusInterface, QDBusConnection, QDBusReply
 
 
 def dbus_as(value: Sequence[str]) -> QVariant:
@@ -44,7 +44,7 @@ def url_from_path(path: str) -> str:
 
 class DBusThumbnailCache:
 
-    def __init__(self, bus: str) -> None:
+    def __init__(self, bus: QDBusConnection) -> None:
         self.cache = QDBusInterface(
             'org.freedesktop.thumbnails.Cache1',
             '/org/freedesktop/thumbnails/Cache1',

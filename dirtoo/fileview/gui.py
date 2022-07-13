@@ -18,8 +18,8 @@
 from typing import TYPE_CHECKING, Optional, cast
 
 from PyQt5.QtCore import QObject, Qt, QEvent, QPoint
-from PyQt5.QtWidgets import (QFileDialog, QTextEdit, QDialog, QMessageBox)
-from PyQt5.QtGui import QCursor, QMouseEvent, QContextMenuEvent
+from PyQt5.QtWidgets import QFileDialog, QTextEdit, QDialog, QMessageBox
+from PyQt5.QtGui import QCursor, QMouseEvent
 
 from dirtoo.fileview.file_view_window import FileViewWindow
 from dirtoo.gui.item_context_menu import ItemContextMenu
@@ -80,9 +80,9 @@ class Gui(QObject):
         menu.exec(pos)
         self.fake_mouse()
 
-    def on_item_context_menu(self, ev: QContextMenuEvent, item: 'FileItem') -> None:
+    def show_item_context_menu(self, item: 'FileItem', screen_pos: Optional[QPoint]) -> None:
         if item.isSelected():
-            selected_items = self._window.file_view._scene.selectedItems()
+            selected_items = self._controller.selected_file_items()
         else:
             self._controller.clear_selection()
             item.setSelected(True)
@@ -90,14 +90,14 @@ class Gui(QObject):
 
         menu = ItemContextMenu(self._controller, [item.fileinfo for item in selected_items])
 
-        if ev.reason() == QContextMenuEvent.Keyboard:
+        if screen_pos is None:
             pos = self._window.file_view.mapToGlobal(
                 self._window.file_view.mapFromScene(
                     item.pos() + item.boundingRect().center()))
             print(pos, item.boundingRect())
             menu.exec(pos)
         else:
-            menu.exec(ev.screenPos())
+            menu.exec(screen_pos)
         self.fake_mouse()
 
     def show_create_directory_dialog(self, name: Optional[str] = None) -> Optional[str]:

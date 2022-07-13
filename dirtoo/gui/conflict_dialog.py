@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import cast
+from typing import cast, Optional
 
 import html
 
@@ -30,7 +30,7 @@ from dirtoo.image.icon import load_icon
 
 class ConflictDialog(QDialog):
 
-    def __init__(self, parent: QWidget) -> None:
+    def __init__(self, parent: Optional[QWidget]) -> None:
         super().__init__()
 
         self._source_filename = "Source File"

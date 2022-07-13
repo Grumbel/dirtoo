@@ -15,24 +15,25 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Sequence, Tuple, Optional
+from typing import cast, Sequence, Tuple, Optional, ClassVar
 
 import logging
 import os
 
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal, pyqtBoundSignal
 
 from dirtoo.archive.extractor import Extractor, ExtractorResult
 from dirtoo.archive.extractor_factory import make_extractor
 from dirtoo.fileview.worker_thread import WorkerThread, Worker
+
 
 logger = logging.getLogger(__name__)
 
 
 class ArchiveExtractorWorker(Worker):
 
-    sig_entry_extracted = pyqtSignal(str, str)
-    sig_finished = pyqtSignal(ExtractorResult)
+    sig_entry_extracted: ClassVar[pyqtSignal] = pyqtSignal(str, str)
+    sig_finished: ClassVar[pyqtSignal] = pyqtSignal(ExtractorResult)
 
     def __init__(self, archive_path: str, contentdir: str) -> None:
         super().__init__()
@@ -124,9 +125,9 @@ class ArchiveExtractor(WorkerThread):
         self.sig_started.emit(self)
 
     @property
-    def sig_entry_extracted(self) -> pyqtSignal:
+    def sig_entry_extracted(self) -> pyqtBoundSignal:
         assert self._worker is not None
-        return self._worker.sig_entry_extracted
+        return cast(ArchiveExtractorWorker, self._worker).sig_entry_extracted
 
 
 # EOF #

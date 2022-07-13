@@ -35,7 +35,7 @@ class DragWidget(QWidget):
     it puts the words Copy/Link/Move next to the cursor if the proper
     modifier is pressed."""
 
-    def __init__(self, parent: QWidget) -> None:
+    def __init__(self, parent: Optional[QWidget]) -> None:
         super().__init__(parent,
                          Qt.Window |
                          Qt.WindowStaysOnTopHint |
@@ -43,7 +43,7 @@ class DragWidget(QWidget):
                          Qt.FramelessWindowHint)
 
         self.resize(48, 20)
-        self._mouse_move_timer = self.startTimer(1000 // 60)
+        self._mouse_move_timer: Optional[int] = self.startTimer(1000 // 60)
         self._text: Optional[str] = None
 
     def __del__(self) -> None:
@@ -55,6 +55,7 @@ class DragWidget(QWidget):
             if not buttons & Qt.LeftButton:
                 # dispose the widget when the mouse button is released
                 self.hide()
+                assert self._mouse_move_timer is not None
                 self.killTimer(self._mouse_move_timer)
                 self._mouse_move_timer = None
             else:

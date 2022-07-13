@@ -48,13 +48,10 @@ class ExtractorResult:
 
 class Extractor(QObject):
 
+    sig_entry_extracted = pyqtSignal(str, str)
+
     def __init__(self) -> None:
         super().__init__()
-
-    @property
-    @abstractmethod
-    def sig_entry_extracted(self) -> pyqtSignal:
-        pass
 
     @abstractmethod
     def extract(self) -> ExtractorResult:

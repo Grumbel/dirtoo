@@ -21,7 +21,7 @@ import logging
 import fcntl
 import os
 
-from PyQt5.QtCore import QObject, QSocketNotifier, pyqtSignal
+from PyQt5.QtCore import QObject, QSocketNotifier, pyqtSignal, pyqtBoundSignal
 
 from dirtoo.filesystem.file_info import FileInfo
 from dirtoo.filesystem.location import Location
@@ -82,7 +82,7 @@ class FileListStream(QObject):
         return FileListStream(app.vfs, tee_fd, linesep)
 
     @property
-    def sig_finished(self) -> pyqtSignal:
+    def sig_finished(self) -> pyqtBoundSignal:
         return self.sig_end_of_stream
 
     def __init__(self, vfs: 'VirtualFilesystem',
@@ -102,7 +102,7 @@ class FileListStream(QObject):
     def start(self) -> None:
         self.readliner = non_blocking_readline(self.fp, self.linesep)
 
-        self.socket_notifier = QSocketNotifier(self.fp.fileno(), QSocketNotifier.Read)
+        self.socket_notifier = QSocketNotifier(self.fp.fileno(), QSocketNotifier.Read)  # type: ignore
         self.socket_notifier.activated.connect(self._on_activated)
 
     def _on_activated(self, fd: int) -> None:

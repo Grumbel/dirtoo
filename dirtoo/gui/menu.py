@@ -46,7 +46,7 @@ class Menu(QMenu):
     def middle_is_pressed(self) -> bool:
         return self._middle_pressed
 
-    def addDoubleAction(self, icon: Optional[QIcon], title: str,
+    def addDoubleAction(self, icon: QIcon, title: str,
                         left_func: Callable[[], None],
                         middle_func: Callable[[], None]) -> QAction:
 

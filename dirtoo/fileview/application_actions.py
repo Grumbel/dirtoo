@@ -33,7 +33,8 @@ class ApplicationActions:
 
     def _make_actions(self) -> None:
         self.enable_filesystem = QAction(load_icon("drive-harddisk"),
-                                         "Allow file manipulation", checkable=True)
+                                         "Allow file manipulation")
+        self.enable_filesystem.setCheckable(True)
         self.enable_filesystem.setChecked(False)
         self.enable_filesystem.triggered.connect(self._app.set_filesystem_enabled)
 

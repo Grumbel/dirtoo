@@ -58,7 +58,8 @@ class Actions(QObject):
             else:
                 logging.getLogger().setLevel(logging.ERROR)
 
-        self.debug = QAction(load_icon('media-record'), '&Debug', self, checkable=True)
+        self.debug = QAction(load_icon('media-record'), '&Debug', self)
+        self.debug.setCheckable(True)
         self.debug.setStatusTip('Debug application')
         self.debug.setChecked(logging.getLogger().getEffectiveLevel() == logging.DEBUG)
         self.debug.triggered.connect(lambda: on_debug(self.debug.isChecked()))
@@ -117,7 +118,8 @@ class Actions(QObject):
         self.lod_out.triggered.connect(self.controller.less_details)
         self.lod_out.setShortcut('Alt+-')
 
-        self.crop_thumbnails = QAction(load_icon('zoom-fit-best'), "Crop Thumbnails", self, checkable=True)
+        self.crop_thumbnails = QAction(load_icon('zoom-fit-best'), "Crop Thumbnails", self)
+        self.crop_thumbnails.setCheckable(True)
         self.crop_thumbnails.triggered.connect(
             lambda: self.controller.set_crop_thumbnails(self.crop_thumbnails.isChecked()))
 
@@ -173,9 +175,12 @@ class Actions(QObject):
         self.prepare.setStatusTip('Load Thumbnails')
         self.prepare.triggered.connect(self.controller.prepare)
 
-        self.view_detail_view = QAction("Detail View", self, checkable=True)
-        self.view_icon_view = QAction("Icon View", self, checkable=True)
-        self.view_small_icon_view = QAction("Small Icon View", self, checkable=True)
+        self.view_detail_view = QAction("Detail View", self)
+        self.view_detail_view.setCheckable(True)
+        self.view_icon_view = QAction("Icon View", self)
+        self.view_icon_view.setCheckable(True)
+        self.view_small_icon_view = QAction("Small Icon View", self)
+        self.view_small_icon_view.setCheckable(True)
 
         self.view_icon_view = QAction(load_icon("view-grid-symbolic"),
                                       "Icon View")
@@ -194,56 +199,68 @@ class Actions(QObject):
         self.view_group.addAction(self.view_icon_view)
         self.view_group.addAction(self.view_small_icon_view)
 
-        self.show_hidden = QAction(load_icon('camera-photo'), "Show Hidden", self, checkable=True)
+        self.show_hidden = QAction(load_icon('camera-photo'), "Show Hidden", self)
+        self.show_hidden.setCheckable(True)
         self.show_hidden.triggered.connect(self.controller.show_hidden)
         self.show_hidden.setShortcut('Ctrl+H')
         self.show_hidden.setChecked(settings.value("globals/show_hidden", False, bool))
 
-        self.show_filtered = QAction(load_icon('camera-photo'), "Show Filtered", self, checkable=True)
+        self.show_filtered = QAction(load_icon('camera-photo'), "Show Filtered", self)
+        self.show_filtered.setCheckable(True)
         self.show_filtered.triggered.connect(self.controller.show_filtered)
 
-        self.show_abspath = QAction("Show AbsPath", self, checkable=True)
+        self.show_abspath = QAction("Show AbsPath", self)
+        self.show_abspath.setCheckable(True)
         self.show_abspath.triggered.connect(self.controller.show_abspath)
 
-        self.show_basename = QAction("Show Basename", self, checkable=True)
+        self.show_basename = QAction("Show Basename", self)
+        self.show_basename.setCheckable(True)
         self.show_basename.triggered.connect(self.controller.show_basename)
 
         self.path_options_group = QActionGroup(self)
         self.path_options_group.addAction(self.show_abspath)
         self.path_options_group.addAction(self.show_basename)
 
-        self.toggle_timegaps = QAction("Show Time Gaps", self, checkable=True)
+        self.toggle_timegaps = QAction("Show Time Gaps", self)
+        self.toggle_timegaps.setCheckable(True)
         self.toggle_timegaps.triggered.connect(self.controller.toggle_timegaps)
 
         # Sorting Options
-        self.sort_directories_first = QAction("Directories First", checkable=True)
+        self.sort_directories_first = QAction("Directories First")
+        self.sort_directories_first.setCheckable(True)
         self.sort_directories_first.triggered.connect(
             lambda: self.controller._sorter.set_directories_first(self.sort_directories_first.isChecked()))
         self.sort_directories_first.setChecked(True)
 
-        self.sort_reversed = QAction("Reverse Sort", checkable=True)
+        self.sort_reversed = QAction("Reverse Sort")
+        self.sort_reversed.setCheckable(True)
         self.sort_reversed.triggered.connect(
             lambda: self.controller.set_sort_reversed(self.sort_reversed.isChecked()))
 
-        self.sort_by_name = QAction("Sort by Name", checkable=True)
+        self.sort_by_name = QAction("Sort by Name")
+        self.sort_by_name.setCheckable(True)
         self.sort_by_name.triggered.connect(lambda:
                                             self.controller.set_sort_key_func(
                                                 lambda x: numeric_sort_key(x.basename().lower())))
         self.sort_by_name.setChecked(True)
 
-        self.sort_by_size = QAction("Sort by Size", checkable=True)
+        self.sort_by_size = QAction("Sort by Size")
+        self.sort_by_size.setCheckable(True)
         self.sort_by_size.triggered.connect(lambda: self.controller.set_sort_key_func(FileInfo.size))
 
-        self.sort_by_ext = QAction("Sort by Extension", checkable=True)
+        self.sort_by_ext = QAction("Sort by Extension")
+        self.sort_by_ext.setCheckable(True)
         self.sort_by_ext.triggered.connect(lambda: self.controller.set_sort_key_func(FileInfo.ext))
 
-        self.sort_by_date = QAction("Sort by Date", checkable=True)
+        self.sort_by_date = QAction("Sort by Date")
+        self.sort_by_date.setCheckable(True)
         self.sort_by_date.triggered.connect(lambda: self.controller.set_sort_key_func(FileInfo.mtime))
 
         def framerate_key(fileinfo: FileInfo) -> float:
             return cast(float, fileinfo.get_metadata_or('framerate', 0.0))
 
-        self.sort_by_framerate = QAction("Sort by Framerate", checkable=True)
+        self.sort_by_framerate = QAction("Sort by Framerate")
+        self.sort_by_framerate.setCheckable(True)
         self.sort_by_framerate.triggered.connect(lambda: self.controller.set_sort_key_func(framerate_key))
 
         def aspect_ratio_key(fileinfo: FileInfo) -> float:
@@ -257,7 +274,8 @@ class Actions(QObject):
             else:
                 return 0
 
-        self.sort_by_aspect_ratio = QAction("Sort by Aspect Ratio", checkable=True)
+        self.sort_by_aspect_ratio = QAction("Sort by Aspect Ratio")
+        self.sort_by_aspect_ratio.setCheckable(True)
         self.sort_by_aspect_ratio.triggered.connect(lambda: self.controller.set_sort_key_func(aspect_ratio_key))
 
         def resolution_key(fileinfo: FileInfo) -> int:
@@ -265,19 +283,25 @@ class Actions(QObject):
             height = cast(int, fileinfo.get_metadata_or('height', 0))
             return width * height
 
-        self.sort_by_resolution = QAction("Sort by Resolution", checkable=True)
+        self.sort_by_resolution = QAction("Sort by Resolution")
+        self.sort_by_resolution.setCheckable(True)
         self.sort_by_resolution.triggered.connect(lambda: self.controller.set_sort_key_func(resolution_key))
 
         def duration_key(fileinfo: FileInfo) -> int:
             return cast(int, fileinfo.get_metadata_or('duration', 0))
 
-        self.sort_by_duration = QAction("Sort by Duration", checkable=True)
+        self.sort_by_duration = QAction("Sort by Duration")
+        self.sort_by_duration.setCheckable(True)
         self.sort_by_duration.triggered.connect(lambda: self.controller.set_sort_key_func(duration_key))
 
-        self.sort_by_user = QAction("Sort by User", checkable=True)
-        self.sort_by_group = QAction("Sort by Group", checkable=True)
-        self.sort_by_permission = QAction("Sort by Permission", checkable=True)
-        self.sort_by_random = QAction("Random Shuffle", checkable=True)
+        self.sort_by_user = QAction("Sort by User")
+        self.sort_by_user.setCheckable(True)
+        self.sort_by_group = QAction("Sort by Group")
+        self.sort_by_group.setCheckable(True)
+        self.sort_by_permission = QAction("Sort by Permission")
+        self.sort_by_permission.setCheckable(True)
+        self.sort_by_random = QAction("Random Shuffle")
+        self.sort_by_random.setCheckable(True)
         # self.sort_by_random.triggered.connect(lambda: self.controller.set_sort_key_func(None))
         self.sort_by_random.triggered.connect(lambda: print("sort_by_random: not implemented"))
 
@@ -295,17 +319,21 @@ class Actions(QObject):
         self.sort_group.addAction(self.sort_by_permission)
         self.sort_group.addAction(self.sort_by_random)
 
-        self.group_by_none = QAction("Don't Group", checkable=True)
+        self.group_by_none = QAction("Don't Group")
+        self.group_by_none.setCheckable(True)
         self.group_by_none.triggered.connect(self.controller.set_grouper_by_none)
         self.group_by_none.setChecked(True)
 
-        self.group_by_day = QAction("Group by Day", checkable=True)
+        self.group_by_day = QAction("Group by Day")
+        self.group_by_day.setCheckable(True)
         self.group_by_day.triggered.connect(self.controller.set_grouper_by_day)
 
-        self.group_by_directory = QAction("Group by Directory", checkable=True)
+        self.group_by_directory = QAction("Group by Directory")
+        self.group_by_directory.setCheckable(True)
         self.group_by_directory.triggered.connect(self.controller.set_grouper_by_directory)
 
-        self.group_by_duration = QAction("Group by Duration", checkable=True)
+        self.group_by_duration = QAction("Group by Duration")
+        self.group_by_duration.setCheckable(True)
         self.group_by_duration.triggered.connect(self.controller.set_grouper_by_duration)
 
         self.group_group = QActionGroup(self)
@@ -329,7 +357,8 @@ class Actions(QObject):
             else:
                 self.filter_pin.setIcon(load_icon("remmina-pin-up"))
 
-        self.filter_pin = QAction(load_icon("remmina-pin-up"), "Pin the filter", checkable=True)
+        self.filter_pin = QAction(load_icon("remmina-pin-up"), "Pin the filter")
+        self.filter_pin.setCheckable(True)
         self.filter_pin.triggered.connect(self.controller.set_filter_pin)
         # self.filter_pin.setToolTip("Pin the filter")
 

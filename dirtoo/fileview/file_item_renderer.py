@@ -205,7 +205,7 @@ class FileItemRenderer:
             if idx != 0:
                 text_option.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
 
-            width = total_width * (widths[idx] / 100)
+            width = total_width * (widths[idx] // 100)
             painter.drawText(QRectF(x, 0,
                                     width, self.tile_rect.height()),
                              text,

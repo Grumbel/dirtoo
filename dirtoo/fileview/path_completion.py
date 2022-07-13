@@ -15,11 +15,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Sequence, Tuple
+from typing import cast, Sequence, Tuple
 
 import os
 
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal, pyqtBoundSignal
 
 from dirtoo.fileview.worker_thread import WorkerThread, Worker
 
@@ -79,16 +79,16 @@ class PathCompletion(WorkerThread):
 
         self.set_worker(PathCompletionWorker())
         assert self._worker is not None
-        self.sig_request_completions.connect(self._worker._on_request_completions)
+        self.sig_request_completions.connect(cast(PathCompletionWorker, self._worker)._on_request_completions)
 
     def request_completions(self, text: str) -> None:
         self._request_interrupted = True
         self.sig_request_completions.emit(text)
 
     @property
-    def sig_completions_ready(self) -> pyqtSignal:
+    def sig_completions_ready(self) -> pyqtBoundSignal:
         assert self._worker is not None
-        return self._worker.sig_completions_ready
+        return cast(PathCompletionWorker, self._worker).sig_completions_ready
 
 
 # EOF #

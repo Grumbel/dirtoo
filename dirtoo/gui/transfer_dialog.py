@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import logging
 import time
@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 class TransferDialog(QDialog):
 
-    def __init__(self, target_directory: str, parent: QWidget) -> None:
+    def __init__(self, target_directory: str, parent: Optional[QWidget]) -> None:
         super().__init__()
 
         self._target_directory = target_directory
@@ -52,7 +52,7 @@ class TransferDialog(QDialog):
         self._make_gui()
         self.resize(600, 400)
 
-        self._timer = self.startTimer(500)
+        self._timer: Optional[int] = self.startTimer(500)
         self._time = time.time()
 
     def __del__(self) -> None:
@@ -256,6 +256,7 @@ class TransferDialog(QDialog):
         self._btn_cancel.setVisible(False)
         self._btn_close.setVisible(True)
 
+        assert self._timer is not None
         self.killTimer(self._timer)
         self._timer = None
 

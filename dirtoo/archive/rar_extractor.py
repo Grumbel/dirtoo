@@ -22,9 +22,10 @@ import logging
 import os
 import re
 
-from PyQt5.QtCore import QProcess, QByteArray, pyqtSignal
+from PyQt5.QtCore import QProcess
 
 from dirtoo.archive.extractor import Extractor, ExtractorResult
+
 
 logger = logging.getLogger(__name__)
 
@@ -43,8 +44,6 @@ class State(Enum):
 
 
 class RarExtractor(Extractor):
-
-    sig_entry_extracted = pyqtSignal(str, str)
 
     def __init__(self, filename: str, outdir: str) -> None:
         super().__init__()
@@ -162,8 +161,8 @@ class RarExtractor(Extractor):
 
         self._process.setCurrentReadChannel(QProcess.StandardOutput)
         while self._process.canReadLine():
-            buf: QByteArray = self._process.readLine()
-            line = os.fsdecode(buf.data())
+            buf: bytes = self._process.readLine().data()  # type: ignore
+            line = os.fsdecode(buf)
             line = line.rstrip("\n")
             self._process_stdout(line)
 
@@ -172,8 +171,8 @@ class RarExtractor(Extractor):
 
         self._process.setCurrentReadChannel(QProcess.StandardError)
         while self._process.canReadLine():
-            buf: QByteArray = self._process.readLine()
-            line = os.fsdecode(buf.data())
+            buf: bytes = self._process.readLine().data()  # type: ignore
+            line = os.fsdecode(buf)
             line = line.rstrip("\n")
             self._process_stderr(line)
 

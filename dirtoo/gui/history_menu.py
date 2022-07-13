@@ -17,8 +17,7 @@
 
 from typing import TYPE_CHECKING, Sequence
 
-from PyQt5.QtWidgets import QMenu
-
+from dirtoo.gui.menu import Menu
 from dirtoo.image.icon import load_icon
 
 if TYPE_CHECKING:
@@ -26,13 +25,13 @@ if TYPE_CHECKING:
     from dirtoo.filesystem.location import Location
 
 
-def make_history_menu_entries(controller: 'Controller', history_menu: QMenu, entries: Sequence['Location']) -> None:
+def make_history_menu_entries(controller: 'Controller', history_menu: Menu, entries: Sequence['Location']) -> None:
     icon = load_icon("folder")
     for entry in entries:
         action = history_menu.addDoubleAction(
             icon, entry.as_url(),
-            lambda entry=entry: controller.set_location(entry),
-            lambda entry=entry: controller.app.show_location(entry))
+            lambda entry=entry: controller.set_location(entry),  # type: ignore
+            lambda entry=entry: controller.app.show_location(entry))  # type: ignore
         # FIXME: exists() checks must be done asynchronously
         if False and not entry.exists():  # type: ignore  # pylint: disable=R1727
             action.setEnabled(False)  # type: ignore

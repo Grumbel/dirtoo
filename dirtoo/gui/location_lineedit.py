@@ -15,21 +15,21 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, Optional, Sequence, cast
+from typing import TYPE_CHECKING, Optional, Sequence
 
 import logging
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPalette, QIcon, QKeySequence, QFocusEvent, QKeyEvent, QHideEvent
 from PyQt5.QtWidgets import (QLineEdit, QShortcut, QWidget,
-                             QListWidget, QVBoxLayout, QSizePolicy)
+                             QListWidget, QListWidgetItem, QVBoxLayout, QSizePolicy)
 
 from dirtoo.filesystem.location import Location
 from dirtoo.image.icon import load_icon
 
 if TYPE_CHECKING:
     from dirtoo.fileview.controller import Controller
-    from dirtoo.fileview.file_item import FileItem
+
 
 logger = logging.getLogger(__name__)
 
@@ -117,9 +117,10 @@ class LocationLineEditPopup(QWidget):
             return None
         else:
             item = self.listwidget.item(row)
-            return cast(str, item.text())
+            assert item is not None
+            return item.text()
 
-    def _on_item_clicked(self, item: 'FileItem') -> None:
+    def _on_item_clicked(self, item: QListWidgetItem) -> None:
         self._parent.setText(item.text())
         self._parent.on_return_pressed()
 
@@ -163,7 +164,7 @@ class LocationLineEdit(QLineEdit):
         shortcut.activated.connect(self._popup.on_key_down)
 
     def _on_completions(self, longest: str, candidates: Sequence[str]) -> None:
-        self._popup.on_completions(longest, candidates)
+        self._popup.set_completions(longest, candidates)
         self._show_completion_selection = True
         self._show_popup()
 

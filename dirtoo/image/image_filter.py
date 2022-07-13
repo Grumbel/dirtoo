@@ -35,7 +35,7 @@ def drop_shadow(image: QImage) -> QImage:
     strides = (4,)
 
     alpha: npt.NDArray[numpy.uint8] = numpy.ndarray(shape=shape, dtype=numpy.uint8,
-                                                    buffer=bits, strides=strides, offset=3)
+                                                    buffer=bytes(bits.asarray()), strides=strides, offset=3)
     color: npt.NDArray[numpy.uint8] = numpy.ndarray(shape=shape, dtype=numpy.uint8)
     color.fill(0)
 
@@ -59,7 +59,7 @@ def white_outline(image: QImage, sigma: int = 6, repeat: int = 6) -> QImage:
     strides = (4,)
 
     alpha: npt.NDArray[numpy.uint8] = numpy.ndarray(shape=shape, dtype=numpy.uint8,
-                                                    buffer=bits, strides=strides, offset=3)
+                                                    buffer=bytes(bits.asarray()), strides=strides, offset=3)
     color: npt.NDArray[numpy.uint8] = numpy.ndarray(shape=shape, dtype=numpy.uint8)
     color.fill(255)
 

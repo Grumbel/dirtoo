@@ -17,7 +17,7 @@
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtBoundSignal
 
 if TYPE_CHECKING:
     from dirtoo.watcher.directory_watcher import DirectoryWatcher
@@ -39,31 +39,31 @@ class ArchiveDirectoryWatcher:
         self._directory_watcher.start()
 
     @property
-    def sig_file_added(self) -> pyqtSignal:
+    def sig_file_added(self) -> pyqtBoundSignal:
         return self._directory_watcher.sig_file_added
 
     @property
-    def sig_file_removed(self) -> pyqtSignal:
+    def sig_file_removed(self) -> pyqtBoundSignal:
         return self._directory_watcher.sig_file_removed
 
     @property
-    def sig_file_modified(self) -> pyqtSignal:
+    def sig_file_modified(self) -> pyqtBoundSignal:
         return self._directory_watcher.sig_file_modified
 
     @property
-    def sig_file_closed(self) -> pyqtSignal:
+    def sig_file_closed(self) -> pyqtBoundSignal:
         return self._directory_watcher.sig_file_closed
 
     @property
-    def sig_scandir_finished(self) -> pyqtSignal:
+    def sig_scandir_finished(self) -> pyqtBoundSignal:
         return self._directory_watcher.sig_scandir_finished
 
     @property
-    def sig_finished(self) -> pyqtSignal:
+    def sig_finished(self) -> pyqtBoundSignal:
         return self._archive_extractor.sig_finished
 
     @property
-    def sig_message(self) -> pyqtSignal:
+    def sig_message(self) -> pyqtBoundSignal:
         return self._directory_watcher.sig_message
 
 

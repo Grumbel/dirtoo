@@ -145,7 +145,7 @@ class SequenceMode(Mode):
         if column_count == 0:
             column_width = self._parent.viewport().width() - 16 - 16
         else:
-            column_width = (self._parent.viewport().width() / column_count) - 16 - 16
+            column_width = (self._parent.viewport().width() // column_count) - 16 - 16
 
         if self._zoom_index == 0:
             self._tile_style.set_tile_size(column_width, 16)

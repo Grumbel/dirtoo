@@ -17,7 +17,7 @@
 
 from typing import TYPE_CHECKING, Union
 
-from PyQt5.QtCore import Qt, QObject, QThread, pyqtSignal
+from PyQt5.QtCore import Qt, QObject, QThread, pyqtSignal, pyqtBoundSignal
 
 from dirtoo.filesystem.location import Location
 from dirtoo.watcher.directory_watcher_worker import DirectoryWatcherWorker
@@ -43,7 +43,7 @@ class DirectoryWatcher(QObject):
         # close() is a blocking connection so the thread is properly
         # done after the signal was emit'ed and we don't have to fuss
         # around with sig_finished() and other stuff
-        self.sig_close_requested.connect(self._worker.close, type=Qt.BlockingQueuedConnection)
+        self.sig_close_requested.connect(self._worker.close, type=Qt.BlockingQueuedConnection)  # type: ignore
 
     def start(self) -> None:
         self._thread.start()
@@ -56,27 +56,27 @@ class DirectoryWatcher(QObject):
         self._thread.wait()
 
     @property
-    def sig_file_added(self) -> pyqtSignal:
+    def sig_file_added(self) -> pyqtBoundSignal:
         return self._worker.sig_file_added
 
     @property
-    def sig_file_removed(self) -> pyqtSignal:
+    def sig_file_removed(self) -> pyqtBoundSignal:
         return self._worker.sig_file_removed
 
     @property
-    def sig_file_modified(self) -> pyqtSignal:
+    def sig_file_modified(self) -> pyqtBoundSignal:
         return self._worker.sig_file_modified
 
     @property
-    def sig_file_closed(self) -> pyqtSignal:
+    def sig_file_closed(self) -> pyqtBoundSignal:
         return self._worker.sig_file_closed
 
     @property
-    def sig_scandir_finished(self) -> pyqtSignal:
+    def sig_scandir_finished(self) -> pyqtBoundSignal:
         return self._worker.sig_scandir_finished
 
     @property
-    def sig_message(self) -> pyqtSignal:
+    def sig_message(self) -> pyqtBoundSignal:
         return self._worker.sig_message
 
 

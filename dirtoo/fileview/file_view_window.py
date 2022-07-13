@@ -65,7 +65,7 @@ class FileViewWindow(QMainWindow):
         self._message_area: Optional[MessageArea] = None
 
         self.controller = controller
-        self.actions = self.controller.actions
+        self._actions = self.controller.actions
 
         self.make_window()
         self.make_menubar()
@@ -82,7 +82,7 @@ class FileViewWindow(QMainWindow):
         self.move(QCursor.pos().x() - self.width() // 2,
                   QCursor.pos().y() - self.height() // 2)
 
-        self.addAction(self.actions.rename)
+        self.addAction(self._actions.rename)
 
     def __del__(self) -> None:
         logger.debug("FileViewWindow.__del__")
@@ -239,91 +239,91 @@ class FileViewWindow(QMainWindow):
 
     def make_group_menu(self) -> QMenu:
         menu = QMenu("Group Options")
-        menu.addAction(self.actions.group_by_none)
-        menu.addAction(self.actions.group_by_day)
-        menu.addAction(self.actions.group_by_directory)
-        menu.addAction(self.actions.group_by_duration)
+        menu.addAction(self._actions.group_by_none)
+        menu.addAction(self._actions.group_by_day)
+        menu.addAction(self._actions.group_by_directory)
+        menu.addAction(self._actions.group_by_duration)
         return menu
 
     def make_sort_menu(self) -> QMenu:
         menu = QMenu("Sort Options")
         menu.addSeparator().setText("Sort Options")
-        menu.addAction(self.actions.sort_directories_first)
-        menu.addAction(self.actions.sort_reversed)
+        menu.addAction(self._actions.sort_directories_first)
+        menu.addAction(self._actions.sort_reversed)
         menu.addSeparator().setText("Sort by")
-        menu.addAction(self.actions.sort_by_name)
-        menu.addAction(self.actions.sort_by_size)
-        menu.addAction(self.actions.sort_by_ext)
-        menu.addAction(self.actions.sort_by_date)
-        menu.addAction(self.actions.sort_by_duration)
-        menu.addAction(self.actions.sort_by_aspect_ratio)
-        menu.addAction(self.actions.sort_by_framerate)
-        menu.addAction(self.actions.sort_by_resolution)
-        menu.addAction(self.actions.sort_by_user)
-        menu.addAction(self.actions.sort_by_group)
-        menu.addAction(self.actions.sort_by_permission)
-        menu.addAction(self.actions.sort_by_random)
+        menu.addAction(self._actions.sort_by_name)
+        menu.addAction(self._actions.sort_by_size)
+        menu.addAction(self._actions.sort_by_ext)
+        menu.addAction(self._actions.sort_by_date)
+        menu.addAction(self._actions.sort_by_duration)
+        menu.addAction(self._actions.sort_by_aspect_ratio)
+        menu.addAction(self._actions.sort_by_framerate)
+        menu.addAction(self._actions.sort_by_resolution)
+        menu.addAction(self._actions.sort_by_user)
+        menu.addAction(self._actions.sort_by_group)
+        menu.addAction(self._actions.sort_by_permission)
+        menu.addAction(self._actions.sort_by_random)
         return menu
 
     def make_view_menu(self) -> QMenu:
         menu = QMenu("View Options")
         menu.addSeparator().setText("View Options")
-        menu.addAction(self.actions.show_abspath)
-        menu.addAction(self.actions.show_basename)
+        menu.addAction(self._actions.show_abspath)
+        menu.addAction(self._actions.show_basename)
         menu.addSeparator()
-        menu.addAction(self.actions.toggle_timegaps)
+        menu.addAction(self._actions.toggle_timegaps)
         return menu
 
     def make_menubar(self) -> None:
         self.menubar = self.menuBar()
         file_menu = self.menubar.addMenu('&File')
-        file_menu.addAction(self.actions.new_window)
-        file_menu.addAction(self.actions.parent_directory)
-        file_menu.addAction(self.actions.debug)
-        file_menu.addAction(self.actions.save_as)
+        file_menu.addAction(self._actions.new_window)
+        file_menu.addAction(self._actions.parent_directory)
+        file_menu.addAction(self._actions.debug)
+        file_menu.addAction(self._actions.save_as)
         file_menu.addSeparator()
-        file_menu.addAction(self.actions.exit)
+        file_menu.addAction(self._actions.exit)
 
         edit_menu = self.menubar.addMenu('&Edit')
-        # edit_menu.addAction(self.actions.undo)
-        # edit_menu.addAction(self.actions.redo)
+        # edit_menu.addAction(self._actions.undo)
+        # edit_menu.addAction(self._actions.redo)
         # edit_menu.addSeparator()
-        edit_menu.addAction(self.actions.edit_cut)
-        edit_menu.addAction(self.actions.edit_copy)
-        edit_menu.addAction(self.actions.edit_paste)
+        edit_menu.addAction(self._actions.edit_cut)
+        edit_menu.addAction(self._actions.edit_copy)
+        edit_menu.addAction(self._actions.edit_paste)
         edit_menu.addSeparator()
-        edit_menu.addAction(self.actions.edit_select_all)
+        edit_menu.addAction(self._actions.edit_select_all)
         edit_menu.addSeparator()
-        edit_menu.addAction(self.actions.show_preferences)
+        edit_menu.addAction(self._actions.show_preferences)
 
         view_menu = self.menubar.addMenu('&View')
         view_menu.addSeparator().setText("View Style")
-        view_menu.addAction(self.actions.view_detail_view)
-        view_menu.addAction(self.actions.view_icon_view)
-        view_menu.addAction(self.actions.view_small_icon_view)
+        view_menu.addAction(self._actions.view_detail_view)
+        view_menu.addAction(self._actions.view_icon_view)
+        view_menu.addAction(self._actions.view_small_icon_view)
         view_menu.addSeparator().setText("Filter")
-        view_menu.addAction(self.actions.show_hidden)
-        view_menu.addAction(self.actions.show_filtered)
+        view_menu.addAction(self._actions.show_hidden)
+        view_menu.addAction(self._actions.show_filtered)
         view_menu.addSeparator().setText("Path Options")
-        view_menu.addAction(self.actions.show_abspath)
-        view_menu.addAction(self.actions.show_basename)
+        view_menu.addAction(self._actions.show_abspath)
+        view_menu.addAction(self._actions.show_basename)
         view_menu.addSeparator().setText("Sort Options")
-        view_menu.addAction(self.actions.sort_directories_first)
-        view_menu.addAction(self.actions.sort_reversed)
-        view_menu.addAction(self.actions.sort_by_name)
-        view_menu.addAction(self.actions.sort_by_size)
-        view_menu.addAction(self.actions.sort_by_ext)
-        view_menu.addAction(self.actions.sort_by_duration)
-        view_menu.addAction(self.actions.sort_by_aspect_ratio)
-        view_menu.addAction(self.actions.sort_by_framerate)
-        view_menu.addAction(self.actions.sort_by_resolution)
-        view_menu.addAction(self.actions.sort_by_user)
-        view_menu.addAction(self.actions.sort_by_group)
-        view_menu.addAction(self.actions.sort_by_permission)
-        view_menu.addAction(self.actions.sort_by_random)
+        view_menu.addAction(self._actions.sort_directories_first)
+        view_menu.addAction(self._actions.sort_reversed)
+        view_menu.addAction(self._actions.sort_by_name)
+        view_menu.addAction(self._actions.sort_by_size)
+        view_menu.addAction(self._actions.sort_by_ext)
+        view_menu.addAction(self._actions.sort_by_duration)
+        view_menu.addAction(self._actions.sort_by_aspect_ratio)
+        view_menu.addAction(self._actions.sort_by_framerate)
+        view_menu.addAction(self._actions.sort_by_resolution)
+        view_menu.addAction(self._actions.sort_by_user)
+        view_menu.addAction(self._actions.sort_by_group)
+        view_menu.addAction(self._actions.sort_by_permission)
+        view_menu.addAction(self._actions.sort_by_random)
         view_menu.addSeparator().setText("Zoom")
-        view_menu.addAction(self.actions.zoom_in)
-        view_menu.addAction(self.actions.zoom_out)
+        view_menu.addAction(self._actions.zoom_in)
+        view_menu.addAction(self._actions.zoom_out)
         view_menu.addSeparator()
 
         self.bookmarks_menu = Menu('&Bookmarks')
@@ -377,8 +377,8 @@ class FileViewWindow(QMainWindow):
             history = self.controller.app.location_history
 
             self.history_menu.clear()
-            self.history_menu.addAction(self.actions.back)
-            self.history_menu.addAction(self.actions.forward)
+            self.history_menu.addAction(self._actions.back)
+            self.history_menu.addAction(self._actions.forward)
             self.history_menu.addSeparator()
 
             self.history_menu.addDoubleAction(
@@ -394,43 +394,43 @@ class FileViewWindow(QMainWindow):
         self.history_menu.aboutToShow.connect(create_history_menu)
 
         help_menu = self.menubar.addMenu('&Help')
-        help_menu.addAction(self.actions.about)
+        help_menu.addAction(self._actions.about)
 
     def make_toolbar(self) -> None:
         self.toolbar = self.addToolBar("FileView")
 
-        button = ToolButton()
-        button.setDefaultAction(self.actions.parent_directory)
-        button.sig_middle_click.connect(lambda: self.controller.parent_directory(new_window=True))
-        button.setIcon(self.actions.parent_directory.icon())
-        self.toolbar.addWidget(button)
+        tool_button = ToolButton()
+        tool_button.setDefaultAction(self._actions.parent_directory)
+        tool_button.sig_middle_click.connect(lambda: self.controller.parent_directory(new_window=True))
+        tool_button.setIcon(self._actions.parent_directory.icon())
+        self.toolbar.addWidget(tool_button)
 
         self.toolbar.addSeparator()
-        self.toolbar.addAction(self.actions.home)
+        self.toolbar.addAction(self._actions.home)
         self.toolbar.addSeparator()
 
         history_back_btn = ToolButton()
-        history_back_btn.setDefaultAction(self.actions.back)
+        history_back_btn.setDefaultAction(self._actions.back)
         history_back_btn.setContextMenuPolicy(Qt.CustomContextMenu)
         history_back_btn.customContextMenuRequested.connect(
             lambda pos: self.controller.show_history_context_menu(history_back_btn, False))
         self.toolbar.addWidget(history_back_btn)
 
         history_forward_btn = ToolButton()
-        history_forward_btn.setDefaultAction(self.actions.forward)
+        history_forward_btn.setDefaultAction(self._actions.forward)
         history_forward_btn.setContextMenuPolicy(Qt.CustomContextMenu)
         history_forward_btn.customContextMenuRequested.connect(
             lambda pos: self.controller.show_history_context_menu(history_forward_btn, False))
         self.toolbar.addWidget(history_forward_btn)
 
         self.toolbar.addSeparator()
-        self.toolbar.addAction(self.actions.reload)
-        self.toolbar.addAction(self.actions.prepare)
+        self.toolbar.addAction(self._actions.reload)
+        self.toolbar.addAction(self._actions.prepare)
         # self.toolbar.addSeparator()
-        # self.toolbar.addAction(self.actions.undo)
-        # self.toolbar.addAction(self.actions.redo)
+        # self.toolbar.addAction(self._actions.undo)
+        # self.toolbar.addAction(self._actions.redo)
         self.toolbar.addSeparator()
-        self.toolbar.addAction(self.actions.show_hidden)
+        self.toolbar.addAction(self._actions.show_hidden)
 
         button = QToolButton()
         button.setIcon(load_icon("view-restore"))
@@ -451,25 +451,25 @@ class FileViewWindow(QMainWindow):
         self.toolbar.addWidget(button)
 
         self.toolbar.addSeparator()
-        self.toolbar.addAction(self.actions.view_icon_view)
-        self.toolbar.addAction(self.actions.view_small_icon_view)
-        self.toolbar.addAction(self.actions.view_detail_view)
+        self.toolbar.addAction(self._actions.view_icon_view)
+        self.toolbar.addAction(self._actions.view_small_icon_view)
+        self.toolbar.addAction(self._actions.view_detail_view)
 
         self.toolbar.addSeparator()
-        self.toolbar.addAction(self.actions.zoom_in)
-        self.toolbar.addAction(self.actions.zoom_out)
+        self.toolbar.addAction(self._actions.zoom_in)
+        self.toolbar.addAction(self._actions.zoom_out)
         self.toolbar.addSeparator()
-        self.toolbar.addAction(self.actions.lod_in)
-        self.toolbar.addAction(self.actions.lod_out)
+        self.toolbar.addAction(self._actions.lod_in)
+        self.toolbar.addAction(self._actions.lod_out)
         self.toolbar.addSeparator()
-        self.toolbar.addAction(self.actions.crop_thumbnails)
+        self.toolbar.addAction(self._actions.crop_thumbnails)
 
         # Spacer to force right alignment for all following widget
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.toolbar.addWidget(spacer)
 
-        self.toolbar.addAction(self.actions.debug)
+        self.toolbar.addAction(self._actions.debug)
         self.toolbar.addAction(self.controller.app.actions.enable_filesystem)
 
         # Loading icon
@@ -486,7 +486,7 @@ class FileViewWindow(QMainWindow):
     def hide_loading(self) -> None:
         self.show_info("")
         self.loading_movie.stop()
-        self.loading_label.setMovie(None)
+        self.loading_label.clear()
         self.loading_label.setVisible(False)
 
     def zoom_in(self) -> None:

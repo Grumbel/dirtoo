@@ -15,14 +15,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, Any, Sequence, Dict, Optional, Callable
+from typing import TYPE_CHECKING, cast, Any, Sequence, Dict, Optional, Callable
 
 import io
 import logging
 import os
 
 from PyQt5.QtCore import QObject, Qt, pyqtSignal, QUrl, QMimeData, QPoint
-from PyQt5.QtGui import QClipboard, QContextMenuEvent
+from PyQt5.QtGui import QClipboard
 
 import bytefmt
 
@@ -121,7 +121,7 @@ class Controller(QObject):
         self.file_collection.set_filter(self._filter)
 
     def show_filtered(self) -> None:
-        self._gui._window.file_view.set_show_filtered(not self._gui._window.file_view.show_filtered)
+        self._gui._window.file_view.set_show_filtered(not self._gui._window.file_view._show_filtered)
 
     def show_abspath(self) -> None:
         pass
@@ -267,7 +267,7 @@ class Controller(QObject):
             self._directory_watcher.sig_file_closed.connect(self.file_collection.close_file)
 
         if hasattr(self._directory_watcher, 'sig_finished'):
-            self._directory_watcher.sig_finished.connect(self._on_finished)
+            self._directory_watcher.sig_finished.connect(self._on_finished)  # type: ignore
 
         if hasattr(self._directory_watcher, 'sig_scandir_finished'):
             self._directory_watcher.sig_scandir_finished.connect(self._on_scandir_finished)
@@ -315,6 +315,9 @@ class Controller(QObject):
     def show_file_history(self) -> None:
         self.set_location(Location.from_url("history:///"))
 
+    def selected_file_items(self) -> Sequence[FileItem]:
+        return cast(Sequence[FileItem], self._gui._window.file_view._scene.selectedItems())
+
     def _update_info(self) -> None:
         fileinfos = self.file_collection.get_fileinfos()
 
@@ -341,7 +344,7 @@ class Controller(QObject):
             total,
             bytefmt.humanize(total_size))
 
-        selected_items = self._gui._window.file_view._scene.selectedItems()
+        selected_items = self.selected_file_items()
         if selected_items != []:
             total_size = 0
             for item in selected_items:
@@ -400,8 +403,8 @@ class Controller(QObject):
     def on_context_menu(self, pos: QPoint) -> None:
         self._gui.on_context_menu(pos)
 
-    def on_item_context_menu(self, ev: QContextMenuEvent, item: FileItem) -> None:
-        self._gui.on_item_context_menu(ev, item)
+    def show_item_context_menu(self, item: FileItem, screen_pos: Optional[QPoint]) -> None:
+        self._gui.show_item_context_menu(item, screen_pos)
 
     def show_current_filename(self, filename: str) -> None:
         self._gui._window.show_current_filename(filename)
@@ -449,7 +452,7 @@ class Controller(QObject):
         self._gui._window.file_view.receive_thumbnail(location, flavor, image, error_code, message)
 
     def reload_thumbnails(self) -> None:
-        selected_items = self._gui._window.file_view._scene.selectedItems()
+        selected_items = self.selected_file_items()
         files = [item.fileinfo.abspath()
                  for item in selected_items]
         self.app.dbus_thumbnail_cache.delete(files)
@@ -458,7 +461,7 @@ class Controller(QObject):
             item.reload_thumbnail()
 
     def reload_metadata(self) -> None:
-        selected_items = self._gui._window.file_view._scene.selectedItems()
+        selected_items = self.selected_file_items()
         locations = [item.fileinfo.location() for item in selected_items]
         self.app.metadata_collector.request_delete_metadatas(locations)
 
@@ -466,14 +469,15 @@ class Controller(QObject):
             item.reload_metadata()
 
     def make_directory_thumbnails(self) -> None:
-        selected_items = self._gui._window.file_view._scene.selectedItems()
+        selected_items = self.selected_file_items()
         locations = []
         for item in selected_items:
             if item.fileinfo.isdir():
                 locations.append(item.fileinfo.location())
             elif item.fileinfo.is_archive():
-                location = item.fileinfo.location().copy()
-                location._payloads.append(Payload("archive", ""))
+                location = Location(item.fileinfo.location()._protocol,
+                                    item.fileinfo.location()._path,
+                                    list(item.fileinfo.location()._payloads) + [Payload("archive", "")])
                 locations.append(location)
 
         for location in locations:
@@ -618,8 +622,7 @@ class Controller(QObject):
 
         if mime_data.hasFormat("x-special/gnome-copied-files"):
             try:
-                action, urls = parse_gnome_copied_files(
-                    mime_data.data("x-special/gnome-copied-files"))
+                action, urls = parse_gnome_copied_files(bytes(mime_data.data("x-special/gnome-copied-files")))
             except Exception as err:
                 logger.error("failed to parse clipboard data: %s", err)
             else:
@@ -642,11 +645,11 @@ class Controller(QObject):
         # https://www.uninformativ.de/blog/postings/2017-04-02/0/POSTING-en.html
 
     def selected_fileinfos(self) -> Sequence[FileInfo]:
-        selected_items = self._gui._window.file_view._scene.selectedItems()
+        selected_items = self.selected_file_items()
         return [item.fileinfo
                 for item in selected_items]
 
-    def selection_to_mimedata(self, uri_only: bool = False, action: Qt.DropActions = None) -> QMimeData:
+    def selection_to_mimedata(self, uri_only: bool = False, action: Optional[Qt.DropAction] = None) -> QMimeData:
         mime_data = QMimeData()
 
         fileinfos = self.selected_fileinfos()
@@ -666,7 +669,7 @@ class Controller(QObject):
 
         return mime_data
 
-    def on_files_drop(self, action: Qt.DropActions, urls: Sequence[QUrl], destination: Optional[Location]) -> None:
+    def on_files_drop(self, action: Qt.DropAction, urls: Sequence[QUrl], destination: Optional[Location]) -> None:
         if destination is None:
             destination = self.location
 

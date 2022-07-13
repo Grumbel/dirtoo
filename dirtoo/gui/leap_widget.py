@@ -15,16 +15,21 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import TYPE_CHECKING, cast, Optional
+
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import (QLineEdit, QVBoxLayout, QWidget)
 from PyQt5.QtGui import QFocusEvent, QKeyEvent, QShowEvent, QHideEvent
+
+if TYPE_CHECKING:
+    from dirtoo.fileview.file_view import FileView
 
 
 class LeapWidget(QWidget):
 
     sig_leap = pyqtSignal(str, bool, bool)
 
-    def __init__(self, parent: QWidget) -> None:
+    def __init__(self, parent: Optional['FileView']) -> None:
         super().__init__(parent,
                          Qt.Window |
                          Qt.WindowStaysOnTopHint |
@@ -49,8 +54,8 @@ class LeapWidget(QWidget):
         self.place_widget()
 
     def place_widget(self) -> None:
-        parent = self.parentWidget()
-        pos = parent.mapToGlobal(self.parentWidget().viewport().geometry().bottomRight())
+        parent = cast('FileView', self.parentWidget())
+        pos = parent.mapToGlobal(parent.viewport().geometry().bottomRight())
 
         self.move(pos.x() - self.width(),
                   pos.y() - self.height())

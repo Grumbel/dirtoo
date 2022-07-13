@@ -23,8 +23,6 @@ import threading
 
 import libarchive
 
-from PyQt5.QtCore import pyqtSignal
-
 from dirtoo.archive.extractor import Extractor, ExtractorResult
 
 logger = logging.getLogger(__name__)
@@ -41,8 +39,6 @@ def sanitize(pathname: str) -> Optional[str]:
 
 
 class LibArchiveExtractor(Extractor):
-
-    sig_entry_extracted = pyqtSignal(str, str)
 
     def __init__(self, filename: str, outdir: str) -> None:
         super().__init__()

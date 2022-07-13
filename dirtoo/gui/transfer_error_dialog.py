@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Optional
+
 import html
 
 from PyQt5.QtCore import Qt
@@ -31,7 +33,7 @@ class TransferErrorDialog(QDialog):
     Skip = QDialog.Accepted
     Retry = 3
 
-    def __init__(self, source_file: str, target_file: str, error_msg: str, parent: QWidget) -> None:
+    def __init__(self, source_file: str, target_file: str, error_msg: str, parent: Optional[QWidget]) -> None:
         super().__init__()
 
         self._source_file = source_file

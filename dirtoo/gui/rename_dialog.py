@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import cast
+from typing import cast, Optional
 
 import os
 
@@ -29,7 +29,7 @@ from dirtoo.image.icon import load_icon
 
 class RenameDialog(QDialog):
 
-    def __init__(self, parent: QWidget) -> None:
+    def __init__(self, parent: Optional[QWidget]) -> None:
         super().__init__(parent)
 
         self._basename: str = ""

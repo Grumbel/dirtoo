@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import Optional
+
 from datetime import datetime
 import grp
 import pwd
@@ -34,7 +36,7 @@ from dirtoo.image.icon import load_icon
 
 class PropertiesDialog(QDialog):
 
-    def __init__(self, fileinfo: FileInfo, parent: QWidget) -> None:
+    def __init__(self, fileinfo: FileInfo, parent: Optional[QWidget]) -> None:
         super().__init__(parent)
 
         self._fileinfo: FileInfo = fileinfo

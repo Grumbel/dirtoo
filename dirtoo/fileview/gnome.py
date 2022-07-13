@@ -35,7 +35,7 @@ def parse_gnome_copied_files(data: bytes) -> Tuple[Qt.DropAction, Sequence[QUrl]
     return action, urls
 
 
-def make_gnome_copied_files(action: Qt.DropActions, urls: Sequence[QUrl]) -> bytes:
+def make_gnome_copied_files(action: Qt.DropAction, urls: Sequence[QUrl]) -> bytes:
     if action == Qt.CopyAction:
         gnome_action = b'copy'
     elif action == Qt.MoveAction:

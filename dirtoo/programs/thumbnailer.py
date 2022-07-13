@@ -22,7 +22,7 @@ import argparse
 import sys
 import os
 
-from PyQt5.QtCore import QCoreApplication, QVariant
+from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtDBus import QDBusConnection
 
 from dirtoo.dbus_thumbnailer import DBusThumbnailer, DBusThumbnailerListener, DBusThumbnailerError
@@ -61,21 +61,21 @@ class ThumbnailerProgressListener(DBusThumbnailerListener):
         self.app = app
         self.verbose = verbose
 
-    def started(self, handle: QVariant) -> None:
+    def started(self, handle: int) -> None:
         # print("[Started]", handle)
         pass
 
-    def ready(self, handle: QVariant, urls: Sequence[str], flavor: str) -> None:
+    def ready(self, handle: int, urls: Sequence[str], flavor: str) -> None:
         if self.verbose:
             for url in urls:
                 print(url, "->", DBusThumbnailer.thumbnail_from_url(url, flavor))
 
-    def error(self, handle: QVariant, uris: Sequence[str],
+    def error(self, handle: int, uris: Sequence[str],
               error_code: DBusThumbnailerError, message: str) -> None:
         for uri in uris:
             print("[Error {}] {}: {}".format(error_code, uri, message), file=sys.stderr)
 
-    def finished(self, handle: QVariant) -> None:
+    def finished(self, handle: int) -> None:
         pass
 
     def idle(self) -> None:
