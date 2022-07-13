@@ -22,6 +22,15 @@
       in rec {
         packages = flake-utils.lib.flattenTree rec {
 
+          PyQt5-stubs = pythonPackages.buildPythonPackage rec {
+            pname = "PyQt5-stubs";
+            version = "5.15.6.0";
+            src = pythonPackages.fetchPypi {
+              inherit pname version;
+              sha256 = "sha256-kScKwj6/OKHcBM2XqoUs0Ir4Lcg5EA5Tla8UR+Pplwc=";
+            };
+          };
+
           python-ngram = pythonPackages.buildPythonPackage rec {
             pname = "ngram";
             version = "4.0.3";
@@ -94,7 +103,9 @@
               mypy
               pylint
               types-setuptools
-            ]);
+            ]) ++ [
+              PyQt5-stubs
+            ];
           };
 
           dirtoo-check = dirtoo.override {
