@@ -21,6 +21,7 @@
         pythonPackages = pkgs.python310Packages;
       in rec {
         packages = flake-utils.lib.flattenTree rec {
+          default = dirtoo;
 
           PyQt5-stubs = pythonPackages.buildPythonPackage rec {
             pname = "PyQt5-stubs";
@@ -103,6 +104,7 @@
               mypy
               pylint
               types-setuptools
+              pip
             ]) ++ [
               PyQt5-stubs
             ];
@@ -111,19 +113,20 @@
           dirtoo-check = dirtoo.override {
             doCheck = true;
           };
-
-          default = dirtoo;
         };
 
         apps = rec {
+          default = dirtoo;
+
           dirtoo = flake-utils.lib.mkApp {
             drv = packages.dirtoo;
             exePath = "/bin/dirtoo";
           };
-          default = dirtoo;
         };
 
         devShells = rec {
+          default = dirtoo;
+
           dirtoo = pkgs.mkShell {
             inputsFrom = [ packages.dirtoo-check ];
             shellHook = packages.dirtoo-check.preCheck + ''
@@ -137,7 +140,6 @@
               export QT_QPA_PLATFORM_PLUGIN_PATH="${pkgs.qt5.qtbase.bin}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";
             '';
           };
-          default = dirtoo;
         };
       }
     );
