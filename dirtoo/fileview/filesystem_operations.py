@@ -69,7 +69,7 @@ class TransferWorker(QObject):
             self._progress.transfer_completed()
 
 
-class GuiProgress(QObject, Progress):
+class GuiProgressSignals(QObject):
 
     sig_copy_file = pyqtSignal(str, str, ConflictResolution)
     sig_copy_progress = pyqtSignal(int, int)
@@ -85,59 +85,73 @@ class GuiProgress(QObject, Progress):
     def __init__(self) -> None:
         super().__init__()
 
+
+class GuiProgress(Progress):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.signals = GuiProgressSignals()
+
     def copy_file(self, src: str, dst: str, resolution: ConflictResolution) -> None:
-        self.sig_copy_file.emit(src, dst, resolution)
+        self.signals.sig_copy_file.emit(src, dst, resolution)
 
     def copy_progress(self, current: int, total: int) -> None:
-        self.sig_copy_progress.emit(current, total)
+        self.signals.sig_copy_progress.emit(current, total)
 
     def copy_directory(self, src: str, dst: str, resolution: ConflictResolution) -> None:
-        self.sig_copy_directory.emit(src, dst, resolution)
+        self.signals.sig_copy_directory.emit(src, dst, resolution)
 
     def remove_file(self, src: str) -> None:
-        self.sig_remove_file.emit(src)
+        self.signals.sig_remove_file.emit(src)
 
     def remove_directory(self, src: str) -> None:
-        self.sig_remove_directory.emit(src)
+        self.signals.sig_remove_directory.emit(src)
 
     def link_file(self, src: str, dst: str, resolution: ConflictResolution) -> None:
-        self.sig_link_file.emit(src, dst, resolution)
+        self.signals.sig_link_file.emit(src, dst, resolution)
 
     def move_file(self, src: str, dst: str, resolution: ConflictResolution) -> None:
-        self.sig_move_file.emit(src, dst, resolution)
+        self.signals.sig_move_file.emit(src, dst, resolution)
 
     def move_directory(self, src: str, dst: str, resolution: ConflictResolution) -> None:
-        self.sig_move_directory.emit(src, dst, resolution)
+        self.signals.sig_move_directory.emit(src, dst, resolution)
 
     def transfer_canceled(self) -> None:
-        self.sig_transfer_canceled.emit()
+        self.signals.sig_transfer_canceled.emit()
 
     def transfer_completed(self) -> None:
-        self.sig_transfer_completed.emit()
+        self.signals.sig_transfer_completed.emit()
 
 
-class GuiMediator(QObject, Mediator):
-    """Whenever a filesystem operation would result in the destruction of data,
-    the Mediator is called to decide which action should be taken."""
+class GuiMediatorSignals(QObject):
 
     sig_file_conflict = pyqtSignal(ReturnValue)
     sig_directory_conflict = pyqtSignal(ReturnValue)
 
-    def __init__(self, parent: Optional[QObject]) -> None:
-        super().__init__(parent)
+    def __init__(self) -> None:
+        super().__init__()
+
+
+class GuiMediator(Mediator):
+    """Whenever a filesystem operation would result in the destruction of data,
+    the Mediator is called to decide which action should be taken."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.signals = GuiMediatorSignals()
 
     def cancel_transfer(self) -> bool:
         return False
 
     def file_conflict(self, source: str, dest: str) -> ConflictResolution:
         retval = ReturnValue[ConflictResolution]()
-        self.sig_file_conflict.emit(retval)
+        self.signals.sig_file_conflict.emit(retval)
         result: ConflictResolution = retval.receive()
         return result
 
     def directory_conflict(self, sourcedir: str, destdir: str) -> ConflictResolution:
         retval = ReturnValue[ConflictResolution]()
-        self.sig_file_conflict.emit(retval)
+        self.signals.sig_file_conflict.emit(retval)
         result: ConflictResolution = retval.receive()
         return result
 
@@ -155,10 +169,10 @@ class GuiFileTransfer(QObject):
 
         thread = QThread(self)
 
-        mediator = GuiMediator(None)
-        mediator.sig_file_conflict.connect(self._on_file_conflict)
-        mediator.sig_directory_conflict.connect(self._on_directory_conflict)
-        mediator.moveToThread(thread)
+        mediator = GuiMediator()
+        mediator.signals.sig_file_conflict.connect(self._on_file_conflict)
+        mediator.signals.sig_directory_conflict.connect(self._on_directory_conflict)
+        mediator.signals.moveToThread(thread)
 
         progress = GuiProgress()
 

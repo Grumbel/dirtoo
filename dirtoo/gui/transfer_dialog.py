@@ -185,16 +185,16 @@ class TransferDialog(QDialog):
         btn_close.clicked.connect(self.accept)
 
     def connect(self, progress: 'GuiProgress') -> None:
-        progress.sig_move_file.connect(self._on_move_file)
-        progress.sig_move_directory.connect(self._on_move_directory)
-        progress.sig_copy_file.connect(self._on_copy_file)
-        progress.sig_copy_progress.connect(lambda x, y: self._on_copy_progress("", x, y))
-        progress.sig_copy_directory.connect(self._on_copy_directory)
-        progress.sig_remove_file.connect(self._on_remove_file)
-        progress.sig_remove_directory.connect(self._on_remove_directory)
-        progress.sig_link_file.connect(self._on_link_file)
-        progress.sig_transfer_canceled.connect(self._on_transfer_canceled)
-        progress.sig_transfer_completed.connect(self._on_transfer_completed)
+        progress.signals.sig_move_file.connect(self._on_move_file)
+        progress.signals.sig_move_directory.connect(self._on_move_directory)
+        progress.signals.sig_copy_file.connect(self._on_copy_file)
+        progress.signals.sig_copy_progress.connect(lambda x, y: self._on_copy_progress("", x, y))
+        progress.signals.sig_copy_directory.connect(self._on_copy_directory)
+        progress.signals.sig_remove_file.connect(self._on_remove_file)
+        progress.signals.sig_remove_directory.connect(self._on_remove_directory)
+        progress.signals.sig_link_file.connect(self._on_link_file)
+        progress.signals.sig_transfer_canceled.connect(self._on_transfer_canceled)
+        progress.signals.sig_transfer_completed.connect(self._on_transfer_completed)
 
     def _on_copy_file(self, src: str, dst: str, resolution: ConflictResolution) -> None:
         if resolution == ConflictResolution.SKIP:
