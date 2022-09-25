@@ -2,11 +2,10 @@
   description = "Python Scripts for directory stuff";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.11";
     flake-utils.url = "github:numtide/flake-utils";
 
     bytefmt.url = "github:grumbel/python-bytefmt";
-    bytefmt.inputs.nix.follows = "nix";
     bytefmt.inputs.nixpkgs.follows = "nixpkgs";
     bytefmt.inputs.flake-utils.follows = "flake-utils";
   };
@@ -20,7 +19,7 @@
         };
         pythonPackages = pkgs.python310Packages;
       in rec {
-        packages = flake-utils.lib.flattenTree rec {
+        packages = rec {
           default = dirtoo;
 
           PyQt5-stubs = pythonPackages.buildPythonPackage rec {
