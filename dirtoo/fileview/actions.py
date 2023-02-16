@@ -265,12 +265,16 @@ class Actions(QObject):
 
         def aspect_ratio_key(fileinfo: FileInfo) -> float:
             if fileinfo.has_metadata('width') and fileinfo.has_metadata('height'):
-                width = int(fileinfo.get_metadata('width'))
-                height = int(fileinfo.get_metadata('height'))
-                if height == 0:
-                    logger.error("{}: height is 0".format(fileinfo))
+                try:
+                    width = int(fileinfo.get_metadata('width'))
+                    height = int(fileinfo.get_metadata('height'))
+                    if height == 0:
+                        logger.error("{}: height is 0".format(fileinfo))
+                        return 0
+                    return width / height
+                except (ValueError, TypeError):
+                    logger.exception("invalid width/height metadata")
                     return 0
-                return width / height
             else:
                 return 0
 
