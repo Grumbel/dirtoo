@@ -16,7 +16,6 @@
 
 
 from dirtoo.archive.extractor import Extractor
-from dirtoo.archive.rar_extractor import RarExtractor
 from dirtoo.archive.sevenzip_extractor import SevenZipExtractor
 from dirtoo.archive.libarchive_extractor import LibArchiveExtractor
 
@@ -24,9 +23,7 @@ from dirtoo.archive.libarchive_extractor import LibArchiveExtractor
 def make_extractor(filename: str, outdir: str) -> Extractor:
     # FIXME: Use mime-type to decide proper extractor
     extractor: Extractor
-    if filename.lower().endswith(".rar"):
-        extractor = RarExtractor(filename, outdir)
-    elif True:  # pylint: disable=using-constant-test
+    if True:  # pylint: disable=using-constant-test
         extractor = SevenZipExtractor(filename, outdir)
     else:
         extractor = LibArchiveExtractor(filename, outdir)  # type: ignore

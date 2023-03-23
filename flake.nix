@@ -11,12 +11,9 @@
   };
 
   outputs = { self, nixpkgs, flake-utils, bytefmt }:
-    flake-utils.lib.eachSystem [ "i686-linux" "x86_64-linux" ] (system:
+    flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import nixpkgs {
-          inherit system;
-          config = { allowUnfree = true; };  # for 'rar'
-        };
+        pkgs = nixpkgs.legacyPackages.${system};
         pythonPackages = pkgs.python310Packages;
       in rec {
         packages = rec {
@@ -57,7 +54,6 @@
               "\${qtWrapperArgs[@]}"
               "--set" "DIRTOO_7ZIP" "${pkgs._7zz}/bin/7zz"
               "--set" "DIRTOO_FFPROBE" "${pkgs.ffmpeg}/bin/ffprobe"
-              "--set" "DIRTOO_RAR" "${pkgs.rar}/bin/rar"
 
               "--set" "LIBGL_DRIVERS_PATH" "${pkgs.mesa.drivers}/lib/dri"
               "--prefix" "LD_LIBRARY_PATH" ":" "${pkgs.mesa.drivers}/lib"
@@ -67,7 +63,6 @@
               export QT_QPA_PLATFORM_PLUGIN_PATH="${pkgs.qt5.qtbase.bin}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";
               export DIRTOO_7ZIP='${pkgs._7zz}/bin/7zz'
               export DIRTOO_FFPROBE='${pkgs.ffmpeg}/bin/ffprobe'
-              export DIRTOO_RAR='${pkgs.rar}/bin/rar'
             '';
             checkPhase = ''
               runHook preCheck
