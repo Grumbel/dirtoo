@@ -14,6 +14,11 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        pkgs-nonfree = import nixpkgs {
+          inherit system;
+          config = { allowUnfree = true; };
+        };
+        lib = pkgs.lib;
         pythonPackages = pkgs.python310Packages;
       in rec {
         packages = rec {
@@ -46,62 +51,43 @@
             };
           };
 
-          dirtoo = pythonPackages.buildPythonPackage rec {
-            name = "dirtoo";
-            src = ./.;
-            nativeBuildInputs = [ pkgs.qt5.wrapQtAppsHook ];
-            makeWrapperArgs = [
-              "\${qtWrapperArgs[@]}"
-              "--set" "DIRTOO_7ZIP" "${pkgs._7zz}/bin/7zz"
-              "--set" "DIRTOO_FFPROBE" "${pkgs.ffmpeg}/bin/ffprobe"
+          dirtoo = pkgs.callPackage ./dirtoo.nix {
+            inherit self;
 
-              "--set" "LIBGL_DRIVERS_PATH" "${pkgs.mesa.drivers}/lib/dri"
-              "--prefix" "LD_LIBRARY_PATH" ":" "${pkgs.mesa.drivers}/lib"
-            ];
             doCheck = false;
-            preCheck = ''
-              export QT_QPA_PLATFORM_PLUGIN_PATH="${pkgs.qt5.qtbase.bin}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";
-              export DIRTOO_7ZIP='${pkgs._7zz}/bin/7zz'
-              export DIRTOO_FFPROBE='${pkgs.ffmpeg}/bin/ffprobe'
-            '';
-            checkPhase = ''
-              runHook preCheck
-              flake8
-              pyright dirtoo tests
-              mypy -p dirtoo -p tests
-              pylint dirtoo tests
-              python3 -m unittest discover -v -s tests/
-              runHook postCheck
-            '';
-            propagatedBuildInputs = with pythonPackages; [
-              setuptools
-              pyparsing
-              pymediainfo
+            bytefmt = bytefmt.lib.bytefmtWithPythonPackages pythonPackages;
+            inherit pyxdg;
+            inherit python-ngram;
+            inherit PyQt5-stubs;
+
+            inherit (pkgs) pyright;
+            inherit (pythonPackages) buildPythonPackage;
+            inherit (pkgs.qt5)
+              qtbase
+              wrapQtAppsHook;
+            inherit (pythonPackages)
               colorama
+              flake8
               inotify-simple
               libarchive-c
               numpy
+              pymediainfo
+              pyparsing
               pypdf2
               pyqt5
               scipy
+              setuptools
               sortedcontainers
               unidecode
-            ] ++ [
-              pyxdg
-              python-ngram
-              (bytefmt.lib.bytefmtWithPythonPackages pythonPackages)
-            ];
-            checkInputs = (with pkgs; [
-              pyright
-            ]) ++ (with pythonPackages; [
-              flake8
               mypy
               pylint
               types-setuptools
-              pip
-            ]) ++ [
-              PyQt5-stubs
-            ];
+              pip;
+          };
+
+          dirtoo-nonfree = dirtoo.override {
+            inherit (pkgs-nonfree) rar;
+            useRar = true;
           };
 
           dirtoo-check = dirtoo.override {
@@ -114,6 +100,11 @@
 
           dirtoo = flake-utils.lib.mkApp {
             drv = packages.dirtoo;
+            exePath = "/bin/dirtoo";
+          };
+
+          dirtoo-nonfree = flake-utils.lib.mkApp {
+            drv = packages.dirtoo-nonfree;
             exePath = "/bin/dirtoo";
           };
         };
