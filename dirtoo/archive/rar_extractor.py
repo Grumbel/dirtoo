@@ -45,6 +45,10 @@ class State(Enum):
 
 class RarExtractor(Extractor):
 
+    @staticmethod
+    def is_available() -> bool:
+        return bool(os.environ.get("DIRTOO_RAR"))
+
     def __init__(self, filename: str, outdir: str) -> None:
         super().__init__()
 
