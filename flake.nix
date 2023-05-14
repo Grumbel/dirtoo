@@ -2,7 +2,7 @@
   description = "Python Scripts for directory stuff";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.05";
     flake-utils.url = "github:numtide/flake-utils";
 
     bytefmt.url = "github:grumbel/python-bytefmt";
@@ -19,7 +19,7 @@
           config = { allowUnfree = true; };
         };
         lib = pkgs.lib;
-        pythonPackages = pkgs.python310Packages;
+        pythonPackages = pkgs.python3Packages;
       in rec {
         packages = rec {
           default = dirtoo;

@@ -92,7 +92,7 @@ buildPythonPackage {
     bytefmt
   ];
 
-  checkInputs = [
+  nativeCheckInputs = [
     flake8
     mypy
     pip
