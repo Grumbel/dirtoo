@@ -63,12 +63,16 @@ class Thumbnail:
             self.pixmap = QPixmap(image)
             try:
                 mtime_txt = image.text("Thumb::MTime")
-                self.mtime = int(mtime_txt)
 
-                # Thumb::MTime only has 1 second resolution, thus it
-                # is quite possible for an thumbnail to be out of date
-                # when the file was modified while the thumbnail was
-                # extracting (e.g. looking at an extracting archive).
+                # Some thumbnailer write mtime as float, not int, so
+                # accept that
+                self.mtime = float(mtime_txt)
+
+                # Thumb::MTime only has 1 second resolution in many
+                # thumbnailer, thus it is quite possible for an
+                # thumbnail to be out of date when the file was
+                # modified while the thumbnail was extracting (e.g.
+                # looking at an extracting archive).
                 if int(self.file_item.fileinfo.mtime()) != self.mtime:
                     self.reset()
             except ValueError as err:
