@@ -8,9 +8,12 @@
     bytefmt.url = "github:grumbel/python-bytefmt";
     bytefmt.inputs.nixpkgs.follows = "nixpkgs";
     bytefmt.inputs.flake-utils.follows = "flake-utils";
+
+    PyQt6-stubs_src.url = "github:python-qt-tools/PyQt6-stubs";
+    PyQt6-stubs_src.flake = false;
   };
 
-  outputs = { self, nixpkgs, flake-utils, bytefmt }:
+  outputs = { self, nixpkgs, flake-utils, bytefmt, PyQt6-stubs_src }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -24,13 +27,15 @@
         packages = rec {
           default = dirtoo;
 
-          PyQt5-stubs = pythonPackages.buildPythonPackage rec {
-            pname = "PyQt5-stubs";
-            version = "5.15.6.0";
-            src = pythonPackages.fetchPypi {
-              inherit pname version;
-              sha256 = "sha256-kScKwj6/OKHcBM2XqoUs0Ir4Lcg5EA5Tla8UR+Pplwc=";
-            };
+          PyQt6-stubs = pythonPackages.buildPythonPackage rec {
+            name = "PyQt6-stubs";
+            src = PyQt6-stubs_src;
+
+            nativeCheckInputs = with pythonPackages; [
+              libcst
+              mypy
+              pyqt6
+            ];
           };
 
           python-ngram = pythonPackages.buildPythonPackage rec {
@@ -58,11 +63,11 @@
             bytefmt = bytefmt.lib.bytefmtWithPythonPackages pythonPackages;
             inherit pyxdg;
             inherit python-ngram;
-            inherit PyQt5-stubs;
+            inherit PyQt6-stubs;
 
             inherit (pkgs) pyright;
             inherit (pythonPackages) buildPythonPackage;
-            inherit (pkgs.qt5)
+            inherit (pkgs.qt6)
               qtbase
               wrapQtAppsHook;
             inherit (pythonPackages)
@@ -74,7 +79,7 @@
               pymediainfo
               pyparsing
               pypdf2
-              pyqt5
+              pyqt6
               scipy
               setuptools
               sortedcontainers
@@ -109,23 +114,23 @@
           };
         };
 
-        devShells = rec {
-          default = dirtoo;
-
-          dirtoo = pkgs.mkShell {
-            inputsFrom = [ packages.dirtoo-check ];
-            shellHook = packages.dirtoo-check.preCheck + ''
-              export QT_QPA_PLATFORM_PLUGIN_PATH="${pkgs.qt5.qtbase.bin}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";
-              runHook setuptoolsShellHook
-            '';
-          };
-          dirtoo-check = pkgs.mkShell {
-            inputsFrom = [ packages.dirtoo-check ];
-            shellHook = packages.dirtoo-check.preCheck + ''
-              export QT_QPA_PLATFORM_PLUGIN_PATH="${pkgs.qt5.qtbase.bin}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";
-            '';
-          };
-        };
+        # devShells = rec {
+        #   default = dirtoo;
+        #
+        #   dirtoo = pkgs.mkShell {
+        #     inputsFrom = [ packages.dirtoo-check ];
+        #     shellHook = packages.dirtoo-check.preCheck + ''
+        #       export QT_QPA_PLATFORM_PLUGIN_PATH="${pkgs.qt5.qtbase.bin}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";
+        #       runHook setuptoolsShellHook
+        #     '';
+        #   };
+        #   dirtoo-check = pkgs.mkShell {
+        #     inputsFrom = [ packages.dirtoo-check ];
+        #     shellHook = packages.dirtoo-check.preCheck + ''
+        #       export QT_QPA_PLATFORM_PLUGIN_PATH="${pkgs.qt5.qtbase.bin}/lib/qt-${pkgs.qt5.qtbase.version}/plugins";
+        #     '';
+        #   };
+        # };
       }
     );
 }

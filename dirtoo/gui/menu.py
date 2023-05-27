@@ -17,9 +17,9 @@
 
 from typing import Callable, Optional
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon, QMouseEvent
-from PyQt5.QtWidgets import QMenu, QAction
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QIcon, QMouseEvent, QAction
+from PyQt6.QtWidgets import QMenu
 
 
 class Menu(QMenu):
@@ -35,12 +35,12 @@ class Menu(QMenu):
         self._middle_pressed: bool = False
 
     def mouseReleaseEvent(self, ev: QMouseEvent) -> None:
-        if ev.button() == Qt.MiddleButton:
+        if ev.button() == Qt.MouseButton.MiddleButton:
             self._middle_pressed = True
 
         super().mouseReleaseEvent(ev)
 
-        if ev.button() == Qt.MiddleButton:
+        if ev.button() == Qt.MouseButton.MiddleButton:
             self._middle_pressed = False
 
     def middle_is_pressed(self) -> bool:

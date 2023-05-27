@@ -22,9 +22,9 @@ import logging
 import os
 import sys
 
-from PyQt5.QtCore import QMimeDatabase
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QApplication
+from PyQt6.QtCore import QMimeDatabase
+from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import QApplication
 
 logger = logging.getLogger(__name__)
 

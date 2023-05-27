@@ -19,8 +19,8 @@ from typing import TYPE_CHECKING, Sequence, Optional
 
 import math
 from enum import Enum
-from PyQt5.QtCore import QRectF
-from PyQt5.QtWidgets import QGraphicsItem
+from PyQt6.QtCore import QRectF
+from PyQt6.QtWidgets import QGraphicsItem
 
 if TYPE_CHECKING:
     from dirtoo.fileview.file_item import FileItem

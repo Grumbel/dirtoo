@@ -20,9 +20,9 @@ from typing import TYPE_CHECKING, Optional
 import logging
 import time
 
-from PyQt5.QtCore import Qt, QTimerEvent
-from PyQt5.QtGui import QTextOption
-from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QCheckBox,
+from PyQt6.QtCore import Qt, QTimerEvent
+from PyQt6.QtGui import QTextOption
+from PyQt6.QtWidgets import (QWidget, QDialog, QPushButton, QCheckBox,
                              QHBoxLayout, QVBoxLayout, QSizePolicy,
                              QDialogButtonBox, QLabel, QGroupBox,
                              QTextEdit, QFormLayout, QProgressBar)
@@ -93,16 +93,16 @@ class TransferDialog(QDialog):
         # Widgets
         move_icon = QLabel()
         move_icon.setPixmap(load_icon("stock_folder-move").pixmap(48))
-        move_icon.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+        move_icon.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
 
         header = QLabel("<big>File transfer in progress:</big>")
-        header.setTextFormat(Qt.RichText)
+        header.setTextFormat(Qt.TextFormat.RichText)
 
         transfer_log_box = QGroupBox("Log:")
 
         transfer_log_widget = QTextEdit()
         transfer_log_widget.setReadOnly(True)
-        transfer_log_widget.setWordWrapMode(QTextOption.NoWrap)
+        transfer_log_widget.setWordWrapMode(QTextOption.WrapMode.NoWrap)
         self._transfer_log_widget = transfer_log_widget
 
         box = QVBoxLayout()
@@ -114,12 +114,12 @@ class TransferDialog(QDialog):
         current_file_form = QFormLayout()
         dest_label = QLabel("Destination:")
         dest_widget = QLabel(self._target_directory)
-        dest_widget.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        dest_widget.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         self._dest_widget = dest_widget
 
         source_label = QLabel("Source:")
         source_widget = QLabel()
-        source_widget.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        source_widget.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         self._source_widget = source_widget
 
         progress_label = QLabel("Progress:")
@@ -149,17 +149,17 @@ class TransferDialog(QDialog):
 
         # Widgets.ButtonBox
         button_box = QDialogButtonBox(self)
-        button_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        button_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         btn_pause = QPushButton(load_icon("media-pause"), "Pause")
-        button_box.addButton(btn_pause, QDialogButtonBox.ActionRole)
+        button_box.addButton(btn_pause, QDialogButtonBox.ButtonRole.ActionRole)
         self._btn_pause = btn_pause
 
-        btn_cancel = button_box.addButton(QDialogButtonBox.Cancel)
+        btn_cancel = button_box.addButton(QDialogButtonBox.StandardButton.Cancel)
         btn_cancel.setDefault(True)
         self._btn_cancel = btn_cancel
 
-        btn_close = button_box.addButton(QDialogButtonBox.Close)
+        btn_close = button_box.addButton(QDialogButtonBox.StandardButton.Close)
         self._btn_close = btn_close
         self._btn_close.setVisible(False)
 

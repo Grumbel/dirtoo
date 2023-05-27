@@ -17,7 +17,7 @@
 
 from typing import TYPE_CHECKING, cast, Sequence, Set, Tuple, Optional
 
-from PyQt5.QtWidgets import QMenu
+from PyQt6.QtWidgets import QMenu
 from xdg.DesktopEntry import DesktopEntry
 
 from dirtoo.filesystem.location import Location, Payload

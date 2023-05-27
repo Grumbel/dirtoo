@@ -17,9 +17,9 @@
 
 from typing import Any
 
-from PyQt5.QtCore import pyqtSignal, Qt
-from PyQt5.QtGui import QMouseEvent
-from PyQt5.QtWidgets import QLabel
+from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt6.QtGui import QMouseEvent
+from PyQt6.QtWidgets import QLabel
 
 
 class Label(QLabel):
@@ -34,10 +34,10 @@ class Label(QLabel):
         super().mouseReleaseEvent(ev)
 
         if not ev.isAccepted() and self.rect().contains(ev.pos()):
-            if ev.button() == Qt.LeftButton:
+            if ev.button() == Qt.MouseButton.LeftButton:
                 ev.accept()
                 self.clicked.emit()
-            elif ev.button() == Qt.MiddleButton:
+            elif ev.button() == Qt.MouseButton.MiddleButton:
                 ev.accept()
                 self.middle_clicked.emit()
 

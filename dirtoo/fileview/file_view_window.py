@@ -20,9 +20,9 @@ from typing import TYPE_CHECKING, Optional, Sequence
 import logging
 
 from pkg_resources import resource_filename
-from PyQt5.QtCore import Qt, QPoint
-from PyQt5.QtGui import QKeySequence, QIcon, QCursor, QMovie, QCloseEvent
-from PyQt5.QtWidgets import (
+from PyQt6.QtCore import Qt, QPoint, QKeyCombination
+from PyQt6.QtGui import QKeySequence, QIcon, QCursor, QMovie, QCloseEvent, QShortcut
+from PyQt6.QtWidgets import (
     QMenu,
     QHBoxLayout,
     QPushButton,
@@ -32,7 +32,6 @@ from PyQt5.QtWidgets import (
     QLabel,
     QMainWindow,
     QSizePolicy,
-    QShortcut,
     QVBoxLayout,
     QToolBar
 )
@@ -91,48 +90,48 @@ class FileViewWindow(QMainWindow):
         self.controller.on_exit()
 
     def make_shortcut(self) -> None:
-        shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_L), self)
-        shortcut.setContext(Qt.WindowShortcut)
+        shortcut = QShortcut(QKeySequence(QKeyCombination(Qt.Modifier.CTRL, Qt.Key.Key_L)), self)
+        shortcut.setContext(Qt.ShortcutContext.WindowShortcut)
         shortcut.activated.connect(self.controller.show_location_toolbar)
 
         def show_filter() -> None:
-            self.file_filter.setFocus(Qt.ShortcutFocusReason)
+            self.file_filter.setFocus(Qt.FocusReason.ShortcutFocusReason)
             self.filter_toolbar.show()
 
-        shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_K), self)
-        shortcut.setContext(Qt.WindowShortcut)
+        shortcut = QShortcut(QKeySequence(QKeyCombination(Qt.Modifier.CTRL, Qt.Key.Key_K)), self)
+        shortcut.setContext(Qt.ShortcutContext.WindowShortcut)
         shortcut.activated.connect(show_filter)
 
-        shortcut = QShortcut(QKeySequence(Qt.Key_F3), self)
-        shortcut.setContext(Qt.WindowShortcut)
+        shortcut = QShortcut(QKeySequence(Qt.Key.Key_F3), self)
+        shortcut.setContext(Qt.ShortcutContext.WindowShortcut)
         shortcut.activated.connect(self.controller.show_search)
 
-        shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_F), self)
-        shortcut.setContext(Qt.WindowShortcut)
+        shortcut = QShortcut(QKeySequence(QKeyCombination(Qt.Modifier.CTRL, Qt.Key.Key_F)), self)
+        shortcut.setContext(Qt.ShortcutContext.WindowShortcut)
         shortcut.activated.connect(self.controller.show_search)
 
-        shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_W), self)
-        shortcut.setContext(Qt.WindowShortcut)
+        shortcut = QShortcut(QKeySequence(QKeyCombination(Qt.Modifier.CTRL, Qt.Key.Key_W)), self)
+        shortcut.setContext(Qt.ShortcutContext.WindowShortcut)
         shortcut.activated.connect(self.controller.close_window)
 
-        shortcut = QShortcut(QKeySequence(Qt.ALT + Qt.Key_Up), self)
-        shortcut.setContext(Qt.WindowShortcut)
+        shortcut = QShortcut(QKeySequence(QKeyCombination(Qt.Modifier.ALT, Qt.Key.Key_Up)), self)
+        shortcut.setContext(Qt.ShortcutContext.WindowShortcut)
         shortcut.activated.connect(self.controller.parent_directory)
 
-        shortcut = QShortcut(Qt.Key_Home, self)
-        shortcut.setContext(Qt.WindowShortcut)
+        shortcut = QShortcut(Qt.Key.Key_Home, self)
+        shortcut.setContext(Qt.ShortcutContext.WindowShortcut)
         shortcut.activated.connect(lambda: self.file_view.scroll_top())
 
-        shortcut = QShortcut(Qt.Key_End, self)
-        shortcut.setContext(Qt.WindowShortcut)
+        shortcut = QShortcut(Qt.Key.Key_End, self)
+        shortcut.setContext(Qt.ShortcutContext.WindowShortcut)
         shortcut.activated.connect(lambda: self.file_view.scroll_bottom())
 
-        shortcut = QShortcut(Qt.Key_PageUp, self)
-        shortcut.setContext(Qt.WindowShortcut)
+        shortcut = QShortcut(Qt.Key.Key_PageUp, self)
+        shortcut.setContext(Qt.ShortcutContext.WindowShortcut)
         shortcut.activated.connect(lambda: self.file_view.scroll_by(0, -self.file_view.viewport().height()))
 
-        shortcut = QShortcut(Qt.Key_PageDown, self)
-        shortcut.setContext(Qt.WindowShortcut)
+        shortcut = QShortcut(Qt.Key.Key_PageDown, self)
+        shortcut.setContext(Qt.ShortcutContext.WindowShortcut)
         shortcut.activated.connect(lambda: self.file_view.scroll_by(0, self.file_view.viewport().height()))
 
     def make_window(self) -> None:
@@ -148,13 +147,13 @@ class FileViewWindow(QMainWindow):
         self.location_buttonbar = LocationButtonBar(self.controller)
         self.file_filter = FilterLineEdit(self.controller)
         # self.file_filter.setText("File Pattern Here")
-        self.file_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.file_view.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.status_bar = self.statusBar()
 
         self.info = QLabel("")
         self.status_bar.addPermanentWidget(self.info)
 
-        self.vbox.addWidget(self.file_view, Qt.AlignLeft)
+        self.vbox.addWidget(self.file_view, Qt.AlignmentFlag.AlignLeft)
 
         self._message_area = MessageArea()
         self._message_area.hide()
@@ -187,7 +186,7 @@ class FileViewWindow(QMainWindow):
 
         self.filter_toolbar = QToolBar("Filter")
         self.filter_toolbar.addWidget(widget)
-        self.addToolBar(Qt.BottomToolBarArea, self.filter_toolbar)
+        self.addToolBar(Qt.ToolBarArea.BottomToolBarArea, self.filter_toolbar)
         self.filter_toolbar.hide()
 
     def make_search_toolbar(self) -> None:
@@ -210,7 +209,7 @@ class FileViewWindow(QMainWindow):
 
         self.search_toolbar = QToolBar("Search")
         self.search_toolbar.addWidget(widget)
-        self.addToolBar(Qt.TopToolBarArea, self.search_toolbar)
+        self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.search_toolbar)
         self.search_toolbar.hide()
 
     def make_location_toolbar(self) -> None:
@@ -223,7 +222,7 @@ class FileViewWindow(QMainWindow):
         def show_location_menu(pos: QPoint) -> None:
             self.controller.on_context_menu(label.mapToGlobal(pos))
 
-        label.setContextMenuPolicy(Qt.CustomContextMenu)
+        label.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         label.customContextMenuRequested.connect(show_location_menu)
 
         both = QVBoxLayout()
@@ -235,7 +234,7 @@ class FileViewWindow(QMainWindow):
         widget.setLayout(form)
         self.location_toolbar.addWidget(widget)
 
-        self.addToolBarBreak(Qt.TopToolBarArea)
+        self.addToolBarBreak(Qt.ToolBarArea.TopToolBarArea)
 
     def make_group_menu(self) -> QMenu:
         menu = QMenu("Group Options")
@@ -411,14 +410,14 @@ class FileViewWindow(QMainWindow):
 
         history_back_btn = ToolButton()
         history_back_btn.setDefaultAction(self._actions.back)
-        history_back_btn.setContextMenuPolicy(Qt.CustomContextMenu)
+        history_back_btn.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         history_back_btn.customContextMenuRequested.connect(
             lambda pos: self.controller.show_history_context_menu(history_back_btn, False))
         self.toolbar.addWidget(history_back_btn)
 
         history_forward_btn = ToolButton()
         history_forward_btn.setDefaultAction(self._actions.forward)
-        history_forward_btn.setContextMenuPolicy(Qt.CustomContextMenu)
+        history_forward_btn.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         history_forward_btn.customContextMenuRequested.connect(
             lambda pos: self.controller.show_history_context_menu(history_forward_btn, False))
         self.toolbar.addWidget(history_forward_btn)
@@ -435,19 +434,19 @@ class FileViewWindow(QMainWindow):
         button = QToolButton()
         button.setIcon(load_icon("view-restore"))
         button.setMenu(self.make_view_menu())
-        button.setPopupMode(QToolButton.InstantPopup)
+        button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         self.toolbar.addWidget(button)
 
         button = QToolButton()
         button.setIcon(load_icon("view-sort-ascending"))
         button.setMenu(self.make_sort_menu())
-        button.setPopupMode(QToolButton.InstantPopup)
+        button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         self.toolbar.addWidget(button)
 
         button = QToolButton()
         button.setIcon(load_icon("view-sort-ascending"))
         button.setMenu(self.make_group_menu())
-        button.setPopupMode(QToolButton.InstantPopup)
+        button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         self.toolbar.addWidget(button)
 
         self.toolbar.addSeparator()
@@ -466,7 +465,7 @@ class FileViewWindow(QMainWindow):
 
         # Spacer to force right alignment for all following widget
         spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.toolbar.addWidget(spacer)
 
         self.toolbar.addAction(self._actions.debug)

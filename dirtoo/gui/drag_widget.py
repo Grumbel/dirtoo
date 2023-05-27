@@ -19,9 +19,9 @@ from typing import Optional
 
 import logging
 
-from PyQt5.QtCore import Qt, QPoint, QTimerEvent
-from PyQt5.QtWidgets import QWidget, QApplication
-from PyQt5.QtGui import QCursor, QPainter, QFontMetrics, QPaintEvent
+from PyQt6.QtCore import Qt, QPoint, QTimerEvent
+from PyQt6.QtWidgets import QWidget, QApplication
+from PyQt6.QtGui import QCursor, QPainter, QFontMetrics, QPaintEvent
 
 
 logger = logging.getLogger(__name__)
@@ -37,10 +37,10 @@ class DragWidget(QWidget):
 
     def __init__(self, parent: Optional[QWidget]) -> None:
         super().__init__(parent,
-                         Qt.Window |
-                         Qt.WindowStaysOnTopHint |
-                         Qt.X11BypassWindowManagerHint |
-                         Qt.FramelessWindowHint)
+                         Qt.WindowType.Window |
+                         Qt.WindowType.WindowStaysOnTopHint |
+                         Qt.WindowType.X11BypassWindowManagerHint |
+                         Qt.WindowType.FramelessWindowHint)
 
         self.resize(48, 20)
         self._mouse_move_timer: Optional[int] = self.startTimer(1000 // 60)
@@ -52,7 +52,7 @@ class DragWidget(QWidget):
     def timerEvent(self, ev: QTimerEvent) -> None:
         if ev.timerId() == self._mouse_move_timer:
             buttons = QApplication.mouseButtons()
-            if not buttons & Qt.LeftButton:
+            if not buttons & Qt.MouseButton.LeftButton:
                 # dispose the widget when the mouse button is released
                 self.hide()
                 assert self._mouse_move_timer is not None
@@ -72,13 +72,14 @@ class DragWidget(QWidget):
 
                 old_text = self._text
 
-                if modifiers & Qt.ControlModifier and modifiers & Qt.ShiftModifier:
+                if modifiers & Qt.KeyboardModifier.ControlModifier and \
+                   modifiers & Qt.KeyboardModifier.ShiftModifier:
                     self._text = "Link"
-                elif modifiers & Qt.ControlModifier:
+                elif modifiers & Qt.KeyboardModifier.ControlModifier:
                     self._text = "Copy"
-                elif modifiers & Qt.ShiftModifier:
+                elif modifiers & Qt.KeyboardModifier.ShiftModifier:
                     self._text = "Move"
-                elif modifiers & Qt.AltModifier:
+                elif modifiers & Qt.KeyboardModifier.AltModifier:
                     self._text = "Link"
                 else:
                     self._text = None
@@ -97,7 +98,7 @@ class DragWidget(QWidget):
             painter = QPainter(self)
             font = painter.font()
             fm = QFontMetrics(font)
-            width = fm.width(self._text)
+            width = fm.boundingRect(self._text).width()
             painter.drawText(QPoint(self.width() // 2 - width // 2, 14), self._text)
             painter.end()
 

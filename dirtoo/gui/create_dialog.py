@@ -17,8 +17,8 @@
 
 from typing import Optional
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLineEdit,
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import (QWidget, QDialog, QPushButton, QLineEdit,
                              QHBoxLayout, QVBoxLayout,
                              QDialogButtonBox, QLabel)
 
@@ -39,7 +39,7 @@ class CreateDialog(QDialog):
     def _build_gui(self) -> None:
         self.resize(400, 100)
 
-        self.setWindowModality(Qt.WindowModal)
+        self.setWindowModality(Qt.WindowModality.WindowModal)
 
         self.name_edit = QLineEdit(self)
         self.name_edit.textEdited.connect(self._on_text_edited)
@@ -61,8 +61,8 @@ class CreateDialog(QDialog):
         self.button_box = QDialogButtonBox(self)
 
         self.btn_create = QPushButton(load_icon("document-save-as"), "Create")
-        self.button_box.addButton(self.btn_create, QDialogButtonBox.AcceptRole)
-        self.btn_cancel = self.button_box.addButton(QDialogButtonBox.Cancel)
+        self.button_box.addButton(self.btn_create, QDialogButtonBox.ButtonRole.AcceptRole)
+        self.btn_cancel = self.button_box.addButton(QDialogButtonBox.StandardButton.Cancel)
         self.btn_create.setDefault(True)
 
         # layout

@@ -17,7 +17,7 @@
 
 from typing import Optional
 
-from PyQt5.QtCore import QObject, QSocketNotifier, pyqtSignal
+from PyQt6.QtCore import QObject, QSocketNotifier, pyqtSignal
 from inotify_simple import INotify, flags as inotify_flags
 import inotify_simple
 
@@ -43,7 +43,7 @@ class INotifyQt(QObject):
         super().__init__(parent)
 
         self.inotify = INotify()
-        self.qnotifier = QSocketNotifier(self.inotify.fd, QSocketNotifier.Read)
+        self.qnotifier = QSocketNotifier(self.inotify.fd, QSocketNotifier.Type.Read)
         self.qnotifier.activated.connect(self._on_activated)
         self.wd = None
 

@@ -19,8 +19,8 @@ from typing import Optional, Sequence, Callable, TYPE_CHECKING
 
 import logging
 
-from PyQt5.QtCore import Qt, QObject, QThread, pyqtSignal
-from PyQt5.QtWidgets import QWidget
+from PyQt6.QtCore import Qt, QObject, QThread, pyqtSignal
+from PyQt6.QtWidgets import QWidget
 
 from dirtoo.filesystem.location import Location
 from dirtoo.fileview.rename_operation import RenameOperation
@@ -186,7 +186,7 @@ class GuiFileTransfer(QObject):
         thread.started.connect(worker.on_started)
         thread.start()
 
-        self.sig_close_requested.connect(worker.close, type=Qt.BlockingQueuedConnection)  # type: ignore
+        self.sig_close_requested.connect(worker.close, type=Qt.ConnectionType.BlockingQueuedConnection)  # type: ignore
 
         self._thread = thread
         self._worker = worker

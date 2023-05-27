@@ -17,7 +17,7 @@
 
 from typing import TypeVar, Generic, Optional
 
-from PyQt5.QtCore import QMutex, QWaitCondition
+from PyQt6.QtCore import QMutex, QWaitCondition
 
 
 T = TypeVar('T')

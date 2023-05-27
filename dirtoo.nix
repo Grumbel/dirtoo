@@ -2,7 +2,7 @@
 , lib
 , buildPythonPackage
 
-, PyQt5-stubs
+, PyQt6-stubs
 , _7zz
 , bytefmt
 , colorama
@@ -17,7 +17,7 @@
 , pymediainfo
 , pyparsing
 , pypdf2
-, pyqt5
+, pyqt6
 , pyright
 , python-ngram
 , pyxdg
@@ -44,7 +44,6 @@ buildPythonPackage {
   doCheck = doCheck;
 
   preCheck = ''
-    export QT_QPA_PLATFORM_PLUGIN_PATH="${qtbase.bin}/lib/qt-${qtbase.version}/plugins";
     export DIRTOO_7ZIP='${_7zz}/bin/7zz'
     export DIRTOO_FFPROBE='${ffmpeg}/bin/ffprobe'
   '' +
@@ -74,6 +73,10 @@ buildPythonPackage {
 
   nativeBuildInputs = [ wrapQtAppsHook ];
 
+  buildInputs = [
+    qtbase
+  ];
+
   propagatedBuildInputs = [
     setuptools
     pyparsing
@@ -83,13 +86,17 @@ buildPythonPackage {
     libarchive-c
     numpy
     pypdf2
-    pyqt5
+    pyqt6
     scipy
     sortedcontainers
     unidecode
     pyxdg
     python-ngram
     bytefmt
+  ];
+
+  checkInputs = [
+    PyQt6-stubs
   ];
 
   nativeCheckInputs = [

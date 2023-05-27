@@ -19,7 +19,7 @@ from typing import Dict, Tuple
 
 from pkg_resources import resource_filename
 
-from PyQt5.QtGui import QIcon, QPixmap, QFont, QFontMetrics, QImage, QPainter
+from PyQt6.QtGui import QIcon, QPixmap, QFont, QFontMetrics, QImage, QPainter
 
 from dirtoo.image.image_filter import white_outline
 from dirtoo.fileview.scaler import make_unscaled_rect
@@ -85,7 +85,7 @@ class SharedScaleable:
             icon_rect = make_unscaled_rect(self.width * 3 // 4, self.height * 3 // 4,
                                            self.width, self.height)
 
-            img = QImage(self.width, self.height, QImage.Format_ARGB32)
+            img = QImage(self.width, self.height, QImage.Format.Format_ARGB32)
             img.fill(0)
 
             p = QPainter(img)

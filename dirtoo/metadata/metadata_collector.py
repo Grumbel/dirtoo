@@ -22,8 +22,8 @@ import logging
 import os
 import sys
 
-from PyQt5.QtCore import QObject, pyqtSignal, QThread
-from PyQt5.QtCore import QMimeDatabase
+from PyQt6.QtCore import QObject, pyqtSignal, QThread
+from PyQt6.QtCore import QMimeDatabase
 
 from dirtoo.metadata.metadata_cache import MetaDataCache
 from dirtoo.metadata.metadata import MetaData

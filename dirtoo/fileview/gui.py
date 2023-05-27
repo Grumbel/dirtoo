@@ -17,9 +17,9 @@
 
 from typing import TYPE_CHECKING, Optional, cast
 
-from PyQt5.QtCore import QObject, Qt, QEvent, QPoint
-from PyQt5.QtWidgets import QFileDialog, QTextEdit, QDialog, QMessageBox
-from PyQt5.QtGui import QCursor, QMouseEvent
+from PyQt6.QtCore import QObject, Qt, QEvent, QPoint, QPointF
+from PyQt6.QtWidgets import QFileDialog, QTextEdit, QDialog, QMessageBox
+from PyQt6.QtGui import QCursor, QMouseEvent
 
 from dirtoo.fileview.file_view_window import FileViewWindow
 from dirtoo.gui.item_context_menu import ItemContextMenu
@@ -44,14 +44,11 @@ class Gui(QObject):
         self._filter_help = QTextEdit()
 
     def get_savefilename(self) -> Optional[str]:
-        options = QFileDialog.Options()
-        # options |= QFileDialog.DontUseNativeDialog
         filename, kind = QFileDialog.getSaveFileName(
             self._window,
             "QFileDialog.getSaveFileName()",
             "",  # dir
-            "URL List (*.urls);;Path List (*.txt);;NUL Path List (*.nlst)",
-            options=options)
+            "URL List (*.urls);;Path List (*.txt);;NUL Path List (*.nlst)")
 
         if filename == "":
             return None
@@ -67,11 +64,11 @@ class Gui(QObject):
         """Generate a fake mouse move event to force the FileView to update
         the hover item after a menu was displayed."""
 
-        ev = QMouseEvent(QEvent.MouseMove,
-                         self._window.mapFromGlobal(QCursor.pos()),
-                         Qt.NoButton,
-                         Qt.NoButton,
-                         Qt.NoModifier)
+        ev = QMouseEvent(QEvent.Type.MouseMove,
+                         self._window.mapFromGlobal(QPointF(QCursor.pos())),
+                         Qt.MouseButton.NoButton,
+                         Qt.MouseButton.NoButton,
+                         Qt.KeyboardModifier.NoModifier)
         self._window.file_view.mouseMoveEvent(ev)
 
     def on_context_menu(self, pos: QPoint) -> None:
@@ -105,7 +102,7 @@ class Gui(QObject):
         if name is not None:
             dialog.set_filename(name)
         dialog.exec()
-        if dialog.result() == QDialog.Accepted:
+        if dialog.result() == QDialog.DialogCode.Accepted:
             result: str = dialog.get_filename()
             return result
         else:
@@ -116,7 +113,7 @@ class Gui(QObject):
         if name is not None:
             dialog.set_filename(name)
         dialog.exec()
-        if dialog.result() == QDialog.Accepted:
+        if dialog.result() == QDialog.DialogCode.Accepted:
             result: str = dialog.get_filename()
             return result
         else:
@@ -124,10 +121,10 @@ class Gui(QObject):
 
     def show_error(self, title: str, message: str) -> None:
         msg = QMessageBox(self._window)
-        msg.setIcon(QMessageBox.Critical)
+        msg.setIcon(QMessageBox.Icon.Critical)
         msg.setWindowTitle(title)
         msg.setText(message)
-        msg.setStandardButtons(QMessageBox.Ok)
+        msg.setStandardButtons(QMessageBox.StandardButton.Ok)
         msg.exec()
 
     def show_about_dialog(self) -> None:

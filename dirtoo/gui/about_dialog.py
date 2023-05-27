@@ -17,9 +17,9 @@
 
 from pkg_resources import resource_filename
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QDialogButtonBox, QSizePolicy
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QPixmap
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QDialogButtonBox, QSizePolicy
 
 
 class AboutDialog(QDialog):
@@ -32,8 +32,8 @@ class AboutDialog(QDialog):
     def _build_gui(self) -> None:
         # Widgets
         icon_label = QLabel()
-        icon_label.setAlignment(Qt.AlignHCenter | Qt.AlignBottom)
-        icon_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        icon_label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom)
+        icon_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         icon_label.setPixmap(QPixmap(resource_filename("dirtoo", "icons/dirtoo.svg")))
 
         text_label = QLabel(
@@ -48,12 +48,12 @@ class AboutDialog(QDialog):
 
             """
         )
-        text_label.setTextFormat(Qt.RichText)
-        text_label.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
-        text_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        text_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        text_label.setTextFormat(Qt.TextFormat.RichText)
+        text_label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
+        text_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        text_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
 
-        button_box = QDialogButtonBox(QDialogButtonBox.Close)
+        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         button_box.rejected.connect(self.reject)
 
         # Layout

@@ -21,8 +21,8 @@ import io
 import logging
 import os
 
-from PyQt5.QtCore import QObject, Qt, pyqtSignal, QUrl, QMimeData, QPoint
-from PyQt5.QtGui import QClipboard
+from PyQt6.QtCore import QObject, Qt, pyqtSignal, QUrl, QMimeData, QPoint, QByteArray
+from PyQt6.QtGui import QClipboard
 
 import bytefmt
 
@@ -267,7 +267,7 @@ class Controller(QObject):
             self._directory_watcher.sig_file_closed.connect(self.file_collection.close_file)
 
         if hasattr(self._directory_watcher, 'sig_finished'):
-            self._directory_watcher.sig_finished.connect(self._on_finished)  # type: ignore
+            self._directory_watcher.sig_finished.connect(self._on_finished)
 
         if hasattr(self._directory_watcher, 'sig_scandir_finished'):
             self._directory_watcher.sig_scandir_finished.connect(self._on_scandir_finished)
@@ -543,7 +543,7 @@ class Controller(QObject):
         self._gui._window.location_lineedit.show()
         self._gui._window.location_buttonbar.hide()
 
-        self._gui._window.location_lineedit.setFocus(Qt.ShortcutFocusReason)
+        self._gui._window.location_lineedit.setFocus(Qt.FocusReason.ShortcutFocusReason)
         if selectall is False:
             self._gui._window.location_lineedit.set_cursor_to_end()
             text = self._gui._window.location_lineedit.text()
@@ -589,18 +589,18 @@ class Controller(QObject):
     def on_edit_cut(self) -> None:
         logger.debug("cut data to clipboard")
 
-        mime_data = self.selection_to_mimedata(action=Qt.MoveAction)
+        mime_data = self.selection_to_mimedata(action=Qt.DropAction.MoveAction)
 
         clipboard = self.app.qapp.clipboard()
-        clipboard.setMimeData(mime_data, QClipboard.Clipboard)
+        clipboard.setMimeData(mime_data, QClipboard.Mode.Clipboard)
 
     def on_edit_copy(self) -> None:
         logger.debug("copying data to clipboard")
 
-        mime_data = self.selection_to_mimedata(action=Qt.CopyAction)
+        mime_data = self.selection_to_mimedata(action=Qt.DropAction.CopyAction)
 
         clipboard = self.app.qapp.clipboard()
-        clipboard.setMimeData(mime_data, QClipboard.Clipboard)
+        clipboard.setMimeData(mime_data, QClipboard.Mode.Clipboard)
 
     def on_edit_paste(self) -> None:
         if self.location is not None:
@@ -610,7 +610,7 @@ class Controller(QObject):
         logger.debug("pasting data into folder from clipboard")
 
         clipboard = self.app.qapp.clipboard()
-        mime_data = clipboard.mimeData(QClipboard.Clipboard)
+        mime_data = clipboard.mimeData(QClipboard.Mode.Clipboard)
 
         # for fmt in mime_data.formats():
         #     print("Format:", fmt)
@@ -622,17 +622,17 @@ class Controller(QObject):
 
         if mime_data.hasFormat("x-special/gnome-copied-files"):
             try:
-                action, urls = parse_gnome_copied_files(bytes(mime_data.data("x-special/gnome-copied-files")))
+                action, urls = parse_gnome_copied_files(cast(bytes, mime_data.data("x-special/gnome-copied-files")))
             except Exception as err:
                 logger.error("failed to parse clipboard data: %s", err)
             else:
                 sources = [url.toLocalFile() for url in urls]
 
-                if action == Qt.MoveAction:
+                if action == Qt.DropAction.MoveAction:
                     self.app.fs_operations.move_files(sources, destination_path)
-                elif action == Qt.CopyAction:
+                elif action == Qt.DropAction.CopyAction:
                     self.app.fs_operations.copy_files(sources, destination_path)
-                elif action == Qt.LinkAction:
+                elif action == Qt.DropAction.LinkAction:
                     self.app.fs_operations.link_files(sources, destination_path)
 
         elif mime_data.hasUrls():
@@ -665,7 +665,7 @@ class Controller(QObject):
 
             if action is not None:
                 gnome_copied_files = make_gnome_copied_files(action, urls)
-                mime_data.setData("x-special/gnome-copied-files", gnome_copied_files)
+                mime_data.setData("x-special/gnome-copied-files", gnome_copied_files)  # type: ignore
 
         return mime_data
 
@@ -684,13 +684,13 @@ class Controller(QObject):
 
         destination_path = destination.get_path()
 
-        if action == Qt.MoveAction:
+        if action == Qt.DropAction.MoveAction:
             self.app.fs_operations.move_files(sources, destination_path)
-        elif action == Qt.CopyAction:
+        elif action == Qt.DropAction.CopyAction:
             self.app.fs_operations.copy_files(sources, destination_path)
-        elif action == Qt.LinkAction:
+        elif action == Qt.DropAction.LinkAction:
             self.app.fs_operations.link_files(sources, destination_path)
-        elif action == Qt.IgnoreAction:
+        elif action == Qt.DropAction.IgnoreAction:
             pass
         else:
             # FIXME: this is triggered by action == 0x40, which is a magic

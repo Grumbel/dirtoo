@@ -21,7 +21,7 @@ import logging
 import traceback
 import os
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt6.QtCore import QObject, pyqtSignal
 from inotify_simple import flags as inotify_flags
 import inotify_simple
 

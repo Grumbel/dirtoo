@@ -1,5 +1,21 @@
 {
   "nodes": {
+    "PyQt6-stubs_src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1648527922,
+        "narHash": "sha256-ZS0kA0iLDJ4LGltWpE2c7KlEXpuUwmFqr5be/zEhp70=",
+        "owner": "python-qt-tools",
+        "repo": "PyQt6-stubs",
+        "rev": "f623a641cd5cdff53342177e4fbbf9cae8172336",
+        "type": "github"
+      },
+      "original": {
+        "owner": "python-qt-tools",
+        "repo": "PyQt6-stubs",
+        "type": "github"
+      }
+    },
     "bytefmt": {
       "inputs": {
         "flake-utils": [
@@ -59,6 +75,7 @@
     },
     "root": {
       "inputs": {
+        "PyQt6-stubs_src": "PyQt6-stubs_src",
         "bytefmt": "bytefmt",
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs"

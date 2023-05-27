@@ -23,7 +23,7 @@ import signal
 import sys
 import xdg.BaseDirectory
 
-from PyQt5.QtCore import QCoreApplication
+from PyQt6.QtCore import QCoreApplication
 
 from dirtoo.filesystem.location import Location
 from dirtoo.filesystem.file_info import FileInfo

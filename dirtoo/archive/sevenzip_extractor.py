@@ -21,7 +21,7 @@ import logging
 import os
 import traceback
 
-from PyQt5.QtCore import QProcess
+from PyQt6.QtCore import QProcess
 
 from dirtoo.archive.extractor import Extractor, ExtractorResult
 
@@ -103,11 +103,11 @@ class SevenZipExtractor(Extractor):
     def _on_process_finished(self, exit_code: int, exit_status: QProcess.ExitStatus) -> None:
         assert self._process is not None
 
-        self._process.setCurrentReadChannel(QProcess.StandardOutput)
+        self._process.setReadChannel(QProcess.ProcessChannel.StandardOutput)
         for line in os.fsdecode(self._process.readAll().data()).splitlines():
             self._process_stdout(line)
 
-        self._process.setCurrentReadChannel(QProcess.StandardError)
+        self._process.setReadChannel(QProcess.ProcessChannel.StandardError)
         for line in os.fsdecode(self._process.readAll().data()).splitlines():
             self._process_stderr(line)
 
@@ -119,7 +119,7 @@ class SevenZipExtractor(Extractor):
         if message:
             logger.error("SevenZipExtractorWorker: errors: %s", message)
 
-        if exit_status != QProcess.NormalExit or exit_code != 0:
+        if exit_status != QProcess.ExitStatus.NormalExit or exit_code != 0:
             logger.error("SevenZipExtractorWorker: something went wrong: %s  %s", exit_code, exit_status)
             self._result = ExtractorResult.failure(message)
         else:
@@ -148,7 +148,7 @@ class SevenZipExtractor(Extractor):
         assert self._process is not None
 
         while self._process.canReadLine():
-            buf: bytes = self._process.readLine().data()  # type: ignore
+            buf: bytes = self._process.readLine().data()
             line = os.fsdecode(buf).rstrip("\n")
             # print("stdout:", repr(line))
             self._process_stdout(line)
@@ -158,7 +158,7 @@ class SevenZipExtractor(Extractor):
 
         while self._process.canReadLine():
             # print("stderr:", repr(line))
-            buf: bytes = self._process.readLine().data()  # type: ignore
+            buf: bytes = self._process.readLine().data()
             line = os.fsdecode(buf).rstrip("\n")
             self._process_stderr(line)
 

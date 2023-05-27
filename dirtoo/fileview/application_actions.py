@@ -17,7 +17,7 @@
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtWidgets import QAction
+from PyQt6.QtGui import QAction
 
 from dirtoo.image.icon import load_icon
 

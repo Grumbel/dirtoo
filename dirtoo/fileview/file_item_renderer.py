@@ -20,8 +20,8 @@ from typing import TYPE_CHECKING, Tuple
 import logging
 from datetime import datetime
 
-from PyQt5.QtCore import Qt, QRect, QRectF, QPoint, QPointF, QMargins
-from PyQt5.QtGui import QColor, QPainter, QIcon, QTextOption, QBrush
+from PyQt6.QtCore import Qt, QRect, QRectF, QPoint, QPointF, QMargins
+from PyQt6.QtGui import QColor, QPainter, QIcon, QTextOption, QBrush
 
 import bytefmt
 
@@ -69,13 +69,13 @@ class FileItemRenderer:
 
         if self.is_selected:
             painter.save()
-            painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
+            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
             painter.setOpacity(0.5)
             painter.fillRect(self.tile_rect, QColor(127, 192, 255))
-            painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
+            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
             painter.setOpacity(1.0)
             painter.setPen(QColor(96, 127, 255))
-            painter.setBrush(Qt.NoBrush)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
             painter.drawRect(self.tile_rect)
             painter.restore()
 
@@ -95,14 +95,14 @@ class FileItemRenderer:
         self.paint_thumbnail(painter)
 
         if self.zoom_index in [0, 1]:
-            text_option = QTextOption(Qt.AlignLeft | Qt.AlignVCenter)
-            text_option.setWrapMode(QTextOption.NoWrap)
+            text_option = QTextOption(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            text_option.setWrapMode(QTextOption.WrapMode.NoWrap)
             text_rect = QRect(QPoint(int(self.tile_rect.height()) + 4,
                                      0),
                               QPoint(self.tile_rect.width(),
                                      self.tile_rect.height()))
             text = self.fileinfo.basename()
-            text = fm.elidedText(text, Qt.ElideRight, text_rect.width())
+            text = fm.elidedText(text, Qt.TextElideMode.ElideRight, text_rect.width())
             painter.drawText(QRectF(text_rect),
                              text,
                              text_option)
@@ -112,9 +112,9 @@ class FileItemRenderer:
                               QPoint(self.tile_rect.width() - 80,
                                      self.tile_rect.height()))
             text = self.fileinfo.basename()
-            text = fm.elidedText(text, Qt.ElideRight, text_rect.width())
-            text_option = QTextOption(Qt.AlignLeft | Qt.AlignVCenter)
-            text_option.setWrapMode(QTextOption.NoWrap)
+            text = fm.elidedText(text, Qt.TextElideMode.ElideRight, text_rect.width())
+            text_option = QTextOption(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            text_option.setWrapMode(QTextOption.WrapMode.NoWrap)
             painter.drawText(QRectF(text_rect), text, text_option)
 
             text_rect = QRect(QPoint(self.tile_rect.width() - 80,
@@ -122,10 +122,10 @@ class FileItemRenderer:
                               QPoint(self.tile_rect.width(),
                                      self.tile_rect.height()))
             text = bytefmt.humanize(self.fileinfo.size())
-            text = fm.elidedText(text, Qt.ElideRight, text_rect.width())
-            text_option = QTextOption(Qt.AlignRight | Qt.AlignVCenter)
+            text = fm.elidedText(text, Qt.TextElideMode.ElideRight, text_rect.width())
+            text_option = QTextOption(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
 
-            text_option.setWrapMode(QTextOption.NoWrap)
+            text_option.setWrapMode(QTextOption.WrapMode.NoWrap)
             painter.setPen(QColor(96, 96, 96))
             painter.drawText(QRectF(text_rect), text, text_option)
         else:
@@ -146,9 +146,9 @@ class FileItemRenderer:
                               QPoint(row1_rect.right() - 80,
                                      row1_rect.bottom()))
             text = self.fileinfo.basename()
-            text = fm.elidedText(text, Qt.ElideRight, text_rect.width())
-            text_option = QTextOption(Qt.AlignLeft | Qt.AlignVCenter)
-            text_option.setWrapMode(QTextOption.NoWrap)
+            text = fm.elidedText(text, Qt.TextElideMode.ElideRight, text_rect.width())
+            text_option = QTextOption(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            text_option.setWrapMode(QTextOption.WrapMode.NoWrap)
             painter.drawText(QRectF(text_rect), text, text_option)
 
             text_rect = QRect(QPoint(row1_rect.left() - 80,
@@ -156,10 +156,10 @@ class FileItemRenderer:
                               QPoint(row1_rect.right(),
                                      row1_rect.bottom()))
             text = bytefmt.humanize(self.fileinfo.size())
-            text = fm.elidedText(text, Qt.ElideRight, text_rect.width())
-            text_option = QTextOption(Qt.AlignRight | Qt.AlignVCenter)
+            text = fm.elidedText(text, Qt.TextElideMode.ElideRight, text_rect.width())
+            text_option = QTextOption(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
 
-            text_option.setWrapMode(QTextOption.NoWrap)
+            text_option.setWrapMode(QTextOption.WrapMode.NoWrap)
             painter.setPen(QColor(96, 96, 96))
             painter.drawText(QRectF(text_rect), text, text_option)
 
@@ -169,9 +169,9 @@ class FileItemRenderer:
                               QPoint(row2_rect.right() - 80,
                                      row2_rect.bottom()))
             text = bottom_left_text
-            text = fm.elidedText(text, Qt.ElideRight, text_rect.width())
-            text_option = QTextOption(Qt.AlignLeft | Qt.AlignVCenter)
-            text_option.setWrapMode(QTextOption.NoWrap)
+            text = fm.elidedText(text, Qt.TextElideMode.ElideRight, text_rect.width())
+            text_option = QTextOption(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            text_option.setWrapMode(QTextOption.WrapMode.NoWrap)
             painter.drawText(QRectF(text_rect), text, text_option)
 
             text_rect = QRect(QPoint(row2_rect.left() - 80,
@@ -179,10 +179,10 @@ class FileItemRenderer:
                               QPoint(row2_rect.right(),
                                      row2_rect.bottom()))
             text = top_left_text
-            text = fm.elidedText(text, Qt.ElideRight, text_rect.width())
-            text_option = QTextOption(Qt.AlignRight | Qt.AlignVCenter)
+            text = fm.elidedText(text, Qt.TextElideMode.ElideRight, text_rect.width())
+            text_option = QTextOption(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
 
-            text_option.setWrapMode(QTextOption.NoWrap)
+            text_option.setWrapMode(QTextOption.WrapMode.NoWrap)
             painter.setPen(QColor(96, 96, 96))
             painter.drawText(QRectF(text_rect), text, text_option)
 
@@ -194,8 +194,8 @@ class FileItemRenderer:
         lst = ([self.fileinfo.basename(), bytefmt.humanize(self.fileinfo.size())] +
                list(self.make_text()))
 
-        text_option = QTextOption(Qt.AlignLeft | Qt.AlignVCenter)
-        text_option.setWrapMode(QTextOption.NoWrap)
+        text_option = QTextOption(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        text_option.setWrapMode(QTextOption.WrapMode.NoWrap)
 
         total_width = self.tile_rect.width() - self.thumbnail_rect.width() - 8
 
@@ -203,7 +203,7 @@ class FileItemRenderer:
         x = self.thumbnail_rect.width() + 4
         for idx, text in enumerate(lst[:-1]):
             if idx != 0:
-                text_option.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+                text_option.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
 
             width = total_width * (widths[idx] // 100)
             painter.drawText(QRectF(x, 0,
@@ -218,11 +218,11 @@ class FileItemRenderer:
 
         if self.hovering and self.animation_timer is None:
             if not self.fileinfo.isdir() and not self.fileinfo.is_archive():
-                painter.setCompositionMode(QPainter.CompositionMode_Overlay)
+                painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Overlay)
                 painter.setOpacity(0.75)
                 self.paint_thumbnail(painter)
                 painter.setOpacity(1.0)
-                painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
+                painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
 
         if self.level_of_detail > 1:
             self.paint_metadata(painter)
@@ -250,8 +250,8 @@ class FileItemRenderer:
 
         target_width = self.tile_rect.width()
 
-        if fm.width(tmp) > target_width:
-            while fm.width(tmp + "…") > target_width:
+        if fm.boundingRect(tmp).width() > target_width:
+            while fm.boundingRect(tmp + "…").width() > target_width:
                 tmp = tmp[0:-1]
 
         if tmp != text:
@@ -260,7 +260,7 @@ class FileItemRenderer:
         painter.setFont(font)
 
         k = [0, 1, 1, 2, 3][self.level_of_detail]
-        painter.drawText(QPointF(self.tile_rect.width() / 2 - fm.width(text) / 2,
+        painter.drawText(QPointF(self.tile_rect.width() / 2 - fm.boundingRect(text).width() / 2,
                                  self.tile_rect.height() - 2 + 16 * row - 16 * k + 14),
                          text)
 
@@ -335,24 +335,24 @@ class FileItemRenderer:
         top_left_text, top_right_text, bottom_left_text, bottom_right = self.make_text()
 
         if top_left_text:
-            w = fm.width(top_left_text)
-            painter.setPen(Qt.NoPen)
+            w = fm.boundingRect(top_left_text).width()
+            painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QColor(255, 255, 255, 160))
             painter.drawRect(0, 0, w + 4, 16)
             painter.setPen(QColor(0, 0, 0))
             painter.drawText(2, 12, top_left_text)
 
         if top_right_text:
-            w = fm.width(top_right_text)
-            painter.setPen(Qt.NoPen)
+            w = fm.boundingRect(top_right_text).width()
+            painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QColor(255, 255, 255, 160))
             painter.drawRect(self.thumbnail_rect.width() - w - 4, 0, w + 4, 16)
             painter.setPen(QColor(0, 0, 0))
             painter.drawText(self.thumbnail_rect.width() - w - 2, 12, top_right_text)
 
         if bottom_left_text:
-            w = fm.width(bottom_left_text)
-            painter.setPen(Qt.NoPen)
+            w = fm.boundingRect(bottom_left_text).width()
+            painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QColor(255, 255, 255, 160))
             painter.drawRect(0, self.thumbnail_rect.height() - 16, w + 4, 16)
             painter.setPen(QColor(0, 0, 0))

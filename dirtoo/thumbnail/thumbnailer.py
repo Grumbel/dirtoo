@@ -21,9 +21,9 @@ import logging
 import os
 from collections import defaultdict, namedtuple
 
-from PyQt5.QtCore import Qt, QObject, pyqtSignal, QThread, QTimerEvent
-from PyQt5.QtDBus import QDBusConnection
-from PyQt5.QtGui import QImage
+from PyQt6.QtCore import Qt, QObject, pyqtSignal, QThread, QTimerEvent
+from PyQt6.QtDBus import QDBusConnection
+from PyQt6.QtGui import QImage
 
 from dirtoo.dbus_thumbnailer import DBusThumbnailer, DBusThumbnailerError
 from dirtoo.filesystem.location import Location
@@ -215,7 +215,7 @@ class Thumbnailer(QObject):
 
         # startup and shutdown
         self._thread.started.connect(self._worker.init)
-        self.sig_close_requested.connect(self._worker.close, type=Qt.BlockingQueuedConnection)  # type: ignore
+        self.sig_close_requested.connect(self._worker.close, type=Qt.ConnectionType.BlockingQueuedConnection)  # type: ignore
 
         # requests to the worker
         self.sig_thumbnail_requested.connect(self._worker.on_thumbnail_requested)

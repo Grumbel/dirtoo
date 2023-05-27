@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from PyQt5.QtCore import QRect
+from PyQt6.QtCore import QRect
 
 
 def make_unscaled_rect(sw: int, sh: int, tw: int, th: int) -> QRect:

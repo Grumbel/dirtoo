@@ -17,7 +17,7 @@
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt6.QtCore import QObject, pyqtSignal
 
 from dirtoo.filesystem.file_info import FileInfo
 

@@ -17,9 +17,9 @@
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPalette, QKeySequence, QFocusEvent
-from PyQt5.QtWidgets import QLineEdit, QShortcut
+from PyQt6.QtCore import Qt, QKeyCombination
+from PyQt6.QtGui import QPalette, QKeySequence, QFocusEvent, QShortcut
+from PyQt6.QtWidgets import QLineEdit
 
 from dirtoo.image.icon import load_icon
 
@@ -38,30 +38,30 @@ class FilterLineEdit(QLineEdit):
         self.history: list[str] = []
         self.history_idx = 0
 
-        action = self.addAction(load_icon("window-close"), QLineEdit.TrailingPosition)
+        action = self.addAction(load_icon("window-close"), QLineEdit.ActionPosition.TrailingPosition)
         action.triggered.connect(self.on_delete_button)
         action.setToolTip("Clear the filter and hide it")
 
-        self.addAction(self.controller.actions.filter_pin, QLineEdit.TrailingPosition)
+        self.addAction(self.controller.actions.filter_pin, QLineEdit.ActionPosition.TrailingPosition)
 
-        shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_P), self)
-        shortcut.setContext(Qt.WindowShortcut)
+        shortcut = QShortcut(QKeySequence(QKeyCombination(Qt.Modifier.CTRL, Qt.Key.Key_P)), self)
+        shortcut.setContext(Qt.ShortcutContext.WindowShortcut)
         shortcut.activated.connect(self.controller.actions.filter_pin.trigger)
 
-        shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_G), self)
-        shortcut.setContext(Qt.WidgetShortcut)
+        shortcut = QShortcut(QKeySequence(QKeyCombination(Qt.Modifier.CTRL, Qt.Key.Key_G)), self)
+        shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
         shortcut.activated.connect(self._on_reset)
 
-        shortcut = QShortcut(QKeySequence(Qt.Key_Escape), self)
-        shortcut.setContext(Qt.WidgetShortcut)
+        shortcut = QShortcut(QKeySequence(Qt.Key.Key_Escape), self)
+        shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
         shortcut.activated.connect(self._on_reset)
 
-        shortcut = QShortcut(QKeySequence(Qt.Key_Up), self)
-        shortcut.setContext(Qt.WidgetShortcut)
+        shortcut = QShortcut(QKeySequence(Qt.Key.Key_Up), self)
+        shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
         shortcut.activated.connect(self.history_up)
 
-        shortcut = QShortcut(QKeySequence(Qt.Key_Down), self)
-        shortcut.setContext(Qt.WidgetShortcut)
+        shortcut = QShortcut(QKeySequence(Qt.Key.Key_Down), self)
+        shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
         shortcut.activated.connect(self.history_down)
 
     def _on_reset(self) -> None:
@@ -87,7 +87,7 @@ class FilterLineEdit(QLineEdit):
             self.setText("")
 
         p = self.palette()
-        p.setColor(QPalette.Text, Qt.black)
+        p.setColor(QPalette.ColorRole.Text, Qt.GlobalColor.black)
         self.setPalette(p)
 
     def focusOutEvent(self, ev: QFocusEvent) -> None:
@@ -101,7 +101,7 @@ class FilterLineEdit(QLineEdit):
 
     def set_unused_text(self) -> None:
         p = self.palette()
-        p.setColor(QPalette.Text, Qt.gray)
+        p.setColor(QPalette.ColorRole.Text, Qt.GlobalColor.gray)
         self.setPalette(p)
         self.setText("enter a filter pattern here")
 

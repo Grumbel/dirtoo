@@ -17,9 +17,9 @@
 
 from enum import Enum
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPalette, QColor
-from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QHBoxLayout, QSizePolicy
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QPalette, QColor
+from PyQt6.QtWidgets import QWidget, QLabel, QPushButton, QHBoxLayout, QSizePolicy
 
 from dirtoo.image.icon import load_icon
 
@@ -38,7 +38,7 @@ class MessageArea(QWidget):
 
         # self.setStyleSheet("background-color: #fcf7b6;")
         pal = QPalette()
-        pal.setColor(QPalette.Background, QColor("#fcf7b6"))
+        pal.setColor(QPalette.ColorRole.Base, QColor("#fcf7b6"))
         self.setPalette(pal)
         self.setAutoFillBackground(True)
 
@@ -49,27 +49,27 @@ class MessageArea(QWidget):
         ]
 
         self._icon_label = QLabel()
-        self._icon_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self._icon_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self._icon_label.setMargin(8)
 
         self._label = QLabel()
         self._label.setWordWrap(True)
-        # self._label.setAlignment(Qt.AlignHCenter)
+        # self._label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self._label.setMargin(4)
-        self._label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self._label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self._label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self._label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
 
         self._close_btn = QPushButton(load_icon("window-close"), "")
         self._close_btn.setFlat(True)
-        self._close_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self._close_btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self._close_btn.clicked.connect(self._on_close_btn_triggerd)
 
         self._hbox = QHBoxLayout()
         self._hbox.setContentsMargins(0, 0, 0, 0)
         # self._hbox.setContentsMargins(0,0,0,0)
-        self._hbox.addWidget(self._icon_label, 0, Qt.AlignTop)
+        self._hbox.addWidget(self._icon_label, 0, Qt.AlignmentFlag.AlignTop)
         self._hbox.addWidget(self._label)
-        self._hbox.addWidget(self._close_btn, 0, Qt.AlignTop)
+        self._hbox.addWidget(self._close_btn, 0, Qt.AlignmentFlag.AlignTop)
 
         self.setLayout(self._hbox)
 

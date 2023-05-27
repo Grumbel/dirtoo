@@ -21,21 +21,21 @@ import numpy
 import numpy.typing as npt
 from scipy.ndimage.filters import gaussian_filter
 
-from PyQt5.QtGui import QImage
+from PyQt6.QtGui import QImage
 
 
 def drop_shadow(image: QImage) -> QImage:
-    if image.format() != QImage.Format_ARGB32:
-        image = image.convertToFormat(QImage.Format_ARGB32)
+    if image.format() != QImage.Format.Format_ARGB32:
+        image = image.convertToFormat(QImage.Format.Format_ARGB32)
 
     bits = image.bits()
-    bits.setsize(image.byteCount())
+    bits.setsize(image.sizeInBytes())
 
     shape = (image.width() * image.height())
     strides = (4,)
 
     alpha: npt.NDArray[numpy.uint8] = numpy.ndarray(shape=shape, dtype=numpy.uint8,
-                                                    buffer=bytes(bits.asarray()), strides=strides, offset=3)
+                                                    buffer=bits.asstring(), strides=strides, offset=3)
     color: npt.NDArray[numpy.uint8] = numpy.ndarray(shape=shape, dtype=numpy.uint8)
     color.fill(0)
 
@@ -45,21 +45,21 @@ def drop_shadow(image: QImage) -> QImage:
 
     arr = numpy.dstack((color, color, color, alpha))
 
-    return QImage(arr, image.width(), image.height(), QImage.Format_ARGB32)
+    return QImage(arr.tobytes(), image.width(), image.height(), QImage.Format.Format_ARGB32)
 
 
 def white_outline(image: QImage, sigma: int = 6, repeat: int = 6) -> QImage:
-    if image.format() != QImage.Format_ARGB32:
-        image = image.convertToFormat(QImage.Format_ARGB32)
+    if image.format() != QImage.Format.Format_ARGB32:
+        image = image.convertToFormat(QImage.Format.Format_ARGB32)
 
     bits = image.bits()
-    bits.setsize(image.byteCount())
+    bits.setsize(image.sizeInBytes())
 
     shape = (image.width() * image.height())
     strides = (4,)
 
     alpha: npt.NDArray[numpy.uint8] = numpy.ndarray(shape=shape, dtype=numpy.uint8,
-                                                    buffer=bytes(bits.asarray()), strides=strides, offset=3)
+                                                    buffer=bytes(bits.asstring()), strides=strides, offset=3)
     color: npt.NDArray[numpy.uint8] = numpy.ndarray(shape=shape, dtype=numpy.uint8)
     color.fill(255)
 
@@ -75,7 +75,7 @@ def white_outline(image: QImage, sigma: int = 6, repeat: int = 6) -> QImage:
 
     arr = numpy.dstack((color, color, color, alpha))
 
-    return QImage(arr, image.width(), image.height(), QImage.Format_ARGB32)
+    return QImage(arr.tobytes(), image.width(), image.height(), QImage.Format.Format_ARGB32)
 
 
 # EOF #

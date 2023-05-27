@@ -23,7 +23,7 @@ import signal
 import sys
 import xdg.BaseDirectory
 
-from PyQt5.QtCore import QCoreApplication
+from PyQt6.QtCore import QCoreApplication
 
 from dirtoo.metadata.metadata_collector import MetaDataCollector
 from dirtoo.filesystem.stdio_filesystem import StdioFilesystem

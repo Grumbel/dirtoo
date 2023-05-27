@@ -17,9 +17,9 @@
 
 from typing import TYPE_CHECKING, Any, Optional, Tuple
 
-from PyQt5.QtCore import Qt, QPoint, QSize
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QSizePolicy
-from PyQt5.QtGui import QDragEnterEvent, QDropEvent, QDragLeaveEvent, QMouseEvent
+from PyQt6.QtCore import Qt, QPoint, QSize
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QSizePolicy
+from PyQt6.QtGui import QDragEnterEvent, QDropEvent, QDragLeaveEvent, QMouseEvent
 
 from dirtoo.filesystem.location import Location
 from dirtoo.gui.push_button import PushButton
@@ -109,7 +109,7 @@ class LocationButtonBar(QWidget):
                 button = LocationButton(self._controller, location, basename)
                 button.setStyleSheet("padding: 3px 4px;")
 
-            button.setContextMenuPolicy(Qt.CustomContextMenu)
+            button.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             button.customContextMenuRequested.connect(lambda pos, button=button, location=location:
                                                       self._on_button_context_menu(button, location, pos))
 
@@ -118,11 +118,11 @@ class LocationButtonBar(QWidget):
             button.middle_clicked.connect(lambda location=location:
                                           self._controller.new_controller().set_location(location))
 
-            button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+            button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
             button.setMinimumWidth(4)
             self._buttons.append((location, button))
 
-            layout.addWidget(button, Qt.AlignCenter)
+            layout.addWidget(button, Qt.AlignmentFlag.AlignCenter)
 
         if button is not None:
             button.setDown(True)
@@ -145,7 +145,7 @@ class LocationButtonBar(QWidget):
                 w = old_layout.itemAt(i).widget()
                 if w is not None:
                     w.setParent(None)  # type: ignore
-            from PyQt5 import sip  # pyright: ignore
+            from PyQt6 import sip  # pyright: ignore
             sip.delete(old_layout)
 
     def mousePressEvent(self, ev: QMouseEvent) -> None:

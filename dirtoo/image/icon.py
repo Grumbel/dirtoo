@@ -17,7 +17,7 @@
 
 import logging
 
-from PyQt5.QtGui import QIcon
+from PyQt6.QtGui import QIcon
 
 
 logger = logging.getLogger(__name__)

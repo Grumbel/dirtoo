@@ -15,30 +15,30 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Sequence, Tuple
+from typing import cast, Sequence, Tuple
 
-from PyQt5.QtCore import Qt, QUrl
+from PyQt6.QtCore import Qt, QUrl, QByteArray
 
 
 def parse_gnome_copied_files(data: bytes) -> Tuple[Qt.DropAction, Sequence[QUrl]]:
     lines = data.split(b'\n')
 
     if lines[0] == b"copy":
-        action = Qt.CopyAction
+        action = Qt.DropAction.CopyAction
     elif lines[0] == b"cut":
-        action = Qt.MoveAction
+        action = Qt.DropAction.MoveAction
     else:
         raise Exception("unknown action: {!r}".format(lines[0]))
 
-    urls = [QUrl.fromEncoded(d) for d in lines[1:]]
+    urls = [QUrl.fromEncoded(cast(QByteArray, d)) for d in lines[1:]]
 
     return action, urls
 
 
 def make_gnome_copied_files(action: Qt.DropAction, urls: Sequence[QUrl]) -> bytes:
-    if action == Qt.CopyAction:
+    if action == Qt.DropAction.CopyAction:
         gnome_action = b'copy'
-    elif action == Qt.MoveAction:
+    elif action == Qt.DropAction.MoveAction:
         gnome_action = b'move'
     else:
         raise Exception("unknown action: {}".format(action))

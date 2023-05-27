@@ -19,8 +19,8 @@ from typing import Optional, Sequence
 
 import html
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLayout,
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import (QWidget, QDialog, QPushButton, QLayout,
                              QHBoxLayout, QVBoxLayout, QSizePolicy,
                              QDialogButtonBox, QLabel, QListWidget,
                              QAbstractScrollArea, QGroupBox)
@@ -30,7 +30,7 @@ from dirtoo.image.icon import load_icon
 
 class TransferRequestDialog(QDialog):
 
-    Cancel = QDialog.Rejected
+    Cancel = QDialog.DialogCode.Rejected
     Move = 2
     Copy = 3
     Link = 4
@@ -47,13 +47,13 @@ class TransferRequestDialog(QDialog):
         # Widgets
         file_icon = QLabel()
         file_icon.setPixmap(load_icon("folder").pixmap(48))
-        file_icon.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        file_icon.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
         file_info = QLabel("Filename: <b>{}</b><br>"
                            "Size: 0 bytes<br>"
                            "Modified: Today".format(html.escape(filename)))
-        file_info.setTextFormat(Qt.RichText)
-        file_info.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        file_info.setTextFormat(Qt.TextFormat.RichText)
+        file_info.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         # Layout
         hbox = QHBoxLayout()
@@ -68,15 +68,15 @@ class TransferRequestDialog(QDialog):
         # Widgets
         move_icon = QLabel()
         move_icon.setPixmap(load_icon("stock_folder-move").pixmap(48))
-        move_icon.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+        move_icon.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
 
         header = QLabel("<big>A file transfer was requested.</big>")
-        header.setTextFormat(Qt.RichText)
+        header.setTextFormat(Qt.TextFormat.RichText)
         subheader = QLabel("Do you want to transfer the following files to the given directory?")
 
         source_files_widget = QGroupBox("Sources:")
         source_files_list = QListWidget()
-        source_files_list.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)
+        source_files_list.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
         for source_file in self._source_files:
             source_files_list.addItem(source_file)
 
@@ -86,7 +86,7 @@ class TransferRequestDialog(QDialog):
 
         arrow_label = QLabel()
         arrow_label.setPixmap(load_icon("down").pixmap(24))
-        arrow_label.setAlignment(Qt.AlignCenter)
+        arrow_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         target_directory_layout = self._make_file_info(self._target_directory)
         target_directory_widget = QGroupBox("Destination:")
@@ -94,16 +94,16 @@ class TransferRequestDialog(QDialog):
 
         # Widgets.ButtonBox
         button_box = QDialogButtonBox(self)
-        button_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        button_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
-        btn_cancel = button_box.addButton(QDialogButtonBox.Cancel)
+        btn_cancel = button_box.addButton(QDialogButtonBox.StandardButton.Cancel)
 
         btn_copy = QPushButton(load_icon("stock_folder-copy"), "Copy Files")
         btn_move = QPushButton(load_icon("stock_folder-move"), "Move Files")
         btn_link = QPushButton(load_icon("stock_folder-move"), "Link Files")
-        button_box.addButton(btn_move, QDialogButtonBox.AcceptRole)
-        button_box.addButton(btn_copy, QDialogButtonBox.AcceptRole)
-        button_box.addButton(btn_link, QDialogButtonBox.AcceptRole)
+        button_box.addButton(btn_move, QDialogButtonBox.ButtonRole.AcceptRole)
+        button_box.addButton(btn_copy, QDialogButtonBox.ButtonRole.AcceptRole)
+        button_box.addButton(btn_link, QDialogButtonBox.ButtonRole.AcceptRole)
         btn_move.setDefault(True)
 
         # Layout

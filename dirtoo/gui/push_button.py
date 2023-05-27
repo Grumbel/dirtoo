@@ -17,11 +17,11 @@
 
 from typing import TYPE_CHECKING, Any
 
-from PyQt5.QtCore import pyqtSignal, Qt
-from PyQt5.QtWidgets import QPushButton
+from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt6.QtWidgets import QPushButton
 
 if TYPE_CHECKING:
-    from PyQt5.QtGui import QMouseEvent
+    from PyQt6.QtGui import QMouseEvent
 
 
 class PushButton(QPushButton):
@@ -35,7 +35,7 @@ class PushButton(QPushButton):
         super().mouseMoveEvent(ev)
 
         if not ev.isAccepted():
-            if ev.buttons() & Qt.MiddleButton:
+            if ev.buttons() & Qt.MouseButton.MiddleButton:
                 ev.accept()
 
                 if self.hitButton(ev.pos()):
@@ -49,7 +49,7 @@ class PushButton(QPushButton):
         super().mousePressEvent(ev)
 
         if not ev.isAccepted():
-            if ev.button() == Qt.MiddleButton:
+            if ev.button() == Qt.MouseButton.MiddleButton:
                 ev.accept()
                 self.setDown(True)
                 self.repaint()
@@ -58,7 +58,7 @@ class PushButton(QPushButton):
         super().mouseReleaseEvent(ev)
 
         if not ev.isAccepted():
-            if ev.button() == Qt.MiddleButton:
+            if ev.button() == Qt.MouseButton.MiddleButton:
                 ev.accept()
                 self.setDown(False)
                 self.repaint()

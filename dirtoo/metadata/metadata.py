@@ -21,7 +21,7 @@ import os
 import logging
 
 from PyPDF2 import PdfFileReader
-from PyQt5.QtCore import QMimeDatabase
+from PyQt6.QtCore import QMimeDatabase
 
 from dirtoo.mediainfo import MediaInfo
 from dirtoo.archive.archiveinfo import ArchiveInfo

@@ -17,7 +17,7 @@
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtCore import pyqtBoundSignal
+from PyQt6.QtCore import pyqtBoundSignal
 
 if TYPE_CHECKING:
     from dirtoo.watcher.directory_watcher import DirectoryWatcher

@@ -19,8 +19,8 @@ from typing import Optional
 
 import html
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton,
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import (QWidget, QDialog, QPushButton,
                              QHBoxLayout, QVBoxLayout, QSizePolicy,
                              QDialogButtonBox, QLabel, QPlainTextEdit)
 
@@ -29,8 +29,8 @@ from dirtoo.image.icon import load_icon
 
 class TransferErrorDialog(QDialog):
 
-    Cancel = QDialog.Rejected
-    Skip = QDialog.Accepted
+    Cancel = QDialog.DialogCode.Rejected
+    Skip = QDialog.DialogCode.Accepted
     Retry = 3
 
     def __init__(self, source_file: str, target_file: str, error_msg: str, parent: Optional[QWidget]) -> None:
@@ -48,10 +48,10 @@ class TransferErrorDialog(QDialog):
         # Widgets
         move_icon = QLabel()
         move_icon.setPixmap(load_icon("error").pixmap(48))
-        move_icon.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+        move_icon.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
 
         header = QLabel("<big>An error occured while accessing '{}'</big>".format(html.escape(self._source_file)))
-        header.setTextFormat(Qt.RichText)
+        header.setTextFormat(Qt.TextFormat.RichText)
 
         error_widget = QPlainTextEdit()
         error_widget.setReadOnly(True)
@@ -61,14 +61,14 @@ class TransferErrorDialog(QDialog):
 
         # Widgets.ButtonBox
         button_box = QDialogButtonBox(self)
-        button_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        button_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
-        btn_cancel = button_box.addButton(QDialogButtonBox.Cancel)
+        btn_cancel = button_box.addButton(QDialogButtonBox.StandardButton.Cancel)
         btn_skip = QPushButton("Skip")
         btn_retry = QPushButton("Retry")
 
-        button_box.addButton(btn_skip, QDialogButtonBox.AcceptRole)
-        button_box.addButton(btn_retry, QDialogButtonBox.AcceptRole)
+        button_box.addButton(btn_skip, QDialogButtonBox.ButtonRole.AcceptRole)
+        button_box.addButton(btn_retry, QDialogButtonBox.ButtonRole.AcceptRole)
         btn_skip.setDefault(True)
 
         # Layout

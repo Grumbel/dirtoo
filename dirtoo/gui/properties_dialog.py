@@ -23,8 +23,8 @@ import pwd
 import stat
 import io
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLineEdit,
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import (QWidget, QDialog, QPushButton, QLineEdit,
                              QGroupBox, QGridLayout, QVBoxLayout, QDialogButtonBox,
                              QLabel, QTabWidget, QPlainTextEdit)
 
@@ -49,9 +49,9 @@ class PropertiesDialog(QDialog):
         # Widgets
         icon_label = QLabel()
         icon_label.setPixmap(load_icon("document").pixmap(48))
-        icon_label.setAlignment(Qt.AlignHCenter)
+        icon_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         name_label = QLabel(self._fileinfo.basename())
-        name_label.setAlignment(Qt.AlignHCenter)
+        name_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
         general_tab = self._make_general_tab()
         metadata_tab = self._make_metadata_tab()
@@ -60,7 +60,7 @@ class PropertiesDialog(QDialog):
         tab_widget.addTab(general_tab, "General")
         tab_widget.addTab(metadata_tab, "MetaData")
 
-        button_box = QDialogButtonBox(QDialogButtonBox.Close | QDialogButtonBox.Reset)
+        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Close | QDialogButtonBox.StandardButton.Reset)
         button_box.rejected.connect(self.reject)
 
         # Layout
@@ -202,53 +202,53 @@ class PropertiesDialog(QDialog):
         vbox = QVBoxLayout()
 
         grid = QGridLayout()
-        grid.addWidget(name_label, 0, 0, Qt.AlignRight)
+        grid.addWidget(name_label, 0, 0, Qt.AlignmentFlag.AlignRight)
         grid.addWidget(name_edit, 0, 1)
-        grid.addWidget(abspath_label, 1, 0, Qt.AlignRight)
+        grid.addWidget(abspath_label, 1, 0, Qt.AlignmentFlag.AlignRight)
         grid.addWidget(abspath_edit, 1, 1)
-        grid.addWidget(size_label, 2, 0, Qt.AlignRight)
+        grid.addWidget(size_label, 2, 0, Qt.AlignmentFlag.AlignRight)
         grid.addWidget(size_edit, 2, 1)
-        grid.addWidget(mimetype_label, 3, 0, Qt.AlignRight)
+        grid.addWidget(mimetype_label, 3, 0, Qt.AlignmentFlag.AlignRight)
         grid.addWidget(mimetype_edit, 3, 1)
 
         size_box.setLayout(grid)
         vbox.addWidget(size_box)
 
         grid = QGridLayout()
-        grid.addWidget(user_label, 0, 0, Qt.AlignRight)
+        grid.addWidget(user_label, 0, 0, Qt.AlignmentFlag.AlignRight)
         grid.addWidget(user_edit, 0, 1)
-        grid.addWidget(group_label, 1, 0, Qt.AlignRight)
+        grid.addWidget(group_label, 1, 0, Qt.AlignmentFlag.AlignRight)
         grid.addWidget(group_edit, 1, 1)
         ownership_box.setLayout(grid)
         vbox.addWidget(ownership_box)
 
         grid = QGridLayout()
-        grid.addWidget(atime_label, 0, 0, Qt.AlignRight)
+        grid.addWidget(atime_label, 0, 0, Qt.AlignmentFlag.AlignRight)
         grid.addWidget(atime_edit, 0, 1)
-        grid.addWidget(mtime_label, 1, 0, Qt.AlignRight)
+        grid.addWidget(mtime_label, 1, 0, Qt.AlignmentFlag.AlignRight)
         grid.addWidget(mtime_edit, 1, 1)
-        grid.addWidget(ctime_label, 2, 0, Qt.AlignRight)
+        grid.addWidget(ctime_label, 2, 0, Qt.AlignmentFlag.AlignRight)
         grid.addWidget(ctime_edit, 2, 1)
         time_box.setLayout(grid)
         vbox.addWidget(time_box)
 
         grid = QGridLayout()
-        grid.addWidget(access_user_label, 0, 0, Qt.AlignRight)
+        grid.addWidget(access_user_label, 0, 0, Qt.AlignmentFlag.AlignRight)
         grid.addWidget(access_user_read, 0, 1)
         grid.addWidget(access_user_write, 0, 2)
         grid.addWidget(access_user_exec, 0, 3)
 
-        grid.addWidget(access_group_label, 1, 0, Qt.AlignRight)
+        grid.addWidget(access_group_label, 1, 0, Qt.AlignmentFlag.AlignRight)
         grid.addWidget(access_group_read, 1, 1)
         grid.addWidget(access_group_write, 1, 2)
         grid.addWidget(access_group_exec, 1, 3)
 
-        grid.addWidget(access_other_label, 2, 0, Qt.AlignRight)
+        grid.addWidget(access_other_label, 2, 0, Qt.AlignmentFlag.AlignRight)
         grid.addWidget(access_other_read, 2, 1)
         grid.addWidget(access_other_write, 2, 2)
         grid.addWidget(access_other_exec, 2, 3)
 
-        grid.addWidget(access_special_label, 3, 0, Qt.AlignRight)
+        grid.addWidget(access_special_label, 3, 0, Qt.AlignmentFlag.AlignRight)
         grid.addWidget(access_special_setuid, 3, 1)
         grid.addWidget(access_special_setgid, 3, 2)
         grid.addWidget(access_special_sticky, 3, 3)

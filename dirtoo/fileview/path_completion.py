@@ -19,7 +19,7 @@ from typing import cast, Sequence, Tuple
 
 import os
 
-from PyQt5.QtCore import pyqtSignal, pyqtBoundSignal
+from PyQt6.QtCore import pyqtSignal, pyqtBoundSignal
 
 from dirtoo.fileview.worker_thread import WorkerThread, Worker
 

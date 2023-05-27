@@ -22,11 +22,11 @@ import logging
 import itertools
 from collections import defaultdict
 
-from PyQt5.QtCore import Qt, QRectF, QTimerEvent
-from PyQt5.QtGui import (QBrush, QIcon, QColor, QPainter, QImage,
+from PyQt6.QtCore import Qt, QRectF, QTimerEvent, QKeyCombination
+from PyQt6.QtGui import (QBrush, QIcon, QColor, QPainter, QImage,
                          QKeySequence, QContextMenuEvent, QPaintEvent,
-                         QMouseEvent, QMoveEvent, QKeyEvent, QResizeEvent)
-from PyQt5.QtWidgets import QGraphicsView, QShortcut
+                         QMouseEvent, QMoveEvent, QKeyEvent, QResizeEvent, QShortcut)
+from PyQt6.QtWidgets import QGraphicsView
 
 from dirtoo.dbus_thumbnailer import DBusThumbnailerError
 from dirtoo.filecollection.file_collection import FileCollection
@@ -54,10 +54,10 @@ class FileView(QGraphicsView):
 
         self._controller = controller
 
-        self.setCacheMode(QGraphicsView.CacheBackground)
+        self.setCacheMode(QGraphicsView.CacheModeFlag.CacheBackground)
 
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        # self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        # self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
 
         self._show_filtered = False
 
@@ -89,21 +89,21 @@ class FileView(QGraphicsView):
         self.apply_zoom()
         self._cursor_item: Optional[FileItem] = None
         self._crop_thumbnails = False
-        self.setBackgroundBrush(QBrush(Qt.white, Qt.SolidPattern))
+        self.setBackgroundBrush(QBrush(Qt.GlobalColor.white, Qt.BrushStyle.SolidPattern))
         self._resize_timer: Optional[int] = None
 
-        self.setDragMode(QGraphicsView.RubberBandDrag)
+        self.setDragMode(QGraphicsView.DragMode.RubberBandDrag)
 
-        self.setRenderHints(QPainter.SmoothPixmapTransform |
-                            QPainter.TextAntialiasing |
-                            QPainter.Antialiasing)
+        self.setRenderHints(QPainter.RenderHint.SmoothPixmapTransform |
+                            QPainter.RenderHint.TextAntialiasing |
+                            QPainter.RenderHint.Antialiasing)
 
-        shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_G), self)
-        shortcut.setContext(Qt.WidgetShortcut)
+        shortcut = QShortcut(QKeySequence(QKeyCombination(Qt.Modifier.CTRL, Qt.Key.Key_G)), self)
+        shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
         shortcut.activated.connect(self._on_reset)
 
-        shortcut = QShortcut(QKeySequence(Qt.Key_Slash), self)
-        shortcut.setContext(Qt.WidgetShortcut)
+        shortcut = QShortcut(QKeySequence(Qt.Key.Key_Slash), self)
+        shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
         shortcut.activated.connect(lambda: self._controller.show_location_toolbar(False))
 
         self._leap_widget = LeapWidget(self)
@@ -194,34 +194,34 @@ class FileView(QGraphicsView):
         self.ensureVisible(self._cursor_item)
 
     def keyPressEvent(self, ev: QKeyEvent) -> None:
-        if ev.key() == Qt.Key_Escape:
+        if ev.key() == Qt.Key.Key_Escape:
             self._scene.clearSelection()
             item = self._cursor_item
             self._cursor_item = None
             if item is not None:
                 item.update()
-        elif ev.key() == Qt.Key_Space and ev.modifiers() & Qt.ControlModifier:
+        elif ev.key() == Qt.Key.Key_Space and ev.modifiers() & Qt.KeyboardModifier.ControlModifier:
             if self._cursor_item is not None:
                 self._cursor_item.setSelected(not self._cursor_item.isSelected())
-        elif ev.key() == Qt.Key_Left:
-            if self._cursor_item is not None and ev.modifiers() & Qt.ShiftModifier:
+        elif ev.key() == Qt.Key.Key_Left:
+            if self._cursor_item is not None and ev.modifiers() & Qt.KeyboardModifier.ShiftModifier:
                 self._cursor_item.setSelected(True)
             self.cursor_move(-1, 0)
-        elif ev.key() == Qt.Key_Right:
-            if self._cursor_item is not None and ev.modifiers() & Qt.ShiftModifier:
+        elif ev.key() == Qt.Key.Key_Right:
+            if self._cursor_item is not None and ev.modifiers() & Qt.KeyboardModifier.ShiftModifier:
                 self._cursor_item.setSelected(True)
             self.cursor_move(+1, 0)
-        elif ev.key() == Qt.Key_Up:
-            if self._cursor_item is not None and ev.modifiers() & Qt.ShiftModifier:
+        elif ev.key() == Qt.Key.Key_Up:
+            if self._cursor_item is not None and ev.modifiers() & Qt.KeyboardModifier.ShiftModifier:
                 self._cursor_item.setSelected(True)
             self.cursor_move(0, -1)
-        elif ev.key() == Qt.Key_Down:
-            if self._cursor_item is not None and ev.modifiers() & Qt.ShiftModifier:
+        elif ev.key() == Qt.Key.Key_Down:
+            if self._cursor_item is not None and ev.modifiers() & Qt.KeyboardModifier.ShiftModifier:
                 self._cursor_item.setSelected(True)
             self.cursor_move(0, +1)
-        elif ev.key() == Qt.Key_Return:
+        elif ev.key() == Qt.Key.Key_Return:
             if self._cursor_item is not None:
-                self._cursor_item.click_action(new_window=bool(ev.modifiers() & Qt.ShiftModifier))
+                self._cursor_item.click_action(new_window=bool(ev.modifiers() & Qt.KeyboardModifier.ShiftModifier))
         elif ev.text() != "":
             self._leap_widget.show()
             self._leap_widget._line_edit.setText(ev.text())
@@ -548,7 +548,7 @@ class FileView(QGraphicsView):
 
     def set_filtered(self, filtered: bool) -> None:
         if filtered:
-            self.setBackgroundBrush(QBrush(QColor(220, 220, 255), Qt.SolidPattern))
+            self.setBackgroundBrush(QBrush(QColor(220, 220, 255), Qt.BrushStyle.SolidPattern))
         else:
             self.setBackgroundBrush(QBrush())
 
@@ -581,7 +581,7 @@ class FileView(QGraphicsView):
             item.update()
 
     def contextMenuEvent(self, ev: QContextMenuEvent) -> None:
-        if ev.reason() == QContextMenuEvent.Keyboard:
+        if ev.reason() == QContextMenuEvent.Reason.Keyboard:
             if self._cursor_item is None:
                 self._controller.on_context_menu(ev.globalPos())
             else:

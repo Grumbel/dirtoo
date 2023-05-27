@@ -19,8 +19,8 @@ from typing import cast, Optional
 
 import html
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (QWidget, QDialog, QPushButton, QLayout,
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import (QWidget, QDialog, QPushButton, QLayout,
                              QHBoxLayout, QVBoxLayout, QSizePolicy,
                              QDialogButtonBox, QLabel, QCheckBox, QGroupBox)
 
@@ -47,13 +47,13 @@ class ConflictDialog(QDialog):
         # Widgets
         file_icon = QLabel()
         file_icon.setPixmap(load_icon("document").pixmap(48))
-        file_icon.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        file_icon.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
         file_info = QLabel("Filename: <b>{}</b><br>"
                            "Size: 0 bytes<br>"
                            "Modified: Today".format(html.escape(filename)))
-        file_info.setTextFormat(Qt.RichText)
-        file_info.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        file_info.setTextFormat(Qt.TextFormat.RichText)
+        file_info.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         rename_btn = QPushButton("Rename")
 
@@ -77,10 +77,10 @@ class ConflictDialog(QDialog):
         # Widgets
         move_icon = QLabel()
         move_icon.setPixmap(load_icon("stock_folder-move").pixmap(48))
-        move_icon.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+        move_icon.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
 
         header = QLabel("<big>This folder already contains a file named <b>{}</b></big>".format(self._source_filename))
-        header.setTextFormat(Qt.RichText)
+        header.setTextFormat(Qt.TextFormat.RichText)
 
         # subheader = QLabel("Would you like to use:")
         subheader = QLabel("Replace the existing file in the destination folder?")
@@ -90,7 +90,7 @@ class ConflictDialog(QDialog):
 
         arrow_label = QLabel()
         arrow_label.setPixmap(load_icon("down").pixmap(24))
-        arrow_label.setAlignment(Qt.AlignCenter)
+        arrow_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # subheader2 = QLabel("to overwrite:")
         target_file_layout = self._make_file_info(self._target_filename)
@@ -102,14 +102,14 @@ class ConflictDialog(QDialog):
 
         # Widgets.ButtonBox
         button_box = QDialogButtonBox(self)
-        button_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        button_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         btn_replace = QPushButton("Replace")
         btn_skip = QPushButton("Skip")
 
-        btn_cancel = button_box.addButton(QDialogButtonBox.Cancel)
-        button_box.addButton(btn_replace, QDialogButtonBox.YesRole)
-        button_box.addButton(btn_skip, QDialogButtonBox.NoRole)
+        btn_cancel = button_box.addButton(QDialogButtonBox.StandardButton.Cancel)
+        button_box.addButton(btn_replace, QDialogButtonBox.ButtonRole.YesRole)
+        button_box.addButton(btn_skip, QDialogButtonBox.ButtonRole.NoRole)
 
         btn_replace.setDefault(True)
 

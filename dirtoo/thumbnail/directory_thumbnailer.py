@@ -19,8 +19,8 @@ from typing import TYPE_CHECKING, cast, Callable, Optional, Dict, Sequence, Tupl
 
 import logging
 
-from PyQt5.QtCore import QObject, QSize, QRect, QPoint, pyqtSignal
-from PyQt5.QtGui import QImage, QPainter
+from PyQt6.QtCore import QObject, QSize, QRect, QPoint, pyqtSignal
+from PyQt6.QtGui import QImage, QPainter
 
 from dirtoo.dbus_thumbnailer import DBusThumbnailer
 from dirtoo.filecollection.file_collection import FileCollection
@@ -139,11 +139,11 @@ class DirectoryThumbnailerTask(QObject):
 
     def _build_directory_thumbnail(self) -> None:
         # print("_build_directory_thumbnail: ", len(self._thumbnails))
-        output = QImage(QSize(256, 256), QImage.Format_ARGB32)
+        output = QImage(QSize(256, 256), QImage.Format.Format_ARGB32)
         output.fill(0)
         painter = QPainter(output)
-        painter.setRenderHints(QPainter.SmoothPixmapTransform |
-                               QPainter.Antialiasing)
+        painter.setRenderHints(QPainter.RenderHint.SmoothPixmapTransform |
+                               QPainter.RenderHint.Antialiasing)
 
         # (x1, y1, x2, y2) coordinates normalized to [0 - 1] for thumbnail arrangement
         specs: Dict[int, Sequence[Tuple[float, ...]]] = {

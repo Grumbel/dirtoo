@@ -22,8 +22,8 @@ import argparse
 import sys
 import os
 
-from PyQt5.QtCore import QCoreApplication
-from PyQt5.QtDBus import QDBusConnection
+from PyQt6.QtCore import QCoreApplication
+from PyQt6.QtDBus import QDBusConnection
 
 from dirtoo.dbus_thumbnailer import DBusThumbnailer, DBusThumbnailerListener, DBusThumbnailerError
 from dirtoo.dbus_thumbnail_cache import DBusThumbnailCache

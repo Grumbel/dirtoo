@@ -17,7 +17,7 @@
 
 from typing import Any, Optional
 
-from PyQt5.QtCore import QObject, QSettings
+from PyQt6.QtCore import QObject, QSettings
 
 
 class Settings(QObject):
@@ -27,7 +27,7 @@ class Settings(QObject):
         self.settings: QSettings
 
     def init(self, filename: str) -> None:
-        self.settings = QSettings(filename, QSettings.IniFormat)
+        self.settings = QSettings(filename, QSettings.Format.IniFormat)
 
     def value(self, name: str, default: Optional[Any] = None, kind: Optional[Any] = None) -> Any:
         if kind is None:

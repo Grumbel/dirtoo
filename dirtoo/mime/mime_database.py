@@ -15,8 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from PyQt5.QtCore import QMimeType, QMimeDatabase
-from PyQt5.QtGui import QIcon
+from PyQt6.QtCore import QMimeType, QMimeDatabase
+from PyQt6.QtGui import QIcon
 
 from dirtoo.filesystem.location import Location
 from dirtoo.fileview.virtual_filesystem import VirtualFilesystem

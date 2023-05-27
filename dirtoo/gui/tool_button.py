@@ -17,11 +17,11 @@
 
 from typing import TYPE_CHECKING
 
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import QToolButton
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtWidgets import QToolButton
 
 if TYPE_CHECKING:
-    from PyQt5.QtGui import QMouseEvent
+    from PyQt6.QtGui import QMouseEvent
 
 
 class ToolButton(QToolButton):
@@ -35,7 +35,7 @@ class ToolButton(QToolButton):
         self._middle_pressed = False
 
     def mousePressEvent(self, ev: 'QMouseEvent') -> None:
-        if ev.button() != Qt.MiddleButton:
+        if ev.button() != Qt.MouseButton.MiddleButton:
             if self._middle_pressed:
                 ev.ignore()
             else:
@@ -45,7 +45,7 @@ class ToolButton(QToolButton):
             self._middle_pressed = True
 
     def mouseReleaseEvent(self, ev: 'QMouseEvent') -> None:
-        if ev.button() != Qt.MiddleButton:
+        if ev.button() != Qt.MouseButton.MiddleButton:
             if self._middle_pressed:
                 ev.ignore()
             else:

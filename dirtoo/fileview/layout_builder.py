@@ -17,8 +17,8 @@
 
 from typing import cast, Any, Callable, Dict, Sequence, Hashable, Tuple, Optional
 
-from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QGraphicsItem, QGraphicsScene
+from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import QGraphicsItem, QGraphicsScene
 
 from dirtoo.fileview.layout import RootLayout, HBoxLayout, TileLayout, TileStyle, ItemLayout, VSpacer
 from dirtoo.fileview.file_item import FileItem

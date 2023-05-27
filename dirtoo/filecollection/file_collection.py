@@ -22,7 +22,7 @@ import logging
 from collections import defaultdict
 from sortedcontainers import SortedList
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt6.QtCore import QObject, pyqtSignal
 
 from dirtoo.filesystem.file_info import FileInfo
 from dirtoo.filecollection.filter import Filter

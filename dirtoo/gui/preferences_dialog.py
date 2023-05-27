@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from PyQt5.QtWidgets import (QDialog, QDialogButtonBox, QVBoxLayout,
+from PyQt6.QtWidgets import (QDialog, QDialogButtonBox, QVBoxLayout,
                              QGroupBox, QCheckBox, QSpinBox, QLabel,
                              QLineEdit)
 
@@ -43,7 +43,7 @@ class PreferencesDialog(QDialog):
         self._vbox.addWidget(self._make_layout_group_box())
         self._vbox.addWidget(self._make_cache_group_box())
 
-        self._button_box = QDialogButtonBox(QDialogButtonBox.Close)
+        self._button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         self._button_box.rejected.connect(self.reject)
         self._vbox.addWidget(self._button_box)
 

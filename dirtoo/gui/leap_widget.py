@@ -17,9 +17,9 @@
 
 from typing import TYPE_CHECKING, cast, Optional
 
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import (QLineEdit, QVBoxLayout, QWidget)
-from PyQt5.QtGui import QFocusEvent, QKeyEvent, QShowEvent, QHideEvent
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtWidgets import (QLineEdit, QVBoxLayout, QWidget)
+from PyQt6.QtGui import QFocusEvent, QKeyEvent, QShowEvent, QHideEvent
 
 if TYPE_CHECKING:
     from dirtoo.fileview.file_view import FileView
@@ -31,10 +31,10 @@ class LeapWidget(QWidget):
 
     def __init__(self, parent: Optional['FileView']) -> None:
         super().__init__(parent,
-                         Qt.Window |
-                         Qt.WindowStaysOnTopHint |
-                         # Qt.X11BypassWindowManagerHint |
-                         Qt.FramelessWindowHint)
+                         Qt.WindowType.Window |
+                         Qt.WindowType.WindowStaysOnTopHint |
+                         # Qt.WindowType.X11BypassWindowManagerHint |
+                         Qt.WindowType.FramelessWindowHint)
 
         self._build_gui()
 
@@ -69,15 +69,15 @@ class LeapWidget(QWidget):
         super().hideEvent(ev)
 
     def keyPressEvent(self, ev: QKeyEvent) -> None:
-        if ev.key() in (Qt.Key_Return, Qt.Key_Enter):
+        if ev.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
             self.parentWidget().keyPressEvent(ev)
         else:
             super().keyPressEvent(ev)
-            if ev.key() == Qt.Key_Escape:
+            if ev.key() == Qt.Key.Key_Escape:
                 self.hide()
-            elif ev.key() == Qt.Key_Up:
+            elif ev.key() == Qt.Key.Key_Up:
                 self.sig_leap.emit(self._line_edit.text(), False, True)
-            elif ev.key() == Qt.Key_Down:
+            elif ev.key() == Qt.Key.Key_Down:
                 self.sig_leap.emit(self._line_edit.text(), True, True)
 
     def on_text_changed(self, text: str) -> None:

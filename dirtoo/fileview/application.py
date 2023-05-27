@@ -24,9 +24,9 @@ import logging
 import logging.config
 import xdg.BaseDirectory
 
-from PyQt5.QtGui import QPixmapCache
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtDBus import QDBusConnection
+from PyQt6.QtGui import QPixmapCache
+from PyQt6.QtWidgets import QApplication
+from PyQt6.QtDBus import QDBusConnection
 
 from dirtoo.bookmark.bookmarks import Bookmarks
 from dirtoo.dbus_thumbnail_cache import DBusThumbnailCache

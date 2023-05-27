@@ -20,7 +20,7 @@ from typing import cast, Sequence, Tuple, Optional, ClassVar
 import logging
 import os
 
-from PyQt5.QtCore import pyqtSignal, pyqtBoundSignal
+from PyQt6.QtCore import pyqtSignal, pyqtBoundSignal
 
 from dirtoo.archive.extractor import Extractor, ExtractorResult
 from dirtoo.archive.extractor_factory import make_extractor

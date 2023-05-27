@@ -19,9 +19,9 @@ from typing import TYPE_CHECKING, Optional, Sequence
 
 import logging
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPalette, QIcon, QKeySequence, QFocusEvent, QKeyEvent, QHideEvent
-from PyQt5.QtWidgets import (QLineEdit, QShortcut, QWidget,
+from PyQt6.QtCore import Qt, QKeyCombination
+from PyQt6.QtGui import QPalette, QIcon, QKeySequence, QFocusEvent, QKeyEvent, QHideEvent, QShortcut
+from PyQt6.QtWidgets import (QLineEdit, QWidget,
                              QListWidget, QListWidgetItem, QVBoxLayout, QSizePolicy)
 
 from dirtoo.filesystem.location import Location
@@ -38,10 +38,10 @@ class LocationLineEditPopup(QWidget):
 
     def __init__(self, parent: 'LocationLineEdit') -> None:
         super().__init__(parent,
-                         Qt.Window |
-                         Qt.WindowStaysOnTopHint |
-                         Qt.X11BypassWindowManagerHint |
-                         Qt.FramelessWindowHint)
+                         Qt.WindowType.Window |
+                         Qt.WindowType.WindowStaysOnTopHint |
+                         Qt.WindowType.X11BypassWindowManagerHint |
+                         Qt.WindowType.FramelessWindowHint)
 
         self._parent = parent
         self._previous_text: Optional[str] = None
@@ -59,7 +59,7 @@ class LocationLineEditPopup(QWidget):
         vbox.addWidget(self.listwidget)
         vbox.setContentsMargins(0, 0, 0, 0)
 
-        self.listwidget.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        self.listwidget.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
 
         self.setLayout(vbox)
 
@@ -137,7 +137,7 @@ class LocationLineEdit(QLineEdit):
         self.returnPressed.connect(self.on_return_pressed)
         self.textEdited.connect(self.on_text_edited)
 
-        self.bookmark_act = self.addAction(load_icon("user-bookmarks"), QLineEdit.TrailingPosition)
+        self.bookmark_act = self.addAction(load_icon("user-bookmarks"), QLineEdit.ActionPosition.TrailingPosition)
         self.bookmark_act.setCheckable(True)
         self.bookmark_act.triggered.connect(self._on_bookmark_triggered)
         self.bookmark_act.setToolTip("Toggle bookmark for this location")
@@ -147,20 +147,20 @@ class LocationLineEdit(QLineEdit):
 
         self._popup = LocationLineEditPopup(self)
 
-        shortcut = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_G), self)
-        shortcut.setContext(Qt.WidgetShortcut)
+        shortcut = QShortcut(QKeySequence(QKeyCombination(Qt.Modifier.CTRL, Qt.Key.Key_G)), self)
+        shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
         shortcut.activated.connect(self._on_escape_press)
 
-        shortcut = QShortcut(QKeySequence(Qt.Key_Escape), self)
-        shortcut.setContext(Qt.WidgetShortcut)
+        shortcut = QShortcut(QKeySequence(Qt.Key.Key_Escape), self)
+        shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
         shortcut.activated.connect(self._on_escape_press)
 
-        shortcut = QShortcut(QKeySequence(Qt.Key_Up), self)
-        shortcut.setContext(Qt.WidgetShortcut)
+        shortcut = QShortcut(QKeySequence(Qt.Key.Key_Up), self)
+        shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
         shortcut.activated.connect(self._popup.on_key_up)
 
-        shortcut = QShortcut(QKeySequence(Qt.Key_Down), self)
-        shortcut.setContext(Qt.WidgetShortcut)
+        shortcut = QShortcut(QKeySequence(Qt.Key.Key_Down), self)
+        shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
         shortcut.activated.connect(self._popup.on_key_down)
 
     def _on_completions(self, longest: str, candidates: Sequence[str]) -> None:
@@ -194,7 +194,7 @@ class LocationLineEdit(QLineEdit):
             self.setText(self._controller.location.as_path())
 
             p = self.palette()
-            p.setColor(QPalette.Text, Qt.black)
+            p.setColor(QPalette.ColorRole.Text, Qt.GlobalColor.black)
             self.setPalette(p)
 
             self._controller._gui._window.file_view.setFocus()
@@ -205,11 +205,11 @@ class LocationLineEdit(QLineEdit):
     def focusInEvent(self, ev: QFocusEvent) -> None:
         super().focusInEvent(ev)
 
-        if ev.reason() != Qt.ActiveWindowFocusReason and self.is_unused:
+        if ev.reason() != Qt.FocusReason.ActiveWindowFocusReason and self.is_unused:
             self.setText("")
 
         p = self.palette()
-        p.setColor(QPalette.Text, Qt.black)
+        p.setColor(QPalette.ColorRole.Text, Qt.GlobalColor.black)
         self.setPalette(p)
 
     def focusOutEvent(self, ev: QFocusEvent) -> None:
@@ -217,7 +217,7 @@ class LocationLineEdit(QLineEdit):
 
         self._hide_popup()
 
-        if ev.reason() != Qt.ActiveWindowFocusReason:
+        if ev.reason() != Qt.FocusReason.ActiveWindowFocusReason:
             self._controller.show_location_buttonbar()
 
             if self.is_unused:
@@ -231,11 +231,11 @@ class LocationLineEdit(QLineEdit):
             # FIXME: exists() checks must be done asynchronously
             # if location.exists()
             if True:  # pylint: disable=R1727
-                p.setColor(QPalette.Text, Qt.black)
+                p.setColor(QPalette.ColorRole.Text, Qt.GlobalColor.black)
             else:
-                p.setColor(QPalette.Text, Qt.red)  # type: ignore
+                p.setColor(QPalette.ColorRole.Text, Qt.GlobalColor.red)  # type: ignore
         except Exception:
-            p.setColor(QPalette.Text, Qt.red)
+            p.setColor(QPalette.ColorRole.Text, Qt.GlobalColor.red)
 
         self.setPalette(p)
 
@@ -262,19 +262,19 @@ class LocationLineEdit(QLineEdit):
     def set_location(self, location: Location) -> None:
         self.is_unused = False
         p = self.palette()
-        p.setColor(QPalette.Text, Qt.black)
+        p.setColor(QPalette.ColorRole.Text, Qt.GlobalColor.black)
         self.setPalette(p)
         self.setText(location.as_human())
 
     def set_unused_text(self) -> None:
         self.is_unused = True
         p = self.palette()
-        p.setColor(QPalette.Text, Qt.gray)
+        p.setColor(QPalette.ColorRole.Text, Qt.GlobalColor.gray)
         self.setPalette(p)
         self.setText("no location selected, file list mode is active")
 
     def keyPressEvent(self, ev: QKeyEvent) -> None:
-        if ev.key() == Qt.Key_Backspace or ev.key() == Qt.Key_Delete:
+        if ev.key() == Qt.Key.Key_Backspace or ev.key() == Qt.Key.Key_Delete:
             self._show_completion_selection = False
         else:
             self._show_completion_selection = True

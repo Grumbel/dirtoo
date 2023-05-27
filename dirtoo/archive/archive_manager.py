@@ -22,7 +22,7 @@ import logging
 import hashlib
 from collections import deque
 
-from PyQt5.QtCore import QTimer
+from PyQt6.QtCore import QTimer
 
 from dirtoo.archive.archive_extractor import ArchiveExtractor
 from dirtoo.archive.extractor import ExtractorResultStatus

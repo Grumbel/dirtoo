@@ -19,10 +19,12 @@ from typing import TYPE_CHECKING, cast
 
 import logging
 
-from PyQt5.QtCore import QObject
-from PyQt5.QtWidgets import (
+from PyQt6.QtCore import QObject
+from PyQt6.QtGui import (
     QAction,
     QActionGroup,
+)
+from PyQt6.QtWidgets import (
     QStyle
 )
 
@@ -124,10 +126,10 @@ class Actions(QObject):
             lambda: self.controller.set_crop_thumbnails(self.crop_thumbnails.isChecked()))
 
         self.new_window = QAction(load_icon('window-new'), "New Window", self)
-        self.new_window.triggered.connect(lambda x: self.controller.new_controller(clone=True))
+        self.new_window.triggered.connect(lambda x: self.controller.new_controller(clone=True))  # type: ignore
         self.new_window.setShortcut('Ctrl+N')
 
-        self.parent_directory = QAction(self.controller.app.qapp.style().standardIcon(QStyle.SP_FileDialogToParent),
+        self.parent_directory = QAction(self.controller.app.qapp.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogToParent),
                                         "Parent Directory")
         self.parent_directory.triggered.connect(self.controller.parent_directory)
 

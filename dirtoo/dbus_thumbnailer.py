@@ -28,8 +28,8 @@ import mimetypes
 from enum import Enum
 import xdg.BaseDirectory
 
-from PyQt5.QtDBus import QDBusConnection, QDBusReply, QDBusMessage, QDBusInterface
-from PyQt5.QtCore import QObject, pyqtSlot, QVariant
+from PyQt6.QtDBus import QDBusConnection, QDBusReply, QDBusMessage, QDBusInterface
+from PyQt6.QtCore import QObject, pyqtSlot, QVariant, QMetaType
 
 logger = logging.getLogger(__name__)
 
@@ -62,14 +62,14 @@ class DBusThumbnailerError(Enum):
 
 def dbus_as(value: Sequence[str]) -> QVariant:
     var = QVariant(value)
-    ret = var.convert(QVariant.StringList)
+    ret = var.convert(QMetaType(cast(int, QMetaType.Type.QStringList.value)))
     assert ret, "QVariant conversion failure: {}".format(value)
     return var
 
 
 def dbus_uint(value: int) -> QVariant:
     var = QVariant(value)
-    ret = var.convert(QVariant.UInt)
+    ret = var.convert(QMetaType(cast(int, QMetaType.Type.UInt.value)))
     assert ret, "QVariant conversion failure: {}".format(value)
     return var
 

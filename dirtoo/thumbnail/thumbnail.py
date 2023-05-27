@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Optional
 import logging
 from enum import Enum
 
-from PyQt5.QtGui import QPixmap, QImage
+from PyQt6.QtGui import QPixmap, QImage
 
 if TYPE_CHECKING:
     from dirtoo.fileview.file_item import FileItem

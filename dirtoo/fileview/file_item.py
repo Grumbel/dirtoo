@@ -20,10 +20,10 @@ from typing import TYPE_CHECKING, Dict, Any, Optional
 import logging
 from pkg_resources import resource_filename
 
-from PyQt5.QtCore import Qt, QPoint, QPointF, QRectF, QRect, QTimerEvent
-from PyQt5.QtGui import (QColor, QPainter, QPainterPath, QImage, QDrag, QPixmap,
+from PyQt6.QtCore import Qt, QPoint, QPointF, QRectF, QRect, QTimerEvent
+from PyQt6.QtGui import (QColor, QPainter, QPainterPath, QImage, QDrag, QPixmap,
                          QIcon)
-from PyQt5.QtWidgets import (QGraphicsObject, QGraphicsItem, QWidget,
+from PyQt6.QtWidgets import (QGraphicsObject, QGraphicsItem, QWidget,
                              QStyleOptionGraphicsItem, QGraphicsSceneMouseEvent,
                              QGraphicsSceneHoverEvent, QGraphicsSceneContextMenuEvent)
 
@@ -49,10 +49,10 @@ class FileItem(QGraphicsObject):
         self.controller = controller
 
         self.press_pos: Optional[QPoint] = None
-        self.setFlags(QGraphicsItem.ItemIsSelectable)
+        self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
         self.setAcceptHoverEvents(True)
 
-        self.setCursor(Qt.PointingHandCursor)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
 
         # self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
 
@@ -120,8 +120,7 @@ class FileItem(QGraphicsObject):
             if thumbnail.status == ThumbnailStatus.INITIAL:
                 thumbnail.request()
 
-    def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem,  # type: ignore
-              widget: Optional[QWidget]) -> None:
+    def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: Optional[QWidget] = None) -> None:
         # logger.debug("FileItem.paint: %s", self.fileinfo)
 
         if not self.file_view.is_scrolling():
@@ -267,12 +266,12 @@ class FileItem(QGraphicsObject):
 
         # PyQt will route the event to the child items when we don't
         # override this
-        if ev.button() == Qt.LeftButton:
-            if ev.modifiers() & Qt.ControlModifier:
+        if ev.button() == Qt.MouseButton.LeftButton:
+            if ev.modifiers() & Qt.KeyboardModifier.ControlModifier:
                 self.setSelected(not self.isSelected())
             else:
                 self.press_pos = ev.pos().toPoint()
-        elif ev.button() == Qt.RightButton:
+        elif ev.button() == Qt.MouseButton.RightButton:
             pass
 
     def mouseMoveEvent(self, ev: QGraphicsSceneMouseEvent) -> None:
@@ -310,12 +309,16 @@ class FileItem(QGraphicsObject):
             drag_widget = DragWidget(None)  # noqa: F841
 
             # this will eat up the mouseReleaseEvent
-            drag.exec(Qt.CopyAction | Qt.MoveAction | Qt.LinkAction | Qt.DropAction(0x40), Qt.DropAction(0x40))
+            drag.exec(Qt.DropAction.CopyAction |
+                      Qt.DropAction.MoveAction |
+                      Qt.DropAction.LinkAction |
+                      Qt.DropAction(0x40),
+                      Qt.DropAction(0x40))
 
     def mouseReleaseEvent(self, ev: QGraphicsSceneMouseEvent) -> None:
-        if ev.button() == Qt.LeftButton and self.press_pos is not None:
+        if ev.button() == Qt.MouseButton.LeftButton and self.press_pos is not None:
             self.click_action(new_window=False)
-        elif ev.button() == Qt.MiddleButton:
+        elif ev.button() == Qt.MouseButton.MiddleButton:
             self.click_action(new_window=True)
 
     def click_action(self, new_window: bool = False) -> None:

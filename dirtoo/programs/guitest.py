@@ -23,8 +23,8 @@ import sys
 import argparse
 import tempfile
 
-from PyQt5.QtCore import QThread, QObject, pyqtSignal
-from PyQt5.QtWidgets import QApplication, QDialog
+from PyQt6.QtCore import QThread, QObject, pyqtSignal
+from PyQt6.QtWidgets import QApplication, QDialog
 
 from dirtoo.file_transfer import ConflictResolution
 from dirtoo.filesystem.file_info import FileInfo

@@ -15,13 +15,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING, Optional, IO, Generator
+from typing import cast, TYPE_CHECKING, Optional, IO, Generator
 
 import logging
 import fcntl
 import os
 
-from PyQt5.QtCore import QObject, QSocketNotifier, pyqtSignal, pyqtBoundSignal
+from PyQt6.sip import voidptr
+from PyQt6.QtCore import QObject, QSocketNotifier, pyqtSignal, pyqtBoundSignal
 
 from dirtoo.filesystem.file_info import FileInfo
 from dirtoo.filesystem.location import Location
@@ -102,7 +103,7 @@ class FileListStream(QObject):
     def start(self) -> None:
         self.readliner = non_blocking_readline(self.fp, self.linesep)
 
-        self.socket_notifier = QSocketNotifier(self.fp.fileno(), QSocketNotifier.Read)  # type: ignore
+        self.socket_notifier = QSocketNotifier(cast(voidptr, self.fp.fileno()), QSocketNotifier.Type.Read)
         self.socket_notifier.activated.connect(self._on_activated)
 
     def _on_activated(self, fd: int) -> None:
