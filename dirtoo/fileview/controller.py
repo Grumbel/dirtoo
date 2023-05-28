@@ -669,7 +669,7 @@ class Controller(QObject):
 
         return mime_data
 
-    def on_files_drop(self, action: Qt.DropAction, urls: Sequence[QUrl], destination: Optional[Location]) -> None:
+    def on_files_drop(self, proposed_action: Qt.DropAction, urls: Sequence[QUrl], destination: Optional[Location]) -> None:
         if destination is None:
             destination = self.location
 
@@ -684,32 +684,30 @@ class Controller(QObject):
 
         destination_path = destination.get_path()
 
-        if action == Qt.DropAction.MoveAction:
+        # FIXME:
+        # if action == Qt.DropAction.MoveAction:
+        #     self.app.fs_operations.move_files(sources, destination_path)
+        # elif action == Qt.DropAction.CopyAction:
+        #     self.app.fs_operations.copy_files(sources, destination_path)
+        # elif action == Qt.DropAction.LinkAction:
+        #     self.app.fs_operations.link_files(sources, destination_path)
+        # elif action == Qt.DropAction.IgnoreAction:
+        #     pass
+
+        print(f"on_files_drop(): proposed_action: {proposed_action}")
+        transfer_dialog = TransferRequestDialog(sources, destination_path, self._gui._window)
+        transfer_dialog.exec()
+
+        result = transfer_dialog.result()
+
+        if result == TransferRequestDialog.Move:
             self.app.fs_operations.move_files(sources, destination_path)
-        elif action == Qt.DropAction.CopyAction:
+        elif result == TransferRequestDialog.Copy:
             self.app.fs_operations.copy_files(sources, destination_path)
-        elif action == Qt.DropAction.LinkAction:
+        elif result == TransferRequestDialog.Link:
             self.app.fs_operations.link_files(sources, destination_path)
-        elif action == Qt.DropAction.IgnoreAction:
-            pass
         else:
-            # FIXME: this is triggered by action == 0x40, which is a magic
-            # value hack to represent a 'Qt.AskAction', which Qt doesn't
-            # have.
-
-            transfer_dialog = TransferRequestDialog(sources, destination_path, self._gui._window)
-            transfer_dialog.exec()
-
-            result = transfer_dialog.result()
-
-            if result == TransferRequestDialog.Move:
-                self.app.fs_operations.move_files(sources, destination_path)
-            elif result == TransferRequestDialog.Copy:
-                self.app.fs_operations.copy_files(sources, destination_path)
-            elif result == TransferRequestDialog.Link:
-                self.app.fs_operations.link_files(sources, destination_path)
-            else:
-                pass
+            pass
 
     def create_directory(self) -> None:
         if self.location is None:

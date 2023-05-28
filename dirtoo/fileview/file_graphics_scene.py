@@ -84,15 +84,13 @@ class FileGraphicsScene(QGraphicsScene):
         assert mime_data.hasUrls()
 
         urls = mime_data.urls()
-        assert ev.dropAction() == ev.proposedAction()
-        action = ev.dropAction()
 
         if self._drag_drop_item is not None:
-            self.sig_files_drop.emit(action, urls, self._drag_drop_item.fileinfo.location())
+            self.sig_files_drop.emit(ev.proposedAction(), urls, self._drag_drop_item.fileinfo.location())
             self._drag_drop_item.set_dropable(False)
             self._drag_drop_item = None
         else:
-            self.sig_files_drop.emit(action, urls, None)
+            self.sig_files_drop.emit(ev.proposedAction(), urls, None)
 
         # self._controller.add_files([Location.from_url(url.toString()) for url in urls])
 

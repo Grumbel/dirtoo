@@ -318,11 +318,10 @@ class FileItem(QGraphicsObject):
             drag_widget = DragWidget(None)  # noqa: F841
 
             # this will eat up the mouseReleaseEvent
-            drag.exec(Qt.DropAction.CopyAction |
-                      Qt.DropAction.MoveAction |
-                      Qt.DropAction.LinkAction |
-                      Qt.DropAction(0x40),
-                      Qt.DropAction(0x40))
+            action = drag.exec(Qt.DropAction.CopyAction |
+                               Qt.DropAction.MoveAction |
+                               Qt.DropAction.LinkAction)
+            print(f"drag.exec result: {action}")
 
     def mouseReleaseEvent(self, ev: QGraphicsSceneMouseEvent) -> None:
         if ev.button() == Qt.MouseButton.LeftButton and self.press_pos is not None:
