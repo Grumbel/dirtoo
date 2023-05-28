@@ -283,11 +283,20 @@ class FileItem(QGraphicsObject):
             drag = QDrag(self.controller._gui._window)
 
             # Create the drag thumbnail
-            if False:
-                pix = QPixmap(self.tile_rect.width(), self.tile_rect.height())  # type: ignore
-                painter = QPainter(pix)
+            if True:
+                tile_pix = QPixmap(self.tile_rect.width(), self.tile_rect.height())  # type: ignore
+
+                painter = QPainter(tile_pix)
                 self.paint(painter, None, None)
                 painter.end()
+
+                pix = QPixmap(self.tile_rect.width(), self.tile_rect.height())  # type: ignore
+                pix.fill(Qt.GlobalColor.transparent)
+                painter = QPainter(pix)
+                painter.setOpacity(0.75)
+                painter.drawPixmap(0, 0, tile_pix)
+                painter.end()
+
                 drag.setPixmap(pix)
                 drag.setHotSpot(ev.pos().toPoint() - self.tile_rect.topLeft())
             else:
