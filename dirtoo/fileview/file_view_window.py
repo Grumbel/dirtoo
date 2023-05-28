@@ -136,7 +136,7 @@ class FileViewWindow(QMainWindow):
 
     def make_window(self) -> None:
         self.setWindowTitle("dirtoo")
-        self.setWindowIcon(QIcon(resource_filename("dirtoo", "icons/dirtoo.svg")))
+        self.setWindowIcon(QIcon(resource_filename("dirtoo", "icons/dirtoo.png")))
         self.vbox = QVBoxLayout()
         self.vbox.setContentsMargins(0, 0, 0, 0)
 

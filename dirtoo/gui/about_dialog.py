@@ -34,7 +34,7 @@ class AboutDialog(QDialog):
         icon_label = QLabel()
         icon_label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom)
         icon_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        icon_label.setPixmap(QPixmap(resource_filename("dirtoo", "icons/dirtoo.svg")))
+        icon_label.setPixmap(QPixmap(resource_filename("dirtoo", "icons/dirtoo.png")))
 
         text_label = QLabel(
             """
