@@ -1,0 +1,108 @@
+[build-system]
+requires = [ "setuptools>=61.2",]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dirtoo"
+version = "0.1.0"
+description = "File and directory manipulation tools for Python"
+readme = "README.md"
+authors = [
+  { name = "Ingo Ruhnke", email = "grumbel@gmail.com" },
+]
+dependencies = [
+  "bytefmt",
+  "ngram",
+  "pyparsing",
+  "pyxdg",
+  "PyPDF2",
+  "libarchive-c",
+  "inotify_simple",
+  "sortedcontainers",
+  "numpy",
+  "scipy",
+]
+
+[project.license]
+text = "GPLv3+"
+
+[project.urls]
+Homepage = "http://github.com/grumbel/dirtoo"
+
+[project.scripts]
+dt-archive-extractor = "dirtoo.programs.archive_extractor:main_entrypoint"
+dt-swap = "dirtoo.programs.swap:main_entrypoint"
+dt-move = "dirtoo.programs.move:move_main_entrypoint"
+dt-copy = "dirtoo.programs.move:copy_main_entrypoint"
+dt-chomp = "dirtoo.programs.chomp:main_entrypoint"
+dt-expr = "dirtoo.programs.expr:main_entrypoint"
+dt-find = "dirtoo.programs.find:find_entrypoint"
+dt-fuzzy = "dirtoo.programs.fuzzy:main_entrypoint"
+dt-glob = "dirtoo.programs.glob:main_entrypoint"
+dt-search = "dirtoo.programs.find:search_entrypoint"
+dt-mkevil = "dirtoo.programs.mkevil:main_entrypoint"
+dt-mktest = "dirtoo.programs.mktest:main_entrypoint"
+dt-fsck = "dirtoo.programs.fsck:main"
+dt-dirtool = "dirtoo.programs.dirtool:main_entrypoint"
+dt-icon = "dirtoo.programs.icon:main_entrypoint"
+dt-mime = "dirtoo.programs.mime:main_entrypoint"
+dt-desktop = "dirtoo.programs.desktop:main_entrypoint"
+dt-unidecode = "dirtoo.programs.unidecode:main"
+dt-mediainfo = "dirtoo.programs.mediainfo:main"
+dt-archiveinfo = "dirtoo.programs.archiveinfo:main_entrypoint"
+dt-guessarchivename = "dirtoo.programs.guessarchivename:main_entrypoint"
+dt-thumbnailer = "dirtoo.programs.thumbnailer:main_entrypoint"
+dt-metadata = "dirtoo.programs.metadata:main_entrypoint"
+dt-qtthumbnailer = "dirtoo.programs.qtthumbnailer:main_entrypoint"
+dt-guitest = "dirtoo.programs.guitest:main_entrypoint"
+dt-sleep = "dirtoo.programs.sleep:main_entrypoint"
+dt-rmdir = "dirtoo.programs.rmdir:main_entrypoint"
+dt-shuffle = "dirtoo.programs.shuffle:main_entrypoint"
+dt-watch = "dirtoo.programs.watch:main_entrypoint"
+
+[project.gui-scripts]
+dirtoo = "dirtoo.programs.fileview:main_entrypoint"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.flake8]
+max-line-length = "120"
+
+[tool.mypy]
+strict = true
+check_untyped_defs = true
+disallow_untyped_defs = true
+warn_return_any = true
+warn_unreachable = true
+warn_unused_configs = true
+ignore_missing_imports = true
+disallow_untyped_calls = false
+disallow_subclassing_any = false
+warn_redundant_casts = false
+
+[[tool.mypy.overrides]]
+module = [ "torch.*",]
+disallow_untyped_calls = false
+
+[[tool.mypy.overrides]]
+module = [ "dirtoo.*",]
+ignore_missing_imports = false
+
+[[tool.mypy.overrides]]
+module = [ "tests.*",]
+ignore_missing_imports = false
+
+[tool.pylint]
+extension-pkg-whitelist = "PyQt6"
+disable = "\nbroad-except,\nconsider-using-f-string,\nconsider-using-in,\nduplicate-code,\nfixme,\nimport-outside-toplevel,\ninvalid-name,\nlogging-format-interpolation,\nlogging-fstring-interpolation,\nmissing-class-docstring,\nmissing-function-docstring,\nmissing-module-docstring,\nno-else-return,\nno-self-use,\nprotected-access,\nsuperfluous-parens,\ntoo-few-public-methods,\ntoo-many-arguments,\ntoo-many-branches,\ntoo-many-instance-attributes,\ntoo-many-locals,\ntoo-many-public-methods,\ntoo-many-return-statements,\ntoo-many-statements,\nunnecessary-lambda,\nunspecified-encoding,\nunused-argument,\nunused-variable,\nusing-constant-test,\ntoo-many-nested-blocks,\nuse-implicit-booleaness-not-comparison,\nconsider-using-from-import,\nuseless-super-delegation,\nconsider-iterating-dictionary,"
+
+[tool."pylint.FORMAT"]
+max-line-length = "120"
+
+[tool.setuptools.package-data]
+dirtoo = [ "icons/dirtoo.svg", "icons/*.gif", "icons/*.png",]
+
+[tool.setuptools.data-files]
+"share/icons/hicolor/scalable/apps" = [ "src/dirtoo/icons/dirtoo.svg",]
+"share/applications" = [ "dirtoo.desktop",]
