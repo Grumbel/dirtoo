@@ -187,7 +187,7 @@ class Filesystem:
         st = os.lstat(src)
         if not (stat.S_ISREG(st.st_mode) or
                 stat.S_ISLNK(st.st_mode)):
-            raise Exception("unknown filetype: {}".format(src))
+            raise RuntimeError("unknown filetype: {}".format(src))
             # stat.S_ISDIR(mode)
             # stat.S_ISCHR(mode)
             # stat.S_ISBLK(mode)

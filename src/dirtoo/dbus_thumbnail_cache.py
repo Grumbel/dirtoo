@@ -55,7 +55,7 @@ class DBusThumbnailCache:
         msg = self.cache.call(method, *args)
         reply = QDBusReply(msg)
         if not reply.isValid():
-            raise Exception("Error on method call '{}': {}: {}".format(
+            raise RuntimeError("Error on method call '{}': {}: {}".format(
                 method,
                 reply.error().name(),
                 reply.error().message()))

@@ -215,7 +215,8 @@ class Thumbnailer(QObject):
 
         # startup and shutdown
         self._thread.started.connect(self._worker.init)
-        self.sig_close_requested.connect(self._worker.close, type=Qt.ConnectionType.BlockingQueuedConnection)  # type: ignore
+        self.sig_close_requested.connect(self._worker.close,
+                                         type=Qt.ConnectionType.BlockingQueuedConnection)  # type: ignore
 
         # requests to the worker
         self.sig_thumbnail_requested.connect(self._worker.on_thumbnail_requested)

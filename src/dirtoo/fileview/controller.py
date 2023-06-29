@@ -21,7 +21,7 @@ import io
 import logging
 import os
 
-from PyQt6.QtCore import QObject, Qt, pyqtSignal, QUrl, QMimeData, QPoint, QByteArray
+from PyQt6.QtCore import QObject, Qt, pyqtSignal, QUrl, QMimeData, QPoint
 from PyQt6.QtGui import QClipboard
 
 import bytefmt
@@ -669,7 +669,10 @@ class Controller(QObject):
 
         return mime_data
 
-    def on_files_drop(self, proposed_action: Qt.DropAction, urls: Sequence[QUrl], destination: Optional[Location]) -> None:
+    def on_files_drop(self,
+                      proposed_action: Qt.DropAction,
+                      urls: Sequence[QUrl],
+                      destination: Optional[Location]) -> None:
         if destination is None:
             destination = self.location
 

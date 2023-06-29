@@ -19,8 +19,8 @@ import os
 import unittest
 from typing import Any, Dict, Optional
 
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QApplication
+from PyQt6.QtCore import QTimer
+from PyQt6.QtWidgets import QApplication
 
 from dirtoo.metadata.metadata_collector import MetaDataCollector
 from dirtoo.filesystem.stdio_filesystem import StdioFilesystem

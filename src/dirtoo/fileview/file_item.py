@@ -284,13 +284,13 @@ class FileItem(QGraphicsObject):
 
             # Create the drag thumbnail
             if True:
-                tile_pix = QPixmap(self.tile_rect.width(), self.tile_rect.height())  # type: ignore
+                tile_pix = QPixmap(self.tile_rect.width(), self.tile_rect.height())
 
                 painter = QPainter(tile_pix)
-                self.paint(painter, None, None)
+                self.paint(painter, None, None)  # type: ignore
                 painter.end()
 
-                pix = QPixmap(self.tile_rect.width(), self.tile_rect.height())  # type: ignore
+                pix = QPixmap(self.tile_rect.width(), self.tile_rect.height())
                 pix.fill(Qt.GlobalColor.transparent)
                 painter = QPainter(pix)
                 painter.setOpacity(0.75)
@@ -300,7 +300,7 @@ class FileItem(QGraphicsObject):
                 drag.setPixmap(pix)
                 drag.setHotSpot(ev.pos().toPoint() - self.tile_rect.topLeft())
             else:
-                pix = QPixmap(resource_filename("dirtoo", "icons/dirtoo.png")).scaled(48, 48)
+                pix = QPixmap(resource_filename("dirtoo", "icons/dirtoo.png")).scaled(48, 48)  # type: ignore
                 drag.setPixmap(pix)
 
             if not self.isSelected():

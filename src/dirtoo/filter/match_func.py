@@ -264,7 +264,7 @@ class TimeOpMatchFunc(MatchFunc):
             except ValueError:
                 pass
         else:
-            raise Exception("TimeOpMatchFunc: couldn't parse text: {}".format(text))
+            raise RuntimeError("TimeOpMatchFunc: couldn't parse text: {}".format(text))
 
     def _snip_it(self, time: datetime.time) -> Union[datetime.time, Tuple[int, int], int]:
         if self._snip == 0:
@@ -294,7 +294,7 @@ class DateOpMatchFunc(MatchFunc):
             except ValueError:
                 pass
         else:
-            raise Exception("DateOpMatchFunc: couldn't parse text: {}".format(text))
+            raise RuntimeError("DateOpMatchFunc: couldn't parse text: {}".format(text))
 
     def _snip_it(self, date: datetime.date) -> Union[datetime.date, Tuple[int, int], int]:
         if self._snip == 0:
@@ -322,10 +322,10 @@ def text2weekday(text: str) -> int:
         text = text.lower()
         results = [idx for idx, weekday in enumerate(WEEKDAYS) if weekday.startswith(text)]
         if len(results) == 0:
-            raise Exception("failed to parse text: {}".format(text)) from exc
+            raise RuntimeError("failed to parse text: {}".format(text)) from exc
 
         if len(results) != 1:
-            raise Exception("ambiguous weekday: {}".format(text)) from exc
+            raise RuntimeError("ambiguous weekday: {}".format(text)) from exc
 
         return results[0]
 

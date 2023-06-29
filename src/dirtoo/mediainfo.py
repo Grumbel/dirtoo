@@ -83,7 +83,7 @@ class MediaInfo:
             elif track.track_type == "Other":
                 self._other_count += 1
             else:
-                raise Exception("{}: unknown track type: {}".format(filename, track.track_type))
+                raise RuntimeError("{}: unknown track type: {}".format(filename, track.track_type))
 
             # print(repr(minfo.Get(MediaInfoDLL3.Stream.Video, 0, "FrameRate_Mode/String"))) # CFR VFR
             # print(repr(minfo.Get(MediaInfoDLL3.Stream.Video, 0, "FrameRate_Maximum")))

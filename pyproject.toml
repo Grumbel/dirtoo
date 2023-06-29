@@ -95,9 +95,43 @@ ignore_missing_imports = false
 
 [tool.pylint]
 extension-pkg-whitelist = "PyQt6"
-disable = "\nbroad-except,\nconsider-using-f-string,\nconsider-using-in,\nduplicate-code,\nfixme,\nimport-outside-toplevel,\ninvalid-name,\nlogging-format-interpolation,\nlogging-fstring-interpolation,\nmissing-class-docstring,\nmissing-function-docstring,\nmissing-module-docstring,\nno-else-return,\nno-self-use,\nprotected-access,\nsuperfluous-parens,\ntoo-few-public-methods,\ntoo-many-arguments,\ntoo-many-branches,\ntoo-many-instance-attributes,\ntoo-many-locals,\ntoo-many-public-methods,\ntoo-many-return-statements,\ntoo-many-statements,\nunnecessary-lambda,\nunspecified-encoding,\nunused-argument,\nunused-variable,\nusing-constant-test,\ntoo-many-nested-blocks,\nuse-implicit-booleaness-not-comparison,\nconsider-using-from-import,\nuseless-super-delegation,\nconsider-iterating-dictionary,"
+disable = """
+broad-except,
+consider-using-f-string,
+consider-using-in,
+duplicate-code,
+fixme,
+import-outside-toplevel,
+invalid-name,
+logging-format-interpolation,
+logging-fstring-interpolation,
+missing-class-docstring,
+missing-function-docstring,
+missing-module-docstring,
+no-else-return,
+protected-access,
+superfluous-parens,
+too-few-public-methods,
+too-many-arguments,
+too-many-branches,
+too-many-instance-attributes,
+too-many-locals,
+too-many-public-methods,
+too-many-return-statements,
+too-many-statements,
+unnecessary-lambda,
+unspecified-encoding,
+unused-argument,
+unused-variable,
+using-constant-test,
+too-many-nested-blocks,
+use-implicit-booleaness-not-comparison,
+consider-using-from-import,
+useless-super-delegation,
+consider-iterating-dictionary,
+"""
 
-[tool."pylint.FORMAT"]
+[tool.pylint.FORMAT]
 max-line-length = "120"
 
 [tool.setuptools.package-data]

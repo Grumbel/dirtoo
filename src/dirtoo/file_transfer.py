@@ -366,7 +366,7 @@ class FileTransfer:
         self.interruption_point()
 
         if not self._fs.isdir(destdir):
-            raise Exception("{}: target directory does not exist".format(destdir))
+            raise RuntimeError("{}: target directory does not exist".format(destdir))
 
         if os.path.isdir(source):
             self._move_directory(source, destdir)
@@ -481,7 +481,7 @@ class FileTransfer:
         self.interruption_point()
 
         if not self._fs.isdir(destdir):
-            raise Exception("{}: target directory does not exist".format(destdir))
+            raise RuntimeError("{}: target directory does not exist".format(destdir))
 
         if os.path.isdir(source):
             self._copy_directory(source, destdir)

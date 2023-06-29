@@ -55,7 +55,7 @@ buildPythonPackage {
     runHook preCheck
     flake8 --max-line-length 120
     pyright dirtoo tests
-    mypy -p dirtoo -p tests
+    MYPYPATH=src mypy -p dirtoo -p tests
     pylint dirtoo tests
     python3 -m unittest discover -v -s tests/
     runHook postCheck

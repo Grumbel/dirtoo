@@ -83,7 +83,7 @@ class Location:
     def from_url(url: str) -> 'Location':
         m = LOCATION_REGEX.match(url)
         if m is None:
-            raise Exception("Location.from_url: failed to decode: {}".format(url))
+            raise RuntimeError("Location.from_url: failed to decode: {}".format(url))
 
         protocol = m.group(1)
         rest = m.group(2)

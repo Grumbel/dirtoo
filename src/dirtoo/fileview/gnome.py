@@ -28,7 +28,7 @@ def parse_gnome_copied_files(data: bytes) -> Tuple[Qt.DropAction, Sequence[QUrl]
     elif lines[0] == b"cut":
         action = Qt.DropAction.MoveAction
     else:
-        raise Exception("unknown action: {!r}".format(lines[0]))
+        raise RuntimeError("unknown action: {!r}".format(lines[0]))
 
     urls = [QUrl.fromEncoded(cast(QByteArray, d)) for d in lines[1:]]
 
@@ -41,7 +41,7 @@ def make_gnome_copied_files(action: Qt.DropAction, urls: Sequence[QUrl]) -> byte
     elif action == Qt.DropAction.MoveAction:
         gnome_action = b'move'
     else:
-        raise Exception("unknown action: {}".format(action))
+        raise RuntimeError("unknown action: {}".format(action))
 
     result = (gnome_action + b'\n' +
               b'\n'.join([url.toString().encode()

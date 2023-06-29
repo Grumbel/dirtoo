@@ -39,13 +39,13 @@ class FFProbe:
                 out_bytes, err_bytes = proc.communicate()
                 out = out_bytes.decode()
                 err = err_bytes.decode()
-                raise Exception("FFProbe: timeout: {}".format(filename)) from exc
+                raise RuntimeError("FFProbe: timeout: {}".format(filename)) from exc
 
             out = out_bytes.decode()
             err = err_bytes.decode()
 
             if proc.returncode != 0:
-                raise Exception("FFProbe: {}: {}: {}".format(filename, proc.returncode, err))
+                raise RuntimeError("FFProbe: {}: {}: {}".format(filename, proc.returncode, err))
 
         self.js = json.loads(out)
         self.streams = self.js['streams']

@@ -51,7 +51,7 @@ class LibArchiveExtractor(Extractor):
 
     def interruption_point(self) -> None:
         if self._interruption_event.is_set():
-            raise Exception("{}: archive extraction was interrupted".format(self.filename))
+            raise RuntimeError("{}: archive extraction was interrupted".format(self.filename))
 
     def extract(self) -> ExtractorResult:
         try:

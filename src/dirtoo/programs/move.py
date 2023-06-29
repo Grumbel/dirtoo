@@ -65,7 +65,7 @@ def main(action: str, argv: Sequence[str]) -> None:
     progress.verbose = args.verbose
 
     if not fs.isdir(destdir):
-        raise Exception("{}: target directory does not exist".format(destdir))
+        raise RuntimeError("{}: target directory does not exist".format(destdir))
 
     ctx = FileTransfer(fs, mediator, progress)
     for source in sources:

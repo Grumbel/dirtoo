@@ -129,8 +129,9 @@ class Actions(QObject):
         self.new_window.triggered.connect(lambda x: self.controller.new_controller(clone=True))  # type: ignore
         self.new_window.setShortcut('Ctrl+N')
 
-        self.parent_directory = QAction(self.controller.app.qapp.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogToParent),
-                                        "Parent Directory")
+        self.parent_directory = \
+            QAction(self.controller.app.qapp.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogToParent),
+                    "Parent Directory")
         self.parent_directory.triggered.connect(self.controller.parent_directory)
 
         self.back = QAction(load_icon('back'), 'Go &back', self)

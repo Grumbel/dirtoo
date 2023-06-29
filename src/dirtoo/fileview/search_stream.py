@@ -119,7 +119,8 @@ class SearchStream(QObject):
         # close() is a blocking connection so the thread is properly
         # done after the signal was emit'ed and we don't have to fuss
         # around with sig_finished() and other stuff
-        self.sig_close_requested.connect(self._worker.close, type=Qt.ConnectionType.BlockingQueuedConnection)  # type: ignore
+        self.sig_close_requested.connect(self._worker.close,
+                                         type=Qt.ConnectionType.BlockingQueuedConnection)  # type: ignore
 
     def start(self) -> None:
         self._thread.start()

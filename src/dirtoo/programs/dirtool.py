@@ -76,7 +76,7 @@ def move_files(sourcedir: str, targetdir: str, files: Sequence[str], ignore_case
         elif os.path.isdir(path):
             pass
         else:
-            raise Exception("%s: error: path already exist, but isn't a directory" % path)
+            raise RuntimeError("%s: error: path already exist, but isn't a directory" % path)
 
     # Move the files over
     for f in files:
@@ -151,7 +151,7 @@ def fileinfo_from_path(path: str) -> Sequence[FileInfo]:
     elif os.path.isfile(path):
         return fileinfo_from_md5sums(path)
     else:
-        raise Exception("%s: error: unknown file type" % path)
+        raise RuntimeError("%s: error: unknown file type" % path)
 
 
 def fileinfo_from_md5sums(filename: str) -> Sequence[FileInfo]:
@@ -204,10 +204,10 @@ def extract_diff_command(path1: str, path2: str, target: str, dry_run: bool, ign
     """Run a diff between path1 and path2 and move all additions to target"""
 
     if not os.path.isdir(path2):
-        raise Exception("%s: error must be a directory" % path2)
+        raise RuntimeError("%s: error must be a directory" % path2)
 
     if os.path.exists(target) and not os.path.isdir(target):
-        raise Exception("%s: error must be a directory" % target)
+        raise RuntimeError("%s: error must be a directory" % target)
 
     finfo1 = fileinfo_from_path(path1)
     finfo2 = fileinfo_from_path(path2)
@@ -230,9 +230,9 @@ def extract_diff_command(path1: str, path2: str, target: str, dry_run: bool, ign
 
 def merge_command(source: str, target: str, dry_run: bool, force: bool) -> None:
     if not os.path.isdir(source):
-        raise Exception("%s: must be a directory" % source)
+        raise RuntimeError("%s: must be a directory" % source)
     if not os.path.isdir(target):
-        raise Exception("%s: must be a directory" % target)
+        raise RuntimeError("%s: must be a directory" % target)
 
     dir_lst = []
     file_lst = []
@@ -247,7 +247,7 @@ def merge_command(source: str, target: str, dry_run: bool, force: bool) -> None:
         target_dir = os.path.join(target, path)
         if os.path.exists(target_dir):
             if not os.path.isdir(target_dir):
-                raise Exception("%s: error: already exist and is not a directory" % target_dir)
+                raise RuntimeError("%s: error: already exist and is not a directory" % target_dir)
         else:
             print("mkdir %s" % target_dir)
             if not dry_run:
@@ -307,7 +307,7 @@ def main(argv: Sequence[str]) -> int:
     elif args.COMMAND == "merge":
         merge_command(args.FILE1, args.FILE2, args.dry_run, args.force)
     else:
-        raise Exception("unknown command: %s" % args.COMMAND)
+        raise RuntimeError("unknown command: %s" % args.COMMAND)
 
     return 0
 

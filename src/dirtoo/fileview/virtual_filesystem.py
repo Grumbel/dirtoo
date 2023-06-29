@@ -64,7 +64,7 @@ class VirtualFilesystem:
             return SearchStream(abspath, query)
 
         else:
-            raise Exception(f"unknown protocol: {location.protocol()}")
+            raise RuntimeError(f"unknown protocol: {location.protocol()}")
 
     def get_fileinfo(self, location: Location) -> FileInfo:
         return self._stdio_fs.get_fileinfo(location)
