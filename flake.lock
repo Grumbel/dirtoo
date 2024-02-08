@@ -3,11 +3,11 @@
     "PyQt6-stubs_src": {
       "flake": false,
       "locked": {
-        "lastModified": 1648527922,
-        "narHash": "sha256-ZS0kA0iLDJ4LGltWpE2c7KlEXpuUwmFqr5be/zEhp70=",
+        "lastModified": 1690114474,
+        "narHash": "sha256-+3by+cAyf7oU5d+DSPCdEjmMagJsgUKY+gPFZJJc53k=",
         "owner": "python-qt-tools",
         "repo": "PyQt6-stubs",
-        "rev": "f623a641cd5cdff53342177e4fbbf9cae8172336",
+        "rev": "86d119ed202c1f9f86923563c2754cf93c1ec303",
         "type": "github"
       },
       "original": {
@@ -44,11 +44,11 @@
         "systems": "systems"
       },
       "locked": {
-        "lastModified": 1681202837,
-        "narHash": "sha256-H+Rh19JDwRtpVPAWp64F+rlEtxUWBAQW28eAi3SRSzg=",
+        "lastModified": 1705309234,
+        "narHash": "sha256-uNRRNRKmJyCRC/8y1RqBkqWBLM034y4qN7EprSdmgyA=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "cfacdce06f30d2b68473a46042957675eebb3401",
+        "rev": "1ef2e671c3b0c19053962c07dbda38332dcebf26",
         "type": "github"
       },
       "original": {
@@ -59,16 +59,16 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1685004253,
-        "narHash": "sha256-AbVL1nN/TDicUQ5wXZ8xdLERxz/eJr7+o8lqkIOVuaE=",
+        "lastModified": 1707347730,
+        "narHash": "sha256-0etC/exQIaqC9vliKhc3eZE2Mm2wgLa0tj93ZF/egvM=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "3e01645c40b92d29f3ae76344a6d654986a91a91",
+        "rev": "6832d0d99649db3d65a0e15fa51471537b2c56a6",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
-        "ref": "nixos-23.05",
+        "ref": "nixos-23.11",
         "repo": "nixpkgs",
         "type": "github"
       }

@@ -2,7 +2,7 @@
   description = "Python Scripts for directory stuff";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
     flake-utils.url = "github:numtide/flake-utils";
 
     bytefmt.url = "github:grumbel/python-bytefmt";
