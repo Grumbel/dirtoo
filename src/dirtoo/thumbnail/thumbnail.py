@@ -73,7 +73,9 @@ class Thumbnail:
                 # thumbnail to be out of date when the file was
                 # modified while the thumbnail was extracting (e.g.
                 # looking at an extracting archive).
-                if int(self.file_item.fileinfo.mtime()) != self.mtime:
+                if (self.mtime - self.file_item.fileinfo.mtime()) > 1.0:
+                    logger.info("%s: thumbnail out of date, resetting",
+                                 self.file_item.fileinfo.location())
                     self.reset()
             except ValueError as err:
                 logger.error("%s: couldn't read Thumb::MTime tag on thumbnail: %s",
