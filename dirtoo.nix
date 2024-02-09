@@ -71,7 +71,10 @@ buildPythonPackage {
   ] ++
   lib.optional useRar [ "--set" "DIRTOO_RAR" "${rar}/bin/rar" ];
 
-  nativeBuildInputs = [ wrapQtAppsHook ];
+  nativeBuildInputs = [
+    wrapQtAppsHook
+    pip
+  ];
 
   buildInputs = [
     qtbase
@@ -102,7 +105,6 @@ buildPythonPackage {
   nativeCheckInputs = [
     flake8
     mypy
-    pip
     pylint
     pyright
     types-setuptools
