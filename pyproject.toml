@@ -138,5 +138,6 @@ max-line-length = "120"
 dirtoo = [ "icons/dirtoo.svg", "icons/*.gif", "icons/*.png",]
 
 [tool.setuptools.data-files]
+"share/icons/hicolor/48x48/apps" = [ "src/dirtoo/icons/dirtoo.png",]
 "share/icons/hicolor/scalable/apps" = [ "src/dirtoo/icons/dirtoo.svg",]
 "share/applications" = [ "dirtoo.desktop",]
