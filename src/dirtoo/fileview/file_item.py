@@ -320,7 +320,8 @@ class FileItem(QGraphicsObject):
             # this will eat up the mouseReleaseEvent
             action = drag.exec(Qt.DropAction.CopyAction |
                                Qt.DropAction.MoveAction |
-                               Qt.DropAction.LinkAction)
+                               Qt.DropAction.LinkAction,
+                               Qt.DropAction.CopyAction)
             print(f"drag.exec result: {action}")
 
     def mouseReleaseEvent(self, ev: QGraphicsSceneMouseEvent) -> None:
