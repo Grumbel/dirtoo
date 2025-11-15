@@ -41,6 +41,8 @@ buildPythonPackage {
 
   src = ./.;
 
+  format = "pyproject";
+
   doCheck = doCheck;
 
   preCheck = ''
@@ -65,9 +67,6 @@ buildPythonPackage {
     "\${qtWrapperArgs[@]}"
     "--set" "DIRTOO_7ZIP" "${_7zz}/bin/7zz"
     "--set" "DIRTOO_FFPROBE" "${ffmpeg}/bin/ffprobe"
-
-    # "--set" "LIBGL_DRIVERS_PATH" "${mesa.drivers}/lib/dri"
-    # "--prefix" "LD_LIBRARY_PATH" ":" "${mesa.drivers}/lib"
   ] ++
   lib.optional useRar [ "--set" "DIRTOO_RAR" "${rar}/bin/rar" ];
 

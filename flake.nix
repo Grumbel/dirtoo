@@ -2,7 +2,7 @@
   description = "Python Scripts for directory stuff";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
 
     bytefmt.url = "github:grumbel/python-bytefmt";
@@ -45,6 +45,8 @@
               inherit pname version;
               sha256 = "BtGAnuL+3dztYGXc0ZgmxhMYeH1Hv08QscAReD1BmqY=";
             };
+            pyproject = true;
+            build-system = [ pythonPackages.setuptools ];
           };
 
           pyxdg = pythonPackages.buildPythonPackage rec {
@@ -54,6 +56,8 @@
               inherit pname version;
               sha256 = "sha256-Mme7MHTpNN8gKvLuCGhXVIQQhYHm88sAavHaNTleiLQ=";
             };
+            pyproject = true;
+            build-system = [ pythonPackages.setuptools ];
           };
 
           dirtoo = pkgs.callPackage ./dirtoo.nix {
