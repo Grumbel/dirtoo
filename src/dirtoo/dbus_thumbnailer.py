@@ -170,7 +170,6 @@ class DBusThumbnailer(QObject):
                 reply.error().name(),
                 reply.error().message()))
 
-        print("-------", repr(msg.arguments()))
         return msg.arguments()
 
     def queue(self, files: Sequence[str], flavor: str = "default") -> Optional[int]:
