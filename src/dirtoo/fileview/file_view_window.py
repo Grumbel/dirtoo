@@ -19,7 +19,8 @@ from typing import TYPE_CHECKING, Optional, Sequence
 
 import logging
 
-from pkg_resources import resource_filename
+from importlib.resources import files
+
 from PyQt6.QtCore import Qt, QPoint, QKeyCombination
 from PyQt6.QtGui import QKeySequence, QIcon, QCursor, QMovie, QCloseEvent, QShortcut
 from PyQt6.QtWidgets import (
@@ -136,7 +137,7 @@ class FileViewWindow(QMainWindow):
 
     def make_window(self) -> None:
         self.setWindowTitle("dirtoo")
-        self.setWindowIcon(QIcon(resource_filename("dirtoo", "icons/dirtoo.png")))
+        self.setWindowIcon(QIcon(str(files("dirtoo") / "icons/dirtoo.png")))
         self.vbox = QVBoxLayout()
         self.vbox.setContentsMargins(0, 0, 0, 0)
 
@@ -472,7 +473,7 @@ class FileViewWindow(QMainWindow):
         self.toolbar.addAction(self.controller.app.actions.enable_filesystem)
 
         # Loading icon
-        self.loading_movie = QMovie(resource_filename("dirtoo", "icons/gears.gif"))
+        self.loading_movie = QMovie(str(files("dirtoo") / "icons/gears.gif"))
         self.loading_label = QLabel()
         self.toolbar.addWidget(self.loading_label)
 

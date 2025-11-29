@@ -17,7 +17,7 @@
 
 from typing import Dict, Tuple
 
-from pkg_resources import resource_filename
+from importlib.resources import files
 
 from PyQt6.QtGui import QIcon, QPixmap, QFont, QFontMetrics, QImage, QPainter
 
@@ -41,12 +41,12 @@ class SharedIcons:
 class SharedPixmaps:
 
     def __init__(self) -> None:
-        self.video = QPixmap(resource_filename("dirtoo", "icons/noun_36746_cc.png"))
-        self.image = QPixmap(resource_filename("dirtoo", "icons/noun_386758_cc.png"))  # noun_757280_cc.png
-        self.loading = QPixmap(resource_filename("dirtoo", "icons/noun_409399_cc.png"))
-        self.error = QPixmap(resource_filename("dirtoo", "icons/noun_175057_cc.png"))
-        self.locked = QPixmap(resource_filename("dirtoo", "icons/noun_236873_cc.png"))
-        self.new = QPixmap(resource_filename("dirtoo", "icons/noun_258297_cc.png"))
+        self.video = QPixmap(str(files("dirtoo") / "icons/noun_36746_cc.png"))
+        self.image = QPixmap(str(files("dirtoo") / "icons/noun_386758_cc.png"))  # noun_757280_cc.png
+        self.loading = QPixmap(str(files("dirtoo") / "icons/noun_409399_cc.png"))
+        self.error = QPixmap(str(files("dirtoo") / "icons/noun_175057_cc.png"))
+        self.locked = QPixmap(str(files("dirtoo") / "icons/noun_236873_cc.png"))
+        self.new = QPixmap(str(files("dirtoo") / "icons/noun_258297_cc.png"))
 
 
 class SharedScaleable:

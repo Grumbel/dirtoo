@@ -18,7 +18,7 @@
 from typing import TYPE_CHECKING, Dict, Any, Optional
 
 import logging
-from pkg_resources import resource_filename
+from importlib.resources import files
 
 from PyQt6.QtCore import Qt, QPoint, QPointF, QRectF, QRect, QTimerEvent
 from PyQt6.QtGui import (QColor, QPainter, QPainterPath, QImage, QDrag, QPixmap,
@@ -300,7 +300,7 @@ class FileItem(QGraphicsObject):
                 drag.setPixmap(pix)
                 drag.setHotSpot(ev.pos().toPoint() - self.tile_rect.topLeft())
             else:
-                pix = QPixmap(resource_filename("dirtoo", "icons/dirtoo.png")).scaled(48, 48)  # type: ignore
+                pix = QPixmap(str(files("dirtoo") / "icons/dirtoo.png")).scaled(48, 48)  # type: ignore
                 drag.setPixmap(pix)
 
             if not self.isSelected():

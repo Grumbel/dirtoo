@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from pkg_resources import resource_filename
+from importlib.resources import files
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
@@ -34,7 +34,7 @@ class AboutDialog(QDialog):
         icon_label = QLabel()
         icon_label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom)
         icon_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        icon_label.setPixmap(QPixmap(resource_filename("dirtoo", "icons/dirtoo.png")))
+        icon_label.setPixmap(QPixmap(str(files("dirtoo") / "icons/dirtoo.png")))
 
         text_label = QLabel(
             """
