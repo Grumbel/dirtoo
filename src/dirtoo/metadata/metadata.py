@@ -59,8 +59,8 @@ class MetaData:
         elif mimetype.name() == 'application/pdf':
             metadata['type'] = 'pdf'
             with open(abspath, 'rb') as fin:
-                pdf = PdfReader(fin)
-                metadata['pages'] = len(pdf.pages)
+                with PdfReader(fin) as pdf:
+                    metadata['pages'] = len(pdf.pages)
         elif mimetype.name() in ['application/zip',
                                  'application/vnd.rar',
                                  'application/rar']:
