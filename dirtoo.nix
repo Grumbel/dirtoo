@@ -16,7 +16,7 @@
 , pylint
 , pymediainfo
 , pyparsing
-, pypdf2
+, pypdf
 , pyqt6
 , pyright
 , python-ngram
@@ -87,7 +87,7 @@ buildPythonPackage {
     inotify-simple
     libarchive-c
     numpy
-    pypdf2
+    pypdf
     pyqt6
     scipy
     sortedcontainers

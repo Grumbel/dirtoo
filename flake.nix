@@ -82,7 +82,7 @@
               numpy
               pymediainfo
               pyparsing
-              pypdf2
+              pypdf
               pyqt6
               scipy
               setuptools

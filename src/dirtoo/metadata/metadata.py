@@ -20,7 +20,7 @@ from typing import Dict, Any
 import os
 import logging
 
-from PyPDF2 import PdfFileReader
+from pypdf import PdfReader
 from PyQt6.QtCore import QMimeDatabase
 
 from dirtoo.mediainfo import MediaInfo
@@ -59,8 +59,8 @@ class MetaData:
         elif mimetype.name() == 'application/pdf':
             metadata['type'] = 'pdf'
             with open(abspath, 'rb') as fin:
-                pdf = PdfFileReader(fin)
-                metadata['pages'] = pdf.getNumPages()
+                pdf = PdfReader(fin)
+                metadata['pages'] = len(pdf.pages)
         elif mimetype.name() in ['application/zip',
                                  'application/vnd.rar',
                                  'application/rar']:

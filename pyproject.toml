@@ -15,7 +15,7 @@ dependencies = [
   "ngram",
   "pyparsing",
   "pyxdg",
-  "PyPDF2",
+  "pypdf",
   "libarchive-c",
   "inotify_simple",
   "sortedcontainers",
