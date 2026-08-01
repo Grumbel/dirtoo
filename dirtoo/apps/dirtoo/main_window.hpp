@@ -4,6 +4,7 @@
 #pragma once
 
 #include "clipboard.hpp"
+#include "dirtoo/archive/archive_index.hpp"
 #include "dirtoo/archive/archive_manager.hpp"
 #include "dirtoo/collection/file_collection.hpp"
 #include "dirtoo/fs/location.hpp"
@@ -110,6 +111,9 @@ private:
   thumbnail::Thumbnailer thumbnailer_;
   archive::ArchiveManager archive_manager_;
   fs::Location pending_archive_location_;
+  std::vector<archive::ArchiveEntry> archive_entries_;
+  bool archive_listing_ok_ = false;
+  std::filesystem::path indexed_archive_path_;
   FileListModel* model_ = nullptr;
 
   QThread transfer_thread_;

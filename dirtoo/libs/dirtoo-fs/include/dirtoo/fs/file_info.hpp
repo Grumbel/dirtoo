@@ -8,7 +8,6 @@
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
-#include <optional>
 #include <string>
 #include <vector>
 
@@ -18,6 +17,10 @@ class FileInfo {
 public:
   [[nodiscard]] static FileInfo from_path(const std::filesystem::path& path);
   [[nodiscard]] static FileInfo from_location(const Location& location);
+
+  /// Virtual entry (e.g. archive member) that may not exist on the real FS.
+  [[nodiscard]] static FileInfo synthetic(Location location, std::string basename, bool is_directory,
+                                          std::uint64_t size = 0);
 
   [[nodiscard]] const Location& location() const noexcept { return location_; }
   [[nodiscard]] const std::filesystem::path& path() const noexcept { return path_; }
@@ -31,6 +34,7 @@ public:
   [[nodiscard]] bool is_directory() const noexcept { return is_directory_; }
   [[nodiscard]] bool is_regular_file() const noexcept { return is_regular_file_; }
   [[nodiscard]] bool is_symlink() const noexcept { return is_symlink_; }
+  [[nodiscard]] bool is_synthetic() const noexcept { return is_synthetic_; }
 
   [[nodiscard]] std::filesystem::perms permissions() const noexcept { return permissions_; }
 
@@ -42,6 +46,7 @@ private:
   bool is_directory_ = false;
   bool is_regular_file_ = false;
   bool is_symlink_ = false;
+  bool is_synthetic_ = false;
   std::filesystem::perms permissions_{};
 };
 

@@ -37,8 +37,32 @@ FileInfo FileInfo::from_location(const Location& location)
   return from_path(location.as_path());
 }
 
+FileInfo FileInfo::synthetic(Location location, std::string basename, bool is_directory,
+                             std::uint64_t size)
+{
+  FileInfo info;
+  info.location_ = std::move(location);
+  info.path_ = info.location_.as_path() / basename;
+  if (info.location_.is_archive()) {
+    // path() remains archive file path for ops; basename comes from location entry.
+    info.path_ = info.location_.as_path();
+  }
+  info.size_ = size;
+  info.is_directory_ = is_directory;
+  info.is_regular_file_ = !is_directory;
+  info.is_synthetic_ = true;
+  return info;
+}
+
+
 std::string FileInfo::basename() const
 {
+  if (location_.is_archive() && !location_.entry_path().empty()) {
+    return location_.entry_path().filename().string();
+  }
+  if (is_synthetic_ && location_.is_archive()) {
+    return location_.basename();
+  }
   return path_.filename().string();
 }
 

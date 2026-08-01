@@ -28,11 +28,27 @@
 
           buildInputs = with pkgs; [
             qt6.qtbase
+            libarchive
+          ];
+
+          # Runtime helpers used by ArchiveManager / archive_index
+          propagatedBuildInputs = with pkgs; [
+            libarchive # bsdtar
+            unzip
+            gnutar
+            p7zip
           ];
 
           cmakeFlags = [
-            "-DDIRTOO_BUILD_TESTS=OFF"
+            "-DDIRTOO_BUILD_TESTS=ON"
           ];
+
+          doCheck = true;
+          checkPhase = ''
+            runHook preCheck
+            ctest --output-on-failure
+            runHook postCheck
+          '';
         };
 
         devShells.default = pkgs.mkShell {
@@ -43,12 +59,17 @@
             gcc
             qt6.qtbase
             qt6.qttools
+            libarchive
+            unzip
+            gnutar
+            p7zip
             gdb
             clang-tools
           ];
 
           shellHook = ''
             echo "dirtoo C++ dev shell (C++23, Qt6, CMake/Ninja)"
+            echo "Archive tools: bsdtar/tar/unzip/7z available for browsing"
           '';
         };
       });

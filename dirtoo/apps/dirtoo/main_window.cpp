@@ -382,11 +382,34 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
   if (location_.is_archive()) {
     watcher_.stop();
     pending_archive_location_ = location_;
-    if (archive_manager_.status(fs::Location::from_archive(location_.as_path(), {}))
-        != archive::ExtractStatus::Ready) {
+
+    // Reuse index when navigating within the same archive file.
+    if (archive_listing_ok_ && indexed_archive_path_ == location_.as_path()) {
+      on_directory_changed();
+    } else {
+      archive_listing_ok_ = false;
+      archive_entries_.clear();
       QApplication::setOverrideCursor(Qt::WaitCursor);
+      auto listed = archive::list_archive_entries(location_.as_path());
+      QApplication::restoreOverrideCursor();
+      if (listed) {
+        archive_entries_ = std::move(*listed);
+        archive_listing_ok_ = true;
+        indexed_archive_path_ = location_.as_path();
+        status_label_->setText(QStringLiteral("Archive index: %1 entries")
+                                   .arg(archive_entries_.size()));
+        on_directory_changed();
+      } else {
+        indexed_archive_path_.clear();
+        status_label_->setText(QStringLiteral("Listing failed (%1); extracting…")
+                                   .arg(QString::fromStdString(listed.error())));
+        if (archive_manager_.status(fs::Location::from_archive(location_.as_path(), {}))
+            != archive::ExtractStatus::Ready) {
+          QApplication::setOverrideCursor(Qt::WaitCursor);
+        }
+        archive_manager_.open(location_);
+      }
     }
-    archive_manager_.open(location_);
   } else {
     watcher_.set_location(location_);
     watcher_.start();
@@ -457,16 +480,15 @@ void MainWindow::on_directory_changed()
   model_->clear_thumbnails();
   std::vector<fs::FileInfo> items;
   if (location_.is_archive()) {
-    const auto resolved = archive_manager_.resolved_directory(location_);
-    if (!resolved) {
-      status_label_->setText(QStringLiteral("Archive not ready"));
-      return;
-    }
-    items = fs::list_directory(fs::Location::from_path(*resolved));
-    // Re-tag locations as archive-relative for navigation.
-    for (auto& fi : items) {
-      // Keep real path for size/mtime; navigation uses basename joins.
-      (void)fi;
+    if (archive_listing_ok_) {
+      items = archive::fileinfos_for_prefix(location_, archive_entries_);
+    } else {
+      const auto resolved = archive_manager_.resolved_directory(location_);
+      if (!resolved) {
+        status_label_->setText(QStringLiteral("Archive not ready"));
+        return;
+      }
+      items = fs::list_directory(fs::Location::from_path(*resolved));
     }
   } else {
     items = fs::list_directory(location_);
@@ -564,9 +586,25 @@ void MainWindow::on_item_activated(const QModelIndex& index)
     } else {
       open_location(fi->location());
     }
+  } else if (location_.is_archive()) {
+    // Extract single member then open with the default application.
+    const auto member = location_.entry_path().empty()
+                            ? std::filesystem::path{fi->basename()}
+                            : location_.entry_path() / fi->basename();
+    const auto cache = std::filesystem::temp_directory_path() / "dirtoo-open" /
+                       std::to_string(std::hash<std::string>{}(location_.as_path().string()));
+    auto extracted = archive::extract_member(location_.as_path(), member, cache);
+    if (!extracted) {
+      QMessageBox::warning(this, QStringLiteral("Archive"),
+                           QString::fromStdString(extracted.error()));
+      return;
+    }
+    if (fs::looks_like_archive(*extracted)) {
+      open_location(fs::Location::from_archive(*extracted, {}));
+    } else {
+      open_default(*extracted);
+    }
   } else if (fs::looks_like_archive(fi->path())) {
-    // Works for top-level and nested archives (path is the real file on disk
-    // or inside an already extracted cache tree).
     open_location(fs::Location::from_archive(fi->path(), {}));
   } else {
     open_default(fi->path());

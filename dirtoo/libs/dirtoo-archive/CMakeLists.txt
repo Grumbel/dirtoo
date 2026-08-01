@@ -3,6 +3,7 @@
 
 add_library(dirtoo-archive
   src/archive_manager.cpp
+  src/archive_index.cpp
 )
 
 add_library(dirtoo::archive ALIAS dirtoo-archive)

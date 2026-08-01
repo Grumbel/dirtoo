@@ -6,17 +6,11 @@ This document is the working plan for the C++ port. The Python tree in
 
 ## Progress (2026-08-01)
 
-C++ port MVP + archive browsing:
-
-- Modular libs: dirops, fs, collection, watcher, thumbnail, archive
-- GUI: dual views, zoom, DND, clipboard (GNOME), background transfers, menus, settings
-- Archives: URL form, cache extract, nested open, read-only, wait cursor + fallback on failure
-- Tests: location (incl. archive), dirops, collection, clipboard text
-
-Optional later:
-- Write into archives / multi-payload Location stack
-- libarchive in-process listing without full extract
-- Packaging CI on Nix with Qt6
+Archive browsing improved to prefer **table-of-contents listing**
+(`bsdtar -tf` / `unzip -Z1` / `tar -tf`) without full extraction. Single
+members are extracted on demand when opened. Full-tree extract remains a
+fallback. Nested archives work via on-demand extract. Flake includes
+libarchive/unzip/tar/7z for tools.
 
 Principles (see also `AGENTS.md`):
 
