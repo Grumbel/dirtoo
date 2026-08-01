@@ -405,7 +405,7 @@ void GraphicsFileView::dragEnterEvent(QDragEnterEvent* event)
 void GraphicsFileView::dragMoveEvent(QDragMoveEvent* event)
 {
   if (event->mimeData() != nullptr && event->mimeData()->hasUrls()) {
-    const auto mods = event->keyboardModifiers();
+    const auto mods = event->modifiers();
     if ((mods & Qt::ControlModifier) && (mods & Qt::ShiftModifier)) {
       event->setDropAction(Qt::LinkAction);
     } else if (mods & Qt::AltModifier) {
@@ -435,7 +435,7 @@ void GraphicsFileView::dropEvent(QDropEvent* event)
       }
     }
   }
-  const auto mods = event->keyboardModifiers();
+  const auto mods = event->modifiers();
   Qt::DropAction action = event->proposedAction();
   if ((mods & Qt::ControlModifier) && (mods & Qt::ShiftModifier)) {
     action = Qt::LinkAction;

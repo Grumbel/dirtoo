@@ -9,6 +9,7 @@
 #include <QObject>
 #include <QString>
 
+#include <atomic>
 #include <vector>
 
 namespace dirtoo::app {
@@ -23,10 +24,15 @@ public:
 public slots:
   /// @param path Absolute filesystem path to list (already-resolved archive extract tree OK).
   void load(const QString& path, quint64 generation);
+  /// Bump cancel token so an in-flight load abandons the result (generation still checked by UI).
+  void cancel();
 
 signals:
   void loaded(quint64 generation, std::vector<dirtoo::fs::FileInfo> items);
   void failed(quint64 generation, QString error);
+
+private:
+  std::atomic<quint64> cancel_generation_{0};
 };
 
 } // namespace dirtoo::app

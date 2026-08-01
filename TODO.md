@@ -8,7 +8,7 @@ Python reference: `dirtoo-py/`. Active code: `dirtoo/`.
 
 Core plumbing and the Critical queue mitigations (listing cost, filter
 worker, Graphics reuse, viewport thumbs, watcher debounce, DnD/Link,
-directory montages) are in place. Remaining polish: incremental watcher deltas. Treat large-dir
+directory montages) are in place. Remaining polish: true incremental FS deltas (add/remove without full rescan); list virtualization. Treat large-dir
 responsiveness as improved but not fully virtualized.
 
 ### Parity freeze (still intentionally out of scope)
@@ -34,7 +34,7 @@ Ordered by user impact. File references are under `dirtoo/` unless noted.
 | Filter I/O on GUI thread | `file_collection.cpp` / `filter_worker.cpp` | **Mitigated**: content predicates go through `FilterWorker` + generation-safe `replace_visible`. Non-content filters remain sync. |
 | Graphics full scene rebuild | `graphics_file_view.cpp` `rebuild_items` | **Mitigated**: reuses items (shrink/grow/update). `FileListModel::refresh` uses layoutChanged instead of full reset. |
 | Thumbnails for every visible row | `main_window.cpp` `request_thumbnails_for_visible` | **Mitigated**: viewport-scoped batch (cap 64), no GUI mime DB, scroll-driven requests; directory cache probe. |
-| Watcher → full rescan, no debounce | `main_window.cpp` ↔ `directory_watcher.cpp` | **Mitigated**: 200ms single-shot debounce. Full reload still used (no incremental FS delta yet). |
+| Watcher → full rescan, no debounce | `main_window.cpp` ↔ `directory_watcher.cpp` | **Mitigated**: 200ms debounce + **soft reload** (keep listing until scan finishes); load worker can supersede in-flight lists. |
 | Double model refresh | `on_directory_loaded` + `on_sort_finished` | Unsorted paint then sorted paint; each `refresh_list` → `beginResetModel` → Graphics rebuild. |
 
 ### 2. Drag & drop broken / incomplete
@@ -203,7 +203,7 @@ Use:
 
 1. ~~Content predicates on GUI thread~~ → `FilterWorker` for content IO  
 2. ~~mime probing on GUI thread~~ → fixed (generic mime / cache only)  
-3. ~~Watcher without debounce~~ → 200ms debounce (still full reload)  
+3. ~~Watcher without debounce~~ → 200ms debounce + soft reload  
 4. ~~Graphics mass allocation~~ → item reuse + softer model refresh  
 
 ### C++ advantages vs Python

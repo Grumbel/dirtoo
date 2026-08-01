@@ -23,6 +23,23 @@
 namespace dirtoo::app {
 namespace {
 
+/// Threshold (seconds) above which a time-gap separator is drawn between rows.
+constexpr qint64 kTimeGapThresholdSecs = 6 * 60 * 60; // 6 hours
+
+QString format_time_gap(qint64 secs)
+{
+  if (secs < 60) {
+    return QStringLiteral("%1s gap").arg(secs);
+  }
+  if (secs < 3600) {
+    return QStringLiteral("%1m gap").arg(secs / 60);
+  }
+  if (secs < 86400) {
+    return QStringLiteral("%1h gap").arg(secs / 3600);
+  }
+  return QStringLiteral("%1d gap").arg(secs / 86400);
+}
+
 void draw_badge(QPainter* painter, const QRect& thumb, const QString& text, Qt::Alignment align)
 {
   if (text.isEmpty()) {

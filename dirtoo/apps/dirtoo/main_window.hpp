@@ -79,6 +79,8 @@ private slots:
   void on_go_back();
   void on_go_forward();
   void on_directory_changed();
+  /// @param soft If true (watcher), keep current listing until load completes.
+  void reload_directory(bool soft);
   void on_directory_loaded(quint64 generation, std::vector<dirtoo::fs::FileInfo> items);
   void on_directory_load_failed(quint64 generation, QString error);
   void on_sort_finished(quint64 generation, std::vector<dirtoo::fs::FileInfo> items);

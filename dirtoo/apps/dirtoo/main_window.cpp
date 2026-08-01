@@ -733,7 +733,7 @@ MainWindow::MainWindow(QWidget* parent)
   watcher_reload_timer_ = new QTimer(this);
   watcher_reload_timer_->setSingleShot(true);
   watcher_reload_timer_->setInterval(200);
-  connect(watcher_reload_timer_, &QTimer::timeout, this, &MainWindow::on_directory_changed);
+  connect(watcher_reload_timer_, &QTimer::timeout, this, [this] { reload_directory(true); });
   connect(&watcher_, &watcher::DirectoryWatcher::directory_changed, this, [this] {
     if (watcher_reload_timer_ != nullptr) {
       watcher_reload_timer_->start();
@@ -1104,13 +1104,22 @@ void MainWindow::update_edit_actions()
 
 void MainWindow::on_directory_changed()
 {
+  reload_directory(false);
+}
+
+void MainWindow::reload_directory(bool soft)
+{
   if (search_active_) {
     // Keep recursive search results until the user navigates away or closes search.
     return;
   }
-  thumbnailer_.cancel_all();
-  model_->clear_thumbnails();
-  filter::MediaMetaCache::instance().bump_generation();
+  if (!soft) {
+    thumbnailer_.cancel_all();
+    if (model_ != nullptr) {
+      model_->clear_thumbnails();
+    }
+    filter::MediaMetaCache::instance().bump_generation();
+  }
 
   // In-memory archive index: apply on UI thread (no directory walk).
   if (location_.is_archive() && archive_listing_ok_) {
@@ -1141,15 +1150,20 @@ void MainWindow::on_directory_changed()
 
   const quint64 gen = ++dir_load_generation_;
   if (status_label_ != nullptr) {
-    status_label_->setText(QStringLiteral("Loading…"));
+    status_label_->setText(soft ? QStringLiteral("Refreshing…") : QStringLiteral("Loading…"));
   }
-  // Clear the view immediately so navigation feels responsive.
-  collection_.clear();
-  refresh_list();
+  // Hard navigation: clear immediately so the old directory does not linger.
+  // Soft (watcher): keep showing the previous listing until the worker finishes.
+  if (!soft) {
+    collection_.clear();
+    refresh_list();
+  }
 
   if (dir_load_worker_ == nullptr) {
     return;
   }
+  // Supersede any in-flight listing (especially important when soft refreshes stack up).
+  QMetaObject::invokeMethod(dir_load_worker_, "cancel", Qt::QueuedConnection);
   const QString path = QString::fromStdString(load_loc.as_path().string());
   QMetaObject::invokeMethod(dir_load_worker_, "load", Qt::QueuedConnection,
                             Q_ARG(QString, path), Q_ARG(quint64, gen));
