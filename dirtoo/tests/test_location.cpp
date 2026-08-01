@@ -47,7 +47,7 @@ TEST_CASE("archive parent leaves archive at root", "[location]")
   const auto root = dirtoo::fs::Location::from_archive("/tmp/demo.zip", "");
   const auto parent = root.parent();
   REQUIRE(parent.is_file());
-  REQUIRE(parent.as_path().filename() != "demo.zip" || true); // parent dir of /tmp
+  REQUIRE(parent.as_path().filename() != "demo.zip");
   REQUIRE_FALSE(parent.is_archive());
 
   const auto nested = dirtoo::fs::Location::from_archive("/tmp/demo.zip", "a/b");

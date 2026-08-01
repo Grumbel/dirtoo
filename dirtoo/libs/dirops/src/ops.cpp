@@ -201,7 +201,7 @@ OpResult copy_path(const std::filesystem::path& from,
   namespace fs = std::filesystem;
 
   if (cancelled(options)) {
-    return Result{.cancelled = true};
+    return Result{.items = {}, .cancelled = true};
   }
 
   std::error_code ec;
@@ -262,7 +262,7 @@ OpResult move_path(const std::filesystem::path& from,
   namespace fs = std::filesystem;
 
   if (cancelled(options)) {
-    return Result{.cancelled = true};
+    return Result{.items = {}, .cancelled = true};
   }
 
   std::error_code ec;
@@ -343,7 +343,7 @@ OpResult rename_path(const std::filesystem::path& from,
                      const Options& options)
 {
   if (cancelled(options)) {
-    return Result{.cancelled = true};
+    return Result{.items = {}, .cancelled = true};
   }
 
   auto resolved = resolve_destination(to, options);
@@ -385,7 +385,7 @@ OpResult rename_path(const std::filesystem::path& from,
 OpResult remove_path(const std::filesystem::path& path, const Options& options)
 {
   if (cancelled(options)) {
-    return Result{.cancelled = true};
+    return Result{.items = {}, .cancelled = true};
   }
 
   if (options.dry_run) {
@@ -415,7 +415,7 @@ OpResult remove_path(const std::filesystem::path& path, const Options& options)
 OpResult create_directory(const std::filesystem::path& path, const Options& options)
 {
   if (cancelled(options)) {
-    return Result{.cancelled = true};
+    return Result{.items = {}, .cancelled = true};
   }
 
   if (options.dry_run) {
@@ -450,7 +450,7 @@ OpResult swap_names(const std::filesystem::path& a,
   namespace fs = std::filesystem;
 
   if (cancelled(options)) {
-    return Result{.cancelled = true};
+    return Result{.items = {}, .cancelled = true};
   }
 
   std::error_code ec;
