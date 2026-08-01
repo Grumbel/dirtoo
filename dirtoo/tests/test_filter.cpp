@@ -344,3 +344,15 @@ TEST_CASE("filter containsfuzzy random charset", "[filter]")
   REQUIRE((*m)->matches(item));
   fs::remove_all(dir);
 }
+
+TEST_CASE("filter pages and filecount parse", "[filter]")
+{
+  auto m = parse_filter("pages:>=10");
+  REQUIRE(m);
+  m = parse_filter("filecount:>5");
+  REQUIRE(m);
+  m = parse_filter("files:=3");
+  REQUIRE(m);
+  // Non-pdf / non-archive → no match
+  REQUIRE_FALSE((*m)->matches(file("readme.txt")));
+}

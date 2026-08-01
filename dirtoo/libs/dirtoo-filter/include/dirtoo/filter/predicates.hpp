@@ -45,6 +45,10 @@ namespace dirtoo::filter {
 [[nodiscard]] MatchFuncPtr make_random(std::string argument);
 /// Basename encodable in charset (charset:ascii, charset:latin1, …)
 [[nodiscard]] MatchFuncPtr make_charset(std::string argument);
+/// PDF page count compare: pages:>=10 (pdfinfo or /Type /Page scan)
+[[nodiscard]] MatchFuncPtr make_pages(std::string argument);
+/// Archive member count: filecount:>5 / files:>5 (bsdtar/unzip/7z)
+[[nodiscard]] MatchFuncPtr make_filecount(std::string argument);
 
 /// mtime time-of-day: time:>=15:00, time:9:30 (HH:MM local)
 [[nodiscard]] MatchFuncPtr make_time(std::string argument);

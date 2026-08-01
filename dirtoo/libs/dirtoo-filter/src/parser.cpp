@@ -344,6 +344,12 @@ private:
     if (c == "charset" || c == "encoding") {
       return make_charset(arg);
     }
+    if (c == "pages" || c == "page") {
+      return make_pages(arg);
+    }
+    if (c == "filecount" || c == "files" || c == "file_count") {
+      return make_filecount(arg);
+    }
     if (c == "time") {
       return make_time(arg);
     }
@@ -392,6 +398,8 @@ Terms (juxtaposition = AND, OR joins alternatives):
   containsfuzzy:speling  fuzzy content lines (cfuzzy:); optional @0.6
   random:0.5      match with probability
   charset:ascii   basename encodable as charset (utf-8, latin1, …)
+  pages:>=10      PDF page count (pdfinfo or scan)
+  filecount:>5    archive member count (files: / file_count:)
   -term           exclude / NOT term   (also ^term or not term)
   ( a OR b )      grouping with parentheses
 
