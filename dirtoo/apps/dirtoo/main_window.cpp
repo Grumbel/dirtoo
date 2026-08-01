@@ -18,10 +18,15 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QCloseEvent>
+#include <QCompleter>
+#include <QEvent>
+#include <QFileSystemModel>
+#include <QMouseEvent>
 #include <QDesktopServices>
 #include <QDir>
 #include <QHeaderView>
 #include <QIcon>
+#include <QKeyEvent>
 #include <QItemSelectionModel>
 #include <QInputDialog>
 #include <QKeySequence>
@@ -163,6 +168,9 @@ MainWindow::MainWindow(QWidget* parent)
     go_menu->addAction(QStringLiteral("Back"), this, &MainWindow::on_go_back);
     go_menu->addAction(QStringLiteral("Forward"), this, &MainWindow::on_go_forward);
     go_menu->addAction(QStringLiteral("Parent"), this, &MainWindow::on_go_parent);
+    go_menu->addAction(QStringLiteral("Parent in New Window"), this, [this] {
+      open_new_window(location_.parent());
+    });
     go_menu->addAction(QStringLiteral("Home"), this, &MainWindow::on_go_home);
 
     auto* help_menu = menuBar()->addMenu(QStringLiteral("&Help"));
@@ -219,6 +227,16 @@ MainWindow::MainWindow(QWidget* parent)
 
     location_edit_ = new QLineEdit(loc_host);
     location_edit_->setPlaceholderText(QStringLiteral("Location"));
+    {
+      auto* fs_model = new QFileSystemModel(location_edit_);
+      fs_model->setFilter(QDir::AllDirs | QDir::NoDotAndDotDot | QDir::Drives);
+      fs_model->setRootPath(QStringLiteral("/"));
+      auto* completer = new QCompleter(fs_model, location_edit_);
+      completer->setCaseSensitivity(Qt::CaseInsensitive);
+      completer->setCompletionMode(QCompleter::PopupCompletion);
+      location_edit_->setCompleter(completer);
+    }
+
     connect(location_edit_, &QLineEdit::returnPressed, this, &MainWindow::on_location_entered);
     connect(location_edit_, &QLineEdit::editingFinished, this, [this] {
       // Leave edit mode when focus leaves, unless empty.
@@ -236,6 +254,7 @@ MainWindow::MainWindow(QWidget* parent)
 
   filter_edit_ = new QLineEdit(central);
   filter_edit_->setPlaceholderText(QStringLiteral("Filter by name or glob (e.g. *.png)…"));
+  filter_edit_->installEventFilter(this);
   connect(filter_edit_, &QLineEdit::textChanged, this, &MainWindow::on_filter_changed);
   layout->addWidget(filter_edit_);
 
@@ -264,6 +283,7 @@ MainWindow::MainWindow(QWidget* parent)
   tree_view_->setColumnWidth(1, 100);
   tree_view_->setColumnWidth(2, 160);
   connect(tree_view_, &QTreeView::activated, this, &MainWindow::on_item_activated);
+  tree_view_->viewport()->installEventFilter(this);
   connect(tree_view_, &QWidget::customContextMenuRequested, this, &MainWindow::on_context_menu);
   connect(tree_view_->header(), &QHeaderView::sectionClicked, this, &MainWindow::on_header_clicked);
   view_stack_->addWidget(tree_view_);
@@ -283,6 +303,7 @@ MainWindow::MainWindow(QWidget* parent)
   icon_view_->setDragDropMode(QAbstractItemView::DragDrop);
   icon_view_->setDefaultDropAction(Qt::CopyAction);
   connect(icon_view_, &QListView::activated, this, &MainWindow::on_item_activated);
+  icon_view_->viewport()->installEventFilter(this);
   connect(icon_view_, &QWidget::customContextMenuRequested, this, &MainWindow::on_context_menu);
   view_stack_->addWidget(icon_view_);
   apply_icon_zoom();
@@ -1265,6 +1286,82 @@ void MainWindow::on_breadcrumb_drop(const fs::Location& target, const QList<QUrl
     return;
   }
   start_transfer(req);
+}
+
+
+bool MainWindow::eventFilter(QObject* obj, QEvent* event)
+{
+  if (event->type() == QEvent::MouseButtonRelease) {
+    auto* me = static_cast<QMouseEvent*>(event);
+    if (me->button() == Qt::MiddleButton) {
+      QModelIndex index;
+      if (obj == tree_view_->viewport()) {
+        index = tree_view_->indexAt(me->pos());
+      } else if (obj == icon_view_->viewport()) {
+        index = icon_view_->indexAt(me->pos());
+      }
+      if (index.isValid()) {
+        on_view_middle_click(index);
+        return true;
+      }
+    }
+  }
+
+  if (obj == filter_edit_ && event->type() == QEvent::KeyPress) {
+    auto* ke = static_cast<QKeyEvent*>(event);
+    if (ke->key() == Qt::Key_Up) {
+      if (!filter_history_.isEmpty()) {
+        if (filter_history_index_ < 0) {
+          filter_history_index_ = filter_history_.size() - 1;
+        } else if (filter_history_index_ > 0) {
+          --filter_history_index_;
+        }
+        filter_edit_->setText(filter_history_.at(filter_history_index_));
+      }
+      return true;
+    }
+    if (ke->key() == Qt::Key_Down) {
+      if (!filter_history_.isEmpty() && filter_history_index_ >= 0) {
+        if (filter_history_index_ + 1 < filter_history_.size()) {
+          ++filter_history_index_;
+          filter_edit_->setText(filter_history_.at(filter_history_index_));
+        } else {
+          filter_history_index_ = -1;
+          filter_edit_->clear();
+        }
+      }
+      return true;
+    }
+    if (ke->key() == Qt::Key_Return || ke->key() == Qt::Key_Enter) {
+      const QString text = filter_edit_->text();
+      if (!text.isEmpty() && (filter_history_.isEmpty() || filter_history_.last() != text)) {
+        filter_history_.append(text);
+        if (filter_history_.size() > 50) {
+          filter_history_.removeFirst();
+        }
+      }
+      filter_history_index_ = -1;
+    }
+  }
+
+  return QMainWindow::eventFilter(obj, event);
+}
+
+void MainWindow::on_view_middle_click(const QModelIndex& index)
+{
+  const fs::FileInfo* fi = model_->file_at(index.row());
+  if (fi == nullptr) {
+    return;
+  }
+  if (fi->is_directory()) {
+    if (location_.is_archive()) {
+      open_new_window(location_.join(fi->basename()));
+    } else {
+      open_new_window(fi->location());
+    }
+  } else if (fs::looks_like_archive(fi->path()) && !location_.is_archive()) {
+    open_new_window(fs::Location::from_archive(fi->path(), {}));
+  }
 }
 
 } // namespace dirtoo::app

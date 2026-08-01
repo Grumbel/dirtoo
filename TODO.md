@@ -1,126 +1,107 @@
-# TODO — Porting dirtoo from Python/PyQt6 to C++23
+# TODO — dirtoo C++ port (UI parity & remaining work)
 
-Python reference: `dirtoo-py/`. Active codebase: `dirtoo/`.
-
-Principles: modular design, **dirops** separate, C++23, CMake + Nix, GPLv3+
-SPDX, no hacks, VERSION file is sole version source. Archives are **read-only**.
+Python reference: `dirtoo-py/`. Active code: `dirtoo/`.
 
 ---
 
-## Milestone checklist (MVP)
+## MVP status
 
-- [x] Build with CMake + flake (`PROJECT_VERSION_FULL` / `DIRTOO_VERSION`)
-- [x] Open home / directory; list files (detail + icon views)
-- [x] Navigate parent/home/history; location bar + **breadcrumb buttons**
-- [x] Rename, mkdir, delete via dirops
-- [x] Copy/move with conflict dialog, progress, background worker
-- [x] Directory auto-refresh (QFileSystemWatcher)
-- [x] MIME icons + Thumbnailer1 D-Bus client
-- [x] Context menu; open with default app / Open with… / terminal
-- [x] Drag-and-drop, clipboard (dirtoo + uri-list + GNOME)
-- [x] QSettings (geometry, view mode, zoom, hidden, last location)
-- [x] About dialog; `--version`; desktop file + icons
-- [x] Archive browse (TOC list-first, on-demand member extract, nested)
-- [x] Unit tests (location, dirops, collection, clipboard, archive index)
+Core file manager MVP is **done** (browse, mutate via dirops, DND, clipboard,
+archives read-only, multi-window, packaging). See completed checklist below.
 
 ---
 
-## Phase status
+## Python UI analysis → C++ parity
 
-### Phase 0 — Repository & build skeleton — **done**
+Findings from `dirtoo-py` GUI / fileview (high-value behaviours):
 
-- [x] Tree: libs, apps, tools, tests, resources
-- [x] CMake C++23, Qt6, warnings
-- [x] flake.nix (qt6, catch2_3, archive tools); no FetchContent
-- [x] VERSION → `PROJECT_VERSION_FULL` / `DIRTOO_VERSION`; flake `+g<rev>`
-- [x] Install rules (binary, desktop, icons)
+### Navigation & mouse
 
-### Phase 1 — `dirtoo-fs` — **done** (archives extended)
+| Python behaviour | Source | C++ status |
+|------------------|--------|------------|
+| Middle-click breadcrumb → new window | `location_buttonbar.py` | **done** |
+| Middle-click directory item → new window | `file_item.py` | **done** |
+| Middle-click archive → open archive in new window | file item | **done** |
+| Middle-click Parent tool button → parent in new window | `tool_button.py` + window | **partial** (Go → Parent in New Window; toolbar middle-click TBD) |
+| Middle-click History / menu entries → new window | `menu.py` `addDoubleAction` | **todo** |
+| Click empty location bar → line edit | buttonbar | **done** |
+| Path completion while typing location | `path_completion.py` | **done** (QFileSystemModel completer; not async worker) |
+| Location history menu (unique past locations) | `history_menu.py` | **todo** (back/forward only today) |
+| Bookmarks protocol / menu | file_view_window | **todo** / low priority |
 
-- [x] `Location` (file + `archive:///path!/entry`)
-- [x] `FileInfo` (+ synthetic for archive members)
-- [x] `list_directory`
+### Filter & search
 
-### Phase 2 — `dirops` — **done**
+| Python behaviour | Source | C++ status |
+|------------------|--------|------------|
+| Filter toolbar (show/hide, pin) | `filter_line_edit.py` | **partial** (always-visible line; no pin/hide) |
+| Filter text history (Up/Down) | `filter_line_edit.py` | **done** |
+| Escape clears / hides filter | filter line edit | **done** (clear; second Escape leaves location edit) |
+| Substring + glob filter | collection | **done** |
+| Full filter language (`filter/`, expr parser) | `filter/*.py` | **todo** (large; defer unless needed) |
+| Content / recursive search stream | `search_stream.py` | **todo** / defer |
+| Filter help dialog | controller | **todo** |
 
-- [x] copy/move/rename/remove/mkdir/swap
-- [x] conflict policies, progress, cancel, dry-run
-- [x] CLI tools: `dt-copy`, `dt-move`, `dt-rename`, `dt-mkdir`, `dt-swap`
+### View & chrome
 
-### Phase 3 — `dirtoo-collection` — **done**
+| Python behaviour | Source | C++ status |
+|------------------|--------|------------|
+| Detail + icon views, zoom | file_view / scaler | **done** |
+| **Leap widget** (type-to-jump, bottom-right overlay) | `leap_widget.py` | **todo** |
+| Message area (transient status/errors) | `message_area.py` | **partial** (status bar only) |
+| Preferences dialog | `preferences_dialog.py` | **partial** (QSettings without UI) |
+| Transfer / conflict dialogs | gui/* | **done** |
+| Properties dialog | properties | **done** |
+| Drag “edge” / resize grip styling | drag_widget / style | **todo** (low; Qt native grips OK) |
+| Graphics-scene icon layout (file_graphics_scene) | fileview | **out of scope** for MVP Widgets port |
 
-- [x] sort by name/size/mtime; name filter; show-hidden
+### Ops & filesystem
 
-### Phase 4 — `dirtoo-watcher` — **done**
-
-- [x] QFileSystemWatcher wrapper
-
-### Phase 5 — GUI application — **done** (MVP+)
-
-- [x] MainWindow, dual views, zoom, filter, history
-- [x] Location line edit + **LocationButtonBar** breadcrumbs
-- [x] Context menus, properties, keyboard shortcuts
-- [x] Clipboard / DND / TransferWorker / TransferDialog
-- [x] Menus: File / Edit / View / Go / Help
-
-### Phase 6 — Thumbnails — **done** (basic)
-
-- [x] Thumbnailer1 D-Bus client; icon view requests
-- [ ] Optional: local freedesktop cache path fallback without D-Bus
-- [x] Optional: cancel in-flight requests on directory change
-
-### Phase 7 — Archives — **done** (read-only)
-
-- [x] TOC listing (`bsdtar`/`unzip`/`tar`); member extract on open
-- [x] Full extract fallback; nested archives
-- [x] Mutations blocked inside archives
-- [ ] Optional: progress dialog for large TOC / extract (status only today)
-- [ ] Optional: libarchive in-process listing (no external process)
-
-### Phase 8 — Search / filter — **partial**
-
-- [x] Name substring filter
-- [x] Glob patterns
-- [ ] Expression language (Python `filter/` / `expr/`) — defer
-- [ ] Recursive content search — defer
-
-### Phase 9 — Polish & packaging — **mostly done**
-
-- [x] Desktop file, icons, About, settings, README/STATUS
-- [x] Escape clears filter (not only focus quirks)
-- [ ] Middle-click breadcrumb → open in new window (Python had this)
-- [x] DnD onto breadcrumb segments (Python LocationButton)
-- [ ] Audit README build instructions vs current flake
-- [ ] Optional: AppStream metainfo
+| Python behaviour | C++ status |
+|------------------|------------|
+| dirops-style copy/move/rename/mkdir/delete | **done** (`dirops`) |
+| Archive browse (extract/cache) | **done** (read-only, TOC-first) |
+| Virtual FS / multi-protocol stacks | **partial** (file + archive only) |
+| Thumbnailer D-Bus | **done** |
 
 ---
 
-## Near-term queue (priority order)
+## Completed MVP checklist
 
-1. [x] Escape key clears name filter
-2. [x] DnD files onto breadcrumb buttons (drop into that directory)
-3. [x] Cancel thumbnail requests when leaving a directory
-4. [x] Glob filter (`*.png`)
-5. [x] Breadcrumb middle-click / open in new window
-6. [x] AppStream metainfo
+- [x] CMake + flake; VERSION; independent lib packages
+- [x] Browse, dual view, zoom, breadcrumbs, location completer
+- [x] dirops mutations, transfers, conflicts, DND, clipboard
+- [x] Watcher, thumbnails, archives read-only
+- [x] Multi-window (Ctrl+N, middle-click breadcrumb & directory)
+- [x] Filter glob + history (Up/Down)
+- [x] About, desktop, AppStream, settings
 
 ---
 
-## Explicitly out of scope / ignore
+## Near-term UI queue (from analysis)
+
+1. [ ] **Leap widget** — frameless type-ahead jump overlay (Python `LeapWidget`)
+2. [ ] **Location history menu** — unique past paths, middle-click opens new window
+3. [ ] **Middle-click on toolbar Parent** (and other nav buttons) → new window
+4. [ ] Filter show/hide + pin (bottom toolbar like Python)
+5. [ ] Preferences dialog surface for QSettings keys
+6. [ ] Optional: async path completion worker (large dirs)
+7. [ ] Optional: simplified subset of filter language (`size>`, `mtime:`)
+
+---
+
+## Explicitly defer / ignore
 
 | Item | Reason |
 |------|--------|
-| Write into archives | Read-only by design for now |
-| Most `programs/*` Python CLIs | dirops tools suffice |
-| experiments/, face detect, QML, UDisks demos | Not MVP |
-| Pixel-perfect Python UI | Functional modular UI |
-| Cloning Python bugs | Fix by design |
-| Windows/macOS first | Linux-first |
+| Write into archives | Policy: read-only |
+| Graphics View icon scene | Different architecture |
+| Face detect / experiments / most programs/* | Out of scope |
+| Pixel-perfect Python layout | Functional parity only |
+| Full expr/filter DSL | Large; glob+substring first |
 
 ---
 
 ## Working process
 
-- After each change series, suggest a detailed git commit message.
-- Prefer small commits: library → tests → UI.
-- Keep `dirtoo-py/` intact as reference.
+- Suggest a detailed commit message after each series of changes.
+- Keep `dirtoo-py/` as reference only.

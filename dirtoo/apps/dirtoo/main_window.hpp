@@ -82,6 +82,8 @@ private slots:
   void on_breadcrumb_drop(const dirtoo::fs::Location& target, const QList<QUrl>& urls,
                          Qt::DropAction action);
   void on_clear_filter();
+  void on_view_middle_click(const QModelIndex& index);
+  bool eventFilter(QObject* obj, QEvent* event) override;
   void on_location_edit_requested();
   void show_location_buttons();
   void show_location_line_edit();
@@ -150,6 +152,8 @@ private:
   LocationButtonBar* location_buttons_ = nullptr;
   QWidget* location_stack_host_ = nullptr;
   QLineEdit* filter_edit_ = nullptr;
+  QStringList filter_history_;
+  int filter_history_index_ = -1;
   QStackedWidget* view_stack_ = nullptr;
   QTreeView* tree_view_ = nullptr;
   QListView* icon_view_ = nullptr;
