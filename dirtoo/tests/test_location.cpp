@@ -29,10 +29,28 @@ TEST_CASE("archive location url roundtrip", "[location]")
   REQUIRE(loc.as_path().filename() == "demo.zip");
   REQUIRE(loc.entry_path() == "docs/readme.txt");
 
-  const auto again = dirtoo::fs::Location::from_url(loc.as_url());
+  // Preferred Python-style encoding.
+  const std::string url = loc.as_url();
+  REQUIRE(url.find("file://") == 0);
+  REQUIRE(url.find("//archive:") != std::string::npos);
+  REQUIRE(url.find("docs/readme.txt") != std::string::npos);
+
+  const auto again = dirtoo::fs::Location::from_url(url);
   REQUIRE(again.is_archive());
   REQUIRE(again.as_path() == loc.as_path());
   REQUIRE(again.entry_path() == loc.entry_path());
+
+  // Legacy JAR-style still accepted.
+  const auto legacy = dirtoo::fs::Location::from_url("archive:///tmp/demo.zip!/docs/readme.txt");
+  REQUIRE(legacy.is_archive());
+  REQUIRE(legacy.entry_path() == "docs/readme.txt");
+
+  // Archive root without entry.
+  const auto root = dirtoo::fs::Location::from_archive("/tmp/demo.zip", "");
+  REQUIRE(root.as_url().ends_with("//archive"));
+  const auto root2 = dirtoo::fs::Location::from_url(root.as_url());
+  REQUIRE(root2.is_archive());
+  REQUIRE(root2.entry_path().empty());
 }
 
 TEST_CASE("looks_like_archive", "[location]")

@@ -16,7 +16,11 @@ namespace dirtoo::fs {
 /// - file:  path is a normal filesystem path
 /// - archive: path is the archive file; entry_ is the path inside the archive
 ///
-/// URL encoding for archives: archive:///abs/path/to.zip!/inner/dir
+/// URL encoding for archives (Python-style, preferred):
+///   file:///abs/path/to.zip//archive
+///   file:///abs/path/to.zip//archive:inner/dir
+/// Legacy JAR-inspired form still accepted by from_url:
+///   archive:///abs/path/to.zip!/inner/dir
 class Location {
 public:
   Location() = default;

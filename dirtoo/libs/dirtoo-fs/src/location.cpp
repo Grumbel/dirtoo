@@ -110,10 +110,38 @@ Location Location::from_archive(const std::filesystem::path& archive_file,
 
 Location Location::from_url(std::string_view url)
 {
+  // Python-style archive: file:///path/to.zip//archive or file:///path/to.zip//archive:entry
+  // Legacy JAR-style:     archive:///path/to.zip!/entry
   if (url.starts_with("file://")) {
-    return from_path(std::filesystem::path{percent_decode(url.substr(7))});
+    std::string rest{url.substr(7)};
+    // Split on "//" payload separators (Python Location payloads).
+    const auto payload_sep = rest.find("//");
+    if (payload_sep != std::string::npos) {
+      const std::string abspath = percent_decode(rest.substr(0, payload_sep));
+      std::string payload = rest.substr(payload_sep + 2); // e.g. "archive" or "archive:docs/a"
+      // Nested payloads are rare; take the first.
+      const auto next = payload.find("//");
+      if (next != std::string::npos) {
+        payload = payload.substr(0, next);
+      }
+      const auto colon = payload.find(':');
+      std::string prot =
+          colon == std::string::npos ? payload : payload.substr(0, colon);
+      std::string entry =
+          colon == std::string::npos ? std::string{} : percent_decode(payload.substr(colon + 1));
+      for (char& c : prot) {
+        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+      }
+      if (prot == "archive") {
+        return from_archive(std::filesystem::path{abspath}, std::filesystem::path{entry});
+      }
+      // Unknown payload: treat as plain file path to the archive container.
+      return from_path(std::filesystem::path{abspath});
+    }
+    return from_path(std::filesystem::path{percent_decode(rest)});
   }
   if (url.starts_with("archive://")) {
+    // Backward-compatible JAR-inspired form: archive:///abs/file.zip!/inner
     std::string rest{percent_decode(url.substr(10))};
     const auto bang = rest.find("!/");
     if (bang == std::string::npos) {
@@ -133,16 +161,26 @@ Location Location::from_human(std::string_view text)
   if (text.starts_with("file://") || text.starts_with("archive://")) {
     return from_url(text);
   }
+  // Bare path that embeds Python-style //archive payload (typed without scheme).
+  if (text.find("//archive") != std::string_view::npos) {
+    return from_url(std::string("file://") + std::string{text});
+  }
   return from_path(std::filesystem::path{std::string{text}});
 }
 
 std::string Location::as_url() const
 {
+  // Prefer Python-style URLs so the location bar matches dirtoo-py:
+  //   file:///path/to.zip//archive
+  //   file:///path/to.zip//archive:docs/readme.txt
   if (protocol_ == "archive") {
-    std::string out = "archive://";
+    std::string out = "file://";
     out += percent_encode_path(path_.string());
-    out += "!/";
-    out += percent_encode_path(entry_.generic_string());
+    out += "//archive";
+    if (!entry_.empty()) {
+      out += ':';
+      out += percent_encode_path(entry_.generic_string());
+    }
     return out;
   }
   return "file://" + percent_encode_path(path_.string());

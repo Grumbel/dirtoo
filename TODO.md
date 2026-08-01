@@ -245,7 +245,8 @@ thumbnail work. `dirops` remains Qt-free.
 - [x] the chunky button in the LocationBar in dirtoo-py/ looked
       better, "Location:" label didn't hurd either.
 - [x] filters should reset when changing directories, unless Pin filter is active
-- [ ] the Location syntax of dirtoo-py/ was better than the new JAR inspired one
+- [x] the Location syntax of dirtoo-py/ was better than the new JAR inspired one
+      (as_url uses file://…//archive[:entry]; JAR archive://…!/… still accepted)
 - [x] filecount (recursive here) isn't displayed for archives
       (archive directory child counts from index; disk archives via media meta)
 - [x] Right click seems to cancel the selection
@@ -253,7 +254,7 @@ thumbnail work. `dirops` remains Qt-free.
       (was likely selection-clear on right-click; preserved multi-select + explicit Properties)
 - [x] Rename dialog doesn't open up
       (same selection fix as Properties)
-- [ ] dirtoo-py/ had a much better
+- [ ] dirtoo-py/ had a much better  *(incomplete note in original list — no actionable detail)*
 - [x] sort and group-by used to have buttons in the toolbar
 - [ ] the rendering of group-by looks like a hack, if there isn't an
       obviously batter way, leave that
