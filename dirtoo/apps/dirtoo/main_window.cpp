@@ -165,8 +165,7 @@ MainWindow::MainWindow(QWidget* parent)
     show_hidden_act_->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+H")));
     connect(show_hidden_act_, &QAction::toggled, this, &MainWindow::on_toggle_hidden);
     view_menu->addSeparator();
-    {
-      show_filter_act_ = view_menu->addAction(QStringLiteral("Show Filter"));
+    show_filter_act_ = view_menu->addAction(QStringLiteral("Show Filter"));
     show_filter_act_->setCheckable(true);
     show_filter_act_->setChecked(true);
     show_filter_act_->setShortcut(QKeySequence(QStringLiteral("Ctrl+F")));
@@ -191,7 +190,8 @@ MainWindow::MainWindow(QWidget* parent)
       auto* act = view_menu->addAction(QStringLiteral("Jump to…"), this, &MainWindow::on_show_leap);
       act->setShortcut(QKeySequence(QStringLiteral("/")));
     }
-
+    {
+      auto* act = view_menu->addAction(QStringLiteral("Refresh"), this, &MainWindow::on_refresh);
       act->setShortcut(QKeySequence(Qt::Key_F5));
     }
     {
