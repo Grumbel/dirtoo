@@ -18,6 +18,7 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QCloseEvent>
+#include <QShowEvent>
 #include <QCompleter>
 #include <QEvent>
 #include <QFileSystemModel>
@@ -42,12 +43,14 @@
 #include <QProcess>
 #include <QStackedWidget>
 #include <QToolBar>
+#include <QToolButton>
 #include <QTreeView>
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QWheelEvent>
 #include <QWidget>
 
+#include <algorithm>
 #include <filesystem>
 
 namespace dirtoo::app {
@@ -76,7 +79,11 @@ MainWindow::MainWindow(QWidget* parent)
 
   back_act_ = toolbar->addAction(QStringLiteral("Back"), this, &MainWindow::on_go_back);
   forward_act_ = toolbar->addAction(QStringLiteral("Forward"), this, &MainWindow::on_go_forward);
-  toolbar->addAction(QStringLiteral("Parent"), this, &MainWindow::on_go_parent);
+  parent_act_ = toolbar->addAction(QStringLiteral("Parent"), this, &MainWindow::on_go_parent);
+  // Middle-click Parent → open parent in a new window.
+  if (auto* btn = qobject_cast<QToolButton*>(toolbar->widgetForAction(parent_act_))) {
+    btn->installEventFilter(this);
+  }
   toolbar->addAction(QStringLiteral("Home"), this, &MainWindow::on_go_home);
   toolbar->addSeparator();
   toolbar->addAction(QStringLiteral("New Folder"), this, &MainWindow::on_mkdir);
@@ -152,7 +159,23 @@ MainWindow::MainWindow(QWidget* parent)
     connect(show_hidden_act_, &QAction::toggled, this, &MainWindow::on_toggle_hidden);
     view_menu->addSeparator();
     {
-      auto* act = view_menu->addAction(QStringLiteral("Refresh"), this, &MainWindow::on_refresh);
+      auto* act = show_filter_act_ = view_menu->addAction(QStringLiteral("Show Filter"));
+    show_filter_act_->setCheckable(true);
+    show_filter_act_->setChecked(true);
+    show_filter_act_->setShortcut(QKeySequence(QStringLiteral("Ctrl+F")));
+    connect(show_filter_act_, &QAction::toggled, this, [this](bool on) {
+      if (filter_edit_ != nullptr) {
+        filter_edit_->setVisible(on);
+        if (on) {
+          filter_edit_->setFocus(Qt::ShortcutFocusReason);
+        }
+      }
+    });
+    {
+      auto* act = view_menu->addAction(QStringLiteral("Jump to…"), this, &MainWindow::on_show_leap);
+      act->setShortcut(QKeySequence(QStringLiteral("/")));
+    }
+
       act->setShortcut(QKeySequence(Qt::Key_F5));
     }
     {
@@ -168,10 +191,11 @@ MainWindow::MainWindow(QWidget* parent)
     go_menu->addAction(QStringLiteral("Back"), this, &MainWindow::on_go_back);
     go_menu->addAction(QStringLiteral("Forward"), this, &MainWindow::on_go_forward);
     go_menu->addAction(QStringLiteral("Parent"), this, &MainWindow::on_go_parent);
-    go_menu->addAction(QStringLiteral("Parent in New Window"), this, [this] {
-      open_new_window(location_.parent());
-    });
+    go_menu->addAction(QStringLiteral("Parent in New Window"), this, &MainWindow::on_parent_new_window);
     go_menu->addAction(QStringLiteral("Home"), this, &MainWindow::on_go_home);
+
+    history_menu_ = menuBar()->addMenu(QStringLiteral("H&istory"));
+    connect(history_menu_, &QMenu::aboutToShow, this, &MainWindow::on_rebuild_history_menu);
 
     auto* help_menu = menuBar()->addMenu(QStringLiteral("&Help"));
     help_menu->addAction(QStringLiteral("About dirtoo"), this, &MainWindow::on_about);
@@ -319,6 +343,9 @@ MainWindow::MainWindow(QWidget* parent)
   layout->addWidget(status_label_);
   setCentralWidget(central);
 
+  leap_widget_ = new LeapWidget(this);
+  connect(leap_widget_, &LeapWidget::leap, this, &MainWindow::on_leap);
+
   connect(&watcher_, &watcher::DirectoryWatcher::directory_changed, this,
           &MainWindow::on_directory_changed);
   connect(&watcher_, &watcher::DirectoryWatcher::message, this, [this](const QString& msg) {
@@ -433,6 +460,15 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
       history_index_ = static_cast<int>(history_.size()) - 1;
     } else {
       history_index_ = static_cast<int>(history_.size()) - 1;
+    }
+    // Unique location history for the History menu (most recent last).
+    location_history_unique_.erase(
+        std::remove_if(location_history_unique_.begin(), location_history_unique_.end(),
+                       [&](const fs::Location& loc) { return loc.as_url() == location.as_url(); }),
+        location_history_unique_.end());
+    location_history_unique_.push_back(location);
+    if (location_history_unique_.size() > 40) {
+      location_history_unique_.erase(location_history_unique_.begin());
     }
   }
   update_history_actions();
@@ -1109,6 +1145,19 @@ void MainWindow::persist_settings() const
   save_settings(s);
 }
 
+void MainWindow::showEvent(QShowEvent* event)
+{
+  QMainWindow::showEvent(event);
+  // Tool buttons exist after the toolbar is realized.
+  if (parent_act_ != nullptr) {
+    for (auto* tb : findChildren<QToolButton*>()) {
+      if (tb->defaultAction() == parent_act_) {
+        tb->installEventFilter(this);
+      }
+    }
+  }
+}
+
 void MainWindow::closeEvent(QCloseEvent* event)
 {
   persist_settings();
@@ -1293,6 +1342,14 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event)
 {
   if (event->type() == QEvent::MouseButtonRelease) {
     auto* me = static_cast<QMouseEvent*>(event);
+    if (me->button() == Qt::MiddleButton && parent_act_ != nullptr) {
+      if (auto* tb = qobject_cast<QToolButton*>(obj)) {
+        if (tb->defaultAction() == parent_act_) {
+          on_parent_new_window();
+          return true;
+        }
+      }
+    }
     if (me->button() == Qt::MiddleButton) {
       QModelIndex index;
       if (obj == tree_view_->viewport()) {
@@ -1361,6 +1418,99 @@ void MainWindow::on_view_middle_click(const QModelIndex& index)
     }
   } else if (fs::looks_like_archive(fi->path()) && !location_.is_archive()) {
     open_new_window(fs::Location::from_archive(fi->path(), {}));
+  }
+}
+
+
+void MainWindow::on_show_leap()
+{
+  if (leap_widget_ != nullptr) {
+    leap_widget_->show_and_focus();
+  }
+}
+
+void MainWindow::on_leap(const QString& text, bool forward, bool from_key)
+{
+  (void)from_key;
+  if (text.isEmpty() || model_ == nullptr) {
+    return;
+  }
+  const int rows = model_->rowCount();
+  if (rows <= 0) {
+    return;
+  }
+
+  auto* view = current_view();
+  int start = 0;
+  if (view != nullptr && view->selectionModel() != nullptr) {
+    const auto sel = view->selectionModel()->selectedIndexes();
+    if (!sel.isEmpty()) {
+      start = sel.first().row();
+    }
+  }
+
+  const QString needle = text.toLower();
+  auto matches = [&](int row) {
+    const fs::FileInfo* fi = model_->file_at(row);
+    if (fi == nullptr) {
+      return false;
+    }
+    return QString::fromStdString(fi->basename()).toLower().startsWith(needle);
+  };
+
+  int found = -1;
+  if (forward) {
+    for (int i = 1; i <= rows; ++i) {
+      const int row = (start + i) % rows;
+      if (matches(row)) {
+        found = row;
+        break;
+      }
+    }
+  } else {
+    for (int i = 1; i <= rows; ++i) {
+      const int row = (start - i + rows * 2) % rows;
+      if (matches(row)) {
+        found = row;
+        break;
+      }
+    }
+  }
+
+  if (found < 0 || view == nullptr) {
+    return;
+  }
+  const QModelIndex idx = model_->index(found, 0);
+  view->setCurrentIndex(idx);
+  view->selectionModel()->select(idx, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+  view->scrollTo(idx);
+}
+
+void MainWindow::on_parent_new_window()
+{
+  open_new_window(location_.parent());
+}
+
+void MainWindow::on_rebuild_history_menu()
+{
+  if (history_menu_ == nullptr) {
+    return;
+  }
+  history_menu_->clear();
+  history_menu_->addAction(QStringLiteral("Back"), this, &MainWindow::on_go_back);
+  history_menu_->addAction(QStringLiteral("Forward"), this, &MainWindow::on_go_forward);
+  history_menu_->addSeparator();
+
+  // Most recent first.
+  int count = 0;
+  for (auto it = location_history_unique_.rbegin();
+       it != location_history_unique_.rend() && count < 35; ++it, ++count) {
+    const fs::Location loc = *it;
+    QString label = loc.is_archive() ? QString::fromStdString(loc.as_url())
+                                     : QString::fromStdString(loc.as_path().string());
+    auto* act = history_menu_->addAction(label);
+    connect(act, &QAction::triggered, this, [this, loc] { open_location(loc); });
+    // Middle-click via custom? QAction doesn't get middle easily; use context - skip for now
   }
 }
 

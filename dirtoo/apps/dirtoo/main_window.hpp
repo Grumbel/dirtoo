@@ -12,6 +12,7 @@
 #include "dirtoo/watcher/directory_watcher.hpp"
 #include "dirops/ops.hpp"
 #include "file_list_model.hpp"
+#include "leap_widget.hpp"
 #include "location_button_bar.hpp"
 #include "transfer_dialog.hpp"
 #include "transfer_worker.hpp"
@@ -52,6 +53,7 @@ public:
 
 protected:
   void closeEvent(QCloseEvent* event) override;
+  void showEvent(QShowEvent* event) override;
 
 private slots:
   void on_location_entered();
@@ -83,6 +85,11 @@ private slots:
                          Qt::DropAction action);
   void on_clear_filter();
   void on_view_middle_click(const QModelIndex& index);
+  void on_leap(const QString& text, bool forward, bool from_key);
+  void on_show_leap();
+  void on_toggle_filter_visible();
+  void on_rebuild_history_menu();
+  void on_parent_new_window();
   bool eventFilter(QObject* obj, QEvent* event) override;
   void on_location_edit_requested();
   void show_location_buttons();
@@ -150,6 +157,11 @@ private:
 
   QLineEdit* location_edit_ = nullptr;
   LocationButtonBar* location_buttons_ = nullptr;
+  LeapWidget* leap_widget_ = nullptr;
+  QAction* parent_act_ = nullptr;
+  QAction* show_filter_act_ = nullptr;
+  QMenu* history_menu_ = nullptr;
+  std::vector<fs::Location> location_history_unique_;
   QWidget* location_stack_host_ = nullptr;
   QLineEdit* filter_edit_ = nullptr;
   QStringList filter_history_;

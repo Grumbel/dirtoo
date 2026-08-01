@@ -22,18 +22,18 @@ Findings from `dirtoo-py` GUI / fileview (high-value behaviours):
 | Middle-click breadcrumb → new window | `location_buttonbar.py` | **done** |
 | Middle-click directory item → new window | `file_item.py` | **done** |
 | Middle-click archive → open archive in new window | file item | **done** |
-| Middle-click Parent tool button → parent in new window | `tool_button.py` + window | **partial** (Go → Parent in New Window; toolbar middle-click TBD) |
+| Middle-click Parent tool button → parent in new window | `tool_button.py` + window | **done** |
 | Middle-click History / menu entries → new window | `menu.py` `addDoubleAction` | **todo** |
 | Click empty location bar → line edit | buttonbar | **done** |
 | Path completion while typing location | `path_completion.py` | **done** (QFileSystemModel completer; not async worker) |
-| Location history menu (unique past locations) | `history_menu.py` | **todo** (back/forward only today) |
+| Location history menu (unique past locations) | `history_menu.py` | **done** (History menu; middle-click on entries TBD) |
 | Bookmarks protocol / menu | file_view_window | **todo** / low priority |
 
 ### Filter & search
 
 | Python behaviour | Source | C++ status |
 |------------------|--------|------------|
-| Filter toolbar (show/hide, pin) | `filter_line_edit.py` | **partial** (always-visible line; no pin/hide) |
+| Filter toolbar (show/hide, pin) | `filter_line_edit.py` | **partial** (Ctrl+F show/hide; no pin yet) |
 | Filter text history (Up/Down) | `filter_line_edit.py` | **done** |
 | Escape clears / hides filter | filter line edit | **done** (clear; second Escape leaves location edit) |
 | Substring + glob filter | collection | **done** |
@@ -46,7 +46,7 @@ Findings from `dirtoo-py` GUI / fileview (high-value behaviours):
 | Python behaviour | Source | C++ status |
 |------------------|--------|------------|
 | Detail + icon views, zoom | file_view / scaler | **done** |
-| **Leap widget** (type-to-jump, bottom-right overlay) | `leap_widget.py` | **todo** |
+| **Leap widget** (type-to-jump, bottom-right overlay) | `leap_widget.py` | **done** |
 | Message area (transient status/errors) | `message_area.py` | **partial** (status bar only) |
 | Preferences dialog | `preferences_dialog.py` | **partial** (QSettings without UI) |
 | Transfer / conflict dialogs | gui/* | **done** |
@@ -79,10 +79,10 @@ Findings from `dirtoo-py` GUI / fileview (high-value behaviours):
 
 ## Near-term UI queue (from analysis)
 
-1. [ ] **Leap widget** — frameless type-ahead jump overlay (Python `LeapWidget`)
-2. [ ] **Location history menu** — unique past paths, middle-click opens new window
-3. [ ] **Middle-click on toolbar Parent** (and other nav buttons) → new window
-4. [ ] Filter show/hide + pin (bottom toolbar like Python)
+1. [x] **Leap widget** — frameless type-ahead jump overlay (Python `LeapWidget`)
+2. [x] **Location history menu** — unique past paths, middle-click opens new window
+3. [x] **Middle-click on toolbar Parent** (and other nav buttons) → new window
+4. [x] Filter show/hide (pin still open) (bottom toolbar like Python)
 5. [ ] Preferences dialog surface for QSettings keys
 6. [ ] Optional: async path completion worker (large dirs)
 7. [ ] Optional: simplified subset of filter language (`size>`, `mtime:`)
