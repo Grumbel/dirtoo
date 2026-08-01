@@ -74,6 +74,9 @@ private slots:
   void on_archive_failed(const dirtoo::fs::Location& archive_location, const QString& message);
   void on_focus_location();
   void on_breadcrumb_location(const dirtoo::fs::Location& location);
+  void on_breadcrumb_drop(const dirtoo::fs::Location& target, const QList<QUrl>& urls,
+                         Qt::DropAction action);
+  void on_clear_filter();
   void on_location_edit_requested();
   void show_location_buttons();
   void show_location_line_edit();

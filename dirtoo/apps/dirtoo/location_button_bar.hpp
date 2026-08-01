@@ -10,6 +10,7 @@
 #include <vector>
 
 class QHBoxLayout;
+class QMouseEvent;
 class QPushButton;
 
 namespace dirtoo::app {
@@ -27,8 +28,10 @@ public:
 
 signals:
   void location_activated(const dirtoo::fs::Location& location);
-  /// User clicked outside of a segment button (e.g. to edit the path as text).
   void edit_requested();
+  /// Files dropped onto a breadcrumb segment (target directory location).
+  void urls_dropped(const dirtoo::fs::Location& target, const QList<QUrl>& urls,
+                    Qt::DropAction action);
 
 protected:
   void mousePressEvent(QMouseEvent* event) override;

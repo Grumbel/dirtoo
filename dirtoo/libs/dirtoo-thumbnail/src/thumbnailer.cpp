@@ -70,6 +70,18 @@ void Thumbnailer::emit_from_cache_or_fail(const fs::Location& location, const QS
   }
 }
 
+
+void Thumbnailer::cancel_all()
+{
+  if (service_available_ && iface_ != nullptr && iface_->isValid()) {
+    for (const auto& [handle, locs] : pending_) {
+      (void)locs;
+      iface_->call(QStringLiteral("Dequeue"), handle);
+    }
+  }
+  pending_.clear();
+}
+
 void Thumbnailer::request(const fs::Location& location, const QString& mime_type,
                           const QString& flavor)
 {

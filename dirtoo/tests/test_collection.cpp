@@ -36,3 +36,28 @@ TEST_CASE("FileCollection hides dotfiles by default", "[collection]")
 
   fs::remove_all(dir);
 }
+
+TEST_CASE("FileCollection glob filter", "[collection]")
+{
+  const auto dir = fs::temp_directory_path() / "dirtoo-collection-glob";
+  fs::remove_all(dir);
+  fs::create_directories(dir);
+  std::ofstream(dir / "a.png") << "x";
+  std::ofstream(dir / "b.jpg") << "y";
+  std::ofstream(dir / "readme.txt") << "z";
+
+  dirtoo::collection::FileCollection col;
+  col.set_items(dirtoo::fs::list_directory(dirtoo::fs::Location::from_path(dir)));
+  col.set_name_filter("*.png");
+  REQUIRE(col.visible_items().size() == 1);
+  REQUIRE(col.visible_items().front().basename() == "a.png");
+
+  col.set_name_filter("*.jpg");
+  REQUIRE(col.visible_items().size() == 1);
+
+  col.set_name_filter("read");
+  REQUIRE(col.visible_items().size() == 1);
+  REQUIRE(col.visible_items().front().basename() == "readme.txt");
+
+  fs::remove_all(dir);
+}

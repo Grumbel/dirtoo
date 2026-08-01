@@ -188,6 +188,7 @@ MainWindow::MainWindow(QWidget* parent)
     add_shortcut(QKeySequence(Qt::ALT | Qt::Key_Left), &MainWindow::on_go_back);
     add_shortcut(QKeySequence(Qt::ALT | Qt::Key_Right), &MainWindow::on_go_forward);
     add_shortcut(QKeySequence(QStringLiteral("Ctrl+L")), &MainWindow::on_focus_location);
+    add_shortcut(QKeySequence(Qt::Key_Escape), &MainWindow::on_clear_filter);
     // Home: Alt+Home (Ctrl+Shift+H toggles hidden files)
 
     add_shortcut(QKeySequence(Qt::Key_F3), &MainWindow::on_properties);
@@ -207,6 +208,8 @@ MainWindow::MainWindow(QWidget* parent)
             &MainWindow::on_breadcrumb_location);
     connect(location_buttons_, &LocationButtonBar::edit_requested, this,
             &MainWindow::on_location_edit_requested);
+    connect(location_buttons_, &LocationButtonBar::urls_dropped, this,
+            &MainWindow::on_breadcrumb_drop);
 
     location_edit_ = new QLineEdit(loc_host);
     location_edit_->setPlaceholderText(QStringLiteral("Location"));
@@ -226,7 +229,7 @@ MainWindow::MainWindow(QWidget* parent)
   }
 
   filter_edit_ = new QLineEdit(central);
-  filter_edit_->setPlaceholderText(QStringLiteral("Filter by name…"));
+  filter_edit_->setPlaceholderText(QStringLiteral("Filter by name or glob (e.g. *.png)…"));
   connect(filter_edit_, &QLineEdit::textChanged, this, &MainWindow::on_filter_changed);
   layout->addWidget(filter_edit_);
 
@@ -505,6 +508,7 @@ void MainWindow::update_edit_actions()
 
 void MainWindow::on_directory_changed()
 {
+  thumbnailer_.cancel_all();
   model_->clear_thumbnails();
   std::vector<fs::FileInfo> items;
   if (location_.is_archive()) {
@@ -1196,6 +1200,43 @@ void MainWindow::on_archive_failed(const fs::Location& archive_location, const Q
   status_label_->setText(message);
   // Fall back to parent directory so the user is not stuck on a failed archive view.
   open_location(fs::Location::from_path(archive_location.as_path().parent_path()), false);
+}
+
+
+void MainWindow::on_clear_filter()
+{
+  if (filter_edit_ != nullptr && !filter_edit_->text().isEmpty()) {
+    filter_edit_->clear();
+    return;
+  }
+  // Second Escape: leave location line-edit mode if active.
+  if (location_edit_ != nullptr && location_edit_->isVisible()) {
+    show_location_buttons();
+  }
+}
+
+void MainWindow::on_breadcrumb_drop(const fs::Location& target, const QList<QUrl>& urls,
+                                   Qt::DropAction action)
+{
+  if (target.is_archive()) {
+    status_label_->setText(QStringLiteral("Cannot drop into an archive (read-only)"));
+    return;
+  }
+  if (transfer_busy_ || urls.isEmpty()) {
+    return;
+  }
+  TransferRequest req;
+  req.mode = (action == Qt::MoveAction) ? ClipboardMode::Cut : ClipboardMode::Copy;
+  req.destination_directory = target.as_path();
+  for (const QUrl& url : urls) {
+    if (url.isLocalFile()) {
+      req.sources.emplace_back(url.toLocalFile().toStdString());
+    }
+  }
+  if (req.sources.empty()) {
+    return;
+  }
+  start_transfer(req);
 }
 
 } // namespace dirtoo::app

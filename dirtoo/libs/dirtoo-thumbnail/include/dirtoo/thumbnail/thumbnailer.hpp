@@ -33,6 +33,8 @@ public:
                const QString& mime_type = QStringLiteral("application/octet-stream"),
                const QString& flavor = QStringLiteral("large"));
 
+  void cancel_all();
+
   void request_many(const std::vector<fs::Location>& locations,
                     const QStringList& mime_types,
                     const QString& flavor = QStringLiteral("large"));

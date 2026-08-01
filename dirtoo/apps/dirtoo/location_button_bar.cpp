@@ -3,15 +3,79 @@
 
 #include "location_button_bar.hpp"
 
-#include <algorithm>
-
+#include <QDragEnterEvent>
+#include <QDropEvent>
 #include <QHBoxLayout>
+#include <QMimeData>
 #include <QMouseEvent>
 #include <QPushButton>
 #include <QSizePolicy>
-#include <QStyle>
+#include <QUrl>
+
+#include <algorithm>
+#include <functional>
 
 namespace dirtoo::app {
+namespace {
+
+class SegmentButton : public QPushButton {
+public:
+  SegmentButton(const fs::Location& location, const QString& label, QWidget* parent)
+      : QPushButton(label, parent)
+      , location_(location)
+  {
+    setFlat(true);
+    setCursor(Qt::PointingHandCursor);
+    setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
+    setMinimumWidth(4);
+    setFocusPolicy(Qt::NoFocus);
+    setAcceptDrops(true);
+    setStyleSheet(QStringLiteral(
+        "QPushButton { padding: 2px 6px; border-radius: 3px; }"
+        "QPushButton:hover { background: palette(mid); }"
+        "QPushButton:pressed { background: palette(dark); }"));
+  }
+
+  [[nodiscard]] const fs::Location& location() const { return location_; }
+
+  void set_current(bool current)
+  {
+    setEnabled(!current);
+    if (current) {
+      setStyleSheet(QStringLiteral(
+          "QPushButton { padding: 2px 6px; font-weight: bold; border-radius: 3px; }"));
+    }
+  }
+
+  std::function<void(const fs::Location&, const QList<QUrl>&, Qt::DropAction)> on_drop;
+
+protected:
+  void dragEnterEvent(QDragEnterEvent* event) override
+  {
+    if (event->mimeData() != nullptr && event->mimeData()->hasUrls()) {
+      event->acceptProposedAction();
+    } else {
+      event->ignore();
+    }
+  }
+
+  void dropEvent(QDropEvent* event) override
+  {
+    if (event->mimeData() == nullptr || !event->mimeData()->hasUrls()) {
+      event->ignore();
+      return;
+    }
+    if (on_drop) {
+      on_drop(location_, event->mimeData()->urls(), event->proposedAction());
+    }
+    event->acceptProposedAction();
+  }
+
+private:
+  fs::Location location_;
+};
+
+} // namespace
 
 LocationButtonBar::LocationButtonBar(QWidget* parent)
     : QWidget(parent)
@@ -43,7 +107,6 @@ LocationButtonBar::segments_for(const fs::Location& location) const
   std::vector<std::pair<QString, fs::Location>> segs;
 
   if (location.is_archive()) {
-    // Archive file path segments, then internal entry path.
     const auto archive_file = location.as_path();
     std::vector<std::filesystem::path> parts;
     for (std::filesystem::path p = archive_file; !p.empty(); p = p.parent_path()) {
@@ -91,7 +154,6 @@ LocationButtonBar::segments_for(const fs::Location& location) const
     return segs;
   }
 
-  // Normal file location.
   const auto path = location.as_path();
   std::vector<std::filesystem::path> parts;
   for (std::filesystem::path p = path; !p.empty(); p = p.parent_path()) {
@@ -128,31 +190,22 @@ void LocationButtonBar::rebuild()
   }
 
   const auto segs = segments_for(location_);
-  QPushButton* last = nullptr;
-  for (const auto& [label, loc] : segs) {
-    auto* btn = new QPushButton(label, this);
-    btn->setFlat(true);
-    btn->setCursor(Qt::PointingHandCursor);
-    btn->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
-    btn->setMinimumWidth(4);
-    btn->setFocusPolicy(Qt::NoFocus);
-    // Style as a breadcrumb chip.
-    btn->setStyleSheet(QStringLiteral(
-        "QPushButton { padding: 2px 6px; border-radius: 3px; }"
-        "QPushButton:hover { background: palette(mid); }"
-        "QPushButton:pressed { background: palette(dark); }"));
+  SegmentButton* last = nullptr;
+  for (std::size_t i = 0; i < segs.size(); ++i) {
+    const auto& [label, loc] = segs[i];
+    auto* btn = new SegmentButton(loc, label, this);
+    const bool is_current = (i + 1 == segs.size());
+    btn->set_current(is_current);
 
     const fs::Location target = loc;
     connect(btn, &QPushButton::clicked, this, [this, target] { emit location_activated(target); });
+    btn->on_drop = [this](const fs::Location& dest, const QList<QUrl>& urls, Qt::DropAction action) {
+      emit urls_dropped(dest, urls, action);
+    };
     layout_->addWidget(btn);
     last = btn;
   }
-
-  if (last != nullptr) {
-    last->setEnabled(false); // current location — not clickable
-    last->setStyleSheet(QStringLiteral(
-        "QPushButton { padding: 2px 6px; font-weight: bold; border-radius: 3px; }"));
-  }
+  (void)last;
 
   layout_->addStretch(1);
 }

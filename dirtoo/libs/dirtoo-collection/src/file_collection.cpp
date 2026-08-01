@@ -22,6 +22,53 @@ bool is_hidden_name(const std::string& name)
   return !name.empty() && name[0] == '.';
 }
 
+bool looks_like_glob(const std::string& pattern)
+{
+  return pattern.find('*') != std::string::npos || pattern.find('?') != std::string::npos;
+}
+
+/// Case-insensitive glob with `*` and `?` only.
+bool match_glob(std::string_view text, std::string_view pattern)
+{
+  std::size_t ti = 0;
+  std::size_t pi = 0;
+  std::size_t star = std::string_view::npos;
+  std::size_t match = 0;
+
+  while (ti < text.size()) {
+    if (pi < pattern.size()
+        && (pattern[pi] == '?'
+            || std::tolower(static_cast<unsigned char>(pattern[pi]))
+                   == std::tolower(static_cast<unsigned char>(text[ti])))) {
+      ++ti;
+      ++pi;
+    } else if (pi < pattern.size() && pattern[pi] == '*') {
+      star = pi++;
+      match = ti;
+    } else if (star != std::string_view::npos) {
+      pi = star + 1;
+      ti = ++match;
+    } else {
+      return false;
+    }
+  }
+  while (pi < pattern.size() && pattern[pi] == '*') {
+    ++pi;
+  }
+  return pi == pattern.size();
+}
+
+bool name_matches(const std::string& basename, const std::string& filter)
+{
+  if (filter.empty()) {
+    return true;
+  }
+  if (looks_like_glob(filter)) {
+    return match_glob(basename, filter);
+  }
+  return to_lower(basename).find(filter) != std::string::npos;
+}
+
 } // namespace
 
 void FileCollection::clear()
@@ -93,7 +140,8 @@ void FileCollection::sort_by_mtime(bool ascending)
 
 void FileCollection::set_name_filter(std::string needle)
 {
-  name_filter_ = to_lower(std::move(needle));
+  // Keep original case for globs; substring path lowercases in name_matches.
+  name_filter_ = std::move(needle);
   rebuild_visible();
 }
 
@@ -117,14 +165,14 @@ const std::vector<fs::FileInfo>& FileCollection::visible_items() const noexcept
 void FileCollection::rebuild_visible()
 {
   visible_.clear();
+  const std::string filter =
+      looks_like_glob(name_filter_) ? name_filter_ : to_lower(name_filter_);
   for (const auto& fi : items_) {
     if (!show_hidden_ && is_hidden_name(fi.basename())) {
       continue;
     }
-    if (!name_filter_.empty()) {
-      if (to_lower(fi.basename()).find(name_filter_) == std::string::npos) {
-        continue;
-      }
+    if (!name_matches(fi.basename(), filter)) {
+      continue;
     }
     visible_.push_back(fi);
   }
