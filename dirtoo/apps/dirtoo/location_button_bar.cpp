@@ -5,10 +5,12 @@
 
 #include <QDragEnterEvent>
 #include <QDropEvent>
+#include <QIcon>
 #include <QHBoxLayout>
 #include <QMimeData>
 #include <QMouseEvent>
 #include <QPushButton>
+#include <QSize>
 #include <QSizePolicy>
 #include <QUrl>
 
@@ -23,39 +25,22 @@ public:
       : QPushButton(label, parent)
       , location_(location)
   {
-    setFlat(true);
+    // Match dirtoo-py LocationButton: normal QPushButton chrome, not flat
+    // text chips with a highlight fill. Current segment uses setDown(true).
     setCursor(Qt::PointingHandCursor);
     setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
     setMinimumWidth(4);
     setFocusPolicy(Qt::NoFocus);
     setAcceptDrops(true);
-    setStyleSheet(QStringLiteral(
-        "QPushButton {"
-        "  padding: 4px 10px;"
-        "  border-radius: 4px;"
-        "  border: 1px solid palette(mid);"
-        "  background: palette(button);"
-        "  min-height: 22px;"
-        "}"
-        "QPushButton:hover { background: palette(midlight); }"
-        "QPushButton:pressed, QPushButton:checked {"
-        "  background: palette(highlight);"
-        "  color: palette(highlighted-text);"
-        "}"));
+    setStyleSheet(QStringLiteral("QPushButton { padding: 3px 4px; }"));
   }
 
   [[nodiscard]] const fs::Location& location() const { return location_; }
 
   void set_current(bool current)
   {
-    // Python LocationButtonBar uses setDown() so the current segment stays
-    // visually pressed while remaining in the trail.
-    setCheckable(true);
+    // Python: button.setDown(True) on the current ancestry segment only.
     setDown(current);
-    setChecked(current);
-    auto font = this->font();
-    font.setBold(current);
-    setFont(font);
   }
 
   std::function<void(const fs::Location&, const QList<QUrl>&, Qt::DropAction)> on_drop;
@@ -101,8 +86,8 @@ LocationButtonBar::LocationButtonBar(QWidget* parent)
     : QWidget(parent)
 {
   layout_ = new QHBoxLayout(this);
-  layout_->setContentsMargins(2, 2, 2, 2);
-  layout_->setSpacing(3);
+  layout_->setContentsMargins(0, 0, 0, 0);
+  layout_->setSpacing(0);
   setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
   setCursor(Qt::PointingHandCursor);
   setMinimumHeight(28);
@@ -251,7 +236,21 @@ void LocationButtonBar::rebuild()
   const auto segs = segments_for(location_);
   for (std::size_t i = 0; i < segs.size(); ++i) {
     const auto& [label, loc] = segs[i];
-    auto* btn = new SegmentButton(loc, label, this);
+    // Root segment: hard-disk icon + empty text (dirtoo-py).
+    SegmentButton* btn = nullptr;
+    if (label == QLatin1String("/") || label.isEmpty()) {
+      btn = new SegmentButton(loc, QString{}, this);
+      const QIcon disk = QIcon::fromTheme(QStringLiteral("drive-harddisk"),
+                                          QIcon::fromTheme(QStringLiteral("drive-harddisk-solid")));
+      if (!disk.isNull()) {
+        btn->setIcon(disk);
+        btn->setIconSize(QSize(16, 16));
+      } else {
+        btn->setText(QStringLiteral("/"));
+      }
+    } else {
+      btn = new SegmentButton(loc, label, this);
+    }
     const bool is_current = (i + 1 == segs.size());
     btn->set_current(is_current);
     wire_button(btn);
