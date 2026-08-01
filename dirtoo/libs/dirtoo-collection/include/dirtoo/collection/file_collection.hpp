@@ -45,6 +45,8 @@ public:
 
   /// Apply current sorter settings to the underlying item list.
   void apply_sort();
+  /// Sort items_ only (no visible rebuild) — for content-filter paths.
+  void sort_items_only();
 
   [[nodiscard]] Sorter& sorter() noexcept { return sorter_; }
   [[nodiscard]] const Sorter& sorter() const noexcept { return sorter_; }

@@ -141,6 +141,11 @@ void FileCollection::apply_sort()
   rebuild_visible();
 }
 
+void FileCollection::sort_items_only()
+{
+  sorter_.sort(items_);
+}
+
 void FileCollection::set_sort_key(SortKey key)
 {
   sorter_.set_key(key);

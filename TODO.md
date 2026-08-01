@@ -30,7 +30,7 @@ parity features are in place. Build/tests green (50/50 as of last Nix check).
 |-------|--------|
 | Extra stats / `weakly_canonical` per entry | **Mitigated** — `directory_entry` + `from_path_unchecked` |
 | Full listing cost | **Partial** — async + cancellable; still O(n) stats |
-| Content filter I/O on GUI thread | **Mitigated** — `FilterWorker` + `replace_visible`; soft reload keeps list (`keep_previous_visible`) |
+| Content filter I/O on GUI thread | **Mitigated** — `FilterWorker` + `replace_visible`; soft reload keeps list; sort uses `sort_items_only` + re-filter |
 | Graphics full scene rebuild | **Mitigated** — item reuse; softer `layoutChanged` refresh |
 | Thumbnails for every visible row | **Mitigated** — viewport batch (cap 64), scroll-driven |
 | Watcher full rescan storms | **Mitigated** — debounce + soft reload + **merge_items** + cancel in-flight; **no emit on start**; hard nav cancels pending soft timer |

@@ -1259,6 +1259,14 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
 
 void MainWindow::request_async_sort()
 {
+  // Content filters own visible_ via FilterWorker. Sorting must not call
+  // replace_items_sorted → rebuild_visible (GUI content I/O / wipe filter).
+  if (filter_edit_ != nullptr && !filter_edit_->text().isEmpty()
+      && filter_expression_needs_content_io(filter_edit_->text())) {
+    collection_.sort_items_only();
+    request_async_filter(/*keep_previous_visible=*/true);
+    return;
+  }
   if (sort_worker_ == nullptr) {
     collection_.apply_sort();
     refresh_list();
@@ -1466,6 +1474,8 @@ void MainWindow::on_filter_finished(quint64 generation, std::vector<dirtoo::fs::
   if (generation != filter_generation_ || search_active_) {
     return;
   }
+  // Apply current sort to the filtered list (in-memory only; no FS I/O).
+  collection_.sorter().sort(visible);
   collection_.replace_visible(std::move(visible), parse_ok);
   refresh_list();
   request_thumbnails_for_visible();
