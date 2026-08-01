@@ -5,9 +5,6 @@
 
 #include <QMetaType>
 
-#include <condition_variable>
-#include <mutex>
-
 namespace dirtoo::app {
 
 TransferWorker::TransferWorker(QObject* parent)
@@ -21,6 +18,7 @@ TransferWorker::TransferWorker(QObject* parent)
 void TransferWorker::cancel()
 {
   cancel_requested_.store(true);
+  pause_requested_.store(false);
   {
     std::lock_guard lock(conflict_mutex_);
     if (conflict_pending_) {
@@ -29,6 +27,31 @@ void TransferWorker::cancel()
     }
   }
   conflict_cv_.notify_all();
+  pause_cv_.notify_all();
+}
+
+void TransferWorker::pause()
+{
+  pause_requested_.store(true);
+  emit log_line(QStringLiteral("Paused"));
+}
+
+void TransferWorker::resume()
+{
+  pause_requested_.store(false);
+  pause_cv_.notify_all();
+  emit log_line(QStringLiteral("Resumed"));
+}
+
+void TransferWorker::wait_while_paused()
+{
+  if (!pause_requested_.load()) {
+    return;
+  }
+  std::unique_lock lock(pause_mutex_);
+  pause_cv_.wait(lock, [this] {
+    return !pause_requested_.load() || cancel_requested_.load();
+  });
 }
 
 void TransferWorker::resolve_conflict(dirops::ConflictPolicy policy, bool accepted, bool apply_to_all)
@@ -84,14 +107,19 @@ dirops::ConflictPolicy TransferWorker::wait_for_conflict_policy(
 void TransferWorker::run(TransferRequest request)
 {
   cancel_requested_.store(false);
+  pause_requested_.store(false);
   {
     std::lock_guard lock(conflict_mutex_);
     conflict_have_sticky_ = false;
   }
   TransferSummary summary;
 
+  emit log_line(request.mode == ClipboardMode::Cut ? QStringLiteral("Starting move…")
+                                                   : QStringLiteral("Starting copy…"));
+
   const int total = static_cast<int>(request.sources.size());
   for (int i = 0; i < total; ++i) {
+    wait_while_paused();
     if (cancel_requested_.load()) {
       summary.cancelled = true;
       break;
@@ -99,11 +127,18 @@ void TransferWorker::run(TransferRequest request)
 
     const auto& src = request.sources[static_cast<std::size_t>(i)];
     emit item_started(i + 1, total, QString::fromStdString(src.string()));
+    emit log_line(QStringLiteral("[%1/%2] %3")
+                      .arg(i + 1)
+                      .arg(total)
+                      .arg(QString::fromStdString(src.string())));
 
     const auto dest = request.destination_directory / src.filename();
 
     dirops::Options opt;
-    opt.is_cancelled = [this] { return cancel_requested_.load(); };
+    opt.is_cancelled = [this] {
+      wait_while_paused();
+      return cancel_requested_.load();
+    };
     opt.on_progress = [this](std::uint64_t done, std::uint64_t tot,
                              const std::filesystem::path& p) {
       emit byte_progress(static_cast<quint64>(done), static_cast<quint64>(tot),
@@ -116,8 +151,11 @@ void TransferWorker::run(TransferRequest request)
           QString::fromStdString(dest.filename().string()), src, dest, &user_cancelled);
       if (user_cancelled || cancel_requested_.load()) {
         summary.cancelled = true;
+        emit log_line(QStringLiteral("Cancelled during conflict resolution"));
         break;
       }
+      emit log_line(QStringLiteral("Conflict on %1 → policy applied")
+                        .arg(QString::fromStdString(dest.filename().string())));
     }
 
     dirops::OpResult result;
@@ -129,19 +167,28 @@ void TransferWorker::run(TransferRequest request)
 
     if (!result) {
       summary.error = QString::fromStdString(result.error().to_string());
+      emit log_line(QStringLiteral("Error: %1").arg(summary.error));
       break;
     }
     if (result->cancelled) {
       summary.cancelled = true;
+      emit log_line(QStringLiteral("Cancelled"));
       break;
     }
     if (!result->items.empty() && result->items.front().skipped) {
       ++summary.skipped;
+      emit log_line(QStringLiteral("Skipped %1").arg(QString::fromStdString(src.filename().string())));
     } else {
       ++summary.completed;
+      emit log_line(QStringLiteral("Done %1").arg(QString::fromStdString(src.filename().string())));
     }
   }
 
+  if (!summary.cancelled && summary.error.isEmpty()) {
+    emit log_line(QStringLiteral("Finished: %1 done, %2 skipped")
+                      .arg(summary.completed)
+                      .arg(summary.skipped));
+  }
   emit finished(summary);
 }
 

@@ -10,6 +10,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLocale>
+#include <QPlainTextEdit>
 #include <QProgressBar>
 #include <QPushButton>
 #include <QTimer>
@@ -22,12 +23,22 @@ TransferDialog::TransferDialog(QWidget* parent)
 {
   setWindowTitle(QStringLiteral("Transferring files"));
   setModal(true);
-  setMinimumWidth(480);
+  setMinimumWidth(520);
+  setMinimumHeight(420);
 
   auto* layout = new QVBoxLayout(this);
   title_label_ = new QLabel(QStringLiteral("<big>File transfer in progress:</big>"), this);
   title_label_->setTextFormat(Qt::RichText);
   layout->addWidget(title_label_);
+
+  auto* log_box = new QGroupBox(QStringLiteral("Log:"), this);
+  auto* log_layout = new QVBoxLayout(log_box);
+  log_ = new QPlainTextEdit(log_box);
+  log_->setReadOnly(true);
+  log_->setMaximumBlockCount(2000);
+  log_->setMinimumHeight(100);
+  log_layout->addWidget(log_);
+  layout->addWidget(log_box);
 
   auto* info = new QGroupBox(QStringLiteral("Info:"), this);
   auto* form = new QFormLayout(info);
@@ -57,9 +68,11 @@ TransferDialog::TransferDialog(QWidget* parent)
 
   auto* buttons = new QHBoxLayout();
   buttons->addStretch(1);
+  pause_btn_ = new QPushButton(QStringLiteral("Pause"), this);
   cancel_btn_ = new QPushButton(QStringLiteral("Cancel"), this);
   close_btn_ = new QPushButton(QStringLiteral("Close"), this);
   close_btn_->setVisible(false);
+  buttons->addWidget(pause_btn_);
   buttons->addWidget(cancel_btn_);
   buttons->addWidget(close_btn_);
   layout->addLayout(buttons);
@@ -69,6 +82,7 @@ TransferDialog::TransferDialog(QWidget* parent)
   ui_timer_->setInterval(250);
   connect(ui_timer_, &QTimer::timeout, this, &TransferDialog::on_tick);
 
+  connect(pause_btn_, &QPushButton::clicked, this, &TransferDialog::on_pause_toggle);
   connect(cancel_btn_, &QPushButton::clicked, this, &TransferDialog::on_cancel);
   connect(close_btn_, &QPushButton::clicked, this, &QDialog::accept);
 }
@@ -93,7 +107,7 @@ void TransferDialog::set_progress(std::uint64_t done, std::uint64_t total)
   bytes_done_ = done;
   bytes_total_ = total;
   if (total == 0) {
-    bar_->setRange(0, 0); // busy
+    bar_->setRange(0, 0);
   } else {
     bar_->setRange(0, 100);
     bar_->setValue(static_cast<int>((done * 100) / total));
@@ -106,19 +120,30 @@ void TransferDialog::set_item_progress(int current_item, int total_items)
   item_label_->setText(QStringLiteral("%1 of %2").arg(current_item).arg(total_items));
 }
 
+void TransferDialog::append_log(const QString& line)
+{
+  if (log_ != nullptr) {
+    log_->appendPlainText(line);
+  }
+}
+
 void TransferDialog::mark_finished(bool cancelled, const QString& error)
 {
   ui_timer_->stop();
   update_time_label();
+  pause_btn_->setEnabled(false);
   cancel_btn_->setEnabled(false);
   cancel_btn_->setVisible(false);
+  pause_btn_->setVisible(false);
   close_btn_->setVisible(true);
   close_btn_->setDefault(true);
   if (!error.isEmpty()) {
     title_label_->setText(QStringLiteral("<big>Transfer failed</big>"));
     file_label_->setText(error);
+    append_log(QStringLiteral("Failed: %1").arg(error));
   } else if (cancelled) {
     title_label_->setText(QStringLiteral("<big>Transfer cancelled</big>"));
+    append_log(QStringLiteral("Cancelled by user"));
   } else {
     title_label_->setText(QStringLiteral("<big>Transfer complete</big>"));
     bar_->setRange(0, 100);
@@ -137,6 +162,7 @@ bool TransferDialog::close_when_finished() const
 void TransferDialog::reset()
 {
   cancelled_.store(false);
+  paused_ = false;
   bytes_done_ = 0;
   bytes_total_ = 0;
   title_label_->setText(QStringLiteral("<big>File transfer in progress:</big>"));
@@ -145,8 +171,14 @@ void TransferDialog::reset()
   item_label_->clear();
   transferred_label_->setText(QStringLiteral("—"));
   time_label_->setText(QStringLiteral("00:00:00"));
+  if (log_ != nullptr) {
+    log_->clear();
+  }
   bar_->setRange(0, 100);
   bar_->setValue(0);
+  pause_btn_->setEnabled(true);
+  pause_btn_->setVisible(true);
+  pause_btn_->setText(QStringLiteral("Pause"));
   cancel_btn_->setEnabled(true);
   cancel_btn_->setVisible(true);
   cancel_btn_->setText(QStringLiteral("Cancel"));
@@ -158,14 +190,30 @@ void TransferDialog::reset()
 void TransferDialog::on_cancel()
 {
   cancelled_.store(true);
+  pause_btn_->setEnabled(false);
   cancel_btn_->setEnabled(false);
   cancel_btn_->setText(QStringLiteral("Cancelling…"));
   emit cancel_requested();
 }
 
+void TransferDialog::on_pause_toggle()
+{
+  if (!paused_) {
+    paused_ = true;
+    pause_btn_->setText(QStringLiteral("Continue"));
+    emit pause_requested();
+  } else {
+    paused_ = false;
+    pause_btn_->setText(QStringLiteral("Pause"));
+    emit resume_requested();
+  }
+}
+
 void TransferDialog::on_tick()
 {
-  update_time_label();
+  if (!paused_) {
+    update_time_label();
+  }
 }
 
 void TransferDialog::update_transferred_label()

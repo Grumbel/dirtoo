@@ -306,7 +306,7 @@ C++ dialogs are functional but thinner than Python. Tracked for a dedicated pass
 | Dialog | Gap vs Python |
 |--------|----------------|
 | **Conflict** | **improved** (source/dest info, apply-to-all, Replace/Rename/Skip) |
-| **Transfer** | **improved** (bytes, elapsed, dest, close-when-finished; no pause/log yet) |
+| **Transfer** | **done** (bytes, elapsed, dest, pause/resume, log, close-when-finished) |
 | **Properties** | **improved** (owner/group, times, perms read-only, MIME, media cache) |
 | **About** | **improved** (icon, version, features, license) |
 | **Rename / Create** | **done** (`ask_item_name`) |

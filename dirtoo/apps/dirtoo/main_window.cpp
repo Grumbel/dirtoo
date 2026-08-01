@@ -93,6 +93,11 @@ MainWindow::MainWindow(QWidget* parent)
   connect(transfer_worker_, &TransferWorker::conflict_required, this,
           &MainWindow::on_transfer_conflict);
   connect(transfer_worker_, &TransferWorker::finished, this, &MainWindow::on_transfer_finished);
+  connect(transfer_worker_, &TransferWorker::log_line, this, [this](const QString& line) {
+    if (transfer_dialog_ != nullptr) {
+      transfer_dialog_->append_log(line);
+    }
+  });
   transfer_thread_.start();
 
   dir_load_worker_ = new DirectoryLoadWorker;
@@ -1362,6 +1367,16 @@ void MainWindow::start_transfer(const TransferRequest& request)
     };
     connect(transfer_dialog_, &TransferDialog::cancel_requested, this, cancel_worker);
     connect(transfer_dialog_, &QDialog::rejected, this, cancel_worker);
+    connect(transfer_dialog_, &TransferDialog::pause_requested, this, [this] {
+      if (transfer_worker_ != nullptr) {
+        QMetaObject::invokeMethod(transfer_worker_, &TransferWorker::pause, Qt::QueuedConnection);
+      }
+    });
+    connect(transfer_dialog_, &TransferDialog::resume_requested, this, [this] {
+      if (transfer_worker_ != nullptr) {
+        QMetaObject::invokeMethod(transfer_worker_, &TransferWorker::resume, Qt::QueuedConnection);
+      }
+    });
   }
   transfer_dialog_->reset();
   transfer_dialog_->set_title_text(request.mode == ClipboardMode::Cut ? QStringLiteral("Moving…")

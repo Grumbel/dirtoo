@@ -10,6 +10,7 @@
 
 class QCheckBox;
 class QLabel;
+class QPlainTextEdit;
 class QProgressBar;
 class QPushButton;
 class QElapsedTimer;
@@ -28,6 +29,7 @@ public:
   void set_current_file(const QString& path);
   void set_progress(std::uint64_t done, std::uint64_t total);
   void set_item_progress(int current_item, int total_items);
+  void append_log(const QString& line);
   void mark_finished(bool cancelled, const QString& error = {});
 
   [[nodiscard]] bool is_cancelled() const noexcept { return cancelled_.load(); }
@@ -36,9 +38,12 @@ public:
 
 signals:
   void cancel_requested();
+  void pause_requested();
+  void resume_requested();
 
 private slots:
   void on_cancel();
+  void on_pause_toggle();
   void on_tick();
 
 private:
@@ -52,10 +57,13 @@ private:
   QLabel* transferred_label_ = nullptr;
   QLabel* time_label_ = nullptr;
   QProgressBar* bar_ = nullptr;
+  QPlainTextEdit* log_ = nullptr;
   QCheckBox* close_when_finished_ = nullptr;
+  QPushButton* pause_btn_ = nullptr;
   QPushButton* cancel_btn_ = nullptr;
   QPushButton* close_btn_ = nullptr;
   std::atomic<bool> cancelled_{false};
+  bool paused_ = false;
   std::uint64_t bytes_done_ = 0;
   std::uint64_t bytes_total_ = 0;
   QElapsedTimer* elapsed_ = nullptr;
