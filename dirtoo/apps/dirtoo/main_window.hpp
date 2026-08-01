@@ -122,6 +122,8 @@ private slots:
   void on_view_middle_click(const QModelIndex& index);
   void on_leap(const QString& text, bool forward, bool from_key);
   void on_show_leap();
+  /// Select and scroll to a model row (Home/End / leap).
+  void jump_to_row(int row);
   void on_toggle_filter_visible();
   void on_show_search();
   void on_search_submitted();

@@ -23,6 +23,7 @@ AppSettings load_settings()
   out.window_geometry = s.value(QStringLiteral("window/geometry")).toByteArray();
   out.window_state = s.value(QStringLiteral("window/state")).toByteArray();
   out.last_location = s.value(QStringLiteral("session/last_location")).toString();
+  out.location_history = s.value(QStringLiteral("session/location_history")).toStringList();
   return out;
 }
 
@@ -41,6 +42,7 @@ void save_settings(const AppSettings& settings)
   s.setValue(QStringLiteral("window/geometry"), settings.window_geometry);
   s.setValue(QStringLiteral("window/state"), settings.window_state);
   s.setValue(QStringLiteral("session/last_location"), settings.last_location);
+  s.setValue(QStringLiteral("session/location_history"), settings.location_history);
 }
 
 } // namespace dirtoo::app

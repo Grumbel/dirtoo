@@ -11,6 +11,7 @@
 #include <QCommandLineParser>
 #include <QDir>
 #include <QIcon>
+#include <QLoggingCategory>
 
 #include <filesystem>
 #include <iostream>
@@ -36,10 +37,24 @@ int main(int argc, char* argv[])
   parser.setApplicationDescription(QStringLiteral("Modular Qt file manager"));
   parser.addHelpOption();
   parser.addVersionOption(); // --version / -v via Qt
+  QCommandLineOption verbose_opt({QStringLiteral("verbose"), QStringLiteral("V")},
+                                 QStringLiteral("Log regular events (info level)"));
+  QCommandLineOption debug_opt(QStringLiteral("debug"),
+                               QStringLiteral("Log extreme debug messages"));
+  parser.addOption(verbose_opt);
+  parser.addOption(debug_opt);
   parser.addPositionalArgument(QStringLiteral("path"),
                                QStringLiteral("Initial directory to open"),
                                QStringLiteral("[path]"));
   parser.process(app);
+
+  if (parser.isSet(debug_opt)) {
+    QLoggingCategory::setFilterRules(QStringLiteral("*.debug=true\nqt.*.debug=false"));
+  } else if (parser.isSet(verbose_opt)) {
+    QLoggingCategory::setFilterRules(QStringLiteral("*.debug=false\n*.info=true"));
+  } else {
+    QLoggingCategory::setFilterRules(QStringLiteral("*.debug=false\n*.info=false"));
+  }
 
   dirtoo::app::MainWindow window;
 

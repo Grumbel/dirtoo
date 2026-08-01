@@ -49,6 +49,15 @@ void LeapWidget::show_and_focus()
   edit_->setFocus(Qt::PopupFocusReason);
 }
 
+void LeapWidget::show_with_text(const QString& initial)
+{
+  show();
+  place_on_parent();
+  edit_->setFocus(Qt::PopupFocusReason);
+  edit_->setText(initial);
+  edit_->setCursorPosition(initial.size());
+}
+
 void LeapWidget::place_on_parent()
 {
   QWidget* p = parentWidget();

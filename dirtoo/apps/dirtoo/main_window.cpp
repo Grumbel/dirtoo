@@ -168,6 +168,7 @@ MainWindow::MainWindow(QWidget* parent)
     btn->installEventFilter(this);
   }
   toolbar->addAction(theme_icon("go-home", "user-home"), QStringLiteral("Home"), this, &MainWindow::on_go_home);
+  toolbar->addAction(theme_icon("view-refresh", "reload"), QStringLiteral("Reload"), this, &MainWindow::on_refresh);
   toolbar->addSeparator();
   toolbar->addAction(theme_icon("folder-new"), QStringLiteral("New Folder"), this, &MainWindow::on_mkdir);
   toolbar->addSeparator();
@@ -672,6 +673,7 @@ MainWindow::MainWindow(QWidget* parent)
   tree_view_->setItemDelegate(new FileItemDelegate(model_, tree_view_));
   connect(tree_view_, &QTreeView::activated, this, &MainWindow::on_item_activated);
   tree_view_->viewport()->installEventFilter(this);
+  tree_view_->installEventFilter(this);
   connect(tree_view_, &QWidget::customContextMenuRequested, this, &MainWindow::on_context_menu);
   connect(tree_view_->header(), &QHeaderView::sectionClicked, this, &MainWindow::on_header_clicked);
   view_stack_->addWidget(tree_view_);
@@ -693,6 +695,7 @@ MainWindow::MainWindow(QWidget* parent)
   icon_view_->setDefaultDropAction(Qt::CopyAction);
   connect(icon_view_, &QListView::activated, this, &MainWindow::on_item_activated);
   icon_view_->viewport()->installEventFilter(this);
+  icon_view_->installEventFilter(this);
   connect(icon_view_, &QWidget::customContextMenuRequested, this, &MainWindow::on_context_menu);
   connect(icon_view_->verticalScrollBar(), &QScrollBar::valueChanged, this,
           [this](int) { request_thumbnails_for_visible(); });
@@ -700,6 +703,8 @@ MainWindow::MainWindow(QWidget* parent)
 
   graphics_view_ = new GraphicsFileView(view_stack_);
   graphics_view_->set_model(model_);
+  graphics_view_->viewport()->installEventFilter(this);
+  graphics_view_->installEventFilter(this);
   connect(graphics_view_, &GraphicsFileView::activated, this, &MainWindow::on_item_activated);
   connect(graphics_view_, &GraphicsFileView::middle_clicked, this, &MainWindow::on_view_middle_click);
   connect(graphics_view_, &GraphicsFileView::context_menu_requested, this,
@@ -983,6 +988,13 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
   search_results_.clear();
   if (search_edit_ != nullptr && search_edit_->isVisible()) {
     search_edit_->hide();
+  }
+  // Reset filter on directory change unless Pin Filter is active.
+  if (!filter_pinned_ && filter_edit_ != nullptr && !filter_edit_->text().isEmpty()) {
+    filter_edit_->blockSignals(true);
+    filter_edit_->clear();
+    filter_edit_->blockSignals(false);
+    collection_.set_name_filter(std::string{});
   }
   location_ = location;
   if (location_.is_archive()) {
@@ -1583,7 +1595,38 @@ void MainWindow::on_context_menu(const QPoint& pos)
   if (view == nullptr && !graphics) {
     return;
   }
+
+  // Preserve multi-selection: if the item under the cursor is already selected,
+  // keep the selection; otherwise select only that item (standard FM behaviour).
+  if (graphics && graphics_view_ != nullptr) {
+    const QModelIndex under = graphics_view_->index_at(pos);
+    if (under.isValid()) {
+      const auto rows = graphics_view_->selected_rows();
+      bool already = false;
+      for (int r : rows) {
+        if (r == under.row()) {
+          already = true;
+          break;
+        }
+      }
+      if (!already) {
+        graphics_view_->select_row(under.row(), true);
+      }
+    }
+  } else if (view != nullptr && view->selectionModel() != nullptr) {
+    // customContextMenuRequested pos is relative to the view widget; indexAt wants viewport coords.
+    const QPoint vp = view->viewport()->mapFrom(view, pos);
+    const QModelIndex under = view->indexAt(vp);
+    if (under.isValid() && !view->selectionModel()->isSelected(under)) {
+      view->selectionModel()->select(
+          under, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+      view->setCurrentIndex(under);
+    }
+  }
+
   QMenu menu(this);
+
+  // --- Open ---
   menu.addAction(QStringLiteral("Open"), this, [this, graphics] {
     if (graphics) {
       const auto rows = graphics_view_->selected_rows();
@@ -1592,11 +1635,11 @@ void MainWindow::on_context_menu(const QPoint& pos)
       }
       return;
     }
-    auto* view = current_view();
-    if (view == nullptr || view->selectionModel() == nullptr) {
+    auto* v = current_view();
+    if (v == nullptr || v->selectionModel() == nullptr) {
       return;
     }
-    const auto rows = view->selectionModel()->selectedIndexes();
+    const auto rows = v->selectionModel()->selectedIndexes();
     if (!rows.isEmpty()) {
       on_item_activated(rows.first());
     }
@@ -1618,6 +1661,8 @@ void MainWindow::on_context_menu(const QPoint& pos)
   });
   menu.addAction(QStringLiteral("Open with…"), this, &MainWindow::on_open_with);
   menu.addAction(QStringLiteral("Open in Terminal"), this, &MainWindow::on_open_terminal);
+
+  // --- Clipboard ---
   menu.addSeparator();
   menu.addAction(QStringLiteral("Cut"), this, &MainWindow::on_cut);
   menu.addAction(QStringLiteral("Copy"), this, &MainWindow::on_copy);
@@ -1636,17 +1681,24 @@ void MainWindow::on_context_menu(const QPoint& pos)
       status_label_->setText(QStringLiteral("Copied %1 path(s)").arg(paths.size()));
     }
   });
+
+  // --- Edit ---
   menu.addSeparator();
   menu.addAction(QStringLiteral("Rename…"), this, &MainWindow::on_rename_selected);
   menu.addAction(QStringLiteral("Delete…"), this, &MainWindow::on_delete_selected);
   menu.addAction(QStringLiteral("Properties…"), this, &MainWindow::on_properties);
+
+  // --- Create ---
+  menu.addSeparator();
+  menu.addAction(QStringLiteral("New Folder…"), this, &MainWindow::on_mkdir);
+  menu.addAction(QStringLiteral("New File…"), this, &MainWindow::on_create_file);
+
+  // --- Thumbnails ---
   menu.addSeparator();
   menu.addAction(QStringLiteral("Reload Thumbnails"), this, &MainWindow::on_reload_thumbnails);
   menu.addAction(QStringLiteral("Prepare Thumbnails"), this, &MainWindow::on_prepare_thumbnails);
   menu.addAction(QStringLiteral("Make Directory Thumbnails"), this, &MainWindow::on_make_directory_thumbnails);
-  menu.addSeparator();
-  menu.addAction(QStringLiteral("New Folder…"), this, &MainWindow::on_mkdir);
-  menu.addAction(QStringLiteral("New File…"), this, &MainWindow::on_create_file);
+
   if (graphics) {
     menu.exec(graphics_view_->mapToGlobal(pos));
   } else {
@@ -2291,6 +2343,22 @@ void MainWindow::restore_settings()
   if (!s.window_state.isEmpty()) {
     restoreState(s.window_state);
   }
+  // Restore persistent location history for the History menu.
+  location_history_unique_.clear();
+  for (const QString& entry : s.location_history) {
+    if (entry.isEmpty()) {
+      continue;
+    }
+    try {
+      if (entry.startsWith(QLatin1String("archive://"))
+          || entry.startsWith(QLatin1String("file://"))) {
+        location_history_unique_.push_back(fs::Location::from_url(entry.toStdString()));
+      } else {
+        location_history_unique_.push_back(fs::Location::from_path(entry.toStdString()));
+      }
+    } catch (...) {
+    }
+  }
 }
 
 void MainWindow::persist_settings() const
@@ -2329,6 +2397,9 @@ void MainWindow::persist_settings() const
   s.window_geometry = saveGeometry();
   s.window_state = saveState();
   s.last_location = QString::fromStdString(location_.as_path().string());
+  for (const auto& loc : location_history_unique_) {
+    s.location_history.append(QString::fromStdString(loc.as_url()));
+  }
   save_settings(s);
 }
 
@@ -2723,6 +2794,27 @@ void MainWindow::on_breadcrumb_drop(const fs::Location& target, const QList<QUrl
 
 bool MainWindow::eventFilter(QObject* obj, QEvent* event)
 {
+  // Right-click on an already-selected row must not clear multi-selection.
+  if (event->type() == QEvent::MouseButtonPress) {
+    auto* me = static_cast<QMouseEvent*>(event);
+    if (me->button() == Qt::RightButton) {
+      QAbstractItemView* av = nullptr;
+      if (tree_view_ != nullptr && obj == tree_view_->viewport()) {
+        av = tree_view_;
+      } else if (icon_view_ != nullptr && obj == icon_view_->viewport()) {
+        av = icon_view_;
+      }
+      if (av != nullptr && av->selectionModel() != nullptr) {
+        const QModelIndex under = av->indexAt(me->pos());
+        if (under.isValid() && av->selectionModel()->isSelected(under)) {
+          // Swallow the press so the view does not re-select (clearing multi-select).
+          // Context menu still arrives via customContextMenuRequested.
+          return true;
+        }
+      }
+    }
+  }
+
   if (event->type() == QEvent::MouseButtonRelease) {
     auto* me = static_cast<QMouseEvent*>(event);
     if (me->button() == Qt::MiddleButton && parent_act_ != nullptr) {
@@ -2744,6 +2836,35 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event)
         on_view_middle_click(index);
         return true;
       }
+    }
+  }
+
+  // Home/End + type-ahead when a file view (or its viewport) has focus.
+  const bool is_file_view =
+      (tree_view_ != nullptr && (obj == tree_view_ || obj == tree_view_->viewport()))
+      || (icon_view_ != nullptr && (obj == icon_view_ || obj == icon_view_->viewport()))
+      || (graphics_view_ != nullptr
+          && (obj == graphics_view_ || obj == graphics_view_->viewport()));
+  if (is_file_view && event->type() == QEvent::KeyPress) {
+    auto* ke = static_cast<QKeyEvent*>(event);
+    if (ke->key() == Qt::Key_Home && ke->modifiers() == Qt::NoModifier) {
+      jump_to_row(0);
+      return true;
+    }
+    if (ke->key() == Qt::Key_End && ke->modifiers() == Qt::NoModifier) {
+      if (model_ != nullptr && model_->rowCount() > 0) {
+        jump_to_row(model_->rowCount() - 1);
+      }
+      return true;
+    }
+    // Type-ahead: printable text without Ctrl/Alt/Meta opens the leap overlay.
+    if (!(ke->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))
+        && !ke->text().isEmpty() && ke->text().at(0).isPrint()
+        && !ke->text().at(0).isSpace()) {
+      if (leap_widget_ != nullptr) {
+        leap_widget_->show_with_text(ke->text());
+      }
+      return true;
     }
   }
 
@@ -2825,6 +2946,35 @@ void MainWindow::on_show_leap()
   }
 }
 
+void MainWindow::jump_to_row(int row)
+{
+  if (model_ == nullptr || row < 0 || row >= model_->rowCount()) {
+    return;
+  }
+  const QModelIndex idx = model_->index(row, 0);
+  if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr) {
+    graphics_view_->select_row(row, true);
+    // select_row materializes the item when needed; centre it in the viewport.
+    const auto items = graphics_view_->scene()->selectedItems();
+    if (!items.isEmpty()) {
+      graphics_view_->ensureVisible(items.front(), 32, 32);
+    } else if (row == 0) {
+      graphics_view_->verticalScrollBar()->setValue(0);
+    } else if (row >= model_->rowCount() - 1) {
+      graphics_view_->verticalScrollBar()->setValue(
+          graphics_view_->verticalScrollBar()->maximum());
+    }
+    return;
+  }
+  auto* view = current_view();
+  if (view == nullptr || view->selectionModel() == nullptr) {
+    return;
+  }
+  view->setCurrentIndex(idx);
+  view->selectionModel()->select(idx, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+  view->scrollTo(idx, QAbstractItemView::PositionAtCenter);
+}
+
 void MainWindow::on_leap(const QString& text, bool forward, bool from_key)
 {
   (void)from_key;
@@ -2836,9 +2986,13 @@ void MainWindow::on_leap(const QString& text, bool forward, bool from_key)
     return;
   }
 
-  auto* view = current_view();
   int start = 0;
-  if (view != nullptr && view->selectionModel() != nullptr) {
+  if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr) {
+    const auto sel = graphics_view_->selected_rows();
+    if (!sel.empty()) {
+      start = sel.front();
+    }
+  } else if (auto* view = current_view(); view != nullptr && view->selectionModel() != nullptr) {
     const auto sel = view->selectionModel()->selectedIndexes();
     if (!sel.isEmpty()) {
       start = sel.first().row();
@@ -2873,13 +3027,10 @@ void MainWindow::on_leap(const QString& text, bool forward, bool from_key)
     }
   }
 
-  if (found < 0 || view == nullptr) {
+  if (found < 0) {
     return;
   }
-  const QModelIndex idx = model_->index(found, 0);
-  view->setCurrentIndex(idx);
-  view->selectionModel()->select(idx, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
-  view->scrollTo(idx);
+  jump_to_row(found);
 }
 
 void MainWindow::on_parent_new_window()

@@ -464,6 +464,10 @@ void GraphicsFileView::mouseReleaseEvent(QMouseEvent* event)
 void GraphicsFileView::contextMenuEvent(QContextMenuEvent* event)
 {
   const auto idx = index_at(event->pos());
+  // Keep multi-selection when right-clicking an already-selected tile.
+  if (idx.isValid() && !selected_row_set_.contains(idx.row())) {
+    select_row(idx.row(), true);
+  }
   emit context_menu_requested(event->globalPos(), idx);
   event->accept();
 }
@@ -482,6 +486,12 @@ void GraphicsFileView::mousePressEvent(QMouseEvent* event)
       event->accept();
       return;
     }
+  }
+  if (event->button() == Qt::RightButton) {
+    // Avoid QGraphicsView clearing multi-selection on right-click.
+    // Selection is adjusted (if needed) in contextMenuEvent.
+    event->accept();
+    return;
   }
   if (event->button() == Qt::LeftButton) {
     drag_start_pos_ = event->pos();

@@ -5,6 +5,7 @@
 
 #include <QByteArray>
 #include <QString>
+#include <QStringList>
 
 namespace dirtoo::app {
 
@@ -21,6 +22,8 @@ struct AppSettings {
   QByteArray window_geometry;
   QByteArray window_state;
   QString last_location;
+  /// Persistent location history (URLs / paths), most recent last.
+  QStringList location_history;
 };
 
 [[nodiscard]] AppSettings load_settings();

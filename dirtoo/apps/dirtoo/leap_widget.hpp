@@ -22,6 +22,8 @@ public:
 
 public slots:
   void show_and_focus();
+  /// Show the leap overlay pre-filled with @p initial (e.g. first typed character).
+  void show_with_text(const QString& initial);
 
 signals:
   /// text, forward direction, wrap selection
