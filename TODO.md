@@ -12,12 +12,18 @@ Completed:
 - Phase 2 (core): `dirops` copy/move/rename/remove/mkdir/swap with conflict policies + unit tests + CLI tools
 - Phase 3 stub: `QFileSystemWatcher`-based directory watcher
 - Phase 4 basics: `FileCollection` sort + name filter
-- Phase 5 partial: MainWindow with history, filter, context menu, open/rename/mkdir/delete via dirops
+- Phase 5 (much of MVP UI):
+  - Detail table model (Name/Size/Modified/Type) with column sort
+  - Navigation history, filter, open files/folders
+  - Context menu + toolbar: rename/mkdir/delete
+  - Clipboard cut/copy/paste via dirops (`application/x-dirtoo-clipboard` + `text/uri-list`)
+  - Conflict dialog (Overwrite / Rename / Skip / Cancel)
 
 Next:
-- Finish Phase 5: detail/icon view model, clipboard copy-cut-paste, conflict dialog UI
-- Phase 6 thumbnails
-- Stronger same-device detection tests; progress UI for large copies
+- Icon view mode; keyboard focus polish
+- Phase 6 thumbnails (D-Bus Thumbnailer1)
+- Transfer progress dialog for large copies
+- GNOME clipboard format interop (optional)
 
 Principles (see also `AGENTS.md`):
 

@@ -5,6 +5,12 @@ qt_add_executable(dirtoo-app
   main.cpp
   main_window.cpp
   main_window.hpp
+  file_list_model.cpp
+  file_list_model.hpp
+  clipboard.cpp
+  clipboard.hpp
+  conflict_dialog.cpp
+  conflict_dialog.hpp
 )
 
 set_target_properties(dirtoo-app PROPERTIES OUTPUT_NAME dirtoo)

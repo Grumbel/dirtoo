@@ -3,20 +3,27 @@
 
 #include "main_window.hpp"
 
+#include "clipboard.hpp"
+#include "conflict_dialog.hpp"
 #include "dirtoo/fs/file_info.hpp"
 #include "dirops/ops.hpp"
 
+#include <QAbstractItemView>
 #include <QAction>
+#include <QApplication>
+#include <QClipboard>
 #include <QDesktopServices>
 #include <QDir>
+#include <QHeaderView>
 #include <QInputDialog>
+#include <QKeySequence>
 #include <QLabel>
 #include <QLineEdit>
-#include <QAbstractItemView>
-#include <QListView>
 #include <QMenu>
 #include <QMessageBox>
+#include <QMimeData>
 #include <QToolBar>
+#include <QTreeView>
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -29,27 +36,41 @@ MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
 {
   setWindowTitle(QStringLiteral("dirtoo"));
-  resize(900, 600);
+  resize(960, 640);
 
   auto* toolbar = addToolBar(QStringLiteral("Main"));
   toolbar->setMovable(false);
 
-  back_act_ = toolbar->addAction(QStringLiteral("Back"));
-  connect(back_act_, &QAction::triggered, this, &MainWindow::on_go_back);
-
-  forward_act_ = toolbar->addAction(QStringLiteral("Forward"));
-  connect(forward_act_, &QAction::triggered, this, &MainWindow::on_go_forward);
-
-  auto* parent_act = toolbar->addAction(QStringLiteral("Parent"));
-  connect(parent_act, &QAction::triggered, this, &MainWindow::on_go_parent);
-
-  auto* home_act = toolbar->addAction(QStringLiteral("Home"));
-  connect(home_act, &QAction::triggered, this, &MainWindow::on_go_home);
-
+  back_act_ = toolbar->addAction(QStringLiteral("Back"), this, &MainWindow::on_go_back);
+  forward_act_ = toolbar->addAction(QStringLiteral("Forward"), this, &MainWindow::on_go_forward);
+  toolbar->addAction(QStringLiteral("Parent"), this, &MainWindow::on_go_parent);
+  toolbar->addAction(QStringLiteral("Home"), this, &MainWindow::on_go_home);
   toolbar->addSeparator();
+  toolbar->addAction(QStringLiteral("New Folder"), this, &MainWindow::on_mkdir);
+  toolbar->addSeparator();
+  toolbar->addAction(QStringLiteral("Cut"), this, &MainWindow::on_cut);
+  toolbar->addAction(QStringLiteral("Copy"), this, &MainWindow::on_copy);
+  paste_act_ = toolbar->addAction(QStringLiteral("Paste"), this, &MainWindow::on_paste);
 
-  auto* mkdir_act = toolbar->addAction(QStringLiteral("New Folder"));
-  connect(mkdir_act, &QAction::triggered, this, &MainWindow::on_mkdir);
+  // Standard edit shortcuts
+  {
+    auto* cut = new QAction(this);
+    cut->setShortcut(QKeySequence::Cut);
+    connect(cut, &QAction::triggered, this, &MainWindow::on_cut);
+    addAction(cut);
+    auto* copy = new QAction(this);
+    copy->setShortcut(QKeySequence::Copy);
+    connect(copy, &QAction::triggered, this, &MainWindow::on_copy);
+    addAction(copy);
+    auto* paste = new QAction(this);
+    paste->setShortcut(QKeySequence::Paste);
+    connect(paste, &QAction::triggered, this, &MainWindow::on_paste);
+    addAction(paste);
+    auto* del = new QAction(this);
+    del->setShortcut(QKeySequence::Delete);
+    connect(del, &QAction::triggered, this, &MainWindow::on_delete_selected);
+    addAction(del);
+  }
 
   auto* central = new QWidget(this);
   auto* layout = new QVBoxLayout(central);
@@ -64,19 +85,28 @@ MainWindow::MainWindow(QWidget* parent)
   connect(filter_edit_, &QLineEdit::textChanged, this, &MainWindow::on_filter_changed);
   layout->addWidget(filter_edit_);
 
-  list_model_ = new QStringListModel(this);
-  list_view_ = new QListView(central);
-  list_view_->setModel(list_model_);
-  list_view_->setUniformItemSizes(true);
-  list_view_->setSelectionMode(QAbstractItemView::ExtendedSelection);
-  list_view_->setContextMenuPolicy(Qt::CustomContextMenu);
-  connect(list_view_, &QListView::activated, this, &MainWindow::on_item_activated);
-  connect(list_view_, &QWidget::customContextMenuRequested, this, &MainWindow::on_context_menu);
-  layout->addWidget(list_view_, 1);
+  model_ = new FileListModel(this);
+  model_->set_collection(&collection_);
+
+  tree_view_ = new QTreeView(central);
+  tree_view_->setModel(model_);
+  tree_view_->setRootIsDecorated(false);
+  tree_view_->setUniformRowHeights(true);
+  tree_view_->setSelectionMode(QAbstractItemView::ExtendedSelection);
+  tree_view_->setSelectionBehavior(QAbstractItemView::SelectRows);
+  tree_view_->setSortingEnabled(false);
+  tree_view_->setContextMenuPolicy(Qt::CustomContextMenu);
+  tree_view_->header()->setStretchLastSection(true);
+  tree_view_->setColumnWidth(0, 320);
+  tree_view_->setColumnWidth(1, 100);
+  tree_view_->setColumnWidth(2, 160);
+  connect(tree_view_, &QTreeView::activated, this, &MainWindow::on_item_activated);
+  connect(tree_view_, &QWidget::customContextMenuRequested, this, &MainWindow::on_context_menu);
+  connect(tree_view_->header(), &QHeaderView::sectionClicked, this, &MainWindow::on_header_clicked);
+  layout->addWidget(tree_view_, 1);
 
   status_label_ = new QLabel(central);
   layout->addWidget(status_label_);
-
   setCentralWidget(central);
 
   connect(&watcher_, &watcher::DirectoryWatcher::directory_changed, this,
@@ -85,7 +115,11 @@ MainWindow::MainWindow(QWidget* parent)
     status_label_->setText(msg);
   });
 
+  // Keep Paste enabled state roughly in sync.
+  connect(qApp->clipboard(), &QClipboard::dataChanged, this, &MainWindow::update_edit_actions);
+
   update_history_actions();
+  update_edit_actions();
 }
 
 void MainWindow::open_location(const fs::Location& location, bool record_history)
@@ -126,8 +160,7 @@ void MainWindow::on_go_parent()
 
 void MainWindow::on_go_home()
 {
-  const auto home = std::filesystem::path{QDir::homePath().toStdString()};
-  open_location(fs::Location::from_path(home));
+  open_location(fs::Location::from_path(std::filesystem::path{QDir::homePath().toStdString()}));
 }
 
 void MainWindow::on_go_back()
@@ -158,11 +191,33 @@ void MainWindow::update_history_actions()
   }
 }
 
+void MainWindow::update_edit_actions()
+{
+  if (paste_act_) {
+    paste_act_->setEnabled(clipboard_has_paths(QApplication::clipboard()->mimeData()));
+  }
+}
+
 void MainWindow::on_directory_changed()
 {
   auto items = fs::list_directory(location_);
   collection_.set_items(std::move(items));
-  collection_.sort_by_name(true);
+
+  switch (sort_column_) {
+  case SortColumn::Name:
+    collection_.sort_by_name(sort_ascending_);
+    break;
+  case SortColumn::Size:
+    collection_.sort_by_size(sort_ascending_);
+    break;
+  case SortColumn::Modified:
+    collection_.sort_by_mtime(sort_ascending_);
+    break;
+  case SortColumn::Type:
+    collection_.sort_by_name(sort_ascending_);
+    break;
+  }
+
   if (!filter_edit_->text().isEmpty()) {
     collection_.set_name_filter(filter_edit_->text().toStdString());
   }
@@ -175,53 +230,144 @@ void MainWindow::on_filter_changed(const QString& text)
   refresh_list();
 }
 
+void MainWindow::on_header_clicked(int section)
+{
+  const auto col = static_cast<SortColumn>(section);
+  if (sort_column_ == col) {
+    sort_ascending_ = !sort_ascending_;
+  } else {
+    sort_column_ = col;
+    sort_ascending_ = true;
+  }
+  on_directory_changed();
+}
+
 void MainWindow::on_item_activated(const QModelIndex& index)
 {
-  if (!index.isValid()) {
+  const fs::FileInfo* fi = model_->file_at(index.row());
+  if (fi == nullptr) {
     return;
   }
-  const auto& visible = collection_.visible_items();
-  const auto i = static_cast<std::size_t>(index.row());
-  if (i >= visible.size()) {
-    return;
-  }
-  const auto& fi = visible[i];
-  if (fi.is_directory()) {
-    open_location(fi.location());
+  if (fi->is_directory()) {
+    open_location(fi->location());
   } else {
-    const QUrl url = QUrl::fromLocalFile(QString::fromStdString(fi.path().string()));
-    QDesktopServices::openUrl(url);
+    QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(fi->path().string())));
   }
 }
 
 std::vector<fs::FileInfo> MainWindow::selected_fileinfos() const
 {
-  std::vector<fs::FileInfo> out;
-  const auto& visible = collection_.visible_items();
-  const auto indexes = list_view_->selectionModel()->selectedIndexes();
-  for (const QModelIndex& idx : indexes) {
-    const auto i = static_cast<std::size_t>(idx.row());
-    if (i < visible.size()) {
-      out.push_back(visible[i]);
-    }
-  }
-  return out;
+  return model_->files_at(tree_view_->selectionModel()->selectedRows());
 }
 
 void MainWindow::on_context_menu(const QPoint& pos)
 {
   QMenu menu(this);
   menu.addAction(QStringLiteral("Open"), this, [this] {
-    const auto indexes = list_view_->selectionModel()->selectedIndexes();
-    if (!indexes.isEmpty()) {
-      on_item_activated(indexes.first());
+    const auto rows = tree_view_->selectionModel()->selectedRows();
+    if (!rows.isEmpty()) {
+      on_item_activated(rows.first());
     }
   });
+  menu.addSeparator();
+  menu.addAction(QStringLiteral("Cut"), this, &MainWindow::on_cut);
+  menu.addAction(QStringLiteral("Copy"), this, &MainWindow::on_copy);
+  menu.addAction(QStringLiteral("Paste"), this, &MainWindow::on_paste);
+  menu.addSeparator();
   menu.addAction(QStringLiteral("Rename…"), this, &MainWindow::on_rename_selected);
   menu.addAction(QStringLiteral("Delete…"), this, &MainWindow::on_delete_selected);
   menu.addSeparator();
   menu.addAction(QStringLiteral("New Folder…"), this, &MainWindow::on_mkdir);
-  menu.exec(list_view_->viewport()->mapToGlobal(pos));
+  menu.exec(tree_view_->viewport()->mapToGlobal(pos));
+}
+
+void MainWindow::set_clipboard(ClipboardMode mode)
+{
+  const auto selected = selected_fileinfos();
+  if (selected.empty()) {
+    status_label_->setText(QStringLiteral("Nothing selected"));
+    return;
+  }
+  std::vector<std::filesystem::path> paths;
+  paths.reserve(selected.size());
+  for (const auto& fi : selected) {
+    paths.push_back(fi.path());
+  }
+  QApplication::clipboard()->setMimeData(make_clipboard_mime(mode, paths));
+  status_label_->setText(QStringLiteral("%1 item(s) %2")
+                             .arg(paths.size())
+                             .arg(mode == ClipboardMode::Cut ? QStringLiteral("cut")
+                                                             : QStringLiteral("copied")));
+  update_edit_actions();
+}
+
+void MainWindow::on_copy()
+{
+  set_clipboard(ClipboardMode::Copy);
+}
+
+void MainWindow::on_cut()
+{
+  set_clipboard(ClipboardMode::Cut);
+}
+
+void MainWindow::on_paste()
+{
+  const ClipboardPayload payload = parse_clipboard_mime(QApplication::clipboard()->mimeData());
+  if (payload.paths.empty()) {
+    status_label_->setText(QStringLiteral("Clipboard has no files"));
+    return;
+  }
+
+  const auto dest_dir = location_.as_path();
+  int ok_count = 0;
+  int skip_count = 0;
+
+  for (const auto& src : payload.paths) {
+    const auto dest = dest_dir / src.filename();
+
+    dirops::Options opt;
+    if (std::filesystem::exists(dest)) {
+      const auto chosen = ask_conflict_policy(this, QString::fromStdString(dest.filename().string()));
+      if (!chosen) {
+        status_label_->setText(QStringLiteral("Paste cancelled"));
+        on_directory_changed();
+        return;
+      }
+      opt.conflict = *chosen;
+    } else {
+      opt.conflict = dirops::ConflictPolicy::Fail;
+    }
+
+    dirops::OpResult result;
+    if (payload.mode == ClipboardMode::Cut) {
+      result = dirops::move_path(src, dest_dir, opt);
+    } else {
+      result = dirops::copy_path(src, dest_dir, opt);
+    }
+
+    if (!result) {
+      QMessageBox::warning(this, QStringLiteral("Paste"),
+                           QString::fromStdString(result.error().to_string()));
+      break;
+    }
+    if (!result->items.empty() && result->items.front().skipped) {
+      ++skip_count;
+    } else {
+      ++ok_count;
+    }
+  }
+
+  // After a successful cut, clear clipboard so items are not moved again.
+  if (payload.mode == ClipboardMode::Cut && ok_count > 0) {
+    QApplication::clipboard()->clear();
+  }
+
+  status_label_->setText(QStringLiteral("Paste: %1 done, %2 skipped")
+                             .arg(ok_count)
+                             .arg(skip_count));
+  on_directory_changed();
+  update_edit_actions();
 }
 
 void MainWindow::on_mkdir()
@@ -235,13 +381,38 @@ void MainWindow::on_mkdir()
   }
 
   const auto dest = location_.as_path() / name.trimmed().toStdString();
+  if (std::filesystem::exists(dest)) {
+    const auto chosen = ask_conflict_policy(this, name.trimmed());
+    if (!chosen || *chosen == dirops::ConflictPolicy::Skip) {
+      return;
+    }
+    if (*chosen == dirops::ConflictPolicy::Overwrite) {
+      auto rm = dirops::remove_path(dest);
+      if (!rm) {
+        QMessageBox::warning(this, QStringLiteral("New Folder"),
+                             QString::fromStdString(rm.error().to_string()));
+        return;
+      }
+    } else if (*chosen == dirops::ConflictPolicy::Rename) {
+      // create under unique name
+      const auto unique = dest.parent_path()
+                          / (dest.stem().string() + " (2)" + dest.extension().string());
+      auto result = dirops::create_directory(unique);
+      if (!result) {
+        QMessageBox::warning(this, QStringLiteral("New Folder"),
+                             QString::fromStdString(result.error().to_string()));
+      }
+      on_directory_changed();
+      return;
+    }
+  }
+
   auto result = dirops::create_directory(dest);
   if (!result) {
     QMessageBox::warning(this, QStringLiteral("New Folder"),
                          QString::fromStdString(result.error().to_string()));
     return;
   }
-  // Watcher should refresh; force a rescan if needed.
   on_directory_changed();
 }
 
@@ -263,7 +434,16 @@ void MainWindow::on_rename_selected()
   }
 
   const auto dest = fi.path().parent_path() / name.trimmed().toStdString();
-  auto result = dirops::rename_path(fi.path(), dest);
+  dirops::Options opt;
+  if (std::filesystem::exists(dest) && dest != fi.path()) {
+    const auto chosen = ask_conflict_policy(this, name.trimmed());
+    if (!chosen) {
+      return;
+    }
+    opt.conflict = *chosen;
+  }
+
+  auto result = dirops::rename_path(fi.path(), dest, opt);
   if (!result) {
     QMessageBox::warning(this, QStringLiteral("Rename"),
                          QString::fromStdString(result.error().to_string()));
@@ -283,8 +463,7 @@ void MainWindow::on_delete_selected()
                           ? QStringLiteral("Delete “%1”?")
                                 .arg(QString::fromStdString(selected.front().basename()))
                           : QStringLiteral("Delete %1 items?").arg(selected.size());
-  const auto answer = QMessageBox::question(this, QStringLiteral("Delete"), msg);
-  if (answer != QMessageBox::Yes) {
+  if (QMessageBox::question(this, QStringLiteral("Delete"), msg) != QMessageBox::Yes) {
     return;
   }
 
@@ -301,19 +480,9 @@ void MainWindow::on_delete_selected()
 
 void MainWindow::refresh_list()
 {
-  QStringList rows;
-  const auto& visible = collection_.visible_items();
-  rows.reserve(static_cast<int>(visible.size()));
-  for (const auto& fi : visible) {
-    QString line = QString::fromStdString(fi.basename());
-    if (fi.is_directory()) {
-      line += QLatin1Char('/');
-    }
-    rows.push_back(line);
-  }
-  list_model_->setStringList(rows);
+  model_->refresh();
   status_label_->setText(QStringLiteral("%1 items in %2")
-                             .arg(rows.size())
+                             .arg(model_->rowCount())
                              .arg(QString::fromStdString(location_.as_path().string())));
 }
 
