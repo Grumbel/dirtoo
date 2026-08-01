@@ -11,6 +11,8 @@ qt_add_executable(dirtoo-app
   clipboard.hpp
   conflict_dialog.cpp
   conflict_dialog.hpp
+  transfer_dialog.cpp
+  transfer_dialog.hpp
 )
 
 set_target_properties(dirtoo-app PROPERTIES OUTPUT_NAME dirtoo)
@@ -21,6 +23,7 @@ target_link_libraries(dirtoo-app
     dirtoo::fs
     dirtoo::collection
     dirtoo::watcher
+    dirtoo::thumbnail
     dirtoo::dirops
     Qt6::Core
     Qt6::Gui

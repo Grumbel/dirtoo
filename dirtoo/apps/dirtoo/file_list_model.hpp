@@ -7,6 +7,8 @@
 #include "dirtoo/fs/file_info.hpp"
 
 #include <QAbstractTableModel>
+#include <QHash>
+#include <QIcon>
 
 namespace dirtoo::app {
 
@@ -28,6 +30,9 @@ public:
   void set_collection(collection::FileCollection* collection);
   void refresh();
 
+  void set_thumbnail(const QString& path, const QIcon& icon);
+  void clear_thumbnails();
+
   [[nodiscard]] int rowCount(const QModelIndex& parent = {}) const override;
   [[nodiscard]] int columnCount(const QModelIndex& parent = {}) const override;
   [[nodiscard]] QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
@@ -39,7 +44,10 @@ public:
   [[nodiscard]] std::vector<fs::FileInfo> files_at(const QModelIndexList& indexes) const;
 
 private:
+  [[nodiscard]] QIcon icon_for(const fs::FileInfo& fi) const;
+
   collection::FileCollection* collection_ = nullptr;
+  QHash<QString, QIcon> thumbnails_;
 };
 
 } // namespace dirtoo::app

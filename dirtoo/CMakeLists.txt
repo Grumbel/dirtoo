@@ -15,7 +15,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(DIRTOO_BUILD_TESTS "Build unit tests" ON)
 option(DIRTOO_BUILD_TOOLS "Build CLI tools" ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets DBus)
 qt_standard_project_setup()
 
 # ---------------------------------------------------------------------------

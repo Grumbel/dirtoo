@@ -6,6 +6,7 @@
 #include "clipboard.hpp"
 #include "dirtoo/collection/file_collection.hpp"
 #include "dirtoo/fs/location.hpp"
+#include "dirtoo/thumbnail/thumbnailer.hpp"
 #include "dirtoo/watcher/directory_watcher.hpp"
 #include "dirops/ops.hpp"
 #include "file_list_model.hpp"
@@ -17,10 +18,17 @@
 
 class QLineEdit;
 class QTreeView;
+class QListView;
 class QLabel;
 class QAction;
+class QStackedWidget;
 
 namespace dirtoo::app {
+
+enum class ViewMode {
+  Detail,
+  Icons,
+};
 
 class MainWindow : public QMainWindow {
   Q_OBJECT
@@ -47,17 +55,25 @@ private slots:
   void on_cut();
   void on_paste();
   void on_header_clicked(int section);
+  void on_view_detail();
+  void on_view_icons();
+  void on_thumbnail_ready(const dirtoo::fs::Location& location, const QString& path);
+  void on_thumbnail_failed(const dirtoo::fs::Location& location, const QString& message);
 
 private:
   void refresh_list();
   void update_history_actions();
   void update_edit_actions();
+  void set_view_mode(ViewMode mode);
   void set_clipboard(ClipboardMode mode);
+  void request_thumbnails_for_visible();
   [[nodiscard]] std::vector<fs::FileInfo> selected_fileinfos() const;
+  [[nodiscard]] QAbstractItemView* current_view() const;
 
   fs::Location location_;
   collection::FileCollection collection_;
   watcher::DirectoryWatcher watcher_;
+  thumbnail::Thumbnailer thumbnailer_;
   FileListModel* model_ = nullptr;
 
   std::vector<fs::Location> history_;
@@ -66,15 +82,20 @@ private:
   enum class SortColumn { Name, Size, Modified, Type };
   SortColumn sort_column_ = SortColumn::Name;
   bool sort_ascending_ = true;
+  ViewMode view_mode_ = ViewMode::Detail;
 
   QLineEdit* location_edit_ = nullptr;
   QLineEdit* filter_edit_ = nullptr;
+  QStackedWidget* view_stack_ = nullptr;
   QTreeView* tree_view_ = nullptr;
+  QListView* icon_view_ = nullptr;
   QLabel* status_label_ = nullptr;
 
   QAction* back_act_ = nullptr;
   QAction* forward_act_ = nullptr;
   QAction* paste_act_ = nullptr;
+  QAction* detail_act_ = nullptr;
+  QAction* icons_act_ = nullptr;
 };
 
 } // namespace dirtoo::app

@@ -7,23 +7,21 @@ This document is the working plan for the C++ port. The Python tree in
 ## Progress (2026-08-01)
 
 Completed:
-- Phase 0 scaffold (CMake, flake, libs, app, tools, tests)
-- Phase 1 basics: `Location`, `FileInfo`, `list_directory`
-- Phase 2 (core): `dirops` copy/move/rename/remove/mkdir/swap with conflict policies + unit tests + CLI tools
-- Phase 3 stub: `QFileSystemWatcher`-based directory watcher
-- Phase 4 basics: `FileCollection` sort + name filter
-- Phase 5 (much of MVP UI):
-  - Detail table model (Name/Size/Modified/Type) with column sort
-  - Navigation history, filter, open files/folders
-  - Context menu + toolbar: rename/mkdir/delete
-  - Clipboard cut/copy/paste via dirops (`application/x-dirtoo-clipboard` + `text/uri-list`)
-  - Conflict dialog (Overwrite / Rename / Skip / Cancel)
+- Phase 0–2: scaffold, dirtoo-fs, full dirops + tests + CLI tools
+- Phase 3: QFileSystemWatcher directory watcher
+- Phase 4: FileCollection sort/filter
+- Phase 5 (MVP UI largely in place):
+  - Detail table + **Icon view** toggle
+  - History, filter, open, rename/mkdir/delete
+  - Clipboard cut/copy/paste via dirops
+  - Conflict dialog + transfer progress dialog (cancelable)
+- Phase 6 (started): freedesktop **Thumbnailer1 D-Bus client**; icons use cache or queue generation
 
 Next:
-- Icon view mode; keyboard focus polish
-- Phase 6 thumbnails (D-Bus Thumbnailer1)
-- Transfer progress dialog for large copies
-- GNOME clipboard format interop (optional)
+- Refine icon layout / zoom levels
+- Background worker thread for large transfers (avoid blocking UI)
+- Optional GNOME clipboard format
+- Archive browsing (later)
 
 Principles (see also `AGENTS.md`):
 

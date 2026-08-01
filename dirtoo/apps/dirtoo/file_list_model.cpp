@@ -4,6 +4,7 @@
 #include "file_list_model.hpp"
 
 #include <QDateTime>
+#include <QFileIconProvider>
 #include <QLocale>
 
 #include <algorithm>
@@ -11,6 +12,12 @@
 
 namespace dirtoo::app {
 namespace {
+
+QFileIconProvider& icon_provider()
+{
+  static QFileIconProvider provider;
+  return provider;
+}
 
 QString format_size(std::uint64_t bytes, bool is_directory)
 {
@@ -42,7 +49,6 @@ QString type_label(const fs::FileInfo& fi)
   if (ext.empty()) {
     return QStringLiteral("File");
   }
-  // extension() includes the leading dot
   if (!ext.empty() && ext[0] == '.') {
     return QString::fromStdString(ext.substr(1));
   }
@@ -69,6 +75,43 @@ void FileListModel::refresh()
   endResetModel();
 }
 
+void FileListModel::set_thumbnail(const QString& path, const QIcon& icon)
+{
+  thumbnails_.insert(path, icon);
+  if (collection_ == nullptr) {
+    return;
+  }
+  const auto& visible = collection_->visible_items();
+  for (int row = 0; row < static_cast<int>(visible.size()); ++row) {
+    if (QString::fromStdString(visible[static_cast<std::size_t>(row)].path().string()) == path) {
+      const QModelIndex idx = index(row, 0);
+      emit dataChanged(idx, idx, {Qt::DecorationRole});
+      break;
+    }
+  }
+}
+
+void FileListModel::clear_thumbnails()
+{
+  if (thumbnails_.isEmpty()) {
+    return;
+  }
+  thumbnails_.clear();
+  if (rowCount() > 0) {
+    emit dataChanged(index(0, 0), index(rowCount() - 1, 0), {Qt::DecorationRole});
+  }
+}
+
+QIcon FileListModel::icon_for(const fs::FileInfo& fi) const
+{
+  const QString path = QString::fromStdString(fi.path().string());
+  const auto it = thumbnails_.constFind(path);
+  if (it != thumbnails_.constEnd()) {
+    return it.value();
+  }
+  return icon_provider().icon(QFileInfo(path));
+}
+
 int FileListModel::rowCount(const QModelIndex& parent) const
 {
   if (parent.isValid() || collection_ == nullptr) {
@@ -90,6 +133,10 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
   const fs::FileInfo* fi = file_at(index.row());
   if (fi == nullptr) {
     return {};
+  }
+
+  if (role == Qt::DecorationRole && index.column() == 0) {
+    return icon_for(*fi);
   }
 
   if (role == Qt::DisplayRole) {

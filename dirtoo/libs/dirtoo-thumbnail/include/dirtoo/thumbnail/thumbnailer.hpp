@@ -7,25 +7,55 @@
 
 #include <QObject>
 #include <QString>
+#include <QStringList>
+
+#include <unordered_map>
+
+class QDBusInterface;
 
 namespace dirtoo::thumbnail {
 
-/// Placeholder for freedesktop Thumbnailer1 D-Bus client.
+/// Client for org.freedesktop.thumbnails.Thumbnailer1.
+/// Falls back to reading an existing cache file when the service is unavailable.
 class Thumbnailer : public QObject {
   Q_OBJECT
 
 public:
   explicit Thumbnailer(QObject* parent = nullptr);
+  ~Thumbnailer() override;
 
-  /// Returns the expected on-disk path for a large thumbnail, if any.
+  /// Expected on-disk path for a thumbnail (XDG thumbnail spec).
   [[nodiscard]] static QString cache_path_for(const fs::Location& location,
                                               const QString& flavor = QStringLiteral("large"));
 
-  void request(const fs::Location& location, const QString& flavor = QStringLiteral("large"));
+  /// Queue thumbnail generation. Emits thumbnail_ready or thumbnail_failed.
+  void request(const fs::Location& location,
+               const QString& mime_type = QStringLiteral("application/octet-stream"),
+               const QString& flavor = QStringLiteral("large"));
+
+  void request_many(const std::vector<fs::Location>& locations,
+                    const QStringList& mime_types,
+                    const QString& flavor = QStringLiteral("large"));
 
 signals:
   void thumbnail_ready(const dirtoo::fs::Location& location, const QString& path);
   void thumbnail_failed(const dirtoo::fs::Location& location, const QString& message);
+
+private slots:
+  void on_ready(uint handle, const QStringList& uris);
+  void on_error(uint handle, const QStringList& uris, int error_code, const QString& message);
+  void on_finished(uint handle);
+
+private:
+  void connect_signals();
+  void emit_from_cache_or_fail(const fs::Location& location, const QString& flavor,
+                               const QString& reason);
+
+  QDBusInterface* iface_ = nullptr;
+  bool service_available_ = false;
+
+  // handle -> list of locations queued under that handle
+  std::unordered_map<uint, std::vector<fs::Location>> pending_;
 };
 
 } // namespace dirtoo::thumbnail

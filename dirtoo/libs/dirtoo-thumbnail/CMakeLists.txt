@@ -19,6 +19,7 @@ target_link_libraries(dirtoo-thumbnail
     dirtoo_warnings
     dirtoo::fs
     Qt6::Core
+    Qt6::DBus
 )
 
 target_compile_features(dirtoo-thumbnail PUBLIC cxx_std_23)
