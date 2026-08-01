@@ -30,9 +30,18 @@ public:
     setFocusPolicy(Qt::NoFocus);
     setAcceptDrops(true);
     setStyleSheet(QStringLiteral(
-        "QPushButton { padding: 2px 6px; border-radius: 3px; }"
-        "QPushButton:hover { background: palette(mid); }"
-        "QPushButton:pressed { background: palette(dark); }"));
+        "QPushButton {"
+        "  padding: 4px 10px;"
+        "  border-radius: 4px;"
+        "  border: 1px solid palette(mid);"
+        "  background: palette(button);"
+        "  min-height: 22px;"
+        "}"
+        "QPushButton:hover { background: palette(midlight); }"
+        "QPushButton:pressed, QPushButton:checked {"
+        "  background: palette(highlight);"
+        "  color: palette(highlighted-text);"
+        "}"));
   }
 
   [[nodiscard]] const fs::Location& location() const { return location_; }
@@ -41,7 +50,9 @@ public:
   {
     // Python LocationButtonBar uses setDown() so the current segment stays
     // visually pressed while remaining in the trail.
+    setCheckable(true);
     setDown(current);
+    setChecked(current);
     auto font = this->font();
     font.setBold(current);
     setFont(font);
@@ -90,10 +101,11 @@ LocationButtonBar::LocationButtonBar(QWidget* parent)
     : QWidget(parent)
 {
   layout_ = new QHBoxLayout(this);
-  layout_->setContentsMargins(0, 0, 0, 0);
-  layout_->setSpacing(2);
+  layout_->setContentsMargins(2, 2, 2, 2);
+  layout_->setSpacing(3);
   setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
   setCursor(Qt::PointingHandCursor);
+  setMinimumHeight(28);
 }
 
 void LocationButtonBar::wire_button(SegmentButton* btn)

@@ -66,6 +66,7 @@ protected:
   void mouseMoveEvent(QMouseEvent* event) override;
   void dragEnterEvent(QDragEnterEvent* event) override;
   void dragMoveEvent(QDragMoveEvent* event) override;
+  void dragLeaveEvent(QDragLeaveEvent* event) override;
   void dropEvent(QDropEvent* event) override;
   void scrollContentsBy(int dx, int dy) override;
   void changeEvent(QEvent* event) override;

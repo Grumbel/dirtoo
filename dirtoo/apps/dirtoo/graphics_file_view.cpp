@@ -17,6 +17,7 @@
 #include <QDropEvent>
 #include <QDragMoveEvent>
 #include <QDragEnterEvent>
+#include <QDragLeaveEvent>
 #include <QMimeData>
 #include <QDrag>
 #include <QTimer>
@@ -610,14 +611,43 @@ void GraphicsFileView::dragMoveEvent(QDragMoveEvent* event)
     } else {
       event->setDropAction(Qt::CopyAction);
     }
+    // Highlight folder under the cursor as the drop target.
+    GraphicsFileItem* under = qgraphicsitem_cast<GraphicsFileItem*>(itemAt(event->position().toPoint()));
+    bool under_is_dir = false;
+    if (under != nullptr && model_ != nullptr) {
+      if (const auto* fi = model_->file_at(under->row()); fi != nullptr && fi->is_directory()) {
+        under_is_dir = true;
+      }
+    }
+    for (GraphicsFileItem* it : items_) {
+      if (it == nullptr) {
+        continue;
+      }
+      it->set_drop_target(under_is_dir && it == under);
+    }
     event->accept();
   } else {
     event->ignore();
   }
 }
 
+void GraphicsFileView::dragLeaveEvent(QDragLeaveEvent* event)
+{
+  for (GraphicsFileItem* it : items_) {
+    if (it != nullptr) {
+      it->set_drop_target(false);
+    }
+  }
+  QGraphicsView::dragLeaveEvent(event);
+}
+
 void GraphicsFileView::dropEvent(QDropEvent* event)
 {
+  for (GraphicsFileItem* it : items_) {
+    if (it != nullptr) {
+      it->set_drop_target(false);
+    }
+  }
   if (event->mimeData() == nullptr || !event->mimeData()->hasUrls()) {
     event->ignore();
     return;

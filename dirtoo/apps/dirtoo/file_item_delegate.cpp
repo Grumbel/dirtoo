@@ -8,6 +8,7 @@
 #include "dirtoo/fs/file_info.hpp"
 
 #include <QApplication>
+#include <QFileIconProvider>
 #include <QFontMetrics>
 #include <QMetaObject>
 #include <QPainter>
@@ -341,6 +342,17 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
   }
 
   const fs::FileInfo* fi = model_->file_at(index.row());
+
+  // Directory with a montage/thumbnail: keep a folder emblem so it stays recognizable.
+  if (fi != nullptr && fi->is_directory()
+      && index.data(ThumbnailStatusRole).toInt() == static_cast<int>(ThumbnailStatus::Ready)) {
+    static QFileIconProvider provider;
+    const QIcon folder_icon = provider.icon(QFileIconProvider::Folder);
+    const int emblem = std::max(16, thumb.width() / 3);
+    const QRect emblem_rect(thumb.left() + 2, thumb.bottom() - emblem - 2, emblem, emblem);
+    folder_icon.paint(painter, emblem_rect, Qt::AlignCenter);
+  }
+
   MediaKind kind = MediaKind::None;
   std::optional<filter::MediaInfo> meta;
 

@@ -220,25 +220,28 @@ thumbnail work. `dirops` remains Qt-free.
 
 - [x] Home/End should jump to the top/bottom of the file view
 - [x] type-ahead in the file view should jump to a file matching the name, currently does nothing
-- [ ] folders with thumbnails should still be recognizable as folders,
+- [x] folders with thumbnails should still be recognizable as folders,
       use them as background for a normal folder icon, see dirtoo-py/.
+      (folder emblem overlaid on directory montages)
 - [x] a dedicated reload button to reload a folder, inotify can't
       always be dependend up on or isn't available sometimes
-- [ ] thumbnail generation isn't starting
+- [x] thumbnail generation isn't starting
+      (extension-based MIME for Thumbnailer1; octet-stream was often ignored)
 - [ ] new files where marked with a little sticker in dirtoo-py, they aren't anymore
       (code path exists via `IsNewRole` / `mark_new` on watcher soft reload — needs verification)
 - [x] no debug messages make it hard to lack what is going on, add a
       --verbose (regular events) and --debug (extreme debug messages)
       flag for more verbose messages
-- [ ] if a file is drag&dropped and hovering over a folder, the folder
+- [x] if a file is drag&dropped and hovering over a folder, the folder
       should indicate that it is the drog target at the moment
+      (Graphics view drop-target highlight)
 - [ ] folders should show how many files they contain (i.e. filecount, non-recursive)
 - [x] right click menu should follow normal conventions, currently looks very unorganized
       (grouped Open / Clipboard / Edit / Create / Thumbnails sections)
 - [ ] proper mime-type handling is missing, no "Open With...", no
       default mime-apps listed in context menu, see dirtoo-py/
       ("Open with…" exists; default mime-app list still missing)
-- [ ] the chunky button in the LocationBar in dirtoo-py/ looked
+- [x] the chunky button in the LocationBar in dirtoo-py/ looked
       better, "Location:" label didn't hurd either.
 - [x] filters should reset when changing directories, unless Pin filter is active
 - [ ] the Location syntax of dirtoo-py/ was better than the new JAR inspired one
@@ -249,7 +252,7 @@ thumbnail work. `dirops` remains Qt-free.
 - [x] Rename dialog doesn't open up
       (same selection fix as Properties)
 - [ ] dirtoo-py/ had a much better
-- [ ] sort and group-by used to have buttons in the toolbar
+- [x] sort and group-by used to have buttons in the toolbar
 - [ ] the rendering of group-by looks like a hack, if there isn't an
       obviously batter way, leave that
 - [x] history isn't persistent between restarts

@@ -8,6 +8,7 @@
 
 #include "dirtoo/filter/media_meta_cache.hpp"
 
+#include <QFileIconProvider>
 #include <QGraphicsSceneContextMenuEvent>
 #include <QGraphicsSceneMouseEvent>
 #include <QPainter>
@@ -99,6 +100,15 @@ void GraphicsFileItem::set_tile_size(const QSize& size)
   update();
 }
 
+void GraphicsFileItem::set_drop_target(bool on)
+{
+  if (drop_target_ == on) {
+    return;
+  }
+  drop_target_ = on;
+  update();
+}
+
 QRectF GraphicsFileItem::boundingRect() const
 {
   return QRectF(0, 0, tile_size_.width(), tile_size_.height());
@@ -132,6 +142,15 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
     QColor fill = highlight;
     fill.setAlpha(40);
     painter->fillRect(br, fill);
+  }
+  if (drop_target_) {
+    QColor fill = highlight;
+    fill.setAlpha(120);
+    painter->fillRect(br, fill);
+    QPen pen(highlight, 2);
+    painter->setPen(pen);
+    painter->setBrush(Qt::NoBrush);
+    painter->drawRoundedRect(br.adjusted(1, 1, -1, -1), 4, 4);
   }
 
   // Group section header above the first item of a group (matches FileItemDelegate).
@@ -180,6 +199,17 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
     } else {
       icon.paint(painter, thumb, Qt::AlignCenter);
     }
+  }
+
+  // Directory with a montage/thumbnail: folder emblem so it stays recognizable.
+  if (const auto* fi = model_->file_at(row_);
+      fi != nullptr && fi->is_directory()
+      && idx.data(ThumbnailStatusRole).toInt() == static_cast<int>(ThumbnailStatus::Ready)) {
+    static QFileIconProvider provider;
+    const QIcon folder_icon = provider.icon(QFileIconProvider::Folder);
+    const int emblem = std::max(16, icon_side / 3);
+    const QRect emblem_rect(thumb.left() + 2, thumb.bottom() - emblem - 2, emblem, emblem);
+    folder_icon.paint(painter, emblem_rect, Qt::AlignCenter);
   }
 
   // Media badges from memory cache only

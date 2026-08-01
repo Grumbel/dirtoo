@@ -62,6 +62,7 @@
 #include <QTreeView>
 #include <QScrollBar>
 #include <QUrl>
+#include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QGraphicsItem>
 #include <QGraphicsScene>
@@ -218,6 +219,118 @@ MainWindow::MainWindow(QWidget* parent)
                      &MainWindow::on_less_icon_details);
   toolbar->addAction(theme_icon("zoom-fit-best", "list-add"), QStringLiteral("More detail"), this,
                      &MainWindow::on_more_icon_details);
+
+  // Sort / Group toolbar menus (parity with Python toolbar buttons)
+  toolbar->addSeparator();
+  {
+    auto* sort_btn = new QToolButton(toolbar);
+    sort_btn->setText(QStringLiteral("Sort"));
+    sort_btn->setIcon(theme_icon("view-sort-ascending", "view-sort"));
+    sort_btn->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    sort_btn->setPopupMode(QToolButton::InstantPopup);
+    auto* sort_menu = new QMenu(sort_btn);
+    auto* sort_group = new QActionGroup(sort_btn);
+    sort_group->setExclusive(true);
+    auto add_sort = [&](const QString& title, dirtoo::collection::SortKey key, bool checked) {
+      auto* act = sort_menu->addAction(title);
+      act->setCheckable(true);
+      act->setChecked(checked);
+      sort_group->addAction(act);
+      connect(act, &QAction::triggered, this, [this, key] {
+        sort_ascending_ = true;
+        collection_.sorter().set_ascending(true);
+        collection_.sorter().set_key(key);
+        switch (key) {
+        case dirtoo::collection::SortKey::Name:
+          sort_column_ = SortColumn::Name;
+          break;
+        case dirtoo::collection::SortKey::Size:
+          sort_column_ = SortColumn::Size;
+          break;
+        case dirtoo::collection::SortKey::Modified:
+          sort_column_ = SortColumn::Modified;
+          break;
+        case dirtoo::collection::SortKey::Type:
+          sort_column_ = SortColumn::Type;
+          break;
+        default:
+          break;
+        }
+        request_async_sort();
+      });
+    };
+    add_sort(QStringLiteral("Name"), dirtoo::collection::SortKey::Name, true);
+    add_sort(QStringLiteral("Size"), dirtoo::collection::SortKey::Size, false);
+    add_sort(QStringLiteral("Modified"), dirtoo::collection::SortKey::Modified, false);
+    add_sort(QStringLiteral("Type"), dirtoo::collection::SortKey::Type, false);
+    sort_menu->addSeparator();
+    auto* asc = sort_menu->addAction(QStringLiteral("Ascending"));
+    asc->setCheckable(true);
+    asc->setChecked(true);
+    connect(asc, &QAction::triggered, this, [this, asc] {
+      sort_ascending_ = true;
+      collection_.sorter().set_ascending(true);
+      asc->setChecked(true);
+      request_async_sort();
+    });
+    auto* desc = sort_menu->addAction(QStringLiteral("Descending"));
+    desc->setCheckable(true);
+    connect(desc, &QAction::triggered, this, [this, desc, asc] {
+      sort_ascending_ = false;
+      collection_.sorter().set_ascending(false);
+      desc->setChecked(true);
+      asc->setChecked(false);
+      request_async_sort();
+    });
+    sort_btn->setMenu(sort_menu);
+    toolbar->addWidget(sort_btn);
+  }
+  {
+    auto* group_btn = new QToolButton(toolbar);
+    group_btn->setText(QStringLiteral("Group"));
+    group_btn->setIcon(theme_icon("view-list-tree", "view-list"));
+    group_btn->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    group_btn->setPopupMode(QToolButton::InstantPopup);
+    auto* group_menu = new QMenu(group_btn);
+    auto* group_actions = new QActionGroup(group_btn);
+    group_actions->setExclusive(true);
+    auto add_group = [&](const QString& title, dirtoo::collection::GroupMode mode, bool checked) {
+      auto* act = group_menu->addAction(title);
+      act->setCheckable(true);
+      act->setChecked(checked);
+      group_actions->addAction(act);
+      connect(act, &QAction::triggered, this, [this, mode] {
+        collection_.set_group_mode(mode);
+        {
+          AppSettings s = load_settings();
+          switch (mode) {
+          case collection::GroupMode::Day:
+            s.group_mode = QStringLiteral("day");
+            break;
+          case collection::GroupMode::Directory:
+            s.group_mode = QStringLiteral("directory");
+            break;
+          case collection::GroupMode::Duration:
+            s.group_mode = QStringLiteral("duration");
+            break;
+          default:
+            s.group_mode = QStringLiteral("none");
+            break;
+          }
+          save_settings(s);
+        }
+        if (model_ != nullptr) {
+          model_->refresh();
+        }
+      });
+    };
+    add_group(QStringLiteral("None"), dirtoo::collection::GroupMode::None, true);
+    add_group(QStringLiteral("Day"), dirtoo::collection::GroupMode::Day, false);
+    add_group(QStringLiteral("Directory"), dirtoo::collection::GroupMode::Directory, false);
+    add_group(QStringLiteral("Duration"), dirtoo::collection::GroupMode::Duration, false);
+    group_btn->setMenu(group_menu);
+    toolbar->addWidget(group_btn);
+  }
 
   // Menu bar
   {
@@ -574,7 +687,16 @@ MainWindow::MainWindow(QWidget* parent)
     loc_layout->setContentsMargins(0, 0, 0, 0);
     loc_layout->setSpacing(0);
 
-    location_buttons_ = new LocationButtonBar(loc_host);
+    auto* breadcrumb_row = new QWidget(loc_host);
+    auto* breadcrumb_layout = new QHBoxLayout(breadcrumb_row);
+    breadcrumb_layout->setContentsMargins(4, 2, 4, 2);
+    breadcrumb_layout->setSpacing(6);
+    auto* loc_label = new QLabel(QStringLiteral("Location:"), breadcrumb_row);
+    loc_label->setStyleSheet(QStringLiteral("font-weight: bold;"));
+    breadcrumb_layout->addWidget(loc_label);
+
+    location_buttons_ = new LocationButtonBar(breadcrumb_row);
+    breadcrumb_layout->addWidget(location_buttons_, 1);
     connect(location_buttons_, &LocationButtonBar::location_activated, this,
             &MainWindow::on_breadcrumb_location);
     connect(location_buttons_, &LocationButtonBar::location_activated_new_window, this,
@@ -621,7 +743,7 @@ MainWindow::MainWindow(QWidget* parent)
     });
     location_edit_->hide();
 
-    loc_layout->addWidget(location_buttons_);
+    loc_layout->addWidget(breadcrumb_row);
     loc_layout->addWidget(location_edit_);
     layout->addWidget(loc_host);
     location_stack_host_ = loc_host;
@@ -1408,8 +1530,11 @@ void MainWindow::request_thumbnails_for_visible()
         model_->set_thumbnail_pending(path);
       }
       locs.push_back(fi.location());
-      // Avoid QMimeDatabase::mimeTypeForFile (stat/magic) on the GUI thread.
-      mimes.push_back(QStringLiteral("application/octet-stream"));
+      // Extension-only MIME guess (no content/magic I/O on the GUI thread).
+      // Tumbler / Thumbnailer1 needs a real type; octet-stream is often ignored.
+      static QMimeDatabase mime_db;
+      const QMimeType mt = mime_db.mimeTypeForFile(path, QMimeDatabase::MatchExtension);
+      mimes.push_back(mt.isValid() ? mt.name() : QStringLiteral("application/octet-stream"));
     }
     if (!locs.empty()) {
       thumbnailer_.request_many(locs, mimes, QStringLiteral("large"));

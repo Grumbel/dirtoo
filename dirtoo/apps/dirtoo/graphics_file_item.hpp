@@ -25,6 +25,9 @@ public:
   void set_tile_size(const QSize& size);
   [[nodiscard]] QSize tile_size() const noexcept { return tile_size_; }
 
+  void set_drop_target(bool on);
+  [[nodiscard]] bool is_drop_target() const noexcept { return drop_target_; }
+
   [[nodiscard]] QRectF boundingRect() const override;
   void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
 
@@ -38,6 +41,7 @@ private:
   GraphicsFileView* view_ = nullptr;
   int row_ = -1;
   QSize tile_size_{128, 160};
+  bool drop_target_ = false;
 };
 
 } // namespace dirtoo::app
