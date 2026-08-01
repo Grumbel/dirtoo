@@ -16,6 +16,7 @@
 #include <QStyleOptionGraphicsItem>
 
 #include <algorithm>
+#include <initializer_list>
 #include <cctype>
 #include <optional>
 
@@ -230,7 +231,7 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
     }
   }
 
-  // Media badges (Python: level_of_detail > 1). Request async if missing.
+  // Media text badges + image/video stickers (Python paint_metadata, level_of_detail > 1).
   if (model_->icon_detail_level() > 1) {
     if (const auto* fi = model_->file_at(row_); fi != nullptr && !fi->is_directory()) {
       std::string ext = fi->extension();
@@ -240,22 +241,27 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
       for (char& c : ext) {
         c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
       }
-      static const char* kMedia[] = {
-          "png", "jpg", "jpeg", "gif", "webp", "bmp", "tif", "tiff", "svg",
-          "mp4", "mkv", "webm", "avi", "mov", "m4v", "wmv", "flv", "mpg", "mpeg",
-          "mp3", "flac", "ogg", "wav", "m4a", "aac", "opus",
-          "pdf", "zip", "tar", "tgz", "7z", "rar", "cbz", "cbr", "jar", "apk",
-          "gz", "bz2", "xz"};
-      bool want = false;
-      for (const char* e : kMedia) {
-        if (ext == e) {
-          want = true;
-          break;
+      auto is_one_of = [&](std::initializer_list<const char*> list) {
+        for (const char* e : list) {
+          if (ext == e) {
+            return true;
+          }
         }
-      }
+        return false;
+      };
+      const bool is_image = is_one_of(
+          {"png", "jpg", "jpeg", "gif", "bmp", "webp", "tif", "tiff", "svg", "heic", "avif"});
+      const bool is_video = is_one_of(
+          {"mp4", "mkv", "webm", "avi", "mov", "wmv", "m4v", "mpeg", "mpg", "ts", "flv"});
+      const bool is_audio = is_one_of(
+          {"mp3", "flac", "ogg", "opus", "wav", "m4a", "aac", "wma"});
+      const bool want_meta = is_image || is_video || is_audio
+          || is_one_of({"pdf", "zip", "tar", "tgz", "7z", "rar", "cbz", "cbr", "jar", "apk", "gz",
+                        "bz2", "xz"});
+
       auto& cache = filter::MediaMetaCache::instance();
       std::optional<filter::MediaInfo> meta;
-      if (want) {
+      if (want_meta) {
         meta = cache.try_get(fi->path());
         if (!meta && !cache.is_negative(fi->path())) {
           const int row = row_;
@@ -271,26 +277,43 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
                         });
         }
       }
+
+      QString top_left;
+      QString top_right;
+      QString bottom_left;
       if (meta) {
-        QString top_left;
-        QString top_right;
-        QString bottom_left;
-        if (meta->duration_ms && *meta->duration_ms > 0) {
+        // Duration only for video/audio, and only if at least 1 second (never 0:00 on images).
+        if ((is_video || is_audio) && meta->duration_ms && *meta->duration_ms >= 1000) {
           top_left = format_duration_ms(*meta->duration_ms);
         } else if (meta->pages && *meta->pages > 0) {
           top_left = QStringLiteral("%1 pages").arg(*meta->pages);
         } else if (meta->file_count && *meta->file_count > 0) {
           top_left = QStringLiteral("%1 files").arg(*meta->file_count);
         }
-        if (meta->framerate && *meta->framerate > 0.0) {
+        if ((is_video || is_audio) && meta->framerate && *meta->framerate > 0.0) {
           top_right = QStringLiteral("%1fps").arg(*meta->framerate, 0, 'g', 3);
         }
         if (meta->width && meta->height && *meta->width > 0 && *meta->height > 0) {
           bottom_left = QStringLiteral("%1×%2").arg(*meta->width).arg(*meta->height);
         }
-        draw_badge(painter, thumb, top_left, Qt::AlignLeft | Qt::AlignTop);
-        draw_badge(painter, thumb, top_right, Qt::AlignRight | Qt::AlignTop);
-        draw_badge(painter, thumb, bottom_left, Qt::AlignLeft | Qt::AlignBottom);
+      }
+      draw_badge(painter, thumb, top_left, Qt::AlignLeft | Qt::AlignTop);
+      draw_badge(painter, thumb, top_right, Qt::AlignRight | Qt::AlignTop);
+      draw_badge(painter, thumb, bottom_left, Qt::AlignLeft | Qt::AlignBottom);
+
+      // Image / video sticker (bottom-right), same as dirtoo-py.
+      if (is_image || is_video || is_audio) {
+        static const QPixmap k_video(QStringLiteral(":/icons/badge-video.png"));
+        static const QPixmap k_image(QStringLiteral(":/icons/badge-image.png"));
+        const QPixmap& pm = (is_video || is_audio) ? k_video : k_image;
+        if (!pm.isNull()) {
+          const int s = 24;
+          const QRect r(thumb.right() - s - 2, thumb.bottom() - s - 2, s, s);
+          painter->save();
+          painter->setOpacity(0.5);
+          painter->drawPixmap(r, pm);
+          painter->restore();
+        }
       }
     }
   }

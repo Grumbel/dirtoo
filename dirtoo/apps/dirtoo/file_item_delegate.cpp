@@ -412,15 +412,17 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
       QString top_right;
       QString bottom_left;
 
-      // Priority matches Python: duration, else pages, else file_count.
-      if (meta && meta->duration_ms && *meta->duration_ms > 0) {
+      // Duration only for video/audio and only if ≥1s (images must not show 0:00).
+      if (meta && (kind == MediaKind::Video || kind == MediaKind::Audio)
+          && meta->duration_ms && *meta->duration_ms >= 1000) {
         top_left = format_duration_ms(*meta->duration_ms);
       } else if (meta && meta->pages && *meta->pages > 0) {
         top_left = QStringLiteral("%1 pages").arg(*meta->pages);
       } else if (meta && meta->file_count && *meta->file_count > 0) {
         top_left = QStringLiteral("%1 files").arg(*meta->file_count);
       }
-      if (meta && meta->framerate && *meta->framerate > 0.0) {
+      if (meta && (kind == MediaKind::Video || kind == MediaKind::Audio)
+          && meta->framerate && *meta->framerate > 0.0) {
         top_right = QStringLiteral("%1fps").arg(*meta->framerate, 0, 'g', 3);
       }
       if (meta && meta->width && meta->height && *meta->width > 0 && *meta->height > 0) {
