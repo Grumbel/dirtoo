@@ -103,6 +103,14 @@ MainWindow::MainWindow(QWidget* parent)
   qRegisterMetaType<std::vector<dirtoo::fs::FileInfo>>("std::vector<dirtoo::fs::FileInfo>");
   dir_load_thread_->start();
 
+  sort_worker_ = new SortWorker;
+  sort_thread_ = new QThread(this);
+  sort_worker_->moveToThread(sort_thread_);
+  connect(sort_thread_, &QThread::finished, sort_worker_, &QObject::deleteLater);
+  connect(sort_worker_, &SortWorker::sorted, this, &MainWindow::on_sort_finished);
+  qRegisterMetaType<dirtoo::collection::SortKey>("dirtoo::collection::SortKey");
+  sort_thread_->start();
+
   auto* toolbar = addToolBar(QStringLiteral("Main"));
   toolbar->setMovable(false);
   toolbar->setIconSize(QSize(24, 24));
@@ -265,8 +273,8 @@ MainWindow::MainWindow(QWidget* parent)
       sort_group->addAction(act);
       connect(act, &QAction::triggered, this, [this, key] {
         sort_ascending_ = true;
-        collection_.set_sort_ascending(true);
-        collection_.set_sort_key(key);
+        collection_.sorter().set_ascending(true);
+        collection_.sorter().set_key(key);
         // Map header-related keys
         switch (key) {
         case dirtoo::collection::SortKey::Name:
@@ -285,8 +293,7 @@ MainWindow::MainWindow(QWidget* parent)
         default:
           break;
         }
-        refresh_list();
-        request_thumbnails_for_visible();
+        request_async_sort();
       });
       return act;
     };
@@ -311,8 +318,8 @@ MainWindow::MainWindow(QWidget* parent)
       act->setCheckable(true);
       act->setChecked(true);
       connect(act, &QAction::toggled, this, [this](bool on) {
-        collection_.set_directories_first(on);
-        refresh_list();
+        collection_.sorter().set_directories_first(on);
+        request_async_sort();
       });
     }
     {
@@ -320,8 +327,8 @@ MainWindow::MainWindow(QWidget* parent)
       act->setCheckable(true);
       connect(act, &QAction::toggled, this, [this](bool on) {
         sort_ascending_ = !on;
-        collection_.set_sort_ascending(!on);
-        refresh_list();
+        collection_.sorter().set_ascending(!on);
+        request_async_sort();
       });
     }
 
@@ -570,6 +577,10 @@ MainWindow::~MainWindow()
   if (dir_load_thread_ != nullptr) {
     dir_load_thread_->quit();
     dir_load_thread_->wait(3000);
+  }
+  if (sort_thread_ != nullptr) {
+    sort_thread_->quit();
+    sort_thread_->wait(3000);
   }
 }
 
@@ -870,15 +881,46 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
     return;
   }
   collection_.sorter().set_ascending(sort_ascending_);
-  collection_.set_items(std::move(items));
+  // Show entries ASAP; order refined by SortWorker.
+  collection_.set_items_unsorted(std::move(items));
   if (filter_edit_ != nullptr && !filter_edit_->text().isEmpty()) {
     collection_.set_name_filter(filter_edit_->text().toStdString());
   }
   refresh_list();
-  request_thumbnails_for_visible();
   if (status_label_ != nullptr) {
     status_label_->setText(QStringLiteral("%1 items").arg(collection_.visible_items().size()));
   }
+  request_async_sort();
+  request_thumbnails_for_visible();
+}
+
+void MainWindow::request_async_sort()
+{
+  if (sort_worker_ == nullptr) {
+    collection_.apply_sort();
+    refresh_list();
+    return;
+  }
+  const quint64 gen = ++sort_generation_;
+  auto items = collection_.items(); // copy
+  const auto key = collection_.sorter().key();
+  const bool asc = collection_.sorter().ascending();
+  const bool dirs_first = collection_.sorter().directories_first();
+  QMetaObject::invokeMethod(sort_worker_, "sort_items", Qt::QueuedConnection,
+                            Q_ARG(std::vector<dirtoo::fs::FileInfo>, items),
+                            Q_ARG(dirtoo::collection::SortKey, key), Q_ARG(bool, asc),
+                            Q_ARG(bool, dirs_first), Q_ARG(quint64, gen));
+}
+
+void MainWindow::on_sort_finished(quint64 generation, std::vector<fs::FileInfo> items)
+{
+  if (generation != sort_generation_ || search_active_) {
+    return;
+  }
+  // match_/filter and show_hidden stay; only item order changes.
+  collection_.replace_items_sorted(std::move(items));
+  refresh_list();
+  request_thumbnails_for_visible();
 }
 
 void MainWindow::on_directory_load_failed(quint64 generation, QString error)
@@ -977,9 +1019,8 @@ void MainWindow::on_header_clicked(int section)
     break;
   }
   collection_.sorter().set_ascending(sort_ascending_);
-  collection_.set_sort_key(key);
-  refresh_list();
-  request_thumbnails_for_visible();
+  collection_.sorter().set_key(key);
+  request_async_sort();
 }
 
 void MainWindow::on_item_activated(const QModelIndex& index)

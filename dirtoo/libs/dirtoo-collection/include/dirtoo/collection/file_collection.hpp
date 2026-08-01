@@ -19,6 +19,10 @@ class FileCollection {
 public:
   void clear();
   void set_items(std::vector<fs::FileInfo> items);
+  /// Replace items without sorting (caller will sort async).
+  void set_items_unsorted(std::vector<fs::FileInfo> items);
+  /// Replace underlying items after an off-thread sort; rebuilds visible.
+  void replace_items_sorted(std::vector<fs::FileInfo> items);
   void add(fs::FileInfo info);
   bool remove(const fs::Location& location);
 

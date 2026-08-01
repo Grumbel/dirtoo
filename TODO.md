@@ -141,7 +141,7 @@ Schema evolution via `PRAGMA user_version` migrations.
 - [x] Wire FileItemDelegate to memory-only + viewport requests (paint path)  
 - [x] Stop sync `probe_media` from sorter (memory only); filter uses cache then sync resolve for CLI  
 - [x] Async directory load (`DirectoryLoadWorker` + generation)  
-- [ ] Async sort  
+- [x] Async sort (`SortWorker` + generation; show unsorted then refine)  
 - [x] Debounced thumbnails (80ms singleShot)  
 - [ ] Optional: persist more FileInfo fields; multi-backend location keys  
 

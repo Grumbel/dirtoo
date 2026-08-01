@@ -45,6 +45,18 @@ void FileCollection::set_items(std::vector<fs::FileInfo> items)
   apply_sort();
 }
 
+void FileCollection::set_items_unsorted(std::vector<fs::FileInfo> items)
+{
+  items_ = std::move(items);
+  rebuild_visible();
+}
+
+void FileCollection::replace_items_sorted(std::vector<fs::FileInfo> items)
+{
+  items_ = std::move(items);
+  rebuild_visible();
+}
+
 void FileCollection::add(fs::FileInfo info)
 {
   items_.push_back(std::move(info));
