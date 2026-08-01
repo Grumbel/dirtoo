@@ -78,8 +78,13 @@ void FileListModel::set_collection(collection::FileCollection* collection)
 
 void FileListModel::refresh()
 {
-  beginResetModel();
-  endResetModel();
+  // Prefer layoutChanged over full reset when the collection already backs this model.
+  // GraphicsFileView can relayout/reuse items instead of tearing down the scene.
+  emit layoutAboutToBeChanged();
+  emit layoutChanged();
+  if (rowCount() > 0) {
+    emit dataChanged(index(0, 0), index(rowCount() - 1, columnCount() - 1));
+  }
 }
 
 void FileListModel::emit_path_changed(const QString& path)
@@ -206,6 +211,17 @@ void FileListModel::set_crop_thumbnails(bool crop)
   }
 }
 
+void FileListModel::set_show_abspath(bool show)
+{
+  if (show_abspath_ == show) {
+    return;
+  }
+  show_abspath_ = show;
+  if (rowCount() > 0) {
+    emit dataChanged(index(0, 0), index(rowCount() - 1, 0), {Qt::DisplayRole});
+  }
+}
+
 void FileListModel::set_icon_style(bool enabled)
 {
   if (icon_style_ == enabled) {
@@ -283,7 +299,9 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
   if (role == Qt::DisplayRole) {
     switch (static_cast<FileListColumn>(index.column())) {
     case FileListColumn::Name: {
-      const QString name = QString::fromStdString(fi->basename());
+      const QString name = show_abspath_
+                               ? QString::fromStdString(fi->path().string())
+                               : QString::fromStdString(fi->basename());
       if (!icon_style_ || icon_detail_level_ <= 0) {
         return name;
       }

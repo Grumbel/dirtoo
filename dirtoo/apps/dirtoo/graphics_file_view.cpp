@@ -378,11 +378,19 @@ void GraphicsFileView::start_drag()
       drag->setHotSpot(QPoint(pm.width() / 2, pm.height() / 2));
     }
   }
-  // Prefer Move when Shift is held; otherwise Copy (desktop-common). Ctrl also Copy.
+  // Desktop norms: Shift=Move, Ctrl=Copy, Alt or Ctrl+Shift=Link.
   const auto mods = QApplication::keyboardModifiers();
-  const Qt::DropAction default_action =
-      (mods & Qt::ShiftModifier) ? Qt::MoveAction : Qt::CopyAction;
-  drag->exec(Qt::CopyAction | Qt::MoveAction, default_action);
+  Qt::DropAction default_action = Qt::CopyAction;
+  if ((mods & Qt::ControlModifier) && (mods & Qt::ShiftModifier)) {
+    default_action = Qt::LinkAction;
+  } else if (mods & Qt::AltModifier) {
+    default_action = Qt::LinkAction;
+  } else if (mods & Qt::ShiftModifier) {
+    default_action = Qt::MoveAction;
+  } else if (mods & Qt::ControlModifier) {
+    default_action = Qt::CopyAction;
+  }
+  drag->exec(Qt::CopyAction | Qt::MoveAction | Qt::LinkAction, default_action);
 }
 
 void GraphicsFileView::dragEnterEvent(QDragEnterEvent* event)
@@ -397,8 +405,12 @@ void GraphicsFileView::dragEnterEvent(QDragEnterEvent* event)
 void GraphicsFileView::dragMoveEvent(QDragMoveEvent* event)
 {
   if (event->mimeData() != nullptr && event->mimeData()->hasUrls()) {
-    // Honour modifier keys for the proposed action while hovering.
-    if (event->keyboardModifiers() & Qt::ShiftModifier) {
+    const auto mods = event->keyboardModifiers();
+    if ((mods & Qt::ControlModifier) && (mods & Qt::ShiftModifier)) {
+      event->setDropAction(Qt::LinkAction);
+    } else if (mods & Qt::AltModifier) {
+      event->setDropAction(Qt::LinkAction);
+    } else if (mods & Qt::ShiftModifier) {
       event->setDropAction(Qt::MoveAction);
     } else {
       event->setDropAction(Qt::CopyAction);
@@ -423,10 +435,15 @@ void GraphicsFileView::dropEvent(QDropEvent* event)
       }
     }
   }
+  const auto mods = event->keyboardModifiers();
   Qt::DropAction action = event->proposedAction();
-  if (event->keyboardModifiers() & Qt::ShiftModifier) {
+  if ((mods & Qt::ControlModifier) && (mods & Qt::ShiftModifier)) {
+    action = Qt::LinkAction;
+  } else if (mods & Qt::AltModifier) {
+    action = Qt::LinkAction;
+  } else if (mods & Qt::ShiftModifier) {
     action = Qt::MoveAction;
-  } else if (event->keyboardModifiers() & Qt::ControlModifier) {
+  } else if (mods & Qt::ControlModifier) {
     action = Qt::CopyAction;
   }
   emit files_dropped(event->mimeData()->urls(), action, dest_dir);

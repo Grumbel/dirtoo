@@ -152,7 +152,7 @@ message** for the human (subject ≤ ~72 chars, body explaining why and what).
 | dirops + CLI tools | done |
 | Main window, nav, bookmarks, history | done |
 | Filter DSL + recursive search + `dt-filter` | done (Contains case fix applied; content filters still UI-thread) |
-| Detail / Icons (Graphics) / Small icons | **partial** — freezes on large dirs; icon look/layout weak |
+| Detail / Icons (Graphics) / Small icons | **improved** — item reuse, viewport thumbs; time-gaps still missing |
 | Thumbnails + media badges + meta cache | **partial** — all-visible requests; no directory montage |
 | Clipboard transfers + conflict/transfer dialogs | done (no symlink/link) |
 | Preferences, properties, about, rename/new folder | done (no “new file”) |

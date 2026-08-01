@@ -72,9 +72,17 @@ protected:
       }
     }
     const auto mods = QApplication::keyboardModifiers();
-    const Qt::DropAction def =
-        (mods & Qt::ShiftModifier) ? Qt::MoveAction : defaultDropAction();
-    drag->exec(supportedActions, def);
+    Qt::DropAction def = defaultDropAction();
+    if ((mods & Qt::ControlModifier) && (mods & Qt::ShiftModifier)) {
+      def = Qt::LinkAction;
+    } else if (mods & Qt::AltModifier) {
+      def = Qt::LinkAction;
+    } else if (mods & Qt::ShiftModifier) {
+      def = Qt::MoveAction;
+    } else if (mods & Qt::ControlModifier) {
+      def = Qt::CopyAction;
+    }
+    drag->exec(supportedActions | Qt::LinkAction, def);
   }
 };
 
@@ -107,9 +115,17 @@ protected:
       }
     }
     const auto mods = QApplication::keyboardModifiers();
-    const Qt::DropAction def =
-        (mods & Qt::ShiftModifier) ? Qt::MoveAction : defaultDropAction();
-    drag->exec(supportedActions, def);
+    Qt::DropAction def = defaultDropAction();
+    if ((mods & Qt::ControlModifier) && (mods & Qt::ShiftModifier)) {
+      def = Qt::LinkAction;
+    } else if (mods & Qt::AltModifier) {
+      def = Qt::LinkAction;
+    } else if (mods & Qt::ShiftModifier) {
+      def = Qt::MoveAction;
+    } else if (mods & Qt::ControlModifier) {
+      def = Qt::CopyAction;
+    }
+    drag->exec(supportedActions | Qt::LinkAction, def);
   }
 };
 

@@ -68,6 +68,8 @@ public:
   [[nodiscard]] int icon_detail_level() const noexcept { return icon_detail_level_; }
   [[nodiscard]] bool icon_style_active() const noexcept { return icon_style_; }
   void set_crop_thumbnails(bool crop);
+  void set_show_abspath(bool show);
+  [[nodiscard]] bool show_abspath() const noexcept { return show_abspath_; }
   [[nodiscard]] bool crop_thumbnails() const noexcept { return crop_thumbnails_; }
   [[nodiscard]] static constexpr int icon_detail_level_min() { return 0; }
   [[nodiscard]] static constexpr int icon_detail_level_max() { return 4; }
@@ -108,6 +110,7 @@ private:
   bool icon_style_ = false;
   int icon_detail_level_ = 3; // name + size by default (Python-ish)
   bool crop_thumbnails_ = false;
+  bool show_abspath_ = false;
   bool group_refresh_pending_ = false;
 };
 

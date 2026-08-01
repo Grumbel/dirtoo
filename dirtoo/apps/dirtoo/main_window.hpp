@@ -91,6 +91,8 @@ private slots:
   void on_context_menu(const QPoint& pos);
   void on_mkdir();
   void on_create_file();
+  void on_swap_names();
+  void on_toggle_show_abspath(bool checked);
   void on_rename_selected();
   void on_delete_selected();
   void on_properties();
@@ -212,6 +214,7 @@ private:
   QAction* show_filter_act_ = nullptr;
   QAction* pin_filter_act_ = nullptr;
   bool filter_pinned_ = false;
+  bool show_abspath_ = false;
   HistoryMenu* history_menu_ = nullptr;
   HistoryMenu* bookmarks_menu_ = nullptr;
   Bookmarks bookmarks_{Bookmarks::default_path()};

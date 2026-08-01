@@ -270,6 +270,10 @@ MainWindow::MainWindow(QWidget* parent)
       act->setShortcut(QKeySequence::Delete);
     }
     {
+      auto* act = edit_menu->addAction(QStringLiteral("Swap Names"), this, &MainWindow::on_swap_names);
+      act->setStatusTip(QStringLiteral("Exchange the names of exactly two selected items"));
+    }
+    {
       auto* act = edit_menu->addAction(QStringLiteral("Properties…"), this, &MainWindow::on_properties);
       act->setShortcut(QKeySequence(Qt::Key_F3));
     }
@@ -288,6 +292,12 @@ MainWindow::MainWindow(QWidget* parent)
     show_hidden_act_->setCheckable(true);
     show_hidden_act_->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+H")));
     connect(show_hidden_act_, &QAction::toggled, this, &MainWindow::on_toggle_hidden);
+    {
+      auto* act = view_menu->addAction(QStringLiteral("Show Full Paths"));
+      act->setCheckable(true);
+      act->setStatusTip(QStringLiteral("Show absolute paths instead of basenames in the Name column"));
+      connect(act, &QAction::toggled, this, &MainWindow::on_toggle_show_abspath);
+    }
     view_menu->addSeparator();
     show_filter_act_ = view_menu->addAction(QStringLiteral("Show Filter"));
     show_filter_act_->setCheckable(true);
@@ -1837,6 +1847,38 @@ void MainWindow::on_create_file()
     return;
   }
   on_directory_changed();
+}
+
+
+void MainWindow::on_swap_names()
+{
+  if (location_.is_archive()) {
+    status_label_->setText(QStringLiteral("Read-only: browsing inside an archive"));
+    return;
+  }
+  const auto selected = selected_fileinfos();
+  if (selected.size() != 2) {
+    status_label_->setText(QStringLiteral("Select exactly two items to swap names"));
+    return;
+  }
+  auto result = dirops::swap_names(selected[0].path(), selected[1].path());
+  if (!result) {
+    QMessageBox::warning(this, QStringLiteral("Swap Names"),
+                         QString::fromStdString(result.error().to_string()));
+    return;
+  }
+  on_directory_changed();
+}
+
+void MainWindow::on_toggle_show_abspath(bool checked)
+{
+  show_abspath_ = checked;
+  if (model_ != nullptr) {
+    model_->set_show_abspath(checked);
+  }
+  if (graphics_view_ != nullptr) {
+    graphics_view_->viewport()->update();
+  }
 }
 
 void MainWindow::on_rename_selected()

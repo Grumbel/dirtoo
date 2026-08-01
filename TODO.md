@@ -6,10 +6,11 @@ Python reference: `dirtoo-py/`. Active code: `dirtoo/`.
 
 ## MVP status (revised after full audit)
 
-Core plumbing (libs, filter DSL, multi-window, dirops, read-only archives,
-dialog shells, packaging) is in place, but **the GUI is not yet reliable
-for large directories or everyday DnD/icon use**. Treat “MVP complete” as
-**false** until the Critical queue below is addressed.
+Core plumbing and the Critical queue mitigations (listing cost, filter
+worker, Graphics reuse, viewport thumbs, watcher debounce, DnD/Link,
+directory montages) are in place. Remaining polish: time-gap rows,
+incremental watcher deltas, richer 5–9 tile montages. Treat large-dir
+responsiveness as improved but not fully virtualized.
 
 ### Parity freeze (still intentionally out of scope)
 
@@ -29,21 +30,21 @@ Ordered by user impact. File references are under `dirtoo/` unless noted.
 
 | Cause | Where | Notes |
 |-------|--------|------|
-| Extra stats per entry | `libs/dirtoo-fs/src/file_info.cpp`, `location.cpp` | `list_directory` → `FileInfo::from_path` does `symlink_status` + `file_size` + `last_write_time`. `Location::from_path` also runs `weakly_canonical` (more syscalls) **per file**. Prefer `directory_entry` status/size/mtime and skip canonicalization in listing. |
+| Extra stats per entry | `libs/dirtoo-fs/src/file_info.cpp`, `location.cpp` | **Mitigated**: `list_directory` uses `directory_entry` + `from_path_unchecked` (no per-child `weakly_canonical`). |
 | Full listing still heavy | `directory_load_worker.cpp` | Worker is async, but listing itself is O(n) expensive stats; no progress/cancellation mid-list. |
-| Filter I/O on GUI thread | `file_collection.cpp` `rebuild_visible` + `contains*` predicates | `set_name_filter` runs matchers synchronously on the GUI thread. `contains:` / `containsre:` / `containsfuzzy:` read file contents (bounded) **on the UI thread** when filtering a large dir — violates architecture rule. |
-| Graphics full scene rebuild | `graphics_file_view.cpp` `rebuild_items` | Every `modelReset` / rows insert/remove clears the scene and recreates **all** `QGraphicsItem`s. Large dirs → multi-second stalls. Need incremental updates or virtualization. |
-| Thumbnails for every visible row | `main_window.cpp` `request_thumbnails_for_visible` | Requests D-Bus thumbs for **all** filtered items, not the viewport. Also runs `QMimeDatabase::mimeTypeForFile` on the GUI thread per path. |
-| Watcher → full rescan, no debounce | `main_window.cpp` ↔ `directory_watcher.cpp` | Every `directoryChanged` calls `on_directory_changed()` → clear + reload + re-thumb. Busy dirs thrash. Need debounce + incremental add/remove when possible. |
+| Filter I/O on GUI thread | `file_collection.cpp` / `filter_worker.cpp` | **Mitigated**: content predicates go through `FilterWorker` + generation-safe `replace_visible`. Non-content filters remain sync. |
+| Graphics full scene rebuild | `graphics_file_view.cpp` `rebuild_items` | **Mitigated**: reuses items (shrink/grow/update). `FileListModel::refresh` uses layoutChanged instead of full reset. |
+| Thumbnails for every visible row | `main_window.cpp` `request_thumbnails_for_visible` | **Mitigated**: viewport-scoped batch (cap 64), no GUI mime DB, scroll-driven requests; directory cache probe. |
+| Watcher → full rescan, no debounce | `main_window.cpp` ↔ `directory_watcher.cpp` | **Mitigated**: 200ms single-shot debounce. Full reload still used (no incremental FS delta yet). |
 | Double model refresh | `on_directory_loaded` + `on_sort_finished` | Unsorted paint then sorted paint; each `refresh_list` → `beginResetModel` → Graphics rebuild. |
 
 ### 2. Drag & drop broken / incomplete
 
 | Issue | Where | Notes |
 |-------|--------|------|
-| Graphics drag always prefers Copy | `graphics_file_view.cpp` `start_drag` | `drag->exec(Copy\|Move, Qt::CopyAction)` — Move is never the default; keyboard modifiers not applied as default action. |
-| Folder drop target only in Graphics | `graphics_file_view.cpp` `dropEvent` vs list/tree | List/tree `dropMimeData` always drops into **current** directory; no “drop on folder row” path (Python does). |
-| No Link / symlink DnD | model + transfer | Cursors include link; actions never produce `Qt::LinkAction` or `dirops` symlink. Python pastes/links via `link_files`. |
+| Graphics drag always prefers Copy | `graphics_file_view.cpp` `start_drag` | **Fixed**: Shift=Move, Ctrl=Copy, Alt/Ctrl+Shift=Link. |
+| Folder drop target only in Graphics | model + Graphics | **Fixed**: list/tree resolve directory row target; Graphics drops on folder tile. |
+| No Link / symlink DnD | model + transfer | **Fixed**: LinkAction DnD + Paste/Copy as Link via `dirops::create_symlink`. |
 | Rubber-band vs item drag | Graphics | `setDragMode(RubberBandDrag)` + manual `start_drag` on move — easy to start band drag instead of item drag; selection edge cases. |
 | Modifier → action on drop | `on_urls_dropped_to` | Uses `proposedAction` only; verify Shift/Ctrl mapping matches desktop norms (Move/Copy/Link). |
 | Same-app internal moves | transfer path | Drop of own selection into subfolder should move/copy correctly; same-path / nested-dest checks exist but are thin. |
@@ -52,12 +53,12 @@ Ordered by user impact. File references are under `dirtoo/` unless noted.
 
 | Issue | Where | Notes |
 |-------|--------|------|
-| Hardcoded scene background | `graphics_file_view.cpp` | `QColor(250,250,250)` ignores palette / dark themes. |
+| Hardcoded scene background | `graphics_file_view.cpp` | **Fixed**: `palette().base()`. |
 | Caption / tile geometry | `graphics_file_item.cpp`, `apply_icon_zoom` | Tile height = icon + fixed text rows; elide/multi-line is basic; no Python-style shadow/outline renderer. Overflow or sparse gaps at some zoom levels. |
-| Group headers missing in Graphics | layout | Day/directory/duration headers exist in detail/list delegate only. |
+| Group headers missing in Graphics | layout | **Fixed**: group labels on first tile + row break at group start. |
 | Dual icon paths | MainWindow | Icons mode prefers `GraphicsFileView` but `QListView` IconMode still configured via `apply_icon_zoom` — keep one canonical path. |
 | Small-icons grid | `apply_icon_zoom` | `setGridSize(QSize())` + wrapping TopToBottom — layout can look uneven vs Python SequenceMode. |
-| No directory composite thumbs | missing | Python `DirectoryThumbnailer` builds folder montage thumbs; C++ only theme/mime icons for dirs. |
+| No directory composite thumbs | `directory_thumbnail_worker.cpp` | **Fixed** (explicit action): montage of up to 4 images → XDG cache. |
 
 ### 4. Filter correctness (partially fixed)
 
@@ -65,7 +66,7 @@ Ordered by user impact. File references are under `dirtoo/` unless noted.
 |-------|--------|
 | `Contains:` / `Containsre:` shadowed by lowercased dispatch | **Fixed** in `parser.cpp` (check capital forms first). Same fix applied to Glob/Regex/Fuzzy. |
 | Charset predicate limited | ascii / utf-8 / latin1 only — documented limitation. |
-| Content filters on GUI thread | Still open (see Critical §1). |
+| Content filters on GUI thread | **Mitigated** via `FilterWorker`. |
 
 ---
 
@@ -75,13 +76,14 @@ Ordered by user impact. File references are under `dirtoo/` unless noted.
 
 | Feature | Python | C++ |
 |---------|--------|-----|
-| **Select All** (Ctrl+A) | `actions.edit_select_all` | **Missing** (no menu/shortcut; views may have default only for some) |
-| **Create empty file** | context menu / `create_file` | **Missing** (New Folder only) |
-| **Symlink / Link paste & DnD** | `link_files`, Link drop | **Missing** |
-| **Directory thumbnails** | `DirectoryThumbnailer` | **Missing** |
+| **Select All** (Ctrl+A) | `actions.edit_select_all` | **done** |
+| **Create empty file** | context menu / `create_file` | **done** |
+| **Symlink / Link paste & DnD** | `link_files`, Link drop | **done** |
+| **Directory thumbnails** | `DirectoryThumbnailer` | **done** (Make Directory Thumbnails) |
+| **Swap Names** | `dirops.swap_names` / programs | **done** |
+| **Show abspath vs basename** | view toggles | **done** (Show Full Paths) |
 | **Time gaps** in list | `toggle_timegaps` | **Missing** |
-| **Show abspath vs basename** | view toggles | **Missing** |
-| Filter line **history** | Python filter toolbar history | Pin/show only; history weak/absent |
+| Filter line **history** | Python filter toolbar history | **done** (Up/Down in filter line) |
 | Transfer **error** / **request** dialogs | dedicated dialogs | Partially folded into transfer/conflict |
 | Undo menu entries | present (may be stub) | **Missing** |
 
@@ -198,12 +200,12 @@ Use:
 | Icons | `GraphicsFileView` + `GraphicsFileItem` (primary) |
 | Small icons | `QListView` list mode |
 
-### Known architecture violations (fix these)
+### Known architecture violations (status)
 
-1. `FileCollection::rebuild_visible` + content predicates on GUI thread  
-2. `request_thumbnails_for_visible` mime probing on GUI thread  
-3. Watcher-driven full reload without debounce  
-4. Graphics `rebuild_items` synchronous mass allocation on GUI thread  
+1. ~~Content predicates on GUI thread~~ → `FilterWorker` for content IO  
+2. ~~mime probing on GUI thread~~ → fixed (generic mime / cache only)  
+3. ~~Watcher without debounce~~ → 200ms debounce (still full reload)  
+4. ~~Graphics mass allocation~~ → item reuse + softer model refresh  
 
 ### C++ advantages vs Python
 
