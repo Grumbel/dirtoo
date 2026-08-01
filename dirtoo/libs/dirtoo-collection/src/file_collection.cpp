@@ -66,6 +66,14 @@ void FileCollection::replace_items_sorted(std::vector<fs::FileInfo> items)
   rebuild_visible();
 }
 
+void FileCollection::replace_visible(std::vector<fs::FileInfo> visible, std::optional<bool> parse_ok)
+{
+  visible_ = std::move(visible);
+  if (parse_ok.has_value()) {
+    filter_parse_ok_ = *parse_ok;
+  }
+}
+
 void FileCollection::add(fs::FileInfo info)
 {
   items_.push_back(std::move(info));
@@ -184,10 +192,12 @@ void FileCollection::set_match_func(filter::MatchFuncPtr func)
   rebuild_visible();
 }
 
-void FileCollection::set_show_hidden(bool show)
+void FileCollection::set_show_hidden(bool show, bool rebuild)
 {
   show_hidden_ = show;
-  rebuild_visible();
+  if (rebuild) {
+    rebuild_visible();
+  }
 }
 
 const std::vector<fs::FileInfo>& FileCollection::visible_items() const noexcept

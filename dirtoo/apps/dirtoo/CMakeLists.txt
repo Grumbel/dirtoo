@@ -54,6 +54,8 @@ qt_add_executable(dirtoo-app
   directory_load_worker.hpp
   sort_worker.cpp
   sort_worker.hpp
+  filter_worker.cpp
+  filter_worker.hpp
   resources.qrc
 )
 

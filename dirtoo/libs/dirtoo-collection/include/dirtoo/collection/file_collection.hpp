@@ -24,6 +24,10 @@ public:
   void set_items_unsorted(std::vector<fs::FileInfo> items);
   /// Replace underlying items after an off-thread sort; rebuilds visible.
   void replace_items_sorted(std::vector<fs::FileInfo> items);
+  /// Install a precomputed visible list (e.g. after off-thread content filter).
+  /// Does not re-run matchers. Keeps items_ / match_ / filter_expression_ as-is
+  /// except filter_parse_ok when provided.
+  void replace_visible(std::vector<fs::FileInfo> visible, std::optional<bool> parse_ok = std::nullopt);
   void add(fs::FileInfo info);
   bool remove(const fs::Location& location);
 
@@ -59,7 +63,8 @@ public:
   /// Direct MatchFunc (for tests / advanced callers).
   void set_match_func(filter::MatchFuncPtr func);
 
-  void set_show_hidden(bool show);
+  /// @param rebuild When false, only updates the flag (caller filters async).
+  void set_show_hidden(bool show, bool rebuild = true);
   [[nodiscard]] bool show_hidden() const noexcept { return show_hidden_; }
 
   void set_group_mode(GroupMode mode);

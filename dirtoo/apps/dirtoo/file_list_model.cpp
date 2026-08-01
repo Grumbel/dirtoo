@@ -408,7 +408,7 @@ Qt::ItemFlags FileListModel::flags(const QModelIndex& index) const
 
 Qt::DropActions FileListModel::supportedDropActions() const
 {
-  return Qt::CopyAction | Qt::MoveAction;
+  return Qt::CopyAction | Qt::MoveAction | Qt::LinkAction;
 }
 
 QStringList FileListModel::mimeTypes() const
@@ -447,7 +447,7 @@ bool FileListModel::canDropMimeData(const QMimeData* data, Qt::DropAction action
   if (data == nullptr) {
     return false;
   }
-  if (!(action == Qt::CopyAction || action == Qt::MoveAction)) {
+  if (!(action == Qt::CopyAction || action == Qt::MoveAction || action == Qt::LinkAction)) {
     return false;
   }
   return data->hasUrls();

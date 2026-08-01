@@ -20,6 +20,7 @@
 #include "path_completion_worker.hpp"
 #include "directory_load_worker.hpp"
 #include "sort_worker.hpp"
+#include "filter_worker.hpp"
 #include "leap_widget.hpp"
 #include "location_button_bar.hpp"
 #include "transfer_dialog.hpp"
@@ -82,6 +83,9 @@ private slots:
   void on_sort_finished(quint64 generation, std::vector<dirtoo::fs::FileInfo> items);
   void request_async_sort();
   void on_filter_changed(const QString& text);
+  void on_filter_finished(quint64 generation, std::vector<dirtoo::fs::FileInfo> visible, bool parse_ok);
+  void request_async_filter();
+  void on_paste_link();
   void on_item_activated(const QModelIndex& index);
   void on_context_menu(const QPoint& pos);
   void on_mkdir();
@@ -229,6 +233,9 @@ private:
   QThread* sort_thread_ = nullptr;
   SortWorker* sort_worker_ = nullptr;
   quint64 sort_generation_ = 0;
+  QThread* filter_thread_ = nullptr;
+  FilterWorker* filter_worker_ = nullptr;
+  quint64 filter_generation_ = 0;
   QStringListModel* path_completion_model_ = nullptr;
   QCompleter* path_completer_ = nullptr;
   QTimer* path_completion_timer_ = nullptr;

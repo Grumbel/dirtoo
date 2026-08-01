@@ -21,7 +21,13 @@ ClipboardPayload parse_dirtoo_clipboard_text(const QString& text)
   if (lines.isEmpty()) {
     return payload;
   }
-  payload.mode = (lines.front() == QLatin1String("cut")) ? ClipboardMode::Cut : ClipboardMode::Copy;
+  if (lines.front() == QLatin1String("cut")) {
+    payload.mode = ClipboardMode::Cut;
+  } else if (lines.front() == QLatin1String("link")) {
+    payload.mode = ClipboardMode::Link;
+  } else {
+    payload.mode = ClipboardMode::Copy;
+  }
   for (int i = 1; i < lines.size(); ++i) {
     payload.paths.emplace_back(lines[i].toStdString());
   }
@@ -35,7 +41,13 @@ ClipboardPayload parse_gnome_clipboard_text(const QString& text)
   if (lines.isEmpty()) {
     return payload;
   }
-  payload.mode = (lines.front() == QLatin1String("cut")) ? ClipboardMode::Cut : ClipboardMode::Copy;
+  if (lines.front() == QLatin1String("cut")) {
+    payload.mode = ClipboardMode::Cut;
+  } else if (lines.front() == QLatin1String("link")) {
+    payload.mode = ClipboardMode::Link;
+  } else {
+    payload.mode = ClipboardMode::Copy;
+  }
   for (int i = 1; i < lines.size(); ++i) {
     const QUrl url(lines[i]);
     if (url.isLocalFile()) {
@@ -45,12 +57,30 @@ ClipboardPayload parse_gnome_clipboard_text(const QString& text)
   return payload;
 }
 
+namespace {
+
+QString mode_token(ClipboardMode mode)
+{
+  switch (mode) {
+  case ClipboardMode::Cut:
+    return QStringLiteral("cut");
+  case ClipboardMode::Link:
+    return QStringLiteral("link");
+  case ClipboardMode::Copy:
+  default:
+    return QStringLiteral("copy");
+  }
+}
+
+} // namespace
+
 QMimeData* make_clipboard_mime(ClipboardMode mode, const std::vector<std::filesystem::path>& paths)
 {
   auto* mime = new QMimeData;
 
   QString body;
-  body += (mode == ClipboardMode::Cut) ? QStringLiteral("cut\n") : QStringLiteral("copy\n");
+  body += mode_token(mode);
+  body += QLatin1Char('\n');
   QList<QUrl> urls;
   urls.reserve(static_cast<int>(paths.size()));
   for (const auto& p : paths) {
@@ -62,8 +92,7 @@ QMimeData* make_clipboard_mime(ClipboardMode mode, const std::vector<std::filesy
   mime->setData(QString::fromLatin1(kDirtooMime), body.toUtf8());
   mime->setUrls(urls);
 
-  QString gnome;
-  gnome += (mode == ClipboardMode::Cut) ? QStringLiteral("cut") : QStringLiteral("copy");
+  QString gnome = mode_token(mode);
   for (const QUrl& url : urls) {
     gnome += QLatin1Char('\n');
     gnome += url.toString(QUrl::FullyEncoded);

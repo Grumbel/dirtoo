@@ -15,6 +15,7 @@ namespace dirtoo::app {
 enum class ClipboardMode {
   Copy,
   Cut,
+  Link,
 };
 
 struct ClipboardPayload {

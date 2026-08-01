@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window.hpp"
+#include "filter_worker.hpp"
 #include "file_views.hpp"
 #include "graphics_file_view.hpp"
 #include "graphics_file_item.hpp"
@@ -127,6 +128,14 @@ MainWindow::MainWindow(QWidget* parent)
   qRegisterMetaType<dirtoo::collection::SortKey>("dirtoo::collection::SortKey");
   sort_thread_->start();
 
+  filter_worker_ = new FilterWorker;
+  filter_thread_ = new QThread(this);
+  filter_worker_->moveToThread(filter_thread_);
+  connect(filter_thread_, &QThread::finished, filter_worker_, &QObject::deleteLater);
+  connect(filter_worker_, &FilterWorker::filtered, this, &MainWindow::on_filter_finished);
+  qRegisterMetaType<dirtoo::collection::GroupMode>("dirtoo::collection::GroupMode");
+  filter_thread_->start();
+
   auto* toolbar = addToolBar(QStringLiteral("Main"));
   toolbar->setMovable(false);
   toolbar->setIconSize(QSize(24, 24));
@@ -227,6 +236,10 @@ MainWindow::MainWindow(QWidget* parent)
       auto* act = edit_menu->addAction(QStringLiteral("Paste"), this, &MainWindow::on_paste);
       act->setShortcut(QKeySequence::Paste);
     }
+    edit_menu->addAction(QStringLiteral("Paste as Link"), this, &MainWindow::on_paste_link);
+    edit_menu->addAction(QStringLiteral("Copy as Link"), this, [this] {
+      set_clipboard(ClipboardMode::Link);
+    });
     {
       auto* act = edit_menu->addAction(QStringLiteral("Select All"), this, &MainWindow::on_select_all);
       act->setShortcut(QKeySequence::SelectAll);
@@ -730,6 +743,10 @@ MainWindow::~MainWindow()
     sort_thread_->quit();
     sort_thread_->wait(3000);
   }
+  if (filter_thread_ != nullptr) {
+    filter_thread_->quit();
+    filter_thread_->wait(3000);
+  }
 }
 
 QAbstractItemView* MainWindow::current_view() const
@@ -1052,7 +1069,11 @@ void MainWindow::on_directory_changed()
     collection_.sorter().set_ascending(sort_ascending_);
     collection_.set_items(std::move(items));
     if (filter_edit_ != nullptr && !filter_edit_->text().isEmpty()) {
-      collection_.set_name_filter(filter_edit_->text().toStdString());
+      if (filter_expression_needs_content_io(filter_edit_->text())) {
+        request_async_filter();
+      } else {
+        collection_.set_name_filter(filter_edit_->text().toStdString());
+      }
     }
     refresh_list();
     request_thumbnails_for_visible();
@@ -1111,7 +1132,11 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
   // Show entries ASAP; order refined by SortWorker.
   collection_.set_items_unsorted(std::move(items));
   if (filter_edit_ != nullptr && !filter_edit_->text().isEmpty()) {
-    collection_.set_name_filter(filter_edit_->text().toStdString());
+    if (filter_expression_needs_content_io(filter_edit_->text())) {
+      request_async_filter();
+    } else {
+      collection_.set_name_filter(filter_edit_->text().toStdString());
+    }
   }
   refresh_list();
   if (status_label_ != nullptr) {
@@ -1268,6 +1293,11 @@ void MainWindow::on_thumbnail_failed(const fs::Location& location, const QString
 
 void MainWindow::on_filter_changed(const QString& text)
 {
+  if (filter_expression_needs_content_io(text)) {
+    // Content predicates must not run on the GUI thread.
+    request_async_filter();
+    return;
+  }
   collection_.set_name_filter(text.toStdString());
   refresh_list();
   request_thumbnails_for_visible();
@@ -1275,6 +1305,50 @@ void MainWindow::on_filter_changed(const QString& text)
     if (message_area_ != nullptr) {
       message_area_->show_info(QStringLiteral("Filter parse issue — using substring fallback"));
     }
+  }
+}
+
+void MainWindow::request_async_filter()
+{
+  if (filter_worker_ == nullptr) {
+    collection_.set_name_filter(
+        filter_edit_ != nullptr ? filter_edit_->text().toStdString() : std::string{});
+    refresh_list();
+    return;
+  }
+  const quint64 gen = ++filter_generation_;
+  if (status_label_ != nullptr) {
+    status_label_->setText(QStringLiteral("Filtering…"));
+  }
+  auto items = collection_.items();
+  const QString expr = filter_edit_ != nullptr ? filter_edit_->text() : QString();
+  const bool show_hidden = collection_.show_hidden();
+  const auto group_mode = collection_.group_mode();
+  // Avoid GUI-thread content I/O: clear match-driven rebuild by using empty visible until done.
+  collection_.replace_visible({}, true);
+  refresh_list();
+  QMetaObject::invokeMethod(
+      filter_worker_, "filter_items", Qt::QueuedConnection,
+      Q_ARG(std::vector<dirtoo::fs::FileInfo>, items), Q_ARG(QString, expr),
+      Q_ARG(bool, show_hidden), Q_ARG(dirtoo::collection::GroupMode, group_mode),
+      Q_ARG(quint64, gen));
+}
+
+void MainWindow::on_filter_finished(quint64 generation, std::vector<dirtoo::fs::FileInfo> visible,
+                                    bool parse_ok)
+{
+  if (generation != filter_generation_ || search_active_) {
+    return;
+  }
+  collection_.replace_visible(std::move(visible), parse_ok);
+  refresh_list();
+  request_thumbnails_for_visible();
+  if (!parse_ok && message_area_ != nullptr) {
+    message_area_->show_info(QStringLiteral("Filter parse issue — using substring fallback"));
+  }
+  if (status_label_ != nullptr) {
+    status_label_->setText(
+        QStringLiteral("%1 items").arg(collection_.visible_items().size()));
   }
 }
 
@@ -1456,10 +1530,13 @@ void MainWindow::set_clipboard(ClipboardMode mode)
     paths.push_back(fi.path());
   }
   QApplication::clipboard()->setMimeData(make_clipboard_mime(mode, paths));
-  status_label_->setText(QStringLiteral("%1 item(s) %2")
-                             .arg(paths.size())
-                             .arg(mode == ClipboardMode::Cut ? QStringLiteral("cut")
-                                                             : QStringLiteral("copied")));
+  QString verb = QStringLiteral("copied");
+  if (mode == ClipboardMode::Cut) {
+    verb = QStringLiteral("cut");
+  } else if (mode == ClipboardMode::Link) {
+    verb = QStringLiteral("marked for link");
+  }
+  status_label_->setText(QStringLiteral("%1 item(s) %2").arg(paths.size()).arg(verb));
   update_edit_actions();
 }
 
@@ -1531,11 +1608,48 @@ void MainWindow::on_paste()
     return;
   }
 
+  if (payload.mode == ClipboardMode::Link) {
+    on_paste_link();
+    return;
+  }
+
   TransferRequest req;
   req.mode = payload.mode;
   req.destination_directory = location_.as_path();
   req.sources = payload.paths;
   start_transfer(req);
+}
+
+void MainWindow::on_paste_link()
+{
+  if (location_.is_archive()) {
+    status_label_->setText(QStringLiteral("Read-only: browsing inside an archive"));
+    return;
+  }
+  const ClipboardPayload payload = parse_clipboard_mime(QApplication::clipboard()->mimeData());
+  if (payload.paths.empty()) {
+    // Allow "Paste as Link" using whatever paths are on the clipboard.
+    status_label_->setText(QStringLiteral("Clipboard has no files"));
+    return;
+  }
+  int ok = 0;
+  int fail = 0;
+  for (const auto& src : payload.paths) {
+    const auto dest = location_.as_path() / src.filename();
+    auto result = dirops::create_symlink(src, dest);
+    if (result) {
+      ++ok;
+    } else {
+      ++fail;
+      if (message_area_ != nullptr) {
+        message_area_->show_error(QString::fromStdString(result.error().to_string()));
+      }
+    }
+  }
+  if (status_label_ != nullptr) {
+    status_label_->setText(QStringLiteral("Linked %1 (%2 failed)").arg(ok).arg(fail));
+  }
+  on_directory_changed();
 }
 
 void MainWindow::on_transfer_item_started(int index, int total, const QString& path)
@@ -1848,21 +1962,42 @@ void MainWindow::on_urls_dropped_to(const QList<QUrl>& urls, Qt::DropAction acti
     return;
   }
 
-  TransferRequest req;
-  req.mode = (action == Qt::MoveAction) ? ClipboardMode::Cut : ClipboardMode::Copy;
-  if (!dest_dir.isEmpty()) {
-    req.destination_directory = std::filesystem::path{dest_dir.toStdString()};
-  } else {
-    req.destination_directory = location_.as_path();
-  }
+  const auto dest = !dest_dir.isEmpty()
+                        ? std::filesystem::path{dest_dir.toStdString()}
+                        : location_.as_path();
+  std::vector<std::filesystem::path> sources;
   for (const QUrl& url : urls) {
     if (url.isLocalFile()) {
-      req.sources.emplace_back(url.toLocalFile().toStdString());
+      sources.emplace_back(url.toLocalFile().toStdString());
     }
   }
-  if (req.sources.empty()) {
+  if (sources.empty()) {
     return;
   }
+
+  if (action == Qt::LinkAction) {
+    int ok = 0;
+    int fail = 0;
+    for (const auto& src : sources) {
+      const auto link = dest / src.filename();
+      auto result = dirops::create_symlink(src, link);
+      if (result) {
+        ++ok;
+      } else {
+        ++fail;
+      }
+    }
+    if (status_label_ != nullptr) {
+      status_label_->setText(QStringLiteral("Linked %1 (%2 failed)").arg(ok).arg(fail));
+    }
+    on_directory_changed();
+    return;
+  }
+
+  TransferRequest req;
+  req.mode = (action == Qt::MoveAction) ? ClipboardMode::Cut : ClipboardMode::Copy;
+  req.destination_directory = dest;
+  req.sources = std::move(sources);
 
   std::vector<std::filesystem::path> filtered;
   for (const auto& src : req.sources) {
@@ -2123,6 +2258,12 @@ void MainWindow::on_open_terminal()
 
 void MainWindow::on_toggle_hidden(bool checked)
 {
+  const QString expr = filter_edit_ != nullptr ? filter_edit_->text() : QString();
+  if (filter_expression_needs_content_io(expr)) {
+    collection_.set_show_hidden(checked, false);
+    request_async_filter();
+    return;
+  }
   collection_.set_show_hidden(checked);
   refresh_list();
   request_thumbnails_for_visible();

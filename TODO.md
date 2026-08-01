@@ -220,10 +220,10 @@ Use:
 2. [x] **Watcher debounce** (200ms single-shot).  
 3. [x] **Graphics**: incremental item reuse on modelReset (no full scene clear).  
 4. [x] **Thumbnails**: viewport-scoped batch (cap 64); skip `QMimeDatabase` on GUI.  
-5. **Filter**: evaluate `contains*` on a worker; apply results by generation.  
+5. [x] **Filter**: `FilterWorker` for content predicates; generation-safe apply.  
 6. [x] **DnD**: Shift→Move; folder drop on list/tree; Graphics modifier handling.  
 7. [partial] **Icons**: palette base background; GraphicsFileView constructed; progressive thumbs on scroll. Caption/group headers still open.  
-8. [partial] **Parity**: Select All + New File done; `dirops::create_file` / `create_symlink` added; dir thumbs / link paste UI still open.
+8. [partial] **Parity**: Select All + New File + Paste as Link / Copy as Link + Link DnD; dir thumbs still open.
 
 ---
 
