@@ -168,75 +168,39 @@ MainWindow::MainWindow(QWidget* parent)
   toolbar->setIconSize(QSize(24, 24));
   toolbar->setToolButtonStyle(Qt::ToolButtonIconOnly);
 
-  back_act_ = toolbar->addAction(theme_icon("go-previous", "arrow-left"), QStringLiteral("Back"), this,
-                                 &MainWindow::on_go_back);
-  forward_act_ = toolbar->addAction(theme_icon("go-next", "arrow-right"), QStringLiteral("Forward"), this,
-                                    &MainWindow::on_go_forward);
+  // Order mirrors dirtoo-py FileViewWindow.make_toolbar:
+  // Parent | Home | Back Forward | Reload Prepare | Show Hidden | Sort Group |
+  // Icons SmallIcons Detail | Zoom± | LOD± | Crop
   parent_act_ = toolbar->addAction(theme_icon("go-up", "arrow-up"), QStringLiteral("Parent"), this,
                                    &MainWindow::on_go_parent);
   // Middle-click Parent → open parent in a new window.
   if (auto* btn = qobject_cast<QToolButton*>(toolbar->widgetForAction(parent_act_))) {
     btn->installEventFilter(this);
   }
+  toolbar->addSeparator();
   toolbar->addAction(theme_icon("go-home", "user-home"), QStringLiteral("Home"), this, &MainWindow::on_go_home);
+  toolbar->addSeparator();
+  back_act_ = toolbar->addAction(theme_icon("go-previous", "arrow-left"), QStringLiteral("Back"), this,
+                                 &MainWindow::on_go_back);
+  forward_act_ = toolbar->addAction(theme_icon("go-next", "arrow-right"), QStringLiteral("Forward"), this,
+                                    &MainWindow::on_go_forward);
+  toolbar->addSeparator();
   toolbar->addAction(theme_icon("view-refresh", "reload"), QStringLiteral("Reload"), this, &MainWindow::on_refresh);
-  toolbar->addSeparator();
-  toolbar->addAction(theme_icon("folder-new"), QStringLiteral("New Folder"), this, &MainWindow::on_mkdir);
-  toolbar->addSeparator();
-  toolbar->addAction(theme_icon("edit-cut"), QStringLiteral("Cut"), this, &MainWindow::on_cut);
-  toolbar->addAction(theme_icon("edit-copy"), QStringLiteral("Copy"), this, &MainWindow::on_copy);
-  paste_act_ = toolbar->addAction(theme_icon("edit-paste"), QStringLiteral("Paste"), this, &MainWindow::on_paste);
+  toolbar->addAction(theme_icon("image-x-generic"), QStringLiteral("Prepare Thumbnails"), this,
+                     &MainWindow::on_prepare_thumbnails);
   toolbar->addSeparator();
 
-  detail_act_ = toolbar->addAction(theme_icon("view-list-details", "view-list"), QStringLiteral("Detail"));
-  icons_act_ = toolbar->addAction(theme_icon("view-grid", "view-list-icons"), QStringLiteral("Icons"));
-  small_icons_act_ = toolbar->addAction(theme_icon("view-list", "view-list-details"),
-                                        QStringLiteral("Small Icons"));
-  detail_act_->setCheckable(true);
-  icons_act_->setCheckable(true);
-  small_icons_act_->setCheckable(true);
-  auto* view_group = new QActionGroup(this);
-  view_group->addAction(detail_act_);
-  view_group->addAction(icons_act_);
-  view_group->addAction(small_icons_act_);
-  connect(detail_act_, &QAction::triggered, this, &MainWindow::on_view_detail);
-  connect(icons_act_, &QAction::triggered, this, &MainWindow::on_view_icons);
-  connect(small_icons_act_, &QAction::triggered, this, &MainWindow::on_view_small_icons);
-  detail_act_->setChecked(true);
+  show_hidden_act_ = toolbar->addAction(theme_icon("view-hidden", "view-filter"),
+                                        QStringLiteral("Show Hidden Files"));
+  show_hidden_act_->setCheckable(true);
+  show_hidden_act_->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+H")));
+  connect(show_hidden_act_, &QAction::toggled, this, &MainWindow::on_toggle_hidden);
 
-  toolbar->addSeparator();
-  toolbar->addAction(theme_icon("zoom-out"), QStringLiteral("Zoom −"), this, &MainWindow::on_zoom_out);
-  toolbar->addAction(theme_icon("zoom-in"), QStringLiteral("Zoom +"), this, &MainWindow::on_zoom_in);
-  {
-    auto* act = toolbar->addAction(theme_icon("zoom-fit-best"), QStringLiteral("Crop Thumbnails"));
-    act->setCheckable(true);
-    act->setToolTip(QStringLiteral("Crop thumbnails to fill the icon (cover) instead of letterboxing"));
-    connect(act, &QAction::toggled, this, [this](bool on) {
-      if (model_ != nullptr) {
-        model_->set_crop_thumbnails(on);
-      }
-      if (icon_view_ != nullptr) {
-        icon_view_->viewport()->update();
-      }
-      if (graphics_view_ != nullptr) {
-        graphics_view_->viewport()->update();
-      }
-    });
-    crop_thumbnails_act_ = act;
-  }
-  toolbar->addSeparator();
-  toolbar->addAction(theme_icon("zoom-original", "list-remove"), QStringLiteral("Less detail"), this,
-                     &MainWindow::on_less_icon_details);
-  toolbar->addAction(theme_icon("zoom-fit-best", "list-add"), QStringLiteral("More detail"), this,
-                     &MainWindow::on_more_icon_details);
-
-  // Sort / Group toolbar menus (parity with Python toolbar buttons)
-  toolbar->addSeparator();
+  // Sort / Group popup buttons (icon-only like Python toolbar)
   {
     auto* sort_btn = new QToolButton(toolbar);
-    sort_btn->setText(QStringLiteral("Sort"));
     sort_btn->setIcon(theme_icon("view-sort-ascending", "view-sort"));
-    sort_btn->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    sort_btn->setToolTip(QStringLiteral("Sort"));
     sort_btn->setPopupMode(QToolButton::InstantPopup);
     auto* sort_menu = new QMenu(sort_btn);
     auto* sort_group = new QActionGroup(sort_btn);
@@ -297,9 +261,8 @@ MainWindow::MainWindow(QWidget* parent)
   }
   {
     auto* group_btn = new QToolButton(toolbar);
-    group_btn->setText(QStringLiteral("Group"));
     group_btn->setIcon(theme_icon("view-list-tree", "view-list"));
-    group_btn->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    group_btn->setToolTip(QStringLiteral("Group by"));
     group_btn->setPopupMode(QToolButton::InstantPopup);
     auto* group_menu = new QMenu(group_btn);
     auto* group_actions = new QActionGroup(group_btn);
@@ -343,6 +306,51 @@ MainWindow::MainWindow(QWidget* parent)
     toolbar->addWidget(group_btn);
   }
 
+  toolbar->addSeparator();
+  // View modes: Icons, Small Icons, Detail (Python order)
+  icons_act_ = toolbar->addAction(theme_icon("view-grid", "view-list-icons"), QStringLiteral("Icons"));
+  small_icons_act_ = toolbar->addAction(theme_icon("view-list", "view-list-details"),
+                                        QStringLiteral("Small Icons"));
+  detail_act_ = toolbar->addAction(theme_icon("view-list-details", "view-list"), QStringLiteral("Detail"));
+  detail_act_->setCheckable(true);
+  icons_act_->setCheckable(true);
+  small_icons_act_->setCheckable(true);
+  auto* view_group = new QActionGroup(this);
+  view_group->addAction(icons_act_);
+  view_group->addAction(small_icons_act_);
+  view_group->addAction(detail_act_);
+  connect(detail_act_, &QAction::triggered, this, &MainWindow::on_view_detail);
+  connect(icons_act_, &QAction::triggered, this, &MainWindow::on_view_icons);
+  connect(small_icons_act_, &QAction::triggered, this, &MainWindow::on_view_small_icons);
+  detail_act_->setChecked(true);
+
+  toolbar->addSeparator();
+  toolbar->addAction(theme_icon("zoom-in"), QStringLiteral("Zoom +"), this, &MainWindow::on_zoom_in);
+  toolbar->addAction(theme_icon("zoom-out"), QStringLiteral("Zoom −"), this, &MainWindow::on_zoom_out);
+  toolbar->addSeparator();
+  toolbar->addAction(theme_icon("zoom-fit-best", "list-add"), QStringLiteral("More detail"), this,
+                     &MainWindow::on_more_icon_details);
+  toolbar->addAction(theme_icon("zoom-original", "list-remove"), QStringLiteral("Less detail"), this,
+                     &MainWindow::on_less_icon_details);
+  toolbar->addSeparator();
+  {
+    auto* act = toolbar->addAction(theme_icon("zoom-fit-best"), QStringLiteral("Crop Thumbnails"));
+    act->setCheckable(true);
+    act->setToolTip(QStringLiteral("Crop thumbnails to fill the icon (cover) instead of letterboxing"));
+    connect(act, &QAction::toggled, this, [this](bool on) {
+      if (model_ != nullptr) {
+        model_->set_crop_thumbnails(on);
+      }
+      if (icon_view_ != nullptr) {
+        icon_view_->viewport()->update();
+      }
+      if (graphics_view_ != nullptr) {
+        graphics_view_->viewport()->update();
+      }
+    });
+    crop_thumbnails_act_ = act;
+  }
+
   // Menu bar
   {
     auto* file_menu = menuBar()->addMenu(QStringLiteral("&File"));
@@ -374,8 +382,8 @@ MainWindow::MainWindow(QWidget* parent)
       act->setShortcut(QKeySequence::Copy);
     }
     {
-      auto* act = edit_menu->addAction(theme_icon("edit-paste"), QStringLiteral("Paste"), this, &MainWindow::on_paste);
-      act->setShortcut(QKeySequence::Paste);
+      paste_act_ = edit_menu->addAction(theme_icon("edit-paste"), QStringLiteral("Paste"), this, &MainWindow::on_paste);
+      paste_act_->setShortcut(QKeySequence::Paste);
     }
     edit_menu->addAction(theme_icon("emblem-symbolic-link", "insert-link"), QStringLiteral("Paste as Link"), this, &MainWindow::on_paste_link);
     edit_menu->addAction(theme_icon("edit-copy"), QStringLiteral("Copy as Link"), this, [this] {
@@ -409,14 +417,13 @@ MainWindow::MainWindow(QWidget* parent)
     }
 
     auto* view_menu = menuBar()->addMenu(QStringLiteral("&View"));
-    view_menu->addAction(detail_act_);
     view_menu->addAction(icons_act_);
     view_menu->addAction(small_icons_act_);
+    view_menu->addAction(detail_act_);
     view_menu->addSeparator();
-    show_hidden_act_ = view_menu->addAction(theme_icon("view-hidden", "view-filter"), QStringLiteral("Show Hidden Files"));
-    show_hidden_act_->setCheckable(true);
-    show_hidden_act_->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+H")));
-    connect(show_hidden_act_, &QAction::toggled, this, &MainWindow::on_toggle_hidden);
+    if (show_hidden_act_ != nullptr) {
+      view_menu->addAction(show_hidden_act_);
+    }
     {
       auto* act = view_menu->addAction(QStringLiteral("Show Full Paths"));
       act->setCheckable(true);
