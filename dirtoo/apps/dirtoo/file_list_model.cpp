@@ -579,10 +579,8 @@ bool FileListModel::canDropMimeData(const QMimeData* data, Qt::DropAction action
   (void)row;
   (void)column;
   (void)parent;
+  (void)action; // Qt may probe with IgnoreAction; actual action is chosen in dropEvent.
   if (data == nullptr) {
-    return false;
-  }
-  if (!(action == Qt::CopyAction || action == Qt::MoveAction || action == Qt::LinkAction)) {
     return false;
   }
   return data->hasUrls();

@@ -7,6 +7,8 @@
 
 #include <QApplication>
 #include <QDrag>
+#include <QDropEvent>
+#include <QDragMoveEvent>
 #include <QListView>
 #include <QMimeData>
 #include <QPixmap>
@@ -39,6 +41,29 @@ inline void apply_dnd_cursors(QDrag* drag)
   if (!none.isNull()) {
     drag->setDragCursor(none, Qt::IgnoreAction);
   }
+}
+
+
+inline Qt::DropAction drop_action_from_event(const QDropEvent* event)
+{
+  const auto mods = event->modifiers();
+  if ((mods & Qt::ControlModifier) && (mods & Qt::ShiftModifier)) {
+    return Qt::LinkAction;
+  }
+  if (mods & Qt::AltModifier) {
+    return Qt::LinkAction;
+  }
+  if (mods & Qt::ShiftModifier) {
+    return Qt::MoveAction;
+  }
+  if (mods & Qt::ControlModifier) {
+    return Qt::CopyAction;
+  }
+  const Qt::DropAction proposed = event->proposedAction();
+  if (proposed == Qt::CopyAction || proposed == Qt::MoveAction || proposed == Qt::LinkAction) {
+    return proposed;
+  }
+  return Qt::CopyAction;
 }
 
 } // namespace
@@ -84,6 +109,35 @@ protected:
     }
     drag->exec(supportedActions | Qt::LinkAction, def);
   }
+
+  void dragMoveEvent(QDragMoveEvent* event) override
+  {
+    if (event->mimeData() != nullptr && event->mimeData()->hasUrls()) {
+      event->setDropAction(drop_action_from_event(event));
+      event->accept();
+    } else {
+      event->ignore();
+    }
+  }
+
+  void dropEvent(QDropEvent* event) override
+  {
+    if (event->mimeData() == nullptr || !event->mimeData()->hasUrls() || model() == nullptr) {
+      event->ignore();
+      return;
+    }
+    const Qt::DropAction action = drop_action_from_event(event);
+    const QModelIndex idx = indexAt(event->position().toPoint());
+    // OnItem: pass the directory index as parent so the model resolves dest_dir.
+    const QModelIndex parent = idx.isValid() ? idx : QModelIndex();
+    const int row = idx.isValid() ? -1 : -1;
+    if (model()->dropMimeData(event->mimeData(), action, row, 0, parent)) {
+      event->setDropAction(action);
+      event->acceptProposedAction();
+    } else {
+      event->ignore();
+    }
+  }
 };
 
 /// QListView that shows themed DnD cursors + Copy/Move/Link action overlay.
@@ -126,6 +180,35 @@ protected:
       def = Qt::CopyAction;
     }
     drag->exec(supportedActions | Qt::LinkAction, def);
+  }
+
+  void dragMoveEvent(QDragMoveEvent* event) override
+  {
+    if (event->mimeData() != nullptr && event->mimeData()->hasUrls()) {
+      event->setDropAction(drop_action_from_event(event));
+      event->accept();
+    } else {
+      event->ignore();
+    }
+  }
+
+  void dropEvent(QDropEvent* event) override
+  {
+    if (event->mimeData() == nullptr || !event->mimeData()->hasUrls() || model() == nullptr) {
+      event->ignore();
+      return;
+    }
+    const Qt::DropAction action = drop_action_from_event(event);
+    const QModelIndex idx = indexAt(event->position().toPoint());
+    // OnItem: pass the directory index as parent so the model resolves dest_dir.
+    const QModelIndex parent = idx.isValid() ? idx : QModelIndex();
+    const int row = idx.isValid() ? -1 : -1;
+    if (model()->dropMimeData(event->mimeData(), action, row, 0, parent)) {
+      event->setDropAction(action);
+      event->acceptProposedAction();
+    } else {
+      event->ignore();
+    }
   }
 };
 

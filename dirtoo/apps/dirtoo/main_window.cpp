@@ -951,7 +951,7 @@ MainWindow::~MainWindow()
     path_completion_thread_->wait(2000);
   }
   if (transfer_worker_ != nullptr) {
-    QMetaObject::invokeMethod(transfer_worker_, &TransferWorker::cancel, Qt::QueuedConnection);
+    transfer_worker_->cancel();  // direct: may need to wake conflict/pause wait
   }
   transfer_thread_.quit();
   transfer_thread_.wait(5000);
@@ -2007,19 +2007,19 @@ void MainWindow::start_transfer(const TransferRequest& request)
     transfer_dialog_ = new TransferDialog(this);
     const auto cancel_worker = [this] {
       if (transfer_worker_ != nullptr) {
-        QMetaObject::invokeMethod(transfer_worker_, &TransferWorker::cancel, Qt::QueuedConnection);
+        transfer_worker_->cancel();  // direct: may need to wake conflict/pause wait
       }
     };
     connect(transfer_dialog_, &TransferDialog::cancel_requested, this, cancel_worker);
     connect(transfer_dialog_, &QDialog::rejected, this, cancel_worker);
     connect(transfer_dialog_, &TransferDialog::pause_requested, this, [this] {
       if (transfer_worker_ != nullptr) {
-        QMetaObject::invokeMethod(transfer_worker_, &TransferWorker::pause, Qt::QueuedConnection);
+        transfer_worker_->pause();
       }
     });
     connect(transfer_dialog_, &TransferDialog::resume_requested, this, [this] {
       if (transfer_worker_ != nullptr) {
-        QMetaObject::invokeMethod(transfer_worker_, &TransferWorker::resume, Qt::QueuedConnection);
+        transfer_worker_->resume();
       }
     });
   }
@@ -2115,25 +2115,19 @@ void MainWindow::on_transfer_conflict(const QString& destination_name, const QSt
                                       const QString& destination_path)
 {
   // Runs on UI thread (QueuedConnection from worker signal).
-  const auto chosen = ask_conflict_policy(
-      this, destination_name, std::filesystem::path{source_path.toStdString()},
-      std::filesystem::path{destination_path.toStdString()});
+  // resolve_conflict / cancel MUST be invoked directly: the worker thread is blocked
+  // waiting on conflict_cv_, so a QueuedConnection to the worker would never run (deadlock).
   if (transfer_worker_ == nullptr) {
     return;
   }
+  const auto chosen = ask_conflict_policy(
+      this, destination_name, std::filesystem::path{source_path.toStdString()},
+      std::filesystem::path{destination_path.toStdString()});
   if (!chosen) {
-    QMetaObject::invokeMethod(
-        transfer_worker_,
-        [this] { transfer_worker_->resolve_conflict(dirops::ConflictPolicy::Fail, false, false); },
-        Qt::QueuedConnection);
+    transfer_worker_->resolve_conflict(dirops::ConflictPolicy::Fail, false, false);
   } else {
     const auto decision = *chosen;
-    QMetaObject::invokeMethod(
-        transfer_worker_,
-        [this, decision] {
-          transfer_worker_->resolve_conflict(decision.policy, true, decision.apply_to_all);
-        },
-        Qt::QueuedConnection);
+    transfer_worker_->resolve_conflict(decision.policy, true, decision.apply_to_all);
   }
 }
 

@@ -608,11 +608,20 @@ void GraphicsFileView::dragMoveEvent(QDragMoveEvent* event)
       event->setDropAction(Qt::LinkAction);
     } else if (mods & Qt::ShiftModifier) {
       event->setDropAction(Qt::MoveAction);
-    } else {
+    } else if (mods & Qt::ControlModifier) {
       event->setDropAction(Qt::CopyAction);
+    } else {
+      // Prefer proposed action when the source offers Move (same-app default).
+      const Qt::DropAction proposed = event->proposedAction();
+      if (proposed == Qt::MoveAction || proposed == Qt::CopyAction || proposed == Qt::LinkAction) {
+        event->setDropAction(proposed);
+      } else {
+        event->setDropAction(Qt::CopyAction);
+      }
     }
-    // Highlight folder under the cursor as the drop target.
-    GraphicsFileItem* under = qgraphicsitem_cast<GraphicsFileItem*>(itemAt(event->position().toPoint()));
+    // itemAt expects viewport coordinates; event position is view-local.
+    const QPoint vp = viewport()->mapFrom(this, event->position().toPoint());
+    GraphicsFileItem* under = qgraphicsitem_cast<GraphicsFileItem*>(itemAt(vp));
     bool under_is_dir = false;
     if (under != nullptr && model_ != nullptr) {
       if (const auto* fi = model_->file_at(under->row()); fi != nullptr && fi->is_directory()) {
@@ -625,7 +634,7 @@ void GraphicsFileView::dragMoveEvent(QDragMoveEvent* event)
       }
       it->set_drop_target(under_is_dir && it == under);
     }
-    event->accept();
+    event->acceptProposedAction();
   } else {
     event->ignore();
   }
@@ -652,8 +661,10 @@ void GraphicsFileView::dropEvent(QDropEvent* event)
     event->ignore();
     return;
   }
+  // Viewport coordinates for item lookup (same as dragMoveEvent).
+  const QPoint vp = viewport()->mapFrom(this, event->position().toPoint());
   QString dest_dir;
-  if (auto* item = qgraphicsitem_cast<GraphicsFileItem*>(itemAt(event->position().toPoint()))) {
+  if (auto* item = qgraphicsitem_cast<GraphicsFileItem*>(itemAt(vp))) {
     if (model_ != nullptr) {
       if (const auto* fi = model_->file_at(item->row()); fi != nullptr && fi->is_directory()) {
         dest_dir = QString::fromStdString(fi->path().string());
@@ -670,10 +681,12 @@ void GraphicsFileView::dropEvent(QDropEvent* event)
     action = Qt::MoveAction;
   } else if (mods & Qt::ControlModifier) {
     action = Qt::CopyAction;
+  } else if (action != Qt::CopyAction && action != Qt::MoveAction && action != Qt::LinkAction) {
+    action = Qt::CopyAction;
   }
   emit files_dropped(event->mimeData()->urls(), action, dest_dir);
   event->setDropAction(action);
-  event->accept();
+  event->acceptProposedAction();
 }
 
 } // namespace dirtoo::app
