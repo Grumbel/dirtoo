@@ -32,7 +32,7 @@ Core file manager MVP is **done**. Filter DSL, multi-window, dirops, archives
 | Filter DSL (`and`/`or`/`not`/`()`, glob, regex, size, type) | **done** (`dirtoo-filter`)                                                 |
 | Filter help                                                 | **done** (Help → Filter expression help)                                   |
 | CLI filter tool                                             | **done** (`dt-filter`)                                                     |
-| Content / recursive search                                  | partial: recursive name/filter search done; content `contains:` still open |
+| Content / recursive search                                  | **done** (recursive + bounded `contains:` / `Contains:`)                   |
 | Media metadata predicates                                   | **done** (ffprobe: width/height/duration/framerate)                        |
 
 ### View & chrome
@@ -67,7 +67,7 @@ Core file manager MVP is **done**. Filter DSL, multi-window, dirops, archives
 8. [x] `dt-filter` CLI
 9. [x] Message area
 10. [x] Bookmarks menu
-11. [ ] Optional: `contains:` content match (careful with large files)
+11. [x] Optional: `contains:` content match (careful with large files)
 12. [x] Optional: recursive directory search UI/CLI (`dt-filter -r`, View → Recursive Search)
 
 ---
@@ -242,11 +242,11 @@ as of the responsive-UI / media-cache work.
 #### Filter DSL gaps
 | Predicate                                  | Python | C++     |
 |--------------------------------------------|--------|---------|
-| `contains:` / `Contains:` (file content)   | yes    | **no**  |
+| `contains:` / `Contains:` (file content)   | yes    | **yes** (max 1 MiB) |
 | `containsre:` content regex                | yes    | **no**  |
 | `containsfuzzy:`                           | yes    | **no**  |
-| `date:` / `time:` / `weekday:`             | yes    | **no**  |
-| `length:` / `len:` (name length)           | yes    | **no**  |
+| `date:` / `time:` / `weekday:`             | yes    | **partial** (`date:` done; time/weekday open) |
+| `length:` / `len:` (name length)           | yes    | **yes** |
 | `charset:` / `encoding:`                   | yes    | **no**  |
 | `pages:` (PDF)                             | yes    | **no**  |
 | `filecount:` (dir/archive)                 | yes    | **no**  |
@@ -288,11 +288,12 @@ Python ships many CLIs under `programs/` (find expr engine, fsck, shuffle, deskt
 - Hand-written filter parser (no pyparsing runtime)
 
 ### Recommended next parity work
-1. Filter: `contains:` (bounded size) + `date:` / `length:`
+1. [x] Filter: `contains:` (bounded size) + `date:` / `length:`
 2. Group by day/directory (collection + UI headers)
 3. Small-icon / compact list mode
 4. Wire remaining badge assets (loading/error/locked)
 5. Preferences coverage + thumbnail prepare/reload actions
+6. Filter: `time:` / `weekday:` (remaining date family)
 
 
 ## Working process

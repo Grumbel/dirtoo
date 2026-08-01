@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <optional>
 #include <string>
 
 namespace dirtoo::filter {
@@ -15,6 +16,8 @@ struct FilterItem {
   std::uint64_t size = 0;
   bool is_directory = false;
   std::filesystem::path path;
+  /// Unix epoch seconds when known (search / collection fill this).
+  std::optional<std::int64_t> mtime_sec;
 };
 
 } // namespace dirtoo::filter

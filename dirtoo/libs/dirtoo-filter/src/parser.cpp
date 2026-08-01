@@ -317,6 +317,18 @@ private:
     if (cmd == "Fuzzy" || cmd == "Fuz" || cmd == "Fuzz" || cmd == "F") {
       return make_fuzzy(arg, true);
     }
+    if (c == "length" || c == "len") {
+      return make_length(arg);
+    }
+    if (c == "date") {
+      return make_date(arg);
+    }
+    if (c == "contains") {
+      return make_contains(arg, false);
+    }
+    if (cmd == "Contains") {
+      return make_contains(arg, true);
+    }
     // Unknown command → never match (visible failure)
     return std::make_shared<AlwaysFalse>();
   }
@@ -349,6 +361,10 @@ Terms (juxtaposition = AND, OR joins alternatives):
   framerate:>30   video frame rate (fps)
   fuzzy:speling   n-gram fuzzy basename (threshold 0.5); fuzzy:x@0.6
   Fuzzy:Speling   case-sensitive fuzzy
+  length:>10      basename character length (len:)
+  date:today      mtime date (also date:>=2024-01-01, date:2024-*-01)
+  contains:foo    file content substring, case-insensitive (max 1MiB)
+  Contains:Foo    case-sensitive content match
   -term           exclude / NOT term   (also ^term or not term)
   ( a OR b )      grouping with parentheses
 
@@ -357,6 +373,8 @@ Examples:
   type:file size:>1M
   (readme OR license) -*.bak
   glob:*.cpp regex:main
+  length:>20 contains:TODO
+  date:today type:file
 )";
 }
 

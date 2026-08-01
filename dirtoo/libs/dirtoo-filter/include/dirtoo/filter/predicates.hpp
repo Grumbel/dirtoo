@@ -5,6 +5,7 @@
 
 #include "dirtoo/filter/match_func.hpp"
 
+#include <cstddef>
 #include <cstdint>
 #include <regex>
 #include <string>
@@ -24,5 +25,16 @@ namespace dirtoo::filter {
 [[nodiscard]] MatchFuncPtr make_fuzzy(std::string argument, bool case_sensitive = false);
 [[nodiscard]] double fuzzy_score(std::string_view needle, std::string_view haystack,
                                 int n = 3, bool case_sensitive = false);
+
+/// Basename character length compare: length:>10, len:=3
+[[nodiscard]] MatchFuncPtr make_length(std::string argument);
+
+/// mtime date: today | >=2024-01-01 | 2024-*-01 | 2024-06 | 2024
+[[nodiscard]] MatchFuncPtr make_date(std::string argument);
+
+/// File content substring (UTF-8, errors replaced). Default max 1 MiB read.
+/// contains: needle (case-insensitive), Contains: needle (case-sensitive).
+[[nodiscard]] MatchFuncPtr make_contains(std::string argument, bool case_sensitive = false,
+                                         std::size_t max_bytes = 1u << 20);
 
 } // namespace dirtoo::filter

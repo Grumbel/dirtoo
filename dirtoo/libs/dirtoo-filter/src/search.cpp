@@ -4,6 +4,7 @@
 #include "dirtoo/filter/search.hpp"
 
 #include <system_error>
+#include <chrono>
 
 namespace dirtoo::filter {
 namespace {
@@ -43,6 +44,12 @@ FilterItem make_item(const std::filesystem::directory_entry& entry)
     if (ec) {
       item.size = 0;
     }
+  }
+  const auto ft = entry.last_write_time(ec);
+  if (!ec) {
+    const auto sctp = std::chrono::clock_cast<std::chrono::system_clock>(ft);
+    item.mtime_sec =
+        std::chrono::duration_cast<std::chrono::seconds>(sctp.time_since_epoch()).count();
   }
   return item;
 }

@@ -6,6 +6,11 @@
 #include "dirtoo/filter/media_meta_cache.hpp"
 
 #include <algorithm>
+#include <fstream>
+#include <chrono>
+#include <ctime>
+#include <cstdio>
+#include <tuple>
 #include <set>
 #include <cctype>
 #include <charconv>
@@ -676,6 +681,379 @@ MatchFuncPtr make_fuzzy(std::string argument, bool case_sensitive)
     threshold = 1.0;
   }
   return std::make_shared<FuzzyMatch>(std::move(needle), threshold, n, case_sensitive);
+}
+
+
+
+namespace {
+
+std::string lower_copy(std::string s)
+{
+  for (char& c : s) {
+    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  }
+  return s;
+}
+
+std::optional<std::int64_t> resolve_mtime_sec(const FilterItem& item)
+{
+  if (item.mtime_sec) {
+    return item.mtime_sec;
+  }
+  if (item.path.empty()) {
+    return std::nullopt;
+  }
+  std::error_code ec;
+  const auto ft = std::filesystem::last_write_time(item.path, ec);
+  if (ec) {
+    return std::nullopt;
+  }
+  const auto sctp = std::chrono::clock_cast<std::chrono::system_clock>(ft);
+  return std::chrono::duration_cast<std::chrono::seconds>(sctp.time_since_epoch()).count();
+}
+
+enum class LenCmp { Eq, Ne, Lt, Le, Gt, Ge };
+
+std::pair<LenCmp, std::string_view> split_len_cmp(std::string_view arg)
+{
+  while (!arg.empty() && std::isspace(static_cast<unsigned char>(arg.front()))) {
+    arg.remove_prefix(1);
+  }
+  if (arg.starts_with(">=")) {
+    return {LenCmp::Ge, arg.substr(2)};
+  }
+  if (arg.starts_with("<=")) {
+    return {LenCmp::Le, arg.substr(2)};
+  }
+  if (arg.starts_with("!=") || arg.starts_with("<>")) {
+    return {LenCmp::Ne, arg.substr(2)};
+  }
+  if (arg.starts_with(">")) {
+    return {LenCmp::Gt, arg.substr(1)};
+  }
+  if (arg.starts_with("<")) {
+    return {LenCmp::Lt, arg.substr(1)};
+  }
+  if (arg.starts_with("=")) {
+    return {LenCmp::Eq, arg.substr(1)};
+  }
+  return {LenCmp::Eq, arg};
+}
+
+bool apply_len_cmp(LenCmp op, double a, double b)
+{
+  switch (op) {
+  case LenCmp::Eq:
+    return a == b;
+  case LenCmp::Ne:
+    return a != b;
+  case LenCmp::Lt:
+    return a < b;
+  case LenCmp::Le:
+    return a <= b;
+  case LenCmp::Gt:
+    return a > b;
+  case LenCmp::Ge:
+    return a >= b;
+  }
+  return false;
+}
+
+class LengthMatch : public MatchFunc {
+public:
+  LengthMatch(LenCmp op, std::size_t value)
+      : op_(op)
+      , value_(value)
+  {
+  }
+  bool matches(const FilterItem& item) const override
+  {
+    return apply_len_cmp(op_, static_cast<double>(item.name.size()), static_cast<double>(value_));
+  }
+
+private:
+  LenCmp op_;
+  std::size_t value_;
+};
+
+struct DateKey {
+  int year = 0;
+  int month = 0;
+  int day = 0;
+  [[nodiscard]] auto tie() const { return std::tuple{year, month, day}; }
+  bool operator==(const DateKey& o) const { return tie() == o.tie(); }
+  bool operator!=(const DateKey& o) const { return tie() != o.tie(); }
+  bool operator<(const DateKey& o) const { return tie() < o.tie(); }
+  bool operator<=(const DateKey& o) const { return tie() <= o.tie(); }
+  bool operator>(const DateKey& o) const { return tie() > o.tie(); }
+  bool operator>=(const DateKey& o) const { return tie() >= o.tie(); }
+};
+
+std::optional<DateKey> parse_date_key(std::string_view text)
+{
+  while (!text.empty() && std::isspace(static_cast<unsigned char>(text.front()))) {
+    text.remove_prefix(1);
+  }
+  while (!text.empty() && std::isspace(static_cast<unsigned char>(text.back()))) {
+    text.remove_suffix(1);
+  }
+  if (text.empty()) {
+    return std::nullopt;
+  }
+  try {
+    if (text.size() >= 10 && text[4] == '-' && text[7] == '-') {
+      DateKey k;
+      k.year = std::stoi(std::string{text.substr(0, 4)});
+      k.month = std::stoi(std::string{text.substr(5, 2)});
+      k.day = std::stoi(std::string{text.substr(8, 2)});
+      return k;
+    }
+    if (text.size() >= 7 && text[4] == '-') {
+      DateKey k;
+      k.year = std::stoi(std::string{text.substr(0, 4)});
+      k.month = std::stoi(std::string{text.substr(5, 2)});
+      return k;
+    }
+    if (text.size() == 4) {
+      DateKey k;
+      k.year = std::stoi(std::string{text});
+      return k;
+    }
+  } catch (...) {
+  }
+  return std::nullopt;
+}
+
+DateKey date_key_from_mtime(std::int64_t mtime_sec, int precision)
+{
+  std::time_t t = static_cast<std::time_t>(mtime_sec);
+  std::tm tm{};
+  localtime_r(&t, &tm);
+  DateKey k;
+  k.year = tm.tm_year + 1900;
+  if (precision >= 1) {
+    k.month = tm.tm_mon + 1;
+  }
+  if (precision >= 2) {
+    k.day = tm.tm_mday;
+  }
+  return k;
+}
+
+int date_precision(const DateKey& k)
+{
+  if (k.day > 0) {
+    return 2;
+  }
+  if (k.month > 0) {
+    return 1;
+  }
+  return 0;
+}
+
+bool apply_cmp_date(LenCmp op, const DateKey& a, const DateKey& b)
+{
+  switch (op) {
+  case LenCmp::Eq:
+    return a == b;
+  case LenCmp::Ne:
+    return a != b;
+  case LenCmp::Lt:
+    return a < b;
+  case LenCmp::Le:
+    return a <= b;
+  case LenCmp::Gt:
+    return a > b;
+  case LenCmp::Ge:
+    return a >= b;
+  }
+  return false;
+}
+
+class DateOpMatch : public MatchFunc {
+public:
+  DateOpMatch(LenCmp op, DateKey key)
+      : op_(op)
+      , key_(key)
+      , precision_(date_precision(key))
+  {
+  }
+  bool matches(const FilterItem& item) const override
+  {
+    const auto mt = resolve_mtime_sec(item);
+    if (!mt) {
+      return false;
+    }
+    const DateKey actual = date_key_from_mtime(*mt, precision_);
+    return apply_cmp_date(op_, actual, key_);
+  }
+
+private:
+  LenCmp op_;
+  DateKey key_;
+  int precision_;
+};
+
+bool date_glob_match(std::string_view text, std::string_view pattern)
+{
+  std::size_t ti = 0;
+  std::size_t pi = 0;
+  std::size_t star = std::string_view::npos;
+  std::size_t match = 0;
+  while (ti < text.size()) {
+    if (pi < pattern.size() && (pattern[pi] == '?' || pattern[pi] == text[ti])) {
+      ++ti;
+      ++pi;
+    } else if (pi < pattern.size() && pattern[pi] == '*') {
+      star = pi++;
+      match = ti;
+    } else if (star != std::string_view::npos) {
+      pi = star + 1;
+      ti = ++match;
+    } else {
+      return false;
+    }
+  }
+  while (pi < pattern.size() && pattern[pi] == '*') {
+    ++pi;
+  }
+  return pi == pattern.size();
+}
+
+class DateGlobMatch : public MatchFunc {
+public:
+  explicit DateGlobMatch(std::string pattern)
+      : pattern_(std::move(pattern))
+  {
+  }
+  bool matches(const FilterItem& item) const override
+  {
+    const auto mt = resolve_mtime_sec(item);
+    if (!mt) {
+      return false;
+    }
+    const DateKey k = date_key_from_mtime(*mt, 2);
+    char buf[16];
+    std::snprintf(buf, sizeof(buf), "%04d-%02d-%02d", k.year, k.month, k.day);
+    return date_glob_match(buf, pattern_);
+  }
+
+private:
+  std::string pattern_;
+};
+
+class ContainsMatch : public MatchFunc {
+public:
+  ContainsMatch(std::string needle, bool case_sensitive, std::size_t max_bytes)
+      : needle_(std::move(needle))
+      , case_sensitive_(case_sensitive)
+      , max_bytes_(max_bytes)
+  {
+    if (!case_sensitive_) {
+      needle_ = lower_copy(std::move(needle_));
+    }
+  }
+  bool matches(const FilterItem& item) const override
+  {
+    if (item.is_directory || item.path.empty() || needle_.empty()) {
+      return false;
+    }
+    std::ifstream in(item.path, std::ios::binary);
+    if (!in) {
+      return false;
+    }
+    constexpr std::size_t kChunk = 64 * 1024;
+    std::string chunk(kChunk, '\0');
+    std::size_t total = 0;
+    std::string carry;
+    while (in && total < max_bytes_) {
+      const auto to_read = std::min(kChunk, max_bytes_ - total);
+      in.read(chunk.data(), static_cast<std::streamsize>(to_read));
+      const auto n = static_cast<std::size_t>(in.gcount());
+      if (n == 0) {
+        break;
+      }
+      total += n;
+      std::string view = carry;
+      view.append(chunk.data(), n);
+      if (case_sensitive_) {
+        if (view.find(needle_) != std::string::npos) {
+          return true;
+        }
+      } else if (lower_copy(view).find(needle_) != std::string::npos) {
+        return true;
+      }
+      const std::size_t keep =
+          needle_.empty() ? 0 : std::min(view.size(), needle_.size() - 1);
+      carry = view.substr(view.size() - keep);
+    }
+    return false;
+  }
+
+private:
+  std::string needle_;
+  bool case_sensitive_;
+  std::size_t max_bytes_;
+};
+
+} // namespace
+
+MatchFuncPtr make_length(std::string argument)
+{
+  const auto [op, rest] = split_len_cmp(argument);
+  auto trimmed = rest;
+  while (!trimmed.empty() && std::isspace(static_cast<unsigned char>(trimmed.front()))) {
+    trimmed.remove_prefix(1);
+  }
+  if (trimmed.empty()) {
+    return std::make_shared<AlwaysFalse>();
+  }
+  try {
+    const auto value = static_cast<std::size_t>(std::stoull(std::string{trimmed}));
+    return std::make_shared<LengthMatch>(op, value);
+  } catch (...) {
+    return std::make_shared<AlwaysFalse>();
+  }
+}
+
+MatchFuncPtr make_date(std::string argument)
+{
+  while (!argument.empty() && std::isspace(static_cast<unsigned char>(argument.front()))) {
+    argument.erase(argument.begin());
+  }
+  while (!argument.empty() && std::isspace(static_cast<unsigned char>(argument.back()))) {
+    argument.pop_back();
+  }
+  if (argument.empty()) {
+    return std::make_shared<AlwaysFalse>();
+  }
+  if (lower_copy(argument) == "today") {
+    std::time_t now = std::time(nullptr);
+    std::tm tm{};
+    localtime_r(&now, &tm);
+    DateKey k;
+    k.year = tm.tm_year + 1900;
+    k.month = tm.tm_mon + 1;
+    k.day = tm.tm_mday;
+    return std::make_shared<DateOpMatch>(LenCmp::Ge, k);
+  }
+  if (argument.find('*') != std::string::npos || argument.find('?') != std::string::npos) {
+    return std::make_shared<DateGlobMatch>(std::move(argument));
+  }
+  const auto [op, rest] = split_len_cmp(argument);
+  const auto key = parse_date_key(rest);
+  if (!key) {
+    return std::make_shared<AlwaysFalse>();
+  }
+  return std::make_shared<DateOpMatch>(op, *key);
+}
+
+MatchFuncPtr make_contains(std::string argument, bool case_sensitive, std::size_t max_bytes)
+{
+  if (argument.empty()) {
+    return std::make_shared<AlwaysFalse>();
+  }
+  return std::make_shared<ContainsMatch>(std::move(argument), case_sensitive, max_bytes);
 }
 
 

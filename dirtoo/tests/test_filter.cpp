@@ -11,6 +11,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <ctime>
 
 using dirtoo::filter::FilterItem;
 using dirtoo::filter::parse_filter;
@@ -179,4 +180,83 @@ TEST_CASE("filter fuzzy command", "[filter][fuzzy]")
   m = parse_filter("fuzzy:readme@0.9");
   REQUIRE(m);
   REQUIRE((*m)->matches(file("readme")));
+}
+
+TEST_CASE("filter length command", "[filter]")
+{
+  auto m = parse_filter("length:>5");
+  REQUIRE(m);
+  REQUIRE((*m)->matches(file("abcdef")));
+  REQUIRE_FALSE((*m)->matches(file("ab")));
+  REQUIRE((*m)->matches(file("123456")));
+
+  m = parse_filter("len:=3");
+  REQUIRE(m);
+  REQUIRE((*m)->matches(file("abc")));
+  REQUIRE_FALSE((*m)->matches(file("abcd")));
+}
+
+TEST_CASE("filter date command", "[filter]")
+{
+  auto m = parse_filter("date:today");
+  REQUIRE(m);
+  // Item with today's mtime matches
+  FilterItem today_file = file("x.txt");
+  today_file.mtime_sec = static_cast<std::int64_t>(std::time(nullptr));
+  REQUIRE((*m)->matches(today_file));
+
+  FilterItem old_file = file("old.txt");
+  old_file.mtime_sec = 0; // 1970-01-01
+  REQUIRE_FALSE((*m)->matches(old_file));
+
+  m = parse_filter("date:>=2020-01-01");
+  REQUIRE(m);
+  REQUIRE((*m)->matches(today_file));
+  REQUIRE_FALSE((*m)->matches(old_file));
+
+  // Glob against formatted local date of a known epoch second.
+  m = parse_filter("date:>=1970-01-01");
+  REQUIRE(m);
+  REQUIRE((*m)->matches(today_file));
+
+  m = parse_filter("date:<1970-01-02");
+  REQUIRE(m);
+  // mtime 0 is on or before 1970-01-01 in most zones
+  REQUIRE((*m)->matches(old_file));
+}
+
+TEST_CASE("filter contains command", "[filter]")
+{
+  const auto dir = fs::temp_directory_path() / "dirtoo-contains";
+  fs::remove_all(dir);
+  fs::create_directories(dir);
+  const auto path = dir / "note.txt";
+  {
+    std::ofstream out(path);
+    out << "Hello WORLD\nsecond line\n";
+  }
+
+  FilterItem item{.name = "note.txt", .size = 0, .is_directory = false, .path = path};
+
+  auto m = parse_filter("contains:hello");
+  REQUIRE(m);
+  REQUIRE((*m)->matches(item));
+
+  m = parse_filter("contains:missing");
+  REQUIRE(m);
+  REQUIRE_FALSE((*m)->matches(item));
+
+  m = parse_filter("Contains:WORLD");
+  REQUIRE(m);
+  REQUIRE((*m)->matches(item));
+
+  m = parse_filter("Contains:world");
+  REQUIRE(m);
+  REQUIRE_FALSE((*m)->matches(item)); // case-sensitive
+
+  m = parse_filter("type:dir contains:hello");
+  REQUIRE(m);
+  REQUIRE_FALSE((*m)->matches(dir("folder")));
+
+  fs::remove_all(dir);
 }

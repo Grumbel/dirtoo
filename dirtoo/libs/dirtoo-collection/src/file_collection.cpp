@@ -8,6 +8,7 @@
 #include "dirtoo/filter/predicates.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <cctype>
 
 namespace dirtoo::collection {
@@ -20,12 +21,20 @@ bool is_hidden_name(const std::string& name)
 
 filter::FilterItem to_filter_item(const fs::FileInfo& fi)
 {
-  return filter::FilterItem{
+  filter::FilterItem item{
       .name = fi.basename(),
       .size = fi.size(),
       .is_directory = fi.is_directory(),
       .path = fi.path(),
   };
+  try {
+    const auto sctp = std::chrono::clock_cast<std::chrono::system_clock>(fi.mtime());
+    item.mtime_sec =
+        std::chrono::duration_cast<std::chrono::seconds>(sctp.time_since_epoch()).count();
+  } catch (...) {
+    // synthetic / unset mtime
+  }
+  return item;
 }
 
 } // namespace
