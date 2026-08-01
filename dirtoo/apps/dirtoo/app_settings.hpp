@@ -12,6 +12,8 @@ struct AppSettings {
   QString view_mode = QStringLiteral("detail");
   int zoom_index = 2;
   bool show_hidden = false;
+  bool show_filter = true;
+  bool filter_pinned = false;
   QByteArray window_geometry;
   QByteArray window_state;
   QString last_location;

@@ -8,6 +8,7 @@
 #include "app_settings.hpp"
 #include "conflict_dialog.hpp"
 #include "open_with.hpp"
+#include "preferences_dialog.hpp"
 #include "properties_dialog.hpp"
 #include "dirtoo/fs/file_info.hpp"
 #include "dirops/ops.hpp"
@@ -148,6 +149,11 @@ MainWindow::MainWindow(QWidget* parent)
       auto* act = edit_menu->addAction(QStringLiteral("Properties…"), this, &MainWindow::on_properties);
       act->setShortcut(QKeySequence(Qt::Key_F3));
     }
+    edit_menu->addSeparator();
+    {
+      auto* act = edit_menu->addAction(QStringLiteral("Preferences…"), this, &MainWindow::on_preferences);
+      act->setShortcut(QKeySequence::Preferences);
+    }
 
     auto* view_menu = menuBar()->addMenu(QStringLiteral("&View"));
     view_menu->addAction(detail_act_);
@@ -159,7 +165,7 @@ MainWindow::MainWindow(QWidget* parent)
     connect(show_hidden_act_, &QAction::toggled, this, &MainWindow::on_toggle_hidden);
     view_menu->addSeparator();
     {
-      auto* act = show_filter_act_ = view_menu->addAction(QStringLiteral("Show Filter"));
+      show_filter_act_ = view_menu->addAction(QStringLiteral("Show Filter"));
     show_filter_act_->setCheckable(true);
     show_filter_act_->setChecked(true);
     show_filter_act_->setShortcut(QKeySequence(QStringLiteral("Ctrl+F")));
@@ -169,6 +175,15 @@ MainWindow::MainWindow(QWidget* parent)
         if (on) {
           filter_edit_->setFocus(Qt::ShortcutFocusReason);
         }
+      }
+    });
+    pin_filter_act_ = view_menu->addAction(QStringLiteral("Pin Filter"));
+    pin_filter_act_->setCheckable(true);
+    pin_filter_act_->setShortcut(QKeySequence(QStringLiteral("Ctrl+P")));
+    connect(pin_filter_act_, &QAction::toggled, this, [this](bool on) {
+      filter_pinned_ = on;
+      if (on && show_filter_act_ != nullptr && !show_filter_act_->isChecked()) {
+        show_filter_act_->setChecked(true);
       }
     });
     {
@@ -1120,6 +1135,16 @@ void MainWindow::restore_settings()
   if (show_hidden_act_ != nullptr) {
     show_hidden_act_->setChecked(s.show_hidden);
   }
+  filter_pinned_ = s.filter_pinned;
+  if (pin_filter_act_ != nullptr) {
+    pin_filter_act_->setChecked(s.filter_pinned);
+  }
+  if (show_filter_act_ != nullptr) {
+    show_filter_act_->setChecked(s.show_filter || s.filter_pinned);
+  }
+  if (filter_edit_ != nullptr) {
+    filter_edit_->setVisible(s.show_filter || s.filter_pinned);
+  }
   if (s.view_mode == QLatin1String("icons")) {
     set_view_mode(ViewMode::Icons);
   } else {
@@ -1139,6 +1164,8 @@ void MainWindow::persist_settings() const
   s.view_mode = (view_mode_ == ViewMode::Icons) ? QStringLiteral("icons") : QStringLiteral("detail");
   s.zoom_index = zoom_index_;
   s.show_hidden = collection_.show_hidden();
+  s.show_filter = show_filter_act_ != nullptr && show_filter_act_->isChecked();
+  s.filter_pinned = filter_pinned_;
   s.window_geometry = saveGeometry();
   s.window_state = saveState();
   s.last_location = QString::fromStdString(location_.as_path().string());
@@ -1307,7 +1334,11 @@ void MainWindow::on_clear_filter()
     filter_edit_->clear();
     return;
   }
-  // Second Escape: leave location line-edit mode if active.
+  if (filter_edit_ != nullptr && filter_edit_->isVisible() && !filter_pinned_
+      && show_filter_act_ != nullptr && show_filter_act_->isChecked()) {
+    show_filter_act_->setChecked(false);
+    return;
+  }
   if (location_edit_ != nullptr && location_edit_->isVisible()) {
     show_location_buttons();
   }
@@ -1509,9 +1540,58 @@ void MainWindow::on_rebuild_history_menu()
     QString label = loc.is_archive() ? QString::fromStdString(loc.as_url())
                                      : QString::fromStdString(loc.as_path().string());
     auto* act = history_menu_->addAction(label);
-    connect(act, &QAction::triggered, this, [this, loc] { open_location(loc); });
-    // Middle-click via custom? QAction doesn't get middle easily; use context - skip for now
+    act->setData(QString::fromStdString(loc.as_url()));
+    connect(act, &QAction::triggered, this, [this, loc] {
+      if (QApplication::mouseButtons() & Qt::MiddleButton) {
+        open_new_window(loc);
+      } else if (QApplication::keyboardModifiers() & Qt::ShiftModifier) {
+        open_new_window(loc);
+      } else {
+        open_location(loc);
+      }
+    });
   }
+}
+
+
+void MainWindow::on_preferences()
+{
+  AppSettings s = load_settings();
+  // Reflect live UI into the struct before editing.
+  s.view_mode = (view_mode_ == ViewMode::Icons) ? QStringLiteral("icons") : QStringLiteral("detail");
+  s.zoom_index = zoom_index_;
+  s.show_hidden = collection_.show_hidden();
+  s.show_filter = show_filter_act_ != nullptr && show_filter_act_->isChecked();
+  s.filter_pinned = filter_pinned_;
+  if (!show_preferences_dialog(this, &s)) {
+    return;
+  }
+  save_settings(s);
+  apply_settings(s);
+}
+
+void MainWindow::apply_settings(const AppSettings& s)
+{
+  if (s.zoom_index >= 0 && s.zoom_index < static_cast<int>(std::size(kZoomLevels))) {
+    zoom_index_ = s.zoom_index;
+    apply_icon_zoom();
+  }
+  set_view_mode(s.view_mode == QLatin1String("icons") ? ViewMode::Icons : ViewMode::Detail);
+  collection_.set_show_hidden(s.show_hidden);
+  if (show_hidden_act_ != nullptr) {
+    show_hidden_act_->setChecked(s.show_hidden);
+  }
+  filter_pinned_ = s.filter_pinned;
+  if (pin_filter_act_ != nullptr) {
+    pin_filter_act_->setChecked(s.filter_pinned);
+  }
+  if (show_filter_act_ != nullptr) {
+    show_filter_act_->setChecked(s.show_filter || s.filter_pinned);
+  }
+  if (filter_edit_ != nullptr) {
+    filter_edit_->setVisible(s.show_filter || s.filter_pinned);
+  }
+  refresh_list();
 }
 
 } // namespace dirtoo::app

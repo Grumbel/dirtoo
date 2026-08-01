@@ -27,6 +27,8 @@ qt_add_executable(dirtoo-app
   location_button_bar.hpp
   leap_widget.cpp
   leap_widget.hpp
+  preferences_dialog.cpp
+  preferences_dialog.hpp
   resources.qrc
 )
 

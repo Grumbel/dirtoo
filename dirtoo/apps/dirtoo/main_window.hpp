@@ -11,6 +11,7 @@
 #include "dirtoo/thumbnail/thumbnailer.hpp"
 #include "dirtoo/watcher/directory_watcher.hpp"
 #include "dirops/ops.hpp"
+#include "app_settings.hpp"
 #include "file_list_model.hpp"
 #include "leap_widget.hpp"
 #include "location_button_bar.hpp"
@@ -74,6 +75,8 @@ private slots:
   void on_open_terminal();
   void on_toggle_hidden(bool checked);
   void on_about();
+  void on_preferences();
+  void apply_settings(const AppSettings& settings);
   void on_archive_ready(const dirtoo::fs::Location& archive_location,
                         const std::filesystem::path& extracted_root);
   void on_archive_failed(const dirtoo::fs::Location& archive_location, const QString& message);
@@ -160,6 +163,8 @@ private:
   LeapWidget* leap_widget_ = nullptr;
   QAction* parent_act_ = nullptr;
   QAction* show_filter_act_ = nullptr;
+  QAction* pin_filter_act_ = nullptr;
+  bool filter_pinned_ = false;
   QMenu* history_menu_ = nullptr;
   std::vector<fs::Location> location_history_unique_;
   QWidget* location_stack_host_ = nullptr;
