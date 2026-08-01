@@ -30,6 +30,9 @@
 #include <QStringListModel>
 #include <QTimer>
 #include <QEvent>
+#include <QFile>
+#include <QFileDialog>
+#include <QTextStream>
 #include <QMouseEvent>
 #include <QDesktopServices>
 #include <QDir>
@@ -171,6 +174,9 @@ MainWindow::MainWindow(QWidget* parent)
       if (icon_view_ != nullptr) {
         icon_view_->viewport()->update();
       }
+      if (graphics_view_ != nullptr) {
+        graphics_view_->viewport()->update();
+      }
     });
     crop_thumbnails_act_ = act;
   }
@@ -188,6 +194,12 @@ MainWindow::MainWindow(QWidget* parent)
       act->setShortcut(QKeySequence::New); // Ctrl+N
     }
     file_menu->addAction(QStringLiteral("New Folder…"), this, &MainWindow::on_mkdir);
+    file_menu->addSeparator();
+    {
+      auto* act = file_menu->addAction(QStringLiteral("Save File List As…"), this,
+                                       &MainWindow::on_save_file_list);
+      act->setShortcut(QKeySequence::SaveAs);
+    }
     file_menu->addSeparator();
     {
       auto* act = file_menu->addAction(QStringLiteral("Close"), this, &QWidget::close);
@@ -1693,13 +1705,23 @@ void MainWindow::update_status_selection()
 
 void MainWindow::on_urls_dropped(const QList<QUrl>& urls, Qt::DropAction action)
 {
+  on_urls_dropped_to(urls, action, {});
+}
+
+void MainWindow::on_urls_dropped_to(const QList<QUrl>& urls, Qt::DropAction action,
+                                   const QString& dest_dir)
+{
   if (transfer_busy_ || urls.isEmpty()) {
     return;
   }
 
   TransferRequest req;
   req.mode = (action == Qt::MoveAction) ? ClipboardMode::Cut : ClipboardMode::Copy;
-  req.destination_directory = location_.as_path();
+  if (!dest_dir.isEmpty()) {
+    req.destination_directory = std::filesystem::path{dest_dir.toStdString()};
+  } else {
+    req.destination_directory = location_.as_path();
+  }
   for (const QUrl& url : urls) {
     if (url.isLocalFile()) {
       req.sources.emplace_back(url.toLocalFile().toStdString());
@@ -1709,7 +1731,6 @@ void MainWindow::on_urls_dropped(const QList<QUrl>& urls, Qt::DropAction action)
     return;
   }
 
-  // Avoid copying a directory into itself.
   std::vector<std::filesystem::path> filtered;
   for (const auto& src : req.sources) {
     const auto dest = req.destination_directory / src.filename();
@@ -1724,6 +1745,37 @@ void MainWindow::on_urls_dropped(const QList<QUrl>& urls, Qt::DropAction action)
     return;
   }
   start_transfer(req);
+}
+
+void MainWindow::on_save_file_list()
+{
+  if (model_ == nullptr) {
+    return;
+  }
+  const QString path = QFileDialog::getSaveFileName(
+      this, QStringLiteral("Save File List As"),
+      QString::fromStdString(location_.as_path().string()) + QStringLiteral("/filelist.txt"),
+      QStringLiteral("Text files (*.txt);;All files (*)"));
+  if (path.isEmpty()) {
+    return;
+  }
+  QFile file(path);
+  if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+    QMessageBox::warning(this, QStringLiteral("Save File List"),
+                         QStringLiteral("Could not write %1").arg(path));
+    return;
+  }
+  QTextStream out(&file);
+  const int rows = model_->rowCount();
+  for (int r = 0; r < rows; ++r) {
+    if (const auto* fi = model_->file_at(r)) {
+      out << QString::fromStdString(fi->path().string()) << '
+';
+    }
+  }
+  if (status_label_ != nullptr) {
+    status_label_->setText(QStringLiteral("Saved %1 paths to %2").arg(rows).arg(path));
+  }
 }
 
 void MainWindow::restore_settings()

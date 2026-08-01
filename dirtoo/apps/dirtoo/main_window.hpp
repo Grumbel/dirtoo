@@ -144,6 +144,8 @@ private slots:
   void on_thumbnail_failed(const dirtoo::fs::Location& location, const QString& message);
   void on_selection_changed();
   void on_urls_dropped(const QList<QUrl>& urls, Qt::DropAction action);
+  void on_urls_dropped_to(const QList<QUrl>& urls, Qt::DropAction action, const QString& dest_dir);
+  void on_save_file_list();
 
   void on_transfer_item_started(int index, int total, const QString& path);
   void on_transfer_byte_progress(quint64 done, quint64 total, const QString& path);

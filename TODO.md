@@ -43,7 +43,7 @@ Core file manager MVP is **done**. Filter DSL, multi-window, dirops, archives
 | Message area                              | **done** (transient banner)            |
 | Preferences, transfers, properties, About | **done**                               |
 | Async path completion worker              | **done**                               |
-| Graphics View icon scene                  | **initial** (Icons mode uses GraphicsFileView) |
+| Graphics View icon scene                  | **done** (grid, DnD, folder drop) |
 
 ### Ops
 
@@ -151,7 +151,7 @@ Schema evolution via `PRAGMA user_version` migrations.
 | Item                                        | Reason                          |
 |---------------------------------------------|---------------------------------|
 | Write into archives                         | Read-only by design             |
-| Graphics View icon scene                    | May revisit; Model/View for now |
+| Graphics View icon scene                    | **done** for Icons mode |
 | Face detect / experiments / most programs/* | Out of scope                    |
 | Pixel-perfect Python layout                 | Functional parity only          |
 | Archive write support                       | Read-only by design             |
@@ -179,7 +179,7 @@ as of the responsive-UI / media-cache work.
 | Area           | Python                                    | C++                                         | Notes                             |
 |----------------|-------------------------------------------|---------------------------------------------|-----------------------------------|
 | Language / UI  | Python 3 + PyQt6                          | C++23 + Qt6 Widgets                         |                                   |
-| View tech      | `QGraphicsView` + custom `FileItem` scene | Detail: tree; Icons: GraphicsFileView; Small: list | **partial** |
+| View tech      | `QGraphicsView` + custom `FileItem` scene | Detail: tree; Icons: GraphicsFileView; Small: list | **done** |
 | FS abstraction | `virtual_filesystem`, Location URLs       | `dirtoo-fs::Location` (file + archive)      | SFTP/other VFS not started        |
 | File ops       | In-app + scripts                          | **`dirops`** lib + `dt-*` CLIs              | Stronger separation in C++        |
 | Filtering      | `filter/` + pyparsing                     | **`dirtoo-filter`** (hand parser, Qt-free)  |                                   |
@@ -229,7 +229,7 @@ as of the responsive-UI / media-cache work.
 | Missing                                          | Python behaviour                                           |
 |--------------------------------------------------|------------------------------------------------------------|
 | **Small icon / sequence mode**                   | **done** (QListView ListMode + zoom steps)                 |
-| **Graphics View icon scene**                     | **improved** (DnD + themed cursors + drag overlay)         |
+| **Graphics View icon scene**                     | **done** (DnD, folder-tile drop, themed cursors)           |
 | **Group by** (day, directory, duration, none)    | **done**                                                   |
 | **Time gaps** in icon layout                     | Visual spacing by mtime gaps                               |
 | **Show abspath vs basename** toggle              | Caption shows full path                                    |
@@ -279,7 +279,7 @@ Python ships many CLIs under `programs/` (find expr engine, fsck, shuffle, deskt
 | DnD action overlay (Copy/Move/Link)            | **done** (DragActionOverlay)               |
 | DnD cursor themed pixmaps                      | **done** (`dnd-*.png` + setDragCursor)   |
 | Icon badges for pages / archive file count     | **done**                                 |
-| Save file list as                              | Python action                            |
+| Save file list as                              | **done** (File → Save File List As…)     |
 | Debug mode action                              | Python only                              |
 
 ### C++ advantages (not in Python)
@@ -314,6 +314,17 @@ C++ dialogs are functional but thinner than Python. Tracked for a dedicated pass
 
 Recommended order: Conflict → Transfer → Properties.
 
+
+## Parity freeze
+
+Local GUI / filter / dialog / Graphics View parity for the MVP is complete.
+Intentionally **out of scope** unless revisited:
+
+- Archive **write** / modify
+- Remote / VFS backends (gio, KIO, …)
+- Full Python `programs/*` CLI surface
+- Debug mode action
+- Kinetic / animated Graphics layout
 
 ## Working process
 

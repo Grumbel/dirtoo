@@ -356,11 +356,19 @@ void GraphicsFileView::dragMoveEvent(QDragMoveEvent* event)
 
 void GraphicsFileView::dropEvent(QDropEvent* event)
 {
-  if (model_ == nullptr || event->mimeData() == nullptr || !event->mimeData()->hasUrls()) {
+  if (event->mimeData() == nullptr || !event->mimeData()->hasUrls()) {
     event->ignore();
     return;
   }
-  model_->dropMimeData(event->mimeData(), event->proposedAction(), -1, -1, {});
+  QString dest_dir;
+  if (auto* item = qgraphicsitem_cast<GraphicsFileItem*>(itemAt(event->position().toPoint()))) {
+    if (model_ != nullptr) {
+      if (const auto* fi = model_->file_at(item->row()); fi != nullptr && fi->is_directory()) {
+        dest_dir = QString::fromStdString(fi->path().string());
+      }
+    }
+  }
+  emit files_dropped(event->mimeData()->urls(), event->proposedAction(), dest_dir);
   event->acceptProposedAction();
 }
 
