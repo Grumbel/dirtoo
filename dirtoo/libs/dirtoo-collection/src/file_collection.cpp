@@ -3,70 +3,29 @@
 
 #include "dirtoo/collection/file_collection.hpp"
 
+#include "dirtoo/filter/filter_item.hpp"
+#include "dirtoo/filter/parser.hpp"
+#include "dirtoo/filter/predicates.hpp"
+
 #include <algorithm>
 #include <cctype>
 
 namespace dirtoo::collection {
 namespace {
 
-std::string to_lower(std::string s)
-{
-  for (char& c : s) {
-    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-  }
-  return s;
-}
-
 bool is_hidden_name(const std::string& name)
 {
   return !name.empty() && name[0] == '.';
 }
 
-bool looks_like_glob(const std::string& pattern)
+filter::FilterItem to_filter_item(const fs::FileInfo& fi)
 {
-  return pattern.find('*') != std::string::npos || pattern.find('?') != std::string::npos;
-}
-
-/// Case-insensitive glob with `*` and `?` only.
-bool match_glob(std::string_view text, std::string_view pattern)
-{
-  std::size_t ti = 0;
-  std::size_t pi = 0;
-  std::size_t star = std::string_view::npos;
-  std::size_t match = 0;
-
-  while (ti < text.size()) {
-    if (pi < pattern.size()
-        && (pattern[pi] == '?'
-            || std::tolower(static_cast<unsigned char>(pattern[pi]))
-                   == std::tolower(static_cast<unsigned char>(text[ti])))) {
-      ++ti;
-      ++pi;
-    } else if (pi < pattern.size() && pattern[pi] == '*') {
-      star = pi++;
-      match = ti;
-    } else if (star != std::string_view::npos) {
-      pi = star + 1;
-      ti = ++match;
-    } else {
-      return false;
-    }
-  }
-  while (pi < pattern.size() && pattern[pi] == '*') {
-    ++pi;
-  }
-  return pi == pattern.size();
-}
-
-bool name_matches(const std::string& basename, const std::string& filter)
-{
-  if (filter.empty()) {
-    return true;
-  }
-  if (looks_like_glob(filter)) {
-    return match_glob(basename, filter);
-  }
-  return to_lower(basename).find(filter) != std::string::npos;
+  return filter::FilterItem{
+      .name = fi.basename(),
+      .size = fi.size(),
+      .is_directory = fi.is_directory(),
+      .path = fi.path(),
+  };
 }
 
 } // namespace
@@ -75,7 +34,9 @@ void FileCollection::clear()
 {
   items_.clear();
   visible_.clear();
-  name_filter_.clear();
+  filter_expression_.clear();
+  match_.reset();
+  filter_parse_ok_ = true;
 }
 
 void FileCollection::set_items(std::vector<fs::FileInfo> items)
@@ -138,16 +99,41 @@ void FileCollection::sort_by_mtime(bool ascending)
   rebuild_visible();
 }
 
-void FileCollection::set_name_filter(std::string needle)
+void FileCollection::set_name_filter(std::string expression)
 {
-  // Keep original case for globs; substring path lowercases in name_matches.
-  name_filter_ = std::move(needle);
+  filter_expression_ = std::move(expression);
+  if (filter_expression_.empty()) {
+    match_.reset();
+    filter_parse_ok_ = true;
+    rebuild_visible();
+    return;
+  }
+
+  auto parsed = filter::parse_filter(filter_expression_);
+  if (parsed) {
+    match_ = *parsed;
+    filter_parse_ok_ = true;
+  } else {
+    // Fallback: treat entire string as substring.
+    match_ = filter::make_name_substring(filter_expression_, false);
+    filter_parse_ok_ = false;
+  }
   rebuild_visible();
 }
 
 void FileCollection::clear_filter()
 {
-  name_filter_.clear();
+  filter_expression_.clear();
+  match_.reset();
+  filter_parse_ok_ = true;
+  rebuild_visible();
+}
+
+void FileCollection::set_match_func(filter::MatchFuncPtr func)
+{
+  match_ = std::move(func);
+  filter_expression_.clear();
+  filter_parse_ok_ = true;
   rebuild_visible();
 }
 
@@ -165,13 +151,11 @@ const std::vector<fs::FileInfo>& FileCollection::visible_items() const noexcept
 void FileCollection::rebuild_visible()
 {
   visible_.clear();
-  const std::string filter =
-      looks_like_glob(name_filter_) ? name_filter_ : to_lower(name_filter_);
   for (const auto& fi : items_) {
     if (!show_hidden_ && is_hidden_name(fi.basename())) {
       continue;
     }
-    if (!name_matches(fi.basename(), filter)) {
+    if (match_ != nullptr && !match_->matches(to_filter_item(fi))) {
       continue;
     }
     visible_.push_back(fi);

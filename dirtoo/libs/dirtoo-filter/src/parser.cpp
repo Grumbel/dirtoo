@@ -1,0 +1,339 @@
+// SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#include "dirtoo/filter/parser.hpp"
+
+#include "dirtoo/filter/predicates.hpp"
+
+#include <cctype>
+
+namespace dirtoo::filter {
+namespace {
+
+bool is_glob_pattern(std::string_view s)
+{
+  return s.find('*') != std::string_view::npos || s.find('?') != std::string_view::npos;
+}
+
+class Parser {
+public:
+  explicit Parser(std::string_view in)
+      : in_(in)
+  {
+  }
+
+  std::expected<MatchFuncPtr, ParseError> parse()
+  {
+    skip_ws();
+    if (eof()) {
+      return std::make_shared<AlwaysTrue>();
+    }
+    auto result = parse_or();
+    if (!result) {
+      return result;
+    }
+    skip_ws();
+    if (!eof()) {
+      return std::unexpected(ParseError{"unexpected input", pos_});
+    }
+    return result;
+  }
+
+private:
+  std::string_view in_;
+  std::size_t pos_ = 0;
+
+  [[nodiscard]] bool eof() const { return pos_ >= in_.size(); }
+  [[nodiscard]] char peek() const { return eof() ? '\0' : in_[pos_]; }
+  char get() { return eof() ? '\0' : in_[pos_++]; }
+
+  void skip_ws()
+  {
+    while (!eof() && std::isspace(static_cast<unsigned char>(peek()))) {
+      ++pos_;
+    }
+  }
+
+  bool match_keyword(std::string_view kw)
+  {
+    skip_ws();
+    if (in_.size() - pos_ < kw.size()) {
+      return false;
+    }
+    for (std::size_t i = 0; i < kw.size(); ++i) {
+      const char a = static_cast<char>(std::tolower(static_cast<unsigned char>(in_[pos_ + i])));
+      const char b = static_cast<char>(std::tolower(static_cast<unsigned char>(kw[i])));
+      if (a != b) {
+        return false;
+      }
+    }
+    // Keyword boundary
+    const std::size_t after = pos_ + kw.size();
+    if (after < in_.size()) {
+      const char c = in_[after];
+      if (std::isalnum(static_cast<unsigned char>(c)) || c == '_' || c == ':') {
+        return false;
+      }
+    }
+    pos_ = after;
+    return true;
+  }
+
+  std::expected<MatchFuncPtr, ParseError> parse_or()
+  {
+    auto left = parse_and();
+    if (!left) {
+      return left;
+    }
+    std::vector<MatchFuncPtr> parts;
+    parts.push_back(*left);
+    while (true) {
+      skip_ws();
+      if (!match_keyword("or")) {
+        break;
+      }
+      auto right = parse_and();
+      if (!right) {
+        return right;
+      }
+      parts.push_back(*right);
+    }
+    if (parts.size() == 1) {
+      return parts.front();
+    }
+    return std::make_shared<OrMatch>(std::move(parts));
+  }
+
+  std::expected<MatchFuncPtr, ParseError> parse_and()
+  {
+    auto left = parse_unary();
+    if (!left) {
+      return left;
+    }
+    std::vector<MatchFuncPtr> parts;
+    parts.push_back(*left);
+    while (true) {
+      skip_ws();
+      if (eof() || peek() == ')') {
+        break;
+      }
+      // Stop before OR at this level
+      const std::size_t save = pos_;
+      if (match_keyword("or")) {
+        pos_ = save;
+        break;
+      }
+      // Optional AND keyword
+      match_keyword("and");
+      skip_ws();
+      if (eof() || peek() == ')') {
+        break;
+      }
+      // Another OR check after optional and
+      const std::size_t save2 = pos_;
+      if (match_keyword("or")) {
+        pos_ = save2;
+        break;
+      }
+      auto right = parse_unary();
+      if (!right) {
+        return right;
+      }
+      parts.push_back(*right);
+    }
+    if (parts.size() == 1) {
+      return parts.front();
+    }
+    return std::make_shared<AndMatch>(std::move(parts));
+  }
+
+  std::expected<MatchFuncPtr, ParseError> parse_unary()
+  {
+    skip_ws();
+    if (peek() == '-' || peek() == '^') {
+      get();
+      auto inner = parse_unary();
+      if (!inner) {
+        return inner;
+      }
+      return std::make_shared<NotMatch>(*inner);
+    }
+    if (match_keyword("not")) {
+      auto inner = parse_unary();
+      if (!inner) {
+        return inner;
+      }
+      return std::make_shared<NotMatch>(*inner);
+    }
+    return parse_primary();
+  }
+
+  std::expected<MatchFuncPtr, ParseError> parse_primary()
+  {
+    skip_ws();
+    if (peek() == '(') {
+      get();
+      auto inner = parse_or();
+      if (!inner) {
+        return inner;
+      }
+      skip_ws();
+      if (peek() != ')') {
+        return std::unexpected(ParseError{"expected ')'", pos_});
+      }
+      get();
+      return inner;
+    }
+
+    if (peek() == '"' || peek() == '\'') {
+      auto str = parse_quoted();
+      if (!str) {
+        return std::unexpected(str.error());
+      }
+      return word_to_match(*str);
+    }
+
+    // command or word
+    auto atom = parse_atom();
+    if (!atom) {
+      return std::unexpected(atom.error());
+    }
+    return atom;
+  }
+
+  std::expected<std::string, ParseError> parse_quoted()
+  {
+    const char quote = get();
+    std::string out;
+    while (!eof()) {
+      const char c = get();
+      if (c == quote) {
+        return out;
+      }
+      if (c == '\\' && !eof()) {
+        out.push_back(get());
+      } else {
+        out.push_back(c);
+      }
+    }
+    return std::unexpected(ParseError{"unterminated string", pos_});
+  }
+
+  std::expected<MatchFuncPtr, ParseError> parse_atom()
+  {
+    // Read until whitespace or special paren, but allow ':' inside command
+    skip_ws();
+    if (eof()) {
+      return std::unexpected(ParseError{"expected term", pos_});
+    }
+    std::string token;
+    while (!eof()) {
+      const char c = peek();
+      if (std::isspace(static_cast<unsigned char>(c)) || c == '(' || c == ')') {
+        break;
+      }
+      // Stop at AND/OR handled by higher level — they are separate tokens only if
+      // separated by spaces, so we read continuous token here.
+      if (c == '\\' && pos_ + 1 < in_.size()) {
+        ++pos_;
+        token.push_back(get());
+        continue;
+      }
+      token.push_back(get());
+    }
+    if (token.empty()) {
+      return std::unexpected(ParseError{"empty token", pos_});
+    }
+
+    // Reject pure keywords if they leaked
+    const auto lower = [&] {
+      std::string s = token;
+      for (char& ch : s) {
+        ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+      }
+      return s;
+    }();
+    if (lower == "and" || lower == "or" || lower == "not") {
+      return std::unexpected(ParseError{"unexpected keyword '" + token + "'", pos_});
+    }
+
+    const auto colon = token.find(':');
+    if (colon != std::string::npos && colon > 0) {
+      const std::string cmd = token.substr(0, colon);
+      const std::string arg = token.substr(colon + 1);
+      return command_to_match(cmd, arg);
+    }
+    return word_to_match(token);
+  }
+
+  MatchFuncPtr word_to_match(const std::string& word)
+  {
+    if (is_glob_pattern(word)) {
+      return make_glob(word, false);
+    }
+    // Implicit *word* substring via glob
+    return make_glob("*" + word + "*", false);
+  }
+
+  MatchFuncPtr command_to_match(const std::string& cmd, const std::string& arg)
+  {
+    std::string c = cmd;
+    for (char& ch : c) {
+      ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+    }
+    if (c == "glob" || c == "g") {
+      return make_glob(arg, false);
+    }
+    if (cmd == "Glob" || cmd == "G") {
+      return make_glob(arg, true);
+    }
+    if (c == "regex" || c == "re" || c == "r" || c == "rx") {
+      return make_regex(arg, false);
+    }
+    if (cmd == "Regex" || cmd == "Re" || cmd == "R" || cmd == "Rx") {
+      return make_regex(arg, true);
+    }
+    if (c == "size") {
+      return make_size(arg);
+    }
+    if (c == "type" || c == "t") {
+      return make_type(arg);
+    }
+    // Unknown command → never match (visible failure)
+    return std::make_shared<AlwaysFalse>();
+  }
+};
+
+} // namespace
+
+std::expected<MatchFuncPtr, ParseError> parse_filter(std::string_view input)
+{
+  Parser p{input};
+  return p.parse();
+}
+
+std::string filter_help_text()
+{
+  return R"(Filter expression language
+===========================
+
+Terms (juxtaposition = AND, OR joins alternatives):
+  word            basename contains word (case-insensitive)
+  "quoted"        same, allows spaces
+  glob:*.png      glob match (also: g:)
+  Glob:*.PNG      case-sensitive glob
+  regex:^a.*      regex on basename (re:, r:)
+  size:>1M        size compare (K/M/G); also size:10K-2M
+  type:dir        type:file | type:dir (t:)
+  -term           exclude / NOT term   (also ^term or not term)
+  ( a OR b )      grouping with parentheses
+
+Examples:
+  *.png OR *.jpg
+  type:file size:>1M
+  (readme OR license) -*.bak
+  glob:*.cpp regex:main
+)";
+}
+
+} // namespace dirtoo::filter

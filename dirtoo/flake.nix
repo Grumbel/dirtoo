@@ -42,11 +42,20 @@
           cmakeFlags = [ versionFlag ];
         };
 
+        
+        dirtoo-filter = pkgs.stdenv.mkDerivation {
+          pname = "dirtoo-filter";
+          inherit version src;
+          nativeBuildInputs = with pkgs; [ cmake ninja ];
+          postUnpack = ''sourceRoot+=/libs/dirtoo-filter'';
+          cmakeFlags = [ versionFlag ];
+        };
+
         dirtoo-collection = pkgs.stdenv.mkDerivation {
           pname = "dirtoo-collection";
           inherit version src;
           nativeBuildInputs = with pkgs; [ cmake ninja ];
-          buildInputs = [ dirtoo-fs ];
+          buildInputs = [ dirtoo-fs dirtoo-filter ];
           postUnpack = ''sourceRoot+=/libs/dirtoo-collection'';
           cmakeFlags = [ versionFlag ];
         };
@@ -86,6 +95,7 @@
           buildInputs = [
             dirops
             dirtoo-fs
+            dirtoo-filter
             dirtoo-collection
             dirtoo-watcher
             dirtoo-thumbnail
@@ -113,6 +123,7 @@
           inherit
             dirops
             dirtoo-fs
+            dirtoo-filter
             dirtoo-collection
             dirtoo-watcher
             dirtoo-thumbnail
@@ -124,6 +135,7 @@
             paths = [
               dirops
               dirtoo-fs
+              dirtoo-filter
               dirtoo-collection
               dirtoo-watcher
               dirtoo-thumbnail

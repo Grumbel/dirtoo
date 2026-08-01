@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "dirtoo/filter/match_func.hpp"
 #include "dirtoo/fs/file_info.hpp"
 #include "dirtoo/fs/location.hpp"
 
@@ -32,21 +33,29 @@ public:
   void sort_by_size(bool ascending = true);
   void sort_by_mtime(bool ascending = true);
 
-  /// Case-insensitive substring filter on basename. Empty needle = show all.
-  void set_name_filter(std::string needle);
+  /// Set filter expression (dirtoo-filter DSL). Empty string clears the filter.
+  /// On parse error, falls back to simple substring match on the whole string.
+  void set_name_filter(std::string expression);
   void clear_filter();
+
+  /// Direct MatchFunc (for tests / advanced callers).
+  void set_match_func(filter::MatchFuncPtr func);
 
   void set_show_hidden(bool show);
   [[nodiscard]] bool show_hidden() const noexcept { return show_hidden_; }
 
   [[nodiscard]] const std::vector<fs::FileInfo>& visible_items() const noexcept;
+  [[nodiscard]] const std::string& filter_expression() const noexcept { return filter_expression_; }
+  [[nodiscard]] bool filter_parse_ok() const noexcept { return filter_parse_ok_; }
 
 private:
   void rebuild_visible();
 
   std::vector<fs::FileInfo> items_;
   std::vector<fs::FileInfo> visible_;
-  std::string name_filter_;
+  std::string filter_expression_;
+  filter::MatchFuncPtr match_;
+  bool filter_parse_ok_ = true;
   bool show_hidden_ = false;
 };
 

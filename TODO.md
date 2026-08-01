@@ -37,7 +37,7 @@ Findings from `dirtoo-py` GUI / fileview (high-value behaviours):
 | Filter text history (Up/Down) | `filter_line_edit.py` | **done** |
 | Escape clears / hides filter | filter line edit | **done** (clear; second Escape leaves location edit) |
 | Substring + glob filter | collection | **done** |
-| Full filter language (`filter/`, expr parser) | `filter/*.py` | **todo** (large; defer unless needed) |
+| Full filter language (`filter/`, expr parser) | `filter/*.py` | **done** (`dirtoo-filter`; `()` grouping fixed) |
 | Content / recursive search stream | `search_stream.py` | **todo** / defer |
 | Filter help dialog | controller | **todo** |
 
@@ -85,7 +85,7 @@ Findings from `dirtoo-py` GUI / fileview (high-value behaviours):
 4. [x] Filter show/hide + pin (Ctrl+P) (bottom toolbar like Python)
 5. [x] Preferences dialog surface for QSettings keys
 6. [ ] Optional: async path completion worker (large dirs)
-7. [ ] Optional: simplified subset of filter language (`size>`, `mtime:`)
+7. [x] Filter DSL (`dirtoo-filter`: and/or/not/`()`, glob, regex, size, type)
 
 ---
 
@@ -97,7 +97,7 @@ Findings from `dirtoo-py` GUI / fileview (high-value behaviours):
 | Graphics View icon scene | Different architecture |
 | Face detect / experiments / most programs/* | Out of scope |
 | Pixel-perfect Python layout | Functional parity only |
-| Full expr/filter DSL | Large; glob+substring first |
+| Media metadata filters (width/height/duration) | Need optional deps later |
 
 ---
 
@@ -105,3 +105,15 @@ Findings from `dirtoo-py` GUI / fileview (high-value behaviours):
 
 - Suggest a detailed commit message after each series of changes.
 - Keep `dirtoo-py/` as reference only.
+
+
+## Filter DSL notes (`dirtoo-filter`)
+
+Python issues addressed in the C++ port:
+
+- **Parentheses** for grouping: `(a OR b) AND c` works (Python grammar lacked `()`).
+- Explicit **AND** / **OR** / **NOT** keywords; juxtaposition still means AND.
+- **Exclude** via `-term`, `^term`, or `not term`.
+- Modular **Qt-free** library suitable for a future CLI search tool.
+- Still deferred vs Python: content search (`contains:`), fuzzy, media metadata
+  (`width`, `duration`, …) until those backends exist.

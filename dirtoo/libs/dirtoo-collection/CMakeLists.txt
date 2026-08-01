@@ -23,6 +23,7 @@ include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
 find_package(dirtoo-fs REQUIRED CONFIG)
+find_package(dirtoo-filter REQUIRED CONFIG)
 
 add_library(dirtoo-collection src/file_collection.cpp)
 add_library(dirtoo::collection ALIAS dirtoo-collection)
@@ -32,7 +33,7 @@ target_include_directories(dirtoo-collection PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
-target_link_libraries(dirtoo-collection PUBLIC dirtoo-fs::dirtoo-fs)
+target_link_libraries(dirtoo-collection PUBLIC dirtoo-fs::dirtoo-fs dirtoo-filter::dirtoo-filter)
 target_compile_features(dirtoo-collection PUBLIC cxx_std_23)
 target_compile_options(dirtoo-collection PRIVATE
   $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic>

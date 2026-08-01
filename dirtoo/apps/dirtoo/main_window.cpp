@@ -10,6 +10,7 @@
 #include "open_with.hpp"
 #include "preferences_dialog.hpp"
 #include "properties_dialog.hpp"
+#include "dirtoo/filter/parser.hpp"
 #include "dirtoo/fs/file_info.hpp"
 #include "dirops/ops.hpp"
 
@@ -213,6 +214,10 @@ MainWindow::MainWindow(QWidget* parent)
     connect(history_menu_, &QMenu::aboutToShow, this, &MainWindow::on_rebuild_history_menu);
 
     auto* help_menu = menuBar()->addMenu(QStringLiteral("&Help"));
+    help_menu->addAction(QStringLiteral("Filter expression help"), this, [this] {
+      QMessageBox::information(this, QStringLiteral("Filter help"),
+                               QString::fromStdString(dirtoo::filter::filter_help_text()));
+    });
     help_menu->addAction(QStringLiteral("About dirtoo"), this, &MainWindow::on_about);
   }
 
@@ -670,6 +675,9 @@ void MainWindow::on_filter_changed(const QString& text)
   collection_.set_name_filter(text.toStdString());
   refresh_list();
   request_thumbnails_for_visible();
+  if (!text.isEmpty() && !collection_.filter_parse_ok()) {
+    status_label_->setText(QStringLiteral("Filter: using fallback substring match"));
+  }
 }
 
 void MainWindow::on_header_clicked(int section)

@@ -9,6 +9,7 @@ add_executable(dirtoo-tests
   test_collection.cpp
   test_clipboard_text.cpp
   test_archive_index.cpp
+  test_filter.cpp
   ${CMAKE_SOURCE_DIR}/apps/dirtoo/clipboard.cpp
 )
 
@@ -22,6 +23,7 @@ target_link_libraries(dirtoo-tests
     dirops::dirops
     dirtoo-collection::dirtoo-collection
     dirtoo-archive::dirtoo-archive
+    dirtoo-filter::dirtoo-filter
     Qt6::Core
     Catch2::Catch2WithMain
     dirtoo_warnings
