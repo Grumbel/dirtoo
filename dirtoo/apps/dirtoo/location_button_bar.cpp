@@ -16,7 +16,6 @@
 #include <functional>
 
 namespace dirtoo::app {
-namespace {
 
 class SegmentButton : public QPushButton {
 public:
@@ -40,11 +39,12 @@ public:
 
   void set_current(bool current)
   {
-    setEnabled(!current);
-    if (current) {
-      setStyleSheet(QStringLiteral(
-          "QPushButton { padding: 2px 6px; font-weight: bold; border-radius: 3px; }"));
-    }
+    // Python LocationButtonBar uses setDown() so the current segment stays
+    // visually pressed while remaining in the trail.
+    setDown(current);
+    auto font = this->font();
+    font.setBold(current);
+    setFont(font);
   }
 
   std::function<void(const fs::Location&, const QList<QUrl>&, Qt::DropAction)> on_drop;
@@ -86,8 +86,6 @@ private:
   fs::Location location_;
 };
 
-} // namespace
-
 LocationButtonBar::LocationButtonBar(QWidget* parent)
     : QWidget(parent)
 {
@@ -98,9 +96,50 @@ LocationButtonBar::LocationButtonBar(QWidget* parent)
   setCursor(Qt::PointingHandCursor);
 }
 
+void LocationButtonBar::wire_button(SegmentButton* btn)
+{
+  const fs::Location target = btn->location();
+  connect(btn, &QPushButton::clicked, this, [this, target] { emit location_activated(target); });
+  btn->on_drop = [this](const fs::Location& dest, const QList<QUrl>& urls, Qt::DropAction action) {
+    emit urls_dropped(dest, urls, action);
+  };
+  btn->on_middle_click = [this](const fs::Location& dest) {
+    emit location_activated_new_window(dest);
+  };
+}
+
+int LocationButtonBar::index_of_location(const fs::Location& location) const
+{
+  for (int i = 0; i < static_cast<int>(buttons_.size()); ++i) {
+    if (buttons_[static_cast<std::size_t>(i)] != nullptr
+        && buttons_[static_cast<std::size_t>(i)]->location() == location) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+void LocationButtonBar::update_current_highlight()
+{
+  for (SegmentButton* btn : buttons_) {
+    if (btn == nullptr) {
+      continue;
+    }
+    btn->set_current(btn->location() == location_);
+  }
+}
+
 void LocationButtonBar::set_location(const fs::Location& location)
 {
   location_ = location;
+
+  // If this location is already on the trail (navigating to an ancestor), keep
+  // deeper segment buttons so the user can jump forward again quickly.
+  if (index_of_location(location) >= 0) {
+    update_current_highlight();
+    return;
+  }
+
   rebuild();
 }
 
@@ -121,12 +160,8 @@ LocationButtonBar::segments_for(const fs::Location& location) const
     const auto archive_file = location.as_path();
     std::vector<std::filesystem::path> parts;
     for (std::filesystem::path p = archive_file; !p.empty(); p = p.parent_path()) {
-      if (p == p.root_path()) {
-        parts.push_back(p);
-        break;
-      }
       parts.push_back(p);
-      if (p.parent_path() == p) {
+      if (p == p.root_path() || p.parent_path() == p) {
         break;
       }
     }
@@ -195,31 +230,22 @@ void LocationButtonBar::rebuild()
     }
     delete item;
   }
+  buttons_.clear();
 
   if (location_.empty()) {
     return;
   }
 
   const auto segs = segments_for(location_);
-  SegmentButton* last = nullptr;
   for (std::size_t i = 0; i < segs.size(); ++i) {
     const auto& [label, loc] = segs[i];
     auto* btn = new SegmentButton(loc, label, this);
     const bool is_current = (i + 1 == segs.size());
     btn->set_current(is_current);
-
-    const fs::Location target = loc;
-    connect(btn, &QPushButton::clicked, this, [this, target] { emit location_activated(target); });
-    btn->on_drop = [this](const fs::Location& dest, const QList<QUrl>& urls, Qt::DropAction action) {
-      emit urls_dropped(dest, urls, action);
-    };
-    btn->on_middle_click = [this](const fs::Location& dest) {
-      emit location_activated_new_window(dest);
-    };
+    wire_button(btn);
     layout_->addWidget(btn);
-    last = btn;
+    buttons_.push_back(btn);
   }
-  (void)last;
 
   layout_->addStretch(1);
 }

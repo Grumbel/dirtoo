@@ -15,8 +15,14 @@ class QPushButton;
 
 namespace dirtoo::app {
 
+class SegmentButton;
+
 /// Breadcrumb-style location control: each path segment is a button that
 /// navigates to that ancestor. Empty area click requests the line-edit form.
+///
+/// When the new location is already present as a segment (navigating up to an
+/// ancestor), deeper segment buttons stay visible so the user can jump forward
+/// again without rebuilding the trail — same behaviour as the Python LocationButtonBar.
 class LocationButtonBar : public QWidget {
   Q_OBJECT
 
@@ -39,10 +45,14 @@ protected:
 
 private:
   void rebuild();
+  void update_current_highlight();
+  [[nodiscard]] int index_of_location(const fs::Location& location) const;
   [[nodiscard]] std::vector<std::pair<QString, fs::Location>> segments_for(const fs::Location& location) const;
+  void wire_button(SegmentButton* btn);
 
   fs::Location location_;
   QHBoxLayout* layout_ = nullptr;
+  std::vector<SegmentButton*> buttons_;
 };
 
 } // namespace dirtoo::app
