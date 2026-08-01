@@ -27,7 +27,15 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   auto* view = new QComboBox(&dialog);
   view->addItem(QStringLiteral("Detail"), QStringLiteral("detail"));
   view->addItem(QStringLiteral("Icons"), QStringLiteral("icons"));
-  view->setCurrentIndex(settings->view_mode == QLatin1String("icons") ? 1 : 0);
+  view->addItem(QStringLiteral("Small Icons"), QStringLiteral("small"));
+  if (settings->view_mode == QLatin1String("icons")) {
+    view->setCurrentIndex(1);
+  } else if (settings->view_mode == QLatin1String("small")
+             || settings->view_mode == QLatin1String("smallicons")) {
+    view->setCurrentIndex(2);
+  } else {
+    view->setCurrentIndex(0);
+  }
 
   auto* zoom = new QSpinBox(&dialog);
   zoom->setRange(0, 4);

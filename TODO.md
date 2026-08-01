@@ -195,7 +195,7 @@ as of the responsive-UI / media-cache work.
 | Feature                                                                      | C++ status                                      |
 |------------------------------------------------------------------------------|-------------------------------------------------|
 | Multi-window                                                                 | done                                            |
-| Detail + icon views                                                          | done (no separate “small icon / sequence” mode) |
+| Detail + icon + small-icon views                                             | done                                            |
 | Zoom in/out (+ large zoom steps)                                             | done                                            |
 | Crop thumbnails (cover vs letterbox)                                         | done                                            |
 | Icon caption LOD (name / size / date)                                        | done                                            |
@@ -228,7 +228,7 @@ as of the responsive-UI / media-cache work.
 #### View & layout
 | Missing                                          | Python behaviour                                           |
 |--------------------------------------------------|------------------------------------------------------------|
-| **Small icon / sequence mode**                   | Third view style (wide rows / list-like icons)             |
+| **Small icon / sequence mode**                   | **done** (QListView ListMode + zoom steps)                 |
 | **Graphics View icon scene**                     | Freer layout, hover overlays, per-item animation           |
 | **Group by** (day, directory, duration, none)    | **partial** (day/directory/none + UI headers; duration open) |
 | **Time gaps** in icon layout                     | Visual spacing by mtime gaps                               |
@@ -290,7 +290,7 @@ Python ships many CLIs under `programs/` (find expr engine, fsck, shuffle, deskt
 ### Recommended next parity work
 1. [x] Filter: `contains:` (bounded size) + `date:` / `length:`
 2. [x] Group by day/directory (collection + UI headers)
-3. Small-icon / compact list mode
+3. [x] Small-icon / compact list mode
 4. Wire remaining badge assets (loading/error/locked)
 5. Preferences coverage + thumbnail prepare/reload actions
 6. Filter: `time:` / `weekday:` (remaining date family)

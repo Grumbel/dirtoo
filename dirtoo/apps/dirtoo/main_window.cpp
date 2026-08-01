@@ -137,13 +137,18 @@ MainWindow::MainWindow(QWidget* parent)
 
   detail_act_ = toolbar->addAction(theme_icon("view-list-details", "view-list"), QStringLiteral("Detail"));
   icons_act_ = toolbar->addAction(theme_icon("view-grid", "view-list-icons"), QStringLiteral("Icons"));
+  small_icons_act_ = toolbar->addAction(theme_icon("view-list", "view-list-details"),
+                                        QStringLiteral("Small Icons"));
   detail_act_->setCheckable(true);
   icons_act_->setCheckable(true);
+  small_icons_act_->setCheckable(true);
   auto* view_group = new QActionGroup(this);
   view_group->addAction(detail_act_);
   view_group->addAction(icons_act_);
+  view_group->addAction(small_icons_act_);
   connect(detail_act_, &QAction::triggered, this, &MainWindow::on_view_detail);
   connect(icons_act_, &QAction::triggered, this, &MainWindow::on_view_icons);
+  connect(small_icons_act_, &QAction::triggered, this, &MainWindow::on_view_small_icons);
   detail_act_->setChecked(true);
 
   toolbar->addSeparator();
@@ -218,6 +223,7 @@ MainWindow::MainWindow(QWidget* parent)
     auto* view_menu = menuBar()->addMenu(QStringLiteral("&View"));
     view_menu->addAction(detail_act_);
     view_menu->addAction(icons_act_);
+    view_menu->addAction(small_icons_act_);
     view_menu->addSeparator();
     show_hidden_act_ = view_menu->addAction(QStringLiteral("Show Hidden Files"));
     show_hidden_act_->setCheckable(true);
@@ -638,13 +644,43 @@ MainWindow::~MainWindow()
 
 QAbstractItemView* MainWindow::current_view() const
 {
-  return view_mode_ == ViewMode::Detail ? static_cast<QAbstractItemView*>(tree_view_)
-                                        : static_cast<QAbstractItemView*>(icon_view_);
+  if (view_mode_ == ViewMode::Detail) {
+    return tree_view_;
+  }
+  return icon_view_;
 }
 
 void MainWindow::apply_icon_zoom()
 {
-  const int size = kZoomLevels[zoom_index_];
+  if (view_mode_ == ViewMode::SmallIcons) {
+    // Compact list-like rows (Python SequenceMode-ish). Zoom steps map to row height.
+    static constexpr int kSmall[] = {16, 24, 32, 48, 64, 96, 128};
+    const int zi = std::clamp(zoom_index_, 0, static_cast<int>(std::size(kSmall)) - 1);
+    const int size = kSmall[zi];
+    icon_view_->setViewMode(QListView::ListMode);
+    icon_view_->setFlow(QListView::TopToBottom);
+    icon_view_->setWrapping(true);
+    icon_view_->setResizeMode(QListView::Adjust);
+    icon_view_->setUniformItemSizes(true);
+    icon_view_->setIconSize(QSize(size, size));
+    icon_view_->setSpacing(2);
+    icon_view_->setGridSize(QSize()); // let list mode size from icon + text
+    if (model_ != nullptr) {
+      model_->set_icon_style(false); // single-line name; decoration from model
+    }
+    const int detail = std::max(16, size / 2);
+    tree_view_->setIconSize(QSize(detail, detail));
+    return;
+  }
+
+  const int size = kZoomLevels[std::clamp(zoom_index_, 0, static_cast<int>(std::size(kZoomLevels)) - 1)];
+  if (view_mode_ == ViewMode::Icons) {
+    icon_view_->setViewMode(QListView::IconMode);
+    icon_view_->setFlow(QListView::LeftToRight);
+    icon_view_->setWrapping(true);
+    icon_view_->setResizeMode(QListView::Adjust);
+    icon_view_->setUniformItemSizes(true);
+  }
   icon_view_->setIconSize(QSize(size, size));
   const int text_rows = model_ != nullptr ? model_->icon_text_rows() : 1;
   // Caption lines under the icon (name / size / date). Use a generous line height so
@@ -700,7 +736,10 @@ void MainWindow::on_less_icon_details()
 
 void MainWindow::on_zoom_in()
 {
-  if (zoom_index_ + 1 < static_cast<int>(std::size(kZoomLevels))) {
+  const int max_zi = (view_mode_ == ViewMode::SmallIcons)
+                         ? 6
+                         : static_cast<int>(std::size(kZoomLevels)) - 1;
+  if (zoom_index_ < max_zi) {
     ++zoom_index_;
     apply_icon_zoom();
   }
@@ -718,15 +757,32 @@ void MainWindow::on_zoom_out()
 void MainWindow::set_view_mode(ViewMode mode)
 {
   view_mode_ = mode;
-  if (model_ != nullptr) {
-    model_->set_icon_style(mode == ViewMode::Icons);
-  }
   if (mode == ViewMode::Detail) {
+    if (model_ != nullptr) {
+      model_->set_icon_style(false);
+    }
     view_stack_->setCurrentWidget(tree_view_);
-    detail_act_->setChecked(true);
-  } else {
+    if (detail_act_ != nullptr) {
+      detail_act_->setChecked(true);
+    }
+  } else if (mode == ViewMode::SmallIcons) {
+    if (model_ != nullptr) {
+      model_->set_icon_style(false);
+    }
     view_stack_->setCurrentWidget(icon_view_);
-    icons_act_->setChecked(true);
+    if (small_icons_act_ != nullptr) {
+      small_icons_act_->setChecked(true);
+    }
+    apply_icon_zoom();
+    request_thumbnails_for_visible();
+  } else {
+    if (model_ != nullptr) {
+      model_->set_icon_style(true);
+    }
+    view_stack_->setCurrentWidget(icon_view_);
+    if (icons_act_ != nullptr) {
+      icons_act_->setChecked(true);
+    }
     apply_icon_zoom();
     request_thumbnails_for_visible();
   }
@@ -740,6 +796,11 @@ void MainWindow::on_view_detail()
 void MainWindow::on_view_icons()
 {
   set_view_mode(ViewMode::Icons);
+}
+
+void MainWindow::on_view_small_icons()
+{
+  set_view_mode(ViewMode::SmallIcons);
 }
 
 void MainWindow::open_location(const fs::Location& location, bool record_history)
@@ -1546,6 +1607,8 @@ void MainWindow::restore_settings()
   }
   if (s.view_mode == QLatin1String("icons")) {
     set_view_mode(ViewMode::Icons);
+  } else if (s.view_mode == QLatin1String("small") || s.view_mode == QLatin1String("smallicons")) {
+    set_view_mode(ViewMode::SmallIcons);
   } else {
     set_view_mode(ViewMode::Detail);
   }
@@ -1560,7 +1623,13 @@ void MainWindow::restore_settings()
 void MainWindow::persist_settings() const
 {
   AppSettings s;
-  s.view_mode = (view_mode_ == ViewMode::Icons) ? QStringLiteral("icons") : QStringLiteral("detail");
+  if (view_mode_ == ViewMode::Icons) {
+    s.view_mode = QStringLiteral("icons");
+  } else if (view_mode_ == ViewMode::SmallIcons) {
+    s.view_mode = QStringLiteral("small");
+  } else {
+    s.view_mode = QStringLiteral("detail");
+  }
   s.zoom_index = zoom_index_;
   if (model_ != nullptr) {
     s.icon_detail_level = model_->icon_detail_level();
@@ -2159,7 +2228,13 @@ void MainWindow::on_preferences()
 {
   AppSettings s = load_settings();
   // Reflect live UI into the struct before editing.
-  s.view_mode = (view_mode_ == ViewMode::Icons) ? QStringLiteral("icons") : QStringLiteral("detail");
+  if (view_mode_ == ViewMode::Icons) {
+    s.view_mode = QStringLiteral("icons");
+  } else if (view_mode_ == ViewMode::SmallIcons) {
+    s.view_mode = QStringLiteral("small");
+  } else {
+    s.view_mode = QStringLiteral("detail");
+  }
   s.zoom_index = zoom_index_;
   if (model_ != nullptr) {
     s.icon_detail_level = model_->icon_detail_level();
@@ -2188,7 +2263,13 @@ void MainWindow::apply_settings(const AppSettings& s)
     zoom_index_ = s.zoom_index;
     apply_icon_zoom();
   }
-  set_view_mode(s.view_mode == QLatin1String("icons") ? ViewMode::Icons : ViewMode::Detail);
+  if (s.view_mode == QLatin1String("icons")) {
+    set_view_mode(ViewMode::Icons);
+  } else if (s.view_mode == QLatin1String("small") || s.view_mode == QLatin1String("smallicons")) {
+    set_view_mode(ViewMode::SmallIcons);
+  } else {
+    set_view_mode(ViewMode::Detail);
+  }
   collection_.set_show_hidden(s.show_hidden);
   if (show_hidden_act_ != nullptr) {
     show_hidden_act_->setChecked(s.show_hidden);
