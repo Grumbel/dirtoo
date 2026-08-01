@@ -131,7 +131,6 @@ private slots:
   void on_view_icons();
   void on_zoom_in();
   void on_zoom_out();
-  void on_zoom_fit();
   void on_more_icon_details();
   void on_less_icon_details();
   void apply_icon_detail_level();
@@ -232,6 +231,7 @@ private:
   QAction* paste_act_ = nullptr;
   QAction* detail_act_ = nullptr;
   QAction* icons_act_ = nullptr;
+  QAction* crop_thumbnails_act_ = nullptr;
   QAction* show_hidden_act_ = nullptr;
 };
 

@@ -114,6 +114,17 @@ void FileListModel::clear_thumbnails()
   }
 }
 
+void FileListModel::set_crop_thumbnails(bool crop)
+{
+  if (crop_thumbnails_ == crop) {
+    return;
+  }
+  crop_thumbnails_ = crop;
+  if (rowCount() > 0) {
+    emit dataChanged(index(0, 0), index(rowCount() - 1, 0), {Qt::DecorationRole});
+  }
+}
+
 void FileListModel::set_icon_style(bool enabled)
 {
   if (icon_style_ == enabled) {

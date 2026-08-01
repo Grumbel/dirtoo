@@ -149,7 +149,20 @@ MainWindow::MainWindow(QWidget* parent)
   toolbar->addSeparator();
   toolbar->addAction(theme_icon("zoom-out"), QStringLiteral("Zoom −"), this, &MainWindow::on_zoom_out);
   toolbar->addAction(theme_icon("zoom-in"), QStringLiteral("Zoom +"), this, &MainWindow::on_zoom_in);
-  toolbar->addAction(theme_icon("zoom-fit-best"), QStringLiteral("Zoom Fit"), this, &MainWindow::on_zoom_fit);
+  {
+    auto* act = toolbar->addAction(theme_icon("zoom-fit-best"), QStringLiteral("Crop Thumbnails"));
+    act->setCheckable(true);
+    act->setToolTip(QStringLiteral("Crop thumbnails to fill the icon (cover) instead of letterboxing"));
+    connect(act, &QAction::toggled, this, [this](bool on) {
+      if (model_ != nullptr) {
+        model_->set_crop_thumbnails(on);
+      }
+      if (icon_view_ != nullptr) {
+        icon_view_->viewport()->update();
+      }
+    });
+    crop_thumbnails_act_ = act;
+  }
   toolbar->addSeparator();
   toolbar->addAction(theme_icon("zoom-original", "list-remove"), QStringLiteral("Less detail"), this,
                      &MainWindow::on_less_icon_details);
@@ -254,8 +267,21 @@ MainWindow::MainWindow(QWidget* parent)
       act->setShortcut(QKeySequence::ZoomOut);
     }
     {
-      auto* act = view_menu->addAction(QStringLiteral("Zoom Fit"), this, &MainWindow::on_zoom_fit);
+      auto* act = view_menu->addAction(QStringLiteral("Crop Thumbnails"));
+      act->setCheckable(true);
       act->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_0));
+      connect(act, &QAction::toggled, this, [this](bool on) {
+        if (crop_thumbnails_act_ != nullptr) {
+          crop_thumbnails_act_->setChecked(on);
+        } else if (model_ != nullptr) {
+          model_->set_crop_thumbnails(on);
+        }
+      });
+      // Keep menu action in sync with toolbar.
+      if (crop_thumbnails_act_ != nullptr) {
+        connect(crop_thumbnails_act_, &QAction::toggled, act, &QAction::setChecked);
+        act->setChecked(crop_thumbnails_act_->isChecked());
+      }
     }
     {
       auto* act = view_menu->addAction(QStringLiteral("More Icon Details"), this,
@@ -667,35 +693,6 @@ void MainWindow::on_zoom_out()
   }
 }
 
-void MainWindow::on_zoom_fit()
-{
-  set_view_mode(ViewMode::Icons);
-  if (icon_view_ == nullptr || icon_view_->viewport() == nullptr) {
-    return;
-  }
-  const int text_rows = model_ != nullptr ? model_->icon_text_rows() : 1;
-  const int text_h = 6 + text_rows * 18;
-  const int vw = std::max(64, icon_view_->viewport()->width() - 24);
-  const int vh = std::max(64, icon_view_->viewport()->height() - 24);
-  // Size icons so a cell roughly fills the viewport (one large tile).
-  int target = std::min(vw - 40, vh - text_h - 16);
-  target = std::clamp(target, kZoomLevels[0], kZoomLevels[std::size(kZoomLevels) - 1]);
-
-  int best = 0;
-  int best_diff = std::abs(kZoomLevels[0] - target);
-  for (int i = 1; i < static_cast<int>(std::size(kZoomLevels)); ++i) {
-    const int d = std::abs(kZoomLevels[i] - target);
-    if (d < best_diff) {
-      best_diff = d;
-      best = i;
-    }
-  }
-  zoom_index_ = best;
-  apply_icon_zoom();
-  if (status_label_ != nullptr) {
-    status_label_->setText(QStringLiteral("Zoom fit: %1px").arg(kZoomLevels[zoom_index_]));
-  }
-}
 
 void MainWindow::set_view_mode(ViewMode mode)
 {
@@ -1505,6 +1502,10 @@ void MainWindow::restore_settings()
     zoom_index_ = s.zoom_index;
     if (model_ != nullptr) {
       model_->set_icon_detail_level(s.icon_detail_level);
+    model_->set_crop_thumbnails(s.crop_thumbnails);
+    if (crop_thumbnails_act_ != nullptr) {
+      crop_thumbnails_act_->setChecked(s.crop_thumbnails);
+    }
     }
     apply_icon_zoom();
   }
@@ -1542,6 +1543,7 @@ void MainWindow::persist_settings() const
   s.zoom_index = zoom_index_;
   if (model_ != nullptr) {
     s.icon_detail_level = model_->icon_detail_level();
+    s.crop_thumbnails = model_->crop_thumbnails();
   }
   s.show_hidden = collection_.show_hidden();
   s.show_filter = show_filter_act_ != nullptr && show_filter_act_->isChecked();
@@ -2140,6 +2142,7 @@ void MainWindow::on_preferences()
   s.zoom_index = zoom_index_;
   if (model_ != nullptr) {
     s.icon_detail_level = model_->icon_detail_level();
+    s.crop_thumbnails = model_->crop_thumbnails();
   }
   s.show_hidden = collection_.show_hidden();
   s.show_filter = show_filter_act_ != nullptr && show_filter_act_->isChecked();
@@ -2155,6 +2158,10 @@ void MainWindow::apply_settings(const AppSettings& s)
 {
   if (model_ != nullptr) {
     model_->set_icon_detail_level(s.icon_detail_level);
+    model_->set_crop_thumbnails(s.crop_thumbnails);
+    if (crop_thumbnails_act_ != nullptr) {
+      crop_thumbnails_act_->setChecked(s.crop_thumbnails);
+    }
   }
   if (s.zoom_index >= 0 && s.zoom_index < static_cast<int>(std::size(kZoomLevels))) {
     zoom_index_ = s.zoom_index;

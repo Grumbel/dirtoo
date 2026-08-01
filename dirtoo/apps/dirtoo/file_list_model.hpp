@@ -42,6 +42,8 @@ public:
   void set_icon_detail_level(int level);
   [[nodiscard]] int icon_detail_level() const noexcept { return icon_detail_level_; }
   [[nodiscard]] bool icon_style_active() const noexcept { return icon_style_; }
+  void set_crop_thumbnails(bool crop);
+  [[nodiscard]] bool crop_thumbnails() const noexcept { return crop_thumbnails_; }
   [[nodiscard]] static constexpr int icon_detail_level_min() { return 0; }
   [[nodiscard]] static constexpr int icon_detail_level_max() { return 4; }
   /// Extra text rows under the icon for current LOD (Python k map).
@@ -76,6 +78,7 @@ private:
   QHash<QString, QIcon> thumbnails_;
   bool icon_style_ = false;
   int icon_detail_level_ = 3; // name + size by default (Python-ish)
+  bool crop_thumbnails_ = false;
 };
 
 } // namespace dirtoo::app

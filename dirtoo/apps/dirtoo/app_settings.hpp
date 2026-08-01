@@ -12,6 +12,7 @@ struct AppSettings {
   QString view_mode = QStringLiteral("detail");
   int zoom_index = 2;
   int icon_detail_level = 3;
+  bool crop_thumbnails = false;
   bool show_hidden = false;
   bool show_filter = true;
   bool filter_pinned = false;

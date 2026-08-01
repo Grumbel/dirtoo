@@ -187,9 +187,34 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
   QRect thumb(0, 0, icon_side, icon_side);
   thumb.moveCenter(QPoint(opt.rect.center().x(), opt.rect.top() + icon_side / 2 + 4));
 
-  // Icon / thumbnail
+  // Icon / thumbnail — letterbox (fit) vs cover (crop), matching Python crop_thumbnails.
   if (!icon.isNull()) {
-    icon.paint(painter, thumb, Qt::AlignCenter, QIcon::Normal, QIcon::On);
+    const QPixmap pm = icon.pixmap(QSize(std::max(thumb.width(), thumb.height()) * 2,
+                                         std::max(thumb.width(), thumb.height()) * 2));
+    if (pm.isNull()) {
+      icon.paint(painter, thumb, Qt::AlignCenter, QIcon::Normal, QIcon::On);
+    } else if (model_ != nullptr && model_->crop_thumbnails()) {
+      // Cover: scale to fill thumb, crop overflow (Python make_cropped_rect + drawPixmap).
+      const qreal sx = static_cast<qreal>(pm.width()) / static_cast<qreal>(thumb.width());
+      const qreal sy = static_cast<qreal>(pm.height()) / static_cast<qreal>(thumb.height());
+      const qreal scale = std::min(sx, sy); // crop the larger dimension
+      const int sw = static_cast<int>(thumb.width() * scale);
+      const int sh = static_cast<int>(thumb.height() * scale);
+      QRect srcrect((pm.width() - sw) / 2, 0, sw, sh); // top-aligned crop like Python
+      if (srcrect.height() > pm.height()) {
+        srcrect.setHeight(pm.height());
+      }
+      if (srcrect.width() > pm.width()) {
+        srcrect.setWidth(pm.width());
+      }
+      painter->drawPixmap(thumb, pm, srcrect);
+    } else {
+      // Fit: whole pixmap visible inside thumb (letterbox).
+      const QSize scaled = pm.size().scaled(thumb.size(), Qt::KeepAspectRatio);
+      QRect dest(0, 0, scaled.width(), scaled.height());
+      dest.moveCenter(thumb.center());
+      painter->drawPixmap(dest, pm);
+    }
   }
 
   const fs::FileInfo* fi = model_->file_at(index.row());
