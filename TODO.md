@@ -36,7 +36,7 @@ parity features are in place. Build/tests green (50/50 as of last Nix check).
 | Watcher full rescan storms | **Mitigated** — debounce + soft reload + **merge_items** + cancel in-flight; **no emit on start** (nav loads explicitly) |
 | Double paint unsorted→sorted | **Mitigated** for soft watcher reloads (skip intermediate paint; refresh after sort) |
 | Full-range dataChanged on every refresh | **Mitigated** — `FileListModel::refresh` uses layoutChanged only |
-| No list virtualization | **Mitigated** for Icons/Graphics — viewport window + precomputed slots; Detail/Small still full model |
+| No list virtualization | **Mitigated** for Icons/Graphics — viewport window + precomputed slots; selection persists off-window; Detail/Small still full model |
 
 ### 2. Drag & drop
 

@@ -228,11 +228,20 @@ void GraphicsFileView::update_visible_window()
   const int last = lo; // exclusive
 
   suppress_selection_signal_ = true;
+  // Snapshot selection from live items into the persistent set.
+  for (auto* item : items_) {
+    if (item != nullptr && item->isSelected()) {
+      selected_row_set_.insert(item->row());
+    }
+  }
   for (int r = 0; r < rows; ++r) {
     const bool want = r >= first && r < last;
     auto*& item = items_[static_cast<std::size_t>(r)];
     if (!want) {
       if (item != nullptr) {
+        if (item->isSelected()) {
+          selected_row_set_.insert(r);
+        }
         scene_->removeItem(item);
         delete item;
         item = nullptr;
@@ -243,9 +252,13 @@ void GraphicsFileView::update_visible_window()
       item = new GraphicsFileItem(model_, r, this);
       item->set_tile_size(tile_size_);
       scene_->addItem(item);
+      if (selected_row_set_.contains(r)) {
+        item->setSelected(true);
+      }
     } else {
       item->set_row(r);
       item->set_tile_size(tile_size_);
+      item->setSelected(selected_row_set_.contains(r));
     }
     item->setPos(slot_pos_[static_cast<std::size_t>(r)]);
   }
@@ -255,6 +268,7 @@ void GraphicsFileView::update_visible_window()
 void GraphicsFileView::rebuild_items()
 {
   clear_all_items();
+  selected_row_set_.clear();
   if (model_ == nullptr) {
     scene_->setSceneRect(QRectF());
     return;
@@ -281,11 +295,18 @@ QModelIndex GraphicsFileView::index_at(const QPoint& view_pos) const
 
 std::vector<int> GraphicsFileView::selected_rows() const
 {
-  std::vector<int> rows;
+  QSet<int> set = selected_row_set_;
   for (auto* item : items_) {
     if (item != nullptr && item->isSelected()) {
-      rows.push_back(item->row());
+      set.insert(item->row());
+    } else if (item != nullptr && !item->isSelected()) {
+      set.remove(item->row());
     }
+  }
+  std::vector<int> rows;
+  rows.reserve(static_cast<std::size_t>(set.size()));
+  for (int r : set) {
+    rows.push_back(r);
   }
   std::sort(rows.begin(), rows.end());
   return rows;
@@ -293,6 +314,7 @@ std::vector<int> GraphicsFileView::selected_rows() const
 
 void GraphicsFileView::clear_selection()
 {
+  selected_row_set_.clear();
   scene_->clearSelection();
 }
 
@@ -314,6 +336,7 @@ void GraphicsFileView::notify_context_menu(const QPoint& global_pos, const QMode
 void GraphicsFileView::select_row(int row, bool clear_others)
 {
   if (clear_others) {
+    selected_row_set_.clear();
     scene_->clearSelection();
   }
   if (row < 0 || static_cast<std::size_t>(row) >= items_.size()) {
@@ -328,6 +351,7 @@ void GraphicsFileView::select_row(int row, bool clear_others)
     scene_->addItem(item);
     items_[static_cast<std::size_t>(row)] = item;
   }
+  selected_row_set_.insert(row);
   if (items_[static_cast<std::size_t>(row)] != nullptr) {
     items_[static_cast<std::size_t>(row)]->setSelected(true);
   }
@@ -355,9 +379,30 @@ void GraphicsFileView::on_model_data_changed(const QModelIndex& top_left, const 
 
 void GraphicsFileView::on_scene_selection_changed()
 {
-  if (!suppress_selection_signal_) {
-    emit selection_changed();
+  if (suppress_selection_signal_) {
+    return;
   }
+  // Merge live item selection with rows that remain selected off-window.
+  QSet<int> live_selected;
+  QSet<int> live_rows;
+  for (auto* item : items_) {
+    if (item == nullptr) {
+      continue;
+    }
+    live_rows.insert(item->row());
+    if (item->isSelected()) {
+      live_selected.insert(item->row());
+    }
+  }
+  // Drop rows that are live but no longer selected; keep off-window selections.
+  for (int r : live_rows) {
+    if (live_selected.contains(r)) {
+      selected_row_set_.insert(r);
+    } else {
+      selected_row_set_.remove(r);
+    }
+  }
+  emit selection_changed();
 }
 
 void GraphicsFileView::resizeEvent(QResizeEvent* event)

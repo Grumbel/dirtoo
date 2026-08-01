@@ -8,6 +8,7 @@
 #include <QPoint>
 #include <QPointF>
 #include <QSize>
+#include <QSet>
 #include <vector>
 
 class QGraphicsScene;
@@ -98,6 +99,8 @@ private:
   bool drag_started_ = false;
   int layout_cols_ = 1;
   int layout_max_row_ = 0;
+  /// Rows selected even when their tile is outside the viewport window.
+  QSet<int> selected_row_set_;
 
   void start_drag();
 };
