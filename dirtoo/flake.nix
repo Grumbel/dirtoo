@@ -16,152 +16,89 @@
         versionBase = lib.strings.removeSuffix "\n" (builtins.readFile ./VERSION);
         gitRev = self.shortRev or self.dirtyShortRev or "dirty";
         version = "${versionBase}+g${gitRev}";
+        versionFlag = "-DPROJECT_VERSION_FULL=${version}";
 
-        # Shared src / version for all derivations.
-        common = {
-          inherit version;
-          src = ./.;
-          nativeBuildInputs = with pkgs; [ cmake ninja pkg-config ];
+        # Repo root must be available so libs can read ../../VERSION and tools paths.
+        src = ./.;
+
+        dirops = pkgs.stdenv.mkDerivation {
+          pname = "dirops";
+          inherit version src;
+          nativeBuildInputs = with pkgs; [ cmake ninja ];
+          cmakeFlags = [
+            versionFlag
+            "-DDIROPS_BUILD_TOOLS=ON"
+          ];
+          # cmake -S is not in cmakeFlags the same way on all stdenv versions;
+          # use sourceRoot / configurePhase instead if needed.
+          postUnpack = ''sourceRoot+=/libs/dirops'';
         };
 
-        # ---------------------------------------------------------------------------
-        # Qt-free libraries (and tools that only need dirops)
-        # ---------------------------------------------------------------------------
-        dirops = pkgs.stdenv.mkDerivation (common // {
-          pname = "dirops";
-          cmakeFlags = [
-            "-DPROJECT_VERSION_FULL=${version}"
-            "-DDIRTOO_WITH_QT=OFF"
-            "-DDIRTOO_BUILD_APP=OFF"
-            "-DDIRTOO_BUILD_TESTS=OFF"
-            "-DDIRTOO_BUILD_TOOLS=ON"
-            "-DDIRTOO_BUILD_DIROPS=ON"
-            "-DDIRTOO_BUILD_FS=OFF"
-            "-DDIRTOO_BUILD_COLLECTION=OFF"
-            "-DDIRTOO_BUILD_WATCHER=OFF"
-            "-DDIRTOO_BUILD_THUMBNAIL=OFF"
-            "-DDIRTOO_BUILD_ARCHIVE=OFF"
-          ];
-        });
-
-        dirtoo-fs = pkgs.stdenv.mkDerivation (common // {
+        dirtoo-fs = pkgs.stdenv.mkDerivation {
           pname = "dirtoo-fs";
-          cmakeFlags = [
-            "-DPROJECT_VERSION_FULL=${version}"
-            "-DDIRTOO_WITH_QT=OFF"
-            "-DDIRTOO_BUILD_APP=OFF"
-            "-DDIRTOO_BUILD_TESTS=OFF"
-            "-DDIRTOO_BUILD_TOOLS=OFF"
-            "-DDIRTOO_BUILD_DIROPS=OFF"
-            "-DDIRTOO_BUILD_FS=ON"
-            "-DDIRTOO_BUILD_COLLECTION=OFF"
-            "-DDIRTOO_BUILD_WATCHER=OFF"
-            "-DDIRTOO_BUILD_THUMBNAIL=OFF"
-            "-DDIRTOO_BUILD_ARCHIVE=OFF"
-          ];
-        });
+          inherit version src;
+          nativeBuildInputs = with pkgs; [ cmake ninja ];
+          postUnpack = ''sourceRoot+=/libs/dirtoo-fs'';
+          cmakeFlags = [ versionFlag ];
+        };
 
-        dirtoo-collection = pkgs.stdenv.mkDerivation (common // {
+        dirtoo-collection = pkgs.stdenv.mkDerivation {
           pname = "dirtoo-collection";
-          cmakeFlags = [
-            "-DPROJECT_VERSION_FULL=${version}"
-            "-DDIRTOO_WITH_QT=OFF"
-            "-DDIRTOO_BUILD_APP=OFF"
-            "-DDIRTOO_BUILD_TESTS=OFF"
-            "-DDIRTOO_BUILD_TOOLS=OFF"
-            "-DDIRTOO_BUILD_DIROPS=OFF"
-            "-DDIRTOO_BUILD_FS=ON"
-            "-DDIRTOO_BUILD_COLLECTION=ON"
-            "-DDIRTOO_BUILD_WATCHER=OFF"
-            "-DDIRTOO_BUILD_THUMBNAIL=OFF"
-            "-DDIRTOO_BUILD_ARCHIVE=OFF"
-          ];
-        });
+          inherit version src;
+          nativeBuildInputs = with pkgs; [ cmake ninja ];
+          buildInputs = [ dirtoo-fs ];
+          postUnpack = ''sourceRoot+=/libs/dirtoo-collection'';
+          cmakeFlags = [ versionFlag ];
+        };
 
-        # ---------------------------------------------------------------------------
-        # Qt-based libraries
-        # ---------------------------------------------------------------------------
-        qtNative = with pkgs; [ cmake ninja pkg-config qt6.wrapQtAppsHook ];
-        qtBuild = with pkgs; [ qt6.qtbase ];
-
-        dirtoo-watcher = pkgs.stdenv.mkDerivation (common // {
+        dirtoo-watcher = pkgs.stdenv.mkDerivation {
           pname = "dirtoo-watcher";
-          nativeBuildInputs = qtNative;
-          buildInputs = qtBuild;
-          cmakeFlags = [
-            "-DPROJECT_VERSION_FULL=${version}"
-            "-DDIRTOO_WITH_QT=ON"
-            "-DDIRTOO_BUILD_APP=OFF"
-            "-DDIRTOO_BUILD_TESTS=OFF"
-            "-DDIRTOO_BUILD_TOOLS=OFF"
-            "-DDIRTOO_BUILD_DIROPS=OFF"
-            "-DDIRTOO_BUILD_FS=ON"
-            "-DDIRTOO_BUILD_COLLECTION=OFF"
-            "-DDIRTOO_BUILD_WATCHER=ON"
-            "-DDIRTOO_BUILD_THUMBNAIL=OFF"
-            "-DDIRTOO_BUILD_ARCHIVE=OFF"
-          ];
-        });
+          inherit version src;
+          nativeBuildInputs = with pkgs; [ cmake ninja qt6.wrapQtAppsHook ];
+          buildInputs = [ dirtoo-fs pkgs.qt6.qtbase ];
+          postUnpack = ''sourceRoot+=/libs/dirtoo-watcher'';
+          cmakeFlags = [ versionFlag ];
+        };
 
-        dirtoo-thumbnail = pkgs.stdenv.mkDerivation (common // {
+        dirtoo-thumbnail = pkgs.stdenv.mkDerivation {
           pname = "dirtoo-thumbnail";
-          nativeBuildInputs = qtNative;
-          buildInputs = qtBuild;
-          cmakeFlags = [
-            "-DPROJECT_VERSION_FULL=${version}"
-            "-DDIRTOO_WITH_QT=ON"
-            "-DDIRTOO_BUILD_APP=OFF"
-            "-DDIRTOO_BUILD_TESTS=OFF"
-            "-DDIRTOO_BUILD_TOOLS=OFF"
-            "-DDIRTOO_BUILD_DIROPS=OFF"
-            "-DDIRTOO_BUILD_FS=ON"
-            "-DDIRTOO_BUILD_COLLECTION=OFF"
-            "-DDIRTOO_BUILD_WATCHER=OFF"
-            "-DDIRTOO_BUILD_THUMBNAIL=ON"
-            "-DDIRTOO_BUILD_ARCHIVE=OFF"
-          ];
-        });
+          inherit version src;
+          nativeBuildInputs = with pkgs; [ cmake ninja qt6.wrapQtAppsHook ];
+          buildInputs = [ dirtoo-fs pkgs.qt6.qtbase ];
+          postUnpack = ''sourceRoot+=/libs/dirtoo-thumbnail'';
+          cmakeFlags = [ versionFlag ];
+        };
 
-        dirtoo-archive = pkgs.stdenv.mkDerivation (common // {
+        dirtoo-archive = pkgs.stdenv.mkDerivation {
           pname = "dirtoo-archive";
-          nativeBuildInputs = qtNative;
-          buildInputs = qtBuild ++ (with pkgs; [ libarchive ]);
+          inherit version src;
+          nativeBuildInputs = with pkgs; [ cmake ninja qt6.wrapQtAppsHook ];
+          buildInputs = [ dirtoo-fs pkgs.qt6.qtbase ];
           propagatedBuildInputs = with pkgs; [ libarchive unzip gnutar p7zip ];
-          cmakeFlags = [
-            "-DPROJECT_VERSION_FULL=${version}"
-            "-DDIRTOO_WITH_QT=ON"
-            "-DDIRTOO_BUILD_APP=OFF"
-            "-DDIRTOO_BUILD_TESTS=OFF"
-            "-DDIRTOO_BUILD_TOOLS=OFF"
-            "-DDIRTOO_BUILD_DIROPS=OFF"
-            "-DDIRTOO_BUILD_FS=ON"
-            "-DDIRTOO_BUILD_COLLECTION=OFF"
-            "-DDIRTOO_BUILD_WATCHER=OFF"
-            "-DDIRTOO_BUILD_THUMBNAIL=OFF"
-            "-DDIRTOO_BUILD_ARCHIVE=ON"
-          ];
-        });
+          postUnpack = ''sourceRoot+=/libs/dirtoo-archive'';
+          cmakeFlags = [ versionFlag ];
+        };
 
-        # ---------------------------------------------------------------------------
-        # Full application (default)
-        # ---------------------------------------------------------------------------
-        dirtoo = pkgs.stdenv.mkDerivation (common // {
+        dirtoo = pkgs.stdenv.mkDerivation {
           pname = "dirtoo";
-          nativeBuildInputs = qtNative;
-          buildInputs = qtBuild ++ (with pkgs; [ libarchive catch2_3 ]);
+          inherit version src;
+          nativeBuildInputs = with pkgs; [ cmake ninja pkg-config qt6.wrapQtAppsHook ];
+          buildInputs = [
+            dirops
+            dirtoo-fs
+            dirtoo-collection
+            dirtoo-watcher
+            dirtoo-thumbnail
+            dirtoo-archive
+            pkgs.qt6.qtbase
+            pkgs.catch2_3
+          ];
           propagatedBuildInputs = with pkgs; [ libarchive unzip gnutar p7zip ];
           cmakeFlags = [
-            "-DPROJECT_VERSION_FULL=${version}"
-            "-DDIRTOO_WITH_QT=ON"
+            versionFlag
             "-DDIRTOO_BUILD_APP=ON"
             "-DDIRTOO_BUILD_TESTS=ON"
-            "-DDIRTOO_BUILD_TOOLS=ON"
-            "-DDIRTOO_BUILD_DIROPS=ON"
-            "-DDIRTOO_BUILD_FS=ON"
-            "-DDIRTOO_BUILD_COLLECTION=ON"
-            "-DDIRTOO_BUILD_WATCHER=ON"
-            "-DDIRTOO_BUILD_THUMBNAIL=ON"
-            "-DDIRTOO_BUILD_ARCHIVE=ON"
+            "-DDIRTOO_BUILD_TOOLS=OFF"
           ];
           doCheck = true;
           checkPhase = ''
@@ -169,7 +106,7 @@
             ctest --output-on-failure
             runHook postCheck
           '';
-        });
+        };
       in
       {
         packages = {
@@ -197,24 +134,14 @@
 
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
-            cmake
-            ninja
-            pkg-config
-            gcc
-            qt6.qtbase
-            qt6.qttools
-            libarchive
-            unzip
-            gnutar
-            p7zip
-            catch2_3
-            gdb
-            clang-tools
+            cmake ninja pkg-config gcc
+            qt6.qtbase qt6.qttools
+            libarchive unzip gnutar p7zip catch2_3
+            gdb clang-tools
           ];
           shellHook = ''
-            echo "dirtoo C++ dev shell — VERSION $(cat VERSION 2>/dev/null || echo '?')"
-            echo "Flake packages: dirops dirtoo-fs dirtoo-collection dirtoo-watcher"
-            echo "                dirtoo-thumbnail dirtoo-archive dirtoo (default) all-libs"
+            echo "dirtoo — libraries are independent CMake packages under libs/"
+            echo "nix build .#dirops .#dirtoo-fs .#dirtoo"
           '';
         };
       });

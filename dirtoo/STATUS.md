@@ -62,3 +62,20 @@ nix build .#dirtoo-fs
 nix build .#all-libs
 nix build .#dirtoo
 ```
+
+
+## Independent library packages
+
+Each directory under `libs/` is a standalone CMake project that installs a
+`*Config.cmake` package. The top-level `dirtoo` project does **not**
+`add_subdirectory` the libs; it uses `find_package`:
+
+- `dirops::dirops`
+- `dirtoo-fs::dirtoo-fs`
+- `dirtoo-collection::dirtoo-collection`
+- `dirtoo-watcher::dirtoo-watcher`
+- `dirtoo-thumbnail::dirtoo-thumbnail`
+- `dirtoo-archive::dirtoo-archive`
+
+The flake builds libraries first, then configures the app with those
+packages on `CMAKE_PREFIX_PATH` (via Nix `buildInputs`).
