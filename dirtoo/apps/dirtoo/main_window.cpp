@@ -723,15 +723,16 @@ void MainWindow::apply_icon_zoom()
   }
   icon_view_->setIconSize(QSize(size, size));
   const int text_rows = model_ != nullptr ? model_->icon_text_rows() : 1;
-  // Caption lines under the icon (name / size / date). Use a generous line height so
-  // multi-line text is not clipped by the grid cell.
   const int text_h = 6 + text_rows * 18;
-  // Cell must be at least as wide as the thumbnail; prefer a bit of side margin for
-  // long names and for media badges that sit on the icon edges.
   const int cell_w = std::max(size + 40, 96);
   const int cell_h = size + text_h + 16;
   icon_view_->setGridSize(QSize(cell_w, cell_h));
   icon_view_->setSpacing(8);
+  if (graphics_view_ != nullptr) {
+    graphics_view_->set_tile_size(QSize(cell_w, cell_h));
+    graphics_view_->set_compact(false);
+    graphics_view_->relayout();
+  }
   const int detail = std::max(16, size / 4);
   tree_view_->setIconSize(QSize(detail, detail));
 }
@@ -819,7 +820,12 @@ void MainWindow::set_view_mode(ViewMode mode)
     if (model_ != nullptr) {
       model_->set_icon_style(true);
     }
-    view_stack_->setCurrentWidget(icon_view_);
+    if (graphics_view_ != nullptr) {
+      view_stack_->setCurrentWidget(graphics_view_);
+      graphics_view_->sync_from_model();
+    } else {
+      view_stack_->setCurrentWidget(icon_view_);
+    }
     if (icons_act_ != nullptr) {
       icons_act_->setChecked(true);
     }
@@ -1239,6 +1245,18 @@ void MainWindow::on_item_activated(const QModelIndex& index)
 
 std::vector<fs::FileInfo> MainWindow::selected_fileinfos() const
 {
+  if (model_ == nullptr) {
+    return {};
+  }
+  if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr) {
+    std::vector<fs::FileInfo> out;
+    for (int row : graphics_view_->selected_rows()) {
+      if (const auto* fi = model_->file_at(row)) {
+        out.push_back(*fi);
+      }
+    }
+    return out;
+  }
   auto* view = current_view();
   if (view == nullptr || view->selectionModel() == nullptr) {
     return {};
@@ -1249,12 +1267,21 @@ std::vector<fs::FileInfo> MainWindow::selected_fileinfos() const
 void MainWindow::on_context_menu(const QPoint& pos)
 {
   auto* view = current_view();
-  if (view == nullptr) {
+  const bool graphics = (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr);
+  if (view == nullptr && !graphics) {
     return;
   }
   QMenu menu(this);
-  menu.addAction(QStringLiteral("Open"), this, [this, view] {
-    if (view->selectionModel() == nullptr) {
+  menu.addAction(QStringLiteral("Open"), this, [this, graphics] {
+    if (graphics) {
+      const auto rows = graphics_view_->selected_rows();
+      if (!rows.empty() && model_ != nullptr) {
+        on_item_activated(model_->index(rows.front(), 0));
+      }
+      return;
+    }
+    auto* view = current_view();
+    if (view == nullptr || view->selectionModel() == nullptr) {
       return;
     }
     const auto rows = view->selectionModel()->selectedIndexes();
@@ -1262,28 +1289,19 @@ void MainWindow::on_context_menu(const QPoint& pos)
       on_item_activated(rows.first());
     }
   });
-  menu.addAction(QStringLiteral("Open in New Window"), this, [this, view] {
-    if (view->selectionModel() == nullptr || model_ == nullptr) {
+  menu.addAction(QStringLiteral("Open in New Window"), this, [this] {
+    const auto selected = selected_fileinfos();
+    if (selected.empty()) {
       return;
     }
-    const auto rows = view->selectionModel()->selectedIndexes();
-    for (const auto& idx : rows) {
-      if (idx.column() != 0) {
-        continue;
-      }
-      const auto* fi = model_->file_at(idx.row());
-      if (fi == nullptr) {
-        continue;
-      }
-      auto* win = new MainWindow();
-      win->setAttribute(Qt::WA_DeleteOnClose);
-      win->show();
-      if (fi->is_directory() || fi->location().is_archive()) {
-        win->open_location(fi->location());
-      } else {
-        win->open_location(fi->location().parent());
-      }
-      break; // one window from context menu
+    const auto& fi = selected.front();
+    auto* win = new MainWindow();
+    win->setAttribute(Qt::WA_DeleteOnClose);
+    win->show();
+    if (fi.is_directory() || fi.location().is_archive()) {
+      win->open_location(fi.location());
+    } else {
+      win->open_location(fi.location().parent());
     }
   });
   menu.addAction(QStringLiteral("Open with…"), this, &MainWindow::on_open_with);
@@ -1315,7 +1333,11 @@ void MainWindow::on_context_menu(const QPoint& pos)
   menu.addAction(QStringLiteral("Prepare Thumbnails"), this, &MainWindow::on_prepare_thumbnails);
   menu.addSeparator();
   menu.addAction(QStringLiteral("New Folder…"), this, &MainWindow::on_mkdir);
-  menu.exec(view->viewport()->mapToGlobal(pos));
+  if (graphics) {
+    menu.exec(graphics_view_->mapToGlobal(pos));
+  } else {
+    menu.exec(view->viewport()->mapToGlobal(pos));
+  }
 }
 
 void MainWindow::set_clipboard(ClipboardMode mode)

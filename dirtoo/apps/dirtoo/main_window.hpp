@@ -35,6 +35,7 @@
 class QLineEdit;
 class QTreeView;
 class QListView;
+class GraphicsFileView;
 class QLabel;
 class QAction;
 class QStackedWidget;
@@ -230,7 +231,8 @@ private:
   quint64 path_completion_request_id_ = 0;
   QStackedWidget* view_stack_ = nullptr;
   QTreeView* tree_view_ = nullptr;
-  QListView* icon_view_ = nullptr;
+  QListView* icon_view_ = nullptr; // SmallIcons list mode
+  GraphicsFileView* graphics_view_ = nullptr; // Icons Graphics View
   QLabel* status_label_ = nullptr;
   MessageArea* message_area_ = nullptr;
 

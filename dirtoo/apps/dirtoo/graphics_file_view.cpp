@@ -1,0 +1,259 @@
+// SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#include "graphics_file_view.hpp"
+
+#include "file_list_model.hpp"
+#include "graphics_file_item.hpp"
+
+#include <QContextMenuEvent>
+#include <QGraphicsScene>
+#include <QMouseEvent>
+#include <QResizeEvent>
+#include <QScrollBar>
+#include <QWheelEvent>
+
+#include <algorithm>
+
+namespace dirtoo::app {
+
+GraphicsFileView::GraphicsFileView(QWidget* parent)
+    : QGraphicsView(parent)
+{
+  scene_ = new QGraphicsScene(this);
+  setScene(scene_);
+  setAlignment(Qt::AlignLeft | Qt::AlignTop);
+  setDragMode(QGraphicsView::RubberBandDrag);
+  setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing);
+  setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+  setResizeAnchor(QGraphicsView::AnchorUnderMouse);
+  setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  setBackgroundBrush(QColor(250, 250, 250));
+  setAcceptDrops(true);
+
+  connect(scene_, &QGraphicsScene::selectionChanged, this, &GraphicsFileView::on_scene_selection_changed);
+}
+
+void GraphicsFileView::set_model(FileListModel* model)
+{
+  if (model_ == model) {
+    return;
+  }
+  if (model_ != nullptr) {
+    disconnect(model_, nullptr, this, nullptr);
+  }
+  model_ = model;
+  if (model_ != nullptr) {
+    connect(model_, &QAbstractItemModel::modelReset, this, &GraphicsFileView::on_model_reset);
+    connect(model_, &QAbstractItemModel::layoutChanged, this, &GraphicsFileView::on_model_reset);
+    connect(model_, &QAbstractItemModel::rowsInserted, this, &GraphicsFileView::on_model_reset);
+    connect(model_, &QAbstractItemModel::rowsRemoved, this, &GraphicsFileView::on_model_reset);
+    connect(model_, &QAbstractItemModel::dataChanged, this, &GraphicsFileView::on_model_data_changed);
+  }
+  rebuild_items();
+}
+
+void GraphicsFileView::set_tile_size(const QSize& size)
+{
+  if (tile_size_ == size) {
+    return;
+  }
+  tile_size_ = size;
+  for (auto* item : items_) {
+    item->set_tile_size(tile_size_);
+  }
+  layout_items();
+}
+
+void GraphicsFileView::set_compact(bool compact)
+{
+  if (compact_ == compact) {
+    return;
+  }
+  compact_ = compact;
+  spacing_ = compact ? 6 : 12;
+  layout_items();
+}
+
+void GraphicsFileView::relayout()
+{
+  layout_items();
+}
+
+void GraphicsFileView::sync_from_model()
+{
+  rebuild_items();
+}
+
+void GraphicsFileView::rebuild_items()
+{
+  suppress_selection_signal_ = true;
+  scene_->clear();
+  items_.clear();
+  if (model_ == nullptr) {
+    suppress_selection_signal_ = false;
+    return;
+  }
+  const int rows = model_->rowCount();
+  items_.reserve(static_cast<std::size_t>(rows));
+  for (int r = 0; r < rows; ++r) {
+    auto* item = new GraphicsFileItem(model_, r, this);
+    item->set_tile_size(tile_size_);
+    scene_->addItem(item);
+    items_.push_back(item);
+  }
+  suppress_selection_signal_ = false;
+  layout_items();
+}
+
+void GraphicsFileView::layout_items()
+{
+  if (items_.empty()) {
+    scene_->setSceneRect(QRectF());
+    return;
+  }
+  const int vp_w = std::max(tile_size_.width() + padding_ * 2,
+                            viewport()->width() - 4);
+  const int cell_w = tile_size_.width() + spacing_;
+  const int cell_h = tile_size_.height() + spacing_;
+  int cols = std::max(1, (vp_w - padding_) / cell_w);
+  if (compact_) {
+    // Prefer wider rows for compact list-like grid
+    cols = std::max(1, (vp_w - padding_) / std::max(cell_w, 160));
+  }
+
+  for (std::size_t i = 0; i < items_.size(); ++i) {
+    const int col = static_cast<int>(i % static_cast<std::size_t>(cols));
+    const int row = static_cast<int>(i / static_cast<std::size_t>(cols));
+    items_[i]->setPos(padding_ + col * cell_w, padding_ + row * cell_h);
+  }
+  const int rows = static_cast<int>((items_.size() + static_cast<std::size_t>(cols) - 1)
+                                   / static_cast<std::size_t>(cols));
+  scene_->setSceneRect(0, 0, padding_ * 2 + cols * cell_w, padding_ * 2 + rows * cell_h);
+}
+
+QModelIndex GraphicsFileView::index_at(const QPoint& view_pos) const
+{
+  if (auto* item = qgraphicsitem_cast<GraphicsFileItem*>(itemAt(view_pos))) {
+    return item->model_index();
+  }
+  return {};
+}
+
+std::vector<int> GraphicsFileView::selected_rows() const
+{
+  std::vector<int> rows;
+  for (auto* item : items_) {
+    if (item->isSelected()) {
+      rows.push_back(item->row());
+    }
+  }
+  std::sort(rows.begin(), rows.end());
+  return rows;
+}
+
+void GraphicsFileView::clear_selection()
+{
+  scene_->clearSelection();
+}
+
+void GraphicsFileView::notify_activated(const QModelIndex& index)
+{
+  emit activated(index);
+}
+
+void GraphicsFileView::notify_middle_clicked(const QModelIndex& index)
+{
+  emit middle_clicked(index);
+}
+
+void GraphicsFileView::notify_context_menu(const QPoint& global_pos, const QModelIndex& index)
+{
+  emit context_menu_requested(global_pos, index);
+}
+
+void GraphicsFileView::select_row(int row, bool clear_others)
+{
+  if (clear_others) {
+    scene_->clearSelection();
+  }
+  if (row >= 0 && static_cast<std::size_t>(row) < items_.size()) {
+    items_[static_cast<std::size_t>(row)]->setSelected(true);
+  }
+}
+
+void GraphicsFileView::on_model_reset()
+{
+  rebuild_items();
+}
+
+void GraphicsFileView::on_model_data_changed(const QModelIndex& top_left, const QModelIndex& bottom_right,
+                                            const QList<int>& roles)
+{
+  (void)roles;
+  if (!top_left.isValid()) {
+    return;
+  }
+  for (int r = top_left.row(); r <= bottom_right.row(); ++r) {
+    if (r >= 0 && static_cast<std::size_t>(r) < items_.size()) {
+      items_[static_cast<std::size_t>(r)]->update();
+    }
+  }
+}
+
+void GraphicsFileView::on_scene_selection_changed()
+{
+  if (!suppress_selection_signal_) {
+    emit selection_changed();
+  }
+}
+
+void GraphicsFileView::resizeEvent(QResizeEvent* event)
+{
+  QGraphicsView::resizeEvent(event);
+  layout_items();
+}
+
+void GraphicsFileView::mousePressEvent(QMouseEvent* event)
+{
+  if (event->button() == Qt::MiddleButton) {
+    const auto idx = index_at(event->pos());
+    if (idx.isValid()) {
+      emit middle_clicked(idx);
+      event->accept();
+      return;
+    }
+  }
+  QGraphicsView::mousePressEvent(event);
+}
+
+void GraphicsFileView::mouseDoubleClickEvent(QMouseEvent* event)
+{
+  const auto idx = index_at(event->pos());
+  if (idx.isValid()) {
+    emit activated(idx);
+    event->accept();
+    return;
+  }
+  QGraphicsView::mouseDoubleClickEvent(event);
+}
+
+void GraphicsFileView::mouseReleaseEvent(QMouseEvent* event)
+{
+  QGraphicsView::mouseReleaseEvent(event);
+}
+
+void GraphicsFileView::contextMenuEvent(QContextMenuEvent* event)
+{
+  const auto idx = index_at(event->pos());
+  emit context_menu_requested(event->globalPos(), idx);
+  event->accept();
+}
+
+void GraphicsFileView::wheelEvent(QWheelEvent* event)
+{
+  // Plain wheel scrolls; Ctrl+wheel reserved for zoom at MainWindow level if desired
+  QGraphicsView::wheelEvent(event);
+}
+
+} // namespace dirtoo::app

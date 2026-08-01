@@ -43,7 +43,7 @@ Core file manager MVP is **done**. Filter DSL, multi-window, dirops, archives
 | Message area                              | **done** (transient banner)            |
 | Preferences, transfers, properties, About | **done**                               |
 | Async path completion worker              | **done**                               |
-| Graphics View icon scene                  | deferred (may revisit for flexibility) |
+| Graphics View icon scene                  | **initial** (Icons mode uses GraphicsFileView) |
 
 ### Ops
 
@@ -179,7 +179,7 @@ as of the responsive-UI / media-cache work.
 | Area           | Python                                    | C++                                         | Notes                             |
 |----------------|-------------------------------------------|---------------------------------------------|-----------------------------------|
 | Language / UI  | Python 3 + PyQt6                          | C++23 + Qt6 Widgets                         |                                   |
-| View tech      | `QGraphicsView` + custom `FileItem` scene | `QTreeView` / `QListView` + model/delegate  | Graphics scene deferred           |
+| View tech      | `QGraphicsView` + custom `FileItem` scene | Detail: tree; Icons: GraphicsFileView; Small: list | **partial** |
 | FS abstraction | `virtual_filesystem`, Location URLs       | `dirtoo-fs::Location` (file + archive)      | SFTP/other VFS not started        |
 | File ops       | In-app + scripts                          | **`dirops`** lib + `dt-*` CLIs              | Stronger separation in C++        |
 | Filtering      | `filter/` + pyparsing                     | **`dirtoo-filter`** (hand parser, Qt-free)  |                                   |
@@ -229,7 +229,7 @@ as of the responsive-UI / media-cache work.
 | Missing                                          | Python behaviour                                           |
 |--------------------------------------------------|------------------------------------------------------------|
 | **Small icon / sequence mode**                   | **done** (QListView ListMode + zoom steps)                 |
-| **Graphics View icon scene**                     | Freer layout, hover overlays, per-item animation           |
+| **Graphics View icon scene**                     | **initial** (grid layout, selection, badges, menus)        |
 | **Group by** (day, directory, duration, none)    | **done**                                                   |
 | **Time gaps** in icon layout                     | Visual spacing by mtime gaps                               |
 | **Show abspath vs basename** toggle              | Caption shows full path                                    |

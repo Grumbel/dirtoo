@@ -12,6 +12,10 @@ qt_add_executable(dirtoo-app
   drag_action_overlay.hpp
   file_item_delegate.cpp
   file_item_delegate.hpp
+  graphics_file_view.cpp
+  graphics_file_view.hpp
+  graphics_file_item.cpp
+  graphics_file_item.hpp
   clipboard.cpp
   clipboard.hpp
   conflict_dialog.cpp
