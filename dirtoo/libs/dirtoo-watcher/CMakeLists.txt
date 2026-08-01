@@ -23,3 +23,15 @@ target_link_libraries(dirtoo-watcher
 
 target_compile_features(dirtoo-watcher PUBLIC cxx_std_23)
 set_target_properties(dirtoo-watcher PROPERTIES AUTOMOC ON)
+
+install(TARGETS dirtoo-watcher
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  FILES_MATCHING PATTERN "*.hpp"
+)

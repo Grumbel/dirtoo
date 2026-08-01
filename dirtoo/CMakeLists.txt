@@ -27,42 +27,83 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+include(GNUInstallDirs)
+
+option(DIRTOO_WITH_QT "Build Qt-based libraries and the GUI" ON)
+option(DIRTOO_BUILD_APP "Build the dirtoo GUI application" ON)
+option(DIRTOO_BUILD_TOOLS "Build dirops CLI tools" ON)
 option(DIRTOO_BUILD_TESTS "Build unit tests" ON)
-option(DIRTOO_BUILD_TOOLS "Build CLI tools" ON)
+option(DIRTOO_BUILD_DIROPS "Build dirops library" ON)
+option(DIRTOO_BUILD_FS "Build dirtoo-fs library" ON)
+option(DIRTOO_BUILD_COLLECTION "Build dirtoo-collection library" ON)
+option(DIRTOO_BUILD_WATCHER "Build dirtoo-watcher library" ON)
+option(DIRTOO_BUILD_THUMBNAIL "Build dirtoo-thumbnail library" ON)
+option(DIRTOO_BUILD_ARCHIVE "Build dirtoo-archive library" ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets DBus)
-qt_standard_project_setup()
+# App/tests imply Qt components.
+if(DIRTOO_BUILD_APP OR DIRTOO_BUILD_TESTS)
+  set(DIRTOO_WITH_QT ON)
+endif()
 
-# Make the full version string available to all targets as DIRTOO_VERSION.
+if(DIRTOO_WITH_QT)
+  find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets DBus)
+  qt_standard_project_setup()
+endif()
+
 add_compile_definitions(DIRTOO_VERSION="${PROJECT_VERSION_FULL}")
 
-# ---------------------------------------------------------------------------
-# Compiler warnings
-# ---------------------------------------------------------------------------
 add_library(dirtoo_warnings INTERFACE)
 target_compile_options(dirtoo_warnings INTERFACE
   $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic>
 )
 
-# ---------------------------------------------------------------------------
-# Libraries
-# ---------------------------------------------------------------------------
-add_subdirectory(libs/dirops)
-add_subdirectory(libs/dirtoo-fs)
-add_subdirectory(libs/dirtoo-collection)
-add_subdirectory(libs/dirtoo-watcher)
-add_subdirectory(libs/dirtoo-thumbnail)
-add_subdirectory(libs/dirtoo-archive)
+# Qt-free core
+if(DIRTOO_BUILD_DIROPS)
+  add_subdirectory(libs/dirops)
+endif()
+if(DIRTOO_BUILD_FS)
+  add_subdirectory(libs/dirtoo-fs)
+endif()
+if(DIRTOO_BUILD_COLLECTION)
+  if(NOT DIRTOO_BUILD_FS)
+    message(FATAL_ERROR "dirtoo-collection requires DIRTOO_BUILD_FS=ON")
+  endif()
+  add_subdirectory(libs/dirtoo-collection)
+endif()
 
-# ---------------------------------------------------------------------------
-# Application
-# ---------------------------------------------------------------------------
-add_subdirectory(apps/dirtoo)
+# Qt libraries
+if(DIRTOO_WITH_QT)
+  if(DIRTOO_BUILD_WATCHER)
+    if(NOT DIRTOO_BUILD_FS)
+      message(FATAL_ERROR "dirtoo-watcher requires DIRTOO_BUILD_FS=ON")
+    endif()
+    add_subdirectory(libs/dirtoo-watcher)
+  endif()
+  if(DIRTOO_BUILD_THUMBNAIL)
+    if(NOT DIRTOO_BUILD_FS)
+      message(FATAL_ERROR "dirtoo-thumbnail requires DIRTOO_BUILD_FS=ON")
+    endif()
+    add_subdirectory(libs/dirtoo-thumbnail)
+  endif()
+  if(DIRTOO_BUILD_ARCHIVE)
+    if(NOT DIRTOO_BUILD_FS)
+      message(FATAL_ERROR "dirtoo-archive requires DIRTOO_BUILD_FS=ON")
+    endif()
+    add_subdirectory(libs/dirtoo-archive)
+  endif()
+endif()
 
-# ---------------------------------------------------------------------------
-# Tools & tests
-# ---------------------------------------------------------------------------
+if(DIRTOO_BUILD_APP)
+  if(NOT DIRTOO_WITH_QT)
+    message(FATAL_ERROR "DIRTOO_BUILD_APP requires DIRTOO_WITH_QT=ON")
+  endif()
+  add_subdirectory(apps/dirtoo)
+endif()
+
 if(DIRTOO_BUILD_TOOLS)
+  if(NOT DIRTOO_BUILD_DIROPS)
+    message(FATAL_ERROR "DIRTOO_BUILD_TOOLS requires DIRTOO_BUILD_DIROPS=ON")
+  endif()
   add_subdirectory(tools)
 endif()
 

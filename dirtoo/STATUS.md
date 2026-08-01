@@ -41,3 +41,24 @@ GPL-3.0-or-later (SPDX headers on sources).
 - GUI: Help → About and `dirtoo --version`.
 - CLI tools: `--version` / `-V`.
 - Release: drop `-dev`, commit `VERSION`, tag `vX.Y.Z` matching the file with a `v` prefix.
+
+
+## Flake package outputs
+
+| Attribute | Contents |
+|-----------|----------|
+| `default` / `dirtoo` | Full app + libs + tools + tests |
+| `dirops` | Qt-free file-ops library + `dt-*` tools |
+| `dirtoo-fs` | Location / FileInfo |
+| `dirtoo-collection` | Filter/sort collection (+ fs) |
+| `dirtoo-watcher` | Directory watcher (Qt) |
+| `dirtoo-thumbnail` | Thumbnailer D-Bus client (Qt) |
+| `dirtoo-archive` | Archive index/manager (Qt) |
+| `all-libs` | symlinkJoin of all libraries |
+
+```bash
+nix build .#dirops
+nix build .#dirtoo-fs
+nix build .#all-libs
+nix build .#dirtoo
+```

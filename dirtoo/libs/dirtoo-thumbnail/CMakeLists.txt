@@ -24,3 +24,15 @@ target_link_libraries(dirtoo-thumbnail
 
 target_compile_features(dirtoo-thumbnail PUBLIC cxx_std_23)
 set_target_properties(dirtoo-thumbnail PROPERTIES AUTOMOC ON)
+
+install(TARGETS dirtoo-thumbnail
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  FILES_MATCHING PATTERN "*.hpp"
+)
