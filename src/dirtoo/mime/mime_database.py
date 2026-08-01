@@ -29,9 +29,14 @@ class MimeDatabase:
         self.mime_db = QMimeDatabase()
 
     def get_mime_type(self, location: Location) -> QMimeType:
-        return self.mime_db.mimeTypeForFile(self.vfs.get_stdio_name(location))
+        filename = self.vfs.get_stdio_name(location)
+        print(f"---: {self.mime_db} '{filename}'")
+        result = self.mime_db.mimeTypeForFile(filename)
+        print(repr(result))
+        return result
 
     def get_icon_from_mime_type(self, mimetype: QMimeType) -> QIcon:
+        print("---")
         icon_name = mimetype.iconName()
         icon = QIcon.fromTheme(icon_name)
         if not icon.isNull():

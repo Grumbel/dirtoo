@@ -53,7 +53,7 @@ class FileItem(QGraphicsObject):
         self.setAcceptHoverEvents(True)
 
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-
+        logger.debug("step: FileItem.__init__: %s", fileinfo)
         # self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
 
         self.file_view = file_view
@@ -62,11 +62,13 @@ class FileItem(QGraphicsObject):
         self.hovering: bool = False
         self.animation_count = 0
 
+        logger.debug("make_icon: FileItem.__init__: %s", fileinfo)
         self.icon = self.make_icon()
+        logger.debug("icon: FileItem.__init__: %s", fileinfo)
         self.normal_thumbnail: Thumbnail = Thumbnail("normal", self)
         self.large_thumbnail: Thumbnail = Thumbnail("large", self)
         self.metadata: Optional[Dict[str, Any]] = None
-
+        logger.debug("step: FileItem.__init__: %s", fileinfo)
         self.tile_rect: QRect
         self.thumbnail_rect: QRect
         self.bounding_rect: QRect
@@ -76,6 +78,7 @@ class FileItem(QGraphicsObject):
 
         self._file_is_final = True
         self._dropable = False
+        logger.debug("done: FileItem.__init__: %s", fileinfo)
 
     def __del__(self) -> None:
         logger.debug("FileItem.__del__")
