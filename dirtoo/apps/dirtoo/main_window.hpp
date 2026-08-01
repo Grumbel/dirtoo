@@ -10,8 +10,11 @@
 #include "dirtoo/watcher/directory_watcher.hpp"
 #include "dirops/ops.hpp"
 #include "file_list_model.hpp"
+#include "transfer_dialog.hpp"
+#include "transfer_worker.hpp"
 
 #include <QMainWindow>
+#include <QThread>
 
 #include <filesystem>
 #include <vector>
@@ -22,6 +25,7 @@ class QListView;
 class QLabel;
 class QAction;
 class QStackedWidget;
+class QAbstractItemView;
 
 namespace dirtoo::app {
 
@@ -35,6 +39,7 @@ class MainWindow : public QMainWindow {
 
 public:
   explicit MainWindow(QWidget* parent = nullptr);
+  ~MainWindow() override;
 
   void open_location(const fs::Location& location, bool record_history = true);
 
@@ -57,16 +62,25 @@ private slots:
   void on_header_clicked(int section);
   void on_view_detail();
   void on_view_icons();
+  void on_zoom_in();
+  void on_zoom_out();
   void on_thumbnail_ready(const dirtoo::fs::Location& location, const QString& path);
   void on_thumbnail_failed(const dirtoo::fs::Location& location, const QString& message);
+
+  void on_transfer_item_started(int index, int total, const QString& path);
+  void on_transfer_byte_progress(quint64 done, quint64 total, const QString& path);
+  void on_transfer_conflict(const QString& destination_name);
+  void on_transfer_finished(TransferSummary summary);
 
 private:
   void refresh_list();
   void update_history_actions();
   void update_edit_actions();
+  void apply_icon_zoom();
   void set_view_mode(ViewMode mode);
   void set_clipboard(ClipboardMode mode);
   void request_thumbnails_for_visible();
+  void start_transfer(const TransferRequest& request);
   [[nodiscard]] std::vector<fs::FileInfo> selected_fileinfos() const;
   [[nodiscard]] QAbstractItemView* current_view() const;
 
@@ -76,6 +90,12 @@ private:
   thumbnail::Thumbnailer thumbnailer_;
   FileListModel* model_ = nullptr;
 
+  QThread transfer_thread_;
+  TransferWorker* transfer_worker_ = nullptr;
+  TransferDialog* transfer_dialog_ = nullptr;
+  bool transfer_busy_ = false;
+  ClipboardMode last_transfer_mode_ = ClipboardMode::Copy;
+
   std::vector<fs::Location> history_;
   int history_index_ = -1;
 
@@ -83,6 +103,9 @@ private:
   SortColumn sort_column_ = SortColumn::Name;
   bool sort_ascending_ = true;
   ViewMode view_mode_ = ViewMode::Detail;
+
+  static constexpr int kZoomLevels[] = {48, 64, 96, 128, 192};
+  int zoom_index_ = 2; // 96
 
   QLineEdit* location_edit_ = nullptr;
   QLineEdit* filter_edit_ = nullptr;

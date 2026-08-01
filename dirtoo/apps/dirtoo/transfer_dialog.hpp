@@ -14,7 +14,7 @@ class QPushButton;
 
 namespace dirtoo::app {
 
-/// Simple modal progress UI for multi-file paste/copy operations.
+/// Progress UI for multi-file paste/copy operations.
 class TransferDialog : public QDialog {
   Q_OBJECT
 
@@ -27,6 +27,10 @@ public:
   void set_item_progress(int current_item, int total_items);
 
   [[nodiscard]] bool is_cancelled() const noexcept { return cancelled_.load(); }
+  void reset();
+
+signals:
+  void cancel_requested();
 
 private slots:
   void on_cancel();

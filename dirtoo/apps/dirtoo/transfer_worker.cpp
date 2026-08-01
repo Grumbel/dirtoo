@@ -5,6 +5,9 @@
 
 #include <QMetaType>
 
+#include <condition_variable>
+#include <mutex>
+
 namespace dirtoo::app {
 
 TransferWorker::TransferWorker(QObject* parent)
@@ -18,7 +21,6 @@ TransferWorker::TransferWorker(QObject* parent)
 void TransferWorker::cancel()
 {
   cancel_requested_.store(true);
-  // Unblock any waiter.
   {
     std::lock_guard lock(conflict_mutex_);
     if (conflict_pending_) {
@@ -67,7 +69,7 @@ dirops::ConflictPolicy TransferWorker::wait_for_conflict_policy(const QString& d
   return conflict_answer_;
 }
 
-void TransferWorker::run(const TransferRequest& request)
+void TransferWorker::run(TransferRequest request)
 {
   cancel_requested_.store(false);
   TransferSummary summary;
@@ -88,7 +90,8 @@ void TransferWorker::run(const TransferRequest& request)
     opt.is_cancelled = [this] { return cancel_requested_.load(); };
     opt.on_progress = [this](std::uint64_t done, std::uint64_t tot,
                              const std::filesystem::path& p) {
-      emit byte_progress(done, tot, QString::fromStdString(p.string()));
+      emit byte_progress(static_cast<quint64>(done), static_cast<quint64>(tot),
+                         QString::fromStdString(p.string()));
     };
 
     if (std::filesystem::exists(dest)) {

@@ -10,6 +10,7 @@ namespace dirtoo::app {
 namespace {
 
 const char* kDirtooMime = "application/x-dirtoo-clipboard";
+const char* kGnomeMime = "x-special/gnome-copied-files";
 
 } // namespace
 
@@ -29,6 +30,16 @@ QMimeData* make_clipboard_mime(ClipboardMode mode, const std::vector<std::filesy
 
   mime->setData(QString::fromLatin1(kDirtooMime), body.toUtf8());
   mime->setUrls(urls);
+
+  // GNOME/Nautilus interop: first line copy|cut, then URIs.
+  QString gnome;
+  gnome += (mode == ClipboardMode::Cut) ? QStringLiteral("cut") : QStringLiteral("copy");
+  for (const QUrl& url : urls) {
+    gnome += QLatin1Char('\n');
+    gnome += url.toString(QUrl::FullyEncoded);
+  }
+  mime->setData(QString::fromLatin1(kGnomeMime), gnome.toUtf8());
+
   return mime;
 }
 
@@ -43,13 +54,26 @@ ClipboardPayload parse_clipboard_mime(const QMimeData* mime)
     const QString text = QString::fromUtf8(mime->data(QString::fromLatin1(kDirtooMime)));
     const QStringList lines = text.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
     if (!lines.isEmpty()) {
-      if (lines.front() == QLatin1String("cut")) {
-        payload.mode = ClipboardMode::Cut;
-      } else {
-        payload.mode = ClipboardMode::Copy;
-      }
+      payload.mode = (lines.front() == QLatin1String("cut")) ? ClipboardMode::Cut
+                                                             : ClipboardMode::Copy;
       for (int i = 1; i < lines.size(); ++i) {
         payload.paths.emplace_back(lines[i].toStdString());
+      }
+    }
+    return payload;
+  }
+
+  if (mime->hasFormat(QString::fromLatin1(kGnomeMime))) {
+    const QString text = QString::fromUtf8(mime->data(QString::fromLatin1(kGnomeMime)));
+    const QStringList lines = text.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+    if (!lines.isEmpty()) {
+      payload.mode = (lines.front() == QLatin1String("cut")) ? ClipboardMode::Cut
+                                                             : ClipboardMode::Copy;
+      for (int i = 1; i < lines.size(); ++i) {
+        const QUrl url(lines[i]);
+        if (url.isLocalFile()) {
+          payload.paths.emplace_back(url.toLocalFile().toStdString());
+        }
       }
     }
     return payload;
@@ -71,7 +95,8 @@ bool clipboard_has_paths(const QMimeData* mime)
   if (mime == nullptr) {
     return false;
   }
-  if (mime->hasFormat(QString::fromLatin1(kDirtooMime))) {
+  if (mime->hasFormat(QString::fromLatin1(kDirtooMime))
+      || mime->hasFormat(QString::fromLatin1(kGnomeMime))) {
     return true;
   }
   if (mime->hasUrls()) {

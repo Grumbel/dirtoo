@@ -7,7 +7,6 @@
 #include "conflict_dialog.hpp"
 #include "dirtoo/fs/file_info.hpp"
 #include "dirops/ops.hpp"
-#include "transfer_dialog.hpp"
 
 #include <QAbstractItemView>
 #include <QAction>
@@ -32,6 +31,7 @@
 #include <QTreeView>
 #include <QUrl>
 #include <QVBoxLayout>
+#include <QWheelEvent>
 #include <QWidget>
 
 #include <filesystem>
@@ -43,6 +43,19 @@ MainWindow::MainWindow(QWidget* parent)
 {
   setWindowTitle(QStringLiteral("dirtoo"));
   resize(960, 640);
+
+  // Background transfer worker
+  transfer_worker_ = new TransferWorker;
+  transfer_worker_->moveToThread(&transfer_thread_);
+  connect(&transfer_thread_, &QThread::finished, transfer_worker_, &QObject::deleteLater);
+  connect(transfer_worker_, &TransferWorker::item_started, this,
+          &MainWindow::on_transfer_item_started);
+  connect(transfer_worker_, &TransferWorker::byte_progress, this,
+          &MainWindow::on_transfer_byte_progress);
+  connect(transfer_worker_, &TransferWorker::conflict_required, this,
+          &MainWindow::on_transfer_conflict);
+  connect(transfer_worker_, &TransferWorker::finished, this, &MainWindow::on_transfer_finished);
+  transfer_thread_.start();
 
   auto* toolbar = addToolBar(QStringLiteral("Main"));
   toolbar->setMovable(false);
@@ -70,6 +83,10 @@ MainWindow::MainWindow(QWidget* parent)
   connect(detail_act_, &QAction::triggered, this, &MainWindow::on_view_detail);
   connect(icons_act_, &QAction::triggered, this, &MainWindow::on_view_icons);
 
+  toolbar->addSeparator();
+  toolbar->addAction(QStringLiteral("Zoom −"), this, &MainWindow::on_zoom_out);
+  toolbar->addAction(QStringLiteral("Zoom +"), this, &MainWindow::on_zoom_in);
+
   {
     auto* cut = new QAction(this);
     cut->setShortcut(QKeySequence::Cut);
@@ -87,6 +104,14 @@ MainWindow::MainWindow(QWidget* parent)
     del->setShortcut(QKeySequence::Delete);
     connect(del, &QAction::triggered, this, &MainWindow::on_delete_selected);
     addAction(del);
+    auto* zoomin = new QAction(this);
+    zoomin->setShortcut(QKeySequence::ZoomIn);
+    connect(zoomin, &QAction::triggered, this, &MainWindow::on_zoom_in);
+    addAction(zoomin);
+    auto* zoomout = new QAction(this);
+    zoomout->setShortcut(QKeySequence::ZoomOut);
+    connect(zoomout, &QAction::triggered, this, &MainWindow::on_zoom_out);
+    addAction(zoomout);
   }
 
   auto* central = new QWidget(this);
@@ -132,13 +157,12 @@ MainWindow::MainWindow(QWidget* parent)
   icon_view_->setMovement(QListView::Static);
   icon_view_->setUniformItemSizes(true);
   icon_view_->setWordWrap(true);
-  icon_view_->setIconSize(QSize(96, 96));
-  icon_view_->setGridSize(QSize(120, 140));
   icon_view_->setSelectionMode(QAbstractItemView::ExtendedSelection);
   icon_view_->setContextMenuPolicy(Qt::CustomContextMenu);
   connect(icon_view_, &QListView::activated, this, &MainWindow::on_item_activated);
   connect(icon_view_, &QWidget::customContextMenuRequested, this, &MainWindow::on_context_menu);
   view_stack_->addWidget(icon_view_);
+  apply_icon_zoom();
 
   layout->addWidget(view_stack_, 1);
 
@@ -164,10 +188,45 @@ MainWindow::MainWindow(QWidget* parent)
   set_view_mode(ViewMode::Detail);
 }
 
+MainWindow::~MainWindow()
+{
+  if (transfer_worker_ != nullptr) {
+    QMetaObject::invokeMethod(transfer_worker_, &TransferWorker::cancel, Qt::QueuedConnection);
+  }
+  transfer_thread_.quit();
+  transfer_thread_.wait(5000);
+}
+
 QAbstractItemView* MainWindow::current_view() const
 {
   return view_mode_ == ViewMode::Detail ? static_cast<QAbstractItemView*>(tree_view_)
                                         : static_cast<QAbstractItemView*>(icon_view_);
+}
+
+void MainWindow::apply_icon_zoom()
+{
+  const int size = kZoomLevels[zoom_index_];
+  icon_view_->setIconSize(QSize(size, size));
+  icon_view_->setGridSize(QSize(size + 28, size + 48));
+  // Detail view keeps small icons; slightly scale with zoom for consistency.
+  const int detail = std::max(16, size / 4);
+  tree_view_->setIconSize(QSize(detail, detail));
+}
+
+void MainWindow::on_zoom_in()
+{
+  if (zoom_index_ + 1 < static_cast<int>(std::size(kZoomLevels))) {
+    ++zoom_index_;
+    apply_icon_zoom();
+  }
+}
+
+void MainWindow::on_zoom_out()
+{
+  if (zoom_index_ > 0) {
+    --zoom_index_;
+    apply_icon_zoom();
+  }
 }
 
 void MainWindow::set_view_mode(ViewMode mode)
@@ -265,7 +324,8 @@ void MainWindow::update_history_actions()
 void MainWindow::update_edit_actions()
 {
   if (paste_act_) {
-    paste_act_->setEnabled(clipboard_has_paths(QApplication::clipboard()->mimeData()));
+    paste_act_->setEnabled(!transfer_busy_
+                           && clipboard_has_paths(QApplication::clipboard()->mimeData()));
   }
 }
 
@@ -333,7 +393,6 @@ void MainWindow::on_thumbnail_failed(const fs::Location& location, const QString
 {
   (void)location;
   (void)message;
-  // Keep default MIME/file icon from QFileIconProvider.
 }
 
 void MainWindow::on_filter_changed(const QString& text)
@@ -432,90 +491,116 @@ void MainWindow::on_cut()
   set_clipboard(ClipboardMode::Cut);
 }
 
+void MainWindow::start_transfer(const TransferRequest& request)
+{
+  if (transfer_busy_) {
+    status_label_->setText(QStringLiteral("A transfer is already in progress"));
+    return;
+  }
+  transfer_busy_ = true;
+  last_transfer_mode_ = request.mode;
+  update_edit_actions();
+
+  if (transfer_dialog_ == nullptr) {
+    transfer_dialog_ = new TransferDialog(this);
+    const auto cancel_worker = [this] {
+      if (transfer_worker_ != nullptr) {
+        QMetaObject::invokeMethod(transfer_worker_, &TransferWorker::cancel, Qt::QueuedConnection);
+      }
+    };
+    connect(transfer_dialog_, &TransferDialog::cancel_requested, this, cancel_worker);
+    connect(transfer_dialog_, &QDialog::rejected, this, cancel_worker);
+  }
+  transfer_dialog_->reset();
+  transfer_dialog_->set_title_text(request.mode == ClipboardMode::Cut ? QStringLiteral("Moving…")
+                                                                     : QStringLiteral("Copying…"));
+  transfer_dialog_->show();
+
+  QMetaObject::invokeMethod(transfer_worker_, [this, request] { transfer_worker_->run(request); },
+                            Qt::QueuedConnection);
+}
+
 void MainWindow::on_paste()
 {
+  if (transfer_busy_) {
+    return;
+  }
+
   const ClipboardPayload payload = parse_clipboard_mime(QApplication::clipboard()->mimeData());
   if (payload.paths.empty()) {
     status_label_->setText(QStringLiteral("Clipboard has no files"));
     return;
   }
 
-  TransferDialog progress(this);
-  progress.set_title_text(payload.mode == ClipboardMode::Cut ? QStringLiteral("Moving…")
-                                                             : QStringLiteral("Copying…"));
-  progress.show();
-  QApplication::processEvents();
+  TransferRequest req;
+  req.mode = payload.mode;
+  req.destination_directory = location_.as_path();
+  req.sources = payload.paths;
+  start_transfer(req);
+}
 
-  const auto dest_dir = location_.as_path();
-  int ok_count = 0;
-  int skip_count = 0;
-  const int total = static_cast<int>(payload.paths.size());
+void MainWindow::on_transfer_item_started(int index, int total, const QString& path)
+{
+  if (transfer_dialog_ != nullptr) {
+    transfer_dialog_->set_item_progress(index, total);
+    transfer_dialog_->set_current_file(path);
+  }
+}
 
-  for (int i = 0; i < total; ++i) {
-    if (progress.is_cancelled()) {
-      status_label_->setText(QStringLiteral("Paste cancelled"));
-      break;
-    }
+void MainWindow::on_transfer_byte_progress(quint64 done, quint64 total, const QString& path)
+{
+  if (transfer_dialog_ != nullptr) {
+    transfer_dialog_->set_current_file(path);
+    transfer_dialog_->set_progress(done, total);
+  }
+}
 
-    const auto& src = payload.paths[static_cast<std::size_t>(i)];
-    progress.set_item_progress(i + 1, total);
-    progress.set_current_file(QString::fromStdString(src.string()));
-    QApplication::processEvents();
+void MainWindow::on_transfer_conflict(const QString& destination_name)
+{
+  // Runs on UI thread (QueuedConnection from worker signal).
+  const auto chosen = ask_conflict_policy(this, destination_name);
+  if (transfer_worker_ == nullptr) {
+    return;
+  }
+  if (!chosen) {
+    QMetaObject::invokeMethod(
+        transfer_worker_,
+        [this] { transfer_worker_->resolve_conflict(dirops::ConflictPolicy::Fail, false); },
+        Qt::QueuedConnection);
+  } else {
+    const auto policy = *chosen;
+    QMetaObject::invokeMethod(
+        transfer_worker_,
+        [this, policy] { transfer_worker_->resolve_conflict(policy, true); },
+        Qt::QueuedConnection);
+  }
+}
 
-    const auto dest = dest_dir / src.filename();
-    dirops::Options opt;
-    opt.is_cancelled = [&progress] { return progress.is_cancelled(); };
-    opt.on_progress = [&progress](std::uint64_t done, std::uint64_t tot,
-                                  const std::filesystem::path& p) {
-      progress.set_current_file(QString::fromStdString(p.string()));
-      progress.set_progress(done, tot);
-      QApplication::processEvents();
-    };
-
-    if (std::filesystem::exists(dest)) {
-      progress.hide();
-      const auto chosen =
-          ask_conflict_policy(this, QString::fromStdString(dest.filename().string()));
-      progress.show();
-      if (!chosen) {
-        status_label_->setText(QStringLiteral("Paste cancelled"));
-        break;
-      }
-      opt.conflict = *chosen;
-    }
-
-    dirops::OpResult result;
-    if (payload.mode == ClipboardMode::Cut) {
-      result = dirops::move_path(src, dest_dir, opt);
-    } else {
-      result = dirops::copy_path(src, dest_dir, opt);
-    }
-
-    if (!result) {
-      progress.hide();
-      QMessageBox::warning(this, QStringLiteral("Paste"),
-                           QString::fromStdString(result.error().to_string()));
-      break;
-    }
-    if (result->cancelled) {
-      status_label_->setText(QStringLiteral("Paste cancelled"));
-      break;
-    }
-    if (!result->items.empty() && result->items.front().skipped) {
-      ++skip_count;
-    } else {
-      ++ok_count;
-    }
+void MainWindow::on_transfer_finished(TransferSummary summary)
+{
+  transfer_busy_ = false;
+  if (transfer_dialog_ != nullptr) {
+    transfer_dialog_->hide();
   }
 
-  progress.hide();
+  if (!summary.error.isEmpty()) {
+    QMessageBox::warning(this, QStringLiteral("Transfer"), summary.error);
+  }
 
-  if (payload.mode == ClipboardMode::Cut && ok_count > 0) {
+  if (last_transfer_mode_ == ClipboardMode::Cut && summary.completed > 0 && !summary.cancelled) {
     QApplication::clipboard()->clear();
   }
 
-  status_label_->setText(
-      QStringLiteral("Paste: %1 done, %2 skipped").arg(ok_count).arg(skip_count));
+  if (summary.cancelled) {
+    status_label_->setText(QStringLiteral("Transfer cancelled (%1 done, %2 skipped)")
+                               .arg(summary.completed)
+                               .arg(summary.skipped));
+  } else {
+    status_label_->setText(QStringLiteral("Transfer: %1 done, %2 skipped")
+                               .arg(summary.completed)
+                               .arg(summary.skipped));
+  }
+
   on_directory_changed();
   update_edit_actions();
 }

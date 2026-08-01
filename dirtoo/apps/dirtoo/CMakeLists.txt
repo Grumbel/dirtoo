@@ -13,6 +13,8 @@ qt_add_executable(dirtoo-app
   conflict_dialog.hpp
   transfer_dialog.cpp
   transfer_dialog.hpp
+  transfer_worker.cpp
+  transfer_worker.hpp
 )
 
 set_target_properties(dirtoo-app PROPERTIES OUTPUT_NAME dirtoo)

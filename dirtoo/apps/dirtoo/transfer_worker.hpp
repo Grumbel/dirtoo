@@ -9,7 +9,10 @@
 #include <QObject>
 #include <QString>
 
+#include <atomic>
+#include <condition_variable>
 #include <filesystem>
+#include <mutex>
 #include <vector>
 
 namespace dirtoo::app {
@@ -24,7 +27,7 @@ struct TransferSummary {
   int completed = 0;
   int skipped = 0;
   bool cancelled = false;
-  QString error; // empty if ok
+  QString error;
 };
 
 /// Runs copy/move on a worker thread. Conflict resolution is requested via
@@ -36,7 +39,7 @@ public:
   explicit TransferWorker(QObject* parent = nullptr);
 
 public slots:
-  void run(const TransferRequest& request);
+  void run(TransferRequest request);
   void cancel();
   void resolve_conflict(dirops::ConflictPolicy policy, bool accepted);
 
@@ -44,7 +47,7 @@ signals:
   void item_started(int index, int total, const QString& path);
   void byte_progress(quint64 done, quint64 total, const QString& path);
   void conflict_required(const QString& destination_name);
-  void finished(const TransferSummary& summary);
+  void finished(TransferSummary summary);
 
 private:
   [[nodiscard]] dirops::ConflictPolicy wait_for_conflict_policy(const QString& dest_name,
@@ -60,3 +63,6 @@ private:
 };
 
 } // namespace dirtoo::app
+
+Q_DECLARE_METATYPE(dirtoo::app::TransferRequest)
+Q_DECLARE_METATYPE(dirtoo::app::TransferSummary)

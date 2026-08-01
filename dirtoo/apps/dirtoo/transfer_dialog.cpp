@@ -49,7 +49,7 @@ void TransferDialog::set_current_file(const QString& path)
 void TransferDialog::set_progress(std::uint64_t done, std::uint64_t total)
 {
   if (total == 0) {
-    bar_->setRange(0, 0); // busy indicator
+    bar_->setRange(0, 0);
     return;
   }
   bar_->setRange(0, 100);
@@ -70,6 +70,18 @@ void TransferDialog::on_cancel()
   cancelled_.store(true);
   cancel_btn_->setEnabled(false);
   cancel_btn_->setText(QStringLiteral("Cancelling…"));
+  emit cancel_requested();
+}
+
+void TransferDialog::reset()
+{
+  cancelled_.store(false);
+  cancel_btn_->setEnabled(true);
+  cancel_btn_->setText(QStringLiteral("Cancel"));
+  bar_->setRange(0, 100);
+  bar_->setValue(0);
+  file_label_->clear();
+  item_label_->clear();
 }
 
 } // namespace dirtoo::app

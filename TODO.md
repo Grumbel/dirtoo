@@ -7,20 +7,20 @@ This document is the working plan for the C++ port. The Python tree in
 ## Progress (2026-08-01)
 
 Completed:
-- Phase 0–2: scaffold, dirtoo-fs, full dirops + tests + CLI tools
-- Phase 3: QFileSystemWatcher directory watcher
-- Phase 4: FileCollection sort/filter
-- Phase 5 (MVP UI largely in place):
-  - Detail table + **Icon view** toggle
-  - History, filter, open, rename/mkdir/delete
-  - Clipboard cut/copy/paste via dirops
-  - Conflict dialog + transfer progress dialog (cancelable)
-- Phase 6 (started): freedesktop **Thumbnailer1 D-Bus client**; icons use cache or queue generation
+- Phase 0–4 foundations (CMake/flake, fs, dirops, watcher, collection)
+- Phase 5 MVP UI:
+  - Detail + Icon views, history, filter, open, rename/mkdir/delete
+  - Clipboard cut/copy/paste (dirtoo MIME + uri-list + **GNOME** `x-special/gnome-copied-files`)
+  - Conflict dialog
+  - **Background TransferWorker** (QThread) with cancel + conflict hand-off
+  - Transfer progress dialog
+  - **Icon zoom** levels (48–192) with toolbar and Ctrl+/-
+- Phase 6 started: Thumbnailer1 D-Bus client + cache
 
 Next:
-- Refine icon layout / zoom levels
-- Background worker thread for large transfers (avoid blocking UI)
-- Optional GNOME clipboard format
+- Drag-and-drop
+- Properties dialog / status bar selection info
+- Settings persistence (view mode, zoom, geometry)
 - Archive browsing (later)
 
 Principles (see also `AGENTS.md`):
