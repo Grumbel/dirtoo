@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 add_library(dirtoo-archive
+  include/dirtoo/archive/archive_manager.hpp
   src/archive_manager.cpp
   src/archive_index.cpp
 )
