@@ -149,6 +149,7 @@ MainWindow::MainWindow(QWidget* parent)
   toolbar->addSeparator();
   toolbar->addAction(theme_icon("zoom-out"), QStringLiteral("Zoom −"), this, &MainWindow::on_zoom_out);
   toolbar->addAction(theme_icon("zoom-in"), QStringLiteral("Zoom +"), this, &MainWindow::on_zoom_in);
+  toolbar->addAction(theme_icon("zoom-fit-best"), QStringLiteral("Zoom Fit"), this, &MainWindow::on_zoom_fit);
   toolbar->addSeparator();
   toolbar->addAction(theme_icon("zoom-original", "list-remove"), QStringLiteral("Less detail"), this,
                      &MainWindow::on_less_icon_details);
@@ -251,6 +252,10 @@ MainWindow::MainWindow(QWidget* parent)
     {
       auto* act = view_menu->addAction(QStringLiteral("Zoom Out"), this, &MainWindow::on_zoom_out);
       act->setShortcut(QKeySequence::ZoomOut);
+    }
+    {
+      auto* act = view_menu->addAction(QStringLiteral("Zoom Fit"), this, &MainWindow::on_zoom_fit);
+      act->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_0));
     }
     {
       auto* act = view_menu->addAction(QStringLiteral("More Icon Details"), this,
@@ -659,6 +664,36 @@ void MainWindow::on_zoom_out()
   if (zoom_index_ > 0) {
     --zoom_index_;
     apply_icon_zoom();
+  }
+}
+
+void MainWindow::on_zoom_fit()
+{
+  set_view_mode(ViewMode::Icons);
+  if (icon_view_ == nullptr || icon_view_->viewport() == nullptr) {
+    return;
+  }
+  const int text_rows = model_ != nullptr ? model_->icon_text_rows() : 1;
+  const int text_h = 6 + text_rows * 18;
+  const int vw = std::max(64, icon_view_->viewport()->width() - 24);
+  const int vh = std::max(64, icon_view_->viewport()->height() - 24);
+  // Size icons so a cell roughly fills the viewport (one large tile).
+  int target = std::min(vw - 40, vh - text_h - 16);
+  target = std::clamp(target, kZoomLevels[0], kZoomLevels[std::size(kZoomLevels) - 1]);
+
+  int best = 0;
+  int best_diff = std::abs(kZoomLevels[0] - target);
+  for (int i = 1; i < static_cast<int>(std::size(kZoomLevels)); ++i) {
+    const int d = std::abs(kZoomLevels[i] - target);
+    if (d < best_diff) {
+      best_diff = d;
+      best = i;
+    }
+  }
+  zoom_index_ = best;
+  apply_icon_zoom();
+  if (status_label_ != nullptr) {
+    status_label_->setText(QStringLiteral("Zoom fit: %1px").arg(kZoomLevels[zoom_index_]));
   }
 }
 

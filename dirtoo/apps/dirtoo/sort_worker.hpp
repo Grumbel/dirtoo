@@ -29,5 +29,4 @@ signals:
 
 } // namespace dirtoo::app
 
-Q_DECLARE_METATYPE(std::vector<dirtoo::fs::FileInfo>)
 Q_DECLARE_METATYPE(dirtoo::collection::SortKey)

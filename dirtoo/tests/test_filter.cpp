@@ -121,9 +121,10 @@ TEST_CASE("search_directory respects cancel", "[filter][search]")
   dirtoo::filter::SearchOptions opt;
   opt.max_depth = 0;
   opt.should_cancel = [&] { return hits >= 3; };
-  dirtoo::filter::search_directory(dir, **m, opt, [&](const dirtoo::filter::FilterItem&) {
+  const auto stats = dirtoo::filter::search_directory(dir, **m, opt, [&](const dirtoo::filter::FilterItem&) {
     ++hits;
   });
+  (void)stats;
   REQUIRE(hits == 3);
   fs::remove_all(dir);
 }

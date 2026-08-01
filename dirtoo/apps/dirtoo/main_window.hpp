@@ -131,6 +131,7 @@ private slots:
   void on_view_icons();
   void on_zoom_in();
   void on_zoom_out();
+  void on_zoom_fit();
   void on_more_icon_details();
   void on_less_icon_details();
   void apply_icon_detail_level();
@@ -184,7 +185,7 @@ private:
   bool sort_ascending_ = true;
   ViewMode view_mode_ = ViewMode::Detail;
 
-  static constexpr int kZoomLevels[] = {48, 64, 96, 128, 192};
+  static constexpr int kZoomLevels[] = {48, 64, 96, 128, 192, 256, 384, 512, 768, 1024};
   int zoom_index_ = 2;
 
   QLineEdit* location_edit_ = nullptr;
