@@ -63,6 +63,15 @@ using OpResult = std::expected<Result, Error>;
 [[nodiscard]] OpResult create_directory(const std::filesystem::path& path,
                                         const Options& options = {});
 
+/// Create an empty regular file (fails if path already exists unless options say otherwise).
+[[nodiscard]] OpResult create_file(const std::filesystem::path& path,
+                                   const Options& options = {});
+
+/// Create a symbolic link at link_path pointing at target.
+[[nodiscard]] OpResult create_symlink(const std::filesystem::path& target,
+                                      const std::filesystem::path& link_path,
+                                      const Options& options = {});
+
 /// Atomically swap two names on the same filesystem.
 [[nodiscard]] OpResult swap_names(const std::filesystem::path& a,
                                   const std::filesystem::path& b,

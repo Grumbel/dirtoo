@@ -20,6 +20,7 @@
 #include "properties_dialog.hpp"
 #include "dirtoo/fs/file_info.hpp"
 #include "dirops/ops.hpp"
+#include "dirops/util.hpp"
 
 #include <QAbstractItemView>
 #include <QAction>
@@ -57,6 +58,7 @@
 #include <QToolBar>
 #include <QToolButton>
 #include <QTreeView>
+#include <QScrollBar>
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QGraphicsItem>
@@ -199,6 +201,7 @@ MainWindow::MainWindow(QWidget* parent)
       act->setShortcut(QKeySequence::New); // Ctrl+N
     }
     file_menu->addAction(QStringLiteral("New Folder…"), this, &MainWindow::on_mkdir);
+    file_menu->addAction(QStringLiteral("New File…"), this, &MainWindow::on_create_file);
     file_menu->addSeparator();
     {
       auto* act = file_menu->addAction(QStringLiteral("Save File List As…"), this,
@@ -633,6 +636,8 @@ MainWindow::MainWindow(QWidget* parent)
   connect(icon_view_, &QListView::activated, this, &MainWindow::on_item_activated);
   icon_view_->viewport()->installEventFilter(this);
   connect(icon_view_, &QWidget::customContextMenuRequested, this, &MainWindow::on_context_menu);
+  connect(icon_view_->verticalScrollBar(), &QScrollBar::valueChanged, this,
+          [this](int) { request_thumbnails_for_visible(); });
   view_stack_->addWidget(icon_view_);
 
   graphics_view_ = new GraphicsFileView(view_stack_);
@@ -646,6 +651,8 @@ MainWindow::MainWindow(QWidget* parent)
   connect(graphics_view_, &GraphicsFileView::selection_changed, this,
           &MainWindow::on_selection_changed);
   connect(graphics_view_, &GraphicsFileView::files_dropped, this, &MainWindow::on_urls_dropped_to);
+  connect(graphics_view_->verticalScrollBar(), &QScrollBar::valueChanged, this,
+          [this](int) { request_thumbnails_for_visible(); });
   view_stack_->addWidget(graphics_view_);
 
   apply_icon_zoom();
@@ -1428,6 +1435,7 @@ void MainWindow::on_context_menu(const QPoint& pos)
   menu.addAction(QStringLiteral("Prepare Thumbnails"), this, &MainWindow::on_prepare_thumbnails);
   menu.addSeparator();
   menu.addAction(QStringLiteral("New Folder…"), this, &MainWindow::on_mkdir);
+  menu.addAction(QStringLiteral("New File…"), this, &MainWindow::on_create_file);
   if (graphics) {
     menu.exec(graphics_view_->mapToGlobal(pos));
   } else {
@@ -1647,6 +1655,35 @@ void MainWindow::on_mkdir()
   auto result = dirops::create_directory(dest);
   if (!result) {
     QMessageBox::warning(this, QStringLiteral("New Folder"),
+                         QString::fromStdString(result.error().to_string()));
+    return;
+  }
+  on_directory_changed();
+}
+
+void MainWindow::on_create_file()
+{
+  if (location_.is_archive()) {
+    status_label_->setText(QStringLiteral("Read-only: browsing inside an archive"));
+    return;
+  }
+
+  const auto name_opt = ask_item_name(this, QStringLiteral("New File"),
+                                      QStringLiteral("File name:"),
+                                      QStringLiteral("New File"),
+                                      QStringLiteral("Create"));
+  if (!name_opt || name_opt->isEmpty()) {
+    return;
+  }
+  const QString name = *name_opt;
+  auto dest = location_.as_path() / name.toStdString();
+  if (std::filesystem::exists(dest)) {
+    const auto unique = dirops::unique_path(dest);
+    dest = unique;
+  }
+  auto result = dirops::create_file(dest);
+  if (!result) {
+    QMessageBox::warning(this, QStringLiteral("New File"),
                          QString::fromStdString(result.error().to_string()));
     return;
   }

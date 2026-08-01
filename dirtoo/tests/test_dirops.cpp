@@ -232,3 +232,29 @@ TEST_CASE("dry_run does not touch filesystem", "[dirops]")
 
   fs::remove_all(dir);
 }
+
+TEST_CASE("create_file makes empty file", "[dirops]")
+{
+  const auto dir = make_temp_dir("dirtoo-test-create-file");
+  const auto path = dir / "empty.txt";
+  auto result = dirops::create_file(path);
+  REQUIRE(result.has_value());
+  REQUIRE(fs::exists(path));
+  REQUIRE(fs::file_size(path) == 0);
+  // second create fails
+  auto again = dirops::create_file(path);
+  REQUIRE_FALSE(again.has_value());
+  fs::remove_all(dir);
+}
+
+TEST_CASE("create_symlink makes link", "[dirops]")
+{
+  const auto dir = make_temp_dir("dirtoo-test-symlink");
+  const auto target = dir / "target.txt";
+  write_file(target, "data");
+  const auto link = dir / "link.txt";
+  auto result = dirops::create_symlink(target, link);
+  REQUIRE(result.has_value());
+  REQUIRE(fs::is_symlink(link));
+  fs::remove_all(dir);
+}

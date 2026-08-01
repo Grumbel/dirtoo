@@ -218,12 +218,12 @@ Use:
 
 1. [x] **Listing cost**: `list_directory` via `directory_entry`; `from_path_unchecked` (no per-child `weakly_canonical`).  
 2. [x] **Watcher debounce** (200ms single-shot).  
-3. **Graphics**: incremental model sync; don’t recreate all items on every reset.  
+3. [x] **Graphics**: incremental item reuse on modelReset (no full scene clear).  
 4. [x] **Thumbnails**: viewport-scoped batch (cap 64); skip `QMimeDatabase` on GUI.  
 5. **Filter**: evaluate `contains*` on a worker; apply results by generation.  
 6. [x] **DnD**: Shift→Move; folder drop on list/tree; Graphics modifier handling.  
-7. [partial] **Icons**: palette base background; **GraphicsFileView is now constructed** (was never created). Caption/group headers still open.  
-8. [partial] **Parity**: Select All (Ctrl+A) done; New File / symlink / dir thumbs still open.
+7. [partial] **Icons**: palette base background; GraphicsFileView constructed; progressive thumbs on scroll. Caption/group headers still open.  
+8. [partial] **Parity**: Select All + New File done; `dirops::create_file` / `create_symlink` added; dir thumbs / link paste UI still open.
 
 ---
 

@@ -4,6 +4,7 @@
 #include "dirops/ops.hpp"
 #include "dirops/util.hpp"
 
+#include <fstream>
 #include <system_error>
 #include <utility>
 
@@ -440,6 +441,88 @@ OpResult create_directory(const std::filesystem::path& path, const Options& opti
 
   Result r;
   r.items.push_back(ItemResult{.source = {}, .destination = path});
+  return r;
+}
+
+OpResult create_file(const std::filesystem::path& path, const Options& options)
+{
+  if (cancelled(options)) {
+    return Result{.items = {}, .cancelled = true};
+  }
+
+  if (options.dry_run) {
+    Result r;
+    r.items.push_back(ItemResult{.source = {}, .destination = path});
+    return r;
+  }
+
+  std::error_code ec;
+  if (std::filesystem::exists(path, ec)) {
+    return std::unexpected(Error{
+        std::make_error_code(std::errc::file_exists),
+        path,
+        "path already exists",
+    });
+  }
+
+  {
+    std::ofstream out(path, std::ios::binary | std::ios::out | std::ios::trunc);
+    if (!out) {
+      return std::unexpected(Error{
+          std::make_error_code(std::errc::io_error),
+          path,
+          "create_file failed",
+      });
+    }
+  }
+
+  Result r;
+  r.items.push_back(ItemResult{.source = {}, .destination = path});
+  return r;
+}
+
+OpResult create_symlink(const std::filesystem::path& target, const std::filesystem::path& link_path,
+                        const Options& options)
+{
+  if (cancelled(options)) {
+    return Result{.items = {}, .cancelled = true};
+  }
+
+  if (options.dry_run) {
+    Result r;
+    r.items.push_back(ItemResult{.source = target, .destination = link_path});
+    return r;
+  }
+
+  std::error_code ec;
+  if (std::filesystem::exists(link_path, ec)) {
+    if (options.conflict == ConflictPolicy::Fail) {
+      return std::unexpected(Error{
+          std::make_error_code(std::errc::file_exists),
+          link_path,
+          "link path already exists",
+      });
+    }
+    if (options.conflict == ConflictPolicy::Skip) {
+      Result r;
+      r.items.push_back(ItemResult{.source = target, .destination = link_path, .skipped = true});
+      return r;
+    }
+    if (options.conflict == ConflictPolicy::Overwrite) {
+      std::filesystem::remove(link_path, ec);
+      if (ec) {
+        return std::unexpected(Error{ec, link_path, "failed to remove existing path for symlink"});
+      }
+    }
+  }
+
+  std::filesystem::create_symlink(target, link_path, ec);
+  if (ec) {
+    return std::unexpected(Error{ec, link_path, "create_symlink failed"});
+  }
+
+  Result r;
+  r.items.push_back(ItemResult{.source = target, .destination = link_path});
   return r;
 }
 

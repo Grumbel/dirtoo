@@ -85,6 +85,7 @@ private slots:
   void on_item_activated(const QModelIndex& index);
   void on_context_menu(const QPoint& pos);
   void on_mkdir();
+  void on_create_file();
   void on_rename_selected();
   void on_delete_selected();
   void on_properties();

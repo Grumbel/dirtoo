@@ -94,21 +94,52 @@ void GraphicsFileView::sync_from_model()
 
 void GraphicsFileView::rebuild_items()
 {
+  // Reuse existing QGraphicsItems when the row count changes only slightly —
+  // full scene_->clear() + N allocations freezes large directories on every
+  // modelReset (load, sort, filter, watcher refresh).
   suppress_selection_signal_ = true;
-  scene_->clear();
-  items_.clear();
   if (model_ == nullptr) {
+    for (auto* item : items_) {
+      scene_->removeItem(item);
+      delete item;
+    }
+    items_.clear();
     suppress_selection_signal_ = false;
+    layout_items();
     return;
   }
+
   const int rows = model_->rowCount();
-  items_.reserve(static_cast<std::size_t>(rows));
-  for (int r = 0; r < rows; ++r) {
-    auto* item = new GraphicsFileItem(model_, r, this);
-    item->set_tile_size(tile_size_);
-    scene_->addItem(item);
-    items_.push_back(item);
+  const int old_n = static_cast<int>(items_.size());
+
+  // Shrink: drop surplus items from the end.
+  if (old_n > rows) {
+    for (int i = old_n - 1; i >= rows; --i) {
+      auto* item = items_[static_cast<std::size_t>(i)];
+      scene_->removeItem(item);
+      delete item;
+    }
+    items_.resize(static_cast<std::size_t>(rows));
   }
+
+  // Update rows already present (path/icon may have changed).
+  for (int r = 0; r < static_cast<int>(items_.size()); ++r) {
+    items_[static_cast<std::size_t>(r)]->set_row(r);
+    items_[static_cast<std::size_t>(r)]->set_tile_size(tile_size_);
+    items_[static_cast<std::size_t>(r)]->update();
+  }
+
+  // Grow: append new items.
+  if (static_cast<int>(items_.size()) < rows) {
+    items_.reserve(static_cast<std::size_t>(rows));
+    for (int r = static_cast<int>(items_.size()); r < rows; ++r) {
+      auto* item = new GraphicsFileItem(model_, r, this);
+      item->set_tile_size(tile_size_);
+      scene_->addItem(item);
+      items_.push_back(item);
+    }
+  }
+
   suppress_selection_signal_ = false;
   layout_items();
 }
