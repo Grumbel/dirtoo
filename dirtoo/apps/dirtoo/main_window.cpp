@@ -41,6 +41,7 @@
 #include <QMouseEvent>
 #include <QDesktopServices>
 #include <QDir>
+#include <set>
 #include <QHeaderView>
 #include <QIcon>
 #include <QKeyEvent>
@@ -1277,6 +1278,37 @@ void MainWindow::reload_directory(bool soft)
   if (location_.is_archive() && archive_listing_ok_) {
     soft_directory_reload_ = false;
     auto items = archive::fileinfos_for_prefix(location_, archive_entries_);
+    // Pre-fill non-recursive child counts for archive directories from the index.
+    if (model_ != nullptr) {
+      model_->clear_child_counts();
+      const std::string prefix = location_.entry_path().lexically_normal().generic_string();
+      for (const auto& fi : items) {
+        if (!fi.is_directory()) {
+          continue;
+        }
+        const std::string name = fi.basename();
+        const std::string needed =
+            prefix.empty() ? name + "/" : prefix + "/" + name + "/";
+        qint64 n = 0;
+        std::set<std::string> seen;
+        for (const auto& entry : archive_entries_) {
+          std::string rel = entry.path.generic_string();
+          if (!rel.starts_with(needed)) {
+            continue;
+          }
+          rel = rel.substr(needed.size());
+          if (rel.empty()) {
+            continue;
+          }
+          const auto slash = rel.find('/');
+          const std::string child = (slash == std::string::npos) ? rel : rel.substr(0, slash);
+          if (seen.insert(child).second) {
+            ++n;
+          }
+        }
+        model_->set_child_count(QString::fromStdString(fi.path().string()), n);
+      }
+    }
     collection_.sorter().set_ascending(sort_ascending_);
     collection_.set_items(std::move(items));
     if (filter_edit_ != nullptr && !filter_edit_->text().isEmpty()) {
@@ -1330,6 +1362,7 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
   // Mark paths that appeared since the last listing of this location (watcher refresh).
   if (model_ != nullptr) {
     model_->clear_new_marks();
+    model_->clear_child_counts();
     QSet<QString> next_paths;
     next_paths.reserve(static_cast<int>(items.size()));
     for (const auto& fi : items) {
@@ -1784,7 +1817,20 @@ void MainWindow::on_context_menu(const QPoint& pos)
       win->open_location(fi.location().parent());
     }
   });
-  menu.addAction(QStringLiteral("Open with…"), this, &MainWindow::on_open_with);
+  {
+    const auto selected = selected_fileinfos();
+    std::vector<std::filesystem::path> paths;
+    paths.reserve(selected.size());
+    for (const auto& fi : selected) {
+      paths.push_back(fi.path());
+    }
+    auto* open_with = menu.addMenu(QStringLiteral("Open with"));
+    if (paths.empty()) {
+      open_with->setEnabled(false);
+    } else {
+      populate_open_with_menu(open_with, paths);
+    }
+  }
   menu.addAction(QStringLiteral("Open in Terminal"), this, &MainWindow::on_open_terminal);
 
   // --- Clipboard ---
@@ -2626,9 +2672,17 @@ void MainWindow::on_open_with()
   for (const auto& fi : selected) {
     paths.push_back(fi.path());
   }
-  if (!open_with_command_dialog(this, paths)) {
-    return;
+  // Prefer a listed default app when available; otherwise prompt for a command.
+  QMimeDatabase db;
+  const QMimeType mt = db.mimeTypeForFile(QString::fromStdString(paths.front().string()),
+                                          QMimeDatabase::MatchExtension);
+  const auto apps = apps_for_mime(mt.isValid() ? mt.name() : QStringLiteral("application/octet-stream"));
+  if (!apps.empty()) {
+    if (launch_desktop_app(apps.front(), paths)) {
+      return;
+    }
   }
+  open_with_command_dialog(this, paths);
 }
 
 void MainWindow::on_open_terminal()

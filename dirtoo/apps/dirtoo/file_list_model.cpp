@@ -14,7 +14,9 @@
 #include <QFileIconProvider>
 #include <QFileInfo>
 #include <QLocale>
+#include <QMetaObject>
 #include <QMimeData>
+#include <QThreadPool>
 #include <QUrl>
 
 #include <algorithm>
@@ -32,7 +34,7 @@ QFileIconProvider& icon_provider()
 QString format_size(std::uint64_t bytes, bool is_directory)
 {
   if (is_directory) {
-    return QStringLiteral("—");
+    return QStringLiteral("—"); // replaced by child count when known
   }
   return QLocale::system().formattedDataSize(static_cast<qint64>(bytes));
 }
@@ -97,9 +99,12 @@ void FileListModel::emit_path_changed(const QString& path)
   const auto& visible = collection_->visible_items();
   for (int row = 0; row < static_cast<int>(visible.size()); ++row) {
     if (QString::fromStdString(visible[static_cast<std::size_t>(row)].path().string()) == path) {
-      const QModelIndex idx = index(row, 0);
-      emit dataChanged(idx, idx,
-                       {Qt::DecorationRole, ThumbnailStatusRole, IsNewRole, AccessDeniedRole});
+      const QModelIndex left = index(row, 0);
+      const QModelIndex right =
+          index(row, static_cast<int>(FileListColumn::Count) - 1);
+      emit dataChanged(left, right,
+                       {Qt::DecorationRole, Qt::DisplayRole, ThumbnailStatusRole, IsNewRole,
+                        AccessDeniedRole, ChildCountRole});
       break;
     }
   }
@@ -109,7 +114,8 @@ void FileListModel::set_thumbnail(const QString& path, const QIcon& icon)
 {
   thumbnails_.insert(path, icon);
   thumbnail_status_.insert(path, ThumbnailStatus::Ready);
-  new_paths_.remove(path);
+  // Do not clear the "new" badge when a thumbnail arrives — Python keeps _new
+  // until the directory is reloaded / the item is replaced.
   emit_path_changed(path);
 }
 
@@ -155,6 +161,53 @@ bool FileListModel::is_new(const QString& path) const
   return new_paths_.contains(path);
 }
 
+void FileListModel::clear_child_counts()
+{
+  child_counts_.clear();
+  child_count_pending_.clear();
+}
+
+void FileListModel::request_child_count(const QString& path)
+{
+  if (path.isEmpty() || child_counts_.contains(path) || child_count_pending_.contains(path)) {
+    return;
+  }
+  child_count_pending_.insert(path);
+  child_counts_.insert(path, -1);
+  // Offload readdir to a worker thread; never run on the GUI thread.
+  const QString path_copy = path;
+  QThreadPool::globalInstance()->start([this, path_copy] {
+    qint64 n = 0;
+    std::error_code ec;
+    const auto opts = std::filesystem::directory_options::skip_permission_denied;
+    for (const auto& entry :
+         std::filesystem::directory_iterator(path_copy.toStdString(), opts, ec)) {
+      (void)entry;
+      if (ec) {
+        ec.clear();
+        continue;
+      }
+      ++n;
+    }
+    QMetaObject::invokeMethod(this, "on_child_count_ready", Qt::QueuedConnection,
+                              Q_ARG(QString, path_copy), Q_ARG(qint64, n));
+  });
+}
+
+void FileListModel::on_child_count_ready(const QString& path, qint64 count)
+{
+  child_count_pending_.remove(path);
+  child_counts_.insert(path, count);
+  emit_path_changed(path);
+}
+
+void FileListModel::set_child_count(const QString& path, qint64 count)
+{
+  child_count_pending_.remove(path);
+  child_counts_.insert(path, count);
+  emit_path_changed(path);
+}
+
 void FileListModel::notify_row_changed(int row)
 {
   if (row < 0 || row >= rowCount()) {
@@ -196,6 +249,7 @@ void FileListModel::clear_thumbnails()
   }
   thumbnails_.clear();
   thumbnail_status_.clear();
+  // Child counts are location-specific; cleared separately on navigation.
   if (rowCount() > 0) {
     emit dataChanged(index(0, 0), index(rowCount() - 1, 0),
                      {Qt::DecorationRole, ThumbnailStatusRole});
@@ -336,7 +390,19 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
       return caption;
     }
     case FileListColumn::Size:
-      return format_size(fi->size(), fi->is_directory());
+      if (fi->is_directory()) {
+        const QString path = QString::fromStdString(fi->path().string());
+        const auto it = child_counts_.constFind(path);
+        if (it == child_counts_.constEnd()) {
+          const_cast<FileListModel*>(this)->request_child_count(path);
+          return QStringLiteral("…");
+        }
+        if (it.value() < 0) {
+          return QStringLiteral("…");
+        }
+        return QStringLiteral("%1 items").arg(it.value());
+      }
+      return format_size(fi->size(), false);
     case FileListColumn::Modified:
       return format_mtime_from_path(fi->path());
     case FileListColumn::Type:
@@ -365,6 +431,20 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
 
   if (role == IsNewRole) {
     return is_new(QString::fromStdString(fi->path().string()));
+  }
+
+  if (role == ChildCountRole) {
+    if (!fi->is_directory()) {
+      return QVariant::fromValue(static_cast<qint64>(-1));
+    }
+    const QString path = QString::fromStdString(fi->path().string());
+    const auto it = child_counts_.constFind(path);
+    if (it == child_counts_.constEnd()) {
+      // Kick off async count on first query (paint/delegate).
+      const_cast<FileListModel*>(this)->request_child_count(path);
+      return QVariant::fromValue(static_cast<qint64>(-1));
+    }
+    return QVariant::fromValue(it.value());
   }
 
   if (role == TimeGapSecondsRole) {

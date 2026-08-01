@@ -170,10 +170,17 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
   }
 
   const QIcon icon = idx.data(Qt::DecorationRole).value<QIcon>();
-  const QString text = idx.data(Qt::DisplayRole).toString();
+  QString text = idx.data(Qt::DisplayRole).toString();
+  if (text.isEmpty()) {
+    if (const auto* fi = model_->file_at(row_)) {
+      text = QString::fromStdString(fi->basename());
+    }
+  }
 
   const int text_rows = model_->icon_text_rows();
-  const int caption_h = text_rows > 0 ? (6 + text_rows * 16) : 0;
+  const int caption_h =
+      text_rows > 0 ? (6 + text_rows * 16)
+                    : (model_->icon_detail_level() > 0 ? 22 : 0);
   int icon_side = std::min(tile_size_.width() - 8, tile_size_.height() - caption_h - top_pad - 4);
   icon_side = std::max(16, icon_side);
   QRect thumb(0, 0, icon_side, icon_side);
@@ -210,6 +217,14 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
     const int emblem = std::max(16, icon_side / 3);
     const QRect emblem_rect(thumb.left() + 2, thumb.bottom() - emblem - 2, emblem, emblem);
     folder_icon.paint(painter, emblem_rect, Qt::AlignCenter);
+  }
+
+  // Non-recursive file count for folders.
+  if (const auto* fi = model_->file_at(row_); fi != nullptr && fi->is_directory()) {
+    const qint64 n = idx.data(ChildCountRole).toLongLong();
+    if (n >= 0) {
+      draw_badge(painter, thumb, QStringLiteral("%1").arg(n), Qt::AlignRight | Qt::AlignBottom);
+    }
   }
 
   // Media badges from memory cache only

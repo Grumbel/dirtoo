@@ -300,9 +300,16 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
   }
 
   const QIcon icon = opt.icon;
-  const QString text = opt.text;
+  QString text = opt.text;
+  if (text.isEmpty() && model_ != nullptr) {
+    if (const auto* fi = model_->file_at(index.row())) {
+      text = QString::fromStdString(fi->basename());
+    }
+  }
   const int text_rows = model_ != nullptr ? model_->icon_text_rows() : 0;
-  const int caption_budget = text_rows > 0 ? (6 + text_rows * 18) : 0;
+  const int caption_budget =
+      text_rows > 0 ? (6 + text_rows * 18)
+                    : (model_ != nullptr && model_->icon_detail_level() > 0 ? 22 : 0);
   int icon_side = opt.decorationSize.width() > 0 ? opt.decorationSize.width()
                                                  : std::min(opt.rect.width() - 8, opt.rect.height() / 2);
   // Keep enough vertical space under the icon for the caption lines.
@@ -351,6 +358,14 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     const int emblem = std::max(16, thumb.width() / 3);
     const QRect emblem_rect(thumb.left() + 2, thumb.bottom() - emblem - 2, emblem, emblem);
     folder_icon.paint(painter, emblem_rect, Qt::AlignCenter);
+  }
+
+  // Non-recursive file count for folders (async ChildCountRole).
+  if (fi != nullptr && fi->is_directory()) {
+    const qint64 n = index.data(ChildCountRole).toLongLong();
+    if (n >= 0) {
+      draw_badge(painter, thumb, QStringLiteral("%1").arg(n), Qt::AlignRight | Qt::AlignBottom);
+    }
   }
 
   MediaKind kind = MediaKind::None;

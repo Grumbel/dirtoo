@@ -227,25 +227,27 @@ thumbnail work. `dirops` remains Qt-free.
       always be dependend up on or isn't available sometimes
 - [x] thumbnail generation isn't starting
       (extension-based MIME for Thumbnailer1; octet-stream was often ignored)
-- [ ] new files where marked with a little sticker in dirtoo-py, they aren't anymore
-      (code path exists via `IsNewRole` / `mark_new` on watcher soft reload — needs verification)
+- [x] new files where marked with a little sticker in dirtoo-py, they aren't anymore
+      (fixed: thumbnail ready no longer clears IsNewRole; marks persist until reload)
 - [x] no debug messages make it hard to lack what is going on, add a
       --verbose (regular events) and --debug (extreme debug messages)
       flag for more verbose messages
 - [x] if a file is drag&dropped and hovering over a folder, the folder
       should indicate that it is the drog target at the moment
       (Graphics view drop-target highlight)
-- [ ] folders should show how many files they contain (i.e. filecount, non-recursive)
+- [x] folders should show how many files they contain (i.e. filecount, non-recursive)
+      (async ChildCountRole; badge + Size column "N items")
 - [x] right click menu should follow normal conventions, currently looks very unorganized
       (grouped Open / Clipboard / Edit / Create / Thumbnails sections)
-- [ ] proper mime-type handling is missing, no "Open With...", no
+- [x] proper mime-type handling is missing, no "Open With...", no
       default mime-apps listed in context menu, see dirtoo-py/
-      ("Open with…" exists; default mime-app list still missing)
+      (Open with submenu from mimeapps.list + desktop files; Other Application…)
 - [x] the chunky button in the LocationBar in dirtoo-py/ looked
       better, "Location:" label didn't hurd either.
 - [x] filters should reset when changing directories, unless Pin filter is active
 - [ ] the Location syntax of dirtoo-py/ was better than the new JAR inspired one
-- [ ] filecount (recursive here) isn't displayed for archives
+- [x] filecount (recursive here) isn't displayed for archives
+      (archive directory child counts from index; disk archives via media meta)
 - [x] Right click seems to cancel the selection
 - [x] Properties dialog doesn't open up
       (was likely selection-clear on right-click; preserved multi-select + explicit Properties)
@@ -256,4 +258,5 @@ thumbnail work. `dirops` remains Qt-free.
 - [ ] the rendering of group-by looks like a hack, if there isn't an
       obviously batter way, leave that
 - [x] history isn't persistent between restarts
-- [ ] filenames still disappear and don't render properly
+- [x] filenames still disappear and don't render properly
+      (basename fallback when DisplayRole empty; caption height floor)
