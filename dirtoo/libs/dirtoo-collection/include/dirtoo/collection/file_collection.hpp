@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "dirtoo/collection/sorter.hpp"
 #include "dirtoo/filter/match_func.hpp"
 #include "dirtoo/fs/file_info.hpp"
 #include "dirtoo/fs/location.hpp"
@@ -29,9 +30,21 @@ public:
 
   [[nodiscard]] std::optional<std::size_t> index_of(const fs::Location& location) const;
 
+  /// Apply current sorter settings to the underlying item list.
+  void apply_sort();
+
+  [[nodiscard]] Sorter& sorter() noexcept { return sorter_; }
+  [[nodiscard]] const Sorter& sorter() const noexcept { return sorter_; }
+
+  void set_sort_key(SortKey key);
+  void set_sort_ascending(bool ascending);
+  void set_directories_first(bool v);
+
+  // Convenience wrappers (keep older call sites working).
   void sort_by_name(bool ascending = true);
   void sort_by_size(bool ascending = true);
   void sort_by_mtime(bool ascending = true);
+  void sort_by_extension(bool ascending = true);
 
   /// Set filter expression (dirtoo-filter DSL). Empty string clears the filter.
   /// On parse error, falls back to simple substring match on the whole string.
@@ -57,6 +70,7 @@ private:
   filter::MatchFuncPtr match_;
   bool filter_parse_ok_ = true;
   bool show_hidden_ = false;
+  Sorter sorter_;
 };
 
 } // namespace dirtoo::collection

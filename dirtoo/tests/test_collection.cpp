@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "dirtoo/collection/file_collection.hpp"
+#include "dirtoo/collection/sorter.hpp"
 #include "dirtoo/fs/file_info.hpp"
 #include "dirtoo/fs/location.hpp"
 
@@ -60,4 +61,29 @@ TEST_CASE("FileCollection glob filter", "[collection]")
   REQUIRE(col.visible_items().front().basename() == "readme.txt");
 
   fs::remove_all(dir);
+}
+
+
+TEST_CASE("numeric_sort_key natural order", "[collection][sort]")
+{
+  using dirtoo::collection::numeric_sort_key;
+  using dirtoo::collection::Sorter;
+  using dirtoo::collection::SortKey;
+
+  // file2 before file10
+  REQUIRE(Sorter{}.compare(
+      dirtoo::fs::FileInfo::synthetic(dirtoo::fs::Location::from_path("/t/file2"), "file2", false),
+      dirtoo::fs::FileInfo::synthetic(dirtoo::fs::Location::from_path("/t/file10"), "file10", false)) < 0);
+
+  dirtoo::collection::FileCollection col;
+  std::vector<dirtoo::fs::FileInfo> items;
+  items.push_back(dirtoo::fs::FileInfo::synthetic(dirtoo::fs::Location::from_path("/t/file10"), "file10", false));
+  items.push_back(dirtoo::fs::FileInfo::synthetic(dirtoo::fs::Location::from_path("/t/file2"), "file2", false));
+  items.push_back(dirtoo::fs::FileInfo::synthetic(dirtoo::fs::Location::from_path("/t/dir"), "dir", true));
+  col.set_items(std::move(items));
+  col.set_directories_first(true);
+  col.sort_by_name(true);
+  REQUIRE(col.visible_items().front().basename() == "dir");
+  REQUIRE(col.visible_items()[1].basename() == "file2");
+  REQUIRE(col.visible_items()[2].basename() == "file10");
 }

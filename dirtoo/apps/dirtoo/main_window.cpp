@@ -210,6 +210,76 @@ MainWindow::MainWindow(QWidget* parent)
       act->setShortcut(QKeySequence::ZoomOut);
     }
 
+    auto* sort_menu = menuBar()->addMenu(QStringLiteral("&Sort"));
+    auto* sort_group = new QActionGroup(this);
+    sort_group->setExclusive(true);
+    auto add_sort = [&](const QString& title, dirtoo::collection::SortKey key, bool checked = false) {
+      auto* act = sort_menu->addAction(title);
+      act->setCheckable(true);
+      act->setChecked(checked);
+      sort_group->addAction(act);
+      connect(act, &QAction::triggered, this, [this, key] {
+        sort_ascending_ = true;
+        collection_.set_sort_ascending(true);
+        collection_.set_sort_key(key);
+        // Map header-related keys
+        switch (key) {
+        case dirtoo::collection::SortKey::Name:
+          sort_column_ = SortColumn::Name;
+          break;
+        case dirtoo::collection::SortKey::Size:
+          sort_column_ = SortColumn::Size;
+          break;
+        case dirtoo::collection::SortKey::Modified:
+          sort_column_ = SortColumn::Modified;
+          break;
+        case dirtoo::collection::SortKey::Type:
+        case dirtoo::collection::SortKey::Extension:
+          sort_column_ = SortColumn::Type;
+          break;
+        default:
+          break;
+        }
+        refresh_list();
+        request_thumbnails_for_visible();
+      });
+      return act;
+    };
+    add_sort(QStringLiteral("By Name"), dirtoo::collection::SortKey::Name, true);
+    add_sort(QStringLiteral("By Size"), dirtoo::collection::SortKey::Size);
+    add_sort(QStringLiteral("By Extension"), dirtoo::collection::SortKey::Extension);
+    add_sort(QStringLiteral("By Date"), dirtoo::collection::SortKey::Modified);
+    add_sort(QStringLiteral("By Type"), dirtoo::collection::SortKey::Type);
+    sort_menu->addSeparator();
+    add_sort(QStringLiteral("By Width"), dirtoo::collection::SortKey::Width);
+    add_sort(QStringLiteral("By Height"), dirtoo::collection::SortKey::Height);
+    add_sort(QStringLiteral("By Resolution"), dirtoo::collection::SortKey::Resolution);
+    add_sort(QStringLiteral("By Aspect Ratio"), dirtoo::collection::SortKey::AspectRatio);
+    add_sort(QStringLiteral("By Duration"), dirtoo::collection::SortKey::Duration);
+    add_sort(QStringLiteral("By Framerate"), dirtoo::collection::SortKey::Framerate);
+    sort_menu->addSeparator();
+    add_sort(QStringLiteral("By Permissions"), dirtoo::collection::SortKey::Permissions);
+    add_sort(QStringLiteral("Random Shuffle"), dirtoo::collection::SortKey::Random);
+    sort_menu->addSeparator();
+    {
+      auto* act = sort_menu->addAction(QStringLiteral("Directories First"));
+      act->setCheckable(true);
+      act->setChecked(true);
+      connect(act, &QAction::toggled, this, [this](bool on) {
+        collection_.set_directories_first(on);
+        refresh_list();
+      });
+    }
+    {
+      auto* act = sort_menu->addAction(QStringLiteral("Reverse Order"));
+      act->setCheckable(true);
+      connect(act, &QAction::toggled, this, [this](bool on) {
+        sort_ascending_ = !on;
+        collection_.set_sort_ascending(!on);
+        refresh_list();
+      });
+    }
+
     auto* go_menu = menuBar()->addMenu(QStringLiteral("&Go"));
     go_menu->addAction(QStringLiteral("Back"), this, &MainWindow::on_go_back);
     go_menu->addAction(QStringLiteral("Forward"), this, &MainWindow::on_go_forward);
@@ -666,22 +736,9 @@ void MainWindow::on_directory_changed()
   } else {
     items = fs::list_directory(location_);
   }
+  // Keep current Sort key (Name/Size/media/…); only refresh order direction.
+  collection_.sorter().set_ascending(sort_ascending_);
   collection_.set_items(std::move(items));
-
-  switch (sort_column_) {
-  case SortColumn::Name:
-    collection_.sort_by_name(sort_ascending_);
-    break;
-  case SortColumn::Size:
-    collection_.sort_by_size(sort_ascending_);
-    break;
-  case SortColumn::Modified:
-    collection_.sort_by_mtime(sort_ascending_);
-    break;
-  case SortColumn::Type:
-    collection_.sort_by_name(sort_ascending_);
-    break;
-  }
 
   if (!filter_edit_->text().isEmpty()) {
     collection_.set_name_filter(filter_edit_->text().toStdString());
@@ -749,7 +806,26 @@ void MainWindow::on_header_clicked(int section)
     sort_column_ = col;
     sort_ascending_ = true;
   }
-  on_directory_changed();
+  using dirtoo::collection::SortKey;
+  SortKey key = SortKey::Name;
+  switch (col) {
+  case SortColumn::Name:
+    key = SortKey::Name;
+    break;
+  case SortColumn::Size:
+    key = SortKey::Size;
+    break;
+  case SortColumn::Modified:
+    key = SortKey::Modified;
+    break;
+  case SortColumn::Type:
+    key = SortKey::Type;
+    break;
+  }
+  collection_.sorter().set_ascending(sort_ascending_);
+  collection_.set_sort_key(key);
+  refresh_list();
+  request_thumbnails_for_visible();
 }
 
 void MainWindow::on_item_activated(const QModelIndex& index)

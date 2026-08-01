@@ -42,7 +42,7 @@ void FileCollection::clear()
 void FileCollection::set_items(std::vector<fs::FileInfo> items)
 {
   items_ = std::move(items);
-  rebuild_visible();
+  apply_sort();
 }
 
 void FileCollection::add(fs::FileInfo info)
@@ -74,29 +74,56 @@ std::optional<std::size_t> FileCollection::index_of(const fs::Location& location
   return std::nullopt;
 }
 
+void FileCollection::apply_sort()
+{
+  sorter_.sort(items_);
+  rebuild_visible();
+}
+
+void FileCollection::set_sort_key(SortKey key)
+{
+  sorter_.set_key(key);
+  apply_sort();
+}
+
+void FileCollection::set_sort_ascending(bool ascending)
+{
+  sorter_.set_ascending(ascending);
+  apply_sort();
+}
+
+void FileCollection::set_directories_first(bool v)
+{
+  sorter_.set_directories_first(v);
+  apply_sort();
+}
+
 void FileCollection::sort_by_name(bool ascending)
 {
-  std::ranges::sort(items_, [ascending](const fs::FileInfo& a, const fs::FileInfo& b) {
-    const int cmp = a.basename().compare(b.basename());
-    return ascending ? cmp < 0 : cmp > 0;
-  });
-  rebuild_visible();
+  sorter_.set_key(SortKey::Name);
+  sorter_.set_ascending(ascending);
+  apply_sort();
 }
 
 void FileCollection::sort_by_size(bool ascending)
 {
-  std::ranges::sort(items_, [ascending](const fs::FileInfo& a, const fs::FileInfo& b) {
-    return ascending ? a.size() < b.size() : a.size() > b.size();
-  });
-  rebuild_visible();
+  sorter_.set_key(SortKey::Size);
+  sorter_.set_ascending(ascending);
+  apply_sort();
 }
 
 void FileCollection::sort_by_mtime(bool ascending)
 {
-  std::ranges::sort(items_, [ascending](const fs::FileInfo& a, const fs::FileInfo& b) {
-    return ascending ? a.mtime() < b.mtime() : a.mtime() > b.mtime();
-  });
-  rebuild_visible();
+  sorter_.set_key(SortKey::Modified);
+  sorter_.set_ascending(ascending);
+  apply_sort();
+}
+
+void FileCollection::sort_by_extension(bool ascending)
+{
+  sorter_.set_key(SortKey::Extension);
+  sorter_.set_ascending(ascending);
+  apply_sort();
 }
 
 void FileCollection::set_name_filter(std::string expression)
@@ -114,7 +141,6 @@ void FileCollection::set_name_filter(std::string expression)
     match_ = *parsed;
     filter_parse_ok_ = true;
   } else {
-    // Fallback: treat entire string as substring.
     match_ = filter::make_name_substring(filter_expression_, false);
     filter_parse_ok_ = false;
   }

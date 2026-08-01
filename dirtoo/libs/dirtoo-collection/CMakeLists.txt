@@ -25,7 +25,7 @@ include(CMakePackageConfigHelpers)
 find_package(dirtoo-fs REQUIRED CONFIG)
 find_package(dirtoo-filter REQUIRED CONFIG)
 
-add_library(dirtoo-collection src/file_collection.cpp)
+add_library(dirtoo-collection src/file_collection.cpp src/sorter.cpp)
 add_library(dirtoo::collection ALIAS dirtoo-collection)
 add_library(dirtoo-collection::dirtoo-collection ALIAS dirtoo-collection)
 
