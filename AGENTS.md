@@ -170,3 +170,18 @@ When initializing the C++ side, prefer small, reviewable steps:
 5. Wire navigation, then filter/sort, then thumbnails, etc.
 
 See `TODO.md` for the full phased plan.
+
+
+## Current C++ layout (dirtoo/)
+
+| Path | Role |
+|------|------|
+| `libs/dirops` | Qt-free copy/move/rename/remove (future extractable project) |
+| `libs/dirtoo-fs` | Location (file + archive URLs), FileInfo, list_directory |
+| `libs/dirtoo-collection` | Filtering/sorting (name filter, show hidden) |
+| `libs/dirtoo-watcher` | QFileSystemWatcher wrapper |
+| `libs/dirtoo-thumbnail` | freedesktop Thumbnailer1 D-Bus client |
+| `libs/dirtoo-archive` | ArchiveManager — cache extract via bsdtar/tar/unzip/7z |
+| `apps/dirtoo` | Qt GUI (MainWindow, model, clipboard, transfers) |
+
+Python reference remains in `dirtoo-py/` for comparison only.

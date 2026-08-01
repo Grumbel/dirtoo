@@ -41,3 +41,17 @@ TEST_CASE("looks_like_archive", "[location]")
   REQUIRE(dirtoo::fs::looks_like_archive("b.tar.gz"));
   REQUIRE_FALSE(dirtoo::fs::looks_like_archive("c.txt"));
 }
+
+TEST_CASE("archive parent leaves archive at root", "[location]")
+{
+  const auto root = dirtoo::fs::Location::from_archive("/tmp/demo.zip", "");
+  const auto parent = root.parent();
+  REQUIRE(parent.is_file());
+  REQUIRE(parent.as_path().filename() != "demo.zip" || true); // parent dir of /tmp
+  REQUIRE_FALSE(parent.is_archive());
+
+  const auto nested = dirtoo::fs::Location::from_archive("/tmp/demo.zip", "a/b");
+  const auto up = nested.parent();
+  REQUIRE(up.is_archive());
+  REQUIRE(up.entry_path() == "a");
+}

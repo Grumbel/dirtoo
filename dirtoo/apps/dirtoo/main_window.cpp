@@ -382,6 +382,10 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
   if (location_.is_archive()) {
     watcher_.stop();
     pending_archive_location_ = location_;
+    if (archive_manager_.status(fs::Location::from_archive(location_.as_path(), {}))
+        != archive::ExtractStatus::Ready) {
+      QApplication::setOverrideCursor(Qt::WaitCursor);
+    }
     archive_manager_.open(location_);
   } else {
     watcher_.set_location(location_);
@@ -560,7 +564,9 @@ void MainWindow::on_item_activated(const QModelIndex& index)
     } else {
       open_location(fi->location());
     }
-  } else if (!location_.is_archive() && fs::looks_like_archive(fi->path())) {
+  } else if (fs::looks_like_archive(fi->path())) {
+    // Works for top-level and nested archives (path is the real file on disk
+    // or inside an already extracted cache tree).
     open_location(fs::Location::from_archive(fi->path(), {}));
   } else {
     open_default(fi->path());
@@ -1071,21 +1077,26 @@ void MainWindow::on_archive_ready(const fs::Location& archive_location,
                                   const std::filesystem::path& extracted_root)
 {
   (void)extracted_root;
+  QApplication::restoreOverrideCursor();
   // Refresh if we are still viewing this archive (or a path inside it).
   if (!location_.is_archive() || location_.as_path() != archive_location.as_path()) {
     return;
   }
-  status_label_->setText(QStringLiteral("Archive ready"));
+  status_label_->setText(QStringLiteral("Archive ready — %1")
+                             .arg(QString::fromStdString(archive_location.as_path().filename().string())));
   on_directory_changed();
 }
 
 void MainWindow::on_archive_failed(const fs::Location& archive_location, const QString& message)
 {
+  QApplication::restoreOverrideCursor();
   if (!location_.is_archive() || location_.as_path() != archive_location.as_path()) {
     return;
   }
   QMessageBox::warning(this, QStringLiteral("Archive"), message);
   status_label_->setText(message);
+  // Fall back to parent directory so the user is not stuck on a failed archive view.
+  open_location(fs::Location::from_path(archive_location.as_path().parent_path()), false);
 }
 
 } // namespace dirtoo::app

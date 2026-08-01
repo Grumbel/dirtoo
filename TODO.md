@@ -6,17 +6,17 @@ This document is the working plan for the C++ port. The Python tree in
 
 ## Progress (2026-08-01)
 
-MVP + archive browsing foundation:
+C++ port MVP + archive browsing:
 
-- Full GUI file manager workflows (views, DND, clipboard, transfers, menus, settings)
-- Archive locations (`archive:///path.zip!/entry`) via ArchiveManager
-- Cache extract using bsdtar/tar/unzip/7z; read-only browsing inside archives
-- Unit tests for location/archive URL, collection, clipboard, dirops
+- Modular libs: dirops, fs, collection, watcher, thumbnail, archive
+- GUI: dual views, zoom, DND, clipboard (GNOME), background transfers, menus, settings
+- Archives: URL form, cache extract, nested open, read-only, wait cursor + fallback on failure
+- Tests: location (incl. archive), dirops, collection, clipboard text
 
-Still optional:
-- Write support into archives
-- Nested archives
-- libarchive direct integration instead of external tools
+Optional later:
+- Write into archives / multi-payload Location stack
+- libarchive in-process listing without full extract
+- Packaging CI on Nix with Qt6
 
 Principles (see also `AGENTS.md`):
 
