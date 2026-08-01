@@ -17,6 +17,7 @@
 #include "history_menu.hpp"
 #include "message_area.hpp"
 #include "search_worker.hpp"
+#include "path_completion_worker.hpp"
 #include "leap_widget.hpp"
 #include "location_button_bar.hpp"
 #include "transfer_dialog.hpp"
@@ -101,6 +102,10 @@ private slots:
   void on_search_finished(quint64 matched, quint64 visited, const QString& error);
   void on_search_progress(quint64 visited, quint64 matched);
   void stop_search();
+  void on_location_text_edited(const QString& text);
+  void on_path_completion_timeout();
+  void on_path_completions_ready(quint64 request_id, const QString& longest,
+                                const QStringList& candidates);
   void on_rebuild_history_menu();
   void on_rebuild_bookmarks_menu();
   void on_toggle_bookmark();
@@ -190,6 +195,13 @@ private:
   std::vector<fs::FileInfo> search_results_;
   QThread* search_thread_ = nullptr;
   SearchWorker* search_worker_ = nullptr;
+  QThread* path_completion_thread_ = nullptr;
+  PathCompletionWorker* path_completion_worker_ = nullptr;
+  class QStringListModel* path_completion_model_ = nullptr;
+  class QCompleter* path_completer_ = nullptr;
+  class QTimer* path_completion_timer_ = nullptr;
+  QString path_completion_pending_;
+  quint64 path_completion_request_id_ = 0;
   QStackedWidget* view_stack_ = nullptr;
   QTreeView* tree_view_ = nullptr;
   QListView* icon_view_ = nullptr;

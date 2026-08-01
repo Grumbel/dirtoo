@@ -15,7 +15,7 @@
 | dirtoo-archive | TOC listing + optional full/member extract |
 
 ## GUI highlights
-Dual view, zoom, DND, clipboard (dirtoo + uri-list + GNOME), background
+Async location-bar path completion, dual view, zoom, DND, clipboard (dirtoo + uri-list + GNOME), background
 transfers, conflict dialogs, properties, open-with, menus, QSettings,
 read-only archive browse (list-first).
 

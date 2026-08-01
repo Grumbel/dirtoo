@@ -42,7 +42,7 @@ Core file manager MVP is **done**. Filter DSL, multi-window, dirops, archives
 | Detail + icons, zoom, leap widget | **done** |
 | Message area | **done** (transient banner) |
 | Preferences, transfers, properties, About | **done** |
-| Async path completion worker | **todo** (optional; QFileSystemModel OK for now) |
+| Async path completion worker | **done** |
 | Graphics View icon scene | deferred (may revisit for flexibility) |
 
 ### Ops
@@ -62,7 +62,7 @@ Core file manager MVP is **done**. Filter DSL, multi-window, dirops, archives
 3. [x] Middle-click Parent
 4. [x] Filter show/hide + pin
 5. [x] Preferences dialog
-6. [ ] Optional: async path completion worker
+6. [x] Optional: async path completion worker
 7. [x] Filter DSL + `()` grouping
 8. [x] `dt-filter` CLI
 9. [x] Message area

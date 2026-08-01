@@ -12,7 +12,6 @@
 #include "open_with.hpp"
 #include "preferences_dialog.hpp"
 #include "properties_dialog.hpp"
-#include "dirtoo/filter/parser.hpp"
 #include "dirtoo/fs/file_info.hpp"
 #include "dirops/ops.hpp"
 
@@ -24,8 +23,9 @@
 #include <QCloseEvent>
 #include <QShowEvent>
 #include <QCompleter>
+#include <QStringListModel>
+#include <QTimer>
 #include <QEvent>
-#include <QFileSystemModel>
 #include <QMouseEvent>
 #include <QDesktopServices>
 #include <QDir>
@@ -285,13 +285,29 @@ MainWindow::MainWindow(QWidget* parent)
     location_edit_ = new QLineEdit(loc_host);
     location_edit_->setPlaceholderText(QStringLiteral("Location"));
     {
-      auto* fs_model = new QFileSystemModel(location_edit_);
-      fs_model->setFilter(QDir::AllDirs | QDir::NoDotAndDotDot | QDir::Drives);
-      fs_model->setRootPath(QStringLiteral("/"));
-      auto* completer = new QCompleter(fs_model, location_edit_);
-      completer->setCaseSensitivity(Qt::CaseInsensitive);
-      completer->setCompletionMode(QCompleter::PopupCompletion);
-      location_edit_->setCompleter(completer);
+      path_completion_model_ = new QStringListModel(location_edit_);
+      path_completer_ = new QCompleter(path_completion_model_, location_edit_);
+      path_completer_->setCaseSensitivity(Qt::CaseInsensitive);
+      path_completer_->setCompletionMode(QCompleter::PopupCompletion);
+      path_completer_->setFilterMode(Qt::MatchStartsWith);
+      location_edit_->setCompleter(path_completer_);
+
+      path_completion_timer_ = new QTimer(this);
+      path_completion_timer_->setSingleShot(true);
+      path_completion_timer_->setInterval(60);
+      connect(path_completion_timer_, &QTimer::timeout, this,
+              &MainWindow::on_path_completion_timeout);
+
+      path_completion_thread_ = new QThread(this);
+      path_completion_worker_ = new PathCompletionWorker();
+      path_completion_worker_->moveToThread(path_completion_thread_);
+      connect(path_completion_thread_, &QThread::finished, path_completion_worker_,
+              &QObject::deleteLater);
+      connect(path_completion_worker_, &PathCompletionWorker::completions_ready, this,
+              &MainWindow::on_path_completions_ready);
+      path_completion_thread_->start();
+
+      connect(location_edit_, &QLineEdit::textEdited, this, &MainWindow::on_location_text_edited);
     }
 
     connect(location_edit_, &QLineEdit::returnPressed, this, &MainWindow::on_location_entered);
@@ -421,6 +437,13 @@ MainWindow::MainWindow(QWidget* parent)
 MainWindow::~MainWindow()
 {
   stop_search();
+  if (path_completion_worker_ != nullptr) {
+    path_completion_worker_->cancel();
+  }
+  if (path_completion_thread_ != nullptr) {
+    path_completion_thread_->quit();
+    path_completion_thread_->wait(2000);
+  }
   if (transfer_worker_ != nullptr) {
     QMetaObject::invokeMethod(transfer_worker_, &TransferWorker::cancel, Qt::QueuedConnection);
   }
@@ -1347,6 +1370,51 @@ void MainWindow::on_toggle_filter_visible()
     return;
   }
   show_filter_act_->toggle();
+}
+
+
+void MainWindow::on_location_text_edited(const QString& text)
+{
+  path_completion_pending_ = text;
+  if (path_completion_timer_ != nullptr) {
+    path_completion_timer_->start();
+  }
+}
+
+void MainWindow::on_path_completion_timeout()
+{
+  if (path_completion_worker_ == nullptr || path_completion_thread_ == nullptr) {
+    return;
+  }
+  const QString text = path_completion_pending_;
+  if (text.isEmpty()) {
+    if (path_completion_model_ != nullptr) {
+      path_completion_model_->setStringList({});
+    }
+    return;
+  }
+  const quint64 id = ++path_completion_request_id_;
+  QMetaObject::invokeMethod(
+      path_completion_worker_,
+      [worker = path_completion_worker_, id, text] { worker->complete(id, text); },
+      Qt::QueuedConnection);
+}
+
+void MainWindow::on_path_completions_ready(quint64 request_id, const QString& longest,
+                                           const QStringList& candidates)
+{
+  (void)longest;
+  if (request_id != path_completion_request_id_) {
+    return; // stale
+  }
+  if (path_completion_model_ == nullptr) {
+    return;
+  }
+  path_completion_model_->setStringList(candidates);
+  if (path_completer_ != nullptr && location_edit_ != nullptr && location_edit_->hasFocus()
+      && !candidates.isEmpty()) {
+    path_completer_->complete();
+  }
 }
 
 

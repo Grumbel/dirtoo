@@ -37,6 +37,8 @@ qt_add_executable(dirtoo-app
   bookmarks.hpp
   search_worker.cpp
   search_worker.hpp
+  path_completion_worker.cpp
+  path_completion_worker.hpp
   resources.qrc
 )
 
