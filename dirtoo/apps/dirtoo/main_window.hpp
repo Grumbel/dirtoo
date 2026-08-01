@@ -24,6 +24,7 @@
 #include "location_button_bar.hpp"
 #include "transfer_dialog.hpp"
 #include "transfer_worker.hpp"
+#include "graphics_file_view.hpp"
 
 #include <QMainWindow>
 #include <QSet>
