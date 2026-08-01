@@ -311,6 +311,12 @@ private:
     if (c == "framerate" || c == "fps" || c == "fr") {
       return make_framerate(arg);
     }
+    if (c == "fuzzy" || c == "fuz" || c == "fuzz" || c == "f") {
+      return make_fuzzy(arg, false);
+    }
+    if (cmd == "Fuzzy" || cmd == "Fuz" || cmd == "Fuzz" || cmd == "F") {
+      return make_fuzzy(arg, true);
+    }
     // Unknown command → never match (visible failure)
     return std::make_shared<AlwaysFalse>();
   }
@@ -341,6 +347,8 @@ Terms (juxtaposition = AND, OR joins alternatives):
   height:=1080    image/video height
   duration:>1m    media duration (seconds; 1h2m / 1:30)
   framerate:>30   video frame rate (fps)
+  fuzzy:speling   n-gram fuzzy basename (threshold 0.5); fuzzy:x@0.6
+  Fuzzy:Speling   case-sensitive fuzzy
   -term           exclude / NOT term   (also ^term or not term)
   ( a OR b )      grouping with parentheses
 

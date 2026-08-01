@@ -20,5 +20,9 @@ namespace dirtoo::filter {
 [[nodiscard]] MatchFuncPtr make_height(std::string argument);
 [[nodiscard]] MatchFuncPtr make_duration(std::string argument); // seconds; >1m, 1:30
 [[nodiscard]] MatchFuncPtr make_framerate(std::string argument);
+/// N-gram fuzzy basename match (threshold default 0.5, n=3). Arg: needle or needle@0.6
+[[nodiscard]] MatchFuncPtr make_fuzzy(std::string argument, bool case_sensitive = false);
+[[nodiscard]] double fuzzy_score(std::string_view needle, std::string_view haystack,
+                                int n = 3, bool case_sensitive = false);
 
 } // namespace dirtoo::filter

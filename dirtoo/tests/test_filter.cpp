@@ -5,6 +5,7 @@
 #include "dirtoo/filter/filter_item.hpp"
 #include "dirtoo/filter/search.hpp"
 #include "dirtoo/filter/media_probe.hpp"
+#include "dirtoo/filter/predicates.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -155,4 +156,26 @@ TEST_CASE("filter media commands parse", "[filter][media]")
   REQUIRE(m);
   // directories never match media predicates
   REQUIRE_FALSE((*m)->matches(dir("folder")));
+}
+
+
+TEST_CASE("fuzzy_score ngram", "[filter][fuzzy]")
+{
+  using dirtoo::filter::fuzzy_score;
+  REQUIRE(fuzzy_score("readme", "readme") > 0.99);
+  REQUIRE(fuzzy_score("speling", "spelling") > 0.5);
+  REQUIRE(fuzzy_score("zzzzz", "readme") < 0.5);
+  REQUIRE(fuzzy_score("ab", "cab") > 0.0);
+}
+
+TEST_CASE("filter fuzzy command", "[filter][fuzzy]")
+{
+  auto m = parse_filter("fuzzy:speling");
+  REQUIRE(m);
+  REQUIRE((*m)->matches(file("spelling.txt")));
+  REQUIRE_FALSE((*m)->matches(file("zzzzz.dat")));
+
+  m = parse_filter("fuzzy:readme@0.9");
+  REQUIRE(m);
+  REQUIRE((*m)->matches(file("readme")));
 }

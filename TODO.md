@@ -88,7 +88,7 @@ Core file manager MVP is **done**. Filter DSL, multi-window, dirops, archives
 
 - Parentheses grouping fixed vs Python.
 - Modular Qt-free library; `dt-filter '<expr>' [dir]` for CLI testing.
-- Still open vs Python: `contains:`, fuzzy. Media width/height/duration/framerate via ffprobe.
+- Still open vs Python: `contains:`. Media width/height/duration/framerate via ffprobe; fuzzy n-gram done.
 
 ---
 
