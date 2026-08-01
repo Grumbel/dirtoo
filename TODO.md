@@ -307,7 +307,7 @@ C++ dialogs are functional but thinner than Python. Tracked for a dedicated pass
 |--------|----------------|
 | **Conflict** | **improved** (source/dest info, apply-to-all, Replace/Rename/Skip) |
 | **Transfer** | **improved** (bytes, elapsed, dest, close-when-finished; no pause/log yet) |
-| **Properties** | Permissions, owner, media/metadata fields, multi-select detail |
+| **Properties** | **improved** (owner/group, times, perms read-only, MIME, media cache) |
 | **About** | Richer HTML / version / license text |
 | **Rename / Create** | Dedicated dialogs (vs `QInputDialog`) |
 | **Transfer error / request** | Missing dedicated dialogs |
