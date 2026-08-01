@@ -54,3 +54,10 @@ GPL-3.0-or-later (SPDX headers on all sources).
 | Ctrl+C / X / V | Copy / Cut / Paste |
 | Delete | Delete selection |
 | Ctrl++ / Ctrl+- | Zoom icons |
+
+
+## Archive browsing
+
+Double-click a supported archive (zip, tar, tar.gz, 7z, rar, …) to browse its
+contents. Extraction uses external tools (`bsdtar`, `tar`, `unzip`, or `7z`)
+into a cache under the user cache directory. Archive views are read-only.

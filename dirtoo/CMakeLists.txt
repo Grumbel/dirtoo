@@ -34,6 +34,7 @@ add_subdirectory(libs/dirtoo-fs)
 add_subdirectory(libs/dirtoo-collection)
 add_subdirectory(libs/dirtoo-watcher)
 add_subdirectory(libs/dirtoo-thumbnail)
+add_subdirectory(libs/dirtoo-archive)
 
 # ---------------------------------------------------------------------------
 # Application

@@ -278,6 +278,15 @@ MainWindow::MainWindow(QWidget* parent)
 
   connect(qApp->clipboard(), &QClipboard::dataChanged, this, &MainWindow::update_edit_actions);
 
+  connect(&archive_manager_, &archive::ArchiveManager::extraction_started, this,
+          [this](const fs::Location&) {
+            status_label_->setText(QStringLiteral("Extracting archive…"));
+          });
+  connect(&archive_manager_, &archive::ArchiveManager::extraction_ready, this,
+          &MainWindow::on_archive_ready);
+  connect(&archive_manager_, &archive::ArchiveManager::extraction_failed, this,
+          &MainWindow::on_archive_failed);
+
   update_history_actions();
   update_edit_actions();
   set_view_mode(ViewMode::Detail);
@@ -351,13 +360,17 @@ void MainWindow::on_view_icons()
 void MainWindow::open_location(const fs::Location& location, bool record_history)
 {
   location_ = location;
-  location_edit_->setText(QString::fromStdString(location_.as_path().string()));
+  if (location_.is_archive()) {
+    location_edit_->setText(QString::fromStdString(location_.as_url()));
+  } else {
+    location_edit_->setText(QString::fromStdString(location_.as_path().string()));
+  }
 
   if (record_history) {
     if (history_index_ >= 0 && history_index_ + 1 < static_cast<int>(history_.size())) {
       history_.erase(history_.begin() + history_index_ + 1, history_.end());
     }
-    if (history_.empty() || history_.back().as_path() != location.as_path()) {
+    if (history_.empty() || history_.back().as_url() != location.as_url()) {
       history_.push_back(location);
       history_index_ = static_cast<int>(history_.size()) - 1;
     } else {
@@ -366,8 +379,15 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
   }
   update_history_actions();
 
-  watcher_.set_location(location_);
-  watcher_.start();
+  if (location_.is_archive()) {
+    watcher_.stop();
+    pending_archive_location_ = location_;
+    archive_manager_.open(location_);
+  } else {
+    watcher_.set_location(location_);
+    watcher_.start();
+  }
+
   if (auto* view = current_view()) {
     view->setFocus(Qt::OtherFocusReason);
   }
@@ -431,7 +451,22 @@ void MainWindow::update_edit_actions()
 void MainWindow::on_directory_changed()
 {
   model_->clear_thumbnails();
-  auto items = fs::list_directory(location_);
+  std::vector<fs::FileInfo> items;
+  if (location_.is_archive()) {
+    const auto resolved = archive_manager_.resolved_directory(location_);
+    if (!resolved) {
+      status_label_->setText(QStringLiteral("Archive not ready"));
+      return;
+    }
+    items = fs::list_directory(fs::Location::from_path(*resolved));
+    // Re-tag locations as archive-relative for navigation.
+    for (auto& fi : items) {
+      // Keep real path for size/mtime; navigation uses basename joins.
+      (void)fi;
+    }
+  } else {
+    items = fs::list_directory(location_);
+  }
   collection_.set_items(std::move(items));
 
   switch (sort_column_) {
@@ -520,7 +555,13 @@ void MainWindow::on_item_activated(const QModelIndex& index)
     return;
   }
   if (fi->is_directory()) {
-    open_location(fi->location());
+    if (location_.is_archive()) {
+      open_location(location_.join(fi->basename()));
+    } else {
+      open_location(fi->location());
+    }
+  } else if (!location_.is_archive() && fs::looks_like_archive(fi->path())) {
+    open_location(fs::Location::from_archive(fi->path(), {}));
   } else {
     open_default(fi->path());
   }
@@ -624,6 +665,11 @@ void MainWindow::start_transfer(const TransferRequest& request)
 
 void MainWindow::on_paste()
 {
+  if (location_.is_archive()) {
+    status_label_->setText(QStringLiteral("Read-only: browsing inside an archive"));
+    return;
+  }
+
   if (transfer_busy_) {
     return;
   }
@@ -709,6 +755,11 @@ void MainWindow::on_transfer_finished(TransferSummary summary)
 
 void MainWindow::on_mkdir()
 {
+  if (location_.is_archive()) {
+    status_label_->setText(QStringLiteral("Read-only: browsing inside an archive"));
+    return;
+  }
+
   bool ok = false;
   const QString name = QInputDialog::getText(this, QStringLiteral("New Folder"),
                                              QStringLiteral("Folder name:"),
@@ -754,6 +805,11 @@ void MainWindow::on_mkdir()
 
 void MainWindow::on_rename_selected()
 {
+  if (location_.is_archive()) {
+    status_label_->setText(QStringLiteral("Read-only: browsing inside an archive"));
+    return;
+  }
+
   const auto selected = selected_fileinfos();
   if (selected.size() != 1) {
     status_label_->setText(QStringLiteral("Select exactly one item to rename"));
@@ -790,6 +846,11 @@ void MainWindow::on_rename_selected()
 
 void MainWindow::on_delete_selected()
 {
+  if (location_.is_archive()) {
+    status_label_->setText(QStringLiteral("Read-only: browsing inside an archive"));
+    return;
+  }
+
   const auto selected = selected_fileinfos();
   if (selected.empty()) {
     return;
@@ -1003,6 +1064,28 @@ void MainWindow::on_toggle_hidden(bool checked)
 void MainWindow::on_about()
 {
   show_about_dialog(this);
+}
+
+
+void MainWindow::on_archive_ready(const fs::Location& archive_location,
+                                  const std::filesystem::path& extracted_root)
+{
+  (void)extracted_root;
+  // Refresh if we are still viewing this archive (or a path inside it).
+  if (!location_.is_archive() || location_.as_path() != archive_location.as_path()) {
+    return;
+  }
+  status_label_->setText(QStringLiteral("Archive ready"));
+  on_directory_changed();
+}
+
+void MainWindow::on_archive_failed(const fs::Location& archive_location, const QString& message)
+{
+  if (!location_.is_archive() || location_.as_path() != archive_location.as_path()) {
+    return;
+  }
+  QMessageBox::warning(this, QStringLiteral("Archive"), message);
+  status_label_->setText(message);
 }
 
 } // namespace dirtoo::app

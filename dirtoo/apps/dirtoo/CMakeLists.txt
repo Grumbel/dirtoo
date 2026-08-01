@@ -35,6 +35,7 @@ target_link_libraries(dirtoo-app
     dirtoo::collection
     dirtoo::watcher
     dirtoo::thumbnail
+    dirtoo::archive
     dirtoo::dirops
     Qt6::Core
     Qt6::Gui

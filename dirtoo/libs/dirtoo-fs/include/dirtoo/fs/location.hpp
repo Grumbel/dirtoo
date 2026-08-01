@@ -10,18 +10,33 @@
 
 namespace dirtoo::fs {
 
-/// URI-like location. Phase 1 supports the file:// protocol only.
-/// Archive payload stacks (file.rar//rar:...) are deferred.
+/// URI-like location.
+///
+/// Forms:
+/// - file:  path is a normal filesystem path
+/// - archive: path is the archive file; entry_ is the path inside the archive
+///
+/// URL encoding for archives: archive:///abs/path/to.zip!/inner/dir
 class Location {
 public:
   Location() = default;
 
   [[nodiscard]] static Location from_path(const std::filesystem::path& path);
+  [[nodiscard]] static Location from_archive(const std::filesystem::path& archive_file,
+                                             const std::filesystem::path& entry = {});
   [[nodiscard]] static Location from_url(std::string_view url);
   [[nodiscard]] static Location from_human(std::string_view text);
 
   [[nodiscard]] std::string as_url() const;
+  /// For file locations: the filesystem path.
+  /// For archive locations: the archive file path (not the extracted tree).
   [[nodiscard]] std::filesystem::path as_path() const;
+
+  [[nodiscard]] bool is_archive() const noexcept { return protocol_ == "archive"; }
+  [[nodiscard]] bool is_file() const noexcept { return protocol_ == "file"; }
+
+  /// Path inside the archive (empty = archive root). Only meaningful if is_archive().
+  [[nodiscard]] std::filesystem::path entry_path() const { return entry_; }
 
   [[nodiscard]] Location parent() const;
   [[nodiscard]] Location join(std::string_view child) const;
@@ -35,11 +50,15 @@ public:
   [[nodiscard]] auto operator<=>(const Location&) const = default;
 
 private:
-  explicit Location(std::filesystem::path path);
+  Location(std::string protocol, std::filesystem::path path, std::filesystem::path entry);
 
   std::string protocol_{"file"};
   std::filesystem::path path_;
+  std::filesystem::path entry_;
 };
+
+/// Heuristic: common archive extensions.
+[[nodiscard]] bool looks_like_archive(const std::filesystem::path& path);
 
 } // namespace dirtoo::fs
 

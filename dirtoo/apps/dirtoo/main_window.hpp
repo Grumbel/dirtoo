@@ -4,6 +4,7 @@
 #pragma once
 
 #include "clipboard.hpp"
+#include "dirtoo/archive/archive_manager.hpp"
 #include "dirtoo/collection/file_collection.hpp"
 #include "dirtoo/fs/location.hpp"
 #include "dirtoo/thumbnail/thumbnailer.hpp"
@@ -66,6 +67,9 @@ private slots:
   void on_open_terminal();
   void on_toggle_hidden(bool checked);
   void on_about();
+  void on_archive_ready(const dirtoo::fs::Location& archive_location,
+                        const std::filesystem::path& extracted_root);
+  void on_archive_failed(const dirtoo::fs::Location& archive_location, const QString& message);
   void on_focus_location();
   void on_copy();
   void on_cut();
@@ -104,6 +108,8 @@ private:
   collection::FileCollection collection_;
   watcher::DirectoryWatcher watcher_;
   thumbnail::Thumbnailer thumbnailer_;
+  archive::ArchiveManager archive_manager_;
+  fs::Location pending_archive_location_;
   FileListModel* model_ = nullptr;
 
   QThread transfer_thread_;
