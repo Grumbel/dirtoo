@@ -3,6 +3,8 @@
 
 #include "main_window.hpp"
 
+#include "app_settings.hpp"
+
 #include "dirtoo/fs/location.hpp"
 
 #include <QApplication>
@@ -22,6 +24,11 @@ int main(int argc, char* argv[])
   std::filesystem::path start = QDir::homePath().toStdString();
   if (argc > 1) {
     start = argv[1];
+  } else {
+    const auto settings = dirtoo::app::load_settings();
+    if (!settings.last_location.isEmpty()) {
+      start = settings.last_location.toStdString();
+    }
   }
   window.open_location(dirtoo::fs::Location::from_path(start));
   window.show();

@@ -9,6 +9,7 @@
 #include <QAbstractTableModel>
 #include <QHash>
 #include <QIcon>
+#include <QUrl>
 
 namespace dirtoo::app {
 
@@ -40,8 +41,20 @@ public:
                                     int role = Qt::DisplayRole) const override;
   [[nodiscard]] Qt::ItemFlags flags(const QModelIndex& index) const override;
 
+  [[nodiscard]] Qt::DropActions supportedDropActions() const override;
+  [[nodiscard]] QStringList mimeTypes() const override;
+  [[nodiscard]] QMimeData* mimeData(const QModelIndexList& indexes) const override;
+  [[nodiscard]] bool canDropMimeData(const QMimeData* data, Qt::DropAction action, int row,
+                                     int column, const QModelIndex& parent) const override;
+  bool dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column,
+                    const QModelIndex& parent) override;
+
   [[nodiscard]] const fs::FileInfo* file_at(int row) const;
   [[nodiscard]] std::vector<fs::FileInfo> files_at(const QModelIndexList& indexes) const;
+
+signals:
+  /// Emitted when external URLs are dropped onto the view. Handled by MainWindow.
+  void urls_dropped(const QList<QUrl>& urls, Qt::DropAction action);
 
 private:
   [[nodiscard]] QIcon icon_for(const fs::FileInfo& fi) const;

@@ -5,7 +5,10 @@
 
 #include <QDateTime>
 #include <QFileIconProvider>
+#include <QFileInfo>
 #include <QLocale>
+#include <QMimeData>
+#include <QUrl>
 
 #include <algorithm>
 #include <sys/stat.h>
@@ -188,9 +191,70 @@ QVariant FileListModel::headerData(int section, Qt::Orientation orientation, int
 Qt::ItemFlags FileListModel::flags(const QModelIndex& index) const
 {
   if (!index.isValid()) {
-    return Qt::NoItemFlags;
+    return Qt::ItemIsDropEnabled;
   }
-  return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+  return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled;
+}
+
+Qt::DropActions FileListModel::supportedDropActions() const
+{
+  return Qt::CopyAction | Qt::MoveAction;
+}
+
+QStringList FileListModel::mimeTypes() const
+{
+  return {QStringLiteral("text/uri-list")};
+}
+
+QMimeData* FileListModel::mimeData(const QModelIndexList& indexes) const
+{
+  QList<QUrl> urls;
+  std::vector<int> rows;
+  for (const QModelIndex& idx : indexes) {
+    rows.push_back(idx.row());
+  }
+  std::sort(rows.begin(), rows.end());
+  rows.erase(std::unique(rows.begin(), rows.end()), rows.end());
+  for (int row : rows) {
+    if (const fs::FileInfo* fi = file_at(row)) {
+      urls.push_back(QUrl::fromLocalFile(QString::fromStdString(fi->path().string())));
+    }
+  }
+  if (urls.isEmpty()) {
+    return nullptr;
+  }
+  auto* mime = new QMimeData;
+  mime->setUrls(urls);
+  return mime;
+}
+
+bool FileListModel::canDropMimeData(const QMimeData* data, Qt::DropAction action, int row,
+                                    int column, const QModelIndex& parent) const
+{
+  (void)row;
+  (void)column;
+  (void)parent;
+  if (data == nullptr) {
+    return false;
+  }
+  if (!(action == Qt::CopyAction || action == Qt::MoveAction)) {
+    return false;
+  }
+  return data->hasUrls();
+}
+
+bool FileListModel::dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column,
+                                 const QModelIndex& parent)
+{
+  (void)row;
+  (void)column;
+  (void)parent;
+  if (!canDropMimeData(data, action, -1, -1, {})) {
+    return false;
+  }
+  emit urls_dropped(data->urls(), action);
+  // Model does not mutate itself; MainWindow performs the FS operation.
+  return true;
 }
 
 const fs::FileInfo* FileListModel::file_at(int row) const

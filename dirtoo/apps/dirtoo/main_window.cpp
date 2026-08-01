@@ -4,7 +4,9 @@
 #include "main_window.hpp"
 
 #include "clipboard.hpp"
+#include "app_settings.hpp"
 #include "conflict_dialog.hpp"
+#include "properties_dialog.hpp"
 #include "dirtoo/fs/file_info.hpp"
 #include "dirops/ops.hpp"
 
@@ -13,13 +15,16 @@
 #include <QActionGroup>
 #include <QApplication>
 #include <QClipboard>
+#include <QCloseEvent>
 #include <QDesktopServices>
 #include <QDir>
 #include <QHeaderView>
 #include <QIcon>
+#include <QItemSelectionModel>
 #include <QInputDialog>
 #include <QKeySequence>
 #include <QLabel>
+#include <QLocale>
 #include <QLineEdit>
 #include <QListView>
 #include <QMenu>
@@ -129,6 +134,7 @@ MainWindow::MainWindow(QWidget* parent)
 
   model_ = new FileListModel(this);
   model_->set_collection(&collection_);
+  connect(model_, &FileListModel::urls_dropped, this, &MainWindow::on_urls_dropped);
 
   view_stack_ = new QStackedWidget(central);
 
@@ -140,6 +146,11 @@ MainWindow::MainWindow(QWidget* parent)
   tree_view_->setSelectionBehavior(QAbstractItemView::SelectRows);
   tree_view_->setSortingEnabled(false);
   tree_view_->setContextMenuPolicy(Qt::CustomContextMenu);
+  tree_view_->setDragEnabled(true);
+  tree_view_->setAcceptDrops(true);
+  tree_view_->setDropIndicatorShown(true);
+  tree_view_->setDragDropMode(QAbstractItemView::DragDrop);
+  tree_view_->setDefaultDropAction(Qt::CopyAction);
   tree_view_->setIconSize(QSize(24, 24));
   tree_view_->header()->setStretchLastSection(true);
   tree_view_->setColumnWidth(0, 320);
@@ -159,10 +170,20 @@ MainWindow::MainWindow(QWidget* parent)
   icon_view_->setWordWrap(true);
   icon_view_->setSelectionMode(QAbstractItemView::ExtendedSelection);
   icon_view_->setContextMenuPolicy(Qt::CustomContextMenu);
+  icon_view_->setDragEnabled(true);
+  icon_view_->setAcceptDrops(true);
+  icon_view_->setDropIndicatorShown(true);
+  icon_view_->setDragDropMode(QAbstractItemView::DragDrop);
+  icon_view_->setDefaultDropAction(Qt::CopyAction);
   connect(icon_view_, &QListView::activated, this, &MainWindow::on_item_activated);
   connect(icon_view_, &QWidget::customContextMenuRequested, this, &MainWindow::on_context_menu);
   view_stack_->addWidget(icon_view_);
   apply_icon_zoom();
+
+    connect(tree_view_->selectionModel(), &QItemSelectionModel::selectionChanged, this,
+          &MainWindow::on_selection_changed);
+  connect(icon_view_->selectionModel(), &QItemSelectionModel::selectionChanged, this,
+          &MainWindow::on_selection_changed);
 
   layout->addWidget(view_stack_, 1);
 
@@ -186,6 +207,7 @@ MainWindow::MainWindow(QWidget* parent)
   update_history_actions();
   update_edit_actions();
   set_view_mode(ViewMode::Detail);
+  restore_settings();
 }
 
 MainWindow::~MainWindow()
@@ -456,6 +478,7 @@ void MainWindow::on_context_menu(const QPoint& pos)
   menu.addSeparator();
   menu.addAction(QStringLiteral("Rename…"), this, &MainWindow::on_rename_selected);
   menu.addAction(QStringLiteral("Delete…"), this, &MainWindow::on_delete_selected);
+  menu.addAction(QStringLiteral("Properties…"), this, &MainWindow::on_properties);
   menu.addSeparator();
   menu.addAction(QStringLiteral("New Folder…"), this, &MainWindow::on_mkdir);
   menu.exec(view->viewport()->mapToGlobal(pos));
@@ -715,9 +738,133 @@ void MainWindow::on_delete_selected()
 void MainWindow::refresh_list()
 {
   model_->refresh();
-  status_label_->setText(QStringLiteral("%1 items in %2")
-                             .arg(model_->rowCount())
+  update_status_selection();
+}
+
+
+void MainWindow::on_properties()
+{
+  const auto selected = selected_fileinfos();
+  if (selected.empty()) {
+    status_label_->setText(QStringLiteral("Nothing selected"));
+    return;
+  }
+  show_properties_dialog(this, selected);
+}
+
+void MainWindow::on_selection_changed()
+{
+  update_status_selection();
+}
+
+void MainWindow::update_status_selection()
+{
+  const auto selected = selected_fileinfos();
+  const int total = model_->rowCount();
+  if (selected.empty()) {
+    status_label_->setText(QStringLiteral("%1 items in %2")
+                               .arg(total)
+                               .arg(QString::fromStdString(location_.as_path().string())));
+    return;
+  }
+
+  std::uint64_t bytes = 0;
+  int dirs = 0;
+  for (const auto& fi : selected) {
+    if (fi.is_directory()) {
+      ++dirs;
+    } else {
+      bytes += fi.size();
+    }
+  }
+  QString extra;
+  if (selected.size() == 1) {
+    extra = QString::fromStdString(selected.front().basename());
+  } else {
+    extra = QStringLiteral("%1 selected").arg(selected.size());
+    if (bytes > 0) {
+      extra += QStringLiteral(" (%1)").arg(QLocale::system().formattedDataSize(static_cast<qint64>(bytes)));
+    }
+    if (dirs > 0) {
+      extra += QStringLiteral(", %1 folders").arg(dirs);
+    }
+  }
+  status_label_->setText(QStringLiteral("%1 — %2 items in %3")
+                             .arg(extra)
+                             .arg(total)
                              .arg(QString::fromStdString(location_.as_path().string())));
+}
+
+void MainWindow::on_urls_dropped(const QList<QUrl>& urls, Qt::DropAction action)
+{
+  if (transfer_busy_ || urls.isEmpty()) {
+    return;
+  }
+
+  TransferRequest req;
+  req.mode = (action == Qt::MoveAction) ? ClipboardMode::Cut : ClipboardMode::Copy;
+  req.destination_directory = location_.as_path();
+  for (const QUrl& url : urls) {
+    if (url.isLocalFile()) {
+      req.sources.emplace_back(url.toLocalFile().toStdString());
+    }
+  }
+  if (req.sources.empty()) {
+    return;
+  }
+
+  // Avoid copying a directory into itself.
+  std::vector<std::filesystem::path> filtered;
+  for (const auto& src : req.sources) {
+    const auto dest = req.destination_directory / src.filename();
+    if (src == req.destination_directory || src == dest) {
+      continue;
+    }
+    filtered.push_back(src);
+  }
+  req.sources = std::move(filtered);
+  if (req.sources.empty()) {
+    status_label_->setText(QStringLiteral("Drop ignored (invalid targets)"));
+    return;
+  }
+  start_transfer(req);
+}
+
+void MainWindow::restore_settings()
+{
+  const AppSettings s = load_settings();
+  if (s.zoom_index >= 0 && s.zoom_index < static_cast<int>(std::size(kZoomLevels))) {
+    zoom_index_ = s.zoom_index;
+    apply_icon_zoom();
+  }
+  if (s.view_mode == QLatin1String("icons")) {
+    set_view_mode(ViewMode::Icons);
+  } else {
+    set_view_mode(ViewMode::Detail);
+  }
+  if (!s.window_geometry.isEmpty()) {
+    restoreGeometry(s.window_geometry);
+  }
+  if (!s.window_state.isEmpty()) {
+    restoreState(s.window_state);
+  }
+}
+
+void MainWindow::persist_settings() const
+{
+  AppSettings s;
+  s.view_mode = (view_mode_ == ViewMode::Icons) ? QStringLiteral("icons") : QStringLiteral("detail");
+  s.zoom_index = zoom_index_;
+  s.window_geometry = saveGeometry();
+  s.window_state = saveState();
+  s.last_location = QString::fromStdString(location_.as_path().string());
+  save_settings(s);
+}
+
+void MainWindow::closeEvent(QCloseEvent* event)
+{
+  persist_settings();
+  QMainWindow::closeEvent(event);
 }
 
 } // namespace dirtoo::app
