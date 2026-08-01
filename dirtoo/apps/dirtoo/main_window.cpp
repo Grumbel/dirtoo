@@ -1769,8 +1769,8 @@ void MainWindow::on_save_file_list()
   const int rows = model_->rowCount();
   for (int r = 0; r < rows; ++r) {
     if (const auto* fi = model_->file_at(r)) {
-      out << QString::fromStdString(fi->path().string()) << '
-';
+      out << QString::fromStdString(fi->path().string()) << QLatin1Char('\n');
+');
     }
   }
   if (status_label_ != nullptr) {
@@ -1806,6 +1806,19 @@ void MainWindow::restore_settings()
   if (filter_edit_ != nullptr) {
     filter_edit_->setVisible(s.show_filter || s.filter_pinned);
   }
+  collection_.sorter().set_directories_first(s.directories_first);
+  {
+    collection::GroupMode gm = collection::GroupMode::None;
+    const QString g = s.group_mode.toLower();
+    if (g == QLatin1String("day")) {
+      gm = collection::GroupMode::Day;
+    } else if (g == QLatin1String("directory")) {
+      gm = collection::GroupMode::Directory;
+    } else if (g == QLatin1String("duration")) {
+      gm = collection::GroupMode::Duration;
+    }
+    collection_.set_group_mode(gm);
+  }
   if (s.view_mode == QLatin1String("icons")) {
     set_view_mode(ViewMode::Icons);
   } else if (s.view_mode == QLatin1String("small") || s.view_mode == QLatin1String("smallicons")) {
@@ -1839,6 +1852,21 @@ void MainWindow::persist_settings() const
   s.show_hidden = collection_.show_hidden();
   s.show_filter = show_filter_act_ != nullptr && show_filter_act_->isChecked();
   s.filter_pinned = filter_pinned_;
+  s.directories_first = collection_.sorter().directories_first();
+  switch (collection_.group_mode()) {
+  case collection::GroupMode::Day:
+    s.group_mode = QStringLiteral("day");
+    break;
+  case collection::GroupMode::Directory:
+    s.group_mode = QStringLiteral("directory");
+    break;
+  case collection::GroupMode::Duration:
+    s.group_mode = QStringLiteral("duration");
+    break;
+  default:
+    s.group_mode = QStringLiteral("none");
+    break;
+  }
   s.window_geometry = saveGeometry();
   s.window_state = saveState();
   s.last_location = QString::fromStdString(location_.as_path().string());
