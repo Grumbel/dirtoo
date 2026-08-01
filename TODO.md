@@ -22,7 +22,7 @@ Core file manager MVP is **done**. Filter DSL, multi-window, dirops, archives
 | Middle-click History menu entries → new window | **done** (`HistoryMenu`) |
 | Location bar ↔ line edit, path completer | **done** |
 | Location history menu | **done** |
-| Bookmarks protocol / menu | **todo** (low priority) |
+| Bookmarks menu (file store, middle-click) | **done** |
 
 ### Filter & search
 
@@ -66,7 +66,7 @@ Core file manager MVP is **done**. Filter DSL, multi-window, dirops, archives
 7. [x] Filter DSL + `()` grouping
 8. [x] `dt-filter` CLI
 9. [x] Message area
-10. [ ] Optional: bookmarks menu
+10. [x] Bookmarks menu
 11. [ ] Optional: `contains:` content match (careful with large files)
 12. [ ] Optional: recursive directory search UI/CLI
 

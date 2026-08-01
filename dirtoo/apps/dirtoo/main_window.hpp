@@ -12,6 +12,7 @@
 #include "dirtoo/watcher/directory_watcher.hpp"
 #include "dirops/ops.hpp"
 #include "app_settings.hpp"
+#include "bookmarks.hpp"
 #include "file_list_model.hpp"
 #include "history_menu.hpp"
 #include "message_area.hpp"
@@ -94,6 +95,8 @@ private slots:
   void on_show_leap();
   void on_toggle_filter_visible();
   void on_rebuild_history_menu();
+  void on_rebuild_bookmarks_menu();
+  void on_toggle_bookmark();
   void on_parent_new_window();
   bool eventFilter(QObject* obj, QEvent* event) override;
   void on_location_edit_requested();
@@ -168,6 +171,8 @@ private:
   QAction* pin_filter_act_ = nullptr;
   bool filter_pinned_ = false;
   HistoryMenu* history_menu_ = nullptr;
+  HistoryMenu* bookmarks_menu_ = nullptr;
+  Bookmarks bookmarks_{Bookmarks::default_path()};
   std::vector<fs::Location> location_history_unique_;
   QWidget* location_stack_host_ = nullptr;
   QLineEdit* filter_edit_ = nullptr;

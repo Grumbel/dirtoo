@@ -33,6 +33,8 @@ qt_add_executable(dirtoo-app
   history_menu.hpp
   message_area.cpp
   message_area.hpp
+  bookmarks.cpp
+  bookmarks.hpp
   resources.qrc
 )
 

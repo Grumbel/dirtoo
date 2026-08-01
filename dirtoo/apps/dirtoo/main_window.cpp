@@ -210,6 +210,10 @@ MainWindow::MainWindow(QWidget* parent)
     go_menu->addAction(QStringLiteral("Parent in New Window"), this, &MainWindow::on_parent_new_window);
     go_menu->addAction(QStringLiteral("Home"), this, &MainWindow::on_go_home);
 
+    bookmarks_menu_ = new HistoryMenu(QStringLiteral("&Bookmarks"), this);
+    menuBar()->addMenu(bookmarks_menu_);
+    connect(bookmarks_menu_, &QMenu::aboutToShow, this, &MainWindow::on_rebuild_bookmarks_menu);
+
     history_menu_ = new HistoryMenu(QStringLiteral("H&istory"), this);
     menuBar()->addMenu(history_menu_);
     connect(history_menu_, &QMenu::aboutToShow, this, &MainWindow::on_rebuild_history_menu);
@@ -246,6 +250,7 @@ MainWindow::MainWindow(QWidget* parent)
     add_shortcut(QKeySequence(Qt::ALT | Qt::Key_Right), &MainWindow::on_go_forward);
     add_shortcut(QKeySequence(QStringLiteral("Ctrl+L")), &MainWindow::on_focus_location);
     add_shortcut(QKeySequence(Qt::Key_Escape), &MainWindow::on_clear_filter);
+    add_shortcut(QKeySequence(QStringLiteral("Ctrl+D")), &MainWindow::on_toggle_bookmark);
     // Home: Alt+Home (Ctrl+Shift+H toggles hidden files)
 
     add_shortcut(QKeySequence(Qt::Key_F3), &MainWindow::on_properties);
@@ -1605,6 +1610,67 @@ void MainWindow::apply_settings(const AppSettings& s)
     filter_edit_->setVisible(s.show_filter || s.filter_pinned);
   }
   refresh_list();
+}
+
+
+void MainWindow::on_toggle_bookmark()
+{
+  if (location_.empty()) {
+    return;
+  }
+  const bool now = bookmarks_.toggle(location_);
+  if (message_area_ != nullptr) {
+    if (now) {
+      message_area_->show_info(QStringLiteral("Bookmark added"));
+    } else {
+      message_area_->show_info(QStringLiteral("Bookmark removed"));
+    }
+  }
+  if (status_label_ != nullptr) {
+    status_label_->setText(now ? QStringLiteral("Bookmarked") : QStringLiteral("Bookmark removed"));
+  }
+}
+
+void MainWindow::on_rebuild_bookmarks_menu()
+{
+  if (bookmarks_menu_ == nullptr) {
+    return;
+  }
+  bookmarks_menu_->clear();
+
+  if (location_.empty()) {
+    auto* act = bookmarks_menu_->addAction(QStringLiteral("No location to bookmark"));
+    act->setEnabled(false);
+  } else if (bookmarks_.contains(location_)) {
+    bookmarks_menu_->addAction(QStringLiteral("Remove Bookmark for This Location"), this,
+                               &MainWindow::on_toggle_bookmark);
+  } else {
+    bookmarks_menu_->addAction(QStringLiteral("Bookmark This Location"), this,
+                               &MainWindow::on_toggle_bookmark);
+  }
+  bookmarks_menu_->addSeparator();
+
+  const auto entries = bookmarks_.entries();
+  if (entries.empty()) {
+    auto* act = bookmarks_menu_->addAction(QStringLiteral("(no bookmarks yet)"));
+    act->setEnabled(false);
+    return;
+  }
+
+  for (const auto& loc : entries) {
+    QString label = loc.is_archive() ? QString::fromStdString(loc.as_url())
+                                     : QString::fromStdString(loc.as_path().string());
+    auto* act = bookmarks_menu_->addAction(label);
+    connect(act, &QAction::triggered, this, [this, loc] {
+      if (bookmarks_menu_ != nullptr && bookmarks_menu_->middle_pressed()) {
+        open_new_window(loc);
+      } else if (QApplication::keyboardModifiers() & Qt::ShiftModifier) {
+        open_new_window(loc);
+      } else {
+        open_location(loc);
+      }
+    });
+  }
 }
 
 } // namespace dirtoo::app
