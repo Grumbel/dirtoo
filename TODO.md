@@ -4,6 +4,21 @@ This document is the working plan for the C++ port. The Python tree in
 `dirtoo-py/` remains the behavioral reference. The active codebase is
 `dirtoo/`.
 
+## Progress (2026-08-01)
+
+Completed:
+- Phase 0 scaffold (CMake, flake, libs, app, tools, tests)
+- Phase 1 basics: `Location`, `FileInfo`, `list_directory`
+- Phase 2 (core): `dirops` copy/move/rename/remove/mkdir/swap with conflict policies + unit tests + CLI tools
+- Phase 3 stub: `QFileSystemWatcher`-based directory watcher
+- Phase 4 basics: `FileCollection` sort + name filter
+- Phase 5 partial: MainWindow with history, filter, context menu, open/rename/mkdir/delete via dirops
+
+Next:
+- Finish Phase 5: detail/icon view model, clipboard copy-cut-paste, conflict dialog UI
+- Phase 6 thumbnails
+- Stronger same-device detection tests; progress UI for large copies
+
 Principles (see also `AGENTS.md`):
 
 - Functional modular file manager; keep general UI and capabilities, not

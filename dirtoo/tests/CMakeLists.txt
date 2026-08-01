@@ -11,7 +11,7 @@ FetchContent_MakeAvailable(Catch2)
 
 add_executable(dirtoo-tests
   test_location.cpp
-  test_dirops_rename.cpp
+  test_dirops.cpp
 )
 target_link_libraries(dirtoo-tests
   PRIVATE

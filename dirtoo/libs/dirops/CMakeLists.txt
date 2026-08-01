@@ -4,6 +4,7 @@
 add_library(dirops
   src/error.cpp
   src/ops.cpp
+  src/util.cpp
 )
 
 add_library(dirtoo::dirops ALIAS dirops)
