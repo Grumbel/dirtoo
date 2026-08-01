@@ -6,6 +6,7 @@
 #include <QGraphicsView>
 #include <QModelIndex>
 #include <QPoint>
+#include <QPointF>
 #include <QSize>
 #include <vector>
 
@@ -17,7 +18,7 @@ namespace dirtoo::app {
 class FileListModel;
 class GraphicsFileItem;
 
-/// Icon / small-icon view backed by QGraphicsScene (Python FileView parity path).
+/// Icon view backed by QGraphicsScene with viewport-windowed tiles for large dirs.
 class GraphicsFileView : public QGraphicsView {
   Q_OBJECT
 
@@ -64,6 +65,7 @@ protected:
   void dragEnterEvent(QDragEnterEvent* event) override;
   void dragMoveEvent(QDragMoveEvent* event) override;
   void dropEvent(QDropEvent* event) override;
+  void scrollContentsBy(int dx, int dy) override;
 
 private slots:
   void on_model_reset();
@@ -73,12 +75,19 @@ private slots:
 
 private:
   void rebuild_items();
-  void layout_items();
-  void grow_items_batch();
+  void compute_layout_slots();
+  void update_visible_window();
+  void clear_all_items();
+  [[nodiscard]] int cell_width() const;
+  [[nodiscard]] int cell_height() const;
+  [[nodiscard]] int column_count() const;
 
   FileListModel* model_ = nullptr;
   QGraphicsScene* scene_ = nullptr;
+  /// Sparse: nullptr for rows outside the viewport window.
   std::vector<GraphicsFileItem*> items_;
+  /// Precomputed top-left of each row's tile (group-aware).
+  std::vector<QPointF> slot_pos_;
   QSize tile_size_{128, 160};
   bool compact_ = false;
   int spacing_ = 12;
@@ -86,8 +95,8 @@ private:
   bool suppress_selection_signal_ = false;
   QPoint drag_start_pos_;
   bool drag_started_ = false;
-  int pending_grow_target_ = 0;
-  bool grow_scheduled_ = false;
+  int layout_cols_ = 1;
+  int layout_max_row_ = 0;
 
   void start_drag();
 };

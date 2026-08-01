@@ -40,6 +40,11 @@ GraphicsFileView::GraphicsFileView(QWidget* parent)
   setAcceptDrops(true);
 
   connect(scene_, &QGraphicsScene::selectionChanged, this, &GraphicsFileView::on_scene_selection_changed);
+  if (verticalScrollBar() != nullptr) {
+    connect(verticalScrollBar(), &QScrollBar::valueChanged, this, [this](int) {
+      update_visible_window();
+    });
+  }
 }
 
 void GraphicsFileView::set_model(FileListModel* model)
@@ -68,9 +73,12 @@ void GraphicsFileView::set_tile_size(const QSize& size)
   }
   tile_size_ = size;
   for (auto* item : items_) {
-    item->set_tile_size(tile_size_);
+    if (item != nullptr) {
+      item->set_tile_size(tile_size_);
+    }
   }
-  layout_items();
+  compute_layout_slots();
+  update_visible_window();
 }
 
 void GraphicsFileView::set_compact(bool compact)
@@ -80,12 +88,14 @@ void GraphicsFileView::set_compact(bool compact)
   }
   compact_ = compact;
   spacing_ = compact ? 6 : 12;
-  layout_items();
+  compute_layout_slots();
+  update_visible_window();
 }
 
 void GraphicsFileView::relayout()
 {
-  layout_items();
+  compute_layout_slots();
+  update_visible_window();
 }
 
 void GraphicsFileView::sync_from_model()
@@ -93,131 +103,171 @@ void GraphicsFileView::sync_from_model()
   rebuild_items();
 }
 
-void GraphicsFileView::rebuild_items()
+void GraphicsFileView::clear_all_items()
 {
-  // Reuse existing QGraphicsItems when the row count changes only slightly —
-  // full scene_->clear() + N allocations freezes large directories on every
-  // modelReset (load, sort, filter, watcher refresh).
   suppress_selection_signal_ = true;
-  if (model_ == nullptr) {
-    for (auto* item : items_) {
+  for (auto* item : items_) {
+    if (item != nullptr) {
       scene_->removeItem(item);
       delete item;
     }
-    items_.clear();
-    suppress_selection_signal_ = false;
-    layout_items();
+  }
+  items_.clear();
+  slot_pos_.clear();
+  suppress_selection_signal_ = false;
+}
+
+int GraphicsFileView::cell_width() const
+{
+  return tile_size_.width() + spacing_;
+}
+
+int GraphicsFileView::cell_height() const
+{
+  return tile_size_.height() + spacing_;
+}
+
+int GraphicsFileView::column_count() const
+{
+  const int vp_w = std::max(tile_size_.width() + padding_ * 2, viewport()->width() - 4);
+  const int cell_w = cell_width();
+  int cols = std::max(1, (vp_w - padding_) / cell_w);
+  if (compact_) {
+    cols = std::max(1, (vp_w - padding_) / std::max(cell_w, 160));
+  }
+  return cols;
+}
+
+void GraphicsFileView::compute_layout_slots()
+{
+  const int rows = model_ != nullptr ? model_->rowCount() : 0;
+  slot_pos_.assign(static_cast<std::size_t>(rows), QPointF());
+  if (rows == 0) {
+    layout_cols_ = 1;
+    layout_max_row_ = 0;
+    scene_->setSceneRect(QRectF());
     return;
   }
 
-  const int rows = model_->rowCount();
-  const int old_n = static_cast<int>(items_.size());
+  const int cols = column_count();
+  const int cell_w = cell_width();
+  const int cell_h = cell_height();
+  layout_cols_ = cols;
 
-  // Shrink: drop surplus items from the end.
-  if (old_n > rows) {
-    for (int i = old_n - 1; i >= rows; --i) {
-      auto* item = items_[static_cast<std::size_t>(i)];
-      scene_->removeItem(item);
-      delete item;
+  int col = 0;
+  int grid_row = 0;
+  int max_row = 0;
+  for (int i = 0; i < rows; ++i) {
+    if (model_ != nullptr) {
+      const QModelIndex idx = model_->index(i, 0);
+      if (idx.data(IsGroupStartRole).toBool() && i > 0 && col != 0) {
+        col = 0;
+        ++grid_row;
+      }
     }
-    items_.resize(static_cast<std::size_t>(rows));
+    slot_pos_[static_cast<std::size_t>(i)] =
+        QPointF(padding_ + col * cell_w, padding_ + grid_row * cell_h);
+    max_row = std::max(max_row, grid_row);
+    ++col;
+    if (col >= cols) {
+      col = 0;
+      ++grid_row;
+    }
+  }
+  layout_max_row_ = max_row;
+  scene_->setSceneRect(0, 0, padding_ * 2 + cols * cell_w,
+                       padding_ * 2 + (max_row + 1) * cell_h);
+}
+
+void GraphicsFileView::update_visible_window()
+{
+  if (model_ == nullptr || slot_pos_.empty()) {
+    return;
   }
 
-  // Update rows already present (path/icon may have changed).
-  for (int r = 0; r < static_cast<int>(items_.size()); ++r) {
-    items_[static_cast<std::size_t>(r)]->set_row(r);
-    items_[static_cast<std::size_t>(r)]->set_tile_size(tile_size_);
-    items_[static_cast<std::size_t>(r)]->update();
+  const int rows = static_cast<int>(slot_pos_.size());
+  if (static_cast<int>(items_.size()) != rows) {
+    // Resize sparse vector; drop any items that would be orphaned.
+    for (std::size_t i = rows; i < items_.size(); ++i) {
+      if (items_[i] != nullptr) {
+        scene_->removeItem(items_[i]);
+        delete items_[i];
+      }
+    }
+    items_.resize(static_cast<std::size_t>(rows), nullptr);
   }
 
-  // Grow: append items. For large directories, create the first batch immediately
-  // and schedule the rest so the event loop can paint/interact between chunks.
-  pending_grow_target_ = rows;
-  if (static_cast<int>(items_.size()) < rows) {
-    items_.reserve(static_cast<std::size_t>(rows));
-    constexpr int kFirstBatch = 400;
-    const int limit = std::min(rows, static_cast<int>(items_.size()) + kFirstBatch);
-    for (int r = static_cast<int>(items_.size()); r < limit; ++r) {
-      auto* item = new GraphicsFileItem(model_, r, this);
+  const QRectF vis = mapToScene(viewport()->rect()).boundingRect();
+  const qreal margin = cell_height() * 3.0; // a few rows above/below
+  const qreal top = vis.top() - margin;
+  const qreal bottom = vis.bottom() + margin;
+
+  // Binary-search first slot with y + cell_h >= top (non-decreasing y).
+  int lo = 0;
+  int hi = rows;
+  while (lo < hi) {
+    const int mid = lo + (hi - lo) / 2;
+    if (slot_pos_[static_cast<std::size_t>(mid)].y() + cell_height() < top) {
+      lo = mid + 1;
+    } else {
+      hi = mid;
+    }
+  }
+  const int first = lo;
+  lo = first;
+  hi = rows;
+  while (lo < hi) {
+    const int mid = lo + (hi - lo) / 2;
+    if (slot_pos_[static_cast<std::size_t>(mid)].y() <= bottom) {
+      lo = mid + 1;
+    } else {
+      hi = mid;
+    }
+  }
+  const int last = lo; // exclusive
+
+  suppress_selection_signal_ = true;
+  for (int r = 0; r < rows; ++r) {
+    const bool want = r >= first && r < last;
+    auto*& item = items_[static_cast<std::size_t>(r)];
+    if (!want) {
+      if (item != nullptr) {
+        scene_->removeItem(item);
+        delete item;
+        item = nullptr;
+      }
+      continue;
+    }
+    if (item == nullptr) {
+      item = new GraphicsFileItem(model_, r, this);
       item->set_tile_size(tile_size_);
       scene_->addItem(item);
-      items_.push_back(item);
+    } else {
+      item->set_row(r);
+      item->set_tile_size(tile_size_);
     }
-    if (static_cast<int>(items_.size()) < rows && !grow_scheduled_) {
-      grow_scheduled_ = true;
-      QTimer::singleShot(0, this, [this] { grow_items_batch(); });
-    }
+    item->setPos(slot_pos_[static_cast<std::size_t>(r)]);
   }
-
   suppress_selection_signal_ = false;
-  layout_items();
+}
+
+void GraphicsFileView::rebuild_items()
+{
+  clear_all_items();
+  if (model_ == nullptr) {
+    scene_->setSceneRect(QRectF());
+    return;
+  }
+  const int rows = model_->rowCount();
+  items_.assign(static_cast<std::size_t>(rows), nullptr);
+  compute_layout_slots();
+  update_visible_window();
 }
 
 void GraphicsFileView::grow_items_batch()
 {
-  grow_scheduled_ = false;
-  if (model_ == nullptr) {
-    pending_grow_target_ = 0;
-    return;
-  }
-  const int rows = std::min(pending_grow_target_, model_->rowCount());
-  constexpr int kBatch = 300;
-  const int limit = std::min(rows, static_cast<int>(items_.size()) + kBatch);
-  suppress_selection_signal_ = true;
-  for (int r = static_cast<int>(items_.size()); r < limit; ++r) {
-    auto* item = new GraphicsFileItem(model_, r, this);
-    item->set_tile_size(tile_size_);
-    scene_->addItem(item);
-    items_.push_back(item);
-  }
-  suppress_selection_signal_ = false;
-  layout_items();
-  if (static_cast<int>(items_.size()) < rows) {
-    grow_scheduled_ = true;
-    QTimer::singleShot(0, this, [this] { grow_items_batch(); });
-  } else {
-    pending_grow_target_ = 0;
-  }
-}
-
-void GraphicsFileView::layout_items()
-{
-  if (items_.empty()) {
-    scene_->setSceneRect(QRectF());
-    return;
-  }
-  const int vp_w = std::max(tile_size_.width() + padding_ * 2,
-                            viewport()->width() - 4);
-  const int cell_w = tile_size_.width() + spacing_;
-  const int cell_h = tile_size_.height() + spacing_;
-  int cols = std::max(1, (vp_w - padding_) / cell_w);
-  if (compact_) {
-    // Prefer wider rows for compact list-like grid
-    cols = std::max(1, (vp_w - padding_) / std::max(cell_w, 160));
-  }
-
-  // Flow left-to-right. When a group starts mid-row, break to a new row so the
-  // section header painted on the first tile of the group has a full line.
-  int col = 0;
-  int row = 0;
-  int max_row = 0;
-  for (std::size_t i = 0; i < items_.size(); ++i) {
-    if (model_ != nullptr) {
-      const QModelIndex idx = model_->index(static_cast<int>(i), 0);
-      if (idx.data(IsGroupStartRole).toBool() && i > 0 && col != 0) {
-        col = 0;
-        ++row;
-      }
-    }
-    items_[i]->setPos(padding_ + col * cell_w, padding_ + row * cell_h);
-    max_row = std::max(max_row, row);
-    ++col;
-    if (col >= cols) {
-      col = 0;
-      ++row;
-    }
-  }
-  scene_->setSceneRect(0, 0, padding_ * 2 + cols * cell_w, padding_ * 2 + (max_row + 1) * cell_h);
+  // Retained for ABI stability with older call sites; windowing supersedes batching.
+  update_visible_window();
 }
 
 QModelIndex GraphicsFileView::index_at(const QPoint& view_pos) const
@@ -232,7 +282,7 @@ std::vector<int> GraphicsFileView::selected_rows() const
 {
   std::vector<int> rows;
   for (auto* item : items_) {
-    if (item->isSelected()) {
+    if (item != nullptr && item->isSelected()) {
       rows.push_back(item->row());
     }
   }
@@ -265,7 +315,19 @@ void GraphicsFileView::select_row(int row, bool clear_others)
   if (clear_others) {
     scene_->clearSelection();
   }
-  if (row >= 0 && static_cast<std::size_t>(row) < items_.size()) {
+  if (row < 0 || static_cast<std::size_t>(row) >= items_.size()) {
+    return;
+  }
+  // Ensure the target is materialized (may be outside the current window).
+  if (items_[static_cast<std::size_t>(row)] == nullptr && model_ != nullptr
+      && static_cast<std::size_t>(row) < slot_pos_.size()) {
+    auto* item = new GraphicsFileItem(model_, row, this);
+    item->set_tile_size(tile_size_);
+    item->setPos(slot_pos_[static_cast<std::size_t>(row)]);
+    scene_->addItem(item);
+    items_[static_cast<std::size_t>(row)] = item;
+  }
+  if (items_[static_cast<std::size_t>(row)] != nullptr) {
     items_[static_cast<std::size_t>(row)]->setSelected(true);
   }
 }
@@ -283,7 +345,8 @@ void GraphicsFileView::on_model_data_changed(const QModelIndex& top_left, const 
     return;
   }
   for (int r = top_left.row(); r <= bottom_right.row(); ++r) {
-    if (r >= 0 && static_cast<std::size_t>(r) < items_.size()) {
+    if (r >= 0 && static_cast<std::size_t>(r) < items_.size()
+        && items_[static_cast<std::size_t>(r)] != nullptr) {
       items_[static_cast<std::size_t>(r)]->update();
     }
   }
@@ -299,7 +362,14 @@ void GraphicsFileView::on_scene_selection_changed()
 void GraphicsFileView::resizeEvent(QResizeEvent* event)
 {
   QGraphicsView::resizeEvent(event);
-  layout_items();
+  compute_layout_slots();
+  update_visible_window();
+}
+
+void GraphicsFileView::scrollContentsBy(int dx, int dy)
+{
+  QGraphicsView::scrollContentsBy(dx, dy);
+  update_visible_window();
 }
 
 void GraphicsFileView::mouseDoubleClickEvent(QMouseEvent* event)

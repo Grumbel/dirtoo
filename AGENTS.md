@@ -158,14 +158,14 @@ fix defects, or close/open work items:
 | dirops + CLI tools | **done** (`create_file` / `create_symlink` / swap) |
 | Main window, nav, bookmarks, history | **done** |
 | Filter DSL + recursive search + `dt-filter` | **done**; content filters via `FilterWorker` |
-| Detail / Icons (Graphics) / Small icons | **improved** — item reuse, batched Graphics grow, even small-icon grid |
+| Detail / Icons (Graphics) / Small icons | **improved** — Graphics viewport-windowed tiles; even small-icon grid |
 | Thumbnails + media badges + meta cache | **improved** — viewport batch; directory montages (explicit action) |
 | Clipboard transfers + conflict/transfer dialogs | **done** including Link paste |
 | Preferences, properties, about, rename/new folder/file | **done** |
 | Archives read-only | **done** |
 | DnD | **done** — Move/Copy/Link modifiers; folder drop on list/tree |
 | Select All / Swap Names / Show Full Paths / Time Gaps | **done** |
-| List virtualization / incremental FS deltas | **open** (residual perf) |
+| Graphics viewport virtualization | **done**; Detail virtualization / incremental FS deltas **open** |
 | Archive write / remote VFS / programs/* | **out of scope** |
 
 Priority residual queue and parity matrix: **`TODO.md`**.  
