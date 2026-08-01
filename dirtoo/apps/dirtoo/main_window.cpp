@@ -10,6 +10,7 @@
 
 #include "clipboard.hpp"
 #include "about_dialog.hpp"
+#include "name_input_dialog.hpp"
 #include "app_settings.hpp"
 #include "conflict_dialog.hpp"
 #include "open_with.hpp"
@@ -36,7 +37,6 @@
 #include <QIcon>
 #include <QKeyEvent>
 #include <QItemSelectionModel>
-#include <QInputDialog>
 #include <QKeySequence>
 #include <QLabel>
 #include <QLocale>
@@ -1477,17 +1477,18 @@ void MainWindow::on_mkdir()
     return;
   }
 
-  bool ok = false;
-  const QString name = QInputDialog::getText(this, QStringLiteral("New Folder"),
-                                             QStringLiteral("Folder name:"),
-                                             QLineEdit::Normal, QStringLiteral("New Folder"), &ok);
-  if (!ok || name.trimmed().isEmpty()) {
+  const auto name_opt = ask_item_name(this, QStringLiteral("New Folder"),
+                                      QStringLiteral("Folder name:"),
+                                      QStringLiteral("New Folder"),
+                                      QStringLiteral("Create"));
+  if (!name_opt || name_opt->isEmpty()) {
     return;
   }
+  const QString name = *name_opt;
 
-  const auto dest = location_.as_path() / name.trimmed().toStdString();
+  const auto dest = location_.as_path() / name.toStdString();
   if (std::filesystem::exists(dest)) {
-    const auto chosen = ask_conflict_policy(this, name.trimmed());
+    const auto chosen = ask_conflict_policy(this, name);
     if (!chosen || chosen->policy == dirops::ConflictPolicy::Skip) {
       return;
     }
@@ -1534,18 +1535,19 @@ void MainWindow::on_rename_selected()
   }
 
   const auto& fi = selected.front();
-  bool ok = false;
-  const QString name = QInputDialog::getText(this, QStringLiteral("Rename"),
-                                             QStringLiteral("New name:"), QLineEdit::Normal,
-                                             QString::fromStdString(fi.basename()), &ok);
-  if (!ok || name.trimmed().isEmpty()) {
+  const auto name_opt = ask_item_name(this, QStringLiteral("Rename"),
+                                      QStringLiteral("New name:"),
+                                      QString::fromStdString(fi.basename()),
+                                      QStringLiteral("Rename"));
+  if (!name_opt || name_opt->isEmpty()) {
     return;
   }
+  const QString name = *name_opt;
 
-  const auto dest = fi.path().parent_path() / name.trimmed().toStdString();
+  const auto dest = fi.path().parent_path() / name.toStdString();
   dirops::Options opt;
   if (std::filesystem::exists(dest) && dest != fi.path()) {
-    const auto chosen = ask_conflict_policy(this, name.trimmed());
+    const auto chosen = ask_conflict_policy(this, name);
     if (!chosen) {
       return;
     }

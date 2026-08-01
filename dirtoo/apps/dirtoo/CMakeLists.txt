@@ -28,6 +28,8 @@ qt_add_executable(dirtoo-app
   open_with.hpp
   about_dialog.cpp
   about_dialog.hpp
+  name_input_dialog.cpp
+  name_input_dialog.hpp
   location_button_bar.cpp
   location_button_bar.hpp
   leap_widget.cpp

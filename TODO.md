@@ -308,9 +308,9 @@ C++ dialogs are functional but thinner than Python. Tracked for a dedicated pass
 | **Conflict** | **improved** (source/dest info, apply-to-all, Replace/Rename/Skip) |
 | **Transfer** | **improved** (bytes, elapsed, dest, close-when-finished; no pause/log yet) |
 | **Properties** | **improved** (owner/group, times, perms read-only, MIME, media cache) |
-| **About** | Richer HTML / version / license text |
-| **Rename / Create** | Dedicated dialogs (vs `QInputDialog`) |
-| **Transfer error / request** | Missing dedicated dialogs |
+| **About** | **improved** (icon, version, features, license) |
+| **Rename / Create** | **done** (`ask_item_name`) |
+| **Transfer error / request** | Errors shown in transfer dialog finish state |
 
 Recommended order: Conflict → Transfer → Properties.
 
