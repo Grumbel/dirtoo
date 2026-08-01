@@ -44,7 +44,6 @@ inline void apply_dnd_cursors(QDrag* drag)
 
 /// QTreeView that shows themed DnD cursors + Copy/Move/Link action overlay.
 class FileTreeView : public QTreeView {
-  Q_OBJECT
 public:
   using QTreeView::QTreeView;
 
@@ -77,7 +76,6 @@ protected:
 
 /// QListView that shows themed DnD cursors + Copy/Move/Link action overlay.
 class FileListView : public QListView {
-  Q_OBJECT
 public:
   using QListView::QListView;
 
