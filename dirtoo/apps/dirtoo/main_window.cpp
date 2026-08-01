@@ -6,6 +6,7 @@
 #include "clipboard.hpp"
 #include "app_settings.hpp"
 #include "conflict_dialog.hpp"
+#include "open_with.hpp"
 #include "properties_dialog.hpp"
 #include "dirtoo/fs/file_info.hpp"
 #include "dirops/ops.hpp"
@@ -31,6 +32,7 @@
 #include <QMessageBox>
 #include <QMimeDatabase>
 #include <QPixmap>
+#include <QProcess>
 #include <QStackedWidget>
 #include <QToolBar>
 #include <QTreeView>
@@ -93,30 +95,29 @@ MainWindow::MainWindow(QWidget* parent)
   toolbar->addAction(QStringLiteral("Zoom +"), this, &MainWindow::on_zoom_in);
 
   {
-    auto* cut = new QAction(this);
-    cut->setShortcut(QKeySequence::Cut);
-    connect(cut, &QAction::triggered, this, &MainWindow::on_cut);
-    addAction(cut);
-    auto* copy = new QAction(this);
-    copy->setShortcut(QKeySequence::Copy);
-    connect(copy, &QAction::triggered, this, &MainWindow::on_copy);
-    addAction(copy);
-    auto* paste = new QAction(this);
-    paste->setShortcut(QKeySequence::Paste);
-    connect(paste, &QAction::triggered, this, &MainWindow::on_paste);
-    addAction(paste);
-    auto* del = new QAction(this);
-    del->setShortcut(QKeySequence::Delete);
-    connect(del, &QAction::triggered, this, &MainWindow::on_delete_selected);
-    addAction(del);
-    auto* zoomin = new QAction(this);
-    zoomin->setShortcut(QKeySequence::ZoomIn);
-    connect(zoomin, &QAction::triggered, this, &MainWindow::on_zoom_in);
-    addAction(zoomin);
-    auto* zoomout = new QAction(this);
-    zoomout->setShortcut(QKeySequence::ZoomOut);
-    connect(zoomout, &QAction::triggered, this, &MainWindow::on_zoom_out);
-    addAction(zoomout);
+    auto add_shortcut = [this](const QKeySequence& seq, auto slot) {
+      auto* act = new QAction(this);
+      act->setShortcut(seq);
+      connect(act, &QAction::triggered, this, slot);
+      addAction(act);
+      return act;
+    };
+    add_shortcut(QKeySequence::Cut, &MainWindow::on_cut);
+    add_shortcut(QKeySequence::Copy, &MainWindow::on_copy);
+    add_shortcut(QKeySequence::Paste, &MainWindow::on_paste);
+    add_shortcut(QKeySequence::Delete, &MainWindow::on_delete_selected);
+    add_shortcut(QKeySequence::ZoomIn, &MainWindow::on_zoom_in);
+    add_shortcut(QKeySequence::ZoomOut, &MainWindow::on_zoom_out);
+    add_shortcut(QKeySequence(Qt::Key_F2), &MainWindow::on_rename_selected);
+    add_shortcut(QKeySequence(Qt::Key_F5), &MainWindow::on_refresh);
+    add_shortcut(QKeySequence(Qt::Key_Backspace), &MainWindow::on_go_parent);
+    add_shortcut(QKeySequence(Qt::ALT | Qt::Key_Up), &MainWindow::on_go_parent);
+    add_shortcut(QKeySequence(Qt::ALT | Qt::Key_Home), &MainWindow::on_go_home);
+    add_shortcut(QKeySequence(Qt::ALT | Qt::Key_Left), &MainWindow::on_go_back);
+    add_shortcut(QKeySequence(Qt::ALT | Qt::Key_Right), &MainWindow::on_go_forward);
+    add_shortcut(QKeySequence(QStringLiteral("Ctrl+L")), &MainWindow::on_focus_location);
+    add_shortcut(QKeySequence(QStringLiteral("Ctrl+H")), &MainWindow::on_go_home);
+    add_shortcut(QKeySequence(Qt::Key_F3), &MainWindow::on_properties);
   }
 
   auto* central = new QWidget(this);
@@ -294,6 +295,9 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
 
   watcher_.set_location(location_);
   watcher_.start();
+  if (auto* view = current_view()) {
+    view->setFocus(Qt::OtherFocusReason);
+  }
 }
 
 void MainWindow::on_location_entered()
@@ -445,7 +449,7 @@ void MainWindow::on_item_activated(const QModelIndex& index)
   if (fi->is_directory()) {
     open_location(fi->location());
   } else {
-    QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(fi->path().string())));
+    open_default(fi->path());
   }
 }
 
@@ -471,6 +475,8 @@ void MainWindow::on_context_menu(const QPoint& pos)
       on_item_activated(rows.first());
     }
   });
+  menu.addAction(QStringLiteral("Open with…"), this, &MainWindow::on_open_with);
+  menu.addAction(QStringLiteral("Open in Terminal"), this, &MainWindow::on_open_terminal);
   menu.addSeparator();
   menu.addAction(QStringLiteral("Cut"), this, &MainWindow::on_cut);
   menu.addAction(QStringLiteral("Copy"), this, &MainWindow::on_copy);
@@ -865,6 +871,47 @@ void MainWindow::closeEvent(QCloseEvent* event)
 {
   persist_settings();
   QMainWindow::closeEvent(event);
+}
+
+
+void MainWindow::on_refresh()
+{
+  on_directory_changed();
+  status_label_->setText(QStringLiteral("Refreshed"));
+}
+
+void MainWindow::on_focus_location()
+{
+  location_edit_->setFocus(Qt::ShortcutFocusReason);
+  location_edit_->selectAll();
+}
+
+void MainWindow::on_open_with()
+{
+  const auto selected = selected_fileinfos();
+  if (selected.empty()) {
+    status_label_->setText(QStringLiteral("Nothing selected"));
+    return;
+  }
+  std::vector<std::filesystem::path> paths;
+  for (const auto& fi : selected) {
+    paths.push_back(fi.path());
+  }
+  if (!open_with_command_dialog(this, paths)) {
+    return;
+  }
+}
+
+void MainWindow::on_open_terminal()
+{
+  std::filesystem::path dir = location_.as_path();
+  const auto selected = selected_fileinfos();
+  if (selected.size() == 1 && selected.front().is_directory()) {
+    dir = selected.front().path();
+  }
+  if (!open_in_terminal(dir)) {
+    status_label_->setText(QStringLiteral("Could not launch a terminal emulator"));
+  }
 }
 
 } // namespace dirtoo::app

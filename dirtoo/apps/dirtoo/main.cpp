@@ -8,6 +8,7 @@
 #include "dirtoo/fs/location.hpp"
 
 #include <QApplication>
+#include <QIcon>
 #include <QDir>
 
 #include <filesystem>
@@ -18,6 +19,12 @@ int main(int argc, char* argv[])
   QApplication::setApplicationName(QStringLiteral("dirtoo"));
   QApplication::setOrganizationName(QStringLiteral("dirtoo"));
   QApplication::setApplicationVersion(QStringLiteral("0.1.0"));
+  QApplication::setWindowIcon(QIcon(QStringLiteral(":/icons/dirtoo.png")));
+  // Also try theme / installed icon name.
+  if (QApplication::windowIcon().isNull()) {
+    QApplication::setWindowIcon(QIcon::fromTheme(QStringLiteral("dirtoo"),
+                                                 QIcon(QStringLiteral("/usr/share/icons/hicolor/48x48/apps/dirtoo.png"))));
+  }
 
   dirtoo::app::MainWindow window;
 

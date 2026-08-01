@@ -6,19 +6,20 @@ This document is the working plan for the C++ port. The Python tree in
 
 ## Progress (2026-08-01)
 
-Completed toward a usable MVP:
-- Foundations: CMake/flake, dirtoo-fs, dirops, watcher, collection, thumbnailer D-Bus
-- UI: detail + icon views, history, filter, zoom, open/rename/mkdir/delete/properties
-- Clipboard: dirtoo MIME, uri-list, GNOME copied-files
-- Drag-and-drop (uri-list) into current folder via TransferWorker
-- Background transfers with progress + conflict dialog
-- QSettings: geometry, view mode, zoom, last location
+MVP feature set is largely in place:
 
-Next:
-- Keyboard navigation polish / F2 rename / F5 refresh
-- Optional "Open with" / default app menu
+- Libraries: dirops, fs, collection, watcher, thumbnail (D-Bus)
+- UI: detail/icon views, zoom, history, filter, DND, clipboard (incl. GNOME)
+- Ops: rename/mkdir/delete/copy/move via dirops + background TransferWorker
+- Dialogs: conflict, transfer progress, properties, open with
+- UX: F2/F5/Alt navigation, status selection info, QSettings persistence
+- Packaging: desktop file, hicolor icons, embedded qrc icons
+
+Next (optional polish):
+- About dialog + Help menu
+- Show hidden files toggle
 - Archive browsing (Phase 7)
-- Packaging polish (desktop file, icons)
+- Automated GUI tests where practical
 
 Principles (see also `AGENTS.md`):
 

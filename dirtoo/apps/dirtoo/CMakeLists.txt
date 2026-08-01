@@ -19,6 +19,9 @@ qt_add_executable(dirtoo-app
   properties_dialog.hpp
   app_settings.cpp
   app_settings.hpp
+  open_with.cpp
+  open_with.hpp
+  resources.qrc
 )
 
 set_target_properties(dirtoo-app PROPERTIES OUTPUT_NAME dirtoo)
@@ -37,3 +40,20 @@ target_link_libraries(dirtoo-app
 )
 
 install(TARGETS dirtoo-app RUNTIME DESTINATION bin)
+
+install(FILES
+  ${CMAKE_SOURCE_DIR}/resources/dirtoo.desktop
+  DESTINATION share/applications
+)
+
+install(FILES
+  ${CMAKE_SOURCE_DIR}/resources/icons/dirtoo.png
+  DESTINATION share/icons/hicolor/48x48/apps
+  RENAME dirtoo.png
+)
+
+install(FILES
+  ${CMAKE_SOURCE_DIR}/resources/icons/dirtoo.svg
+  DESTINATION share/icons/hicolor/scalable/apps
+  RENAME dirtoo.svg
+)

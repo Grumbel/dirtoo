@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=dirtoo
+Comment=Modular filesystem browser
+GenericName=File Manager
+Exec=dirtoo %U
+Icon=dirtoo
+Terminal=false
+StartupNotify=true
+Type=Application
+Categories=System;FileTools;FileManager;
+MimeType=inode/directory;

@@ -61,6 +61,10 @@ private slots:
   void on_rename_selected();
   void on_delete_selected();
   void on_properties();
+  void on_refresh();
+  void on_open_with();
+  void on_open_terminal();
+  void on_focus_location();
   void on_copy();
   void on_cut();
   void on_paste();

@@ -1,0 +1,7 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+  <qresource prefix="/">
+    <file alias="icons/dirtoo.png">../../resources/icons/dirtoo.png</file>
+    <file alias="icons/dirtoo.svg">../../resources/icons/dirtoo.svg</file>
+  </qresource>
+</RCC>

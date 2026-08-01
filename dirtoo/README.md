@@ -38,3 +38,19 @@ See `../TODO.md` and `../AGENTS.md` for the port plan and agent rules.
 ## License
 
 GPL-3.0-or-later (SPDX headers on all sources).
+
+
+## Keyboard shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| F2 | Rename |
+| F3 | Properties |
+| F5 | Refresh |
+| Backspace / Alt+Up | Parent directory |
+| Alt+Home / Ctrl+H | Home |
+| Alt+Left / Alt+Right | History back / forward |
+| Ctrl+L | Focus location bar |
+| Ctrl+C / X / V | Copy / Cut / Paste |
+| Delete | Delete selection |
+| Ctrl++ / Ctrl+- | Zoom icons |
