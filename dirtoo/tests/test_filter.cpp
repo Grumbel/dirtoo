@@ -18,12 +18,12 @@ using dirtoo::filter::parse_filter;
 
 static FilterItem file(const char* name, std::uint64_t size = 0)
 {
-  return FilterItem{.name = name, .size = size, .is_directory = false, .path = name};
+  return FilterItem{.name = name, .size = size, .is_directory = false, .path = name, .mtime_sec = 0};
 }
 
-static FilterItem dir(const char* name)
+static FilterItem dir_item(const char* name)
 {
-  return FilterItem{.name = name, .size = 0, .is_directory = true, .path = name};
+  return FilterItem{.name = name, .size = 0, .is_directory = true, .path = name, .mtime_sec = 0};
 }
 
 TEST_CASE("filter substring and glob", "[filter]")
@@ -55,7 +55,7 @@ TEST_CASE("filter AND juxtaposition and size", "[filter]")
   REQUIRE(m);
   REQUIRE((*m)->matches(file("big.bin", 200)));
   REQUIRE_FALSE((*m)->matches(file("small.bin", 50)));
-  REQUIRE_FALSE((*m)->matches(dir("folder")));
+  REQUIRE_FALSE((*m)->matches(dir_item("folder")));
 }
 
 TEST_CASE("filter nested groups", "[filter]")
@@ -157,7 +157,7 @@ TEST_CASE("filter media commands parse", "[filter][media]")
   m = parse_filter("type:file width:>=640");
   REQUIRE(m);
   // directories never match media predicates
-  REQUIRE_FALSE((*m)->matches(dir("folder")));
+  REQUIRE_FALSE((*m)->matches(dir_item("folder")));
 }
 
 
@@ -256,7 +256,7 @@ TEST_CASE("filter contains command", "[filter]")
 
   m = parse_filter("type:dir contains:hello");
   REQUIRE(m);
-  REQUIRE_FALSE((*m)->matches(dir("folder")));
+  REQUIRE_FALSE((*m)->matches(dir_item("folder")));
 
   fs::remove_all(dir);
 }

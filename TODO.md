@@ -298,6 +298,23 @@ Python ships many CLIs under `programs/` (find expr engine, fsck, shuffle, deskt
 6. [x] Filter: `time:` / `weekday:` (remaining date family)
 
 
+
+### Dialog polish (vs Python)
+
+C++ dialogs are functional but thinner than Python. Tracked for a dedicated pass:
+
+| Dialog | Gap vs Python |
+|--------|----------------|
+| **Conflict** | Source/dest size & mtime comparison; “apply to all”; clearer replace UX |
+| **Transfer** | Pause/continue, byte counts, elapsed time, log pane, close-when-finished |
+| **Properties** | Permissions, owner, media/metadata fields, multi-select detail |
+| **About** | Richer HTML / version / license text |
+| **Rename / Create** | Dedicated dialogs (vs `QInputDialog`) |
+| **Transfer error / request** | Missing dedicated dialogs |
+
+Recommended order: Conflict → Transfer → Properties.
+
+
 ## Working process
 
 - Suggest a detailed commit message after each change series.
