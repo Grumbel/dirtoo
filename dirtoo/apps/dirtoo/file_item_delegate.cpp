@@ -4,11 +4,12 @@
 #include "file_item_delegate.hpp"
 
 #include "file_list_model.hpp"
-#include "dirtoo/filter/media_probe.hpp"
+#include "dirtoo/filter/media_meta_cache.hpp"
 #include "dirtoo/fs/file_info.hpp"
 
 #include <QApplication>
 #include <QFontMetrics>
+#include <QMetaObject>
 #include <QPainter>
 #include <QPainterPath>
 #include <QStyle>
@@ -201,9 +202,24 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
 
   if (fi != nullptr && !fi->is_directory()) {
     kind = classify_extension(fi->extension());
-    // Only probe known media types (ffprobe is cached after first call).
+    // Memory-only lookup on the GUI thread. Missing media is requested async.
     if (kind != MediaKind::None) {
-      meta = filter::probe_media(fi->path());
+      auto& cache = filter::MediaMetaCache::instance();
+      meta = cache.try_get(fi->path());
+      if (!meta && !cache.is_negative(fi->path())) {
+        const QString path_key = QString::fromStdString(fi->path().string());
+        const int row = index.row();
+        FileListModel* model = model_;
+        cache.request(fi->path(), cache.generation(),
+                      [model, row](const std::string&, std::optional<filter::MediaInfo>,
+                                   std::uint64_t) {
+                        if (model == nullptr) {
+                          return;
+                        }
+                        QMetaObject::invokeMethod(model, "notify_row_changed", Qt::QueuedConnection,
+                                                  Q_ARG(int, row));
+                      });
+      }
     }
 
     if (model_->icon_detail_level() > 1) {

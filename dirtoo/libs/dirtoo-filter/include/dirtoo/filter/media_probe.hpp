@@ -20,9 +20,13 @@ struct MediaInfo {
   std::optional<double> framerate;
 };
 
-/// Probe path with ffprobe. Uses $DIRTOO_FFPROBE or `ffprobe` on PATH.
+/// Probe path with ffprobe (process memory cache only). Uses $DIRTOO_FFPROBE or
+/// `ffprobe` on PATH. Prefer MediaMetaCache for GUI code (no I/O on UI thread).
 /// Returns nullopt if the tool is missing or the file has no usable streams.
 [[nodiscard]] std::optional<MediaInfo> probe_media(const std::filesystem::path& path);
+
+/// ffprobe only — no caches. Used by MediaMetaCache workers.
+[[nodiscard]] std::optional<MediaInfo> probe_media_raw(const std::filesystem::path& path);
 
 /// Parse human duration to seconds: plain number, `1h2m3s`, `mm:ss`, `h:mm:ss`.
 [[nodiscard]] std::optional<double> parse_duration_seconds(std::string_view text);

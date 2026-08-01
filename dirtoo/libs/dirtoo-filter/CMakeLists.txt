@@ -27,6 +27,7 @@ add_library(dirtoo-filter
   src/predicates.cpp
   src/search.cpp
   src/media_probe.cpp
+  src/media_meta_cache.cpp
 )
 add_library(dirtoo-filter::dirtoo-filter ALIAS dirtoo-filter)
 add_library(dirtoo::filter ALIAS dirtoo-filter)
@@ -35,6 +36,8 @@ target_include_directories(dirtoo-filter PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
+find_package(SQLite3 REQUIRED)
+target_link_libraries(dirtoo-filter PRIVATE SQLite3::SQLite3)
 target_compile_features(dirtoo-filter PUBLIC cxx_std_23)
 target_compile_options(dirtoo-filter PRIVATE
   $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic>

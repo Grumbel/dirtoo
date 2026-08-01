@@ -34,6 +34,9 @@ public:
   void set_thumbnail(const QString& path, const QIcon& icon);
   void clear_thumbnails();
 
+  /// Thread-safe request to refresh a row (queues to this object's thread).
+  Q_INVOKABLE void notify_row_changed(int row);
+
   /// Icon-view caption density (0=none … 4=name+size+date). Detail view ignores this.
   void set_icon_style(bool enabled);
   void set_icon_detail_level(int level);

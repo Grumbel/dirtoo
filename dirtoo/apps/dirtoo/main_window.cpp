@@ -3,6 +3,7 @@
 
 #include "main_window.hpp"
 #include "file_item_delegate.hpp"
+#include "dirtoo/filter/media_meta_cache.hpp"
 
 #include "dirtoo/filter/parser.hpp"
 
@@ -428,6 +429,7 @@ MainWindow::MainWindow(QWidget* parent)
 
   model_ = new FileListModel(this);
   model_->set_icon_detail_level(3);
+  dirtoo::filter::MediaMetaCache::instance().open();
   model_->set_collection(&collection_);
   connect(model_, &FileListModel::urls_dropped, this, &MainWindow::on_urls_dropped);
 

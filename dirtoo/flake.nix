@@ -47,6 +47,7 @@
           pname = "dirtoo-filter";
           inherit version src;
           nativeBuildInputs = with pkgs; [ cmake ninja ];
+          buildInputs = with pkgs; [ sqlite ];
           postUnpack = ''sourceRoot+=/libs/dirtoo-filter'';
           cmakeFlags = [ versionFlag "-DDIRTOO_FILTER_BUILD_TOOLS=ON" ];
         };
@@ -55,7 +56,7 @@
           pname = "dirtoo-collection";
           inherit version src;
           nativeBuildInputs = with pkgs; [ cmake ninja ];
-          buildInputs = [ dirtoo-fs dirtoo-filter ];
+          buildInputs = [ dirtoo-fs dirtoo-filter pkgs.sqlite ];
           postUnpack = ''sourceRoot+=/libs/dirtoo-collection'';
           cmakeFlags = [ versionFlag ];
         };
@@ -96,6 +97,7 @@
             dirops
             dirtoo-fs
             dirtoo-filter
+            pkgs.sqlite
             dirtoo-collection
             dirtoo-watcher
             dirtoo-thumbnail

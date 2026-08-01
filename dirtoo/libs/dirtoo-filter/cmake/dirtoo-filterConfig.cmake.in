@@ -1,3 +1,8 @@
 @PACKAGE_INIT@
+
+# Static libdirtoo-filter still lists SQLite on its link interface; pull it in for dependents.
+include(CMakeFindDependencyMacro)
+find_dependency(SQLite3 REQUIRED)
+
 include("${CMAKE_CURRENT_LIST_DIR}/dirtoo-filterTargets.cmake")
 check_required_components(dirtoo-filter)

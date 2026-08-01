@@ -94,6 +94,15 @@ void FileListModel::set_thumbnail(const QString& path, const QIcon& icon)
   }
 }
 
+void FileListModel::notify_row_changed(int row)
+{
+  if (row < 0 || row >= rowCount()) {
+    return;
+  }
+  const QModelIndex idx = index(row, 0);
+  emit dataChanged(idx, idx);
+}
+
 void FileListModel::clear_thumbnails()
 {
   if (thumbnails_.isEmpty()) {

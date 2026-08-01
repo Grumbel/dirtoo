@@ -219,7 +219,7 @@ void clear_media_probe_cache()
   g_cache.clear();
 }
 
-std::optional<MediaInfo> probe_media(const std::filesystem::path& path)
+std::optional<MediaInfo> probe_media_raw(const std::filesystem::path& path)
 {
   const std::string key = path.string();
   {
@@ -259,6 +259,11 @@ std::optional<MediaInfo> probe_media(const std::filesystem::path& path)
     g_cache[key] = result;
   }
   return result;
+}
+
+std::optional<MediaInfo> probe_media(const std::filesystem::path& path)
+{
+  return probe_media_raw(path);
 }
 
 } // namespace dirtoo::filter
