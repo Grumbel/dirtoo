@@ -54,7 +54,8 @@ void DirectoryWatcher::start()
     impl_->watcher.addPath(path);
   }
   impl_->running = true;
-  emit directory_changed();
+  // Do not emit directory_changed() here — navigation already loads explicitly.
+  // Emitting would debounce another soft reload ~200ms after every open_location.
 }
 
 void DirectoryWatcher::stop()

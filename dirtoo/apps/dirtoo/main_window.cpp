@@ -1051,6 +1051,8 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
   } else {
     watcher_.set_location(location_);
     watcher_.start();
+    // Initial listing (watcher no longer emits on start).
+    reload_directory(false);
   }
 
   if (auto* view = current_view()) {

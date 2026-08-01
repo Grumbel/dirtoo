@@ -159,3 +159,36 @@ TEST_CASE("group_key duration buckets", "[collection][group]")
   REQUIRE(group_key(file, GroupMode::Duration) == "8");
   REQUIRE(group_label(file, GroupMode::Duration) == "Unknown duration");
 }
+
+TEST_CASE("FileCollection merge_items add remove update", "[collection]")
+{
+  using dirtoo::collection::FileCollection;
+  using dirtoo::fs::FileInfo;
+  using dirtoo::fs::Location;
+
+  FileCollection col;
+  std::vector<FileInfo> initial;
+  initial.push_back(FileInfo::synthetic(Location::from_path("/t/a"), "a", false));
+  initial.push_back(FileInfo::synthetic(Location::from_path("/t/b"), "b", false));
+  initial.push_back(FileInfo::synthetic(Location::from_path("/t/c"), "c", false));
+  col.set_items_unsorted(std::move(initial));
+  REQUIRE(col.size() == 3);
+
+  // Drop b, keep a/c order, append d.
+  std::vector<FileInfo> next;
+  next.push_back(FileInfo::synthetic(Location::from_path("/t/a"), "a", false));
+  next.push_back(FileInfo::synthetic(Location::from_path("/t/c"), "c", false));
+  next.push_back(FileInfo::synthetic(Location::from_path("/t/d"), "d", false));
+  col.merge_items(std::move(next));
+
+  REQUIRE(col.size() == 3);
+  REQUIRE(col.items()[0].basename() == "a");
+  REQUIRE(col.items()[1].basename() == "c");
+  REQUIRE(col.items()[2].basename() == "d");
+
+  // merge without rebuild leaves size correct
+  std::vector<FileInfo> only_a;
+  only_a.push_back(FileInfo::synthetic(Location::from_path("/t/a"), "a", false));
+  col.merge_items(std::move(only_a), false);
+  REQUIRE(col.size() == 1);
+}
