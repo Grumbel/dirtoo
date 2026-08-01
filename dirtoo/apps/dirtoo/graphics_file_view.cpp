@@ -19,6 +19,7 @@
 #include <QDragEnterEvent>
 #include <QMimeData>
 #include <QDrag>
+#include <QTimer>
 
 #include <algorithm>
 
@@ -129,19 +130,54 @@ void GraphicsFileView::rebuild_items()
     items_[static_cast<std::size_t>(r)]->update();
   }
 
-  // Grow: append new items.
+  // Grow: append items. For large directories, create the first batch immediately
+  // and schedule the rest so the event loop can paint/interact between chunks.
+  pending_grow_target_ = rows;
   if (static_cast<int>(items_.size()) < rows) {
     items_.reserve(static_cast<std::size_t>(rows));
-    for (int r = static_cast<int>(items_.size()); r < rows; ++r) {
+    constexpr int kFirstBatch = 400;
+    const int limit = std::min(rows, static_cast<int>(items_.size()) + kFirstBatch);
+    for (int r = static_cast<int>(items_.size()); r < limit; ++r) {
       auto* item = new GraphicsFileItem(model_, r, this);
       item->set_tile_size(tile_size_);
       scene_->addItem(item);
       items_.push_back(item);
     }
+    if (static_cast<int>(items_.size()) < rows && !grow_scheduled_) {
+      grow_scheduled_ = true;
+      QTimer::singleShot(0, this, [this] { grow_items_batch(); });
+    }
   }
 
   suppress_selection_signal_ = false;
   layout_items();
+}
+
+void GraphicsFileView::grow_items_batch()
+{
+  grow_scheduled_ = false;
+  if (model_ == nullptr) {
+    pending_grow_target_ = 0;
+    return;
+  }
+  const int rows = std::min(pending_grow_target_, model_->rowCount());
+  constexpr int kBatch = 300;
+  const int limit = std::min(rows, static_cast<int>(items_.size()) + kBatch);
+  suppress_selection_signal_ = true;
+  for (int r = static_cast<int>(items_.size()); r < limit; ++r) {
+    auto* item = new GraphicsFileItem(model_, r, this);
+    item->set_tile_size(tile_size_);
+    scene_->addItem(item);
+    items_.push_back(item);
+  }
+  suppress_selection_signal_ = false;
+  layout_items();
+  if (static_cast<int>(items_.size()) < rows) {
+    grow_scheduled_ = true;
+    QTimer::singleShot(0, this, [this] { grow_items_batch(); });
+  } else {
+    pending_grow_target_ = 0;
+  }
 }
 
 void GraphicsFileView::layout_items()

@@ -35,7 +35,7 @@ parity features are in place. Build/tests green (50/50 as of last Nix check).
 | Thumbnails for every visible row | **Mitigated** — viewport batch (cap 64), scroll-driven |
 | Watcher full rescan storms | **Mitigated** — 200ms debounce + soft reload + cancel in-flight |
 | Double paint unsorted→sorted | **Open** — two refreshes after load (acceptable; not a freeze) |
-| No list virtualization | **Open** — all rows still materialized |
+| No list virtualization | **Partial** — Graphics creates items in event-loop batches; still not viewport-virtualized |
 
 ### 2. Drag & drop
 
@@ -55,7 +55,7 @@ parity features are in place. Build/tests green (50/50 as of last Nix check).
 | Group headers in Graphics | **Fixed** — labels + row break at group start |
 | Directory composite thumbs | **Fixed** — up to 9-tile montage (explicit action) |
 | Caption / tile geometry | **Partial** — themed captions; no shadow/outline renderer |
-| Small-icons grid uneven | **Open** |
+| Small-icons grid uneven | **Mitigated** — fixed IconMode grid cells |
 | Dual icon paths (Graphics + QListView) | **Acceptable** — Small Icons uses list mode by design |
 
 ### 4. Filter correctness
@@ -148,10 +148,10 @@ parity features are in place. Build/tests green (50/50 as of last Nix check).
 | Item | Notes |
 |------|--------|
 | True incremental FS watcher deltas | Soft full rescan today |
-| List / Graphics virtualization | Large dirs still allocate all items |
+| List / Graphics virtualization | Batched Graphics grow; true virtualization still open |
 | Rubber-band vs item drag | **done** |
 | Nested drop into own selection | **done** |
-| Small-icons grid metrics | SequenceMode parity |
+| Small-icons grid metrics | **done** (fixed grid) |
 | Caption shadow/outline | Python renderer polish |
 | Transfer dedicated error dialog | Optional UX split |
 
@@ -187,9 +187,9 @@ thumbnail work. `dirops` remains Qt-free.
 
 1. [x] Graphics: item-press → drag, empty → rubber-band
 2. [x] Guard drop into own selected folder / nested selection
-3. [ ] List virtualization or windowed Graphics population for huge dirs
+3. [partial] Windowed Graphics population — batch item create (400 then +300/tick); full virtualization still open
 4. [ ] Incremental watcher (inotify event → add/remove single entries)
-5. [ ] Small-icons grid polish
+5. [x] Small-icons grid polish — fixed IconMode grid cells
 
 ### Completed work order
 

@@ -158,7 +158,7 @@ fix defects, or close/open work items:
 | dirops + CLI tools | **done** (`create_file` / `create_symlink` / swap) |
 | Main window, nav, bookmarks, history | **done** |
 | Filter DSL + recursive search + `dt-filter` | **done**; content filters via `FilterWorker` |
-| Detail / Icons (Graphics) / Small icons | **improved** — item reuse, group headers, time gaps, themed captions |
+| Detail / Icons (Graphics) / Small icons | **improved** — item reuse, batched Graphics grow, even small-icon grid |
 | Thumbnails + media badges + meta cache | **improved** — viewport batch; directory montages (explicit action) |
 | Clipboard transfers + conflict/transfer dialogs | **done** including Link paste |
 | Preferences, properties, about, rename/new folder/file | **done** |

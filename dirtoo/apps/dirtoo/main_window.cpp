@@ -809,20 +809,27 @@ QAbstractItemView* MainWindow::current_view() const
 void MainWindow::apply_icon_zoom()
 {
   if (view_mode_ == ViewMode::SmallIcons) {
-    // Compact list-like rows (Python SequenceMode-ish). Zoom steps map to row height.
+    // Compact icon grid (even cells) rather than wrapped ListMode, which left
+    // uneven gaps. Single-line basename captions; decoration from model.
     static constexpr int kSmall[] = {16, 24, 32, 48, 64, 96, 128};
     const int zi = std::clamp(zoom_index_, 0, static_cast<int>(std::size(kSmall)) - 1);
     const int size = kSmall[zi];
-    icon_view_->setViewMode(QListView::ListMode);
-    icon_view_->setFlow(QListView::TopToBottom);
+    icon_view_->setViewMode(QListView::IconMode);
+    icon_view_->setFlow(QListView::LeftToRight);
     icon_view_->setWrapping(true);
     icon_view_->setResizeMode(QListView::Adjust);
+    icon_view_->setMovement(QListView::Static);
     icon_view_->setUniformItemSizes(true);
+    icon_view_->setWordWrap(false);
     icon_view_->setIconSize(QSize(size, size));
-    icon_view_->setSpacing(2);
-    icon_view_->setGridSize(QSize()); // let list mode size from icon + text
+    icon_view_->setSpacing(4);
+    // Fixed cell: icon + room for elided basename under the icon.
+    const int cell_w = std::max(size + 48, 72);
+    const int cell_h = size + icon_view_->fontMetrics().height() + 10;
+    icon_view_->setGridSize(QSize(cell_w, cell_h));
     if (model_ != nullptr) {
-      model_->set_icon_style(false); // single-line name; decoration from model
+      model_->set_icon_style(true);
+      model_->set_icon_detail_level(1); // name only under icon
     }
     const int detail = std::max(16, size / 2);
     tree_view_->setIconSize(QSize(detail, detail));
@@ -935,6 +942,10 @@ void MainWindow::set_view_mode(ViewMode mode)
   } else {
     if (model_ != nullptr) {
       model_->set_icon_style(true);
+      // Small Icons forces detail level 1; restore a useful multi-line caption LOD.
+      if (model_->icon_detail_level() <= 1) {
+        model_->set_icon_detail_level(3);
+      }
     }
     if (graphics_view_ != nullptr) {
       view_stack_->setCurrentWidget(graphics_view_);

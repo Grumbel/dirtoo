@@ -74,6 +74,7 @@ private slots:
 private:
   void rebuild_items();
   void layout_items();
+  void grow_items_batch();
 
   FileListModel* model_ = nullptr;
   QGraphicsScene* scene_ = nullptr;
@@ -85,6 +86,8 @@ private:
   bool suppress_selection_signal_ = false;
   QPoint drag_start_pos_;
   bool drag_started_ = false;
+  int pending_grow_target_ = 0;
+  bool grow_scheduled_ = false;
 
   void start_drag();
 };
