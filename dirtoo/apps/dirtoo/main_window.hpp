@@ -26,6 +26,7 @@
 #include "transfer_worker.hpp"
 
 #include <QMainWindow>
+#include <QSet>
 #include <QThread>
 
 #include <filesystem>
@@ -216,6 +217,8 @@ private:
   QThread* dir_load_thread_ = nullptr;
   DirectoryLoadWorker* dir_load_worker_ = nullptr;
   quint64 dir_load_generation_ = 0;
+  QSet<QString> known_paths_;
+  fs::Location known_paths_location_;
   QThread* sort_thread_ = nullptr;
   SortWorker* sort_worker_ = nullptr;
   quint64 sort_generation_ = 0;

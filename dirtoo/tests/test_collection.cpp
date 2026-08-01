@@ -141,3 +141,21 @@ TEST_CASE("FileCollection group by directory", "[collection][group]")
   const int same12 = (l1 == l2) ? 1 : 0;
   REQUIRE(same01 + same12 == 1);
 }
+
+TEST_CASE("group_key duration buckets", "[collection][group]")
+{
+  using dirtoo::collection::GroupMode;
+  using dirtoo::collection::group_key;
+  using dirtoo::collection::group_label;
+  using dirtoo::fs::FileInfo;
+  using dirtoo::fs::Location;
+
+  auto dir = FileInfo::synthetic(Location::from_path("/t/d"), "d", true);
+  REQUIRE(group_key(dir, GroupMode::Duration) == "9");
+  REQUIRE(group_label(dir, GroupMode::Duration) == "Directories");
+
+  auto file = FileInfo::synthetic(Location::from_path("/t/v.mp4"), "v.mp4", false);
+  // No media cache → unknown
+  REQUIRE(group_key(file, GroupMode::Duration) == "8");
+  REQUIRE(group_label(file, GroupMode::Duration) == "Unknown duration");
+}

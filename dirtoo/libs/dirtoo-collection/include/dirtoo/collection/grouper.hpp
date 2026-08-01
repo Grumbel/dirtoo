@@ -3,11 +3,12 @@
 
 #pragma once
 
+#include "dirtoo/filter/media_meta_cache.hpp"
 #include "dirtoo/fs/file_info.hpp"
 
 #include <chrono>
-#include <ctime>
 #include <cstdio>
+#include <ctime>
 #include <string>
 
 namespace dirtoo::collection {
@@ -17,6 +18,7 @@ enum class GroupMode {
   None,
   Day,        // local mtime YYYY-MM-DD (directories ungrouped)
   Directory,  // parent path of the entry
+  Duration,   // media duration buckets (Python DurationGrouper)
 };
 
 /// Sortable key for stable grouping (empty = ungrouped / directories under Day).
@@ -54,6 +56,31 @@ enum class GroupMode {
     }
     return parent.generic_string();
   }
+  case GroupMode::Duration: {
+    if (fi.is_directory()) {
+      return "9"; // after media buckets
+    }
+    // Memory cache only (no GUI-thread probe). Missing meta → unknown bucket.
+    const auto meta = filter::MediaMetaCache::instance().try_get(fi.path());
+    if (!meta || !meta->duration_ms || *meta->duration_ms == 0) {
+      return "8"; // Unknown duration
+    }
+    const double minutes = static_cast<double>(*meta->duration_ms) / 60000.0;
+    // Python buckets: >60, >30, >10, >5, else — keys sort long→short then unknown
+    if (minutes > 60.0) {
+      return "0";
+    }
+    if (minutes > 30.0) {
+      return "1";
+    }
+    if (minutes > 10.0) {
+      return "2";
+    }
+    if (minutes > 5.0) {
+      return "3";
+    }
+    return "4";
+  }
   }
   return {};
 }
@@ -67,7 +94,7 @@ enum class GroupMode {
   case GroupMode::Day: {
     const auto key = group_key(fi, mode);
     if (key.empty()) {
-      return {}; // directories: no header of their own
+      return {};
     }
     if (key == "\x7f") {
       return "Unknown date";
@@ -80,6 +107,28 @@ enum class GroupMode {
       return {};
     }
     return key;
+  }
+  case GroupMode::Duration: {
+    const auto key = group_key(fi, mode);
+    if (key == "0") {
+      return "Very Long (>60 minutes)";
+    }
+    if (key == "1") {
+      return "Long (< 60 minutes)";
+    }
+    if (key == "2") {
+      return "Medium (< 30 minutes)";
+    }
+    if (key == "3") {
+      return "Short (< 10 minutes)";
+    }
+    if (key == "4") {
+      return "Very Short (< 5 minutes)";
+    }
+    if (key == "9") {
+      return "Directories";
+    }
+    return "Unknown duration";
   }
   }
   return {};

@@ -230,13 +230,13 @@ as of the responsive-UI / media-cache work.
 |--------------------------------------------------|------------------------------------------------------------|
 | **Small icon / sequence mode**                   | **done** (QListView ListMode + zoom steps)                 |
 | **Graphics View icon scene**                     | Freer layout, hover overlays, per-item animation           |
-| **Group by** (day, directory, duration, none)    | **partial** (day/directory/none + UI headers; duration open) |
+| **Group by** (day, directory, duration, none)    | **done**                                                   |
 | **Time gaps** in icon layout                     | Visual spacing by mtime gaps                               |
 | **Show abspath vs basename** toggle              | Caption shows full path                                    |
 | **Show filtered** (keep non-matches greyed?)     | Separate from hide                                         |
 | **Hover highlight / overlay on thumbnails**      | CompositionMode overlay on hover                           |
 | **Prepare / reload thumbnails** toolbar actions  | **done** (View menu)                                       |
-| **Loading / error / locked / new badge pixmaps** | **done** (status roles + overlays; new via mark_new)       |
+| **Loading / error / locked / new badge pixmaps** | **done** (incl. watcher-detected new files)                |
 | **Undo / redo**                                  | Present in actions but commented out in Python toolbar too |
 
 #### Filter DSL gaps

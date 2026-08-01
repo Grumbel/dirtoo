@@ -329,6 +329,7 @@ MainWindow::MainWindow(QWidget* parent)
       add_group(QStringLiteral("None"), dirtoo::collection::GroupMode::None, true);
       add_group(QStringLiteral("Day"), dirtoo::collection::GroupMode::Day, false);
       add_group(QStringLiteral("Directory"), dirtoo::collection::GroupMode::Directory, false);
+      add_group(QStringLiteral("Duration"), dirtoo::collection::GroupMode::Duration, false);
     }
 
     auto* sort_menu = menuBar()->addMenu(QStringLiteral("&Sort"));
@@ -1004,6 +1005,23 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
   if (generation != dir_load_generation_ || search_active_) {
     return;
   }
+  // Mark paths that appeared since the last listing of this location (watcher refresh).
+  if (model_ != nullptr) {
+    model_->clear_new_marks();
+    if (known_paths_location_ == location_ && !known_paths_.empty()) {
+      for (const auto& fi : items) {
+        const QString p = QString::fromStdString(fi.path().string());
+        if (!known_paths_.contains(p)) {
+          model_->mark_new(p);
+        }
+      }
+    }
+    known_paths_.clear();
+    known_paths_location_ = location_;
+    for (const auto& fi : items) {
+      known_paths_.insert(QString::fromStdString(fi.path().string()));
+    }
+  }
   collection_.sorter().set_ascending(sort_ascending_);
   // Show entries ASAP; order refined by SortWorker.
   collection_.set_items_unsorted(std::move(items));
@@ -1062,12 +1080,12 @@ void MainWindow::on_directory_load_failed(quint64 generation, QString error)
 
 void MainWindow::request_thumbnails_for_visible()
 {
-  if (view_mode_ != ViewMode::Icons) {
+  if (view_mode_ == ViewMode::Detail) {
     return;
   }
   // Debounce rapid refresh/scroll storms (generation-safe via singleShot capturing this).
   QTimer::singleShot(80, this, [this] {
-    if (view_mode_ != ViewMode::Icons) {
+    if (view_mode_ == ViewMode::Detail) {
       return;
     }
     QMimeDatabase mime_db;
