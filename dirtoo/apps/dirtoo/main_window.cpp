@@ -345,64 +345,64 @@ MainWindow::MainWindow(QWidget* parent)
   {
     auto* file_menu = menuBar()->addMenu(QStringLiteral("&File"));
     {
-      auto* act = file_menu->addAction(QStringLiteral("New Window"), this, &MainWindow::on_new_window);
+      auto* act = file_menu->addAction(theme_icon("window-new"), QStringLiteral("New Window"), this, &MainWindow::on_new_window);
       act->setShortcut(QKeySequence::New); // Ctrl+N
     }
-    file_menu->addAction(QStringLiteral("New Folder…"), this, &MainWindow::on_mkdir);
-    file_menu->addAction(QStringLiteral("New File…"), this, &MainWindow::on_create_file);
+    file_menu->addAction(theme_icon("folder-new"), QStringLiteral("New Folder…"), this, &MainWindow::on_mkdir);
+    file_menu->addAction(theme_icon("document-new"), QStringLiteral("New File…"), this, &MainWindow::on_create_file);
     file_menu->addSeparator();
     {
-      auto* act = file_menu->addAction(QStringLiteral("Save File List As…"), this,
+      auto* act = file_menu->addAction(theme_icon("document-save-as"), QStringLiteral("Save File List As…"), this,
                                        &MainWindow::on_save_file_list);
       act->setShortcut(QKeySequence::SaveAs);
     }
     file_menu->addSeparator();
     {
-      auto* act = file_menu->addAction(QStringLiteral("Close"), this, &QWidget::close);
+      auto* act = file_menu->addAction(theme_icon("window-close"), QStringLiteral("Close"), this, &QWidget::close);
       act->setShortcut(QKeySequence::Close);
     }
 
     auto* edit_menu = menuBar()->addMenu(QStringLiteral("&Edit"));
     {
-      auto* act = edit_menu->addAction(QStringLiteral("Cut"), this, &MainWindow::on_cut);
+      auto* act = edit_menu->addAction(theme_icon("edit-cut"), QStringLiteral("Cut"), this, &MainWindow::on_cut);
       act->setShortcut(QKeySequence::Cut);
     }
     {
-      auto* act = edit_menu->addAction(QStringLiteral("Copy"), this, &MainWindow::on_copy);
+      auto* act = edit_menu->addAction(theme_icon("edit-copy"), QStringLiteral("Copy"), this, &MainWindow::on_copy);
       act->setShortcut(QKeySequence::Copy);
     }
     {
-      auto* act = edit_menu->addAction(QStringLiteral("Paste"), this, &MainWindow::on_paste);
+      auto* act = edit_menu->addAction(theme_icon("edit-paste"), QStringLiteral("Paste"), this, &MainWindow::on_paste);
       act->setShortcut(QKeySequence::Paste);
     }
-    edit_menu->addAction(QStringLiteral("Paste as Link"), this, &MainWindow::on_paste_link);
-    edit_menu->addAction(QStringLiteral("Copy as Link"), this, [this] {
+    edit_menu->addAction(theme_icon("emblem-symbolic-link", "insert-link"), QStringLiteral("Paste as Link"), this, &MainWindow::on_paste_link);
+    edit_menu->addAction(theme_icon("edit-copy"), QStringLiteral("Copy as Link"), this, [this] {
       set_clipboard(ClipboardMode::Link);
     });
     {
-      auto* act = edit_menu->addAction(QStringLiteral("Select All"), this, &MainWindow::on_select_all);
+      auto* act = edit_menu->addAction(theme_icon("edit-select-all"), QStringLiteral("Select All"), this, &MainWindow::on_select_all);
       act->setShortcut(QKeySequence::SelectAll);
     }
     edit_menu->addSeparator();
     {
-      auto* act = edit_menu->addAction(QStringLiteral("Rename…"), this, &MainWindow::on_rename_selected);
+      auto* act = edit_menu->addAction(theme_icon("edit-rename", "document-edit"), QStringLiteral("Rename…"), this, &MainWindow::on_rename_selected);
       act->setShortcut(QKeySequence(Qt::Key_F2));
     }
     {
-      auto* act = edit_menu->addAction(QStringLiteral("Delete…"), this, &MainWindow::on_delete_selected);
+      auto* act = edit_menu->addAction(theme_icon("edit-delete"), QStringLiteral("Delete…"), this, &MainWindow::on_delete_selected);
       act->setShortcut(QKeySequence::Delete);
     }
     {
-      auto* act = edit_menu->addAction(QStringLiteral("Swap Names"), this, &MainWindow::on_swap_names);
+      auto* act = edit_menu->addAction(theme_icon("object-flip-horizontal", "edit-copy"), QStringLiteral("Swap Names"), this, &MainWindow::on_swap_names);
       act->setStatusTip(QStringLiteral("Exchange the names of exactly two selected items"));
     }
     {
-      auto* act = edit_menu->addAction(QStringLiteral("Properties…"), this, &MainWindow::on_properties);
+      auto* act = edit_menu->addAction(theme_icon("document-properties"), QStringLiteral("Properties…"), this, &MainWindow::on_properties);
       act->setShortcut(QKeySequence(Qt::Key_F3));
     }
     edit_menu->addSeparator();
     {
-      auto* act = edit_menu->addAction(QStringLiteral("Preferences…"), this, &MainWindow::on_preferences);
+      auto* act = edit_menu->addAction(theme_icon("preferences-system"), QStringLiteral("Preferences…"), this, &MainWindow::on_preferences);
       act->setShortcut(QKeySequence::Preferences);
     }
 
@@ -411,7 +411,7 @@ MainWindow::MainWindow(QWidget* parent)
     view_menu->addAction(icons_act_);
     view_menu->addAction(small_icons_act_);
     view_menu->addSeparator();
-    show_hidden_act_ = view_menu->addAction(QStringLiteral("Show Hidden Files"));
+    show_hidden_act_ = view_menu->addAction(theme_icon("view-hidden", "view-filter"), QStringLiteral("Show Hidden Files"));
     show_hidden_act_->setCheckable(true);
     show_hidden_act_->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+H")));
     connect(show_hidden_act_, &QAction::toggled, this, &MainWindow::on_toggle_hidden);
@@ -422,7 +422,7 @@ MainWindow::MainWindow(QWidget* parent)
       connect(act, &QAction::toggled, this, &MainWindow::on_toggle_show_abspath);
     }
     {
-      auto* act = view_menu->addAction(QStringLiteral("Show Time Gaps"));
+      auto* act = view_menu->addAction(theme_icon("chronometer", "appointment-soon"), QStringLiteral("Show Time Gaps"));
       act->setCheckable(true);
       act->setStatusTip(QStringLiteral("Show separators when consecutive items are far apart in modification time"));
       connect(act, &QAction::toggled, this, [this](bool on) {
@@ -436,7 +436,7 @@ MainWindow::MainWindow(QWidget* parent)
       });
     }
     view_menu->addSeparator();
-    show_filter_act_ = view_menu->addAction(QStringLiteral("Show Filter"));
+    show_filter_act_ = view_menu->addAction(theme_icon("edit-find"), QStringLiteral("Show Filter"));
     show_filter_act_->setCheckable(true);
     show_filter_act_->setChecked(true);
     show_filter_act_->setShortcut(QKeySequence(QStringLiteral("Ctrl+F")));
@@ -453,7 +453,7 @@ MainWindow::MainWindow(QWidget* parent)
         filter_edit_->setFocus(Qt::ShortcutFocusReason);
       }
     });
-    pin_filter_act_ = view_menu->addAction(QStringLiteral("Pin Filter"));
+    pin_filter_act_ = view_menu->addAction(theme_icon("pin", "object-locked"), QStringLiteral("Pin Filter"));
     pin_filter_act_->setCheckable(true);
     pin_filter_act_->setShortcut(QKeySequence(QStringLiteral("Ctrl+P")));
     connect(pin_filter_act_, &QAction::toggled, this, [this](bool on) {
@@ -463,43 +463,43 @@ MainWindow::MainWindow(QWidget* parent)
       }
     });
     {
-      auto* act = view_menu->addAction(QStringLiteral("Jump to…"), this, &MainWindow::on_show_leap);
+      auto* act = view_menu->addAction(theme_icon("go-jump"), QStringLiteral("Jump to…"), this, &MainWindow::on_show_leap);
       act->setShortcut(QKeySequence(QStringLiteral("/")));
     }
     {
-      auto* act = view_menu->addAction(QStringLiteral("Refresh"), this, &MainWindow::on_refresh);
+      auto* act = view_menu->addAction(theme_icon("view-refresh"), QStringLiteral("Refresh"), this, &MainWindow::on_refresh);
       act->setShortcut(QKeySequence(Qt::Key_F5));
     }
     {
-      auto* act = view_menu->addAction(QStringLiteral("Reload Thumbnails"), this,
+      auto* act = view_menu->addAction(theme_icon("view-refresh"), QStringLiteral("Reload Thumbnails"), this,
                                        &MainWindow::on_reload_thumbnails);
       act->setStatusTip(QStringLiteral("Clear and re-request thumbnails for the selection (or all visible)"));
     }
     {
-      auto* act = view_menu->addAction(QStringLiteral("Prepare Thumbnails"), this,
+      auto* act = view_menu->addAction(theme_icon("image-x-generic"), QStringLiteral("Prepare Thumbnails"), this,
                                        &MainWindow::on_prepare_thumbnails);
       act->setStatusTip(QStringLiteral("Request thumbnails for all visible items"));
     }
     {
-      auto* act = view_menu->addAction(QStringLiteral("Make Directory Thumbnails"), this,
+      auto* act = view_menu->addAction(theme_icon("folder"), QStringLiteral("Make Directory Thumbnails"), this,
                                        &MainWindow::on_make_directory_thumbnails);
       act->setStatusTip(QStringLiteral("Build montage thumbnails for folders (selection or all visible)"));
     }
     {
-      auto* act = view_menu->addAction(QStringLiteral("Recursive Search…"), this,
+      auto* act = view_menu->addAction(theme_icon("system-search"), QStringLiteral("Recursive Search…"), this,
                                        &MainWindow::on_show_search);
       act->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+F")));
     }
     {
-      auto* act = view_menu->addAction(QStringLiteral("Zoom In"), this, &MainWindow::on_zoom_in);
+      auto* act = view_menu->addAction(theme_icon("zoom-in"), QStringLiteral("Zoom In"), this, &MainWindow::on_zoom_in);
       act->setShortcut(QKeySequence::ZoomIn);
     }
     {
-      auto* act = view_menu->addAction(QStringLiteral("Zoom Out"), this, &MainWindow::on_zoom_out);
+      auto* act = view_menu->addAction(theme_icon("zoom-out"), QStringLiteral("Zoom Out"), this, &MainWindow::on_zoom_out);
       act->setShortcut(QKeySequence::ZoomOut);
     }
     {
-      auto* act = view_menu->addAction(QStringLiteral("Crop Thumbnails"));
+      auto* act = view_menu->addAction(theme_icon("zoom-fit-best"), QStringLiteral("Crop Thumbnails"));
       act->setCheckable(true);
       act->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_0));
       connect(act, &QAction::toggled, this, [this](bool on) {
@@ -516,12 +516,12 @@ MainWindow::MainWindow(QWidget* parent)
       }
     }
     {
-      auto* act = view_menu->addAction(QStringLiteral("More Icon Details"), this,
+      auto* act = view_menu->addAction(theme_icon("list-add"), QStringLiteral("More Icon Details"), this,
                                        &MainWindow::on_more_icon_details);
       act->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+=")));
     }
     {
-      auto* act = view_menu->addAction(QStringLiteral("Less Icon Details"), this,
+      auto* act = view_menu->addAction(theme_icon("list-remove"), QStringLiteral("Less Icon Details"), this,
                                        &MainWindow::on_less_icon_details);
       act->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+-")));
     }
@@ -618,7 +618,7 @@ MainWindow::MainWindow(QWidget* parent)
     add_sort(QStringLiteral("Random Shuffle"), dirtoo::collection::SortKey::Random);
     sort_menu->addSeparator();
     {
-      auto* act = sort_menu->addAction(QStringLiteral("Directories First"));
+      auto* act = sort_menu->addAction(theme_icon("folder"), QStringLiteral("Directories First"));
       act->setCheckable(true);
       act->setChecked(true);
       connect(act, &QAction::toggled, this, [this](bool on) {
@@ -642,11 +642,11 @@ MainWindow::MainWindow(QWidget* parent)
     }
 
     auto* go_menu = menuBar()->addMenu(QStringLiteral("&Go"));
-    go_menu->addAction(QStringLiteral("Back"), this, &MainWindow::on_go_back);
-    go_menu->addAction(QStringLiteral("Forward"), this, &MainWindow::on_go_forward);
-    go_menu->addAction(QStringLiteral("Parent"), this, &MainWindow::on_go_parent);
-    go_menu->addAction(QStringLiteral("Parent in New Window"), this, &MainWindow::on_parent_new_window);
-    go_menu->addAction(QStringLiteral("Home"), this, &MainWindow::on_go_home);
+    go_menu->addAction(theme_icon("go-previous"), QStringLiteral("Back"), this, &MainWindow::on_go_back);
+    go_menu->addAction(theme_icon("go-next"), QStringLiteral("Forward"), this, &MainWindow::on_go_forward);
+    go_menu->addAction(theme_icon("go-up"), QStringLiteral("Parent"), this, &MainWindow::on_go_parent);
+    go_menu->addAction(theme_icon("window-new"), QStringLiteral("Parent in New Window"), this, &MainWindow::on_parent_new_window);
+    go_menu->addAction(theme_icon("go-home"), QStringLiteral("Home"), this, &MainWindow::on_go_home);
 
     bookmarks_menu_ = new HistoryMenu(QStringLiteral("&Bookmarks"), this);
     menuBar()->addMenu(bookmarks_menu_);
@@ -657,9 +657,9 @@ MainWindow::MainWindow(QWidget* parent)
     connect(history_menu_, &QMenu::aboutToShow, this, &MainWindow::on_rebuild_history_menu);
 
     auto* help_menu = menuBar()->addMenu(QStringLiteral("&Help"));
-    help_menu->addAction(QStringLiteral("Filter expression help"), this,
+    help_menu->addAction(theme_icon("help-contents"), QStringLiteral("Filter expression help"), this,
                          &MainWindow::on_show_filter_help);
-    help_menu->addAction(QStringLiteral("About dirtoo"), this, &MainWindow::on_about);
+    help_menu->addAction(theme_icon("help-about"), QStringLiteral("About dirtoo"), this, &MainWindow::on_about);
   }
 
 
@@ -724,7 +724,7 @@ MainWindow::MainWindow(QWidget* parent)
     connect(location_buttons_, &LocationButtonBar::urls_dropped, this,
             &MainWindow::on_breadcrumb_drop);
 
-    location_edit_ = new QLineEdit(loc_host);
+    location_edit_ = new QLineEdit(breadcrumb_row);
     location_edit_->setPlaceholderText(QStringLiteral("Location"));
     {
       path_completion_model_ = new QStringListModel(location_edit_);
@@ -760,9 +760,9 @@ MainWindow::MainWindow(QWidget* parent)
       }
     });
     location_edit_->hide();
+    breadcrumb_layout->addWidget(location_edit_, 1);
 
     loc_layout->addWidget(breadcrumb_row);
-    loc_layout->addWidget(location_edit_);
     layout->addWidget(loc_host);
     location_stack_host_ = loc_host;
   }
@@ -1909,7 +1909,7 @@ void MainWindow::on_context_menu(const QPoint& pos)
   QMenu menu(this);
 
   // --- Open ---
-  menu.addAction(QStringLiteral("Open"), this, [this, graphics] {
+  menu.addAction(theme_icon("document-open"), QStringLiteral("Open"), this, [this, graphics] {
     if (graphics) {
       const auto rows = graphics_view_->selected_rows();
       if (!rows.empty() && model_ != nullptr) {
@@ -1926,7 +1926,7 @@ void MainWindow::on_context_menu(const QPoint& pos)
       on_item_activated(rows.first());
     }
   });
-  menu.addAction(QStringLiteral("Open in New Window"), this, [this] {
+  menu.addAction(theme_icon("window-new"), QStringLiteral("Open in New Window"), this, [this] {
     const auto selected = selected_fileinfos();
     if (selected.empty()) {
       return;
@@ -1948,21 +1948,21 @@ void MainWindow::on_context_menu(const QPoint& pos)
     for (const auto& fi : selected) {
       paths.push_back(fi.path());
     }
-    auto* open_with = menu.addMenu(QStringLiteral("Open with"));
+    auto* open_with = menu.addMenu(theme_icon("system-run"), QStringLiteral("Open with"));
     if (paths.empty()) {
       open_with->setEnabled(false);
     } else {
       populate_open_with_menu(open_with, paths);
     }
   }
-  menu.addAction(QStringLiteral("Open in Terminal"), this, &MainWindow::on_open_terminal);
+  menu.addAction(theme_icon("utilities-terminal"), QStringLiteral("Open in Terminal"), this, &MainWindow::on_open_terminal);
 
   // --- Clipboard ---
   menu.addSeparator();
-  menu.addAction(QStringLiteral("Cut"), this, &MainWindow::on_cut);
-  menu.addAction(QStringLiteral("Copy"), this, &MainWindow::on_copy);
-  menu.addAction(QStringLiteral("Paste"), this, &MainWindow::on_paste);
-  menu.addAction(QStringLiteral("Copy Path"), this, [this] {
+  menu.addAction(theme_icon("edit-cut"), QStringLiteral("Cut"), this, &MainWindow::on_cut);
+  menu.addAction(theme_icon("edit-copy"), QStringLiteral("Copy"), this, &MainWindow::on_copy);
+  menu.addAction(theme_icon("edit-paste"), QStringLiteral("Paste"), this, &MainWindow::on_paste);
+  menu.addAction(theme_icon("edit-copy"), QStringLiteral("Copy Path"), this, [this] {
     const auto selected = selected_fileinfos();
     if (selected.empty()) {
       return;
@@ -1977,20 +1977,20 @@ void MainWindow::on_context_menu(const QPoint& pos)
 
   // --- Edit ---
   menu.addSeparator();
-  menu.addAction(QStringLiteral("Rename…"), this, &MainWindow::on_rename_selected);
-  menu.addAction(QStringLiteral("Delete…"), this, &MainWindow::on_delete_selected);
-  menu.addAction(QStringLiteral("Properties…"), this, &MainWindow::on_properties);
+  menu.addAction(theme_icon("edit-rename", "document-edit"), QStringLiteral("Rename…"), this, &MainWindow::on_rename_selected);
+  menu.addAction(theme_icon("edit-delete"), QStringLiteral("Delete…"), this, &MainWindow::on_delete_selected);
+  menu.addAction(theme_icon("document-properties"), QStringLiteral("Properties…"), this, &MainWindow::on_properties);
 
   // --- Create ---
   menu.addSeparator();
-  menu.addAction(QStringLiteral("New Folder…"), this, &MainWindow::on_mkdir);
-  menu.addAction(QStringLiteral("New File…"), this, &MainWindow::on_create_file);
+  menu.addAction(theme_icon("folder-new"), QStringLiteral("New Folder…"), this, &MainWindow::on_mkdir);
+  menu.addAction(theme_icon("document-new"), QStringLiteral("New File…"), this, &MainWindow::on_create_file);
 
   // --- Thumbnails ---
   menu.addSeparator();
-  menu.addAction(QStringLiteral("Reload Thumbnails"), this, &MainWindow::on_reload_thumbnails);
-  menu.addAction(QStringLiteral("Prepare Thumbnails"), this, &MainWindow::on_prepare_thumbnails);
-  menu.addAction(QStringLiteral("Make Directory Thumbnails"), this, &MainWindow::on_make_directory_thumbnails);
+  menu.addAction(theme_icon("view-refresh"), QStringLiteral("Reload Thumbnails"), this, &MainWindow::on_reload_thumbnails);
+  menu.addAction(theme_icon("image-x-generic"), QStringLiteral("Prepare Thumbnails"), this, &MainWindow::on_prepare_thumbnails);
+  menu.addAction(theme_icon("folder"), QStringLiteral("Make Directory Thumbnails"), this, &MainWindow::on_make_directory_thumbnails);
 
   if (graphics) {
     menu.exec(graphics_view_->mapToGlobal(pos));
