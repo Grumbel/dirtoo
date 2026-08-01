@@ -530,7 +530,7 @@ void MainWindow::request_thumbnails_for_visible()
   locs.reserve(visible.size());
   mimes.reserve(static_cast<int>(visible.size()));
   for (const auto& fi : visible) {
-    if (fi.is_directory()) {
+    if (fi.is_directory() || fi.is_synthetic() || location_.is_archive()) {
       continue;
     }
     locs.push_back(fi.location());

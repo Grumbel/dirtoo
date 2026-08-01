@@ -19,8 +19,8 @@ public:
   [[nodiscard]] static FileInfo from_location(const Location& location);
 
   /// Virtual entry (e.g. archive member) that may not exist on the real FS.
-  [[nodiscard]] static FileInfo synthetic(Location location, std::string basename, bool is_directory,
-                                          std::uint64_t size = 0);
+  [[nodiscard]] static FileInfo synthetic(Location location, std::string display_name,
+                                          bool is_directory, std::uint64_t size = 0);
 
   [[nodiscard]] const Location& location() const noexcept { return location_; }
   [[nodiscard]] const std::filesystem::path& path() const noexcept { return path_; }
@@ -41,6 +41,7 @@ public:
 private:
   Location location_;
   std::filesystem::path path_;
+  std::string display_name_;
   std::uint64_t size_ = 0;
   std::filesystem::file_time_type mtime_{};
   bool is_directory_ = false;

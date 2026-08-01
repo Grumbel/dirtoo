@@ -12,6 +12,7 @@ FileInfo FileInfo::from_path(const std::filesystem::path& path)
   FileInfo info;
   info.path_ = path;
   info.location_ = Location::from_path(path);
+  info.display_name_ = path.filename().string();
 
   std::error_code ec;
   const auto status = std::filesystem::symlink_status(path, ec);
@@ -34,19 +35,19 @@ FileInfo FileInfo::from_path(const std::filesystem::path& path)
 
 FileInfo FileInfo::from_location(const Location& location)
 {
+  if (location.is_archive()) {
+    return synthetic(location, location.basename(), false, 0);
+  }
   return from_path(location.as_path());
 }
 
-FileInfo FileInfo::synthetic(Location location, std::string basename, bool is_directory,
+FileInfo FileInfo::synthetic(Location location, std::string display_name, bool is_directory,
                              std::uint64_t size)
 {
   FileInfo info;
   info.location_ = std::move(location);
-  info.path_ = info.location_.as_path() / basename;
-  if (info.location_.is_archive()) {
-    // path() remains archive file path for ops; basename comes from location entry.
-    info.path_ = info.location_.as_path();
-  }
+  info.display_name_ = std::move(display_name);
+  info.path_ = info.location_.as_path();
   info.size_ = size;
   info.is_directory_ = is_directory;
   info.is_regular_file_ = !is_directory;
@@ -54,26 +55,33 @@ FileInfo FileInfo::synthetic(Location location, std::string basename, bool is_di
   return info;
 }
 
-
 std::string FileInfo::basename() const
 {
+  if (!display_name_.empty()) {
+    return display_name_;
+  }
   if (location_.is_archive() && !location_.entry_path().empty()) {
     return location_.entry_path().filename().string();
-  }
-  if (is_synthetic_ && location_.is_archive()) {
-    return location_.basename();
   }
   return path_.filename().string();
 }
 
 std::string FileInfo::extension() const
 {
-  return path_.extension().string();
+  const auto name = basename();
+  const auto pos = name.rfind('.');
+  if (pos == std::string::npos || pos == 0) {
+    return {};
+  }
+  return name.substr(pos);
 }
 
 std::vector<FileInfo> list_directory(const Location& location)
 {
   std::vector<FileInfo> result;
+  if (location.is_archive()) {
+    return result;
+  }
   std::error_code ec;
   for (const auto& entry : std::filesystem::directory_iterator(location.as_path(), ec)) {
     if (ec) {

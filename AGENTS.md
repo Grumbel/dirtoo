@@ -185,3 +185,5 @@ See `TODO.md` for the full phased plan.
 | `apps/dirtoo` | Qt GUI (MainWindow, model, clipboard, transfers) |
 
 Python reference remains in `dirtoo-py/` for comparison only.
+
+See also `dirtoo/STATUS.md` for a concise module map and build hints.

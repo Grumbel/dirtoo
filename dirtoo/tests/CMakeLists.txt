@@ -14,6 +14,7 @@ add_executable(dirtoo-tests
   test_dirops.cpp
   test_collection.cpp
   test_clipboard_text.cpp
+  test_archive_index.cpp
   ${CMAKE_SOURCE_DIR}/apps/dirtoo/clipboard.cpp
 )
 target_include_directories(dirtoo-tests PRIVATE
@@ -24,6 +25,7 @@ target_link_libraries(dirtoo-tests
     dirtoo::fs
     dirtoo::dirops
     dirtoo::collection
+    dirtoo::archive
     Qt6::Core
     Catch2::Catch2WithMain
     dirtoo_warnings

@@ -112,6 +112,10 @@ QIcon FileListModel::icon_for(const fs::FileInfo& fi) const
   if (it != thumbnails_.constEnd()) {
     return it.value();
   }
+  if (fi.is_synthetic()) {
+    return icon_provider().icon(fi.is_directory() ? QFileIconProvider::Folder
+                                                  : QFileIconProvider::File);
+  }
   return icon_provider().icon(QFileInfo(path));
 }
 
