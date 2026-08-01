@@ -18,6 +18,7 @@
 #include "message_area.hpp"
 #include "search_worker.hpp"
 #include "path_completion_worker.hpp"
+#include "directory_load_worker.hpp"
 #include "leap_widget.hpp"
 #include "location_button_bar.hpp"
 #include "transfer_dialog.hpp"
@@ -71,6 +72,8 @@ private slots:
   void on_go_back();
   void on_go_forward();
   void on_directory_changed();
+  void on_directory_loaded(quint64 generation, std::vector<dirtoo::fs::FileInfo> items);
+  void on_directory_load_failed(quint64 generation, QString error);
   void on_filter_changed(const QString& text);
   void on_item_activated(const QModelIndex& index);
   void on_context_menu(const QPoint& pos);
@@ -203,6 +206,9 @@ private:
   SearchWorker* search_worker_ = nullptr;
   QThread* path_completion_thread_ = nullptr;
   PathCompletionWorker* path_completion_worker_ = nullptr;
+  QThread* dir_load_thread_ = nullptr;
+  DirectoryLoadWorker* dir_load_worker_ = nullptr;
+  quint64 dir_load_generation_ = 0;
   QStringListModel* path_completion_model_ = nullptr;
   QCompleter* path_completer_ = nullptr;
   QTimer* path_completion_timer_ = nullptr;

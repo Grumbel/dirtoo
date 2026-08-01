@@ -3,7 +3,7 @@
 
 #include "dirtoo/collection/sorter.hpp"
 
-#include "dirtoo/filter/media_probe.hpp"
+#include "dirtoo/filter/media_meta_cache.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -72,7 +72,8 @@ MediaDims media_of(const fs::FileInfo& fi)
   if (fi.is_directory() || fi.path().empty()) {
     return d;
   }
-  const auto meta = filter::probe_media(fi.path());
+  // GUI/sort path: memory cache only — never ffprobe/SQLite here.
+  const auto meta = filter::MediaMetaCache::instance().try_get(fi.path());
   if (!meta) {
     return d;
   }

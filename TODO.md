@@ -139,10 +139,10 @@ Schema evolution via `PRAGMA user_version` migrations.
 - [x] Disk cache get/put keyed by path+mtime+size  
 - [x] In-memory layer + worker queue (`request` / `try_get`)  
 - [x] Wire FileItemDelegate to memory-only + viewport requests (paint path)  
-- [ ] Stop sync `probe_media` from sorter/filter on UI paths (use cache fields)  
-- [ ] Async directory load  
+- [x] Stop sync `probe_media` from sorter (memory only); filter uses cache then sync resolve for CLI  
+- [x] Async directory load (`DirectoryLoadWorker` + generation)  
 - [ ] Async sort  
-- [ ] Debounced thumbnails  
+- [x] Debounced thumbnails (80ms singleShot)  
 - [ ] Optional: persist more FileInfo fields; multi-backend location keys  
 
 

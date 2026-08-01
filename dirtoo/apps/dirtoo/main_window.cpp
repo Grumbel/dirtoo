@@ -94,6 +94,15 @@ MainWindow::MainWindow(QWidget* parent)
   connect(transfer_worker_, &TransferWorker::finished, this, &MainWindow::on_transfer_finished);
   transfer_thread_.start();
 
+  dir_load_worker_ = new DirectoryLoadWorker;
+  dir_load_thread_ = new QThread(this);
+  dir_load_worker_->moveToThread(dir_load_thread_);
+  connect(dir_load_thread_, &QThread::finished, dir_load_worker_, &QObject::deleteLater);
+  connect(dir_load_worker_, &DirectoryLoadWorker::loaded, this, &MainWindow::on_directory_loaded);
+  connect(dir_load_worker_, &DirectoryLoadWorker::failed, this, &MainWindow::on_directory_load_failed);
+  qRegisterMetaType<std::vector<dirtoo::fs::FileInfo>>("std::vector<dirtoo::fs::FileInfo>");
+  dir_load_thread_->start();
+
   auto* toolbar = addToolBar(QStringLiteral("Main"));
   toolbar->setMovable(false);
   toolbar->setIconSize(QSize(24, 24));
@@ -558,6 +567,10 @@ MainWindow::~MainWindow()
   }
   transfer_thread_.quit();
   transfer_thread_.wait(5000);
+  if (dir_load_thread_ != nullptr) {
+    dir_load_thread_->quit();
+    dir_load_thread_->wait(3000);
+  }
 }
 
 QAbstractItemView* MainWindow::current_view() const
@@ -810,30 +823,75 @@ void MainWindow::on_directory_changed()
   }
   thumbnailer_.cancel_all();
   model_->clear_thumbnails();
-  std::vector<fs::FileInfo> items;
-  if (location_.is_archive()) {
-    if (archive_listing_ok_) {
-      items = archive::fileinfos_for_prefix(location_, archive_entries_);
-    } else {
-      const auto resolved = archive_manager_.resolved_directory(location_);
-      if (!resolved) {
-        status_label_->setText(QStringLiteral("Archive not ready"));
-        return;
-      }
-      items = fs::list_directory(fs::Location::from_path(*resolved));
+  filter::MediaMetaCache::instance().bump_generation();
+
+  // In-memory archive index: apply on UI thread (no directory walk).
+  if (location_.is_archive() && archive_listing_ok_) {
+    auto items = archive::fileinfos_for_prefix(location_, archive_entries_);
+    collection_.sorter().set_ascending(sort_ascending_);
+    collection_.set_items(std::move(items));
+    if (filter_edit_ != nullptr && !filter_edit_->text().isEmpty()) {
+      collection_.set_name_filter(filter_edit_->text().toStdString());
     }
-  } else {
-    items = fs::list_directory(location_);
+    refresh_list();
+    request_thumbnails_for_visible();
+    return;
   }
-  // Keep current Sort key (Name/Size/media/…); only refresh order direction.
+
+  fs::Location load_loc = location_;
+  if (location_.is_archive()) {
+    const auto resolved = archive_manager_.resolved_directory(location_);
+    if (!resolved) {
+      status_label_->setText(QStringLiteral("Archive not ready"));
+      return;
+    }
+    load_loc = fs::Location::from_path(*resolved);
+  }
+
+  const quint64 gen = ++dir_load_generation_;
+  if (status_label_ != nullptr) {
+    status_label_->setText(QStringLiteral("Loading…"));
+  }
+  // Clear the view immediately so navigation feels responsive.
+  collection_.clear();
+  refresh_list();
+
+  if (dir_load_worker_ == nullptr) {
+    return;
+  }
+  const QString path = QString::fromStdString(load_loc.as_path().string());
+  QMetaObject::invokeMethod(dir_load_worker_, "load", Qt::QueuedConnection,
+                            Q_ARG(QString, path), Q_ARG(quint64, gen));
+}
+
+void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInfo> items)
+{
+  if (generation != dir_load_generation_ || search_active_) {
+    return;
+  }
   collection_.sorter().set_ascending(sort_ascending_);
   collection_.set_items(std::move(items));
-
-  if (!filter_edit_->text().isEmpty()) {
+  if (filter_edit_ != nullptr && !filter_edit_->text().isEmpty()) {
     collection_.set_name_filter(filter_edit_->text().toStdString());
   }
   refresh_list();
   request_thumbnails_for_visible();
+  if (status_label_ != nullptr) {
+    status_label_->setText(QStringLiteral("%1 items").arg(collection_.visible_items().size()));
+  }
+}
+
+void MainWindow::on_directory_load_failed(quint64 generation, QString error)
+{
+  if (generation != dir_load_generation_) {
+    return;
+  }
+  if (status_label_ != nullptr) {
+    status_label_->setText(error);
+  }
+  if (message_area_ != nullptr) {
+    message_area_->show_error(error);
+  }
 }
 
 void MainWindow::request_thumbnails_for_visible()
@@ -841,22 +899,29 @@ void MainWindow::request_thumbnails_for_visible()
   if (view_mode_ != ViewMode::Icons) {
     return;
   }
-
-  QMimeDatabase mime_db;
-  std::vector<fs::Location> locs;
-  QStringList mimes;
-  const auto& visible = collection_.visible_items();
-  locs.reserve(visible.size());
-  mimes.reserve(static_cast<int>(visible.size()));
-  for (const auto& fi : visible) {
-    if (fi.is_directory() || fi.is_synthetic() || location_.is_archive()) {
-      continue;
+  // Debounce rapid refresh/scroll storms (generation-safe via singleShot capturing this).
+  QTimer::singleShot(80, this, [this] {
+    if (view_mode_ != ViewMode::Icons) {
+      return;
     }
-    locs.push_back(fi.location());
-    const auto mt = mime_db.mimeTypeForFile(QString::fromStdString(fi.path().string()));
-    mimes.push_back(mt.name());
-  }
-  thumbnailer_.request_many(locs, mimes, QStringLiteral("large"));
+    QMimeDatabase mime_db;
+    std::vector<fs::Location> locs;
+    QStringList mimes;
+    const auto& visible = collection_.visible_items();
+    locs.reserve(visible.size());
+    mimes.reserve(static_cast<int>(visible.size()));
+    for (const auto& fi : visible) {
+      if (fi.is_directory() || fi.is_synthetic() || location_.is_archive()) {
+        continue;
+      }
+      locs.push_back(fi.location());
+      const auto mt = mime_db.mimeTypeForFile(QString::fromStdString(fi.path().string()));
+      mimes.push_back(mt.name());
+    }
+    if (!locs.empty()) {
+      thumbnailer_.request_many(locs, mimes, QStringLiteral("large"));
+    }
+  });
 }
 
 void MainWindow::on_thumbnail_ready(const fs::Location& location, const QString& path)

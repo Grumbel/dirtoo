@@ -3,7 +3,7 @@
 
 #include "dirtoo/filter/predicates.hpp"
 
-#include "dirtoo/filter/media_probe.hpp"
+#include "dirtoo/filter/media_meta_cache.hpp"
 
 #include <algorithm>
 #include <set>
@@ -355,6 +355,20 @@ bool apply_cmp(Cmp op, double a, double b)
   return false;
 }
 
+
+std::optional<MediaInfo> lookup_media(const std::filesystem::path& path)
+{
+  auto& cache = MediaMetaCache::instance();
+  if (auto hit = cache.try_get(path)) {
+    return hit;
+  }
+  if (cache.is_negative(path)) {
+    return std::nullopt;
+  }
+  // CLI / non-GUI: resolve synchronously via workers+SQLite (not for paint).
+  return resolve_media_cached(path);
+}
+
 class WidthMatch : public MatchFunc {
 public:
   WidthMatch(Cmp op, double value)
@@ -367,7 +381,7 @@ public:
     if (item.is_directory || item.path.empty()) {
       return false;
     }
-    const auto meta = probe_media(item.path);
+    const auto meta = lookup_media(item.path);
     if (!meta || !meta->width) {
       return false;
     }
@@ -391,7 +405,7 @@ public:
     if (item.is_directory || item.path.empty()) {
       return false;
     }
-    const auto meta = probe_media(item.path);
+    const auto meta = lookup_media(item.path);
     if (!meta || !meta->height) {
       return false;
     }
@@ -415,7 +429,7 @@ public:
     if (item.is_directory || item.path.empty()) {
       return false;
     }
-    const auto meta = probe_media(item.path);
+    const auto meta = lookup_media(item.path);
     if (!meta || !meta->duration_ms) {
       return false;
     }
@@ -439,7 +453,7 @@ public:
     if (item.is_directory || item.path.empty()) {
       return false;
     }
-    const auto meta = probe_media(item.path);
+    const auto meta = lookup_media(item.path);
     if (!meta || !meta->framerate) {
       return false;
     }
