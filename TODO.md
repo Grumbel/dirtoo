@@ -216,14 +216,14 @@ Use:
 
 ## Suggested work order
 
-1. **Listing cost**: `list_directory` via `directory_entry`; stop `weakly_canonical` on every child.  
-2. **Watcher debounce** + avoid clear-before-load flicker where possible.  
+1. [x] **Listing cost**: `list_directory` via `directory_entry`; `from_path_unchecked` (no per-child `weakly_canonical`).  
+2. [x] **Watcher debounce** (200ms single-shot).  
 3. **Graphics**: incremental model sync; don’t recreate all items on every reset.  
-4. **Thumbnails**: viewport-only requests; move mime lookup off GUI or cache.  
+4. [x] **Thumbnails**: viewport-scoped batch (cap 64); skip `QMimeDatabase` on GUI.  
 5. **Filter**: evaluate `contains*` on a worker; apply results by generation.  
-6. **DnD**: correct default action / modifiers; folder drop on list/tree; optional Link.  
-7. **Icons polish**: palette background, caption metrics, group headers in Graphics.  
-8. **Parity gaps**: Select All, New File, symlink paste, directory thumbnails.
+6. [x] **DnD**: Shift→Move; folder drop on list/tree; Graphics modifier handling.  
+7. [partial] **Icons**: palette base background; **GraphicsFileView is now constructed** (was never created). Caption/group headers still open.  
+8. [partial] **Parity**: Select All (Ctrl+A) done; New File / symlink / dir thumbs still open.
 
 ---
 

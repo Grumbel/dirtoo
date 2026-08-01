@@ -76,6 +76,37 @@ std::string FileInfo::extension() const
   return name.substr(pos);
 }
 
+FileInfo FileInfo::from_directory_entry(const std::filesystem::directory_entry& entry)
+{
+  FileInfo info;
+  info.path_ = entry.path();
+  // Parent was already normalized when the user navigated; avoid weakly_canonical
+  // (extra stats) on every child during large listings.
+  info.location_ = Location::from_path_unchecked(entry.path());
+  info.display_name_ = entry.path().filename().string();
+
+  std::error_code ec;
+  const auto status = entry.symlink_status(ec);
+  if (ec) {
+    return info;
+  }
+
+  info.is_symlink_ = std::filesystem::is_symlink(status);
+  info.is_directory_ = std::filesystem::is_directory(status);
+  info.is_regular_file_ = std::filesystem::is_regular_file(status);
+  info.permissions_ = status.permissions();
+
+  if (info.is_regular_file_) {
+    info.size_ = static_cast<std::uint64_t>(entry.file_size(ec));
+    if (ec) {
+      info.size_ = 0;
+    }
+  }
+
+  info.mtime_ = entry.last_write_time(ec);
+  return info;
+}
+
 std::vector<FileInfo> list_directory(const Location& location)
 {
   std::vector<FileInfo> result;
@@ -83,11 +114,13 @@ std::vector<FileInfo> list_directory(const Location& location)
     return result;
   }
   std::error_code ec;
-  for (const auto& entry : std::filesystem::directory_iterator(location.as_path(), ec)) {
+  const auto opts = std::filesystem::directory_options::skip_permission_denied;
+  for (const auto& entry : std::filesystem::directory_iterator(location.as_path(), opts, ec)) {
     if (ec) {
-      break;
+      ec.clear();
+      continue;
     }
-    result.push_back(FileInfo::from_path(entry.path()));
+    result.push_back(FileInfo::from_directory_entry(entry));
   }
   return result;
 }

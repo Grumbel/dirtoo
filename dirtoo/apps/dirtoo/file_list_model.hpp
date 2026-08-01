@@ -94,7 +94,8 @@ public:
 
 signals:
   /// Emitted when external URLs are dropped onto the view. Handled by MainWindow.
-  void urls_dropped(const QList<QUrl>& urls, Qt::DropAction action);
+  /// @param dest_dir empty = current location; otherwise absolute path of folder target.
+  void urls_dropped(const QList<QUrl>& urls, Qt::DropAction action, const QString& dest_dir);
 
 private:
   [[nodiscard]] QIcon icon_for(const fs::FileInfo& fi) const;

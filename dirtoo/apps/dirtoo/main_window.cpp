@@ -4,6 +4,7 @@
 #include "main_window.hpp"
 #include "file_views.hpp"
 #include "graphics_file_view.hpp"
+#include "graphics_file_item.hpp"
 #include "file_item_delegate.hpp"
 #include "dirtoo/filter/media_meta_cache.hpp"
 
@@ -58,6 +59,9 @@
 #include <QTreeView>
 #include <QUrl>
 #include <QVBoxLayout>
+#include <QGraphicsItem>
+#include <QGraphicsScene>
+#include <algorithm>
 #include <QWheelEvent>
 #include <QWidget>
 
@@ -219,6 +223,10 @@ MainWindow::MainWindow(QWidget* parent)
     {
       auto* act = edit_menu->addAction(QStringLiteral("Paste"), this, &MainWindow::on_paste);
       act->setShortcut(QKeySequence::Paste);
+    }
+    {
+      auto* act = edit_menu->addAction(QStringLiteral("Select All"), this, &MainWindow::on_select_all);
+      act->setShortcut(QKeySequence::SelectAll);
     }
     edit_menu->addSeparator();
     {
@@ -579,7 +587,7 @@ MainWindow::MainWindow(QWidget* parent)
   model_->set_icon_detail_level(3);
   dirtoo::filter::MediaMetaCache::instance().open();
   model_->set_collection(&collection_);
-  connect(model_, &FileListModel::urls_dropped, this, &MainWindow::on_urls_dropped);
+  connect(model_, &FileListModel::urls_dropped, this, &MainWindow::on_urls_dropped_to);
 
   view_stack_ = new QStackedWidget(central);
 
@@ -626,9 +634,23 @@ MainWindow::MainWindow(QWidget* parent)
   icon_view_->viewport()->installEventFilter(this);
   connect(icon_view_, &QWidget::customContextMenuRequested, this, &MainWindow::on_context_menu);
   view_stack_->addWidget(icon_view_);
+
+  graphics_view_ = new GraphicsFileView(view_stack_);
+  graphics_view_->set_model(model_);
+  connect(graphics_view_, &GraphicsFileView::activated, this, &MainWindow::on_item_activated);
+  connect(graphics_view_, &GraphicsFileView::middle_clicked, this, &MainWindow::on_view_middle_click);
+  connect(graphics_view_, &GraphicsFileView::context_menu_requested, this,
+          [this](const QPoint& global_pos, const QModelIndex&) {
+            on_context_menu(graphics_view_->mapFromGlobal(global_pos));
+          });
+  connect(graphics_view_, &GraphicsFileView::selection_changed, this,
+          &MainWindow::on_selection_changed);
+  connect(graphics_view_, &GraphicsFileView::files_dropped, this, &MainWindow::on_urls_dropped_to);
+  view_stack_->addWidget(graphics_view_);
+
   apply_icon_zoom();
 
-    connect(tree_view_->selectionModel(), &QItemSelectionModel::selectionChanged, this,
+  connect(tree_view_->selectionModel(), &QItemSelectionModel::selectionChanged, this,
           &MainWindow::on_selection_changed);
   connect(icon_view_->selectionModel(), &QItemSelectionModel::selectionChanged, this,
           &MainWindow::on_selection_changed);
@@ -642,8 +664,16 @@ MainWindow::MainWindow(QWidget* parent)
   leap_widget_ = new LeapWidget(this);
   connect(leap_widget_, &LeapWidget::leap, this, &MainWindow::on_leap);
 
-  connect(&watcher_, &watcher::DirectoryWatcher::directory_changed, this,
-          &MainWindow::on_directory_changed);
+  // Debounce watcher storms (busy dirs otherwise clear+reload+rethumb every event).
+  watcher_reload_timer_ = new QTimer(this);
+  watcher_reload_timer_->setSingleShot(true);
+  watcher_reload_timer_->setInterval(200);
+  connect(watcher_reload_timer_, &QTimer::timeout, this, &MainWindow::on_directory_changed);
+  connect(&watcher_, &watcher::DirectoryWatcher::directory_changed, this, [this] {
+    if (watcher_reload_timer_ != nullptr) {
+      watcher_reload_timer_->start();
+    }
+  });
   connect(&watcher_, &watcher::DirectoryWatcher::message, this, [this](const QString& msg) {
     status_label_->setText(msg);
   });
@@ -1136,23 +1166,75 @@ void MainWindow::request_thumbnails_for_visible()
     if (view_mode_ == ViewMode::Detail) {
       return;
     }
-    QMimeDatabase mime_db;
+    const auto& visible = collection_.visible_items();
+    if (visible.empty()) {
+      return;
+    }
+
+    // Prefer viewport rows when the active view can report them; fall back to a
+    // capped prefix so huge directories do not queue thousands of D-Bus jobs.
+    std::vector<int> rows;
+    if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr) {
+      const QRect vp = graphics_view_->viewport()->rect().adjusted(-64, -64, 64, 64);
+      const QRectF scene_rect = graphics_view_->mapToScene(vp).boundingRect();
+      for (QGraphicsItem* gi : graphics_view_->scene()->items(scene_rect)) {
+        if (auto* item = qgraphicsitem_cast<GraphicsFileItem*>(gi)) {
+          rows.push_back(item->row());
+        }
+      }
+      std::sort(rows.begin(), rows.end());
+      rows.erase(std::unique(rows.begin(), rows.end()), rows.end());
+    } else if (QAbstractItemView* view = current_view()) {
+      const QRect vp = view->viewport()->rect();
+      // Sample top/mid/bottom of the viewport for a cheap row range estimate.
+      const QModelIndex top = view->indexAt(vp.topLeft() + QPoint(4, 4));
+      const QModelIndex bot = view->indexAt(vp.bottomLeft() + QPoint(4, -4));
+      int first = top.isValid() ? top.row() : 0;
+      int last = bot.isValid() ? bot.row() : first;
+      if (last < first) {
+        std::swap(first, last);
+      }
+      // Pad a few screens worth.
+      first = std::max(0, first - 8);
+      last = std::min(model_->rowCount() - 1, last + 24);
+      for (int r = first; r <= last; ++r) {
+        rows.push_back(r);
+      }
+    }
+
+    constexpr int kMaxBatch = 64;
+    if (rows.empty()) {
+      const int n = std::min(static_cast<int>(visible.size()), kMaxBatch);
+      rows.reserve(static_cast<std::size_t>(n));
+      for (int r = 0; r < n; ++r) {
+        rows.push_back(r);
+      }
+    } else if (static_cast<int>(rows.size()) > kMaxBatch) {
+      rows.resize(static_cast<std::size_t>(kMaxBatch));
+    }
+
     std::vector<fs::Location> locs;
     QStringList mimes;
-    const auto& visible = collection_.visible_items();
-    locs.reserve(visible.size());
-    mimes.reserve(static_cast<int>(visible.size()));
-    for (const auto& fi : visible) {
+    locs.reserve(rows.size());
+    mimes.reserve(static_cast<int>(rows.size()));
+    for (int r : rows) {
+      if (r < 0 || static_cast<std::size_t>(r) >= visible.size()) {
+        continue;
+      }
+      const auto& fi = visible[static_cast<std::size_t>(r)];
       if (fi.is_directory() || fi.is_synthetic() || location_.is_archive()) {
         continue;
       }
       const QString path = QString::fromStdString(fi.path().string());
       if (model_ != nullptr) {
+        if (model_->thumbnail_status(path) == ThumbnailStatus::Ready) {
+          continue;
+        }
         model_->set_thumbnail_pending(path);
       }
       locs.push_back(fi.location());
-      const auto mt = mime_db.mimeTypeForFile(path);
-      mimes.push_back(mt.name());
+      // Avoid QMimeDatabase::mimeTypeForFile (stat/magic) on the GUI thread.
+      mimes.push_back(QStringLiteral("application/octet-stream"));
     }
     if (!locs.empty()) {
       thumbnailer_.request_many(locs, mimes, QStringLiteral("large"));
@@ -1707,6 +1789,19 @@ void MainWindow::update_status_selection()
 void MainWindow::on_urls_dropped(const QList<QUrl>& urls, Qt::DropAction action)
 {
   on_urls_dropped_to(urls, action, {});
+}
+
+void MainWindow::on_select_all()
+{
+  if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr) {
+    for (QGraphicsItem* item : graphics_view_->scene()->items()) {
+      item->setSelected(true);
+    }
+    return;
+  }
+  if (QAbstractItemView* view = current_view()) {
+    view->selectAll();
+  }
 }
 
 void MainWindow::on_urls_dropped_to(const QList<QUrl>& urls, Qt::DropAction action,

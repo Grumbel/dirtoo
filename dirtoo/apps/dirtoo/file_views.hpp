@@ -5,6 +5,7 @@
 
 #include "drag_action_overlay.hpp"
 
+#include <QApplication>
 #include <QDrag>
 #include <QListView>
 #include <QMimeData>
@@ -70,7 +71,10 @@ protected:
         drag->setHotSpot(QPoint(pm.width() / 2, pm.height() / 2));
       }
     }
-    drag->exec(supportedActions, defaultDropAction());
+    const auto mods = QApplication::keyboardModifiers();
+    const Qt::DropAction def =
+        (mods & Qt::ShiftModifier) ? Qt::MoveAction : defaultDropAction();
+    drag->exec(supportedActions, def);
   }
 };
 
@@ -102,7 +106,10 @@ protected:
         drag->setHotSpot(QPoint(pm.width() / 2, pm.height() / 2));
       }
     }
-    drag->exec(supportedActions, defaultDropAction());
+    const auto mods = QApplication::keyboardModifiers();
+    const Qt::DropAction def =
+        (mods & Qt::ShiftModifier) ? Qt::MoveAction : defaultDropAction();
+    drag->exec(supportedActions, def);
   }
 };
 

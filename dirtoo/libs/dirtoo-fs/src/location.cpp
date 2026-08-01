@@ -97,6 +97,11 @@ Location Location::from_path(const std::filesystem::path& path)
   return Location{"file", normalize_file_path(path), {}};
 }
 
+Location Location::from_path_unchecked(std::filesystem::path path)
+{
+  return Location{"file", std::move(path), {}};
+}
+
 Location Location::from_archive(const std::filesystem::path& archive_file,
                                 const std::filesystem::path& entry)
 {

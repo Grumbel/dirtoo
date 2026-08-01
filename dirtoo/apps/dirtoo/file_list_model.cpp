@@ -456,13 +456,24 @@ bool FileListModel::canDropMimeData(const QMimeData* data, Qt::DropAction action
 bool FileListModel::dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column,
                                  const QModelIndex& parent)
 {
-  (void)row;
   (void)column;
-  (void)parent;
   if (!canDropMimeData(data, action, -1, -1, {})) {
     return false;
   }
-  emit urls_dropped(data->urls(), action);
+  // Prefer dropping onto a directory row when the view reports an item target.
+  QString dest_dir;
+  QModelIndex target;
+  if (parent.isValid()) {
+    target = parent.sibling(parent.row(), 0);
+  } else if (row >= 0) {
+    target = index(row, 0);
+  }
+  if (target.isValid()) {
+    if (const fs::FileInfo* fi = file_at(target.row()); fi != nullptr && fi->is_directory()) {
+      dest_dir = QString::fromStdString(fi->path().string());
+    }
+  }
+  emit urls_dropped(data->urls(), action, dest_dir);
   // Model does not mutate itself; MainWindow performs the FS operation.
   return true;
 }

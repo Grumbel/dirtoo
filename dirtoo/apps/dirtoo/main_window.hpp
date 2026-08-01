@@ -147,6 +147,7 @@ private slots:
   void on_urls_dropped(const QList<QUrl>& urls, Qt::DropAction action);
   void on_urls_dropped_to(const QList<QUrl>& urls, Qt::DropAction action, const QString& dest_dir);
   void on_save_file_list();
+  void on_select_all();
 
   void on_transfer_item_started(int index, int total, const QString& path);
   void on_transfer_byte_progress(quint64 done, quint64 total, const QString& path);
@@ -230,6 +231,7 @@ private:
   QStringListModel* path_completion_model_ = nullptr;
   QCompleter* path_completer_ = nullptr;
   QTimer* path_completion_timer_ = nullptr;
+  QTimer* watcher_reload_timer_ = nullptr;
   QString path_completion_pending_;
   quint64 path_completion_request_id_ = 0;
   QStackedWidget* view_stack_ = nullptr;

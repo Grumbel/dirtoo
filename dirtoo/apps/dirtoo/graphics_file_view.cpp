@@ -35,7 +35,7 @@ GraphicsFileView::GraphicsFileView(QWidget* parent)
   setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
   setResizeAnchor(QGraphicsView::AnchorUnderMouse);
   setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-  setBackgroundBrush(QColor(250, 250, 250));
+  setBackgroundBrush(palette().base());
   setAcceptDrops(true);
 
   connect(scene_, &QGraphicsScene::selectionChanged, this, &GraphicsFileView::on_scene_selection_changed);
@@ -333,7 +333,11 @@ void GraphicsFileView::start_drag()
       drag->setHotSpot(QPoint(pm.width() / 2, pm.height() / 2));
     }
   }
-  drag->exec(Qt::CopyAction | Qt::MoveAction, Qt::CopyAction);
+  // Prefer Move when Shift is held; otherwise Copy (desktop-common). Ctrl also Copy.
+  const auto mods = QApplication::keyboardModifiers();
+  const Qt::DropAction default_action =
+      (mods & Qt::ShiftModifier) ? Qt::MoveAction : Qt::CopyAction;
+  drag->exec(Qt::CopyAction | Qt::MoveAction, default_action);
 }
 
 void GraphicsFileView::dragEnterEvent(QDragEnterEvent* event)
@@ -348,7 +352,13 @@ void GraphicsFileView::dragEnterEvent(QDragEnterEvent* event)
 void GraphicsFileView::dragMoveEvent(QDragMoveEvent* event)
 {
   if (event->mimeData() != nullptr && event->mimeData()->hasUrls()) {
-    event->acceptProposedAction();
+    // Honour modifier keys for the proposed action while hovering.
+    if (event->keyboardModifiers() & Qt::ShiftModifier) {
+      event->setDropAction(Qt::MoveAction);
+    } else {
+      event->setDropAction(Qt::CopyAction);
+    }
+    event->accept();
   } else {
     event->ignore();
   }
@@ -368,8 +378,15 @@ void GraphicsFileView::dropEvent(QDropEvent* event)
       }
     }
   }
-  emit files_dropped(event->mimeData()->urls(), event->proposedAction(), dest_dir);
-  event->acceptProposedAction();
+  Qt::DropAction action = event->proposedAction();
+  if (event->keyboardModifiers() & Qt::ShiftModifier) {
+    action = Qt::MoveAction;
+  } else if (event->keyboardModifiers() & Qt::ControlModifier) {
+    action = Qt::CopyAction;
+  }
+  emit files_dropped(event->mimeData()->urls(), action, dest_dir);
+  event->setDropAction(action);
+  event->accept();
 }
 
 } // namespace dirtoo::app

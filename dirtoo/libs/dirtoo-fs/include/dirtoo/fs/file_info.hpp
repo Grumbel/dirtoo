@@ -17,6 +17,8 @@ class FileInfo {
 public:
   [[nodiscard]] static FileInfo from_path(const std::filesystem::path& path);
   [[nodiscard]] static FileInfo from_location(const Location& location);
+  /// Build from a directory_iterator entry using cached status (listing hot path).
+  [[nodiscard]] static FileInfo from_directory_entry(const std::filesystem::directory_entry& entry);
 
   /// Virtual entry (e.g. archive member) that may not exist on the real FS.
   [[nodiscard]] static FileInfo synthetic(Location location, std::string display_name,

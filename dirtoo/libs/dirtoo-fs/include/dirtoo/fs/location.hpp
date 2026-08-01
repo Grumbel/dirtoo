@@ -22,6 +22,9 @@ public:
   Location() = default;
 
   [[nodiscard]] static Location from_path(const std::filesystem::path& path);
+  /// Like from_path but skips weakly_canonical — use for directory children when the
+  /// parent is already absolute/normalized (listing hot path).
+  [[nodiscard]] static Location from_path_unchecked(std::filesystem::path path);
   [[nodiscard]] static Location from_archive(const std::filesystem::path& archive_file,
                                              const std::filesystem::path& entry = {});
   [[nodiscard]] static Location from_url(std::string_view url);
