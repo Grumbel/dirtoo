@@ -5,6 +5,7 @@
 
 #include "file_list_model.hpp"
 #include "graphics_file_item.hpp"
+#include "drag_action_overlay.hpp"
 
 #include <QContextMenuEvent>
 #include <QGraphicsScene>
@@ -12,6 +13,12 @@
 #include <QResizeEvent>
 #include <QScrollBar>
 #include <QWheelEvent>
+#include <QApplication>
+#include <QDropEvent>
+#include <QDragMoveEvent>
+#include <QDragEnterEvent>
+#include <QMimeData>
+#include <QDrag>
 
 #include <algorithm>
 
@@ -214,19 +221,6 @@ void GraphicsFileView::resizeEvent(QResizeEvent* event)
   layout_items();
 }
 
-void GraphicsFileView::mousePressEvent(QMouseEvent* event)
-{
-  if (event->button() == Qt::MiddleButton) {
-    const auto idx = index_at(event->pos());
-    if (idx.isValid()) {
-      emit middle_clicked(idx);
-      event->accept();
-      return;
-    }
-  }
-  QGraphicsView::mousePressEvent(event);
-}
-
 void GraphicsFileView::mouseDoubleClickEvent(QMouseEvent* event)
 {
   const auto idx = index_at(event->pos());
@@ -252,8 +246,122 @@ void GraphicsFileView::contextMenuEvent(QContextMenuEvent* event)
 
 void GraphicsFileView::wheelEvent(QWheelEvent* event)
 {
-  // Plain wheel scrolls; Ctrl+wheel reserved for zoom at MainWindow level if desired
   QGraphicsView::wheelEvent(event);
+}
+
+void GraphicsFileView::mousePressEvent(QMouseEvent* event)
+{
+  if (event->button() == Qt::MiddleButton) {
+    const auto idx = index_at(event->pos());
+    if (idx.isValid()) {
+      emit middle_clicked(idx);
+      event->accept();
+      return;
+    }
+  }
+  if (event->button() == Qt::LeftButton) {
+    drag_start_pos_ = event->pos();
+    drag_started_ = false;
+  }
+  QGraphicsView::mousePressEvent(event);
+}
+
+void GraphicsFileView::mouseMoveEvent(QMouseEvent* event)
+{
+  if ((event->buttons() & Qt::LeftButton) && !drag_started_
+      && (event->pos() - drag_start_pos_).manhattanLength()
+             >= QApplication::startDragDistance()) {
+    if (auto* item = qgraphicsitem_cast<GraphicsFileItem*>(itemAt(drag_start_pos_))) {
+      if (!item->isSelected()) {
+        select_row(item->row(), true);
+      }
+      start_drag();
+      drag_started_ = true;
+      event->accept();
+      return;
+    }
+  }
+  QGraphicsView::mouseMoveEvent(event);
+}
+
+void GraphicsFileView::start_drag()
+{
+  if (model_ == nullptr) {
+    return;
+  }
+  QModelIndexList indexes;
+  for (int row : selected_rows()) {
+    indexes.append(model_->index(row, 0));
+  }
+  if (indexes.isEmpty()) {
+    return;
+  }
+  QMimeData* mime = model_->mimeData(indexes);
+  if (mime == nullptr) {
+    return;
+  }
+  begin_drag_action_overlay();
+  auto* drag = new QDrag(this);
+  drag->setMimeData(mime);
+  // Themed cursors (same assets as list/tree views)
+  {
+    auto load = [](const char* alias) {
+      return QPixmap(QStringLiteral(":/icons/%1").arg(QLatin1String(alias)));
+    };
+    const QPixmap copy = load("dnd-copy.png");
+    const QPixmap move = load("dnd-move.png");
+    const QPixmap link = load("dnd-link.png");
+    const QPixmap none = load("dnd-none.png");
+    if (!copy.isNull()) {
+      drag->setDragCursor(copy, Qt::CopyAction);
+    }
+    if (!move.isNull()) {
+      drag->setDragCursor(move, Qt::MoveAction);
+    }
+    if (!link.isNull()) {
+      drag->setDragCursor(link, Qt::LinkAction);
+    }
+    if (!none.isNull()) {
+      drag->setDragCursor(none, Qt::IgnoreAction);
+    }
+  }
+  if (const auto* fi = model_->file_at(indexes.first().row())) {
+    const QIcon icon = indexes.first().data(Qt::DecorationRole).value<QIcon>();
+    const QPixmap pm = icon.pixmap(QSize(64, 64));
+    if (!pm.isNull()) {
+      drag->setPixmap(pm);
+      drag->setHotSpot(QPoint(pm.width() / 2, pm.height() / 2));
+    }
+  }
+  drag->exec(Qt::CopyAction | Qt::MoveAction, Qt::CopyAction);
+}
+
+void GraphicsFileView::dragEnterEvent(QDragEnterEvent* event)
+{
+  if (event->mimeData() != nullptr && event->mimeData()->hasUrls()) {
+    event->acceptProposedAction();
+  } else {
+    event->ignore();
+  }
+}
+
+void GraphicsFileView::dragMoveEvent(QDragMoveEvent* event)
+{
+  if (event->mimeData() != nullptr && event->mimeData()->hasUrls()) {
+    event->acceptProposedAction();
+  } else {
+    event->ignore();
+  }
+}
+
+void GraphicsFileView::dropEvent(QDropEvent* event)
+{
+  if (model_ == nullptr || event->mimeData() == nullptr || !event->mimeData()->hasUrls()) {
+    event->ignore();
+    return;
+  }
+  model_->dropMimeData(event->mimeData(), event->proposedAction(), -1, -1, {});
+  event->acceptProposedAction();
 }
 
 } // namespace dirtoo::app

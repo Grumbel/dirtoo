@@ -229,7 +229,7 @@ as of the responsive-UI / media-cache work.
 | Missing                                          | Python behaviour                                           |
 |--------------------------------------------------|------------------------------------------------------------|
 | **Small icon / sequence mode**                   | **done** (QListView ListMode + zoom steps)                 |
-| **Graphics View icon scene**                     | **initial** (grid layout, selection, badges, menus)        |
+| **Graphics View icon scene**                     | **improved** (DnD + themed cursors + drag overlay)         |
 | **Group by** (day, directory, duration, none)    | **done**                                                   |
 | **Time gaps** in icon layout                     | Visual spacing by mtime gaps                               |
 | **Show abspath vs basename** toggle              | Caption shows full path                                    |

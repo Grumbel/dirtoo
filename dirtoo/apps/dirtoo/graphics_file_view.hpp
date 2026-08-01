@@ -58,6 +58,10 @@ protected:
   void mouseReleaseEvent(QMouseEvent* event) override;
   void contextMenuEvent(QContextMenuEvent* event) override;
   void wheelEvent(QWheelEvent* event) override;
+  void mouseMoveEvent(QMouseEvent* event) override;
+  void dragEnterEvent(QDragEnterEvent* event) override;
+  void dragMoveEvent(QDragMoveEvent* event) override;
+  void dropEvent(QDropEvent* event) override;
 
 private slots:
   void on_model_reset();
@@ -77,6 +81,10 @@ private:
   int spacing_ = 12;
   int padding_ = 8;
   bool suppress_selection_signal_ = false;
+  QPoint drag_start_pos_;
+  bool drag_started_ = false;
+
+  void start_drag();
 };
 
 } // namespace dirtoo::app
