@@ -325,7 +325,7 @@ void GraphicsFileView::start_drag()
       drag->setDragCursor(none, Qt::IgnoreAction);
     }
   }
-  if (const auto* fi = model_->file_at(indexes.first().row())) {
+  {
     const QIcon icon = indexes.first().data(Qt::DecorationRole).value<QIcon>();
     const QPixmap pm = icon.pixmap(QSize(64, 64));
     if (!pm.isNull()) {

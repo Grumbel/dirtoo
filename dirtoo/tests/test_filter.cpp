@@ -236,7 +236,7 @@ TEST_CASE("filter contains command", "[filter]")
     out << "Hello WORLD\nsecond line\n";
   }
 
-  FilterItem item{.name = "note.txt", .size = 0, .is_directory = false, .path = path};
+  FilterItem item{.name = "note.txt", .size = 0, .is_directory = false, .path = path, .mtime_sec = 0};
 
   auto m = parse_filter("contains:hello");
   REQUIRE(m);
@@ -291,7 +291,7 @@ TEST_CASE("filter containsre command", "[filter]")
     std::ofstream out(path);
     out << "alpha\nfoo123bar\nzed\n";
   }
-  FilterItem item{.name = "code.txt", .size = 0, .is_directory = false, .path = path};
+  FilterItem item{.name = "code.txt", .size = 0, .is_directory = false, .path = path, .mtime_sec = 0};
 
   auto m = parse_filter("containsre:foo[0-9]+bar");
   REQUIRE(m);
@@ -338,7 +338,7 @@ TEST_CASE("filter containsfuzzy random charset", "[filter]")
     std::ofstream out(path);
     out << "spelling is hard\n";
   }
-  FilterItem item{.name = "notes.txt", .size = 0, .is_directory = false, .path = path};
+  FilterItem item{.name = "notes.txt", .size = 0, .is_directory = false, .path = path, .mtime_sec = 0};
   m = parse_filter("containsfuzzy:speling");
   REQUIRE(m);
   REQUIRE((*m)->matches(item));

@@ -3,6 +3,7 @@
 
 #include "main_window.hpp"
 #include "file_views.hpp"
+#include "graphics_file_view.hpp"
 #include "file_item_delegate.hpp"
 #include "dirtoo/filter/media_meta_cache.hpp"
 
@@ -1769,8 +1770,7 @@ void MainWindow::on_save_file_list()
   const int rows = model_->rowCount();
   for (int r = 0; r < rows; ++r) {
     if (const auto* fi = model_->file_at(r)) {
-      out << QString::fromStdString(fi->path().string()) << QLatin1Char('\n');
-');
+      out << QString::fromStdString(fi->path().string()) << QChar('\n');
     }
   }
   if (status_label_ != nullptr) {
