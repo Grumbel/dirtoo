@@ -41,23 +41,6 @@ QString format_time_gap(qint64 secs)
   return QStringLiteral("%1d gap").arg(secs / 86400);
 }
 
-void draw_caption_text(QPainter* painter, const QRect& rect, const QString& text,
-                       const QColor& color)
-{
-  const QColor outline(0, 0, 0, 140);
-  for (int dx = -1; dx <= 1; ++dx) {
-    for (int dy = -1; dy <= 1; ++dy) {
-      if (dx == 0 && dy == 0) {
-        continue;
-      }
-      painter->setPen(outline);
-      painter->drawText(rect.translated(dx, dy), Qt::AlignHCenter | Qt::AlignVCenter, text);
-    }
-  }
-  painter->setPen(color);
-  painter->drawText(rect, Qt::AlignHCenter | Qt::AlignVCenter, text);
-}
-
 void draw_badge(QPainter* painter, const QRect& thumb, const QString& text, Qt::Alignment align)
 {
   if (text.isEmpty()) {
@@ -455,28 +438,27 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
 
   draw_status_overlays(painter, thumb, index);
 
-  // Caption under thumbnail — elide each line so long names/sizes stay inside the cell.
+  // Captions: basename in normal text; size/date in gray (dirtoo-py). No outline.
   if (!text.isEmpty() && model_->icon_detail_level() > 0) {
     QRect text_rect = opt.rect.adjusted(4, thumb.bottom() + 4, -4, -2);
     if (text_rect.height() > 0 && text_rect.width() > 0) {
       QPen pen = painter->pen();
-      if (opt.state & QStyle::State_Selected) {
-        painter->setPen(opt.palette.highlightedText().color());
-      } else {
-        painter->setPen(opt.palette.text().color());
-      }
+      const QColor name_color = opt.palette.text().color();
+      const QColor secondary(96, 96, 96);
       const QFontMetrics fm(painter->font());
       const QStringList lines = text.split(QLatin1Char('\n'));
       int y = text_rect.top();
+      int drawn = 0;
       for (const QString& line : lines) {
         if (y + fm.height() > text_rect.bottom()) {
           break;
         }
         const QString elided = fm.elidedText(line, Qt::ElideMiddle, text_rect.width());
-        const QColor color = painter->pen().color();
-        draw_caption_text(painter, QRect(text_rect.left(), y, text_rect.width(), fm.height()),
-                          elided, color);
+        painter->setPen(drawn == 0 ? name_color : secondary);
+        painter->drawText(QRect(text_rect.left(), y, text_rect.width(), fm.height()),
+                          Qt::AlignHCenter | Qt::AlignVCenter, elided);
         y += fm.height() + 1;
+        ++drawn;
       }
       painter->setPen(pen);
     }

@@ -11,10 +11,13 @@
 #include <QFileIconProvider>
 #include <QGraphicsSceneContextMenuEvent>
 #include <QGraphicsSceneMouseEvent>
+#include <QMetaObject>
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 
 #include <algorithm>
+#include <cctype>
+#include <optional>
 
 namespace dirtoo::app {
 namespace {
@@ -32,24 +35,6 @@ QString format_duration_ms(std::uint64_t ms)
         .arg(s, 2, 10, QLatin1Char('0'));
   }
   return QStringLiteral("%1:%2").arg(m).arg(s, 2, 10, QLatin1Char('0'));
-}
-
-void draw_caption_text(QPainter* painter, const QRect& rect, const QString& text,
-                       const QColor& color)
-{
-  // Soft outline so captions stay readable on varied thumbnail backgrounds.
-  const QColor outline(0, 0, 0, 140);
-  for (int dx = -1; dx <= 1; ++dx) {
-    for (int dy = -1; dy <= 1; ++dy) {
-      if (dx == 0 && dy == 0) {
-        continue;
-      }
-      painter->setPen(outline);
-      painter->drawText(rect.translated(dx, dy), Qt::AlignHCenter | Qt::AlignTop, text);
-    }
-  }
-  painter->setPen(color);
-  painter->drawText(rect, Qt::AlignHCenter | Qt::AlignTop, text);
 }
 
 void draw_badge(QPainter* painter, const QRect& thumb, const QString& text, Qt::Alignment align)
@@ -245,28 +230,68 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
     }
   }
 
-  // Media badges from memory cache only
-  if (const auto* fi = model_->file_at(row_); fi != nullptr && !fi->is_directory()) {
-    if (const auto meta = filter::MediaMetaCache::instance().try_get(fi->path())) {
-      QString top_left;
-      QString top_right;
-      QString bottom_left;
-      if (meta->duration_ms && *meta->duration_ms > 0) {
-        top_left = format_duration_ms(*meta->duration_ms);
-      } else if (meta->pages && *meta->pages > 0) {
-        top_left = QStringLiteral("%1 pages").arg(*meta->pages);
-      } else if (meta->file_count && *meta->file_count > 0) {
-        top_left = QStringLiteral("%1 files").arg(*meta->file_count);
+  // Media badges (Python: level_of_detail > 1). Request async if missing.
+  if (model_->icon_detail_level() > 1) {
+    if (const auto* fi = model_->file_at(row_); fi != nullptr && !fi->is_directory()) {
+      std::string ext = fi->extension();
+      if (!ext.empty() && ext[0] == '.') {
+        ext.erase(ext.begin());
       }
-      if (meta->framerate && *meta->framerate > 0.0) {
-        top_right = QStringLiteral("%1fps").arg(*meta->framerate, 0, 'g', 3);
+      for (char& c : ext) {
+        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
       }
-      if (meta->width && meta->height && *meta->width > 0 && *meta->height > 0) {
-        bottom_left = QStringLiteral("%1×%2").arg(*meta->width).arg(*meta->height);
+      static const char* kMedia[] = {
+          "png", "jpg", "jpeg", "gif", "webp", "bmp", "tif", "tiff", "svg",
+          "mp4", "mkv", "webm", "avi", "mov", "m4v", "wmv", "flv", "mpg", "mpeg",
+          "mp3", "flac", "ogg", "wav", "m4a", "aac", "opus",
+          "pdf", "zip", "tar", "tgz", "7z", "rar", "cbz", "cbr", "jar", "apk",
+          "gz", "bz2", "xz"};
+      bool want = false;
+      for (const char* e : kMedia) {
+        if (ext == e) {
+          want = true;
+          break;
+        }
       }
-      draw_badge(painter, thumb, top_left, Qt::AlignLeft | Qt::AlignTop);
-      draw_badge(painter, thumb, top_right, Qt::AlignRight | Qt::AlignTop);
-      draw_badge(painter, thumb, bottom_left, Qt::AlignLeft | Qt::AlignBottom);
+      auto& cache = filter::MediaMetaCache::instance();
+      std::optional<filter::MediaInfo> meta;
+      if (want) {
+        meta = cache.try_get(fi->path());
+        if (!meta && !cache.is_negative(fi->path())) {
+          const int row = row_;
+          FileListModel* model = model_;
+          cache.request(fi->path(), cache.generation(),
+                        [model, row](const std::string&, std::optional<filter::MediaInfo>,
+                                     std::uint64_t) {
+                          if (model == nullptr) {
+                            return;
+                          }
+                          QMetaObject::invokeMethod(model, "notify_row_changed", Qt::QueuedConnection,
+                                                    Q_ARG(int, row));
+                        });
+        }
+      }
+      if (meta) {
+        QString top_left;
+        QString top_right;
+        QString bottom_left;
+        if (meta->duration_ms && *meta->duration_ms > 0) {
+          top_left = format_duration_ms(*meta->duration_ms);
+        } else if (meta->pages && *meta->pages > 0) {
+          top_left = QStringLiteral("%1 pages").arg(*meta->pages);
+        } else if (meta->file_count && *meta->file_count > 0) {
+          top_left = QStringLiteral("%1 files").arg(*meta->file_count);
+        }
+        if (meta->framerate && *meta->framerate > 0.0) {
+          top_right = QStringLiteral("%1fps").arg(*meta->framerate, 0, 'g', 3);
+        }
+        if (meta->width && meta->height && *meta->width > 0 && *meta->height > 0) {
+          bottom_left = QStringLiteral("%1×%2").arg(*meta->width).arg(*meta->height);
+        }
+        draw_badge(painter, thumb, top_left, Qt::AlignLeft | Qt::AlignTop);
+        draw_badge(painter, thumb, top_right, Qt::AlignRight | Qt::AlignTop);
+        draw_badge(painter, thumb, bottom_left, Qt::AlignLeft | Qt::AlignBottom);
+      }
     }
   }
 
@@ -296,15 +321,12 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
     }
   }
 
-  // Caption — multi-line from model (icon detail level); theme-aware colors.
+  // Captions: basename in normal text color; size/date in gray (dirtoo-py).
+  // No outline; selection keeps black text (selection fill provides contrast).
   if (!text.isEmpty() && caption_h > 0) {
     QRect text_rect = br.toRect().adjusted(4, thumb.bottom() + 2, -4, -2);
-    if (selected) {
-      QColor ht = pal.color(QPalette::HighlightedText);
-      painter->setPen(ht.alpha() > 0 ? ht : text_color);
-    } else {
-      painter->setPen(text_color);
-    }
+    const QColor name_color = text_color.isValid() ? text_color : QColor(0, 0, 0);
+    const QColor secondary(96, 96, 96);
     const QFontMetrics fm(painter->font());
     const QStringList lines = text.split(QLatin1Char('\n'));
     int y = text_rect.top();
@@ -314,9 +336,9 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
         break;
       }
       const QString elided = fm.elidedText(line, Qt::ElideMiddle, text_rect.width());
-      const QColor color = painter->pen().color();
-      draw_caption_text(painter, QRect(text_rect.left(), y, text_rect.width(), fm.height()),
-                        elided, color);
+      painter->setPen(drawn == 0 ? name_color : secondary);
+      painter->drawText(QRect(text_rect.left(), y, text_rect.width(), fm.height()),
+                        Qt::AlignHCenter | Qt::AlignTop, elided);
       y += fm.height() + 1;
       ++drawn;
     }
