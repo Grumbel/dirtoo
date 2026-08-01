@@ -1314,6 +1314,15 @@ void MainWindow::on_toggle_hidden(bool checked)
   request_thumbnails_for_visible();
 }
 
+
+void MainWindow::on_toggle_filter_visible()
+{
+  if (show_filter_act_ == nullptr) {
+    return;
+  }
+  show_filter_act_->toggle();
+}
+
 void MainWindow::on_about()
 {
   show_about_dialog(this);
