@@ -28,6 +28,8 @@ qt_add_executable(dirtoo-app
   properties_dialog.hpp
   app_settings.cpp
   app_settings.hpp
+  size_format.cpp
+  size_format.hpp
   open_with.cpp
   open_with.hpp
   about_dialog.cpp

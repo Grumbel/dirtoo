@@ -80,10 +80,24 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   auto* pin_filter = new QCheckBox(QStringLiteral("Keep filter bar visible (pin)"), &dialog);
   pin_filter->setChecked(settings->filter_pinned);
 
+  auto* size_units = new QComboBox(&dialog);
+  size_units->addItem(QStringLiteral("Decimal (KB, MB, GB — base 1000)"), QStringLiteral("si"));
+  size_units->addItem(QStringLiteral("Binary (KiB, MiB, GiB — base 1024)"), QStringLiteral("iec"));
+  {
+    const QString su = settings->size_units.toLower();
+    size_units->setCurrentIndex(su == QLatin1String("iec") || su == QLatin1String("binary")
+                                        || su == QLatin1String("mib")
+                                    ? 1
+                                    : 0);
+  }
+  size_units->setToolTip(
+      QStringLiteral("How file sizes are shown in the list, properties, and transfers"));
+
   form->addRow(QStringLiteral("Default view:"), view);
   form->addRow(QStringLiteral("Zoom level:"), zoom);
   form->addRow(QStringLiteral("Icon caption detail:"), icon_detail);
   form->addRow(QStringLiteral("Group by:"), group);
+  form->addRow(QStringLiteral("Size units:"), size_units);
   form->addRow(crop);
   form->addRow(dirs_first);
   form->addRow(hidden);
@@ -106,6 +120,7 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   settings->zoom_index = zoom->value();
   settings->icon_detail_level = icon_detail->value();
   settings->group_mode = group->currentData().toString();
+  settings->size_units = size_units->currentData().toString();
   settings->crop_thumbnails = crop->isChecked();
   settings->directories_first = dirs_first->isChecked();
   settings->show_hidden = hidden->isChecked();

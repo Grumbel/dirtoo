@@ -20,6 +20,7 @@ AppSettings load_settings()
   out.filter_pinned = s.value(QStringLiteral("ui/filter_pinned"), out.filter_pinned).toBool();
   out.directories_first = s.value(QStringLiteral("ui/directories_first"), out.directories_first).toBool();
   out.group_mode = s.value(QStringLiteral("ui/group_mode"), out.group_mode).toString();
+  out.size_units = s.value(QStringLiteral("ui/size_units"), out.size_units).toString();
   out.window_geometry = s.value(QStringLiteral("window/geometry")).toByteArray();
   out.window_state = s.value(QStringLiteral("window/state")).toByteArray();
   out.last_location = s.value(QStringLiteral("session/last_location")).toString();
@@ -39,6 +40,7 @@ void save_settings(const AppSettings& settings)
   s.setValue(QStringLiteral("ui/filter_pinned"), settings.filter_pinned);
   s.setValue(QStringLiteral("ui/directories_first"), settings.directories_first);
   s.setValue(QStringLiteral("ui/group_mode"), settings.group_mode);
+  s.setValue(QStringLiteral("ui/size_units"), settings.size_units);
   s.setValue(QStringLiteral("window/geometry"), settings.window_geometry);
   s.setValue(QStringLiteral("window/state"), settings.window_state);
   s.setValue(QStringLiteral("session/last_location"), settings.last_location);

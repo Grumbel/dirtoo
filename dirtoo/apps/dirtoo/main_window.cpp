@@ -16,6 +16,7 @@
 #include "about_dialog.hpp"
 #include "name_input_dialog.hpp"
 #include "app_settings.hpp"
+#include "size_format.hpp"
 #include "conflict_dialog.hpp"
 #include "open_with.hpp"
 #include "preferences_dialog.hpp"
@@ -2488,7 +2489,7 @@ void MainWindow::update_status_selection()
   } else {
     extra = QStringLiteral("%1 selected").arg(selected.size());
     if (bytes > 0) {
-      extra += QStringLiteral(" (%1)").arg(QLocale::system().formattedDataSize(static_cast<qint64>(bytes)));
+      extra += QStringLiteral(" (%1)").arg(format_byte_size(bytes));
     }
     if (dirs > 0) {
       extra += QStringLiteral(", %1 folders").arg(dirs);
@@ -2630,6 +2631,7 @@ void MainWindow::on_save_file_list()
 void MainWindow::restore_settings()
 {
   const AppSettings s = load_settings();
+  set_size_unit_style(size_unit_style_from_string(s.size_units));
   if (model_ != nullptr) {
     model_->set_icon_detail_level(s.icon_detail_level);
     model_->set_crop_thumbnails(s.crop_thumbnails);
@@ -2707,7 +2709,7 @@ void MainWindow::restore_settings()
 
 void MainWindow::persist_settings() const
 {
-  AppSettings s;
+  AppSettings s = load_settings(); // keep size_units and other offline prefs
   if (view_mode_ == ViewMode::Icons) {
     s.view_mode = QStringLiteral("icons");
   } else if (view_mode_ == ViewMode::SmallIcons) {
@@ -2724,6 +2726,7 @@ void MainWindow::persist_settings() const
   s.show_filter = show_filter_act_ != nullptr && show_filter_act_->isChecked();
   s.filter_pinned = filter_pinned_;
   s.directories_first = collection_.sorter().directories_first();
+  s.size_units = size_unit_style_to_string(size_unit_style());
   switch (collection_.group_mode()) {
   case collection::GroupMode::Day:
     s.group_mode = QStringLiteral("day");
@@ -2741,6 +2744,7 @@ void MainWindow::persist_settings() const
   s.window_geometry = saveGeometry();
   s.window_state = saveState();
   s.last_location = QString::fromStdString(location_.as_path().string());
+  s.location_history.clear();
   for (const auto& loc : location_history_unique_) {
     s.location_history.append(QString::fromStdString(loc.as_url()));
   }
@@ -3586,6 +3590,7 @@ void MainWindow::on_preferences()
 
 void MainWindow::apply_settings(const AppSettings& s)
 {
+  set_size_unit_style(size_unit_style_from_string(s.size_units));
   if (model_ != nullptr) {
     model_->set_icon_detail_level(s.icon_detail_level);
     model_->set_crop_thumbnails(s.crop_thumbnails);

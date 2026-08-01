@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "properties_dialog.hpp"
+#include "size_format.hpp"
 
 #include "dirtoo/filter/media_meta_cache.hpp"
 
@@ -138,8 +139,7 @@ void show_properties_dialog(QWidget* parent, const std::vector<fs::FileInfo>& it
 
     if (fi.is_regular_file() || fi.is_symlink()) {
       form->addRow(QStringLiteral("Size:"),
-                   new QLabel(QLocale::system().formattedDataSize(static_cast<qint64>(fi.size())),
-                              &dialog));
+                   new QLabel(format_byte_size(fi.size()), &dialog));
     }
     auto* full_lbl = new QLabel(QString::fromStdString(path.string()), &dialog);
     full_lbl->setTextInteractionFlags(Qt::TextSelectableByMouse);
@@ -226,8 +226,7 @@ void show_properties_dialog(QWidget* parent, const std::vector<fs::FileInfo>& it
     form->addRow(QStringLiteral("Files:"), new QLabel(QString::number(files), &dialog));
     form->addRow(QStringLiteral("Folders:"), new QLabel(QString::number(dirs), &dialog));
     form->addRow(QStringLiteral("Total size:"),
-                 new QLabel(QLocale::system().formattedDataSize(static_cast<qint64>(total_size)),
-                            &dialog));
+                 new QLabel(format_byte_size(total_size), &dialog));
     layout->addLayout(form);
   }
 

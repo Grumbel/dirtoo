@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "transfer_dialog.hpp"
+#include "size_format.hpp"
 
 #include <QCheckBox>
 #include <QElapsedTimer>
@@ -218,11 +219,11 @@ void TransferDialog::on_tick()
 
 void TransferDialog::update_transferred_label()
 {
-  const QString done = QLocale::system().formattedDataSize(static_cast<qint64>(bytes_done_));
+  const QString done = format_byte_size(bytes_done_);
   if (bytes_total_ == 0) {
     transferred_label_->setText(done);
   } else {
-    const QString total = QLocale::system().formattedDataSize(static_cast<qint64>(bytes_total_));
+    const QString total = format_byte_size(bytes_total_);
     transferred_label_->setText(QStringLiteral("%1 / %2").arg(done, total));
   }
 }

@@ -19,6 +19,8 @@ struct AppSettings {
   bool filter_pinned = false;
   bool directories_first = true;
   QString group_mode = QStringLiteral("none"); // none|day|directory|duration
+  /// Size display units: "si" (KB/MB, base 1000) or "iec" (KiB/MiB, base 1024).
+  QString size_units = QStringLiteral("si");
   QByteArray window_geometry;
   QByteArray window_state;
   QString last_location;
