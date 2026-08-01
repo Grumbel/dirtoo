@@ -1070,8 +1070,12 @@ void MainWindow::request_thumbnails_for_visible()
       if (fi.is_directory() || fi.is_synthetic() || location_.is_archive()) {
         continue;
       }
+      const QString path = QString::fromStdString(fi.path().string());
+      if (model_ != nullptr) {
+        model_->set_thumbnail_pending(path);
+      }
       locs.push_back(fi.location());
-      const auto mt = mime_db.mimeTypeForFile(QString::fromStdString(fi.path().string()));
+      const auto mt = mime_db.mimeTypeForFile(path);
       mimes.push_back(mt.name());
     }
     if (!locs.empty()) {
@@ -1091,8 +1095,10 @@ void MainWindow::on_thumbnail_ready(const fs::Location& location, const QString&
 
 void MainWindow::on_thumbnail_failed(const fs::Location& location, const QString& message)
 {
-  (void)location;
   (void)message;
+  if (model_ != nullptr) {
+    model_->set_thumbnail_failed(QString::fromStdString(location.as_path().string()));
+  }
 }
 
 void MainWindow::on_filter_changed(const QString& text)

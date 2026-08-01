@@ -119,6 +119,57 @@ const QPixmap& badge_pixmap(MediaKind kind)
   return k_empty;
 }
 
+
+void draw_status_pixmap(QPainter* painter, const QRect& thumb, const QPixmap& pm, Qt::Alignment align,
+                        qreal opacity = 0.55)
+{
+  if (pm.isNull() || thumb.isEmpty()) {
+    return;
+  }
+  const int side = std::min(32, std::max(16, thumb.width() / 4));
+  QRect r(0, 0, side, side);
+  if (align & Qt::AlignRight) {
+    r.moveRight(thumb.right() - 2);
+  } else {
+    r.moveLeft(thumb.left() + 2);
+  }
+  if (align & Qt::AlignBottom) {
+    r.moveBottom(thumb.bottom() - 2);
+  } else {
+    r.moveTop(thumb.top() + 2);
+  }
+  painter->save();
+  painter->setOpacity(opacity);
+  painter->drawPixmap(r, pm);
+  painter->restore();
+}
+
+void draw_status_overlays(QPainter* painter, const QRect& thumb, const QModelIndex& index)
+{
+  static const QPixmap k_loading(QStringLiteral(":/icons/badge-loading.png"));
+  static const QPixmap k_error(QStringLiteral(":/icons/badge-error.png"));
+  static const QPixmap k_locked(QStringLiteral(":/icons/badge-locked.png"));
+  static const QPixmap k_new(QStringLiteral(":/icons/badge-new.png"));
+
+  if (index.data(IsNewRole).toBool() && !k_new.isNull()) {
+    draw_status_pixmap(painter, thumb, k_new, Qt::AlignLeft | Qt::AlignTop, 0.9);
+  }
+  if (index.data(AccessDeniedRole).toBool() && !k_locked.isNull()) {
+    const int m = std::max(4, thumb.width() / 8);
+    QRect r = thumb.adjusted(m, m, -m, -m);
+    painter->save();
+    painter->setOpacity(0.5);
+    painter->drawPixmap(r, k_locked);
+    painter->restore();
+  }
+  const auto status = static_cast<ThumbnailStatus>(index.data(ThumbnailStatusRole).toInt());
+  if (status == ThumbnailStatus::Pending && !k_loading.isNull()) {
+    draw_status_pixmap(painter, thumb, k_loading, Qt::AlignRight | Qt::AlignTop);
+  } else if (status == ThumbnailStatus::Failed && !k_error.isNull()) {
+    draw_status_pixmap(painter, thumb, k_error, Qt::AlignRight | Qt::AlignTop, 0.75);
+  }
+}
+
 void draw_type_badge(QPainter* painter, const QRect& thumb, MediaKind kind)
 {
   if (kind == MediaKind::None) {
@@ -293,6 +344,8 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
       draw_type_badge(painter, thumb, kind);
     }
   }
+
+  draw_status_overlays(painter, thumb, index);
 
   // Caption under thumbnail — elide each line so long names/sizes stay inside the cell.
   if (!text.isEmpty() && model_->icon_detail_level() > 0) {

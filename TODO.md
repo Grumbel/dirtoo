@@ -236,7 +236,7 @@ as of the responsive-UI / media-cache work.
 | **Show filtered** (keep non-matches greyed?)     | Separate from hide                                         |
 | **Hover highlight / overlay on thumbnails**      | CompositionMode overlay on hover                           |
 | **Prepare / reload thumbnails** toolbar actions  | Force thumbnail + metadata refresh                         |
-| **Loading / error / locked / new badge pixmaps** | Assets copied; not fully wired like Python                 |
+| **Loading / error / locked / new badge pixmaps** | **done** (status roles + overlays; new via mark_new)       |
 | **Undo / redo**                                  | Present in actions but commented out in Python toolbar too |
 
 #### Filter DSL gaps
@@ -291,7 +291,7 @@ Python ships many CLIs under `programs/` (find expr engine, fsck, shuffle, deskt
 1. [x] Filter: `contains:` (bounded size) + `date:` / `length:`
 2. [x] Group by day/directory (collection + UI headers)
 3. [x] Small-icon / compact list mode
-4. Wire remaining badge assets (loading/error/locked)
+4. [x] Wire remaining badge assets (loading/error/locked)
 5. Preferences coverage + thumbnail prepare/reload actions
 6. Filter: `time:` / `weekday:` (remaining date family)
 

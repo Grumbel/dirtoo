@@ -8,6 +8,7 @@
 
 #include <QAbstractTableModel>
 #include <QHash>
+#include <QSet>
 #include <QIcon>
 #include <QUrl>
 
@@ -25,6 +26,16 @@ enum FileListRole {
   PathRole = Qt::UserRole,
   GroupLabelRole = Qt::UserRole + 1,
   IsGroupStartRole = Qt::UserRole + 2,
+  ThumbnailStatusRole = Qt::UserRole + 3,
+  AccessDeniedRole = Qt::UserRole + 4,
+  IsNewRole = Qt::UserRole + 5,
+};
+
+enum class ThumbnailStatus {
+  None = 0,
+  Pending,
+  Ready,
+  Failed,
 };
 
 /// Qt model over the visible slice of a FileCollection.
@@ -38,7 +49,14 @@ public:
   void refresh();
 
   void set_thumbnail(const QString& path, const QIcon& icon);
+  void set_thumbnail_pending(const QString& path);
+  void set_thumbnail_failed(const QString& path);
   void clear_thumbnails();
+  void mark_new(const QString& path);
+  void clear_new_marks();
+
+  [[nodiscard]] ThumbnailStatus thumbnail_status(const QString& path) const;
+  [[nodiscard]] bool is_new(const QString& path) const;
 
   /// Thread-safe request to refresh a row (queues to this object's thread).
   Q_INVOKABLE void notify_row_changed(int row);
@@ -79,9 +97,12 @@ signals:
 
 private:
   [[nodiscard]] QIcon icon_for(const fs::FileInfo& fi) const;
+  void emit_path_changed(const QString& path);
 
   collection::FileCollection* collection_ = nullptr;
   QHash<QString, QIcon> thumbnails_;
+  QHash<QString, ThumbnailStatus> thumbnail_status_;
+  QSet<QString> new_paths_;
   bool icon_style_ = false;
   int icon_detail_level_ = 3; // name + size by default (Python-ish)
   bool crop_thumbnails_ = false;

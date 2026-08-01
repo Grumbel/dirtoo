@@ -3,6 +3,8 @@
 
 #include "file_list_model.hpp"
 
+#include <filesystem>
+
 #include <QDateTime>
 #include <QFileIconProvider>
 #include <QFileInfo>
@@ -78,9 +80,8 @@ void FileListModel::refresh()
   endResetModel();
 }
 
-void FileListModel::set_thumbnail(const QString& path, const QIcon& icon)
+void FileListModel::emit_path_changed(const QString& path)
 {
-  thumbnails_.insert(path, icon);
   if (collection_ == nullptr) {
     return;
   }
@@ -88,10 +89,61 @@ void FileListModel::set_thumbnail(const QString& path, const QIcon& icon)
   for (int row = 0; row < static_cast<int>(visible.size()); ++row) {
     if (QString::fromStdString(visible[static_cast<std::size_t>(row)].path().string()) == path) {
       const QModelIndex idx = index(row, 0);
-      emit dataChanged(idx, idx, {Qt::DecorationRole});
+      emit dataChanged(idx, idx,
+                       {Qt::DecorationRole, ThumbnailStatusRole, IsNewRole, AccessDeniedRole});
       break;
     }
   }
+}
+
+void FileListModel::set_thumbnail(const QString& path, const QIcon& icon)
+{
+  thumbnails_.insert(path, icon);
+  thumbnail_status_.insert(path, ThumbnailStatus::Ready);
+  new_paths_.remove(path);
+  emit_path_changed(path);
+}
+
+void FileListModel::set_thumbnail_pending(const QString& path)
+{
+  if (thumbnail_status_.value(path, ThumbnailStatus::None) == ThumbnailStatus::Ready) {
+    return;
+  }
+  thumbnail_status_.insert(path, ThumbnailStatus::Pending);
+  emit_path_changed(path);
+}
+
+void FileListModel::set_thumbnail_failed(const QString& path)
+{
+  thumbnail_status_.insert(path, ThumbnailStatus::Failed);
+  emit_path_changed(path);
+}
+
+void FileListModel::mark_new(const QString& path)
+{
+  new_paths_.insert(path);
+  emit_path_changed(path);
+}
+
+void FileListModel::clear_new_marks()
+{
+  if (new_paths_.isEmpty()) {
+    return;
+  }
+  new_paths_.clear();
+  if (rowCount() > 0) {
+    emit dataChanged(index(0, 0), index(rowCount() - 1, 0), {IsNewRole});
+  }
+}
+
+ThumbnailStatus FileListModel::thumbnail_status(const QString& path) const
+{
+  return thumbnail_status_.value(path, ThumbnailStatus::None);
+}
+
+bool FileListModel::is_new(const QString& path) const
+{
+  return new_paths_.contains(path);
 }
 
 void FileListModel::notify_row_changed(int row)
@@ -105,12 +157,14 @@ void FileListModel::notify_row_changed(int row)
 
 void FileListModel::clear_thumbnails()
 {
-  if (thumbnails_.isEmpty()) {
+  if (thumbnails_.isEmpty() && thumbnail_status_.isEmpty()) {
     return;
   }
   thumbnails_.clear();
+  thumbnail_status_.clear();
   if (rowCount() > 0) {
-    emit dataChanged(index(0, 0), index(rowCount() - 1, 0), {Qt::DecorationRole});
+    emit dataChanged(index(0, 0), index(rowCount() - 1, 0),
+                     {Qt::DecorationRole, ThumbnailStatusRole});
   }
 }
 
@@ -243,6 +297,26 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
 
   if (role == PathRole || role == Qt::UserRole) {
     return QString::fromStdString(fi->path().string());
+  }
+
+  if (role == ThumbnailStatusRole) {
+    return static_cast<int>(thumbnail_status(QString::fromStdString(fi->path().string())));
+  }
+
+  if (role == IsNewRole) {
+    return is_new(QString::fromStdString(fi->path().string()));
+  }
+
+  if (role == AccessDeniedRole) {
+    if (fi->is_synthetic() || fi->path().empty()) {
+      return false;
+    }
+    // No owner read bit → treat as locked (same idea as Python have_access()).
+    using perms = std::filesystem::perms;
+    const auto p = fi->permissions();
+    const bool readable = (p & (perms::owner_read | perms::group_read | perms::others_read))
+                          != perms::none;
+    return !readable;
   }
 
   if (role == GroupLabelRole) {
