@@ -39,9 +39,11 @@ SPDX headers:
 5. Ignore most CLI utilities under `dirtoo-py/.../programs/` unless useful
    for testing C++ libraries.
 
-Local **MVP GUI/filter/dialog parity is complete**. See `TODO.md` for the
-checklist and explicit out-of-scope items (archive write, remote VFS,
-full Python programs surface).
+Local MVP plumbing (libs, filter DSL, dialogs, packaging) exists, but the
+GUI is **not** yet reliable for large directories, DnD, or polished icon
+layout. See **`TODO.md`** for the live defect queue, parity gaps, and
+explicit out-of-scope items (archive write, remote VFS, full Python
+`programs/*` surface).
 
 ---
 
@@ -101,9 +103,15 @@ Use **C++23**, Qt6 (Core, Gui, Widgets, DBus as needed), CMake 3.25+.
 ### GUI / I/O rule
 
 **The GUI thread must not perform filesystem or network I/O** for directory
-loads, meta probes, thumbnail fetches, or multi-file transfers. Use workers,
-signals/slots, and the media meta cache. Bounded reads only for filter
-content predicates (see filter implementation).
+loads, meta probes, thumbnail fetches, multi-file transfers, **or content
+filter evaluation** (`contains*` / `containsre` / `containsfuzzy`). Use
+workers, signals/slots, and the media meta cache. Bounded content reads
+belong on a worker thread, not in `FileCollection::rebuild_visible` on the
+UI thread.
+
+Known violations (see `TODO.md`): content filters on GUI thread; per-file
+`QMimeDatabase` in thumbnail request path; undebounced watcher → full
+reload; Graphics scene full rebuild on every model reset.
 
 ### Git commit messages
 
@@ -143,13 +151,15 @@ message** for the human (subject ≤ ~72 chars, body explaining why and what).
 |------|--------|
 | dirops + CLI tools | done |
 | Main window, nav, bookmarks, history | done |
-| Filter DSL + recursive search + `dt-filter` | done |
-| Detail / Icons (Graphics) / Small icons | done |
-| Thumbnails + media badges + meta cache | done |
-| Clipboard transfers + conflict/transfer dialogs | done |
-| Preferences, properties, about, rename/create | done |
+| Filter DSL + recursive search + `dt-filter` | done (Contains case fix applied; content filters still UI-thread) |
+| Detail / Icons (Graphics) / Small icons | **partial** — freezes on large dirs; icon look/layout weak |
+| Thumbnails + media badges + meta cache | **partial** — all-visible requests; no directory montage |
+| Clipboard transfers + conflict/transfer dialogs | done (no symlink/link) |
+| Preferences, properties, about, rename/new folder | done (no “new file”) |
 | Archives read-only | done |
+| DnD | **broken/incomplete** — Copy-biased; folder drop Graphics-only; no Link |
+| Select All / New File / dir thumbs / timegaps | **missing** vs Python |
 | Archive write / remote VFS / programs/* | **out of scope** |
 
-Details and historical checklists: **`TODO.md`**.
+Priority defect queue and parity matrix: **`TODO.md`**.  
 User-facing overview: **`dirtoo/README.md`**.
