@@ -210,7 +210,8 @@ MainWindow::MainWindow(QWidget* parent)
     go_menu->addAction(QStringLiteral("Parent in New Window"), this, &MainWindow::on_parent_new_window);
     go_menu->addAction(QStringLiteral("Home"), this, &MainWindow::on_go_home);
 
-    history_menu_ = menuBar()->addMenu(QStringLiteral("H&istory"));
+    history_menu_ = new HistoryMenu(QStringLiteral("H&istory"), this);
+    menuBar()->addMenu(history_menu_);
     connect(history_menu_, &QMenu::aboutToShow, this, &MainWindow::on_rebuild_history_menu);
 
     auto* help_menu = menuBar()->addMenu(QStringLiteral("&Help"));
@@ -301,6 +302,9 @@ MainWindow::MainWindow(QWidget* parent)
   filter_edit_->installEventFilter(this);
   connect(filter_edit_, &QLineEdit::textChanged, this, &MainWindow::on_filter_changed);
   layout->addWidget(filter_edit_);
+
+  message_area_ = new MessageArea(central);
+  layout->addWidget(message_area_);
 
   model_ = new FileListModel(this);
   model_->set_collection(&collection_);
@@ -676,7 +680,9 @@ void MainWindow::on_filter_changed(const QString& text)
   refresh_list();
   request_thumbnails_for_visible();
   if (!text.isEmpty() && !collection_.filter_parse_ok()) {
-    status_label_->setText(QStringLiteral("Filter: using fallback substring match"));
+    if (message_area_ != nullptr) {
+      message_area_->show_info(QStringLiteral("Filter parse issue — using substring fallback"));
+    }
   }
 }
 
@@ -1548,9 +1554,8 @@ void MainWindow::on_rebuild_history_menu()
     QString label = loc.is_archive() ? QString::fromStdString(loc.as_url())
                                      : QString::fromStdString(loc.as_path().string());
     auto* act = history_menu_->addAction(label);
-    act->setData(QString::fromStdString(loc.as_url()));
     connect(act, &QAction::triggered, this, [this, loc] {
-      if (QApplication::mouseButtons() & Qt::MiddleButton) {
+      if (history_menu_ != nullptr && history_menu_->middle_pressed()) {
         open_new_window(loc);
       } else if (QApplication::keyboardModifiers() & Qt::ShiftModifier) {
         open_new_window(loc);

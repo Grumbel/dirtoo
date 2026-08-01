@@ -56,3 +56,10 @@ install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/dirtoo-filterConfig.cmake
   ${CMAKE_CURRENT_BINARY_DIR}/dirtoo-filterConfigVersion.cmake
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/dirtoo-filter)
+
+option(DIRTOO_FILTER_BUILD_TOOLS "Build dt-filter CLI" ON)
+if(DIRTOO_FILTER_BUILD_TOOLS)
+  add_executable(dt-filter tools/dt_filter.cpp)
+  target_link_libraries(dt-filter PRIVATE dirtoo-filter)
+  install(TARGETS dt-filter RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif()

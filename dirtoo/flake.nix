@@ -48,7 +48,7 @@
           inherit version src;
           nativeBuildInputs = with pkgs; [ cmake ninja ];
           postUnpack = ''sourceRoot+=/libs/dirtoo-filter'';
-          cmakeFlags = [ versionFlag ];
+          cmakeFlags = [ versionFlag "-DDIRTOO_FILTER_BUILD_TOOLS=ON" ];
         };
 
         dirtoo-collection = pkgs.stdenv.mkDerivation {

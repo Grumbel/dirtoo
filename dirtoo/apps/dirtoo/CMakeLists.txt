@@ -29,6 +29,10 @@ qt_add_executable(dirtoo-app
   leap_widget.hpp
   preferences_dialog.cpp
   preferences_dialog.hpp
+  history_menu.cpp
+  history_menu.hpp
+  message_area.cpp
+  message_area.hpp
   resources.qrc
 )
 

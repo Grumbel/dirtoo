@@ -6,86 +6,69 @@ Python reference: `dirtoo-py/`. Active code: `dirtoo/`.
 
 ## MVP status
 
-Core file manager MVP is **done** (browse, mutate via dirops, DND, clipboard,
-archives read-only, multi-window, packaging). See completed checklist below.
+Core file manager MVP is **done**. Filter DSL, multi-window, dirops, archives
+(read-only), and packaging are in place.
 
 ---
 
 ## Python UI analysis → C++ parity
 
-Findings from `dirtoo-py` GUI / fileview (high-value behaviours):
-
 ### Navigation & mouse
-
-| Python behaviour | Source | C++ status |
-|------------------|--------|------------|
-| Middle-click breadcrumb → new window | `location_buttonbar.py` | **done** |
-| Middle-click directory item → new window | `file_item.py` | **done** |
-| Middle-click archive → open archive in new window | file item | **done** |
-| Middle-click Parent tool button → parent in new window | `tool_button.py` + window | **done** |
-| Middle-click History / menu entries → new window | `menu.py` `addDoubleAction` | **todo** |
-| Click empty location bar → line edit | buttonbar | **done** |
-| Path completion while typing location | `path_completion.py` | **done** (QFileSystemModel completer; not async worker) |
-| Location history menu (unique past locations) | `history_menu.py` | **done** (History menu; middle-click on entries TBD) |
-| Bookmarks protocol / menu | file_view_window | **todo** / low priority |
-
-### Filter & search
-
-| Python behaviour | Source | C++ status |
-|------------------|--------|------------|
-| Filter toolbar (show/hide, pin) | `filter_line_edit.py` | **done** (Ctrl+F / Ctrl+P) |
-| Filter text history (Up/Down) | `filter_line_edit.py` | **done** |
-| Escape clears / hides filter | filter line edit | **done** (clear; second Escape leaves location edit) |
-| Substring + glob filter | collection | **done** |
-| Full filter language (`filter/`, expr parser) | `filter/*.py` | **done** (`dirtoo-filter`; `()` grouping fixed) |
-| Content / recursive search stream | `search_stream.py` | **todo** / defer |
-| Filter help dialog | controller | **todo** |
-
-### View & chrome
-
-| Python behaviour | Source | C++ status |
-|------------------|--------|------------|
-| Detail + icon views, zoom | file_view / scaler | **done** |
-| **Leap widget** (type-to-jump, bottom-right overlay) | `leap_widget.py` | **done** |
-| Message area (transient status/errors) | `message_area.py` | **partial** (status bar only) |
-| Preferences dialog | `preferences_dialog.py` | **done** |
-| Transfer / conflict dialogs | gui/* | **done** |
-| Properties dialog | properties | **done** |
-| Drag “edge” / resize grip styling | drag_widget / style | **todo** (low; Qt native grips OK) |
-| Graphics-scene icon layout (file_graphics_scene) | fileview | **out of scope** for MVP Widgets port |
-
-### Ops & filesystem
 
 | Python behaviour | C++ status |
 |------------------|------------|
-| dirops-style copy/move/rename/mkdir/delete | **done** (`dirops`) |
-| Archive browse (extract/cache) | **done** (read-only, TOC-first) |
-| Virtual FS / multi-protocol stacks | **partial** (file + archive only) |
-| Thumbnailer D-Bus | **done** |
+| Middle-click breadcrumb / directory / archive → new window | **done** |
+| Middle-click Parent toolbar | **done** |
+| Middle-click History menu entries → new window | **done** (`HistoryMenu`) |
+| Location bar ↔ line edit, path completer | **done** |
+| Location history menu | **done** |
+| Bookmarks protocol / menu | **todo** (low priority) |
+
+### Filter & search
+
+| Python behaviour | C++ status |
+|------------------|------------|
+| Filter show/hide + pin, history Up/Down, Escape | **done** |
+| Filter DSL (`and`/`or`/`not`/`()`, glob, regex, size, type) | **done** (`dirtoo-filter`) |
+| Filter help | **done** (Help → Filter expression help) |
+| CLI filter tool | **done** (`dt-filter`) |
+| Content / recursive search | **todo** / defer |
+| Media metadata predicates | **todo** (optional deps) |
+
+### View & chrome
+
+| Python behaviour | C++ status |
+|------------------|------------|
+| Detail + icons, zoom, leap widget | **done** |
+| Message area | **done** (transient banner) |
+| Preferences, transfers, properties, About | **done** |
+| Async path completion worker | **todo** (optional; QFileSystemModel OK for now) |
+| Graphics View icon scene | deferred (may revisit for flexibility) |
+
+### Ops
+
+| Item | Status |
+|------|--------|
+| dirops + tools | **done** |
+| Archives read-only | **done** |
+| Thumbnails D-Bus | **done** |
 
 ---
 
-## Completed MVP checklist
+## Near-term queue
 
-- [x] CMake + flake; VERSION; independent lib packages
-- [x] Browse, dual view, zoom, breadcrumbs, location completer
-- [x] dirops mutations, transfers, conflicts, DND, clipboard
-- [x] Watcher, thumbnails, archives read-only
-- [x] Multi-window (Ctrl+N, middle-click breadcrumb & directory)
-- [x] Filter glob + history (Up/Down)
-- [x] About, desktop, AppStream, settings
-
----
-
-## Near-term UI queue (from analysis)
-
-1. [x] **Leap widget** — frameless type-ahead jump overlay (Python `LeapWidget`)
-2. [x] **Location history menu** — unique past paths, middle-click opens new window
-3. [x] **Middle-click on toolbar Parent** (and other nav buttons) → new window
-4. [x] Filter show/hide + pin (Ctrl+P) (bottom toolbar like Python)
-5. [x] Preferences dialog surface for QSettings keys
-6. [ ] Optional: async path completion worker (large dirs)
-7. [x] Filter DSL (`dirtoo-filter`: and/or/not/`()`, glob, regex, size, type)
+1. [x] Leap widget
+2. [x] History menu + middle-click new window
+3. [x] Middle-click Parent
+4. [x] Filter show/hide + pin
+5. [x] Preferences dialog
+6. [ ] Optional: async path completion worker
+7. [x] Filter DSL + `()` grouping
+8. [x] `dt-filter` CLI
+9. [x] Message area
+10. [ ] Optional: bookmarks menu
+11. [ ] Optional: `contains:` content match (careful with large files)
+12. [ ] Optional: recursive directory search UI/CLI
 
 ---
 
@@ -93,27 +76,23 @@ Findings from `dirtoo-py` GUI / fileview (high-value behaviours):
 
 | Item | Reason |
 |------|--------|
-| Write into archives | Policy: read-only |
-| Graphics View icon scene | Different architecture |
+| Write into archives | Read-only by design |
+| Graphics View icon scene | May revisit; Model/View for now |
 | Face detect / experiments / most programs/* | Out of scope |
 | Pixel-perfect Python layout | Functional parity only |
-| Media metadata filters (width/height/duration) | Need optional deps later |
+| Media metadata filters | Optional backends later |
+
+---
+
+## Filter DSL notes (`dirtoo-filter`)
+
+- Parentheses grouping fixed vs Python.
+- Modular Qt-free library; `dt-filter '<expr>' [dir]` for CLI testing.
+- Still open vs Python: `contains:`, fuzzy, width/height/duration.
 
 ---
 
 ## Working process
 
-- Suggest a detailed commit message after each series of changes.
+- Suggest a detailed commit message after each change series.
 - Keep `dirtoo-py/` as reference only.
-
-
-## Filter DSL notes (`dirtoo-filter`)
-
-Python issues addressed in the C++ port:
-
-- **Parentheses** for grouping: `(a OR b) AND c` works (Python grammar lacked `()`).
-- Explicit **AND** / **OR** / **NOT** keywords; juxtaposition still means AND.
-- **Exclude** via `-term`, `^term`, or `not term`.
-- Modular **Qt-free** library suitable for a future CLI search tool.
-- Still deferred vs Python: content search (`contains:`), fuzzy, media metadata
-  (`width`, `duration`, …) until those backends exist.

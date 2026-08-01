@@ -13,6 +13,8 @@
 #include "dirops/ops.hpp"
 #include "app_settings.hpp"
 #include "file_list_model.hpp"
+#include "history_menu.hpp"
+#include "message_area.hpp"
 #include "leap_widget.hpp"
 #include "location_button_bar.hpp"
 #include "transfer_dialog.hpp"
@@ -165,7 +167,7 @@ private:
   QAction* show_filter_act_ = nullptr;
   QAction* pin_filter_act_ = nullptr;
   bool filter_pinned_ = false;
-  QMenu* history_menu_ = nullptr;
+  HistoryMenu* history_menu_ = nullptr;
   std::vector<fs::Location> location_history_unique_;
   QWidget* location_stack_host_ = nullptr;
   QLineEdit* filter_edit_ = nullptr;
@@ -175,6 +177,7 @@ private:
   QTreeView* tree_view_ = nullptr;
   QListView* icon_view_ = nullptr;
   QLabel* status_label_ = nullptr;
+  MessageArea* message_area_ = nullptr;
 
   QAction* back_act_ = nullptr;
   QAction* forward_act_ = nullptr;
