@@ -107,6 +107,7 @@ private:
   bool icon_style_ = false;
   int icon_detail_level_ = 3; // name + size by default (Python-ish)
   bool crop_thumbnails_ = false;
+  bool group_refresh_pending_ = false;
 };
 
 } // namespace dirtoo::app

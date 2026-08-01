@@ -204,6 +204,14 @@ void FileCollection::set_group_mode(GroupMode mode)
   rebuild_visible();
 }
 
+void FileCollection::refresh_groups()
+{
+  if (group_mode_ == GroupMode::None) {
+    return;
+  }
+  rebuild_visible();
+}
+
 std::string FileCollection::group_label_for(const fs::FileInfo& fi) const
 {
   return group_label(fi, group_mode_);

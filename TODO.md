@@ -243,7 +243,7 @@ as of the responsive-UI / media-cache work.
 | Predicate                                  | Python | C++     |
 |--------------------------------------------|--------|---------|
 | `contains:` / `Contains:` (file content)   | yes    | **yes** (max 1 MiB) |
-| `containsre:` content regex                | yes    | **no**  |
+| `containsre:` content regex                | yes    | **yes** (max 1 MiB) |
 | `containsfuzzy:`                           | yes    | **no**  |
 | `date:` / `time:` / `weekday:`             | yes    | **yes** |
 | `length:` / `len:` (name length)           | yes    | **yes** |

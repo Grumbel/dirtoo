@@ -329,6 +329,12 @@ private:
     if (cmd == "Contains") {
       return make_contains(arg, true);
     }
+    if (c == "containsre" || c == "contains_regex" || c == "cre") {
+      return make_contains_regex(arg, false);
+    }
+    if (cmd == "Containsre" || cmd == "ContainsRe" || cmd == "ContainsRegex" || cmd == "Cre") {
+      return make_contains_regex(arg, true);
+    }
     if (c == "time") {
       return make_time(arg);
     }
@@ -373,6 +379,7 @@ Terms (juxtaposition = AND, OR joins alternatives):
   weekday:mon     mtime weekday (mon–sun or 0–6); weekday:>=fri
   contains:foo    file content substring, case-insensitive (max 1MiB)
   Contains:Foo    case-sensitive content match
+  containsre:a.*b content regex (cre:); Containsre: case-sensitive
   -term           exclude / NOT term   (also ^term or not term)
   ( a OR b )      grouping with parentheses
 

@@ -280,3 +280,34 @@ TEST_CASE("filter time and weekday commands", "[filter]")
   m = parse_filter("wday:0");
   REQUIRE(m);
 }
+
+TEST_CASE("filter containsre command", "[filter]")
+{
+  const auto dir = fs::temp_directory_path() / "dirtoo-containsre";
+  fs::remove_all(dir);
+  fs::create_directories(dir);
+  const auto path = dir / "code.txt";
+  {
+    std::ofstream out(path);
+    out << "alpha\nfoo123bar\nzed\n";
+  }
+  FilterItem item{.name = "code.txt", .size = 0, .is_directory = false, .path = path};
+
+  auto m = parse_filter("containsre:foo[0-9]+bar");
+  REQUIRE(m);
+  REQUIRE((*m)->matches(item));
+
+  m = parse_filter("containsre:FOO[0-9]+BAR");
+  REQUIRE(m);
+  REQUIRE((*m)->matches(item)); // case-insensitive
+
+  m = parse_filter("Containsre:FOO[0-9]+BAR");
+  REQUIRE(m);
+  REQUIRE_FALSE((*m)->matches(item));
+
+  m = parse_filter("containsre:nomatch");
+  REQUIRE(m);
+  REQUIRE_FALSE((*m)->matches(item));
+
+  fs::remove_all(dir);
+}

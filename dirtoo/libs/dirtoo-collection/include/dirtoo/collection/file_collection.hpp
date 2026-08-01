@@ -63,6 +63,8 @@ public:
   [[nodiscard]] bool show_hidden() const noexcept { return show_hidden_; }
 
   void set_group_mode(GroupMode mode);
+  /// Re-apply grouping without changing mode (e.g. after media meta arrives).
+  void refresh_groups();
   [[nodiscard]] GroupMode group_mode() const noexcept { return group_mode_; }
 
   /// Section label for a visible item under the current group mode (empty if none).

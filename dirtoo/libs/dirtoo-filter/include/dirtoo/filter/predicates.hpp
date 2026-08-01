@@ -36,6 +36,9 @@ namespace dirtoo::filter {
 /// contains: needle (case-insensitive), Contains: needle (case-sensitive).
 [[nodiscard]] MatchFuncPtr make_contains(std::string argument, bool case_sensitive = false,
                                          std::size_t max_bytes = 1u << 20);
+/// File content regex (ECMAScript). containsre: / Containsre: (case-sensitive).
+[[nodiscard]] MatchFuncPtr make_contains_regex(std::string argument, bool case_sensitive = false,
+                                               std::size_t max_bytes = 1u << 20);
 
 /// mtime time-of-day: time:>=15:00, time:9:30 (HH:MM local)
 [[nodiscard]] MatchFuncPtr make_time(std::string argument);

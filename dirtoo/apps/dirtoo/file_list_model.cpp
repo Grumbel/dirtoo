@@ -3,6 +3,8 @@
 
 #include "file_list_model.hpp"
 
+#include <QTimer>
+
 #include <filesystem>
 
 #include <QDateTime>
@@ -153,6 +155,24 @@ void FileListModel::notify_row_changed(int row)
   }
   const QModelIndex idx = index(row, 0);
   emit dataChanged(idx, idx);
+  // Duration groups depend on media meta; regroup after a short debounce.
+  if (collection_ != nullptr
+      && collection_->group_mode() == collection::GroupMode::Duration) {
+    if (group_refresh_pending_) {
+      return;
+    }
+    group_refresh_pending_ = true;
+    QTimer::singleShot(150, this, [this] {
+      group_refresh_pending_ = false;
+      if (collection_ == nullptr
+          || collection_->group_mode() != collection::GroupMode::Duration) {
+        return;
+      }
+      beginResetModel();
+      collection_->refresh_groups();
+      endResetModel();
+    });
+  }
 }
 
 void FileListModel::clear_thumbnail(const QString& path)

@@ -1049,6 +1049,60 @@ MatchFuncPtr make_date(std::string argument)
   return std::make_shared<DateOpMatch>(op, *key);
 }
 
+
+class ContainsRegexMatch : public MatchFunc {
+public:
+  ContainsRegexMatch(std::regex re, std::size_t max_bytes)
+      : re_(std::move(re))
+      , max_bytes_(max_bytes)
+  {
+  }
+  bool matches(const FilterItem& item) const override
+  {
+    if (item.is_directory || item.path.empty()) {
+      return false;
+    }
+    std::ifstream in(item.path, std::ios::binary);
+    if (!in) {
+      return false;
+    }
+    constexpr std::size_t kChunk = 64 * 1024;
+    std::string chunk(kChunk, '\0');
+    std::size_t total = 0;
+    std::string carry;
+    // Overlap keep: up to 4KiB so multi-line patterns spanning chunks can still match.
+    constexpr std::size_t kOverlap = 4096;
+    while (in && total < max_bytes_) {
+      const auto to_read = std::min(kChunk, max_bytes_ - total);
+      in.read(chunk.data(), static_cast<std::streamsize>(to_read));
+      const auto n = static_cast<std::size_t>(in.gcount());
+      if (n == 0) {
+        break;
+      }
+      total += n;
+      std::string view = carry;
+      view.append(chunk.data(), n);
+      try {
+        if (std::regex_search(view, re_)) {
+          return true;
+        }
+      } catch (...) {
+        return false;
+      }
+      if (view.size() > kOverlap) {
+        carry = view.substr(view.size() - kOverlap);
+      } else {
+        carry = std::move(view);
+      }
+    }
+    return false;
+  }
+
+private:
+  std::regex re_;
+  std::size_t max_bytes_;
+};
+
 MatchFuncPtr make_contains(std::string argument, bool case_sensitive, std::size_t max_bytes)
 {
   if (argument.empty()) {
@@ -1056,6 +1110,22 @@ MatchFuncPtr make_contains(std::string argument, bool case_sensitive, std::size_
   }
   return std::make_shared<ContainsMatch>(std::move(argument), case_sensitive, max_bytes);
 }
+
+MatchFuncPtr make_contains_regex(std::string argument, bool case_sensitive, std::size_t max_bytes)
+{
+  if (argument.empty()) {
+    return std::make_shared<AlwaysFalse>();
+  }
+  try {
+    const auto flags =
+        case_sensitive ? std::regex::ECMAScript
+                       : (std::regex::ECMAScript | std::regex::icase);
+    return std::make_shared<ContainsRegexMatch>(std::regex(argument, flags), max_bytes);
+  } catch (const std::regex_error&) {
+    return std::make_shared<AlwaysFalse>();
+  }
+}
+
 
 
 
