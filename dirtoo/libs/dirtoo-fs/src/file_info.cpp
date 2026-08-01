@@ -25,8 +25,12 @@ FileInfo FileInfo::from_path(const std::filesystem::path& path)
   info.is_regular_file_ = std::filesystem::is_regular_file(status);
   info.permissions_ = status.permissions();
 
-  if (info.is_regular_file_) {
-    info.size_ = static_cast<std::uint64_t>(std::filesystem::file_size(path, ec));
+  // Regular files and directories both expose st_size (dir metadata size on Linux).
+  if (info.is_regular_file_ || info.is_directory_) {
+    const auto sz = std::filesystem::file_size(path, ec);
+    if (!ec) {
+      info.size_ = static_cast<std::uint64_t>(sz);
+    }
   }
 
   info.mtime_ = std::filesystem::last_write_time(path, ec);
@@ -96,7 +100,8 @@ FileInfo FileInfo::from_directory_entry(const std::filesystem::directory_entry& 
   info.is_regular_file_ = std::filesystem::is_regular_file(status);
   info.permissions_ = status.permissions();
 
-  if (info.is_regular_file_) {
+  // Regular files and directories both expose st_size (dir metadata size on Linux).
+  if (info.is_regular_file_ || info.is_directory_) {
     info.size_ = static_cast<std::uint64_t>(entry.file_size(ec));
     if (ec) {
       info.size_ = 0;

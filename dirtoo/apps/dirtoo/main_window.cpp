@@ -73,6 +73,8 @@
 #include <QUrl>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
+#include <QBrush>
+#include <QColor>
 #include <QGraphicsItem>
 #include <QGraphicsScene>
 #include <algorithm>
@@ -439,7 +441,9 @@ MainWindow::MainWindow(QWidget* parent)
     show_filter_act_ = view_menu->addAction(theme_icon("edit-find"), QStringLiteral("Show Filter"));
     show_filter_act_->setCheckable(true);
     show_filter_act_->setChecked(true);
-    show_filter_act_->setShortcut(QKeySequence(QStringLiteral("Ctrl+F")));
+    // Ctrl+K focuses/shows filter (common find-in-app binding); Ctrl+F kept as alias.
+    show_filter_act_->setShortcuts({QKeySequence(QStringLiteral("Ctrl+K")),
+                                    QKeySequence(QStringLiteral("Ctrl+F"))});
     connect(show_filter_act_, &QAction::toggled, this, [this](bool on) {
       if (filter_row_ != nullptr) {
         filter_row_->setVisible(on);
@@ -767,33 +771,6 @@ MainWindow::MainWindow(QWidget* parent)
     location_stack_host_ = loc_host;
   }
 
-  // Filter row: label + line edit + Help (parity with dirtoo-py filter toolbar).
-  {
-    auto* filter_row = new QWidget(central);
-    auto* filter_layout = new QHBoxLayout(filter_row);
-    filter_layout->setContentsMargins(6, 2, 6, 2);
-    filter_layout->setSpacing(6);
-    auto* filter_label = new QLabel(QStringLiteral("Filter:"), filter_row);
-    filter_edit_ = new QLineEdit(filter_row);
-    filter_edit_->setPlaceholderText(
-        QStringLiteral("Filter by name, glob, or expression (e.g. *.png, size:>1M)…"));
-    filter_edit_->setClearButtonEnabled(true);
-    filter_edit_->setEnabled(true);
-    filter_edit_->setVisible(true);
-    filter_edit_->installEventFilter(this);
-    connect(filter_edit_, &QLineEdit::textChanged, this, &MainWindow::on_filter_changed);
-    filter_label->setBuddy(filter_edit_);
-    auto* filter_help_btn = new QPushButton(QStringLiteral("Help"), filter_row);
-    filter_help_btn->setToolTip(QStringLiteral("Filter expression language help"));
-    filter_help_btn->setFlat(false);
-    connect(filter_help_btn, &QPushButton::clicked, this, &MainWindow::on_show_filter_help);
-    filter_layout->addWidget(filter_label);
-    filter_layout->addWidget(filter_edit_, 1);
-    filter_layout->addWidget(filter_help_btn);
-    filter_row_ = filter_row;
-    layout->addWidget(filter_row);
-  }
-
   // Search row: same expression language + Help.
   {
     auto* search_row = new QWidget(central);
@@ -911,6 +888,34 @@ MainWindow::MainWindow(QWidget* parent)
           &MainWindow::on_selection_changed);
 
   layout->addWidget(view_stack_, 1);
+
+  // Filter row at bottom (parity with dirtoo-py BottomToolBarArea filter toolbar).
+  {
+    auto* filter_row = new QWidget(central);
+    auto* filter_layout = new QHBoxLayout(filter_row);
+    filter_layout->setContentsMargins(6, 2, 6, 2);
+    filter_layout->setSpacing(6);
+    auto* filter_label = new QLabel(QStringLiteral("Filter:"), filter_row);
+    filter_edit_ = new QLineEdit(filter_row);
+    filter_edit_->setPlaceholderText(
+        QStringLiteral("Filter by name, glob, or expression (e.g. *.png, size:>1M)…"));
+    filter_edit_->setClearButtonEnabled(true);
+    filter_edit_->setEnabled(true);
+    filter_edit_->setVisible(true);
+    filter_edit_->installEventFilter(this);
+    connect(filter_edit_, &QLineEdit::textChanged, this, &MainWindow::on_filter_changed);
+    filter_label->setBuddy(filter_edit_);
+    auto* filter_help_btn = new QPushButton(QStringLiteral("Help"), filter_row);
+    filter_help_btn->setToolTip(QStringLiteral("Filter expression language help"));
+    filter_help_btn->setFlat(false);
+    connect(filter_help_btn, &QPushButton::clicked, this, &MainWindow::on_show_filter_help);
+    filter_layout->addWidget(filter_label);
+    filter_layout->addWidget(filter_edit_, 1);
+    filter_layout->addWidget(filter_help_btn);
+    filter_row_ = filter_row;
+    layout->addWidget(filter_row);
+  }
+
   setCentralWidget(central);
 
   // Real QStatusBar: native size grip (bottom-right) like dirtoo-py.
@@ -1001,8 +1006,8 @@ QAbstractItemView* MainWindow::current_view() const
 void MainWindow::apply_icon_zoom()
 {
   if (view_mode_ == ViewMode::SmallIcons) {
-    // Compact icon grid (even cells) rather than wrapped ListMode, which left
-    // uneven gaps. Single-line basename captions; decoration from model.
+    // Compact icon grid (even cells). Single-line basename captions via icon-style
+    // delegate (must stay enabled — default styled paint only showed the first tile).
     static constexpr int kSmall[] = {16, 24, 32, 48, 64, 96, 128};
     const int zi = std::clamp(zoom_index_, 0, static_cast<int>(std::size(kSmall)) - 1);
     const int size = kSmall[zi];
@@ -1016,8 +1021,9 @@ void MainWindow::apply_icon_zoom()
     icon_view_->setIconSize(QSize(size, size));
     icon_view_->setSpacing(4);
     // Fixed cell: icon + room for elided basename under the icon.
+    const int caption_h = icon_view_->fontMetrics().height() + 8;
     const int cell_w = std::max(size + 48, 72);
-    const int cell_h = size + icon_view_->fontMetrics().height() + 10;
+    const int cell_h = size + caption_h + 12;
     icon_view_->setGridSize(QSize(cell_w, cell_h));
     if (model_ != nullptr) {
       model_->set_icon_style(true);
@@ -1122,8 +1128,10 @@ void MainWindow::set_view_mode(ViewMode mode)
       detail_act_->setChecked(true);
     }
   } else if (mode == ViewMode::SmallIcons) {
+    // Icon-style delegate paints captions under each tile; must stay enabled.
     if (model_ != nullptr) {
-      model_->set_icon_style(false);
+      model_->set_icon_style(true);
+      model_->set_icon_detail_level(1);
     }
     view_stack_->setCurrentWidget(icon_view_);
     if (small_icons_act_ != nullptr) {
@@ -1201,6 +1209,7 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
     filter_edit_->clear();
     filter_edit_->blockSignals(false);
     collection_.set_name_filter(std::string{});
+    update_filter_chrome(false);
   }
   location_ = location;
   if (location_.is_archive()) {
@@ -1721,8 +1730,43 @@ void MainWindow::on_show_filter_help()
   dlg->show();
 }
 
+void MainWindow::update_filter_chrome(bool filtered)
+{
+  // Light blue view background when a filter is active (dirtoo-py set_filtered).
+  const QColor tint(220, 220, 255);
+  auto apply_bg = [&](QWidget* w) {
+    if (w == nullptr) {
+      return;
+    }
+    QPalette pal = w->palette();
+    if (filtered) {
+      pal.setColor(QPalette::Base, tint);
+    } else {
+      pal.setColor(QPalette::Base, qApp->palette().color(QPalette::Base));
+    }
+    w->setPalette(pal);
+  };
+  apply_bg(tree_view_);
+  apply_bg(icon_view_);
+  if (graphics_view_ != nullptr) {
+    if (filtered) {
+      graphics_view_->setBackgroundBrush(QBrush(tint));
+    } else {
+      graphics_view_->setBackgroundBrush(graphics_view_->palette().base());
+    }
+  }
+  if (filter_row_ != nullptr) {
+    if (filtered) {
+      filter_row_->setStyleSheet(QStringLiteral("QWidget { background-color: rgb(220, 220, 255); }"));
+    } else {
+      filter_row_->setStyleSheet(QString());
+    }
+  }
+}
+
 void MainWindow::on_filter_changed(const QString& text)
 {
+  update_filter_chrome(!text.isEmpty());
   if (filter_expression_needs_content_io(text)) {
     // Content predicates must not run on the GUI thread.
     request_async_filter();

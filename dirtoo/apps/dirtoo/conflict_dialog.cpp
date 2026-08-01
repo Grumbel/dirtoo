@@ -21,7 +21,23 @@ namespace {
 
 QString format_size(std::uint64_t bytes)
 {
-  return QLocale::system().formattedDataSize(static_cast<qint64>(bytes));
+  // SI base-1000 (same as file list / dirtoo-py bytefmt).
+  static constexpr char const* kUnits[] = {"B", "KB", "MB", "GB", "TB", "PB"};
+  double value = static_cast<double>(bytes);
+  int unit = 0;
+  while (value >= 1000.0 && unit < 5) {
+    value /= 1000.0;
+    ++unit;
+  }
+  if (unit == 0) {
+    return QStringLiteral("%1 B").arg(bytes);
+  }
+  if (value < 10.0) {
+    return QStringLiteral("%1 %2").arg(value, 0, 'f', 1).arg(QLatin1String(kUnits[unit]));
+  }
+  return QStringLiteral("%1 %2")
+      .arg(value, 0, 'f', value < 100.0 ? 1 : 0)
+      .arg(QLatin1String(kUnits[unit]));
 }
 
 QString format_mtime(const std::filesystem::file_time_type& ftp)

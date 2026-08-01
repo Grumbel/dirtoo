@@ -31,9 +31,24 @@ QFileIconProvider& icon_provider()
 
 QString format_size(std::uint64_t bytes, bool /*is_directory*/)
 {
-  // Linux directories still have a st_size (inode/block metadata); show it like files.
-  // Child counts are shown separately as thumbnail badges, not in the size column.
-  return QLocale::system().formattedDataSize(static_cast<qint64>(bytes));
+  // SI / base-1000 units (B, KB, MB, GB…) — matches dirtoo-py bytefmt default, not IEC MiB.
+  static constexpr char const* kUnits[] = {"B", "KB", "MB", "GB", "TB", "PB"};
+  double value = static_cast<double>(bytes);
+  int unit = 0;
+  while (value >= 1000.0 && unit < 5) {
+    value /= 1000.0;
+    ++unit;
+  }
+  if (unit == 0) {
+    return QStringLiteral("%1 B").arg(bytes);
+  }
+  // One decimal for values under 10, none for larger (readable, not noisy).
+  if (value < 10.0) {
+    return QStringLiteral("%1 %2").arg(value, 0, 'f', 1).arg(QLatin1String(kUnits[unit]));
+  }
+  return QStringLiteral("%1 %2")
+      .arg(value, 0, 'f', value < 100.0 ? 1 : 0)
+      .arg(QLatin1String(kUnits[unit]));
 }
 
 QString format_mtime(std::filesystem::file_time_type mtime)
@@ -46,7 +61,8 @@ QString format_mtime(std::filesystem::file_time_type mtime)
       return {};
     }
     const QDateTime dt = QDateTime::fromSecsSinceEpoch(static_cast<qint64>(secs));
-    return QLocale::system().toString(dt, QLocale::ShortFormat);
+    // Human-friendly ISO local date/time: "2011-12-21 16:14"
+    return dt.toString(QStringLiteral("yyyy-MM-dd HH:mm"));
   } catch (...) {
     return {};
   }
@@ -583,7 +599,14 @@ QMimeData* FileListModel::mimeData(const QModelIndexList& indexes) const
   rows.erase(std::unique(rows.begin(), rows.end()), rows.end());
   for (int row : rows) {
     if (const fs::FileInfo* fi = file_at(row)) {
-      urls.push_back(QUrl::fromLocalFile(QString::fromStdString(fi->path().string())));
+      // Archive / synthetic entries: use Location URL (file://…//archive:entry) so
+      // receivers can distinguish members from the archive file itself. Real paths
+      // stay as local file URLs for external apps.
+      if (fi->is_synthetic() || fi->location().is_archive()) {
+        urls.push_back(QUrl(QString::fromStdString(fi->location().as_url())));
+      } else {
+        urls.push_back(QUrl::fromLocalFile(QString::fromStdString(fi->path().string())));
+      }
     }
   }
   if (urls.isEmpty()) {

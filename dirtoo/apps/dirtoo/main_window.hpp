@@ -176,6 +176,7 @@ private:
   void update_history_actions();
   void update_edit_actions();
   void update_status_selection();
+  void update_filter_chrome(bool filtered);
   void apply_icon_zoom();
   void set_view_mode(ViewMode mode);
   /// Update status bar and mirror the text to qInfo (visible with --verbose).

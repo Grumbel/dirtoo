@@ -45,7 +45,7 @@ void show_about_dialog(QWidget* parent)
           "on-demand member extract).</p>"
           "<p>Metadata uses an async SQLite cache; the GUI thread does not "
           "probe media or read the database.</p>"
-          "<p><a href=\"https://github.com/grumbel/dirtoo\">Project page</a></p>"
+          "<p><a href=\"https://github.com/grumbel/dirtoo\">https://github.com/grumbel/dirtoo</a></p>"
           "<p>License: <b>GPL-3.0-or-later</b></p>"
           "<p>Copyright © 2017–2026 Ingo Ruhnke &lt;grumbel@gmail.com&gt;</p>"
           "</center>")

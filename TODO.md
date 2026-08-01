@@ -260,16 +260,22 @@ thumbnail work. `dirops` remains Qt-free.
 - [x] history isn't persistent between restarts
 - [x] filenames still disappear and don't render properly
       (basename fallback when DisplayRole empty; caption height floor)
-- [ ] folders show up with size 0, not their actual size
-- [ ] size show up as MiB, but should be base 1000 MB
-- [ ] use Ctrl-k for Filter
-- [ ] move filter bar to the bottom
-- [ ] change background color when filter bar is active, see dirtoo-py
-- [ ] only the first now in "Small Icons" has a filename, filename is
+- [x] folders show up with size 0, not their actual size
+      (FileInfo reads st_size for directories; Size column still shows "N items")
+- [x] size show up as MiB, but should be base 1000 MB
+      (SI KB/MB/GB in list + conflict dialog)
+- [x] use Ctrl-k for Filter
+      (Ctrl+K primary, Ctrl+F still works)
+- [x] move filter bar to the bottom
+- [x] change background color when filter bar is active, see dirtoo-py
+      (view + filter row tint rgb(220,220,255))
+- [x] only the first now in "Small Icons" has a filename, filename is
       invisible everywhere else
+      (icon-style delegate kept enabled; taller grid for caption)
 - [ ] files in archives don't get thumbnails
-- [ ] drag&drop of files from inside an archive just gives a filename
+- [partial] drag&drop of files from inside an archive just gives a filename
       pointing to the archive
-- [ ] use human-friendly ISO date/time: "2011-12-21 16:14"
-- [ ] in About page, use actual URL, not "Project Page" text on link
+      (mimeData emits Location URL file://…//archive:entry; external extract-on-drop optional)
+- [x] use human-friendly ISO date/time: "2011-12-21 16:14"
+- [x] in About page, use actual URL, not "Project Page" text on link
 
