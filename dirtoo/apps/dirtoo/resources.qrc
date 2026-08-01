@@ -3,5 +3,11 @@
   <qresource prefix="/">
     <file alias="icons/dirtoo.png">../../resources/icons/dirtoo.png</file>
     <file alias="icons/dirtoo.svg">../../resources/icons/dirtoo.svg</file>
+    <file alias="icons/badge-video.png">../../resources/icons/badge-video.png</file>
+    <file alias="icons/badge-image.png">../../resources/icons/badge-image.png</file>
+    <file alias="icons/badge-loading.png">../../resources/icons/badge-loading.png</file>
+    <file alias="icons/badge-error.png">../../resources/icons/badge-error.png</file>
+    <file alias="icons/badge-locked.png">../../resources/icons/badge-locked.png</file>
+    <file alias="icons/badge-new.png">../../resources/icons/badge-new.png</file>
   </qresource>
 </RCC>

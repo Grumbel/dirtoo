@@ -11,7 +11,7 @@
 #include <QFontMetrics>
 #include <QMetaObject>
 #include <QPainter>
-#include <QPainterPath>
+#include <QPixmap>
 #include <QStyle>
 #include <QStyleOptionViewItem>
 
@@ -105,45 +105,35 @@ MediaKind classify_extension(const std::string& ext_in)
   return MediaKind::None;
 }
 
+const QPixmap& badge_pixmap(MediaKind kind)
+{
+  static const QPixmap k_video(QStringLiteral(":/icons/badge-video.png"));
+  static const QPixmap k_image(QStringLiteral(":/icons/badge-image.png"));
+  static const QPixmap k_empty;
+  if (kind == MediaKind::Video || kind == MediaKind::Audio) {
+    return k_video;
+  }
+  if (kind == MediaKind::Image) {
+    return k_image;
+  }
+  return k_empty;
+}
+
 void draw_type_badge(QPainter* painter, const QRect& thumb, MediaKind kind)
 {
   if (kind == MediaKind::None) {
     return;
   }
-  const int s = 18;
-  QRect r(thumb.right() - s - 3, thumb.bottom() - s - 3, s, s);
-  painter->save();
-  painter->setOpacity(0.85);
-  painter->setPen(Qt::NoPen);
-  if (kind == MediaKind::Video) {
-    painter->setBrush(QColor(40, 40, 40, 200));
-    painter->drawRoundedRect(r, 3, 3);
-    // play triangle
-    painter->setBrush(Qt::white);
-    QPainterPath tri;
-    tri.moveTo(r.left() + 6, r.top() + 4);
-    tri.lineTo(r.right() - 4, r.center().y());
-    tri.lineTo(r.left() + 6, r.bottom() - 4);
-    tri.closeSubpath();
-    painter->drawPath(tri);
-  } else if (kind == MediaKind::Image) {
-    painter->setBrush(QColor(40, 40, 40, 200));
-    painter->drawRoundedRect(r, 3, 3);
-    painter->setPen(QPen(Qt::white, 1.2));
-    painter->setBrush(Qt::NoBrush);
-    painter->drawRect(r.adjusted(4, 5, -4, -4));
-    painter->setBrush(Qt::white);
-    painter->setPen(Qt::NoPen);
-    painter->drawEllipse(QPoint(r.left() + 7, r.top() + 8), 2, 2);
-  } else if (kind == MediaKind::Audio) {
-    painter->setBrush(QColor(40, 40, 40, 200));
-    painter->drawRoundedRect(r, 3, 3);
-    painter->setPen(QPen(Qt::white, 1.5));
-    const int cx = r.center().x();
-    painter->drawLine(cx - 2, r.top() + 5, cx - 2, r.bottom() - 5);
-    painter->drawLine(cx + 2, r.top() + 7, cx + 2, r.bottom() - 5);
-    painter->drawLine(cx + 5, r.top() + 9, cx + 5, r.bottom() - 5);
+  const QPixmap& pm = badge_pixmap(kind);
+  if (pm.isNull()) {
+    return;
   }
+  // Match Python FileItemRenderer: 24x24 bottom-right, semi-transparent.
+  const int s = 24;
+  QRect r(thumb.right() - s - 2, thumb.bottom() - s - 2, s, s);
+  painter->save();
+  painter->setOpacity(0.5);
+  painter->drawPixmap(r, pm);
   painter->restore();
 }
 
