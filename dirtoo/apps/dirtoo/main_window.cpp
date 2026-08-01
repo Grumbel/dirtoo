@@ -1366,6 +1366,8 @@ void MainWindow::start_transfer(const TransferRequest& request)
   transfer_dialog_->reset();
   transfer_dialog_->set_title_text(request.mode == ClipboardMode::Cut ? QStringLiteral("Moving…")
                                                                      : QStringLiteral("Copying…"));
+  transfer_dialog_->set_destination(
+      QString::fromStdString(request.destination_directory.string()));
   transfer_dialog_->show();
 
   QMetaObject::invokeMethod(transfer_worker_, [this, request] { transfer_worker_->run(request); },
@@ -1441,11 +1443,10 @@ void MainWindow::on_transfer_conflict(const QString& destination_name, const QSt
 void MainWindow::on_transfer_finished(TransferSummary summary)
 {
   transfer_busy_ = false;
-  if (transfer_dialog_ != nullptr) {
-    transfer_dialog_->hide();
-  }
 
-  if (!summary.error.isEmpty()) {
+  if (transfer_dialog_ != nullptr) {
+    transfer_dialog_->mark_finished(summary.cancelled, summary.error);
+  } else if (!summary.error.isEmpty()) {
     QMessageBox::warning(this, QStringLiteral("Transfer"), summary.error);
   }
 
@@ -1457,6 +1458,8 @@ void MainWindow::on_transfer_finished(TransferSummary summary)
     status_label_->setText(QStringLiteral("Transfer cancelled (%1 done, %2 skipped)")
                                .arg(summary.completed)
                                .arg(summary.skipped));
+  } else if (!summary.error.isEmpty()) {
+    status_label_->setText(summary.error);
   } else {
     status_label_->setText(QStringLiteral("Transfer: %1 done, %2 skipped")
                                .arg(summary.completed)

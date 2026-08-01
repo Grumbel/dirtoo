@@ -8,9 +8,11 @@
 #include <atomic>
 #include <cstdint>
 
+class QCheckBox;
 class QLabel;
 class QProgressBar;
 class QPushButton;
+class QElapsedTimer;
 
 namespace dirtoo::app {
 
@@ -22,11 +24,14 @@ public:
   explicit TransferDialog(QWidget* parent = nullptr);
 
   void set_title_text(const QString& text);
+  void set_destination(const QString& path);
   void set_current_file(const QString& path);
   void set_progress(std::uint64_t done, std::uint64_t total);
   void set_item_progress(int current_item, int total_items);
+  void mark_finished(bool cancelled, const QString& error = {});
 
   [[nodiscard]] bool is_cancelled() const noexcept { return cancelled_.load(); }
+  [[nodiscard]] bool close_when_finished() const;
   void reset();
 
 signals:
@@ -34,14 +39,27 @@ signals:
 
 private slots:
   void on_cancel();
+  void on_tick();
 
 private:
+  void update_transferred_label();
+  void update_time_label();
+
   QLabel* title_label_ = nullptr;
+  QLabel* dest_label_ = nullptr;
   QLabel* file_label_ = nullptr;
   QLabel* item_label_ = nullptr;
+  QLabel* transferred_label_ = nullptr;
+  QLabel* time_label_ = nullptr;
   QProgressBar* bar_ = nullptr;
+  QCheckBox* close_when_finished_ = nullptr;
   QPushButton* cancel_btn_ = nullptr;
+  QPushButton* close_btn_ = nullptr;
   std::atomic<bool> cancelled_{false};
+  std::uint64_t bytes_done_ = 0;
+  std::uint64_t bytes_total_ = 0;
+  QElapsedTimer* elapsed_ = nullptr;
+  class QTimer* ui_timer_ = nullptr;
 };
 
 } // namespace dirtoo::app
