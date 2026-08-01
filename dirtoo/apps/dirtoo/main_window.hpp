@@ -33,7 +33,10 @@
 #include <vector>
 
 class QLineEdit;
+class FileTreeView;
+class FileListView;
 class QTreeView;
+class QListView;
 class QListView;
 class QLabel;
 class QAction;
@@ -228,8 +231,8 @@ private:
   QString path_completion_pending_;
   quint64 path_completion_request_id_ = 0;
   QStackedWidget* view_stack_ = nullptr;
-  QTreeView* tree_view_ = nullptr;
-  QListView* icon_view_ = nullptr;
+  FileTreeView* tree_view_ = nullptr;
+  FileListView* icon_view_ = nullptr;
   QLabel* status_label_ = nullptr;
   MessageArea* message_area_ = nullptr;
 

@@ -7,6 +7,9 @@ qt_add_executable(dirtoo-app
   main_window.hpp
   file_list_model.cpp
   file_list_model.hpp
+  file_views.hpp
+  drag_action_overlay.cpp
+  drag_action_overlay.hpp
   file_item_delegate.cpp
   file_item_delegate.hpp
   clipboard.cpp

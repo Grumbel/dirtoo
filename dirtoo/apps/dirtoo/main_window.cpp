@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window.hpp"
+#include "file_views.hpp"
 #include "file_item_delegate.hpp"
 #include "dirtoo/filter/media_meta_cache.hpp"
 
@@ -541,7 +542,7 @@ MainWindow::MainWindow(QWidget* parent)
 
   view_stack_ = new QStackedWidget(central);
 
-  tree_view_ = new QTreeView(view_stack_);
+  tree_view_ = new FileTreeView(view_stack_);
   tree_view_->setModel(model_);
   tree_view_->setRootIsDecorated(false);
   tree_view_->setUniformRowHeights(true);
@@ -565,7 +566,7 @@ MainWindow::MainWindow(QWidget* parent)
   connect(tree_view_->header(), &QHeaderView::sectionClicked, this, &MainWindow::on_header_clicked);
   view_stack_->addWidget(tree_view_);
 
-  icon_view_ = new QListView(view_stack_);
+  icon_view_ = new FileListView(view_stack_);
   icon_view_->setModel(model_);
   icon_view_->setViewMode(QListView::IconMode);
   icon_view_->setResizeMode(QListView::Adjust);

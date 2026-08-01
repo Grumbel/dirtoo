@@ -276,6 +276,7 @@ Python ships many CLIs under `programs/` (find expr engine, fsck, shuffle, deskt
 |------------------------------------------------|------------------------------------------|
 | Richer preferences (all Python settings keys)  | C++ has a subset                         |
 | Context menu parity (every Python item action) | Improved (new window, paths, thumbs)     |
+| DnD action overlay (Copy/Move/Link)            | **done** (DragActionOverlay)               |
 | DnD cursor themed pixmaps                      | Python `dnd-*.png`; C++ uses Qt defaults |
 | Save file list as                              | Python action                            |
 | Debug mode action                              | Python only                              |
