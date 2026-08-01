@@ -265,7 +265,7 @@ thumbnail work. `dirops` remains Qt-free.
 - [x] size show up as MiB, but should be base 1000 MB
       (SI KB/MB/GB in list + conflict dialog)
 - [x] use Ctrl-k for Filter
-      (Ctrl+K primary, Ctrl+F still works)
+      (Ctrl+K; Search uses Ctrl+F)
 - [x] move filter bar to the bottom
 - [x] change background color when filter bar is active, see dirtoo-py
       (view + filter row tint rgb(220,220,255))

@@ -441,9 +441,7 @@ MainWindow::MainWindow(QWidget* parent)
     show_filter_act_ = view_menu->addAction(theme_icon("edit-find"), QStringLiteral("Show Filter"));
     show_filter_act_->setCheckable(true);
     show_filter_act_->setChecked(true);
-    // Ctrl+K focuses/shows filter (common find-in-app binding); Ctrl+F kept as alias.
-    show_filter_act_->setShortcuts({QKeySequence(QStringLiteral("Ctrl+K")),
-                                    QKeySequence(QStringLiteral("Ctrl+F"))});
+    show_filter_act_->setShortcut(QKeySequence(QStringLiteral("Ctrl+K")));
     connect(show_filter_act_, &QAction::toggled, this, [this](bool on) {
       if (filter_row_ != nullptr) {
         filter_row_->setVisible(on);
@@ -492,7 +490,7 @@ MainWindow::MainWindow(QWidget* parent)
     {
       auto* act = view_menu->addAction(theme_icon("system-search"), QStringLiteral("Recursive Search…"), this,
                                        &MainWindow::on_show_search);
-      act->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+F")));
+      act->setShortcut(QKeySequence(QStringLiteral("Ctrl+F")));
     }
     {
       auto* act = view_menu->addAction(theme_icon("zoom-in"), QStringLiteral("Zoom In"), this, &MainWindow::on_zoom_in);
@@ -668,6 +666,8 @@ MainWindow::MainWindow(QWidget* parent)
 
 
   {
+    // Only shortcuts not already bound on menu/toolbar actions (those are
+    // ambiguous if registered again via addAction).
     auto add_shortcut = [this](const QKeySequence& seq, auto slot) {
       auto* act = new QAction(this);
       act->setShortcut(seq);
@@ -675,14 +675,6 @@ MainWindow::MainWindow(QWidget* parent)
       addAction(act);
       return act;
     };
-    add_shortcut(QKeySequence::Cut, &MainWindow::on_cut);
-    add_shortcut(QKeySequence::Copy, &MainWindow::on_copy);
-    add_shortcut(QKeySequence::Paste, &MainWindow::on_paste);
-    add_shortcut(QKeySequence::Delete, &MainWindow::on_delete_selected);
-    add_shortcut(QKeySequence::ZoomIn, &MainWindow::on_zoom_in);
-    add_shortcut(QKeySequence::ZoomOut, &MainWindow::on_zoom_out);
-    add_shortcut(QKeySequence(Qt::Key_F2), &MainWindow::on_rename_selected);
-    add_shortcut(QKeySequence(Qt::Key_F5), &MainWindow::on_refresh);
     add_shortcut(QKeySequence(Qt::Key_Backspace), &MainWindow::on_go_parent);
     add_shortcut(QKeySequence(Qt::ALT | Qt::Key_Up), &MainWindow::on_go_parent);
     add_shortcut(QKeySequence(Qt::ALT | Qt::Key_Home), &MainWindow::on_go_home);
@@ -691,9 +683,6 @@ MainWindow::MainWindow(QWidget* parent)
     add_shortcut(QKeySequence(QStringLiteral("Ctrl+L")), &MainWindow::on_focus_location);
     add_shortcut(QKeySequence(Qt::Key_Escape), &MainWindow::on_clear_filter);
     add_shortcut(QKeySequence(QStringLiteral("Ctrl+D")), &MainWindow::on_toggle_bookmark);
-    // Home: Alt+Home (Ctrl+Shift+H toggles hidden files)
-
-    add_shortcut(QKeySequence(Qt::Key_F3), &MainWindow::on_properties);
   }
 
   auto* central = new QWidget(this);
