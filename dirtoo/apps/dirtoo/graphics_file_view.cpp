@@ -20,6 +20,7 @@
 #include <QMimeData>
 #include <QDrag>
 #include <QTimer>
+#include <QEvent>
 
 #include <algorithm>
 
@@ -370,6 +371,20 @@ void GraphicsFileView::scrollContentsBy(int dx, int dy)
 {
   QGraphicsView::scrollContentsBy(dx, dy);
   update_visible_window();
+}
+
+void GraphicsFileView::changeEvent(QEvent* event)
+{
+  QGraphicsView::changeEvent(event);
+  if (event->type() == QEvent::PaletteChange) {
+    setBackgroundBrush(palette().base());
+    // Captions/selection colors are palette-driven in item paint; refresh live tiles.
+    for (auto* item : items_) {
+      if (item != nullptr) {
+        item->update();
+      }
+    }
+  }
 }
 
 void GraphicsFileView::mouseDoubleClickEvent(QMouseEvent* event)

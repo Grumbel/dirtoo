@@ -66,6 +66,7 @@ protected:
   void dragMoveEvent(QDragMoveEvent* event) override;
   void dropEvent(QDropEvent* event) override;
   void scrollContentsBy(int dx, int dy) override;
+  void changeEvent(QEvent* event) override;
 
 private slots:
   void on_model_reset();

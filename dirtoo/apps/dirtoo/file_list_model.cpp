@@ -82,12 +82,11 @@ void FileListModel::set_collection(collection::FileCollection* collection)
 void FileListModel::refresh()
 {
   // Prefer layoutChanged over full reset when the collection already backs this model.
-  // GraphicsFileView can relayout/reuse items instead of tearing down the scene.
+  // GraphicsFileView recomputes viewport window from layoutChanged.
+  // Avoid dataChanged over the entire range — that is O(n) and forces every
+  // delegate/view to re-query all roles after every sort/filter/watcher merge.
   emit layoutAboutToBeChanged();
   emit layoutChanged();
-  if (rowCount() > 0) {
-    emit dataChanged(index(0, 0), index(rowCount() - 1, columnCount() - 1));
-  }
 }
 
 void FileListModel::emit_path_changed(const QString& path)
