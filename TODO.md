@@ -93,7 +93,7 @@ Python used per-file XML metadata sidecars — too slow at scale. C++ will use a
 | Store        | `$XDG_CACHE_HOME/dirtoo/meta.sqlite` (fallback `~/.cache/dirtoo/`)         |
 | Key          | Absolute path + `mtime_ns` + `size` (invalidate when either changes)       |
 | Columns (v2) | path, mtime_ns, size, width, height, duration_ms, framerate, pages, file_count, probed_at |
-| Later        | mime/type, pages, file_count, checksum hooks, backend id for non-file URIs |
+| Later        | mime/type, checksum hooks, backend id for non-file URIs                    |
 | Writers      | Worker threads only; one connection per worker or serialized write queue   |
 | Readers      | Workers hydrate an **in-memory** map; GUI reads memory only                |
 | Probe        | ffprobe (override `DIRTOO_FFPROBE`); skip non-media extensions             |
@@ -162,7 +162,7 @@ Schema evolution via `PRAGMA user_version` migrations.
 
 - Parentheses grouping fixed vs Python.
 - Modular Qt-free library; `dt-filter '<expr>' [dir]` for CLI testing.
-- Still open vs Python: `contains:`. Media width/height/duration/framerate via ffprobe; fuzzy n-gram done.
+- Filter content/media/date/time predicates largely done; pages/file_count in meta DB v2.
 
 ---
 
@@ -183,7 +183,7 @@ as of the responsive-UI / media-cache work.
 | FS abstraction | `virtual_filesystem`, Location URLs       | `dirtoo-fs::Location` (file + archive)      | SFTP/other VFS not started        |
 | File ops       | In-app + scripts                          | **`dirops`** lib + `dt-*` CLIs              | Stronger separation in C++        |
 | Filtering      | `filter/` + pyparsing                     | **`dirtoo-filter`** (hand parser, Qt-free)  |                                   |
-| Collection     | SortedList + Sorter + Grouper             | **`dirtoo-collection`** + Sorter            | Grouper day/directory done; duration open |
+| Collection     | SortedList + Sorter + Grouper             | **`dirtoo-collection`** + Sorter + GroupMode | day/directory/duration done               |
 | Metadata cache | Per-file XML sidecars                     | **SQLite** `meta.sqlite` + memory + workers | C++ direction is better for scale |
 | Thumbnails     | D-Bus thumbnailer                         | **`dirtoo-thumbnail`** D-Bus                |                                   |
 | Watcher        | inotify-style                             | **`dirtoo-watcher`**                        |                                   |
@@ -278,6 +278,7 @@ Python ships many CLIs under `programs/` (find expr engine, fsck, shuffle, deskt
 | Context menu parity (every Python item action) | Improved (new window, paths, thumbs)     |
 | DnD action overlay (Copy/Move/Link)            | **done** (DragActionOverlay)               |
 | DnD cursor themed pixmaps                      | **done** (`dnd-*.png` + setDragCursor)   |
+| Icon badges for pages / archive file count     | **done**                                 |
 | Save file list as                              | Python action                            |
 | Debug mode action                              | Python only                              |
 

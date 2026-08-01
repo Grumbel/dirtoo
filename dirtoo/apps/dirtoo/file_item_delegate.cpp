@@ -301,12 +301,26 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
 
   if (fi != nullptr && !fi->is_directory()) {
     kind = classify_extension(fi->extension());
-    // Memory-only lookup on the GUI thread. Missing media is requested async.
-    if (kind != MediaKind::None) {
+    // Memory-only lookup on the GUI thread. Missing meta is requested async
+    // for media, PDFs, and archives (pages / file_count).
+    const std::string ext_l = [&] {
+      std::string e = fi->extension();
+      if (!e.empty() && e[0] == '.') {
+        e.erase(e.begin());
+      }
+      for (char& c : e) {
+        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+      }
+      return e;
+    }();
+    const bool want_meta =
+        kind != MediaKind::None || ext_l == "pdf" || ext_l == "zip" || ext_l == "tar"
+        || ext_l == "tgz" || ext_l == "7z" || ext_l == "rar" || ext_l == "cbz" || ext_l == "cbr"
+        || ext_l == "jar" || ext_l == "apk" || ext_l == "gz" || ext_l == "bz2" || ext_l == "xz";
+    if (want_meta) {
       auto& cache = filter::MediaMetaCache::instance();
       meta = cache.try_get(fi->path());
       if (!meta && !cache.is_negative(fi->path())) {
-        const QString path_key = QString::fromStdString(fi->path().string());
         const int row = index.row();
         FileListModel* model = model_;
         cache.request(fi->path(), cache.generation(),
@@ -326,8 +340,13 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
       QString top_right;
       QString bottom_left;
 
+      // Priority matches Python: duration, else pages, else file_count.
       if (meta && meta->duration_ms && *meta->duration_ms > 0) {
         top_left = format_duration_ms(*meta->duration_ms);
+      } else if (meta && meta->pages && *meta->pages > 0) {
+        top_left = QStringLiteral("%1 pages").arg(*meta->pages);
+      } else if (meta && meta->file_count && *meta->file_count > 0) {
+        top_left = QStringLiteral("%1 files").arg(*meta->file_count);
       }
       if (meta && meta->framerate && *meta->framerate > 0.0) {
         top_right = QStringLiteral("%1fps").arg(*meta->framerate, 0, 'g', 3);
