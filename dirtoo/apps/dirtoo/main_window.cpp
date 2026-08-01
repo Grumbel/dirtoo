@@ -441,8 +441,11 @@ MainWindow::MainWindow(QWidget* parent)
     connect(show_filter_act_, &QAction::toggled, this, [this](bool on) {
       if (filter_row_ != nullptr) {
         filter_row_->setVisible(on);
-      } else if (filter_edit_ != nullptr) {
-        filter_edit_->setVisible(on);
+      }
+      // The line edit must stay visible whenever the row is shown (never hide it alone).
+      if (filter_edit_ != nullptr) {
+        filter_edit_->setVisible(true);
+        filter_edit_->setEnabled(true);
       }
       if (on && filter_edit_ != nullptr) {
         filter_edit_->setFocus(Qt::ShortcutFocusReason);
@@ -768,6 +771,9 @@ MainWindow::MainWindow(QWidget* parent)
     filter_edit_ = new QLineEdit(filter_row);
     filter_edit_->setPlaceholderText(
         QStringLiteral("Filter by name, glob, or expression (e.g. *.png, size:>1M)…"));
+    filter_edit_->setClearButtonEnabled(true);
+    filter_edit_->setEnabled(true);
+    filter_edit_->setVisible(true);
     filter_edit_->installEventFilter(this);
     connect(filter_edit_, &QLineEdit::textChanged, this, &MainWindow::on_filter_changed);
     filter_label->setBuddy(filter_edit_);
@@ -2540,15 +2546,15 @@ void MainWindow::on_save_file_list()
 void MainWindow::restore_settings()
 {
   const AppSettings s = load_settings();
+  if (model_ != nullptr) {
+    model_->set_icon_detail_level(s.icon_detail_level);
+    model_->set_crop_thumbnails(s.crop_thumbnails);
+  }
+  if (crop_thumbnails_act_ != nullptr) {
+    crop_thumbnails_act_->setChecked(s.crop_thumbnails);
+  }
   if (s.zoom_index >= 0 && s.zoom_index < static_cast<int>(std::size(kZoomLevels))) {
     zoom_index_ = s.zoom_index;
-    if (model_ != nullptr) {
-      model_->set_icon_detail_level(s.icon_detail_level);
-    model_->set_crop_thumbnails(s.crop_thumbnails);
-    if (crop_thumbnails_act_ != nullptr) {
-      crop_thumbnails_act_->setChecked(s.crop_thumbnails);
-    }
-    }
     apply_icon_zoom();
   }
   collection_.set_show_hidden(s.show_hidden);
@@ -2562,8 +2568,13 @@ void MainWindow::restore_settings()
   if (show_filter_act_ != nullptr) {
     show_filter_act_->setChecked(s.show_filter || s.filter_pinned);
   }
+  // Toggle the whole filter row; keep the line edit itself always visible/enabled.
+  if (filter_row_ != nullptr) {
+    filter_row_->setVisible(s.show_filter || s.filter_pinned);
+  }
   if (filter_edit_ != nullptr) {
-    filter_edit_->setVisible(s.show_filter || s.filter_pinned);
+    filter_edit_->setVisible(true);
+    filter_edit_->setEnabled(true);
   }
   collection_.sorter().set_directories_first(s.directories_first);
   {
@@ -3156,25 +3167,27 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event)
   if (obj == filter_edit_ && event->type() == QEvent::KeyPress) {
     auto* ke = static_cast<QKeyEvent*>(event);
     if (ke->key() == Qt::Key_Up) {
-      if (!filter_history_.isEmpty()) {
-        if (filter_history_index_ < 0) {
-          filter_history_index_ = filter_history_.size() - 1;
-        } else if (filter_history_index_ > 0) {
-          --filter_history_index_;
-        }
-        filter_edit_->setText(filter_history_.at(filter_history_index_));
+      if (filter_history_.isEmpty()) {
+        return false; // let QLineEdit handle cursor / default
       }
+      if (filter_history_index_ < 0) {
+        filter_history_index_ = filter_history_.size() - 1;
+      } else if (filter_history_index_ > 0) {
+        --filter_history_index_;
+      }
+      filter_edit_->setText(filter_history_.at(filter_history_index_));
       return true;
     }
     if (ke->key() == Qt::Key_Down) {
-      if (!filter_history_.isEmpty() && filter_history_index_ >= 0) {
-        if (filter_history_index_ + 1 < filter_history_.size()) {
-          ++filter_history_index_;
-          filter_edit_->setText(filter_history_.at(filter_history_index_));
-        } else {
-          filter_history_index_ = -1;
-          filter_edit_->clear();
-        }
+      if (filter_history_.isEmpty() || filter_history_index_ < 0) {
+        return false;
+      }
+      if (filter_history_index_ + 1 < filter_history_.size()) {
+        ++filter_history_index_;
+        filter_edit_->setText(filter_history_.at(filter_history_index_));
+      } else {
+        filter_history_index_ = -1;
+        filter_edit_->clear();
       }
       return true;
     }
@@ -3523,8 +3536,12 @@ void MainWindow::apply_settings(const AppSettings& s)
   if (show_filter_act_ != nullptr) {
     show_filter_act_->setChecked(s.show_filter || s.filter_pinned);
   }
+  if (filter_row_ != nullptr) {
+    filter_row_->setVisible(s.show_filter || s.filter_pinned);
+  }
   if (filter_edit_ != nullptr) {
-    filter_edit_->setVisible(s.show_filter || s.filter_pinned);
+    filter_edit_->setVisible(true);
+    filter_edit_->setEnabled(true);
   }
   request_async_sort();
   refresh_list();
