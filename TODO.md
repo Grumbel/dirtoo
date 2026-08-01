@@ -33,8 +33,8 @@ parity features are in place. Build/tests green (50/50 as of last Nix check).
 | Content filter I/O on GUI thread | **Mitigated** — `FilterWorker` + `replace_visible` |
 | Graphics full scene rebuild | **Mitigated** — item reuse; softer `layoutChanged` refresh |
 | Thumbnails for every visible row | **Mitigated** — viewport batch (cap 64), scroll-driven |
-| Watcher full rescan storms | **Mitigated** — 200ms debounce + soft reload + cancel in-flight |
-| Double paint unsorted→sorted | **Open** — two refreshes after load (acceptable; not a freeze) |
+| Watcher full rescan storms | **Mitigated** — 200ms debounce + soft reload + no unsorted flicker + cancel in-flight |
+| Double paint unsorted→sorted | **Mitigated** for soft watcher reloads (skip intermediate paint; refresh after sort) |
 | No list virtualization | **Partial** — Graphics creates items in event-loop batches; still not viewport-virtualized |
 
 ### 2. Drag & drop

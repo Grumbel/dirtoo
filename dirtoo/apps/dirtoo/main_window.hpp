@@ -235,6 +235,7 @@ private:
   QThread* dir_load_thread_ = nullptr;
   DirectoryLoadWorker* dir_load_worker_ = nullptr;
   quint64 dir_load_generation_ = 0;
+  bool soft_directory_reload_ = false;
   QSet<QString> known_paths_;
   fs::Location known_paths_location_;
   QThread* sort_thread_ = nullptr;

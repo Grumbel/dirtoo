@@ -1124,6 +1124,7 @@ void MainWindow::reload_directory(bool soft)
     // Keep recursive search results until the user navigates away or closes search.
     return;
   }
+  soft_directory_reload_ = soft;
   if (!soft) {
     thumbnailer_.cancel_all();
     if (model_ != nullptr) {
@@ -1212,16 +1213,25 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
   collection_.sorter().set_ascending(sort_ascending_);
   // Show entries ASAP; order refined by SortWorker.
   collection_.set_items_unsorted(std::move(items));
+  const bool soft = soft_directory_reload_;
+  soft_directory_reload_ = false;
   if (filter_edit_ != nullptr && !filter_edit_->text().isEmpty()) {
     if (filter_expression_needs_content_io(filter_edit_->text())) {
+      // Async filter will refresh when done; still sort underneath.
       request_async_filter();
     } else {
       collection_.set_name_filter(filter_edit_->text().toStdString());
     }
   }
-  refresh_list();
+  // Soft (watcher) reloads: keep the previous paint until sort finishes to avoid
+  // unsorted→sorted double flicker. Hard navigation still paints ASAP.
+  if (!soft) {
+    refresh_list();
+  }
   if (status_label_ != nullptr) {
-    status_label_->setText(QStringLiteral("%1 items").arg(collection_.visible_items().size()));
+    status_label_->setText(QStringLiteral("%1 items").arg(
+        soft ? known_paths_.size() : collection_.visible_items().size()));
+    // After soft path, visible may still be old until sort/filter apply; status updated again later.
   }
   request_async_sort();
   request_thumbnails_for_visible();
@@ -1253,6 +1263,9 @@ void MainWindow::on_sort_finished(quint64 generation, std::vector<fs::FileInfo> 
   // match_/filter and show_hidden stay; only item order changes.
   collection_.replace_items_sorted(std::move(items));
   refresh_list();
+  if (status_label_ != nullptr) {
+    status_label_->setText(QStringLiteral("%1 items").arg(collection_.visible_items().size()));
+  }
   request_thumbnails_for_visible();
 }
 
