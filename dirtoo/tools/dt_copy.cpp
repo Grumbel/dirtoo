@@ -7,6 +7,10 @@
 #include <string>
 #include <string_view>
 
+#ifndef DIRTOO_VERSION
+#  define DIRTOO_VERSION "0.0.0-unknown"
+#endif
+
 namespace {
 
 dirops::ConflictPolicy parse_conflict(std::string_view s)
@@ -26,6 +30,14 @@ void usage()
 
 int main(int argc, char* argv[])
 {
+  for (int i = 1; i < argc; ++i) {
+    const std::string_view a{argv[i]};
+    if (a == "--version" || a == "-V") {
+      std::cout << "dirtoo " DIRTOO_VERSION "\n";
+      return 0;
+    }
+  }
+
   dirops::Options opt;
   int argi = 1;
   while (argi < argc && std::string_view(argv[argi]).starts_with("--")) {

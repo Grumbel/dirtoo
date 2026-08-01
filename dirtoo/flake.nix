@@ -12,11 +12,15 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        lib = pkgs.lib;
+        versionBase = lib.strings.removeSuffix "\n" (builtins.readFile ./VERSION);
+        gitRev = self.shortRev or self.dirtyShortRev or "dirty";
+        version = "${versionBase}+g${gitRev}";
       in
       {
         packages.default = pkgs.stdenv.mkDerivation {
           pname = "dirtoo";
-          version = "0.1.0";
+          inherit version;
           src = ./.;
 
           nativeBuildInputs = with pkgs; [
@@ -31,15 +35,15 @@
             libarchive
           ];
 
-          # Runtime helpers used by ArchiveManager / archive_index
           propagatedBuildInputs = with pkgs; [
-            libarchive # bsdtar
+            libarchive
             unzip
             gnutar
             p7zip
           ];
 
           cmakeFlags = [
+            "-DPROJECT_VERSION_FULL=${version}"
             "-DDIRTOO_BUILD_TESTS=ON"
           ];
 
@@ -68,8 +72,7 @@
           ];
 
           shellHook = ''
-            echo "dirtoo C++ dev shell (C++23, Qt6, CMake/Ninja)"
-            echo "Archive tools: bsdtar/tar/unzip/7z available for browsing"
+            echo "dirtoo C++ dev shell — VERSION $(cat VERSION 2>/dev/null || echo '?')"
           '';
         };
       });

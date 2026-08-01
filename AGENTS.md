@@ -187,3 +187,10 @@ See `TODO.md` for the full phased plan.
 Python reference remains in `dirtoo-py/` for comparison only.
 
 See also `dirtoo/STATUS.md` for a concise module map and build hints.
+
+
+## Version numbers
+
+Do not hardcode version strings. The only source of truth is `dirtoo/VERSION`.
+CMake exposes it as `DIRTOO_VERSION`; the flake appends `+g<rev>`. Releases
+remove the `-dev` suffix and tag `v` + VERSION contents.

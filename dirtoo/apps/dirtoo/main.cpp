@@ -8,29 +8,45 @@
 #include "dirtoo/fs/location.hpp"
 
 #include <QApplication>
-#include <QIcon>
+#include <QCommandLineParser>
 #include <QDir>
+#include <QIcon>
 
 #include <filesystem>
+#include <iostream>
+
+#ifndef DIRTOO_VERSION
+#  define DIRTOO_VERSION "0.0.0-unknown"
+#endif
 
 int main(int argc, char* argv[])
 {
   QApplication app(argc, argv);
   QApplication::setApplicationName(QStringLiteral("dirtoo"));
   QApplication::setOrganizationName(QStringLiteral("dirtoo"));
-  QApplication::setApplicationVersion(QStringLiteral("0.1.0"));
+  QApplication::setApplicationVersion(QStringLiteral(DIRTOO_VERSION));
   QApplication::setWindowIcon(QIcon(QStringLiteral(":/icons/dirtoo.png")));
-  // Also try theme / installed icon name.
   if (QApplication::windowIcon().isNull()) {
-    QApplication::setWindowIcon(QIcon::fromTheme(QStringLiteral("dirtoo"),
-                                                 QIcon(QStringLiteral("/usr/share/icons/hicolor/48x48/apps/dirtoo.png"))));
+    QApplication::setWindowIcon(QIcon::fromTheme(
+        QStringLiteral("dirtoo"),
+        QIcon(QStringLiteral("/usr/share/icons/hicolor/48x48/apps/dirtoo.png"))));
   }
+
+  QCommandLineParser parser;
+  parser.setApplicationDescription(QStringLiteral("Modular Qt file manager"));
+  parser.addHelpOption();
+  parser.addVersionOption(); // --version / -v via Qt
+  parser.addPositionalArgument(QStringLiteral("path"),
+                               QStringLiteral("Initial directory to open"),
+                               QStringLiteral("[path]"));
+  parser.process(app);
 
   dirtoo::app::MainWindow window;
 
   std::filesystem::path start = QDir::homePath().toStdString();
-  if (argc > 1) {
-    start = argv[1];
+  const QStringList pos = parser.positionalArguments();
+  if (!pos.isEmpty()) {
+    start = pos.first().toStdString();
   } else {
     const auto settings = dirtoo::app::load_settings();
     if (!settings.last_location.isEmpty()) {
