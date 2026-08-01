@@ -302,6 +302,7 @@ MainWindow::MainWindow(QWidget* parent)
       group_actions->addAction(act);
       connect(act, &QAction::triggered, this, [this, mode] {
         collection_.set_group_mode(mode);
+        update_detail_row_heights();
         {
           AppSettings s = load_settings();
           switch (mode) {
@@ -420,6 +421,7 @@ MainWindow::MainWindow(QWidget* parent)
       connect(act, &QAction::toggled, this, [this](bool on) {
         if (model_ != nullptr) {
           model_->set_show_timegaps(on);
+          update_detail_row_heights();
         }
         if (tree_view_ != nullptr) {
           tree_view_->doItemsLayout();
@@ -523,6 +525,7 @@ MainWindow::MainWindow(QWidget* parent)
         group_actions->addAction(act);
         connect(act, &QAction::triggered, this, [this, mode] {
           collection_.set_group_mode(mode);
+          update_detail_row_heights();
           {
             AppSettings s = load_settings();
             switch (mode) {
@@ -778,7 +781,11 @@ MainWindow::MainWindow(QWidget* parent)
   tree_view_ = new FileTreeView(view_stack_);
   tree_view_->setModel(model_);
   tree_view_->setRootIsDecorated(false);
-  tree_view_->setUniformRowHeights(false); // group headers + time gaps need variable height
+  // Prefer uniform heights for large-dir scroll cost; toggle off when group/time-gap
+  // separators need variable row height (see update_detail_row_heights).
+  tree_view_->setUniformRowHeights(true);
+  tree_view_->setAlternatingRowColors(true);
+  tree_view_->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
   tree_view_->setSelectionMode(QAbstractItemView::ExtendedSelection);
   tree_view_->setSelectionBehavior(QAbstractItemView::SelectRows);
   tree_view_->setSortingEnabled(false);
@@ -1422,6 +1429,17 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
     request_async_sort();
   }
   request_thumbnails_for_visible();
+}
+
+void MainWindow::update_detail_row_heights()
+{
+  if (tree_view_ == nullptr || model_ == nullptr) {
+    return;
+  }
+  const bool variable =
+      collection_.group_mode() != collection::GroupMode::None || model_->show_timegaps();
+  tree_view_->setUniformRowHeights(!variable);
+  tree_view_->doItemsLayout();
 }
 
 void MainWindow::request_async_sort()
@@ -2500,6 +2518,7 @@ void MainWindow::restore_settings()
       gm = collection::GroupMode::Duration;
     }
     collection_.set_group_mode(gm);
+    update_detail_row_heights();
   }
   if (s.view_mode == QLatin1String("icons")) {
     set_view_mode(ViewMode::Icons);
@@ -3421,6 +3440,7 @@ void MainWindow::apply_settings(const AppSettings& s)
       gm = collection::GroupMode::Duration;
     }
     collection_.set_group_mode(gm);
+    update_detail_row_heights();
   }
   filter_pinned_ = s.filter_pinned;
   if (pin_filter_act_ != nullptr) {

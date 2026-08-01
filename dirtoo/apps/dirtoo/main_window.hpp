@@ -85,6 +85,7 @@ private slots:
   void on_directory_load_failed(quint64 generation, QString error);
   void on_sort_finished(quint64 generation, std::vector<dirtoo::fs::FileInfo> items);
   void request_async_sort();
+  void update_detail_row_heights();
   void on_filter_changed(const QString& text);
   void on_filter_finished(quint64 generation, std::vector<dirtoo::fs::FileInfo> visible, bool parse_ok);
   /// @param keep_previous_visible Soft reload: do not clear the list until filter finishes.

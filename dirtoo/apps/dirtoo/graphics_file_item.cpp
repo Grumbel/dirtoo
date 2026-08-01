@@ -34,6 +34,24 @@ QString format_duration_ms(std::uint64_t ms)
   return QStringLiteral("%1:%2").arg(m).arg(s, 2, 10, QLatin1Char('0'));
 }
 
+void draw_caption_text(QPainter* painter, const QRect& rect, const QString& text,
+                       const QColor& color)
+{
+  // Soft outline so captions stay readable on varied thumbnail backgrounds.
+  const QColor outline(0, 0, 0, 140);
+  for (int dx = -1; dx <= 1; ++dx) {
+    for (int dy = -1; dy <= 1; ++dy) {
+      if (dx == 0 && dy == 0) {
+        continue;
+      }
+      painter->setPen(outline);
+      painter->drawText(rect.translated(dx, dy), Qt::AlignHCenter | Qt::AlignTop, text);
+    }
+  }
+  painter->setPen(color);
+  painter->drawText(rect, Qt::AlignHCenter | Qt::AlignTop, text);
+}
+
 void draw_badge(QPainter* painter, const QRect& thumb, const QString& text, Qt::Alignment align)
 {
   if (text.isEmpty()) {
@@ -296,8 +314,9 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
         break;
       }
       const QString elided = fm.elidedText(line, Qt::ElideMiddle, text_rect.width());
-      painter->drawText(QRect(text_rect.left(), y, text_rect.width(), fm.height()),
-                        Qt::AlignHCenter | Qt::AlignTop, elided);
+      const QColor color = painter->pen().color();
+      draw_caption_text(painter, QRect(text_rect.left(), y, text_rect.width(), fm.height()),
+                        elided, color);
       y += fm.height() + 1;
       ++drawn;
     }

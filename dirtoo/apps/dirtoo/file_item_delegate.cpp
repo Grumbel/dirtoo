@@ -41,6 +41,23 @@ QString format_time_gap(qint64 secs)
   return QStringLiteral("%1d gap").arg(secs / 86400);
 }
 
+void draw_caption_text(QPainter* painter, const QRect& rect, const QString& text,
+                       const QColor& color)
+{
+  const QColor outline(0, 0, 0, 140);
+  for (int dx = -1; dx <= 1; ++dx) {
+    for (int dy = -1; dy <= 1; ++dy) {
+      if (dx == 0 && dy == 0) {
+        continue;
+      }
+      painter->setPen(outline);
+      painter->drawText(rect.translated(dx, dy), Qt::AlignHCenter | Qt::AlignVCenter, text);
+    }
+  }
+  painter->setPen(color);
+  painter->drawText(rect, Qt::AlignHCenter | Qt::AlignVCenter, text);
+}
+
 void draw_badge(QPainter* painter, const QRect& thumb, const QString& text, Qt::Alignment align)
 {
   if (text.isEmpty()) {
@@ -456,8 +473,9 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
           break;
         }
         const QString elided = fm.elidedText(line, Qt::ElideMiddle, text_rect.width());
-        painter->drawText(QRect(text_rect.left(), y, text_rect.width(), fm.height()),
-                          Qt::AlignHCenter | Qt::AlignVCenter, elided);
+        const QColor color = painter->pen().color();
+        draw_caption_text(painter, QRect(text_rect.left(), y, text_rect.width(), fm.height()),
+                          elided, color);
         y += fm.height() + 1;
       }
       painter->setPen(pen);

@@ -9,8 +9,8 @@ Python reference: `dirtoo-py/`. Active code: `dirtoo/`.
 Critical freezes, DnD/Link, content-filter offload, Graphics reuse, and core
 parity features are in place. Build/tests green (50/50 as of last Nix check).
 
-**Residual focus:** Detail-view virtualization; inotify per-entry events (optional)
-(add/remove without full rescan); DnD edge cases; small-icons layout polish.
+**Residual focus:** inotify per-entry events (optional add/remove without full rescan);
+transfer dedicated error dialog; remaining DnD edge cases.
 
 ### Parity freeze (still intentionally out of scope)
 
@@ -36,7 +36,7 @@ parity features are in place. Build/tests green (50/50 as of last Nix check).
 | Watcher full rescan storms | **Mitigated** — debounce + soft reload + **merge_items** + cancel in-flight; **no emit on start**; hard nav cancels pending soft timer |
 | Double paint unsorted→sorted | **Mitigated** for soft watcher reloads (skip intermediate paint; refresh after sort) |
 | Full-range dataChanged on every refresh | **Mitigated** — `FileListModel::refresh` uses layoutChanged only |
-| No list virtualization | **Mitigated** for Icons/Graphics — viewport window + precomputed slots; selection persists off-window; Detail/Small still full model |
+| No list virtualization | **Mitigated** for Icons/Graphics — viewport window; Detail: uniform heights + no GUI-thread mtime stat; model is still full (Qt paints visible rows only) |
 
 ### 2. Drag & drop
 
@@ -149,11 +149,11 @@ parity features are in place. Build/tests green (50/50 as of last Nix check).
 | Item | Notes |
 |------|--------|
 | True incremental FS watcher deltas | **Partial** — merge_items after soft rescan; still O(n) readdir (no inotify names) |
-| List / Graphics virtualization | **Graphics viewport window done**; Detail/Small still full QAbstractItemView |
+| List / Graphics virtualization | **Graphics viewport window done**; Detail uses uniform row heights when no group/time-gap; Qt paints only visible rows |
 | Rubber-band vs item drag | **done** |
 | Nested drop into own selection | **done** |
 | Small-icons grid metrics | **done** (fixed grid) |
-| Caption shadow/outline | Python renderer polish |
+| Caption shadow/outline | **done** — soft outline on icon captions |
 | Transfer dedicated error dialog | Optional UX split |
 
 ---

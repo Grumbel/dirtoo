@@ -20,8 +20,6 @@
 #include <QUrl>
 
 #include <algorithm>
-#include <sys/stat.h>
-
 namespace dirtoo::app {
 namespace {
 
@@ -39,14 +37,20 @@ QString format_size(std::uint64_t bytes, bool is_directory)
   return QLocale::system().formattedDataSize(static_cast<qint64>(bytes));
 }
 
-QString format_mtime_from_path(const std::filesystem::path& path)
+QString format_mtime(std::filesystem::file_time_type mtime)
 {
-  struct ::stat st {};
-  if (::stat(path.c_str(), &st) != 0) {
+  try {
+    const auto sys = std::chrono::clock_cast<std::chrono::system_clock>(mtime);
+    const auto secs =
+        std::chrono::duration_cast<std::chrono::seconds>(sys.time_since_epoch()).count();
+    if (secs <= 0) {
+      return {};
+    }
+    const QDateTime dt = QDateTime::fromSecsSinceEpoch(static_cast<qint64>(secs));
+    return QLocale::system().toString(dt, QLocale::ShortFormat);
+  } catch (...) {
     return {};
   }
-  const QDateTime dt = QDateTime::fromSecsSinceEpoch(static_cast<qint64>(st.st_mtime));
-  return QLocale::system().toString(dt, QLocale::ShortFormat);
 }
 
 QString type_label(const fs::FileInfo& fi)
@@ -381,7 +385,7 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
         caption += format_size(fi->size(), fi->is_directory());
       }
       if (icon_detail_level_ > 3) {
-        const QString mtime = format_mtime_from_path(fi->path());
+        const QString mtime = format_mtime(fi->mtime());
         if (!mtime.isEmpty()) {
           caption += QLatin1Char('\n');
           caption += mtime;
@@ -404,7 +408,7 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
       }
       return format_size(fi->size(), false);
     case FileListColumn::Modified:
-      return format_mtime_from_path(fi->path());
+      return format_mtime(fi->mtime());
     case FileListColumn::Type:
       return type_label(*fi);
     case FileListColumn::Count:
