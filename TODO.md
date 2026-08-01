@@ -254,10 +254,22 @@ thumbnail work. `dirops` remains Qt-free.
       (was likely selection-clear on right-click; preserved multi-select + explicit Properties)
 - [x] Rename dialog doesn't open up
       (same selection fix as Properties)
-- [ ] dirtoo-py/ had a much better  *(incomplete note in original list — no actionable detail)*
 - [x] sort and group-by used to have buttons in the toolbar
 - [ ] the rendering of group-by looks like a hack, if there isn't an
-      obviously batter way, leave that
+      obviously better way, leave it like that
 - [x] history isn't persistent between restarts
 - [x] filenames still disappear and don't render properly
       (basename fallback when DisplayRole empty; caption height floor)
+- [ ] folders show up with size 0, not their actual size
+- [ ] size show up as MiB, but should be base 1000 MB
+- [ ] use Ctrl-k for Filter
+- [ ] move filter bar to the bottom
+- [ ] change background color when filter bar is active, see dirtoo-py
+- [ ] only the first now in "Small Icons" has a filename, filename is
+      invisible everywhere else
+- [ ] files in archives don't get thumbnails
+- [ ] drag&drop of files from inside an archive just gives a filename
+      pointing to the archive
+- [ ] use human-friendly ISO date/time: "2011-12-21 16:14"
+- [ ] in About page, use actual URL, not "Project Page" text on link
+
