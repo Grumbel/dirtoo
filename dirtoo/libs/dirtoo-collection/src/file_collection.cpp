@@ -8,6 +8,8 @@
 #include "dirtoo/filter/predicates.hpp"
 
 #include <algorithm>
+#include <unordered_map>
+#include <filesystem>
 #include <chrono>
 #include <cctype>
 
@@ -58,6 +60,36 @@ void FileCollection::set_items_unsorted(std::vector<fs::FileInfo> items)
 {
   items_ = std::move(items);
   rebuild_visible();
+}
+
+void FileCollection::merge_items(std::vector<fs::FileInfo> items, bool rebuild)
+{
+  std::unordered_map<std::string, fs::FileInfo> incoming;
+  incoming.reserve(items.size());
+  for (auto& fi : items) {
+    incoming.emplace(fi.path().string(), std::move(fi));
+  }
+
+  // Update survivors in place (preserve relative order of existing entries).
+  std::vector<fs::FileInfo> kept;
+  kept.reserve(items_.size());
+  for (auto& fi : items_) {
+    auto it = incoming.find(fi.path().string());
+    if (it == incoming.end()) {
+      continue; // removed from directory
+    }
+    kept.push_back(std::move(it->second));
+    incoming.erase(it);
+  }
+  // Append newly appeared entries (order refined by subsequent sort).
+  for (auto& [path, fi] : incoming) {
+    (void)path;
+    kept.push_back(std::move(fi));
+  }
+  items_ = std::move(kept);
+  if (rebuild) {
+    rebuild_visible();
+  }
 }
 
 void FileCollection::replace_items_sorted(std::vector<fs::FileInfo> items)

@@ -165,7 +165,7 @@ fix defects, or close/open work items:
 | Archives read-only | **done** |
 | DnD | **done** — Move/Copy/Link modifiers; folder drop on list/tree |
 | Select All / Swap Names / Show Full Paths / Time Gaps | **done** |
-| Graphics viewport virtualization | **done**; Detail virtualization / incremental FS deltas **open** |
+| Graphics viewport virtualization | **done**; soft watcher **merge_items**; Detail virt / inotify **open** |
 | Archive write / remote VFS / programs/* | **out of scope** |
 
 Priority residual queue and parity matrix: **`TODO.md`**.  

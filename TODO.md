@@ -9,7 +9,7 @@ Python reference: `dirtoo-py/`. Active code: `dirtoo/`.
 Critical freezes, DnD/Link, content-filter offload, Graphics reuse, and core
 parity features are in place. Build/tests green (50/50 as of last Nix check).
 
-**Residual focus:** Detail-view virtualization; true incremental FS deltas
+**Residual focus:** Detail-view virtualization; inotify per-entry events (optional)
 (add/remove without full rescan); DnD edge cases; small-icons layout polish.
 
 ### Parity freeze (still intentionally out of scope)
@@ -33,7 +33,7 @@ parity features are in place. Build/tests green (50/50 as of last Nix check).
 | Content filter I/O on GUI thread | **Mitigated** — `FilterWorker` + `replace_visible` |
 | Graphics full scene rebuild | **Mitigated** — item reuse; softer `layoutChanged` refresh |
 | Thumbnails for every visible row | **Mitigated** — viewport batch (cap 64), scroll-driven |
-| Watcher full rescan storms | **Mitigated** — 200ms debounce + soft reload + no unsorted flicker + cancel in-flight |
+| Watcher full rescan storms | **Mitigated** — debounce + soft reload + **merge_items** (no full vector replace) + cancel in-flight |
 | Double paint unsorted→sorted | **Mitigated** for soft watcher reloads (skip intermediate paint; refresh after sort) |
 | No list virtualization | **Mitigated** for Icons/Graphics — viewport window + precomputed slots; Detail/Small still full model |
 
@@ -147,7 +147,7 @@ parity features are in place. Build/tests green (50/50 as of last Nix check).
 
 | Item | Notes |
 |------|--------|
-| True incremental FS watcher deltas | Soft full rescan today |
+| True incremental FS watcher deltas | **Partial** — merge_items after soft rescan; still O(n) readdir (no inotify names) |
 | List / Graphics virtualization | **Graphics viewport window done**; Detail/Small still full QAbstractItemView |
 | Rubber-band vs item drag | **done** |
 | Nested drop into own selection | **done** |
@@ -188,7 +188,7 @@ thumbnail work. `dirops` remains Qt-free.
 1. [x] Graphics: item-press → drag, empty → rubber-band
 2. [x] Guard drop into own selected folder / nested selection
 3. [x] Graphics viewport windowing — only tiles in view (± margin) exist as QGraphicsItems
-4. [ ] Incremental watcher (inotify event → add/remove single entries)
+4. [partial] Soft watcher merge via FileCollection::merge_items (still full readdir; no inotify deltas)
 5. [x] Small-icons grid polish — fixed IconMode grid cells
 
 ### Completed work order

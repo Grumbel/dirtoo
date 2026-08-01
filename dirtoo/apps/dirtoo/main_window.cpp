@@ -1211,12 +1211,21 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
     known_paths_location_ = location_;
   }
   collection_.sorter().set_ascending(sort_ascending_);
-  // Show entries ASAP; order refined by SortWorker.
-  collection_.set_items_unsorted(std::move(items));
   const bool soft = soft_directory_reload_;
   soft_directory_reload_ = false;
+  // Soft watcher refresh: merge into existing collection (preserve order of
+  // survivors, append newcomers) instead of replacing the whole vector.
+  const bool content_filter =
+      filter_edit_ != nullptr && !filter_edit_->text().isEmpty()
+      && filter_expression_needs_content_io(filter_edit_->text());
+  if (soft && !collection_.empty()) {
+    // Avoid rebuild_visible when content matchers would hit the GUI thread.
+    collection_.merge_items(std::move(items), !content_filter);
+  } else {
+    collection_.set_items_unsorted(std::move(items));
+  }
   if (filter_edit_ != nullptr && !filter_edit_->text().isEmpty()) {
-    if (filter_expression_needs_content_io(filter_edit_->text())) {
+    if (content_filter) {
       // Async filter will refresh when done; still sort underneath.
       request_async_filter();
     } else {
