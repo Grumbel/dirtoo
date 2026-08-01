@@ -41,17 +41,19 @@ public:
 public slots:
   void run(TransferRequest request);
   void cancel();
-  void resolve_conflict(dirops::ConflictPolicy policy, bool accepted);
+  void resolve_conflict(dirops::ConflictPolicy policy, bool accepted, bool apply_to_all = false);
 
 signals:
   void item_started(int index, int total, const QString& path);
   void byte_progress(quint64 done, quint64 total, const QString& path);
-  void conflict_required(const QString& destination_name);
+  void conflict_required(const QString& destination_name, const QString& source_path,
+                         const QString& destination_path);
   void finished(TransferSummary summary);
 
 private:
-  [[nodiscard]] dirops::ConflictPolicy wait_for_conflict_policy(const QString& dest_name,
-                                                                bool* cancelled_out);
+  [[nodiscard]] dirops::ConflictPolicy wait_for_conflict_policy(
+      const QString& dest_name, const std::filesystem::path& source,
+      const std::filesystem::path& destination, bool* cancelled_out);
 
   std::atomic<bool> cancel_requested_{false};
 
@@ -60,6 +62,8 @@ private:
   bool conflict_pending_ = false;
   bool conflict_accepted_ = false;
   dirops::ConflictPolicy conflict_answer_ = dirops::ConflictPolicy::Fail;
+  bool conflict_have_sticky_ = false;
+  dirops::ConflictPolicy conflict_sticky_ = dirops::ConflictPolicy::Fail;
 };
 
 } // namespace dirtoo::app

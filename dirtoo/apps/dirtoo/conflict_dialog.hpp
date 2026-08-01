@@ -5,18 +5,26 @@
 
 #include "dirops/ops.hpp"
 
-#include <QDialog>
 #include <QString>
 
+#include <filesystem>
 #include <optional>
 
 class QWidget;
 
 namespace dirtoo::app {
 
-/// Ask the user how to resolve a name conflict. Returns nullopt if cancelled.
-[[nodiscard]] std::optional<dirops::ConflictPolicy> ask_conflict_policy(
+struct ConflictDecision {
+  dirops::ConflictPolicy policy = dirops::ConflictPolicy::Fail;
+  bool apply_to_all = false;
+};
+
+/// Ask how to resolve a name conflict. Pass source/dest paths when known for size/mtime.
+/// Returns nullopt if the user cancels.
+[[nodiscard]] std::optional<ConflictDecision> ask_conflict_policy(
     QWidget* parent,
-    const QString& destination_name);
+    const QString& destination_name,
+    const std::filesystem::path& source_path = {},
+    const std::filesystem::path& destination_path = {});
 
 } // namespace dirtoo::app

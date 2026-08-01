@@ -31,26 +31,38 @@ void TransferWorker::cancel()
   conflict_cv_.notify_all();
 }
 
-void TransferWorker::resolve_conflict(dirops::ConflictPolicy policy, bool accepted)
+void TransferWorker::resolve_conflict(dirops::ConflictPolicy policy, bool accepted, bool apply_to_all)
 {
   {
     std::lock_guard lock(conflict_mutex_);
     conflict_answer_ = policy;
     conflict_accepted_ = accepted;
     conflict_pending_ = false;
+    if (accepted && apply_to_all) {
+      conflict_have_sticky_ = true;
+      conflict_sticky_ = policy;
+    }
   }
   conflict_cv_.notify_all();
 }
 
-dirops::ConflictPolicy TransferWorker::wait_for_conflict_policy(const QString& dest_name,
-                                                               bool* cancelled_out)
+dirops::ConflictPolicy TransferWorker::wait_for_conflict_policy(
+    const QString& dest_name, const std::filesystem::path& source,
+    const std::filesystem::path& destination, bool* cancelled_out)
 {
   {
     std::lock_guard lock(conflict_mutex_);
+    if (conflict_have_sticky_) {
+      if (cancelled_out) {
+        *cancelled_out = false;
+      }
+      return conflict_sticky_;
+    }
     conflict_pending_ = true;
     conflict_accepted_ = false;
   }
-  emit conflict_required(dest_name);
+  emit conflict_required(dest_name, QString::fromStdString(source.string()),
+                         QString::fromStdString(destination.string()));
 
   std::unique_lock lock(conflict_mutex_);
   conflict_cv_.wait(lock, [this] {
@@ -72,6 +84,10 @@ dirops::ConflictPolicy TransferWorker::wait_for_conflict_policy(const QString& d
 void TransferWorker::run(TransferRequest request)
 {
   cancel_requested_.store(false);
+  {
+    std::lock_guard lock(conflict_mutex_);
+    conflict_have_sticky_ = false;
+  }
   TransferSummary summary;
 
   const int total = static_cast<int>(request.sources.size());
@@ -97,7 +113,7 @@ void TransferWorker::run(TransferRequest request)
     if (std::filesystem::exists(dest)) {
       bool user_cancelled = false;
       opt.conflict = wait_for_conflict_policy(
-          QString::fromStdString(dest.filename().string()), &user_cancelled);
+          QString::fromStdString(dest.filename().string()), src, dest, &user_cancelled);
       if (user_cancelled || cancel_requested_.load()) {
         summary.cancelled = true;
         break;

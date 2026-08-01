@@ -305,7 +305,7 @@ C++ dialogs are functional but thinner than Python. Tracked for a dedicated pass
 
 | Dialog | Gap vs Python |
 |--------|----------------|
-| **Conflict** | Source/dest size & mtime comparison; “apply to all”; clearer replace UX |
+| **Conflict** | **improved** (source/dest info, apply-to-all, Replace/Rename/Skip) |
 | **Transfer** | Pause/continue, byte counts, elapsed time, log pane, close-when-finished |
 | **Properties** | Permissions, owner, media/metadata fields, multi-select detail |
 | **About** | Richer HTML / version / license text |

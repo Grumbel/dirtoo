@@ -1412,23 +1412,28 @@ void MainWindow::on_transfer_byte_progress(quint64 done, quint64 total, const QS
   }
 }
 
-void MainWindow::on_transfer_conflict(const QString& destination_name)
+void MainWindow::on_transfer_conflict(const QString& destination_name, const QString& source_path,
+                                      const QString& destination_path)
 {
   // Runs on UI thread (QueuedConnection from worker signal).
-  const auto chosen = ask_conflict_policy(this, destination_name);
+  const auto chosen = ask_conflict_policy(
+      this, destination_name, std::filesystem::path{source_path.toStdString()},
+      std::filesystem::path{destination_path.toStdString()});
   if (transfer_worker_ == nullptr) {
     return;
   }
   if (!chosen) {
     QMetaObject::invokeMethod(
         transfer_worker_,
-        [this] { transfer_worker_->resolve_conflict(dirops::ConflictPolicy::Fail, false); },
+        [this] { transfer_worker_->resolve_conflict(dirops::ConflictPolicy::Fail, false, false); },
         Qt::QueuedConnection);
   } else {
-    const auto policy = *chosen;
+    const auto decision = *chosen;
     QMetaObject::invokeMethod(
         transfer_worker_,
-        [this, policy] { transfer_worker_->resolve_conflict(policy, true); },
+        [this, decision] {
+          transfer_worker_->resolve_conflict(decision.policy, true, decision.apply_to_all);
+        },
         Qt::QueuedConnection);
   }
 }
@@ -1480,17 +1485,17 @@ void MainWindow::on_mkdir()
   const auto dest = location_.as_path() / name.trimmed().toStdString();
   if (std::filesystem::exists(dest)) {
     const auto chosen = ask_conflict_policy(this, name.trimmed());
-    if (!chosen || *chosen == dirops::ConflictPolicy::Skip) {
+    if (!chosen || chosen->policy == dirops::ConflictPolicy::Skip) {
       return;
     }
-    if (*chosen == dirops::ConflictPolicy::Overwrite) {
+    if (chosen->policy == dirops::ConflictPolicy::Overwrite) {
       auto rm = dirops::remove_path(dest);
       if (!rm) {
         QMessageBox::warning(this, QStringLiteral("New Folder"),
                              QString::fromStdString(rm.error().to_string()));
         return;
       }
-    } else if (*chosen == dirops::ConflictPolicy::Rename) {
+    } else if (chosen->policy == dirops::ConflictPolicy::Rename) {
       const auto unique =
           dest.parent_path() / (dest.stem().string() + " (2)" + dest.extension().string());
       auto result = dirops::create_directory(unique);
@@ -1541,7 +1546,7 @@ void MainWindow::on_rename_selected()
     if (!chosen) {
       return;
     }
-    opt.conflict = *chosen;
+    opt.conflict = chosen->policy;
   }
 
   auto result = dirops::rename_path(fi.path(), dest, opt);
