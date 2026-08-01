@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "graphics_file_view.hpp"
+#include "badge_icons.hpp"
 
 #include "file_list_model.hpp"
 #include "graphics_file_item.hpp"
@@ -547,7 +548,7 @@ void GraphicsFileView::start_drag()
   // Themed cursors (same assets as list/tree views)
   {
     auto load = [](const char* alias) {
-      return QPixmap(QStringLiteral(":/icons/%1").arg(QLatin1String(alias)));
+      return load_badge_pixmap(QString::fromLatin1(alias));
     };
     const QPixmap copy = load("dnd-copy.png");
     const QPixmap move = load("dnd-move.png");

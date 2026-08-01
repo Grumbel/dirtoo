@@ -58,10 +58,16 @@ qt_add_executable(dirtoo-app
   filter_worker.hpp
   directory_thumbnail_worker.cpp
   directory_thumbnail_worker.hpp
-  resources.qrc
+  badge_icons.hpp
 )
 
 set_target_properties(dirtoo-app PROPERTIES OUTPUT_NAME dirtoo)
+
+# Plain filesystem icons (no Qt resource embedding).
+# Build tree: resources/icons; install: share/dirtoo/icons.
+target_compile_definitions(dirtoo-app PRIVATE
+  "DIRTOO_ICON_DIR=\"${CMAKE_SOURCE_DIR}/resources/icons\""
+)
 
 target_link_libraries(dirtoo-app
   PRIVATE
@@ -95,6 +101,23 @@ install(FILES
   ${CMAKE_SOURCE_DIR}/resources/icons/dirtoo.svg
   DESTINATION share/icons/hicolor/scalable/apps
   RENAME dirtoo.svg
+)
+
+install(FILES
+  ${CMAKE_SOURCE_DIR}/resources/icons/dirtoo.png
+  ${CMAKE_SOURCE_DIR}/resources/icons/dirtoo.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/badge-video.png
+  ${CMAKE_SOURCE_DIR}/resources/icons/badge-image.png
+  ${CMAKE_SOURCE_DIR}/resources/icons/badge-loading.png
+  ${CMAKE_SOURCE_DIR}/resources/icons/badge-error.png
+  ${CMAKE_SOURCE_DIR}/resources/icons/badge-locked.png
+  ${CMAKE_SOURCE_DIR}/resources/icons/badge-new.png
+  ${CMAKE_SOURCE_DIR}/resources/icons/dnd-copy.png
+  ${CMAKE_SOURCE_DIR}/resources/icons/dnd-move.png
+  ${CMAKE_SOURCE_DIR}/resources/icons/dnd-link.png
+  ${CMAKE_SOURCE_DIR}/resources/icons/dnd-none.png
+  ${CMAKE_SOURCE_DIR}/resources/icons/dnd-ask.png
+  DESTINATION share/dirtoo/icons
 )
 
 install(FILES

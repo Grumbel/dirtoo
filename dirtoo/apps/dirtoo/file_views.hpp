@@ -4,6 +4,7 @@
 #pragma once
 
 #include "drag_action_overlay.hpp"
+#include "badge_icons.hpp"
 
 #include <QApplication>
 #include <QDrag>
@@ -23,7 +24,7 @@ inline void apply_dnd_cursors(QDrag* drag)
     return;
   }
   auto load = [](const char* alias) -> QPixmap {
-    return QPixmap(QStringLiteral(":/icons/%1").arg(QLatin1String(alias)));
+    return load_badge_pixmap(QString::fromLatin1(alias));
   };
   const QPixmap copy = load("dnd-copy.png");
   const QPixmap move = load("dnd-move.png");

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "graphics_file_item.hpp"
+#include "badge_icons.hpp"
 
 #include "file_list_model.hpp"
 #include "graphics_file_view.hpp"
@@ -12,6 +13,7 @@
 #include <QGraphicsSceneContextMenuEvent>
 #include <QGraphicsSceneMouseEvent>
 #include <QMetaObject>
+#include <QDebug>
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 
@@ -297,18 +299,31 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
       draw_badge(painter, thumb, bottom_left, Qt::AlignLeft | Qt::AlignBottom);
     }
 
-    // Type sticker: bottom-right, always for image/video/audio (Python paint_metadata).
+    // Type sticker: bottom-right (Python paint_metadata / SharedPixmaps).
     if (is_image || is_video || is_audio) {
-      static const QPixmap k_video(QStringLiteral(":/icons/badge-video.png"));
-      static const QPixmap k_image(QStringLiteral(":/icons/badge-image.png"));
+      static QPixmap k_video(load_badge_pixmap(QStringLiteral("badge-video.png")));
+      static QPixmap k_image(load_badge_pixmap(QStringLiteral("badge-image.png")));
+      static bool logged = false;
+      if (!logged) {
+        logged = true;
+        if (k_video.isNull() || k_image.isNull()) {
+          qWarning("dirtoo: type stickers failed to load from :/icons/badge-{video,image}.png "
+                   "(null video=%d image=%d)",
+                   int(k_video.isNull()), int(k_image.isNull()));
+        } else {
+          qInfo("dirtoo: type stickers loaded (video %dx%d, image %dx%d)",
+                k_video.width(), k_video.height(), k_image.width(), k_image.height());
+        }
+      }
       const QPixmap& pm = (is_video || is_audio) ? k_video : k_image;
       if (!pm.isNull() && !thumb.isEmpty()) {
-        const int s = std::min(24, std::max(16, thumb.width() / 5));
+        // Match Python: 24x24 in thumbnail corner, opacity ~0.5 — use 0.75 for visibility.
+        const int s = std::min(28, std::max(18, thumb.width() / 4));
         const QRect r(thumb.right() - s - 2, thumb.bottom() - s - 2, s, s);
         painter->save();
-        painter->setOpacity(0.55);
+        painter->setOpacity(0.75);
         painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
-        painter->drawPixmap(r, pm);
+        painter->drawPixmap(r, pm.scaled(r.size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
         painter->restore();
       }
     }
@@ -316,7 +331,7 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
 
   // Status roles
   if (idx.data(IsNewRole).toBool()) {
-    static const QPixmap k_new(QStringLiteral(":/icons/badge-new.png"));
+    static const QPixmap k_new(load_badge_pixmap(QStringLiteral("badge-new.png")));
     if (!k_new.isNull()) {
       painter->setOpacity(0.9);
       painter->drawPixmap(QRect(thumb.left() + 2, thumb.top() + 2, 20, 20), k_new);
@@ -325,14 +340,14 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
   }
   const auto status = static_cast<ThumbnailStatus>(idx.data(ThumbnailStatusRole).toInt());
   if (status == ThumbnailStatus::Pending) {
-    static const QPixmap k_loading(QStringLiteral(":/icons/badge-loading.png"));
+    static const QPixmap k_loading(load_badge_pixmap(QStringLiteral("badge-loading.png")));
     if (!k_loading.isNull()) {
       painter->setOpacity(0.55);
       painter->drawPixmap(QRect(thumb.right() - 22, thumb.top() + 2, 20, 20), k_loading);
       painter->setOpacity(1.0);
     }
   } else if (status == ThumbnailStatus::Failed) {
-    static const QPixmap k_error(QStringLiteral(":/icons/badge-error.png"));
+    static const QPixmap k_error(load_badge_pixmap(QStringLiteral("badge-error.png")));
     if (!k_error.isNull()) {
       painter->setOpacity(0.75);
       painter->drawPixmap(QRect(thumb.right() - 22, thumb.top() + 2, 20, 20), k_error);

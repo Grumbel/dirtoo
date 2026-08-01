@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window.hpp"
+#include "badge_icons.hpp"
 
 #include "app_settings.hpp"
 
@@ -12,6 +13,7 @@
 #include <QDateTime>
 #include <QDir>
 #include <QIcon>
+#include <QPixmap>
 #include <QLoggingCategory>
 
 #include <filesystem>
@@ -68,11 +70,15 @@ int main(int argc, char* argv[])
   QApplication::setApplicationName(QStringLiteral("dirtoo"));
   QApplication::setOrganizationName(QStringLiteral("dirtoo"));
   QApplication::setApplicationVersion(QStringLiteral(DIRTOO_VERSION));
-  QApplication::setWindowIcon(QIcon(QStringLiteral(":/icons/dirtoo.png")));
-  if (QApplication::windowIcon().isNull()) {
-    QApplication::setWindowIcon(QIcon::fromTheme(
-        QStringLiteral("dirtoo"),
-        QIcon(QStringLiteral("/usr/share/icons/hicolor/48x48/apps/dirtoo.png"))));
+  {
+    const QPixmap app_pm = dirtoo::app::load_badge_pixmap(QStringLiteral("dirtoo.png"));
+    if (!app_pm.isNull()) {
+      QApplication::setWindowIcon(QIcon(app_pm));
+    } else {
+      QApplication::setWindowIcon(QIcon::fromTheme(
+          QStringLiteral("dirtoo"),
+          QIcon(QStringLiteral("/usr/share/icons/hicolor/48x48/apps/dirtoo.png"))));
+    }
   }
 
   QCommandLineParser parser;
@@ -111,6 +117,20 @@ int main(int argc, char* argv[])
                              .arg(QStringLiteral(DIRTOO_VERSION))
                              .arg(parser.isSet(verbose_opt))
                              .arg(parser.isSet(debug_opt));
+    qInfo().noquote() << QStringLiteral("icon dir: %1")
+                             .arg(dirtoo::app::icon_directory().isEmpty()
+                                      ? QStringLiteral("(not found)")
+                                      : dirtoo::app::icon_directory());
+    for (const char* name :
+         {"badge-image.png", "badge-video.png", "badge-new.png", "badge-loading.png",
+          "badge-error.png", "badge-locked.png", "dirtoo.png"}) {
+      const QPixmap pm = dirtoo::app::load_badge_pixmap(QLatin1String(name));
+      qInfo().noquote() << QStringLiteral("icon %1 null=%2 %3x%4")
+                               .arg(QLatin1String(name))
+                               .arg(pm.isNull())
+                               .arg(pm.width())
+                               .arg(pm.height());
+    }
   }
 
   dirtoo::app::MainWindow window;

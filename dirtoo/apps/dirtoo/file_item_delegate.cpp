@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "file_item_delegate.hpp"
+#include "badge_icons.hpp"
 
 #include "file_list_model.hpp"
 #include "dirtoo/filter/media_meta_cache.hpp"
@@ -126,8 +127,8 @@ MediaKind classify_extension(const std::string& ext_in)
 
 const QPixmap& badge_pixmap(MediaKind kind)
 {
-  static const QPixmap k_video(QStringLiteral(":/icons/badge-video.png"));
-  static const QPixmap k_image(QStringLiteral(":/icons/badge-image.png"));
+  static const QPixmap k_video(load_badge_pixmap(QStringLiteral("badge-video.png")));
+  static const QPixmap k_image(load_badge_pixmap(QStringLiteral("badge-image.png")));
   static const QPixmap k_empty;
   if (kind == MediaKind::Video || kind == MediaKind::Audio) {
     return k_video;
@@ -165,10 +166,10 @@ void draw_status_pixmap(QPainter* painter, const QRect& thumb, const QPixmap& pm
 
 void draw_status_overlays(QPainter* painter, const QRect& thumb, const QModelIndex& index)
 {
-  static const QPixmap k_loading(QStringLiteral(":/icons/badge-loading.png"));
-  static const QPixmap k_error(QStringLiteral(":/icons/badge-error.png"));
-  static const QPixmap k_locked(QStringLiteral(":/icons/badge-locked.png"));
-  static const QPixmap k_new(QStringLiteral(":/icons/badge-new.png"));
+  static const QPixmap k_loading(load_badge_pixmap(QStringLiteral("badge-loading.png")));
+  static const QPixmap k_error(load_badge_pixmap(QStringLiteral("badge-error.png")));
+  static const QPixmap k_locked(load_badge_pixmap(QStringLiteral("badge-locked.png")));
+  static const QPixmap k_new(load_badge_pixmap(QStringLiteral("badge-new.png")));
 
   if (index.data(IsNewRole).toBool() && !k_new.isNull()) {
     draw_status_pixmap(painter, thumb, k_new, Qt::AlignLeft | Qt::AlignTop, 0.9);
@@ -198,13 +199,12 @@ void draw_type_badge(QPainter* painter, const QRect& thumb, MediaKind kind)
   if (pm.isNull()) {
     return;
   }
-  // Match Python FileItemRenderer: ~24x24 bottom-right, semi-transparent.
-  const int s = std::min(24, std::max(16, thumb.width() / 5));
+  const int s = std::min(28, std::max(18, thumb.width() / 4));
   const QRect r(thumb.right() - s - 2, thumb.bottom() - s - 2, s, s);
   painter->save();
-  painter->setOpacity(0.55);
+  painter->setOpacity(0.75);
   painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
-  painter->drawPixmap(r, pm);
+  painter->drawPixmap(r, pm.scaled(r.size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
   painter->restore();
 }
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "about_dialog.hpp"
+#include "badge_icons.hpp"
 
 #include <QApplication>
 #include <QDialog>
@@ -22,7 +23,7 @@ void show_about_dialog(QWidget* parent)
 
   auto* icon = new QLabel(&dialog);
   icon->setAlignment(Qt::AlignHCenter);
-  const QPixmap pm(QStringLiteral(":/icons/dirtoo.png"));
+  const QPixmap pm = load_badge_pixmap(QStringLiteral("dirtoo.png"));
   if (!pm.isNull()) {
     icon->setPixmap(pm.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation));
   }
