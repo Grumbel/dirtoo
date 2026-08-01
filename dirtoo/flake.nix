@@ -33,10 +33,12 @@
           buildInputs = with pkgs; [
             qt6.qtbase
             libarchive
+            catch2_3
           ];
 
+          # Runtime helpers used by ArchiveManager / archive_index
           propagatedBuildInputs = with pkgs; [
-            libarchive
+            libarchive # bsdtar
             unzip
             gnutar
             p7zip
@@ -67,6 +69,7 @@
             unzip
             gnutar
             p7zip
+            catch2_3
             gdb
             clang-tools
           ];
