@@ -1233,8 +1233,8 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
   }
   if (filter_edit_ != nullptr && !filter_edit_->text().isEmpty()) {
     if (content_filter) {
-      // Async filter will refresh when done; still sort underneath.
-      request_async_filter();
+      // Keep previous visible list until FilterWorker finishes (no empty flash).
+      request_async_filter(/*keep_previous_visible=*/true);
     } else {
       collection_.set_name_filter(filter_edit_->text().toStdString());
     }
@@ -1249,7 +1249,11 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
         soft ? known_paths_.size() : collection_.visible_items().size()));
     // After soft path, visible may still be old until sort/filter apply; status updated again later.
   }
-  request_async_sort();
+  // Content filters own the visible list via FilterWorker; replace_items_sorted would
+  // rebuild_visible with matchers (GUI I/O) or wipe the async filter result.
+  if (!content_filter) {
+    request_async_sort();
+  }
   request_thumbnails_for_visible();
 }
 
@@ -1427,7 +1431,7 @@ void MainWindow::on_filter_changed(const QString& text)
   }
 }
 
-void MainWindow::request_async_filter()
+void MainWindow::request_async_filter(bool keep_previous_visible)
 {
   if (filter_worker_ == nullptr) {
     collection_.set_name_filter(
@@ -1443,9 +1447,12 @@ void MainWindow::request_async_filter()
   const QString expr = filter_edit_ != nullptr ? filter_edit_->text() : QString();
   const bool show_hidden = collection_.show_hidden();
   const auto group_mode = collection_.group_mode();
-  // Avoid GUI-thread content I/O: clear match-driven rebuild by using empty visible until done.
-  collection_.replace_visible({}, true);
-  refresh_list();
+  // Avoid GUI-thread content I/O. For interactive filter changes, clear visible
+  // until the worker finishes; for soft watcher reloads keep the previous list.
+  if (!keep_previous_visible) {
+    collection_.replace_visible({}, true);
+    refresh_list();
+  }
   QMetaObject::invokeMethod(
       filter_worker_, "filter_items", Qt::QueuedConnection,
       Q_ARG(std::vector<dirtoo::fs::FileInfo>, items), Q_ARG(QString, expr),
