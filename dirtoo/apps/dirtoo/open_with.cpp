@@ -131,13 +131,11 @@ QStringList desktop_ids_for_mime_from_file(const QString& path, const QString& m
   return ids;
 }
 
-QStringList desktop_ids_for_mime(const QString& mime)
+QStringList desktop_ids_from_sections(const QString& mime, const QStringList& sections)
 {
   QStringList ids;
   for (const QString& path : mimeapps_paths()) {
-    for (const QString& section :
-         {QStringLiteral("Default Applications"), QStringLiteral("Added Associations"),
-          QStringLiteral("MIME Cache")}) {
+    for (const QString& section : sections) {
       for (const QString& id : desktop_ids_for_mime_from_file(path, mime, section)) {
         if (!ids.contains(id)) {
           ids << id;
@@ -146,6 +144,66 @@ QStringList desktop_ids_for_mime(const QString& mime)
     }
   }
   return ids;
+}
+
+/// Apps that declare MimeType= including this type in their .desktop file.
+QStringList desktop_ids_from_desktop_mimetypes(const QString& mime)
+{
+  QStringList ids;
+  QSet<QString> seen;
+  for (const QString& d : data_dirs()) {
+    const QDir app_dir(d + QStringLiteral("/applications"));
+    if (!app_dir.exists()) {
+      continue;
+    }
+    const QStringList files =
+        app_dir.entryList(QStringList{QStringLiteral("*.desktop")}, QDir::Files);
+    for (const QString& name : files) {
+      const QString path = app_dir.filePath(name);
+      QSettings ini(path, QSettings::IniFormat);
+      ini.beginGroup(QStringLiteral("Desktop Entry"));
+      if (ini.value(QStringLiteral("NoDisplay")).toBool()
+          || ini.value(QStringLiteral("Hidden")).toBool()) {
+        ini.endGroup();
+        continue;
+      }
+      const QString mime_line = ini.value(QStringLiteral("MimeType")).toString();
+      ini.endGroup();
+      if (mime_line.isEmpty()) {
+        continue;
+      }
+      const QStringList declared = mime_line.split(QLatin1Char(';'), Qt::SkipEmptyParts);
+      for (QString m : declared) {
+        if (m.trimmed() == mime && !seen.contains(name)) {
+          seen.insert(name);
+          ids << name;
+          break;
+        }
+      }
+    }
+  }
+  return ids;
+}
+
+std::vector<DesktopApp> apps_from_ids(const QStringList& ids)
+{
+  std::vector<DesktopApp> apps;
+  QSet<QString> seen;
+  for (const QString& id : ids) {
+    const QString path = find_desktop_file(id);
+    DesktopApp app = parse_desktop_file(path);
+    if (app.name.isEmpty() || app.exec.isEmpty()) {
+      continue;
+    }
+    if (seen.contains(app.id)) {
+      continue;
+    }
+    seen.insert(app.id);
+    apps.push_back(std::move(app));
+  }
+  std::sort(apps.begin(), apps.end(),
+            [](const DesktopApp& a, const DesktopApp& b) { return a.name.toLower() < b.name.toLower(); });
+  return apps;
 }
 
 QStringList expand_exec(const QString& exec, const std::vector<std::filesystem::path>& paths)
@@ -170,7 +228,6 @@ QStringList expand_exec(const QString& exec, const std::vector<std::filesystem::
     } else if (p == QLatin1String("%i") || p == QLatin1String("%c") || p == QLatin1String("%k")) {
       // ignore icon/name/desktop-file codes
     } else {
-      // strip remaining % codes inside tokens
       p.replace(QStringLiteral("%f"), QString());
       p.replace(QStringLiteral("%F"), QString());
       p.replace(QStringLiteral("%u"), QString());
@@ -186,6 +243,40 @@ QStringList expand_exec(const QString& exec, const std::vector<std::filesystem::
     }
   }
   return out;
+}
+
+QString mime_for_path(const std::filesystem::path& p)
+{
+  QMimeDatabase db;
+  const QMimeType mt =
+      db.mimeTypeForFile(QString::fromStdString(p.string()), QMimeDatabase::MatchContent);
+  if (mt.isValid() && !mt.name().isEmpty()) {
+    return mt.name();
+  }
+  const QMimeType mt2 =
+      db.mimeTypeForFile(QString::fromStdString(p.string()), QMimeDatabase::MatchExtension);
+  return mt2.isValid() ? mt2.name() : QStringLiteral("application/octet-stream");
+}
+
+std::vector<DesktopApp> intersect_apps(const std::vector<std::vector<DesktopApp>>& sets)
+{
+  if (sets.empty()) {
+    return {};
+  }
+  std::vector<DesktopApp> common = sets.front();
+  for (std::size_t i = 1; i < sets.size(); ++i) {
+    std::vector<DesktopApp> next;
+    for (const DesktopApp& a : common) {
+      for (const DesktopApp& b : sets[i]) {
+        if (a.id == b.id) {
+          next.push_back(a);
+          break;
+        }
+      }
+    }
+    common = std::move(next);
+  }
+  return common;
 }
 
 } // namespace
@@ -256,23 +347,23 @@ bool open_with_command_dialog(QWidget* parent, const std::vector<std::filesystem
   return QProcess::startDetached(program, full_args);
 }
 
+std::vector<DesktopApp> default_apps_for_mime(const QString& mime_type)
+{
+  return apps_from_ids(
+      desktop_ids_from_sections(mime_type, {QStringLiteral("Default Applications")}));
+}
+
 std::vector<DesktopApp> apps_for_mime(const QString& mime_type)
 {
-  std::vector<DesktopApp> apps;
-  QSet<QString> seen;
-  for (const QString& id : desktop_ids_for_mime(mime_type)) {
-    const QString path = find_desktop_file(id);
-    DesktopApp app = parse_desktop_file(path);
-    if (app.name.isEmpty() || app.exec.isEmpty()) {
-      continue;
+  QStringList ids = desktop_ids_from_sections(
+      mime_type, {QStringLiteral("Default Applications"), QStringLiteral("Added Associations"),
+                  QStringLiteral("MIME Cache")});
+  for (const QString& id : desktop_ids_from_desktop_mimetypes(mime_type)) {
+    if (!ids.contains(id)) {
+      ids << id;
     }
-    if (seen.contains(app.id)) {
-      continue;
-    }
-    seen.insert(app.id);
-    apps.push_back(std::move(app));
   }
-  return apps;
+  return apps_from_ids(ids);
 }
 
 bool launch_desktop_app(const DesktopApp& app, const std::vector<std::filesystem::path>& paths)
@@ -287,42 +378,75 @@ bool launch_desktop_app(const DesktopApp& app, const std::vector<std::filesystem
   return QProcess::startDetached(argv.front(), argv.mid(1));
 }
 
+std::vector<DesktopApp> default_apps_for_paths(const std::vector<std::filesystem::path>& paths)
+{
+  if (paths.empty()) {
+    return {};
+  }
+  std::vector<std::vector<DesktopApp>> sets;
+  sets.reserve(paths.size());
+  for (const auto& p : paths) {
+    sets.push_back(default_apps_for_mime(mime_for_path(p)));
+  }
+  return intersect_apps(sets);
+}
+
+std::vector<DesktopApp> associated_apps_for_paths(const std::vector<std::filesystem::path>& paths)
+{
+  if (paths.empty()) {
+    return {};
+  }
+  std::vector<std::vector<DesktopApp>> sets;
+  sets.reserve(paths.size());
+  for (const auto& p : paths) {
+    sets.push_back(apps_for_mime(mime_for_path(p)));
+  }
+  return intersect_apps(sets);
+}
+
+void add_default_open_actions(QMenu* menu, const std::vector<std::filesystem::path>& paths)
+{
+  if (menu == nullptr || paths.empty()) {
+    return;
+  }
+  const auto defaults = default_apps_for_paths(paths);
+  if (defaults.empty()) {
+    auto* none = menu->addAction(QStringLiteral("No applications available"));
+    none->setEnabled(false);
+    return;
+  }
+  for (const DesktopApp& app : defaults) {
+    QAction* act =
+        menu->addAction(QStringLiteral("Open With %1").arg(app.name));
+    if (!app.icon.isEmpty()) {
+      act->setIcon(QIcon::fromTheme(app.icon));
+    }
+    const DesktopApp captured = app;
+    QObject::connect(act, &QAction::triggered, menu, [captured, paths] {
+      launch_desktop_app(captured, paths);
+    });
+  }
+}
+
 void populate_open_with_menu(QMenu* menu, const std::vector<std::filesystem::path>& paths)
 {
   if (menu == nullptr || paths.empty()) {
     return;
   }
-  QMimeDatabase db;
-  QSet<QString> mimes;
-  for (const auto& p : paths) {
-    const QMimeType mt = db.mimeTypeForFile(QString::fromStdString(p.string()),
-                                            QMimeDatabase::MatchExtension);
-    mimes.insert(mt.isValid() ? mt.name() : QStringLiteral("application/octet-stream"));
+  const auto defaults = default_apps_for_paths(paths);
+  QSet<QString> default_ids;
+  for (const DesktopApp& a : defaults) {
+    default_ids.insert(a.id);
   }
-
-  // Intersection of apps across all selected MIME types.
-  std::vector<DesktopApp> common;
-  bool first = true;
-  for (const QString& mime : mimes) {
-    const auto apps = apps_for_mime(mime);
-    if (first) {
-      common = apps;
-      first = false;
-    } else {
-      std::vector<DesktopApp> next;
-      for (const DesktopApp& a : common) {
-        for (const DesktopApp& b : apps) {
-          if (a.id == b.id) {
-            next.push_back(a);
-            break;
-          }
-        }
-      }
-      common = std::move(next);
+  const auto all = associated_apps_for_paths(paths);
+  std::vector<DesktopApp> others;
+  for (const DesktopApp& a : all) {
+    if (!default_ids.contains(a.id)) {
+      others.push_back(a);
     }
   }
 
-  for (const DesktopApp& app : common) {
+  for (const DesktopApp& app : others) {
     QAction* act = menu->addAction(app.name);
     if (!app.icon.isEmpty()) {
       act->setIcon(QIcon::fromTheme(app.icon));
@@ -333,7 +457,7 @@ void populate_open_with_menu(QMenu* menu, const std::vector<std::filesystem::pat
     });
   }
 
-  if (!common.empty()) {
+  if (!others.empty()) {
     menu->addSeparator();
   }
   QAction* other = menu->addAction(QStringLiteral("Other Application…"));
