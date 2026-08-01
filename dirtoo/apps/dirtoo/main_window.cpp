@@ -40,6 +40,7 @@
 #include <QTextStream>
 #include <QMouseEvent>
 #include <QDesktopServices>
+#include <QDebug>
 #include <QDir>
 #include <set>
 #include <QHeaderView>
@@ -113,6 +114,7 @@ MainWindow::MainWindow(QWidget* parent)
           &MainWindow::on_transfer_conflict);
   connect(transfer_worker_, &TransferWorker::finished, this, &MainWindow::on_transfer_finished);
   connect(transfer_worker_, &TransferWorker::log_line, this, [this](const QString& line) {
+    qInfo().noquote() << QStringLiteral("transfer: %1").arg(line);
     if (transfer_dialog_ != nullptr) {
       transfer_dialog_->append_log(line);
     }
@@ -152,10 +154,7 @@ MainWindow::MainWindow(QWidget* parent)
           &MainWindow::on_thumbnail_ready);
   connect(dir_thumb_worker_, &DirectoryThumbnailWorker::finished, this,
           [this](int ok, int fail) {
-            if (status_label_ != nullptr) {
-              status_label_->setText(
-                  QStringLiteral("Directory thumbnails: %1 ok, %2 failed").arg(ok).arg(fail));
-            }
+            set_status(QStringLiteral("Directory thumbnails: %1 ok, %2 failed").arg(ok).arg(fail));
           });
   dir_thumb_thread_->start();
 
@@ -922,7 +921,7 @@ MainWindow::MainWindow(QWidget* parent)
     }
   });
   connect(&watcher_, &watcher::DirectoryWatcher::message, this, [this](const QString& msg) {
-    status_label_->setText(msg);
+    set_status(msg);
   });
 
   connect(&thumbnailer_, &thumbnail::Thumbnailer::thumbnail_ready, this,
@@ -934,7 +933,7 @@ MainWindow::MainWindow(QWidget* parent)
 
   connect(&archive_manager_, &archive::ArchiveManager::extraction_started, this,
           [this](const fs::Location&) {
-            status_label_->setText(QStringLiteral("Extracting archive…"));
+            set_status(QStringLiteral("Extracting archive…"));
           });
   connect(&archive_manager_, &archive::ArchiveManager::extraction_ready, this,
           &MainWindow::on_archive_ready);
@@ -1056,7 +1055,7 @@ void MainWindow::apply_icon_detail_level()
         "Icon captions: name + size + date",
     };
     const int lvl = model_->icon_detail_level();
-    status_label_->setText(QString::fromUtf8(labels[std::clamp(lvl, 0, 4)]));
+    set_status(QString::fromUtf8(labels[std::clamp(lvl, 0, 4)]));
   }
 }
 
@@ -1158,8 +1157,22 @@ void MainWindow::on_view_small_icons()
   set_view_mode(ViewMode::SmallIcons);
 }
 
+void MainWindow::set_status(const QString& text)
+{
+  if (status_label_ != nullptr) {
+    status_label_->setText(text);
+  }
+  if (!text.isEmpty()) {
+    qInfo().noquote() << QStringLiteral("status: %1").arg(text);
+  }
+}
+
 void MainWindow::open_location(const fs::Location& location, bool record_history)
 {
+
+  qInfo().noquote() << QStringLiteral("open_location %1 (history=%2)")
+                           .arg(QString::fromStdString(location.as_url()))
+                           .arg(record_history);
   stop_search();
   search_active_ = false;
   search_results_.clear();
@@ -1228,12 +1241,12 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
         archive_entries_ = std::move(*listed);
         archive_listing_ok_ = true;
         indexed_archive_path_ = location_.as_path();
-        status_label_->setText(QStringLiteral("Archive index: %1 entries")
+        set_status(QStringLiteral("Archive index: %1 entries")
                                    .arg(archive_entries_.size()));
         on_directory_changed();
       } else {
         indexed_archive_path_.clear();
-        status_label_->setText(QStringLiteral("Listing failed (%1); extracting…")
+        set_status(QStringLiteral("Listing failed (%1); extracting…")
                                    .arg(QString::fromStdString(listed.error())));
         if (archive_manager_.status(fs::Location::from_archive(location_.as_path(), {}))
             != archive::ExtractStatus::Ready) {
@@ -1259,7 +1272,7 @@ void MainWindow::on_location_entered()
   try {
     open_location(fs::Location::from_human(location_edit_->text().toStdString()));
   } catch (const std::exception& ex) {
-    status_label_->setText(QString::fromUtf8(ex.what()));
+    set_status(QString::fromUtf8(ex.what()));
   }
 }
 
@@ -1320,6 +1333,9 @@ void MainWindow::reload_directory(bool soft)
     // Keep recursive search results until the user navigates away or closes search.
     return;
   }
+  qInfo().noquote() << QStringLiteral("reload_directory soft=%1 path=%2")
+                           .arg(soft)
+                           .arg(QString::fromStdString(location_.as_url()));
   soft_directory_reload_ = soft;
   if (!soft) {
     // Navigation/explicit refresh supersedes any pending soft watcher tick.
@@ -1386,16 +1402,14 @@ void MainWindow::reload_directory(bool soft)
   if (location_.is_archive()) {
     const auto resolved = archive_manager_.resolved_directory(location_);
     if (!resolved) {
-      status_label_->setText(QStringLiteral("Archive not ready"));
+      set_status(QStringLiteral("Archive not ready"));
       return;
     }
     load_loc = fs::Location::from_path(*resolved);
   }
 
   const quint64 gen = ++dir_load_generation_;
-  if (status_label_ != nullptr) {
-    status_label_->setText(soft ? QStringLiteral("Refreshing…") : QStringLiteral("Loading…"));
-  }
+  set_status(soft ? QStringLiteral("Refreshing…") : QStringLiteral("Loading…"));
   // Hard navigation: clear immediately so the old directory does not linger.
   // Soft (watcher): keep showing the previous listing until the worker finishes.
   if (!soft) {
@@ -1415,6 +1429,10 @@ void MainWindow::reload_directory(bool soft)
 
 void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInfo> items)
 {
+  qInfo().noquote() << QStringLiteral("directory_loaded gen=%1 items=%2")
+                           .arg(generation)
+                           .arg(items.size());
+
   if (generation != dir_load_generation_ || search_active_) {
     return;
   }
@@ -1470,16 +1488,14 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
   if (!soft) {
     refresh_list();
   }
-  if (status_label_ != nullptr) {
-    status_label_->setText(QStringLiteral("%1 items").arg(
+  set_status(QStringLiteral("%1 items").arg(
         soft ? known_paths_.size() : collection_.visible_items().size()));
     // After soft path, visible may still be old until sort/filter apply; status updated again later.
   }
   // Content filters own the visible list via FilterWorker; replace_items_sorted would
   // rebuild_visible with matchers (GUI I/O) or wipe the async filter result.
   if (!content_filter) {
-    request_async_sort();
-  }
+    request_async_sort()
   request_thumbnails_for_visible();
 }
 
@@ -1528,20 +1544,20 @@ void MainWindow::on_sort_finished(quint64 generation, std::vector<fs::FileInfo> 
   // match_/filter and show_hidden stay; only item order changes.
   collection_.replace_items_sorted(std::move(items));
   refresh_list();
-  if (status_label_ != nullptr) {
-    status_label_->setText(QStringLiteral("%1 items").arg(collection_.visible_items().size()));
-  }
+  set_status(QStringLiteral("%1 items").arg(collection_.visible_items().size()));
   request_thumbnails_for_visible();
 }
 
 void MainWindow::on_directory_load_failed(quint64 generation, QString error)
 {
+  qWarning().noquote() << QStringLiteral("directory_load_failed gen=%1: %2")
+                              .arg(generation)
+                              .arg(error);
+
   if (generation != dir_load_generation_) {
     return;
   }
-  if (status_label_ != nullptr) {
-    status_label_->setText(error);
-  }
+  set_status(error);
   if (message_area_ != nullptr) {
     message_area_->show_error(error);
   }
@@ -1640,7 +1656,14 @@ void MainWindow::request_thumbnails_for_visible()
       mimes.push_back(mt.isValid() ? mt.name() : QStringLiteral("application/octet-stream"));
     }
     if (!locs.empty()) {
-      thumbnailer_.request_many(locs, mimes, QStringLiteral("large"));
+      if (!locs.empty()) {
+      qDebug().noquote() << QStringLiteral("thumbnails: requesting %1 (viewport/batch)")
+                                .arg(locs.size());
+      for (const auto& loc : locs) {
+        qDebug().noquote() << QStringLiteral("  thumb %1").arg(QString::fromStdString(loc.as_path().string()));
+      }
+    }
+    thumbnailer_.request_many(locs, mimes, QStringLiteral("large"));
     }
   });
 }
@@ -1708,9 +1731,7 @@ void MainWindow::request_async_filter(bool keep_previous_visible)
     return;
   }
   const quint64 gen = ++filter_generation_;
-  if (status_label_ != nullptr) {
-    status_label_->setText(QStringLiteral("Filtering…"));
-  }
+  set_status(QStringLiteral("Filtering…"));
   auto items = collection_.items();
   const QString expr = filter_edit_ != nullptr ? filter_edit_->text() : QString();
   const bool show_hidden = collection_.show_hidden();
@@ -1742,10 +1763,7 @@ void MainWindow::on_filter_finished(quint64 generation, std::vector<dirtoo::fs::
   if (!parse_ok && message_area_ != nullptr) {
     message_area_->show_info(QStringLiteral("Filter parse issue — using substring fallback"));
   }
-  if (status_label_ != nullptr) {
-    status_label_->setText(
-        QStringLiteral("%1 items").arg(collection_.visible_items().size()));
-  }
+  set_status(QStringLiteral("%1 items").arg(collection_.visible_items().size()));
 }
 
 void MainWindow::on_header_clicked(int section)
@@ -1938,9 +1956,7 @@ void MainWindow::on_context_menu(const QPoint& pos)
       paths << QString::fromStdString(fi.path().string());
     }
     QApplication::clipboard()->setText(paths.join(QLatin1Char('\n')));
-    if (status_label_ != nullptr) {
-      status_label_->setText(QStringLiteral("Copied %1 path(s)").arg(paths.size()));
-    }
+    set_status(QStringLiteral("Copied %1 path(s)").arg(paths.size()));
   });
 
   // --- Edit ---
@@ -1971,7 +1987,7 @@ void MainWindow::set_clipboard(ClipboardMode mode)
 {
   const auto selected = selected_fileinfos();
   if (selected.empty()) {
-    status_label_->setText(QStringLiteral("Nothing selected"));
+    set_status(QStringLiteral("Nothing selected"));
     return;
   }
   std::vector<std::filesystem::path> paths;
@@ -1986,7 +2002,7 @@ void MainWindow::set_clipboard(ClipboardMode mode)
   } else if (mode == ClipboardMode::Link) {
     verb = QStringLiteral("marked for link");
   }
-  status_label_->setText(QStringLiteral("%1 item(s) %2").arg(paths.size()).arg(verb));
+  set_status(QStringLiteral("%1 item(s) %2").arg(paths.size()).arg(verb));
   update_edit_actions();
 }
 
@@ -2003,11 +2019,19 @@ void MainWindow::on_cut()
 void MainWindow::start_transfer(const TransferRequest& request)
 {
   if (transfer_busy_) {
-    status_label_->setText(QStringLiteral("A transfer is already in progress"));
+    set_status(QStringLiteral("A transfer is already in progress"));
     return;
   }
   transfer_busy_ = true;
   last_transfer_mode_ = request.mode;
+  qInfo().noquote() << QStringLiteral("%1 %2 item(s) → %3")
+                           .arg(request.mode == ClipboardMode::Cut ? QStringLiteral("move")
+                                                                  : QStringLiteral("copy"))
+                           .arg(request.sources.size())
+                           .arg(QString::fromStdString(request.destination_directory.string()));
+  for (const auto& src : request.sources) {
+    qDebug().noquote() << QStringLiteral("  source: %1").arg(QString::fromStdString(src.string()));
+  }
   update_edit_actions();
 
   if (transfer_dialog_ == nullptr) {
@@ -2044,7 +2068,7 @@ void MainWindow::start_transfer(const TransferRequest& request)
 void MainWindow::on_paste()
 {
   if (location_.is_archive()) {
-    status_label_->setText(QStringLiteral("Read-only: browsing inside an archive"));
+    set_status(QStringLiteral("Read-only: browsing inside an archive"));
     return;
   }
 
@@ -2054,7 +2078,7 @@ void MainWindow::on_paste()
 
   const ClipboardPayload payload = parse_clipboard_mime(QApplication::clipboard()->mimeData());
   if (payload.paths.empty()) {
-    status_label_->setText(QStringLiteral("Clipboard has no files"));
+    set_status(QStringLiteral("Clipboard has no files"));
     return;
   }
 
@@ -2073,13 +2097,13 @@ void MainWindow::on_paste()
 void MainWindow::on_paste_link()
 {
   if (location_.is_archive()) {
-    status_label_->setText(QStringLiteral("Read-only: browsing inside an archive"));
+    set_status(QStringLiteral("Read-only: browsing inside an archive"));
     return;
   }
   const ClipboardPayload payload = parse_clipboard_mime(QApplication::clipboard()->mimeData());
   if (payload.paths.empty()) {
     // Allow "Paste as Link" using whatever paths are on the clipboard.
-    status_label_->setText(QStringLiteral("Clipboard has no files"));
+    set_status(QStringLiteral("Clipboard has no files"));
     return;
   }
   int ok = 0;
@@ -2096,9 +2120,7 @@ void MainWindow::on_paste_link()
       }
     }
   }
-  if (status_label_ != nullptr) {
-    status_label_->setText(QStringLiteral("Linked %1 (%2 failed)").arg(ok).arg(fail));
-  }
+  set_status(QStringLiteral("Linked %1 (%2 failed)").arg(ok).arg(fail));
   on_directory_changed();
 }
 
@@ -2122,6 +2144,8 @@ void MainWindow::on_transfer_conflict(const QString& destination_name, const QSt
                                       const QString& destination_path)
 {
   // Runs on UI thread (QueuedConnection from worker signal).
+  qInfo().noquote() << QStringLiteral("transfer conflict: %1 (src=%2 dest=%3)")
+                           .arg(destination_name, source_path, destination_path);
   // resolve_conflict / cancel MUST be invoked directly: the worker thread is blocked
   // waiting on conflict_cv_, so a QueuedConnection to the worker would never run (deadlock).
   if (transfer_worker_ == nullptr) {
@@ -2140,6 +2164,12 @@ void MainWindow::on_transfer_conflict(const QString& destination_name, const QSt
 
 void MainWindow::on_transfer_finished(TransferSummary summary)
 {
+  qInfo().noquote() << QStringLiteral("transfer finished: done=%1 skipped=%2 cancelled=%3 error=%4")
+                           .arg(summary.completed)
+                           .arg(summary.skipped)
+                           .arg(summary.cancelled)
+                           .arg(summary.error.isEmpty() ? QStringLiteral("-") : summary.error);
+
   transfer_busy_ = false;
 
   if (transfer_dialog_ != nullptr) {
@@ -2153,13 +2183,13 @@ void MainWindow::on_transfer_finished(TransferSummary summary)
   }
 
   if (summary.cancelled) {
-    status_label_->setText(QStringLiteral("Transfer cancelled (%1 done, %2 skipped)")
+    set_status(QStringLiteral("Transfer cancelled (%1 done, %2 skipped)")
                                .arg(summary.completed)
                                .arg(summary.skipped));
   } else if (!summary.error.isEmpty()) {
-    status_label_->setText(summary.error);
+    set_status(summary.error);
   } else {
-    status_label_->setText(QStringLiteral("Transfer: %1 done, %2 skipped")
+    set_status(QStringLiteral("Transfer: %1 done, %2 skipped")
                                .arg(summary.completed)
                                .arg(summary.skipped));
   }
@@ -2171,7 +2201,7 @@ void MainWindow::on_transfer_finished(TransferSummary summary)
 void MainWindow::on_mkdir()
 {
   if (location_.is_archive()) {
-    status_label_->setText(QStringLiteral("Read-only: browsing inside an archive"));
+    set_status(QStringLiteral("Read-only: browsing inside an archive"));
     return;
   }
 
@@ -2222,7 +2252,7 @@ void MainWindow::on_mkdir()
 void MainWindow::on_create_file()
 {
   if (location_.is_archive()) {
-    status_label_->setText(QStringLiteral("Read-only: browsing inside an archive"));
+    set_status(QStringLiteral("Read-only: browsing inside an archive"));
     return;
   }
 
@@ -2252,12 +2282,12 @@ void MainWindow::on_create_file()
 void MainWindow::on_swap_names()
 {
   if (location_.is_archive()) {
-    status_label_->setText(QStringLiteral("Read-only: browsing inside an archive"));
+    set_status(QStringLiteral("Read-only: browsing inside an archive"));
     return;
   }
   const auto selected = selected_fileinfos();
   if (selected.size() != 2) {
-    status_label_->setText(QStringLiteral("Select exactly two items to swap names"));
+    set_status(QStringLiteral("Select exactly two items to swap names"));
     return;
   }
   auto result = dirops::swap_names(selected[0].path(), selected[1].path());
@@ -2283,13 +2313,13 @@ void MainWindow::on_toggle_show_abspath(bool checked)
 void MainWindow::on_rename_selected()
 {
   if (location_.is_archive()) {
-    status_label_->setText(QStringLiteral("Read-only: browsing inside an archive"));
+    set_status(QStringLiteral("Read-only: browsing inside an archive"));
     return;
   }
 
   const auto selected = selected_fileinfos();
   if (selected.size() != 1) {
-    status_label_->setText(QStringLiteral("Select exactly one item to rename"));
+    set_status(QStringLiteral("Select exactly one item to rename"));
     return;
   }
 
@@ -2325,7 +2355,7 @@ void MainWindow::on_rename_selected()
 void MainWindow::on_delete_selected()
 {
   if (location_.is_archive()) {
-    status_label_->setText(QStringLiteral("Read-only: browsing inside an archive"));
+    set_status(QStringLiteral("Read-only: browsing inside an archive"));
     return;
   }
 
@@ -2364,7 +2394,7 @@ void MainWindow::on_properties()
 {
   const auto selected = selected_fileinfos();
   if (selected.empty()) {
-    status_label_->setText(QStringLiteral("Nothing selected"));
+    set_status(QStringLiteral("Nothing selected"));
     return;
   }
   show_properties_dialog(this, selected);
@@ -2380,7 +2410,7 @@ void MainWindow::update_status_selection()
   const auto selected = selected_fileinfos();
   const int total = model_->rowCount();
   if (selected.empty()) {
-    status_label_->setText(QStringLiteral("%1 items in %2")
+    set_status(QStringLiteral("%1 items in %2")
                                .arg(total)
                                .arg(QString::fromStdString(location_.as_path().string())));
     return;
@@ -2407,7 +2437,7 @@ void MainWindow::update_status_selection()
       extra += QStringLiteral(", %1 folders").arg(dirs);
     }
   }
-  status_label_->setText(QStringLiteral("%1 — %2 items in %3")
+  set_status(QStringLiteral("%1 — %2 items in %3")
                              .arg(extra)
                              .arg(total)
                              .arg(QString::fromStdString(location_.as_path().string())));
@@ -2433,6 +2463,10 @@ void MainWindow::on_select_all()
 void MainWindow::on_urls_dropped_to(const QList<QUrl>& urls, Qt::DropAction action,
                                    const QString& dest_dir)
 {
+  qInfo().noquote() << QStringLiteral("drop: %1 url(s) action=%2 dest=%3")
+                           .arg(urls.size())
+                           .arg(int(action))
+                           .arg(dest_dir.isEmpty() ? QStringLiteral("(cwd)") : dest_dir);
   if (transfer_busy_ || urls.isEmpty()) {
     return;
   }
@@ -2457,17 +2491,13 @@ void MainWindow::on_urls_dropped_to(const QList<QUrl>& urls, Qt::DropAction acti
     for (const auto& src : sources) {
       std::error_code ec;
       if (std::filesystem::equivalent(src, dest_path, ec)) {
-        if (status_label_ != nullptr) {
-          status_label_->setText(QStringLiteral("Cannot drop an item onto itself"));
-        }
+        set_status(QStringLiteral("Cannot drop an item onto itself"));
         return;
       }
       if (std::filesystem::is_directory(src, ec)) {
         const auto rel = dest_path.lexically_relative(src.lexically_normal());
         if (!rel.empty() && *rel.begin() != "..") {
-          if (status_label_ != nullptr) {
-            status_label_->setText(QStringLiteral("Cannot drop into a selected folder"));
-          }
+          set_status(QStringLiteral("Cannot drop into a selected folder"));
           return;
         }
       }
@@ -2486,9 +2516,7 @@ void MainWindow::on_urls_dropped_to(const QList<QUrl>& urls, Qt::DropAction acti
         ++fail;
       }
     }
-    if (status_label_ != nullptr) {
-      status_label_->setText(QStringLiteral("Linked %1 (%2 failed)").arg(ok).arg(fail));
-    }
+    set_status(QStringLiteral("Linked %1 (%2 failed)").arg(ok).arg(fail));
     on_directory_changed();
     return;
   }
@@ -2508,7 +2536,7 @@ void MainWindow::on_urls_dropped_to(const QList<QUrl>& urls, Qt::DropAction acti
   }
   req.sources = std::move(filtered);
   if (req.sources.empty()) {
-    status_label_->setText(QStringLiteral("Drop ignored (invalid targets)"));
+    set_status(QStringLiteral("Drop ignored (invalid targets)"));
     return;
   }
   start_transfer(req);
@@ -2539,9 +2567,7 @@ void MainWindow::on_save_file_list()
       out << QString::fromStdString(fi->path().string()) << QChar('\n');
     }
   }
-  if (status_label_ != nullptr) {
-    status_label_->setText(QStringLiteral("Saved %1 paths to %2").arg(rows).arg(path));
-  }
+  set_status(QStringLiteral("Saved %1 paths to %2").arg(rows).arg(path));
 }
 
 void MainWindow::restore_settings()
@@ -2687,7 +2713,7 @@ void MainWindow::closeEvent(QCloseEvent* event)
 void MainWindow::on_refresh()
 {
   on_directory_changed();
-  status_label_->setText(QStringLiteral("Refreshed"));
+  set_status(QStringLiteral("Refreshed"));
 }
 
 void MainWindow::on_focus_location()
@@ -2755,7 +2781,7 @@ void MainWindow::on_open_with()
 {
   const auto selected = selected_fileinfos();
   if (selected.empty()) {
-    status_label_->setText(QStringLiteral("Nothing selected"));
+    set_status(QStringLiteral("Nothing selected"));
     return;
   }
   std::vector<std::filesystem::path> paths;
@@ -2783,7 +2809,7 @@ void MainWindow::on_open_terminal()
     dir = selected.front().path();
   }
   if (!open_in_terminal(dir)) {
-    status_label_->setText(QStringLiteral("Could not launch a terminal emulator"));
+    set_status(QStringLiteral("Could not launch a terminal emulator"));
   }
 }
 
@@ -2896,7 +2922,7 @@ void MainWindow::on_search_submitted()
     return;
   }
   if (location_.is_archive()) {
-    status_label_->setText(QStringLiteral("Recursive search is not available inside archives"));
+    set_status(QStringLiteral("Recursive search is not available inside archives"));
     return;
   }
 
@@ -2924,7 +2950,7 @@ void MainWindow::on_search_submitted()
             search_worker_->start(root, expr, show_hidden, /*max_depth=*/-1);
           });
 
-  status_label_->setText(QStringLiteral("Searching…"));
+  set_status(QStringLiteral("Searching…"));
   if (message_area_ != nullptr) {
     message_area_->show_info(QStringLiteral("Recursive search: %1").arg(expr));
   }
@@ -2953,7 +2979,7 @@ void MainWindow::on_search_match(const QString& path, bool is_directory, quint64
 void MainWindow::on_search_progress(quint64 visited, quint64 matched)
 {
   (void)visited;
-  status_label_->setText(QStringLiteral("Searching… %1 matches").arg(matched));
+  set_status(QStringLiteral("Searching… %1 matches").arg(matched));
 }
 
 void MainWindow::on_search_finished(quint64 matched, quint64 visited, const QString& error)
@@ -2961,15 +2987,15 @@ void MainWindow::on_search_finished(quint64 matched, quint64 visited, const QStr
   refresh_list();
   request_thumbnails_for_visible();
   if (!error.isEmpty() && error != QStringLiteral("cancelled")) {
-    status_label_->setText(error);
+    set_status(error);
     if (message_area_ != nullptr) {
       message_area_->show_info(error);
     }
   } else if (error == QStringLiteral("cancelled")) {
-    status_label_->setText(
+    set_status(
         QStringLiteral("Search cancelled — %1 matches (%2 visited)").arg(matched).arg(visited));
   } else {
-    status_label_->setText(
+    set_status(
         QStringLiteral("Search done — %1 matches (%2 visited)").arg(matched).arg(visited));
   }
   if (search_thread_ != nullptr) {
@@ -2997,7 +3023,7 @@ void MainWindow::on_archive_ready(const fs::Location& archive_location,
   if (!location_.is_archive() || location_.as_path() != archive_location.as_path()) {
     return;
   }
-  status_label_->setText(QStringLiteral("Archive ready — %1")
+  set_status(QStringLiteral("Archive ready — %1")
                              .arg(QString::fromStdString(archive_location.as_path().filename().string())));
   on_directory_changed();
 }
@@ -3009,7 +3035,7 @@ void MainWindow::on_archive_failed(const fs::Location& archive_location, const Q
     return;
   }
   QMessageBox::warning(this, QStringLiteral("Archive"), message);
-  status_label_->setText(message);
+  set_status(message);
   // Fall back to parent directory so the user is not stuck on a failed archive view.
   open_location(fs::Location::from_path(archive_location.as_path().parent_path()), false);
 }
@@ -3051,7 +3077,7 @@ void MainWindow::on_breadcrumb_drop(const fs::Location& target, const QList<QUrl
                                    Qt::DropAction action)
 {
   if (target.is_archive()) {
-    status_label_->setText(QStringLiteral("Cannot drop into an archive (read-only)"));
+    set_status(QStringLiteral("Cannot drop into an archive (read-only)"));
     return;
   }
   if (transfer_busy_ || urls.isEmpty()) {
@@ -3367,9 +3393,7 @@ void MainWindow::on_reload_thumbnails()
     // Reload all visible
     model_->clear_thumbnails();
     request_thumbnails_for_visible();
-    if (status_label_ != nullptr) {
-      status_label_->setText(QStringLiteral("Reloading thumbnails for visible items…"));
-    }
+    set_status(QStringLiteral("Reloading thumbnails for visible items…"));
     return;
   }
   for (const auto& fi : selected) {
@@ -3394,9 +3418,7 @@ void MainWindow::on_reload_thumbnails()
   if (!locs.empty()) {
     thumbnailer_.request_many(locs, mimes, QStringLiteral("large"));
   }
-  if (status_label_ != nullptr) {
-    status_label_->setText(QStringLiteral("Reloading %1 thumbnail(s)…").arg(locs.size()));
-  }
+  set_status(QStringLiteral("Reloading %1 thumbnail(s)…").arg(locs.size()));
 }
 
 
@@ -3422,14 +3444,10 @@ void MainWindow::on_make_directory_thumbnails()
     }
   }
   if (dirs.isEmpty()) {
-    if (status_label_ != nullptr) {
-      status_label_->setText(QStringLiteral("No directories to thumbnail"));
-    }
+    set_status(QStringLiteral("No directories to thumbnail"));
     return;
   }
-  if (status_label_ != nullptr) {
-    status_label_->setText(QStringLiteral("Building %1 directory thumbnail(s)…").arg(dirs.size()));
-  }
+  set_status(QStringLiteral("Building %1 directory thumbnail(s)…").arg(dirs.size()));
   for (const QString& d : dirs) {
     if (model_ != nullptr) {
       model_->set_thumbnail_pending(d);
@@ -3445,9 +3463,7 @@ void MainWindow::on_prepare_thumbnails()
     // Still useful: switch-less prepare for when user opens icons next
   }
   request_thumbnails_for_visible();
-  if (status_label_ != nullptr) {
-    status_label_->setText(QStringLiteral("Preparing thumbnails for visible items…"));
-  }
+  set_status(QStringLiteral("Preparing thumbnails for visible items…"));
 }
 
 void MainWindow::on_preferences()
@@ -3562,9 +3578,7 @@ void MainWindow::on_toggle_bookmark()
       message_area_->show_info(QStringLiteral("Bookmark removed"));
     }
   }
-  if (status_label_ != nullptr) {
-    status_label_->setText(now ? QStringLiteral("Bookmarked") : QStringLiteral("Bookmark removed"));
-  }
+  set_status(now ? QStringLiteral("Bookmarked") : QStringLiteral("Bookmark removed"));
 }
 
 void MainWindow::on_rebuild_bookmarks_menu()

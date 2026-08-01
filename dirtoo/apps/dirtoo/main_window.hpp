@@ -178,6 +178,8 @@ private:
   void update_status_selection();
   void apply_icon_zoom();
   void set_view_mode(ViewMode mode);
+  /// Update status bar and mirror the text to qInfo (visible with --verbose).
+  void set_status(const QString& text);
   void set_clipboard(ClipboardMode mode);
   void request_thumbnails_for_visible();
   void start_transfer(const TransferRequest& request);
