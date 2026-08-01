@@ -38,6 +38,7 @@ public:
   void set_icon_style(bool enabled);
   void set_icon_detail_level(int level);
   [[nodiscard]] int icon_detail_level() const noexcept { return icon_detail_level_; }
+  [[nodiscard]] bool icon_style_active() const noexcept { return icon_style_; }
   [[nodiscard]] static constexpr int icon_detail_level_min() { return 0; }
   [[nodiscard]] static constexpr int icon_detail_level_max() { return 4; }
   /// Extra text rows under the icon for current LOD (Python k map).

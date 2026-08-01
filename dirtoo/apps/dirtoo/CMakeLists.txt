@@ -7,6 +7,8 @@ qt_add_executable(dirtoo-app
   main_window.hpp
   file_list_model.cpp
   file_list_model.hpp
+  file_item_delegate.cpp
+  file_item_delegate.hpp
   clipboard.cpp
   clipboard.hpp
   conflict_dialog.cpp

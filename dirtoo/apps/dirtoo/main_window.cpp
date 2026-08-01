@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window.hpp"
+#include "file_item_delegate.hpp"
 
 #include "dirtoo/filter/parser.hpp"
 
@@ -462,6 +463,7 @@ MainWindow::MainWindow(QWidget* parent)
   icon_view_->setResizeMode(QListView::Adjust);
   icon_view_->setMovement(QListView::Static);
   icon_view_->setUniformItemSizes(true);
+  icon_view_->setItemDelegate(new FileItemDelegate(model_, icon_view_));
   icon_view_->setWordWrap(true);
   icon_view_->setSelectionMode(QAbstractItemView::ExtendedSelection);
   icon_view_->setContextMenuPolicy(Qt::CustomContextMenu);
