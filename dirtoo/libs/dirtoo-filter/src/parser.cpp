@@ -335,6 +335,15 @@ private:
     if (cmd == "Containsre" || cmd == "ContainsRe" || cmd == "ContainsRegex" || cmd == "Cre") {
       return make_contains_regex(arg, true);
     }
+    if (c == "containsfuzzy" || c == "contains_fuzzy" || c == "cfuzzy" || c == "cfuz") {
+      return make_contains_fuzzy(arg);
+    }
+    if (c == "random") {
+      return make_random(arg);
+    }
+    if (c == "charset" || c == "encoding") {
+      return make_charset(arg);
+    }
     if (c == "time") {
       return make_time(arg);
     }
@@ -380,6 +389,9 @@ Terms (juxtaposition = AND, OR joins alternatives):
   contains:foo    file content substring, case-insensitive (max 1MiB)
   Contains:Foo    case-sensitive content match
   containsre:a.*b content regex (cre:); Containsre: case-sensitive
+  containsfuzzy:speling  fuzzy content lines (cfuzzy:); optional @0.6
+  random:0.5      match with probability
+  charset:ascii   basename encodable as charset (utf-8, latin1, …)
   -term           exclude / NOT term   (also ^term or not term)
   ( a OR b )      grouping with parentheses
 

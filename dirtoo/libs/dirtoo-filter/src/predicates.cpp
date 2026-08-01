@@ -16,6 +16,7 @@
 #include <charconv>
 #include <optional>
 #include <vector>
+#include <random>
 
 namespace dirtoo::filter {
 namespace {
@@ -1298,6 +1299,225 @@ MatchFuncPtr make_weekday(std::string argument)
     return std::make_shared<AlwaysFalse>();
   }
   return std::make_shared<WeekdayMatch>(op, *wd);
+}
+
+
+
+namespace {
+
+class ContainsFuzzyMatch : public MatchFunc {
+public:
+  ContainsFuzzyMatch(std::string needle, double threshold, int n, std::size_t max_bytes)
+      : needle_(std::move(needle))
+      , threshold_(threshold)
+      , n_(n)
+      , max_bytes_(max_bytes)
+  {
+  }
+  bool matches(const FilterItem& item) const override
+  {
+    if (item.is_directory || item.path.empty() || needle_.empty()) {
+      return false;
+    }
+    std::ifstream in(item.path, std::ios::binary);
+    if (!in) {
+      return false;
+    }
+    constexpr std::size_t kChunk = 64 * 1024;
+    std::string chunk(kChunk, '\0');
+    std::size_t total = 0;
+    std::string line_carry;
+    while (in && total < max_bytes_) {
+      const auto to_read = std::min(kChunk, max_bytes_ - total);
+      in.read(chunk.data(), static_cast<std::streamsize>(to_read));
+      const auto got = static_cast<std::size_t>(in.gcount());
+      if (got == 0) {
+        break;
+      }
+      total += got;
+      std::string buf = line_carry;
+      buf.append(chunk.data(), got);
+      std::size_t start = 0;
+      while (start < buf.size()) {
+        const auto nl = buf.find('\n', start);
+        if (nl == std::string::npos) {
+          line_carry = buf.substr(start);
+          break;
+        }
+        std::string_view line{buf.data() + start, nl - start};
+        if (!line.empty() && line.back() == '\r') {
+          line.remove_suffix(1);
+        }
+        if (fuzzy_score(needle_, line, n_, false) > threshold_) {
+          return true;
+        }
+        start = nl + 1;
+        line_carry.clear();
+      }
+      if (start >= buf.size()) {
+        line_carry.clear();
+      }
+    }
+    if (!line_carry.empty() && fuzzy_score(needle_, line_carry, n_, false) > threshold_) {
+      return true;
+    }
+    return false;
+  }
+
+private:
+  std::string needle_;
+  double threshold_;
+  int n_;
+  std::size_t max_bytes_;
+};
+
+class RandomMatch : public MatchFunc {
+public:
+  explicit RandomMatch(double probability)
+      : probability_(std::clamp(probability, 0.0, 1.0))
+      , eng_(std::random_device{}())
+  {
+  }
+  bool matches(const FilterItem&) const override
+  {
+    std::uniform_real_distribution<double> dist(0.0, 1.0);
+    return dist(eng_) < probability_;
+  }
+
+private:
+  double probability_;
+  mutable std::mt19937 eng_;
+};
+
+class CharsetMatch : public MatchFunc {
+public:
+  explicit CharsetMatch(std::string charset)
+      : charset_(std::move(charset))
+  {
+  }
+  bool matches(const FilterItem& item) const override
+  {
+    // Practical subset without iconv: ascii / utf-8 / latin1 / iso-8859-1
+    const auto lower = lower_copy(charset_);
+    if (lower == "ascii" || lower == "us-ascii") {
+      for (unsigned char c : item.name) {
+        if (c > 127) {
+          return false;
+        }
+      }
+      return true;
+    }
+    if (lower == "latin1" || lower == "latin-1" || lower == "iso-8859-1" || lower == "iso8859-1") {
+      // All byte sequences are valid latin1; accept any basename
+      return true;
+    }
+    if (lower == "utf-8" || lower == "utf8") {
+      // Validate UTF-8 of basename
+      const auto& s = item.name;
+      std::size_t i = 0;
+      while (i < s.size()) {
+        const auto c = static_cast<unsigned char>(s[i]);
+        if (c < 0x80) {
+          ++i;
+          continue;
+        }
+        int need = 0;
+        if ((c & 0xE0) == 0xC0) {
+          need = 1;
+        } else if ((c & 0xF0) == 0xE0) {
+          need = 2;
+        } else if ((c & 0xF8) == 0xF0) {
+          need = 3;
+        } else {
+          return false;
+        }
+        if (i + static_cast<std::size_t>(need) >= s.size()) {
+          return false;
+        }
+        for (int k = 1; k <= need; ++k) {
+          if ((static_cast<unsigned char>(s[i + static_cast<std::size_t>(k)]) & 0xC0) != 0x80) {
+            return false;
+          }
+        }
+        i += static_cast<std::size_t>(need) + 1;
+      }
+      return true;
+    }
+    // Unknown charset name → never match (visible failure)
+    return false;
+  }
+
+private:
+  std::string charset_;
+};
+
+} // namespace
+
+MatchFuncPtr make_contains_fuzzy(std::string argument, std::size_t max_bytes)
+{
+  // Same optional @threshold / @n suffixes as make_fuzzy
+  double threshold = 0.5;
+  int n = 3;
+  std::string needle = std::move(argument);
+  {
+    const auto at = needle.rfind('@');
+    if (at != std::string::npos && at + 1 < needle.size()) {
+      const std::string tail = needle.substr(at + 1);
+      bool is_int = !tail.empty();
+      for (char c : tail) {
+        if (!std::isdigit(static_cast<unsigned char>(c))) {
+          is_int = false;
+          break;
+        }
+      }
+      if (is_int && tail.size() <= 2) {
+        try {
+          n = std::stoi(tail);
+          needle.resize(at);
+        } catch (...) {
+        }
+      }
+    }
+  }
+  {
+    const auto at = needle.rfind('@');
+    if (at != std::string::npos && at + 1 < needle.size()) {
+      try {
+        threshold = std::stod(needle.substr(at + 1));
+        needle.resize(at);
+      } catch (...) {
+      }
+    }
+  }
+  if (needle.empty()) {
+    return std::make_shared<AlwaysFalse>();
+  }
+  if (n < 1) {
+    n = 1;
+  }
+  threshold = std::clamp(threshold, 0.0, 1.0);
+  return std::make_shared<ContainsFuzzyMatch>(std::move(needle), threshold, n, max_bytes);
+}
+
+MatchFuncPtr make_random(std::string argument)
+{
+  try {
+    const double p = std::stod(argument);
+    return std::make_shared<RandomMatch>(p);
+  } catch (...) {
+    return std::make_shared<AlwaysFalse>();
+  }
+}
+
+MatchFuncPtr make_charset(std::string argument)
+{
+  while (!argument.empty() && std::isspace(static_cast<unsigned char>(argument.front()))) {
+    argument.erase(argument.begin());
+  }
+  if (argument.empty()) {
+    return std::make_shared<AlwaysFalse>();
+  }
+  return std::make_shared<CharsetMatch>(std::move(argument));
 }
 
 

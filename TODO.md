@@ -244,13 +244,13 @@ as of the responsive-UI / media-cache work.
 |--------------------------------------------|--------|---------|
 | `contains:` / `Contains:` (file content)   | yes    | **yes** (max 1 MiB) |
 | `containsre:` content regex                | yes    | **yes** (max 1 MiB) |
-| `containsfuzzy:`                           | yes    | **no**  |
+| `containsfuzzy:`                           | yes    | **yes** (max 1 MiB) |
 | `date:` / `time:` / `weekday:`             | yes    | **yes** |
 | `length:` / `len:` (name length)           | yes    | **yes** |
-| `charset:` / `encoding:`                   | yes    | **no**  |
+| `charset:` / `encoding:`                   | yes    | **partial** (ascii/utf-8/latin1) |
 | `pages:` (PDF)                             | yes    | **no**  |
 | `filecount:` (dir/archive)                 | yes    | **no**  |
-| `random:`                                  | yes    | **no**  |
+| `random:`                                  | yes    | **yes** |
 | fuzzy / glob / regex / size / type / media | yes    | **yes** |
 
 #### Sort / metadata
@@ -275,7 +275,7 @@ Python ships many CLIs under `programs/` (find expr engine, fsck, shuffle, deskt
 | Missing                                        | Notes                                    |
 |------------------------------------------------|------------------------------------------|
 | Richer preferences (all Python settings keys)  | C++ has a subset                         |
-| Context menu parity (every Python item action) | Basic set present                        |
+| Context menu parity (every Python item action) | Improved (new window, paths, thumbs)     |
 | DnD cursor themed pixmaps                      | Python `dnd-*.png`; C++ uses Qt defaults |
 | Save file list as                              | Python action                            |
 | Debug mode action                              | Python only                              |

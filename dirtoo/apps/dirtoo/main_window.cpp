@@ -1220,14 +1220,41 @@ std::vector<fs::FileInfo> MainWindow::selected_fileinfos() const
 void MainWindow::on_context_menu(const QPoint& pos)
 {
   auto* view = current_view();
+  if (view == nullptr) {
+    return;
+  }
   QMenu menu(this);
   menu.addAction(QStringLiteral("Open"), this, [this, view] {
-    if (view == nullptr || view->selectionModel() == nullptr) {
+    if (view->selectionModel() == nullptr) {
       return;
     }
     const auto rows = view->selectionModel()->selectedIndexes();
     if (!rows.isEmpty()) {
       on_item_activated(rows.first());
+    }
+  });
+  menu.addAction(QStringLiteral("Open in New Window"), this, [this, view] {
+    if (view->selectionModel() == nullptr || model_ == nullptr) {
+      return;
+    }
+    const auto rows = view->selectionModel()->selectedIndexes();
+    for (const auto& idx : rows) {
+      if (idx.column() != 0) {
+        continue;
+      }
+      const auto* fi = model_->file_at(idx.row());
+      if (fi == nullptr) {
+        continue;
+      }
+      auto* win = new MainWindow();
+      win->setAttribute(Qt::WA_DeleteOnClose);
+      win->show();
+      if (fi->is_directory() || fi->location().is_archive()) {
+        win->open_location(fi->location());
+      } else {
+        win->open_location(fi->location().parent());
+      }
+      break; // one window from context menu
     }
   });
   menu.addAction(QStringLiteral("Open with…"), this, &MainWindow::on_open_with);
@@ -1236,10 +1263,27 @@ void MainWindow::on_context_menu(const QPoint& pos)
   menu.addAction(QStringLiteral("Cut"), this, &MainWindow::on_cut);
   menu.addAction(QStringLiteral("Copy"), this, &MainWindow::on_copy);
   menu.addAction(QStringLiteral("Paste"), this, &MainWindow::on_paste);
+  menu.addAction(QStringLiteral("Copy Path"), this, [this] {
+    const auto selected = selected_fileinfos();
+    if (selected.empty()) {
+      return;
+    }
+    QStringList paths;
+    for (const auto& fi : selected) {
+      paths << QString::fromStdString(fi.path().string());
+    }
+    QApplication::clipboard()->setText(paths.join(QLatin1Char('\n')));
+    if (status_label_ != nullptr) {
+      status_label_->setText(QStringLiteral("Copied %1 path(s)").arg(paths.size()));
+    }
+  });
   menu.addSeparator();
   menu.addAction(QStringLiteral("Rename…"), this, &MainWindow::on_rename_selected);
   menu.addAction(QStringLiteral("Delete…"), this, &MainWindow::on_delete_selected);
   menu.addAction(QStringLiteral("Properties…"), this, &MainWindow::on_properties);
+  menu.addSeparator();
+  menu.addAction(QStringLiteral("Reload Thumbnails"), this, &MainWindow::on_reload_thumbnails);
+  menu.addAction(QStringLiteral("Prepare Thumbnails"), this, &MainWindow::on_prepare_thumbnails);
   menu.addSeparator();
   menu.addAction(QStringLiteral("New Folder…"), this, &MainWindow::on_mkdir);
   menu.exec(view->viewport()->mapToGlobal(pos));

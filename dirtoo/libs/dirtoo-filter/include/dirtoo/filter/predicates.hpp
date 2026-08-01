@@ -39,6 +39,12 @@ namespace dirtoo::filter {
 /// File content regex (ECMAScript). containsre: / Containsre: (case-sensitive).
 [[nodiscard]] MatchFuncPtr make_contains_regex(std::string argument, bool case_sensitive = false,
                                                std::size_t max_bytes = 1u << 20);
+/// Fuzzy n-gram match on file content lines (threshold 0.5). containsfuzzy:needle[@0.6]
+[[nodiscard]] MatchFuncPtr make_contains_fuzzy(std::string argument, std::size_t max_bytes = 1u << 20);
+/// Randomly match with probability in (0,1], e.g. random:0.5
+[[nodiscard]] MatchFuncPtr make_random(std::string argument);
+/// Basename encodable in charset (charset:ascii, charset:latin1, …)
+[[nodiscard]] MatchFuncPtr make_charset(std::string argument);
 
 /// mtime time-of-day: time:>=15:00, time:9:30 (HH:MM local)
 [[nodiscard]] MatchFuncPtr make_time(std::string argument);

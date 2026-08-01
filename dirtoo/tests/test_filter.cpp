@@ -311,3 +311,36 @@ TEST_CASE("filter containsre command", "[filter]")
 
   fs::remove_all(dir);
 }
+
+TEST_CASE("filter containsfuzzy random charset", "[filter]")
+{
+  auto m = parse_filter("random:1.0");
+  REQUIRE(m);
+  REQUIRE((*m)->matches(file("anything")));
+
+  m = parse_filter("random:0");
+  REQUIRE(m);
+  REQUIRE_FALSE((*m)->matches(file("anything")));
+
+  m = parse_filter("charset:ascii");
+  REQUIRE(m);
+  REQUIRE((*m)->matches(file("readme.txt")));
+
+  m = parse_filter("charset:utf-8");
+  REQUIRE(m);
+  REQUIRE((*m)->matches(file("readme.txt")));
+
+  const auto dir = fs::temp_directory_path() / "dirtoo-cfuzzy";
+  fs::remove_all(dir);
+  fs::create_directories(dir);
+  const auto path = dir / "notes.txt";
+  {
+    std::ofstream out(path);
+    out << "spelling is hard\n";
+  }
+  FilterItem item{.name = "notes.txt", .size = 0, .is_directory = false, .path = path};
+  m = parse_filter("containsfuzzy:speling");
+  REQUIRE(m);
+  REQUIRE((*m)->matches(item));
+  fs::remove_all(dir);
+}
