@@ -9,8 +9,9 @@
 namespace dirtoo::app {
 
 struct AppSettings {
-  QString view_mode = QStringLiteral("detail"); // "detail" | "icons"
+  QString view_mode = QStringLiteral("detail");
   int zoom_index = 2;
+  bool show_hidden = false;
   QByteArray window_geometry;
   QByteArray window_state;
   QString last_location;

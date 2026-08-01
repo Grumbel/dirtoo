@@ -4,6 +4,7 @@
 #include "main_window.hpp"
 
 #include "clipboard.hpp"
+#include "about_dialog.hpp"
 #include "app_settings.hpp"
 #include "conflict_dialog.hpp"
 #include "open_with.hpp"
@@ -29,6 +30,7 @@
 #include <QLineEdit>
 #include <QListView>
 #include <QMenu>
+#include <QMenuBar>
 #include <QMessageBox>
 #include <QMimeDatabase>
 #include <QPixmap>
@@ -94,6 +96,76 @@ MainWindow::MainWindow(QWidget* parent)
   toolbar->addAction(QStringLiteral("Zoom −"), this, &MainWindow::on_zoom_out);
   toolbar->addAction(QStringLiteral("Zoom +"), this, &MainWindow::on_zoom_in);
 
+  // Menu bar
+  {
+    auto* file_menu = menuBar()->addMenu(QStringLiteral("&File"));
+    file_menu->addAction(QStringLiteral("New Folder…"), this, &MainWindow::on_mkdir);
+    file_menu->addSeparator();
+    {
+      auto* act = file_menu->addAction(QStringLiteral("Close"), this, &QWidget::close);
+      act->setShortcut(QKeySequence::Close);
+    }
+
+    auto* edit_menu = menuBar()->addMenu(QStringLiteral("&Edit"));
+    {
+      auto* act = edit_menu->addAction(QStringLiteral("Cut"), this, &MainWindow::on_cut);
+      act->setShortcut(QKeySequence::Cut);
+    }
+    {
+      auto* act = edit_menu->addAction(QStringLiteral("Copy"), this, &MainWindow::on_copy);
+      act->setShortcut(QKeySequence::Copy);
+    }
+    {
+      auto* act = edit_menu->addAction(QStringLiteral("Paste"), this, &MainWindow::on_paste);
+      act->setShortcut(QKeySequence::Paste);
+    }
+    edit_menu->addSeparator();
+    {
+      auto* act = edit_menu->addAction(QStringLiteral("Rename…"), this, &MainWindow::on_rename_selected);
+      act->setShortcut(QKeySequence(Qt::Key_F2));
+    }
+    {
+      auto* act = edit_menu->addAction(QStringLiteral("Delete…"), this, &MainWindow::on_delete_selected);
+      act->setShortcut(QKeySequence::Delete);
+    }
+    {
+      auto* act = edit_menu->addAction(QStringLiteral("Properties…"), this, &MainWindow::on_properties);
+      act->setShortcut(QKeySequence(Qt::Key_F3));
+    }
+
+    auto* view_menu = menuBar()->addMenu(QStringLiteral("&View"));
+    view_menu->addAction(detail_act_);
+    view_menu->addAction(icons_act_);
+    view_menu->addSeparator();
+    show_hidden_act_ = view_menu->addAction(QStringLiteral("Show Hidden Files"));
+    show_hidden_act_->setCheckable(true);
+    show_hidden_act_->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+H")));
+    connect(show_hidden_act_, &QAction::toggled, this, &MainWindow::on_toggle_hidden);
+    view_menu->addSeparator();
+    {
+      auto* act = view_menu->addAction(QStringLiteral("Refresh"), this, &MainWindow::on_refresh);
+      act->setShortcut(QKeySequence(Qt::Key_F5));
+    }
+    {
+      auto* act = view_menu->addAction(QStringLiteral("Zoom In"), this, &MainWindow::on_zoom_in);
+      act->setShortcut(QKeySequence::ZoomIn);
+    }
+    {
+      auto* act = view_menu->addAction(QStringLiteral("Zoom Out"), this, &MainWindow::on_zoom_out);
+      act->setShortcut(QKeySequence::ZoomOut);
+    }
+
+    auto* go_menu = menuBar()->addMenu(QStringLiteral("&Go"));
+    go_menu->addAction(QStringLiteral("Back"), this, &MainWindow::on_go_back);
+    go_menu->addAction(QStringLiteral("Forward"), this, &MainWindow::on_go_forward);
+    go_menu->addAction(QStringLiteral("Parent"), this, &MainWindow::on_go_parent);
+    go_menu->addAction(QStringLiteral("Home"), this, &MainWindow::on_go_home);
+
+    auto* help_menu = menuBar()->addMenu(QStringLiteral("&Help"));
+    help_menu->addAction(QStringLiteral("About dirtoo"), this, &MainWindow::on_about);
+  }
+
+
   {
     auto add_shortcut = [this](const QKeySequence& seq, auto slot) {
       auto* act = new QAction(this);
@@ -116,7 +188,8 @@ MainWindow::MainWindow(QWidget* parent)
     add_shortcut(QKeySequence(Qt::ALT | Qt::Key_Left), &MainWindow::on_go_back);
     add_shortcut(QKeySequence(Qt::ALT | Qt::Key_Right), &MainWindow::on_go_forward);
     add_shortcut(QKeySequence(QStringLiteral("Ctrl+L")), &MainWindow::on_focus_location);
-    add_shortcut(QKeySequence(QStringLiteral("Ctrl+H")), &MainWindow::on_go_home);
+    // Home: Alt+Home (Ctrl+Shift+H toggles hidden files)
+
     add_shortcut(QKeySequence(Qt::Key_F3), &MainWindow::on_properties);
   }
 
@@ -843,6 +916,10 @@ void MainWindow::restore_settings()
     zoom_index_ = s.zoom_index;
     apply_icon_zoom();
   }
+  collection_.set_show_hidden(s.show_hidden);
+  if (show_hidden_act_ != nullptr) {
+    show_hidden_act_->setChecked(s.show_hidden);
+  }
   if (s.view_mode == QLatin1String("icons")) {
     set_view_mode(ViewMode::Icons);
   } else {
@@ -861,6 +938,7 @@ void MainWindow::persist_settings() const
   AppSettings s;
   s.view_mode = (view_mode_ == ViewMode::Icons) ? QStringLiteral("icons") : QStringLiteral("detail");
   s.zoom_index = zoom_index_;
+  s.show_hidden = collection_.show_hidden();
   s.window_geometry = saveGeometry();
   s.window_state = saveState();
   s.last_location = QString::fromStdString(location_.as_path().string());
@@ -912,6 +990,19 @@ void MainWindow::on_open_terminal()
   if (!open_in_terminal(dir)) {
     status_label_->setText(QStringLiteral("Could not launch a terminal emulator"));
   }
+}
+
+
+void MainWindow::on_toggle_hidden(bool checked)
+{
+  collection_.set_show_hidden(checked);
+  refresh_list();
+  request_thumbnails_for_visible();
+}
+
+void MainWindow::on_about()
+{
+  show_about_dialog(this);
 }
 
 } // namespace dirtoo::app

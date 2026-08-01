@@ -7,6 +7,7 @@
 #include "dirtoo/fs/location.hpp"
 
 #include <optional>
+#include <string>
 #include <vector>
 
 namespace dirtoo::collection {
@@ -35,6 +36,9 @@ public:
   void set_name_filter(std::string needle);
   void clear_filter();
 
+  void set_show_hidden(bool show);
+  [[nodiscard]] bool show_hidden() const noexcept { return show_hidden_; }
+
   [[nodiscard]] const std::vector<fs::FileInfo>& visible_items() const noexcept;
 
 private:
@@ -43,6 +47,7 @@ private:
   std::vector<fs::FileInfo> items_;
   std::vector<fs::FileInfo> visible_;
   std::string name_filter_;
+  bool show_hidden_ = false;
 };
 
 } // namespace dirtoo::collection

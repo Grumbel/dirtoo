@@ -64,6 +64,8 @@ private slots:
   void on_refresh();
   void on_open_with();
   void on_open_terminal();
+  void on_toggle_hidden(bool checked);
+  void on_about();
   void on_focus_location();
   void on_copy();
   void on_cut();
@@ -133,6 +135,7 @@ private:
   QAction* paste_act_ = nullptr;
   QAction* detail_act_ = nullptr;
   QAction* icons_act_ = nullptr;
+  QAction* show_hidden_act_ = nullptr;
 };
 
 } // namespace dirtoo::app

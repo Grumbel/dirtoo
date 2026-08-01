@@ -21,6 +21,8 @@ qt_add_executable(dirtoo-app
   app_settings.hpp
   open_with.cpp
   open_with.hpp
+  about_dialog.cpp
+  about_dialog.hpp
   resources.qrc
 )
 

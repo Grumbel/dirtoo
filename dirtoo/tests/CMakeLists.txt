@@ -12,11 +12,19 @@ FetchContent_MakeAvailable(Catch2)
 add_executable(dirtoo-tests
   test_location.cpp
   test_dirops.cpp
+  test_collection.cpp
+  test_clipboard_text.cpp
+  ${CMAKE_SOURCE_DIR}/apps/dirtoo/clipboard.cpp
+)
+target_include_directories(dirtoo-tests PRIVATE
+  ${CMAKE_SOURCE_DIR}/apps/dirtoo
 )
 target_link_libraries(dirtoo-tests
   PRIVATE
     dirtoo::fs
     dirtoo::dirops
+    dirtoo::collection
+    Qt6::Core
     Catch2::Catch2WithMain
     dirtoo_warnings
 )

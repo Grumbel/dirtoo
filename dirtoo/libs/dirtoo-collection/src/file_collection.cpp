@@ -17,6 +17,11 @@ std::string to_lower(std::string s)
   return s;
 }
 
+bool is_hidden_name(const std::string& name)
+{
+  return !name.empty() && name[0] == '.';
+}
+
 } // namespace
 
 void FileCollection::clear()
@@ -98,6 +103,12 @@ void FileCollection::clear_filter()
   rebuild_visible();
 }
 
+void FileCollection::set_show_hidden(bool show)
+{
+  show_hidden_ = show;
+  rebuild_visible();
+}
+
 const std::vector<fs::FileInfo>& FileCollection::visible_items() const noexcept
 {
   return visible_;
@@ -105,15 +116,17 @@ const std::vector<fs::FileInfo>& FileCollection::visible_items() const noexcept
 
 void FileCollection::rebuild_visible()
 {
-  if (name_filter_.empty()) {
-    visible_ = items_;
-    return;
-  }
   visible_.clear();
   for (const auto& fi : items_) {
-    if (to_lower(fi.basename()).find(name_filter_) != std::string::npos) {
-      visible_.push_back(fi);
+    if (!show_hidden_ && is_hidden_name(fi.basename())) {
+      continue;
     }
+    if (!name_filter_.empty()) {
+      if (to_lower(fi.basename()).find(name_filter_) == std::string::npos) {
+        continue;
+      }
+    }
+    visible_.push_back(fi);
   }
 }
 

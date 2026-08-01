@@ -14,6 +14,37 @@ const char* kGnomeMime = "x-special/gnome-copied-files";
 
 } // namespace
 
+ClipboardPayload parse_dirtoo_clipboard_text(const QString& text)
+{
+  ClipboardPayload payload;
+  const QStringList lines = text.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+  if (lines.isEmpty()) {
+    return payload;
+  }
+  payload.mode = (lines.front() == QLatin1String("cut")) ? ClipboardMode::Cut : ClipboardMode::Copy;
+  for (int i = 1; i < lines.size(); ++i) {
+    payload.paths.emplace_back(lines[i].toStdString());
+  }
+  return payload;
+}
+
+ClipboardPayload parse_gnome_clipboard_text(const QString& text)
+{
+  ClipboardPayload payload;
+  const QStringList lines = text.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+  if (lines.isEmpty()) {
+    return payload;
+  }
+  payload.mode = (lines.front() == QLatin1String("cut")) ? ClipboardMode::Cut : ClipboardMode::Copy;
+  for (int i = 1; i < lines.size(); ++i) {
+    const QUrl url(lines[i]);
+    if (url.isLocalFile()) {
+      payload.paths.emplace_back(url.toLocalFile().toStdString());
+    }
+  }
+  return payload;
+}
+
 QMimeData* make_clipboard_mime(ClipboardMode mode, const std::vector<std::filesystem::path>& paths)
 {
   auto* mime = new QMimeData;
@@ -31,7 +62,6 @@ QMimeData* make_clipboard_mime(ClipboardMode mode, const std::vector<std::filesy
   mime->setData(QString::fromLatin1(kDirtooMime), body.toUtf8());
   mime->setUrls(urls);
 
-  // GNOME/Nautilus interop: first line copy|cut, then URIs.
   QString gnome;
   gnome += (mode == ClipboardMode::Cut) ? QStringLiteral("cut") : QStringLiteral("copy");
   for (const QUrl& url : urls) {
@@ -51,32 +81,11 @@ ClipboardPayload parse_clipboard_mime(const QMimeData* mime)
   }
 
   if (mime->hasFormat(QString::fromLatin1(kDirtooMime))) {
-    const QString text = QString::fromUtf8(mime->data(QString::fromLatin1(kDirtooMime)));
-    const QStringList lines = text.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
-    if (!lines.isEmpty()) {
-      payload.mode = (lines.front() == QLatin1String("cut")) ? ClipboardMode::Cut
-                                                             : ClipboardMode::Copy;
-      for (int i = 1; i < lines.size(); ++i) {
-        payload.paths.emplace_back(lines[i].toStdString());
-      }
-    }
-    return payload;
+    return parse_dirtoo_clipboard_text(QString::fromUtf8(mime->data(QString::fromLatin1(kDirtooMime))));
   }
 
   if (mime->hasFormat(QString::fromLatin1(kGnomeMime))) {
-    const QString text = QString::fromUtf8(mime->data(QString::fromLatin1(kGnomeMime)));
-    const QStringList lines = text.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
-    if (!lines.isEmpty()) {
-      payload.mode = (lines.front() == QLatin1String("cut")) ? ClipboardMode::Cut
-                                                             : ClipboardMode::Copy;
-      for (int i = 1; i < lines.size(); ++i) {
-        const QUrl url(lines[i]);
-        if (url.isLocalFile()) {
-          payload.paths.emplace_back(url.toLocalFile().toStdString());
-        }
-      }
-    }
-    return payload;
+    return parse_gnome_clipboard_text(QString::fromUtf8(mime->data(QString::fromLatin1(kGnomeMime))));
   }
 
   if (mime->hasUrls()) {

@@ -6,20 +6,17 @@ This document is the working plan for the C++ port. The Python tree in
 
 ## Progress (2026-08-01)
 
-MVP feature set is largely in place:
+MVP complete for normal browsing/editing workflows:
 
-- Libraries: dirops, fs, collection, watcher, thumbnail (D-Bus)
-- UI: detail/icon views, zoom, history, filter, DND, clipboard (incl. GNOME)
-- Ops: rename/mkdir/delete/copy/move via dirops + background TransferWorker
-- Dialogs: conflict, transfer progress, properties, open with
-- UX: F2/F5/Alt navigation, status selection info, QSettings persistence
-- Packaging: desktop file, hicolor icons, embedded qrc icons
+- dirops + GUI transfers (background worker, conflicts, DND, clipboard incl. GNOME)
+- Detail/Icon views, zoom, hidden-files toggle, menus (File/Edit/View/Go/Help)
+- Properties, Open with, Open in Terminal, About
+- QSettings persistence; desktop file + icons
+- Unit tests: location, dirops, collection (hidden/filter), clipboard text parsers
 
-Next (optional polish):
-- About dialog + Help menu
-- Show hidden files toggle
+Remaining optional work:
 - Archive browsing (Phase 7)
-- Automated GUI tests where practical
+- Further GUI automation / packaging on Nix
 
 Principles (see also `AGENTS.md`):
 

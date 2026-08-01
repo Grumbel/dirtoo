@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <QString>
+
 #include <filesystem>
 #include <vector>
 
@@ -20,13 +22,17 @@ struct ClipboardPayload {
   std::vector<std::filesystem::path> paths;
 };
 
-/// Build MIME data for internal + text/uri-list interop.
+/// Build MIME data for internal + text/uri-list + GNOME interop.
 [[nodiscard]] QMimeData* make_clipboard_mime(ClipboardMode mode,
                                              const std::vector<std::filesystem::path>& paths);
 
-/// Parse clipboard contents. Supports application/x-dirtoo-clipboard and text/uri-list.
+/// Parse clipboard contents.
 [[nodiscard]] ClipboardPayload parse_clipboard_mime(const QMimeData* mime);
 
 [[nodiscard]] bool clipboard_has_paths(const QMimeData* mime);
+
+/// Testable parsers for textual clipboard payloads.
+[[nodiscard]] ClipboardPayload parse_dirtoo_clipboard_text(const QString& text);
+[[nodiscard]] ClipboardPayload parse_gnome_clipboard_text(const QString& text);
 
 } // namespace dirtoo::app
