@@ -147,14 +147,43 @@ FileItemDelegate::FileItemDelegate(FileListModel* model, QObject* parent)
 
 QSize FileItemDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
-  return QStyledItemDelegate::sizeHint(option, index);
+  QSize sz = QStyledItemDelegate::sizeHint(option, index);
+  if (index.isValid() && index.data(IsGroupStartRole).toBool()) {
+    const QString label = index.data(GroupLabelRole).toString();
+    if (!label.isEmpty()) {
+      sz.setHeight(sz.height() + option.fontMetrics.height() + 8);
+    }
+  }
+  return sz;
 }
 
 void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
                              const QModelIndex& index) const
 {
+  QStyleOptionViewItem opt = option;
+  initStyleOption(&opt, index);
+
+  // Group section header (day / directory) above the first item of a group.
+  if (index.isValid() && index.data(IsGroupStartRole).toBool()) {
+    const QString label = index.data(GroupLabelRole).toString();
+    if (!label.isEmpty()) {
+      const int header_h = option.fontMetrics.height() + 8;
+      QRect header_rect = opt.rect;
+      header_rect.setHeight(header_h);
+      painter->save();
+      painter->fillRect(header_rect, option.palette.alternateBase());
+      QFont bold = option.font;
+      bold.setBold(true);
+      painter->setFont(bold);
+      painter->setPen(option.palette.color(QPalette::Text));
+      painter->drawText(header_rect.adjusted(8, 0, -4, 0), Qt::AlignVCenter | Qt::AlignLeft, label);
+      painter->restore();
+      opt.rect.setTop(opt.rect.top() + header_h);
+    }
+  }
+
   if (model_ == nullptr || !model_->icon_style_active()) {
-    QStyledItemDelegate::paint(painter, option, index);
+    QStyledItemDelegate::paint(painter, opt, index);
     return;
   }
 
@@ -162,8 +191,6 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
   painter->setRenderHint(QPainter::Antialiasing, true);
   painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
 
-  QStyleOptionViewItem opt = option;
-  initStyleOption(&opt, index);
   painter->setClipRect(opt.rect);
 
   // Selection / hover background

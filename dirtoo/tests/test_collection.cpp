@@ -87,3 +87,57 @@ TEST_CASE("numeric_sort_key natural order", "[collection][sort]")
   REQUIRE(col.visible_items()[1].basename() == "file2");
   REQUIRE(col.visible_items()[2].basename() == "file10");
 }
+
+TEST_CASE("FileCollection group by day", "[collection][group]")
+{
+  using dirtoo::collection::FileCollection;
+  using dirtoo::collection::GroupMode;
+  using dirtoo::fs::FileInfo;
+  using dirtoo::fs::Location;
+
+  FileCollection col;
+  std::vector<FileInfo> items;
+  items.push_back(FileInfo::synthetic(Location::from_path("/t/a"), "a.txt", false));
+  items.push_back(FileInfo::synthetic(Location::from_path("/t/b"), "b.txt", false));
+  items.push_back(FileInfo::synthetic(Location::from_path("/t/dir"), "dir", true));
+  col.set_items(std::move(items));
+  col.set_group_mode(GroupMode::Day);
+  // directories are ungrouped; labels for synthetics may be Unknown date
+  REQUIRE(col.group_mode() == GroupMode::Day);
+  REQUIRE(col.visible_items().size() == 3);
+  // directory has empty day label
+  bool found_dir_empty = false;
+  for (const auto& fi : col.visible_items()) {
+    if (fi.is_directory()) {
+      REQUIRE(col.group_label_for(fi).empty());
+      found_dir_empty = true;
+    }
+  }
+  REQUIRE(found_dir_empty);
+}
+
+TEST_CASE("FileCollection group by directory", "[collection][group]")
+{
+  using dirtoo::collection::FileCollection;
+  using dirtoo::collection::GroupMode;
+  using dirtoo::fs::FileInfo;
+  using dirtoo::fs::Location;
+
+  FileCollection col;
+  std::vector<FileInfo> items;
+  items.push_back(FileInfo::synthetic(Location::from_path("/t/x/a"), "a", false));
+  items.push_back(FileInfo::synthetic(Location::from_path("/t/y/b"), "b", false));
+  items.push_back(FileInfo::synthetic(Location::from_path("/t/x/c"), "c", false));
+  col.set_items(std::move(items));
+  col.set_group_mode(GroupMode::Directory);
+  REQUIRE(col.visible_items().size() == 3);
+  // Contiguous groups after stable_sort by key
+  const auto& v = col.visible_items();
+  const auto l0 = col.group_label_for(v[0]);
+  const auto l1 = col.group_label_for(v[1]);
+  const auto l2 = col.group_label_for(v[2]);
+  // Two share /t/x, one /t/y — middle should match one of the ends after grouping
+  const int same01 = (l0 == l1) ? 1 : 0;
+  const int same12 = (l1 == l2) ? 1 : 0;
+  REQUIRE(same01 + same12 == 1);
+}

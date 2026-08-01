@@ -241,8 +241,37 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
     }
   }
 
-  if (role == Qt::UserRole) {
+  if (role == PathRole || role == Qt::UserRole) {
     return QString::fromStdString(fi->path().string());
+  }
+
+  if (role == GroupLabelRole) {
+    if (collection_ == nullptr) {
+      return {};
+    }
+    const auto label = collection_->group_label_for(*fi);
+    if (label.empty()) {
+      return {};
+    }
+    return QString::fromStdString(label);
+  }
+
+  if (role == IsGroupStartRole) {
+    if (collection_ == nullptr || collection_->group_mode() == collection::GroupMode::None) {
+      return false;
+    }
+    const auto label = collection_->group_label_for(*fi);
+    if (label.empty()) {
+      return false;
+    }
+    if (index.row() == 0) {
+      return true;
+    }
+    const auto* prev = file_at(index.row() - 1);
+    if (prev == nullptr) {
+      return true;
+    }
+    return collection_->group_label_for(*prev) != label;
   }
 
   return {};

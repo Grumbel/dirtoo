@@ -293,6 +293,27 @@ MainWindow::MainWindow(QWidget* parent)
                                        &MainWindow::on_less_icon_details);
       act->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+-")));
     }
+    view_menu->addSeparator();
+    {
+      auto* group_menu = view_menu->addMenu(QStringLiteral("Group By"));
+      auto* group_actions = new QActionGroup(this);
+      group_actions->setExclusive(true);
+      auto add_group = [&](const QString& title, dirtoo::collection::GroupMode mode, bool checked) {
+        auto* act = group_menu->addAction(title);
+        act->setCheckable(true);
+        act->setChecked(checked);
+        group_actions->addAction(act);
+        connect(act, &QAction::triggered, this, [this, mode] {
+          collection_.set_group_mode(mode);
+          if (model_ != nullptr) {
+            model_->refresh();
+          }
+        });
+      };
+      add_group(QStringLiteral("None"), dirtoo::collection::GroupMode::None, true);
+      add_group(QStringLiteral("Day"), dirtoo::collection::GroupMode::Day, false);
+      add_group(QStringLiteral("Directory"), dirtoo::collection::GroupMode::Directory, false);
+    }
 
     auto* sort_menu = menuBar()->addMenu(QStringLiteral("&Sort"));
     auto* sort_group = new QActionGroup(this);

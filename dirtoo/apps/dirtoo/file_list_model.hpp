@@ -21,6 +21,12 @@ enum class FileListColumn {
   Count
 };
 
+enum FileListRole {
+  PathRole = Qt::UserRole,
+  GroupLabelRole = Qt::UserRole + 1,
+  IsGroupStartRole = Qt::UserRole + 2,
+};
+
 /// Qt model over the visible slice of a FileCollection.
 class FileListModel : public QAbstractTableModel {
   Q_OBJECT

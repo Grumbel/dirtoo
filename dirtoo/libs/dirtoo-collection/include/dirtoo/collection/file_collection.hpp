@@ -4,6 +4,7 @@
 #pragma once
 
 #include "dirtoo/collection/sorter.hpp"
+#include "dirtoo/collection/grouper.hpp"
 #include "dirtoo/filter/match_func.hpp"
 #include "dirtoo/fs/file_info.hpp"
 #include "dirtoo/fs/location.hpp"
@@ -61,6 +62,12 @@ public:
   void set_show_hidden(bool show);
   [[nodiscard]] bool show_hidden() const noexcept { return show_hidden_; }
 
+  void set_group_mode(GroupMode mode);
+  [[nodiscard]] GroupMode group_mode() const noexcept { return group_mode_; }
+
+  /// Section label for a visible item under the current group mode (empty if none).
+  [[nodiscard]] std::string group_label_for(const fs::FileInfo& fi) const;
+
   [[nodiscard]] const std::vector<fs::FileInfo>& visible_items() const noexcept;
   [[nodiscard]] const std::string& filter_expression() const noexcept { return filter_expression_; }
   [[nodiscard]] bool filter_parse_ok() const noexcept { return filter_parse_ok_; }
@@ -74,6 +81,7 @@ private:
   filter::MatchFuncPtr match_;
   bool filter_parse_ok_ = true;
   bool show_hidden_ = false;
+  GroupMode group_mode_ = GroupMode::None;
   Sorter sorter_;
 };
 

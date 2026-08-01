@@ -183,7 +183,7 @@ as of the responsive-UI / media-cache work.
 | FS abstraction | `virtual_filesystem`, Location URLs       | `dirtoo-fs::Location` (file + archive)      | SFTP/other VFS not started        |
 | File ops       | In-app + scripts                          | **`dirops`** lib + `dt-*` CLIs              | Stronger separation in C++        |
 | Filtering      | `filter/` + pyparsing                     | **`dirtoo-filter`** (hand parser, Qt-free)  |                                   |
-| Collection     | SortedList + Sorter + Grouper             | **`dirtoo-collection`** + Sorter            | Grouper missing                   |
+| Collection     | SortedList + Sorter + Grouper             | **`dirtoo-collection`** + Sorter            | Grouper day/directory done; duration open |
 | Metadata cache | Per-file XML sidecars                     | **SQLite** `meta.sqlite` + memory + workers | C++ direction is better for scale |
 | Thumbnails     | D-Bus thumbnailer                         | **`dirtoo-thumbnail`** D-Bus                |                                   |
 | Watcher        | inotify-style                             | **`dirtoo-watcher`**                        |                                   |
@@ -230,7 +230,7 @@ as of the responsive-UI / media-cache work.
 |--------------------------------------------------|------------------------------------------------------------|
 | **Small icon / sequence mode**                   | Third view style (wide rows / list-like icons)             |
 | **Graphics View icon scene**                     | Freer layout, hover overlays, per-item animation           |
-| **Group by** (day, directory, duration, none)    | `Grouper` + section headers in layout                      |
+| **Group by** (day, directory, duration, none)    | **partial** (day/directory/none + UI headers; duration open) |
 | **Time gaps** in icon layout                     | Visual spacing by mtime gaps                               |
 | **Show abspath vs basename** toggle              | Caption shows full path                                    |
 | **Show filtered** (keep non-matches greyed?)     | Separate from hide                                         |
@@ -289,7 +289,7 @@ Python ships many CLIs under `programs/` (find expr engine, fsck, shuffle, deskt
 
 ### Recommended next parity work
 1. [x] Filter: `contains:` (bounded size) + `date:` / `length:`
-2. Group by day/directory (collection + UI headers)
+2. [x] Group by day/directory (collection + UI headers)
 3. Small-icon / compact list mode
 4. Wire remaining badge assets (loading/error/locked)
 5. Preferences coverage + thumbnail prepare/reload actions

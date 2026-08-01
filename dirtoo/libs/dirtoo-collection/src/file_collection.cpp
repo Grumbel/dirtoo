@@ -195,6 +195,20 @@ const std::vector<fs::FileInfo>& FileCollection::visible_items() const noexcept
   return visible_;
 }
 
+void FileCollection::set_group_mode(GroupMode mode)
+{
+  if (group_mode_ == mode) {
+    return;
+  }
+  group_mode_ = mode;
+  rebuild_visible();
+}
+
+std::string FileCollection::group_label_for(const fs::FileInfo& fi) const
+{
+  return group_label(fi, group_mode_);
+}
+
 void FileCollection::rebuild_visible()
 {
   visible_.clear();
@@ -206,6 +220,14 @@ void FileCollection::rebuild_visible()
       continue;
     }
     visible_.push_back(fi);
+  }
+  if (group_mode_ != GroupMode::None && visible_.size() > 1) {
+    // Stable reorder by group key so section headers are contiguous while
+    // preserving relative order from the active sorter within each group.
+    std::stable_sort(visible_.begin(), visible_.end(),
+                     [mode = group_mode_](const fs::FileInfo& a, const fs::FileInfo& b) {
+                       return group_key(a, mode) < group_key(b, mode);
+                     });
   }
 }
 
