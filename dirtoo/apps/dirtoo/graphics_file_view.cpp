@@ -132,11 +132,13 @@ int GraphicsFileView::cell_height() const
 
 int GraphicsFileView::column_count() const
 {
-  const int vp_w = std::max(tile_size_.width() + padding_ * 2, viewport()->width() - 4);
-  const int cell_w = cell_width();
-  int cols = std::max(1, (vp_w - padding_) / cell_w);
+  // Match dirtoo-py TileLayout._calc_num_columns:
+  // (viewport - 2*padding + spacing) / (tile + spacing)
+  const int vp_w = std::max(1, viewport()->width());
+  const int cell_w = cell_width(); // tile + spacing
+  int cols = std::max(1, (vp_w - 2 * padding_ + spacing_) / std::max(1, cell_w));
   if (compact_) {
-    cols = std::max(1, (vp_w - padding_) / std::max(cell_w, 160));
+    cols = std::max(1, (vp_w - 2 * padding_ + spacing_) / std::max(cell_w, 160));
   }
   return cols;
 }
@@ -157,6 +159,12 @@ void GraphicsFileView::compute_layout_slots()
   const int cell_h = cell_height();
   layout_cols_ = cols;
 
+  // Grid content width (tiles left-aligned inside the grid); center the grid
+  // in the viewport so left/right padding match (dirtoo-py center_x_off).
+  const int grid_w = cols * cell_w - spacing_ + 2 * padding_;
+  const int vp_w = std::max(grid_w, viewport()->width());
+  const int center_x_off = std::max(0, (vp_w - grid_w) / 2);
+
   int col = 0;
   int grid_row = 0;
   int max_row = 0;
@@ -169,7 +177,8 @@ void GraphicsFileView::compute_layout_slots()
       }
     }
     slot_pos_[static_cast<std::size_t>(i)] =
-        QPointF(padding_ + col * cell_w, padding_ + grid_row * cell_h);
+        QPointF(center_x_off + padding_ + col * cell_w,
+                padding_ + grid_row * cell_h);
     max_row = std::max(max_row, grid_row);
     ++col;
     if (col >= cols) {
@@ -178,8 +187,7 @@ void GraphicsFileView::compute_layout_slots()
     }
   }
   layout_max_row_ = max_row;
-  scene_->setSceneRect(0, 0, padding_ * 2 + cols * cell_w,
-                       padding_ * 2 + (max_row + 1) * cell_h);
+  scene_->setSceneRect(0, 0, vp_w, padding_ * 2 + (max_row + 1) * cell_h);
 }
 
 void GraphicsFileView::update_visible_window()

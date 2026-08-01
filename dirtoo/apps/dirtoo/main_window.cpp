@@ -36,6 +36,7 @@
 #include <QTimer>
 #include <QEvent>
 #include <QFile>
+#include <QFrame>
 #include <QFileDialog>
 #include <QTextStream>
 #include <QMouseEvent>
@@ -64,6 +65,7 @@
 #include <QPixmap>
 #include <QProcess>
 #include <QStackedWidget>
+#include <QStatusBar>
 #include <QToolBar>
 #include <QToolButton>
 #include <QTreeView>
@@ -692,6 +694,10 @@ MainWindow::MainWindow(QWidget* parent)
 
   auto* central = new QWidget(this);
   auto* layout = new QVBoxLayout(central);
+  // Flush to window edges so the view scrollbar sits on the window border
+  // (dirtoo-py form margins are 0).
+  layout->setContentsMargins(0, 0, 0, 0);
+  layout->setSpacing(0);
 
   {
     auto* loc_host = new QWidget(central);
@@ -765,7 +771,7 @@ MainWindow::MainWindow(QWidget* parent)
   {
     auto* filter_row = new QWidget(central);
     auto* filter_layout = new QHBoxLayout(filter_row);
-    filter_layout->setContentsMargins(0, 0, 0, 0);
+    filter_layout->setContentsMargins(6, 2, 6, 2);
     filter_layout->setSpacing(6);
     auto* filter_label = new QLabel(QStringLiteral("Filter:"), filter_row);
     filter_edit_ = new QLineEdit(filter_row);
@@ -792,7 +798,7 @@ MainWindow::MainWindow(QWidget* parent)
   {
     auto* search_row = new QWidget(central);
     auto* search_layout = new QHBoxLayout(search_row);
-    search_layout->setContentsMargins(0, 0, 0, 0);
+    search_layout->setContentsMargins(6, 2, 6, 2);
     search_layout->setSpacing(6);
     auto* search_label = new QLabel(QStringLiteral("Search:"), search_row);
     search_edit_ = new QLineEdit(search_row);
@@ -826,6 +832,7 @@ MainWindow::MainWindow(QWidget* parent)
 
   tree_view_ = new FileTreeView(view_stack_);
   tree_view_->setModel(model_);
+  tree_view_->setFrameShape(QFrame::NoFrame);
   tree_view_->setRootIsDecorated(false);
   // Prefer uniform heights for large-dir scroll cost; toggle off when group/time-gap
   // separators need variable row height (see update_detail_row_heights).
@@ -856,6 +863,7 @@ MainWindow::MainWindow(QWidget* parent)
 
   icon_view_ = new FileListView(view_stack_);
   icon_view_->setModel(model_);
+  icon_view_->setFrameShape(QFrame::NoFrame);
   icon_view_->setViewMode(QListView::IconMode);
   icon_view_->setResizeMode(QListView::Adjust);
   icon_view_->setMovement(QListView::Static);
@@ -879,6 +887,7 @@ MainWindow::MainWindow(QWidget* parent)
 
   graphics_view_ = new GraphicsFileView(view_stack_);
   graphics_view_->set_model(model_);
+  graphics_view_->setFrameShape(QFrame::NoFrame);
   graphics_view_->viewport()->installEventFilter(this);
   graphics_view_->installEventFilter(this);
   connect(graphics_view_, &GraphicsFileView::activated, this, &MainWindow::on_item_activated);
@@ -902,10 +911,12 @@ MainWindow::MainWindow(QWidget* parent)
           &MainWindow::on_selection_changed);
 
   layout->addWidget(view_stack_, 1);
-
-  status_label_ = new QLabel(central);
-  layout->addWidget(status_label_);
   setCentralWidget(central);
+
+  // Real QStatusBar: native size grip (bottom-right) like dirtoo-py.
+  status_label_ = new QLabel(this);
+  statusBar()->addWidget(status_label_, 1);
+  statusBar()->setSizeGripEnabled(true);
 
   leap_widget_ = new LeapWidget(this);
   connect(leap_widget_, &LeapWidget::leap, this, &MainWindow::on_leap);
