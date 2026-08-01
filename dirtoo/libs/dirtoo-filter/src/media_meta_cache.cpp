@@ -24,8 +24,6 @@ namespace {
 constexpr int k_db_user_version = 2;
 constexpr int k_worker_count = 2;
 
-std::optional<MediaInfo> probe_uncached(const std::filesystem::path& path);
-
 } // namespace
 
 // probe_media in media_probe.cpp is the ffprobe implementation — we need a

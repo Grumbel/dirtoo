@@ -8,6 +8,7 @@
 #include "dirtoo/filter/predicates.hpp"
 
 #include <algorithm>
+#include <optional>
 #include <unordered_map>
 #include <filesystem>
 #include <chrono>
@@ -28,6 +29,7 @@ filter::FilterItem to_filter_item(const fs::FileInfo& fi)
       .size = fi.size(),
       .is_directory = fi.is_directory(),
       .path = fi.path(),
+      .mtime_sec = std::nullopt,
   };
   try {
     const auto sctp = std::chrono::clock_cast<std::chrono::system_clock>(fi.mtime());

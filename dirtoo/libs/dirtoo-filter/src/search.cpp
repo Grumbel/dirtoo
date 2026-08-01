@@ -165,7 +165,7 @@ search_directory_collect(const std::filesystem::path& root, const MatchFunc& mat
     }
     return original_cancel && original_cancel();
   };
-  search_directory(root, match, opts, [&](const FilterItem& item) {
+  (void)search_directory(root, match, opts, [&](const FilterItem& item) {
     if (!limit || out.size() < *limit) {
       out.push_back(item);
     }

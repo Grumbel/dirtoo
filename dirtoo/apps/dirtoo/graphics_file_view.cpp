@@ -279,12 +279,6 @@ void GraphicsFileView::rebuild_items()
   update_visible_window();
 }
 
-void GraphicsFileView::grow_items_batch()
-{
-  // Retained for ABI stability with older call sites; windowing supersedes batching.
-  update_visible_window();
-}
-
 QModelIndex GraphicsFileView::index_at(const QPoint& view_pos) const
 {
   if (auto* item = qgraphicsitem_cast<GraphicsFileItem*>(itemAt(view_pos))) {
