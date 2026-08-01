@@ -75,7 +75,7 @@ parity features are in place. Build/tests green (50/50 as of last Nix check).
 
 | Feature | Status |
 |---------|--------|
-| Select All (Ctrl+A) | **done** |
+| Select All (Ctrl+A) | **done** (Graphics: all model rows, not only viewport) |
 | Create empty file | **done** |
 | Symlink / Link paste & DnD | **done** |
 | Directory thumbnails | **done** (Make Directory Thumbnails) |

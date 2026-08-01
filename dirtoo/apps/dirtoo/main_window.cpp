@@ -2092,9 +2092,8 @@ void MainWindow::on_urls_dropped(const QList<QUrl>& urls, Qt::DropAction action)
 void MainWindow::on_select_all()
 {
   if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr) {
-    for (QGraphicsItem* item : graphics_view_->scene()->items()) {
-      item->setSelected(true);
-    }
+    // Must mark all model rows, not only live viewport tiles.
+    graphics_view_->select_all();
     return;
   }
   if (QAbstractItemView* view = current_view()) {

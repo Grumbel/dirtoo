@@ -42,6 +42,7 @@ public:
   [[nodiscard]] std::vector<int> selected_rows() const;
   void clear_selection();
   void select_row(int row, bool clear_others = true);
+  void select_all();
 
   void notify_activated(const QModelIndex& index);
   void notify_middle_clicked(const QModelIndex& index);
@@ -100,7 +101,7 @@ private:
   int layout_cols_ = 1;
   int layout_max_row_ = 0;
   /// Rows selected even when their tile is outside the viewport window.
-  QSet<int> selected_row_set_;
+  mutable QSet<int> selected_row_set_;
 
   void start_drag();
 };

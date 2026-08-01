@@ -333,6 +333,23 @@ void GraphicsFileView::notify_context_menu(const QPoint& global_pos, const QMode
   emit context_menu_requested(global_pos, index);
 }
 
+void GraphicsFileView::select_all()
+{
+  selected_row_set_.clear();
+  const int rows = model_ != nullptr ? model_->rowCount() : 0;
+  for (int r = 0; r < rows; ++r) {
+    selected_row_set_.insert(r);
+  }
+  suppress_selection_signal_ = true;
+  for (auto* item : items_) {
+    if (item != nullptr) {
+      item->setSelected(true);
+    }
+  }
+  suppress_selection_signal_ = false;
+  emit selection_changed();
+}
+
 void GraphicsFileView::select_row(int row, bool clear_others)
 {
   if (clear_others) {
