@@ -20,7 +20,7 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
 
   QDialog dialog(parent);
   dialog.setWindowTitle(QStringLiteral("Preferences"));
-  dialog.setMinimumWidth(360);
+  dialog.setMinimumWidth(400);
 
   auto* form = new QFormLayout();
 
@@ -38,9 +38,17 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   }
 
   auto* zoom = new QSpinBox(&dialog);
-  zoom->setRange(0, 4);
+  zoom->setRange(0, 9);
   zoom->setValue(settings->zoom_index);
-  zoom->setToolTip(QStringLiteral("Icon zoom level index (0–4)"));
+  zoom->setToolTip(QStringLiteral("Icon zoom level index (0–9 for grid; 0–6 for small icons)"));
+
+  auto* icon_detail = new QSpinBox(&dialog);
+  icon_detail->setRange(0, 4);
+  icon_detail->setValue(settings->icon_detail_level);
+  icon_detail->setToolTip(QStringLiteral("0=none … 4=name+size+date under icons"));
+
+  auto* crop = new QCheckBox(QStringLiteral("Crop thumbnails (cover instead of letterbox)"), &dialog);
+  crop->setChecked(settings->crop_thumbnails);
 
   auto* hidden = new QCheckBox(QStringLiteral("Show hidden files"), &dialog);
   hidden->setChecked(settings->show_hidden);
@@ -53,6 +61,8 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
 
   form->addRow(QStringLiteral("Default view:"), view);
   form->addRow(QStringLiteral("Zoom level:"), zoom);
+  form->addRow(QStringLiteral("Icon caption detail:"), icon_detail);
+  form->addRow(crop);
   form->addRow(hidden);
   form->addRow(show_filter);
   form->addRow(pin_filter);
@@ -71,6 +81,8 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
 
   settings->view_mode = view->currentData().toString();
   settings->zoom_index = zoom->value();
+  settings->icon_detail_level = icon_detail->value();
+  settings->crop_thumbnails = crop->isChecked();
   settings->show_hidden = hidden->isChecked();
   settings->show_filter = show_filter->isChecked();
   settings->filter_pinned = pin_filter->isChecked();

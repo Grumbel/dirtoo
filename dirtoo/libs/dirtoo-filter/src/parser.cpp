@@ -329,6 +329,12 @@ private:
     if (cmd == "Contains") {
       return make_contains(arg, true);
     }
+    if (c == "time") {
+      return make_time(arg);
+    }
+    if (c == "weekday" || c == "wday") {
+      return make_weekday(arg);
+    }
     // Unknown command → never match (visible failure)
     return std::make_shared<AlwaysFalse>();
   }
@@ -363,6 +369,8 @@ Terms (juxtaposition = AND, OR joins alternatives):
   Fuzzy:Speling   case-sensitive fuzzy
   length:>10      basename character length (len:)
   date:today      mtime date (also date:>=2024-01-01, date:2024-*-01)
+  time:>=15:00    mtime time of day (local HH:MM)
+  weekday:mon     mtime weekday (mon–sun or 0–6); weekday:>=fri
   contains:foo    file content substring, case-insensitive (max 1MiB)
   Contains:Foo    case-sensitive content match
   -term           exclude / NOT term   (also ^term or not term)

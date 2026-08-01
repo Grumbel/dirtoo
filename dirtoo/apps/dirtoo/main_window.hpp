@@ -91,6 +91,8 @@ private slots:
   void on_toggle_hidden(bool checked);
   void on_about();
   void on_preferences();
+  void on_reload_thumbnails();
+  void on_prepare_thumbnails();
   void apply_settings(const AppSettings& settings);
   void on_archive_ready(const dirtoo::fs::Location& archive_location,
                         const std::filesystem::path& extracted_root);

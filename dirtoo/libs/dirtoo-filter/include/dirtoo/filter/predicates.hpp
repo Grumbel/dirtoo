@@ -37,4 +37,9 @@ namespace dirtoo::filter {
 [[nodiscard]] MatchFuncPtr make_contains(std::string argument, bool case_sensitive = false,
                                          std::size_t max_bytes = 1u << 20);
 
+/// mtime time-of-day: time:>=15:00, time:9:30 (HH:MM local)
+[[nodiscard]] MatchFuncPtr make_time(std::string argument);
+/// weekday: monday | mon | 0–6 with optional compare (weekday:>=fri)
+[[nodiscard]] MatchFuncPtr make_weekday(std::string argument);
+
 } // namespace dirtoo::filter

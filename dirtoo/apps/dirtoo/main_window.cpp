@@ -260,6 +260,16 @@ MainWindow::MainWindow(QWidget* parent)
       act->setShortcut(QKeySequence(Qt::Key_F5));
     }
     {
+      auto* act = view_menu->addAction(QStringLiteral("Reload Thumbnails"), this,
+                                       &MainWindow::on_reload_thumbnails);
+      act->setStatusTip(QStringLiteral("Clear and re-request thumbnails for the selection (or all visible)"));
+    }
+    {
+      auto* act = view_menu->addAction(QStringLiteral("Prepare Thumbnails"), this,
+                                       &MainWindow::on_prepare_thumbnails);
+      act->setStatusTip(QStringLiteral("Request thumbnails for all visible items"));
+    }
+    {
       auto* act = view_menu->addAction(QStringLiteral("Recursive Search…"), this,
                                        &MainWindow::on_show_search);
       act->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+F")));
@@ -2229,6 +2239,61 @@ void MainWindow::on_rebuild_history_menu()
   }
 }
 
+
+
+void MainWindow::on_reload_thumbnails()
+{
+  if (model_ == nullptr) {
+    return;
+  }
+  thumbnailer_.cancel_all();
+  auto selected = selected_fileinfos();
+  if (selected.empty()) {
+    // Reload all visible
+    model_->clear_thumbnails();
+    request_thumbnails_for_visible();
+    if (status_label_ != nullptr) {
+      status_label_->setText(QStringLiteral("Reloading thumbnails for visible items…"));
+    }
+    return;
+  }
+  for (const auto& fi : selected) {
+    if (fi.is_directory() || fi.is_synthetic()) {
+      continue;
+    }
+    model_->clear_thumbnail(QString::fromStdString(fi.path().string()));
+  }
+  // Re-request only selection by temporarily using visible-style request on those paths
+  QMimeDatabase mime_db;
+  std::vector<fs::Location> locs;
+  QStringList mimes;
+  for (const auto& fi : selected) {
+    if (fi.is_directory() || fi.is_synthetic() || location_.is_archive()) {
+      continue;
+    }
+    const QString path = QString::fromStdString(fi.path().string());
+    model_->set_thumbnail_pending(path);
+    locs.push_back(fi.location());
+    mimes.push_back(mime_db.mimeTypeForFile(path).name());
+  }
+  if (!locs.empty()) {
+    thumbnailer_.request_many(locs, mimes, QStringLiteral("large"));
+  }
+  if (status_label_ != nullptr) {
+    status_label_->setText(QStringLiteral("Reloading %1 thumbnail(s)…").arg(locs.size()));
+  }
+}
+
+void MainWindow::on_prepare_thumbnails()
+{
+  if (view_mode_ == ViewMode::Detail) {
+    // Still useful: switch-less prepare for when user opens icons next
+  }
+  request_thumbnails_for_visible();
+  if (status_label_ != nullptr) {
+    status_label_->setText(QStringLiteral("Preparing thumbnails for visible items…"));
+  }
+}
 
 void MainWindow::on_preferences()
 {

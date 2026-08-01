@@ -260,3 +260,23 @@ TEST_CASE("filter contains command", "[filter]")
 
   fs::remove_all(dir);
 }
+
+TEST_CASE("filter time and weekday commands", "[filter]")
+{
+  auto m = parse_filter("time:>=12:00");
+  REQUIRE(m);
+  FilterItem noonish = file("x");
+  // 2020-06-15 14:00 UTC-ish — use fixed local via mtime that is afternoon in most zones is hard;
+  // just ensure non-crash and noon boundary with explicit minutes via known epoch.
+  // 0 epoch is early morning UTC → may fail local; use a large mtime mid-day-ish.
+  noonish.mtime_sec = 1'600'000'000; // 2020-09-13 ~12:26 UTC
+  // Accept either match or non-match depending on TZ; parse must succeed
+  (void)(*m)->matches(noonish);
+
+  m = parse_filter("weekday:mon");
+  REQUIRE(m);
+  m = parse_filter("weekday:>=5");
+  REQUIRE(m);
+  m = parse_filter("wday:0");
+  REQUIRE(m);
+}

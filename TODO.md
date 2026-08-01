@@ -235,7 +235,7 @@ as of the responsive-UI / media-cache work.
 | **Show abspath vs basename** toggle              | Caption shows full path                                    |
 | **Show filtered** (keep non-matches greyed?)     | Separate from hide                                         |
 | **Hover highlight / overlay on thumbnails**      | CompositionMode overlay on hover                           |
-| **Prepare / reload thumbnails** toolbar actions  | Force thumbnail + metadata refresh                         |
+| **Prepare / reload thumbnails** toolbar actions  | **done** (View menu)                                       |
 | **Loading / error / locked / new badge pixmaps** | **done** (status roles + overlays; new via mark_new)       |
 | **Undo / redo**                                  | Present in actions but commented out in Python toolbar too |
 
@@ -245,7 +245,7 @@ as of the responsive-UI / media-cache work.
 | `contains:` / `Contains:` (file content)   | yes    | **yes** (max 1 MiB) |
 | `containsre:` content regex                | yes    | **no**  |
 | `containsfuzzy:`                           | yes    | **no**  |
-| `date:` / `time:` / `weekday:`             | yes    | **partial** (`date:` done; time/weekday open) |
+| `date:` / `time:` / `weekday:`             | yes    | **yes** |
 | `length:` / `len:` (name length)           | yes    | **yes** |
 | `charset:` / `encoding:`                   | yes    | **no**  |
 | `pages:` (PDF)                             | yes    | **no**  |
@@ -292,8 +292,8 @@ Python ships many CLIs under `programs/` (find expr engine, fsck, shuffle, deskt
 2. [x] Group by day/directory (collection + UI headers)
 3. [x] Small-icon / compact list mode
 4. [x] Wire remaining badge assets (loading/error/locked)
-5. Preferences coverage + thumbnail prepare/reload actions
-6. Filter: `time:` / `weekday:` (remaining date family)
+5. [x] Preferences coverage + thumbnail prepare/reload actions
+6. [x] Filter: `time:` / `weekday:` (remaining date family)
 
 
 ## Working process

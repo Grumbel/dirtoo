@@ -52,6 +52,7 @@ public:
   void set_thumbnail_pending(const QString& path);
   void set_thumbnail_failed(const QString& path);
   void clear_thumbnails();
+  void clear_thumbnail(const QString& path);
   void mark_new(const QString& path);
   void clear_new_marks();
 

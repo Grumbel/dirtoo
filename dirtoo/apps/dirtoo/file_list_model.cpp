@@ -155,6 +155,13 @@ void FileListModel::notify_row_changed(int row)
   emit dataChanged(idx, idx);
 }
 
+void FileListModel::clear_thumbnail(const QString& path)
+{
+  thumbnails_.remove(path);
+  thumbnail_status_.remove(path);
+  emit_path_changed(path);
+}
+
 void FileListModel::clear_thumbnails()
 {
   if (thumbnails_.isEmpty() && thumbnail_status_.isEmpty()) {

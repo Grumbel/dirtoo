@@ -15,6 +15,7 @@
 #include <cctype>
 #include <charconv>
 #include <optional>
+#include <vector>
 
 namespace dirtoo::filter {
 namespace {
@@ -1054,6 +1055,179 @@ MatchFuncPtr make_contains(std::string argument, bool case_sensitive, std::size_
     return std::make_shared<AlwaysFalse>();
   }
   return std::make_shared<ContainsMatch>(std::move(argument), case_sensitive, max_bytes);
+}
+
+
+
+namespace {
+
+struct TimeOfDay {
+  int minutes = 0; // minutes since midnight
+};
+
+std::optional<TimeOfDay> parse_time_of_day(std::string_view text)
+{
+  while (!text.empty() && std::isspace(static_cast<unsigned char>(text.front()))) {
+    text.remove_prefix(1);
+  }
+  while (!text.empty() && std::isspace(static_cast<unsigned char>(text.back()))) {
+    text.remove_suffix(1);
+  }
+  if (text.empty()) {
+    return std::nullopt;
+  }
+  const auto colon = text.find(':');
+  try {
+    if (colon == std::string_view::npos) {
+      const int h = std::stoi(std::string{text});
+      if (h < 0 || h > 23) {
+        return std::nullopt;
+      }
+      return TimeOfDay{h * 60};
+    }
+    const int h = std::stoi(std::string{text.substr(0, colon)});
+    const int m = std::stoi(std::string{text.substr(colon + 1)});
+    if (h < 0 || h > 23 || m < 0 || m > 59) {
+      return std::nullopt;
+    }
+    return TimeOfDay{h * 60 + m};
+  } catch (...) {
+    return std::nullopt;
+  }
+}
+
+TimeOfDay time_from_mtime(std::int64_t mtime_sec)
+{
+  std::time_t tt = static_cast<std::time_t>(mtime_sec);
+  std::tm tm{};
+  localtime_r(&tt, &tm);
+  return TimeOfDay{tm.tm_hour * 60 + tm.tm_min};
+}
+
+class TimeOpMatch : public MatchFunc {
+public:
+  TimeOpMatch(LenCmp op, TimeOfDay tod)
+      : op_(op)
+      , tod_(tod)
+  {
+  }
+  bool matches(const FilterItem& item) const override
+  {
+    const auto mt = resolve_mtime_sec(item);
+    if (!mt) {
+      return false;
+    }
+    const auto actual = time_from_mtime(*mt);
+    return apply_len_cmp(op_, static_cast<double>(actual.minutes), static_cast<double>(tod_.minutes));
+  }
+
+private:
+  LenCmp op_;
+  TimeOfDay tod_;
+};
+
+std::optional<int> parse_weekday(std::string_view text)
+{
+  while (!text.empty() && std::isspace(static_cast<unsigned char>(text.front()))) {
+    text.remove_prefix(1);
+  }
+  if (text.empty()) {
+    return std::nullopt;
+  }
+  // numeric 0=Mon … 6=Sun (matches Python datetime.weekday)
+  bool all_digit = true;
+  for (char c : text) {
+    if (!std::isdigit(static_cast<unsigned char>(c))) {
+      all_digit = false;
+      break;
+    }
+  }
+  if (all_digit) {
+    try {
+      const int v = std::stoi(std::string{text});
+      if (v < 0 || v > 6) {
+        return std::nullopt;
+      }
+      return v;
+    } catch (...) {
+      return std::nullopt;
+    }
+  }
+  std::string lower = lower_copy(std::string{text});
+  static constexpr const char* names[] = {
+      "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+  };
+  std::vector<int> hits;
+  for (int i = 0; i < 7; ++i) {
+    std::string n = names[i];
+    if (n.starts_with(lower) || lower.starts_with(n.substr(0, std::min(lower.size(), n.size())))) {
+      // prefix match either way for short forms mon/tue/...
+      if (n.starts_with(lower)) {
+        hits.push_back(i);
+      }
+    }
+  }
+  // also explicit short forms
+  if (hits.empty()) {
+    static constexpr const char* shorts[] = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"};
+    for (int i = 0; i < 7; ++i) {
+      if (lower == shorts[i] || std::string{shorts[i]}.starts_with(lower)) {
+        hits.push_back(i);
+      }
+    }
+  }
+  if (hits.size() == 1) {
+    return hits.front();
+  }
+  return std::nullopt;
+}
+
+class WeekdayMatch : public MatchFunc {
+public:
+  WeekdayMatch(LenCmp op, int weekday)
+      : op_(op)
+      , weekday_(weekday)
+  {
+  }
+  bool matches(const FilterItem& item) const override
+  {
+    const auto mt = resolve_mtime_sec(item);
+    if (!mt) {
+      return false;
+    }
+    std::time_t tt = static_cast<std::time_t>(*mt);
+    std::tm tm{};
+    localtime_r(&tt, &tm);
+    // tm_wday: 0=Sunday → convert to Python Monday=0
+    const int py = (tm.tm_wday + 6) % 7;
+    return apply_len_cmp(op_, static_cast<double>(py), static_cast<double>(weekday_));
+  }
+
+private:
+  LenCmp op_;
+  int weekday_;
+};
+
+} // namespace
+
+MatchFuncPtr make_time(std::string argument)
+{
+  const auto [op, rest] = split_len_cmp(argument);
+  const auto tod = parse_time_of_day(rest);
+  if (!tod) {
+    return std::make_shared<AlwaysFalse>();
+  }
+  return std::make_shared<TimeOpMatch>(op, *tod);
+}
+
+MatchFuncPtr make_weekday(std::string argument)
+{
+  const auto [op, rest] = split_len_cmp(argument);
+  const auto wd = parse_weekday(rest);
+  if (!wd) {
+    return std::make_shared<AlwaysFalse>();
+  }
+  return std::make_shared<WeekdayMatch>(op, *wd);
 }
 
 
