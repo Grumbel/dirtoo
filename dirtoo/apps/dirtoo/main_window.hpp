@@ -16,6 +16,7 @@
 #include "file_list_model.hpp"
 #include "history_menu.hpp"
 #include "message_area.hpp"
+#include "search_worker.hpp"
 #include "leap_widget.hpp"
 #include "location_button_bar.hpp"
 #include "transfer_dialog.hpp"
@@ -94,6 +95,12 @@ private slots:
   void on_leap(const QString& text, bool forward, bool from_key);
   void on_show_leap();
   void on_toggle_filter_visible();
+  void on_show_search();
+  void on_search_submitted();
+  void on_search_match(const QString& path, bool is_directory, quint64 size);
+  void on_search_finished(quint64 matched, quint64 visited, const QString& error);
+  void on_search_progress(quint64 visited, quint64 matched);
+  void stop_search();
   void on_rebuild_history_menu();
   void on_rebuild_bookmarks_menu();
   void on_toggle_bookmark();
@@ -178,6 +185,11 @@ private:
   QLineEdit* filter_edit_ = nullptr;
   QStringList filter_history_;
   int filter_history_index_ = -1;
+  QLineEdit* search_edit_ = nullptr;
+  bool search_active_ = false;
+  std::vector<fs::FileInfo> search_results_;
+  QThread* search_thread_ = nullptr;
+  SearchWorker* search_worker_ = nullptr;
   QStackedWidget* view_stack_ = nullptr;
   QTreeView* tree_view_ = nullptr;
   QListView* icon_view_ = nullptr;

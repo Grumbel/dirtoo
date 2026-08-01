@@ -25,6 +25,7 @@ include(CMakePackageConfigHelpers)
 add_library(dirtoo-filter
   src/parser.cpp
   src/predicates.cpp
+  src/search.cpp
 )
 add_library(dirtoo-filter::dirtoo-filter ALIAS dirtoo-filter)
 add_library(dirtoo::filter ALIAS dirtoo-filter)

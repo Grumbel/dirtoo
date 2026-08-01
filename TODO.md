@@ -32,7 +32,7 @@ Core file manager MVP is **done**. Filter DSL, multi-window, dirops, archives
 | Filter DSL (`and`/`or`/`not`/`()`, glob, regex, size, type) | **done** (`dirtoo-filter`) |
 | Filter help | **done** (Help → Filter expression help) |
 | CLI filter tool | **done** (`dt-filter`) |
-| Content / recursive search | **todo** / defer |
+| Content / recursive search | partial: recursive name/filter search done; content `contains:` still open |
 | Media metadata predicates | **todo** (optional deps) |
 
 ### View & chrome
@@ -68,7 +68,7 @@ Core file manager MVP is **done**. Filter DSL, multi-window, dirops, archives
 9. [x] Message area
 10. [x] Bookmarks menu
 11. [ ] Optional: `contains:` content match (careful with large files)
-12. [ ] Optional: recursive directory search UI/CLI
+12. [x] Optional: recursive directory search UI/CLI (`dt-filter -r`, View → Recursive Search)
 
 ---
 

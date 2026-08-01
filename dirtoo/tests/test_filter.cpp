@@ -3,8 +3,12 @@
 
 #include "dirtoo/filter/parser.hpp"
 #include "dirtoo/filter/filter_item.hpp"
+#include "dirtoo/filter/search.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+
+#include <filesystem>
+#include <fstream>
 
 using dirtoo::filter::FilterItem;
 using dirtoo::filter::parse_filter;
@@ -65,4 +69,59 @@ TEST_CASE("filter unbalanced paren", "[filter]")
 {
   auto m = parse_filter("(a OR b");
   REQUIRE_FALSE(m);
+}
+
+namespace fs = std::filesystem;
+
+TEST_CASE("search_directory recursive finds nested files", "[filter][search]")
+{
+  const auto dir = fs::temp_directory_path() / "dirtoo-search-rec";
+  fs::remove_all(dir);
+  fs::create_directories(dir / "sub" / "deep");
+  std::ofstream(dir / "a.png") << "x";
+  std::ofstream(dir / "sub" / "b.jpg") << "y";
+  std::ofstream(dir / "sub" / "deep" / "c.png") << "z";
+  std::ofstream(dir / ".hidden.png") << "h";
+
+  auto m = parse_filter("*.png");
+  REQUIRE(m);
+
+  dirtoo::filter::SearchOptions opt;
+  opt.max_depth = -1;
+  opt.show_hidden = false;
+  auto items = dirtoo::filter::search_directory_collect(dir, **m, opt);
+  REQUIRE(items.size() == 2); // a.png, deep/c.png — not hidden
+
+  opt.max_depth = 0;
+  items = dirtoo::filter::search_directory_collect(dir, **m, opt);
+  REQUIRE(items.size() == 1);
+  REQUIRE(items[0].name == "a.png");
+
+  opt.max_depth = -1;
+  opt.show_hidden = true;
+  items = dirtoo::filter::search_directory_collect(dir, **m, opt);
+  REQUIRE(items.size() == 3);
+
+  fs::remove_all(dir);
+}
+
+TEST_CASE("search_directory respects cancel", "[filter][search]")
+{
+  const auto dir = fs::temp_directory_path() / "dirtoo-search-cancel";
+  fs::remove_all(dir);
+  fs::create_directories(dir);
+  for (int i = 0; i < 20; ++i) {
+    std::ofstream(dir / ("f" + std::to_string(i) + ".txt")) << "x";
+  }
+  auto m = parse_filter("*.txt");
+  REQUIRE(m);
+  int hits = 0;
+  dirtoo::filter::SearchOptions opt;
+  opt.max_depth = 0;
+  opt.should_cancel = [&] { return hits >= 3; };
+  dirtoo::filter::search_directory(dir, **m, opt, [&](const dirtoo::filter::FilterItem&) {
+    ++hits;
+  });
+  REQUIRE(hits == 3);
+  fs::remove_all(dir);
 }

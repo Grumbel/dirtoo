@@ -35,6 +35,8 @@ qt_add_executable(dirtoo-app
   message_area.hpp
   bookmarks.cpp
   bookmarks.hpp
+  search_worker.cpp
+  search_worker.hpp
   resources.qrc
 )
 
@@ -45,6 +47,7 @@ target_link_libraries(dirtoo-app
     dirtoo_warnings
     dirtoo::fs
     dirtoo::collection
+    dirtoo::filter
     dirtoo::watcher
     dirtoo::thumbnail
     dirtoo::archive

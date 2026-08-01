@@ -3,6 +3,8 @@
 
 #include "main_window.hpp"
 
+#include "dirtoo/filter/parser.hpp"
+
 #include "clipboard.hpp"
 #include "about_dialog.hpp"
 #include "app_settings.hpp"
@@ -195,6 +197,11 @@ MainWindow::MainWindow(QWidget* parent)
       act->setShortcut(QKeySequence(Qt::Key_F5));
     }
     {
+      auto* act = view_menu->addAction(QStringLiteral("Recursive Search…"), this,
+                                       &MainWindow::on_show_search);
+      act->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+F")));
+    }
+    {
       auto* act = view_menu->addAction(QStringLiteral("Zoom In"), this, &MainWindow::on_zoom_in);
       act->setShortcut(QKeySequence::ZoomIn);
     }
@@ -308,6 +315,14 @@ MainWindow::MainWindow(QWidget* parent)
   connect(filter_edit_, &QLineEdit::textChanged, this, &MainWindow::on_filter_changed);
   layout->addWidget(filter_edit_);
 
+  search_edit_ = new QLineEdit(central);
+  search_edit_->setPlaceholderText(
+      QStringLiteral("Recursive search (filter expression, Enter to run, Esc to close)…"));
+  search_edit_->setVisible(false);
+  search_edit_->installEventFilter(this);
+  connect(search_edit_, &QLineEdit::returnPressed, this, &MainWindow::on_search_submitted);
+  layout->addWidget(search_edit_);
+
   message_area_ = new MessageArea(central);
   layout->addWidget(message_area_);
 
@@ -405,6 +420,7 @@ MainWindow::MainWindow(QWidget* parent)
 
 MainWindow::~MainWindow()
 {
+  stop_search();
   if (transfer_worker_ != nullptr) {
     QMetaObject::invokeMethod(transfer_worker_, &TransferWorker::cancel, Qt::QueuedConnection);
   }
@@ -469,6 +485,12 @@ void MainWindow::on_view_icons()
 
 void MainWindow::open_location(const fs::Location& location, bool record_history)
 {
+  stop_search();
+  search_active_ = false;
+  search_results_.clear();
+  if (search_edit_ != nullptr && search_edit_->isVisible()) {
+    search_edit_->hide();
+  }
   location_ = location;
   if (location_.is_archive()) {
     location_edit_->setText(QString::fromStdString(location_.as_url()));
@@ -600,6 +622,10 @@ void MainWindow::update_edit_actions()
 
 void MainWindow::on_directory_changed()
 {
+  if (search_active_) {
+    // Keep recursive search results until the user navigates away or closes search.
+    return;
+  }
   thumbnailer_.cancel_all();
   model_->clear_thumbnails();
   std::vector<fs::FileInfo> items;
@@ -1323,6 +1349,129 @@ void MainWindow::on_toggle_filter_visible()
   show_filter_act_->toggle();
 }
 
+
+void MainWindow::on_show_search()
+{
+  stop_search();
+  if (search_edit_ == nullptr) {
+    return;
+  }
+  search_edit_->setVisible(true);
+  search_edit_->setFocus(Qt::ShortcutFocusReason);
+  search_edit_->selectAll();
+}
+
+void MainWindow::stop_search()
+{
+  if (search_worker_ != nullptr) {
+    search_worker_->cancel();
+  }
+  if (search_thread_ != nullptr) {
+    search_thread_->quit();
+    search_thread_->wait(3000);
+    search_thread_->deleteLater();
+    search_thread_ = nullptr;
+    search_worker_ = nullptr;
+  }
+  search_active_ = false;
+}
+
+void MainWindow::on_search_submitted()
+{
+  if (search_edit_ == nullptr) {
+    return;
+  }
+  const QString expr = search_edit_->text().trimmed();
+  if (expr.isEmpty()) {
+    return;
+  }
+  if (location_.is_archive()) {
+    status_label_->setText(QStringLiteral("Recursive search is not available inside archives"));
+    return;
+  }
+
+  stop_search();
+  search_results_.clear();
+  search_active_ = true;
+  collection_.clear();
+  collection_.clear_filter();
+  refresh_list();
+
+  search_thread_ = new QThread(this);
+  search_worker_ = new SearchWorker();
+  search_worker_->moveToThread(search_thread_);
+
+  connect(search_thread_, &QThread::finished, search_worker_, &QObject::deleteLater);
+  connect(search_worker_, &SearchWorker::match_found, this, &MainWindow::on_search_match);
+  connect(search_worker_, &SearchWorker::finished, this, &MainWindow::on_search_finished);
+  connect(search_worker_, &SearchWorker::progress, this, &MainWindow::on_search_progress);
+
+  const QString root = QString::fromStdString(location_.as_path().string());
+  const bool show_hidden = show_hidden_act_ != nullptr && show_hidden_act_->isChecked();
+
+  connect(search_thread_, &QThread::started, search_worker_,
+          [this, root, expr, show_hidden] {
+            search_worker_->start(root, expr, show_hidden, /*max_depth=*/-1);
+          });
+
+  status_label_->setText(QStringLiteral("Searching…"));
+  if (message_area_ != nullptr) {
+    message_area_->show_info(QStringLiteral("Recursive search: %1").arg(expr));
+  }
+  search_thread_->start();
+}
+
+void MainWindow::on_search_match(const QString& path, bool is_directory, quint64 size)
+{
+  if (!search_active_) {
+    return;
+  }
+  auto info = fs::FileInfo::from_path(std::filesystem::path{path.toStdString()});
+  if (info.basename().empty()) {
+    info = fs::FileInfo::synthetic(fs::Location::from_path(std::filesystem::path{path.toStdString()}),
+                                   std::filesystem::path{path.toStdString()}.filename().string(),
+                                   is_directory, size);
+  }
+  search_results_.push_back(info);
+  collection_.add(std::move(info));
+  // Avoid full model reset every hit — refresh periodically.
+  if (search_results_.size() % 32 == 1 || search_results_.size() < 8) {
+    refresh_list();
+  }
+}
+
+void MainWindow::on_search_progress(quint64 visited, quint64 matched)
+{
+  (void)visited;
+  status_label_->setText(QStringLiteral("Searching… %1 matches").arg(matched));
+}
+
+void MainWindow::on_search_finished(quint64 matched, quint64 visited, const QString& error)
+{
+  refresh_list();
+  request_thumbnails_for_visible();
+  if (!error.isEmpty() && error != QStringLiteral("cancelled")) {
+    status_label_->setText(error);
+    if (message_area_ != nullptr) {
+      message_area_->show_info(error);
+    }
+  } else if (error == QStringLiteral("cancelled")) {
+    status_label_->setText(
+        QStringLiteral("Search cancelled — %1 matches (%2 visited)").arg(matched).arg(visited));
+  } else {
+    status_label_->setText(
+        QStringLiteral("Search done — %1 matches (%2 visited)").arg(matched).arg(visited));
+  }
+  if (search_thread_ != nullptr) {
+    search_thread_->quit();
+    search_thread_->wait(1000);
+    search_thread_->deleteLater();
+    search_thread_ = nullptr;
+    search_worker_ = nullptr;
+  }
+  // Keep search_active_ true so directory watcher does not wipe results until user navigates.
+}
+
 void MainWindow::on_about()
 {
   show_about_dialog(this);
@@ -1358,6 +1507,15 @@ void MainWindow::on_archive_failed(const fs::Location& archive_location, const Q
 
 void MainWindow::on_clear_filter()
 {
+  if (search_edit_ != nullptr && search_edit_->isVisible()) {
+    stop_search();
+    search_active_ = false;
+    search_results_.clear();
+    search_edit_->hide();
+    search_edit_->clear();
+    on_directory_changed();
+    return;
+  }
   if (filter_edit_ != nullptr && !filter_edit_->text().isEmpty()) {
     filter_edit_->clear();
     return;
@@ -1420,6 +1578,19 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event)
         on_view_middle_click(index);
         return true;
       }
+    }
+  }
+
+  if (obj == search_edit_ && event->type() == QEvent::KeyPress) {
+    auto* ke = static_cast<QKeyEvent*>(event);
+    if (ke->key() == Qt::Key_Escape) {
+      stop_search();
+      search_active_ = false;
+      search_results_.clear();
+      search_edit_->hide();
+      search_edit_->clear();
+      on_directory_changed();
+      return true;
     }
   }
 
