@@ -9,5 +9,10 @@
     <file alias="icons/badge-error.png">../../resources/icons/badge-error.png</file>
     <file alias="icons/badge-locked.png">../../resources/icons/badge-locked.png</file>
     <file alias="icons/badge-new.png">../../resources/icons/badge-new.png</file>
+    <file alias="icons/dnd-copy.png">../../resources/icons/dnd-copy.png</file>
+    <file alias="icons/dnd-move.png">../../resources/icons/dnd-move.png</file>
+    <file alias="icons/dnd-link.png">../../resources/icons/dnd-link.png</file>
+    <file alias="icons/dnd-none.png">../../resources/icons/dnd-none.png</file>
+    <file alias="icons/dnd-ask.png">../../resources/icons/dnd-ask.png</file>
   </qresource>
 </RCC>

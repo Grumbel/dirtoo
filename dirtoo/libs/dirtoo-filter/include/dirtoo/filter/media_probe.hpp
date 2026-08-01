@@ -18,6 +18,8 @@ struct MediaInfo {
   /// Duration in milliseconds (matches Python MetaData / mediainfo).
   std::optional<std::uint64_t> duration_ms;
   std::optional<double> framerate;
+  std::optional<std::uint64_t> pages;
+  std::optional<std::uint64_t> file_count;
 };
 
 /// Probe path with ffprobe (process memory cache only). Uses $DIRTOO_FFPROBE or

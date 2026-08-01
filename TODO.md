@@ -92,7 +92,7 @@ Python used per-file XML metadata sidecars — too slow at scale. C++ will use a
 |--------------|----------------------------------------------------------------------------|
 | Store        | `$XDG_CACHE_HOME/dirtoo/meta.sqlite` (fallback `~/.cache/dirtoo/`)         |
 | Key          | Absolute path + `mtime_ns` + `size` (invalidate when either changes)       |
-| Columns (v1) | path, mtime_ns, size, width, height, duration_ms, framerate, probed_at     |
+| Columns (v2) | path, mtime_ns, size, width, height, duration_ms, framerate, pages, file_count, probed_at |
 | Later        | mime/type, pages, file_count, checksum hooks, backend id for non-file URIs |
 | Writers      | Worker threads only; one connection per worker or serialized write queue   |
 | Readers      | Workers hydrate an **in-memory** map; GUI reads memory only                |
@@ -248,8 +248,8 @@ as of the responsive-UI / media-cache work.
 | `date:` / `time:` / `weekday:`             | yes    | **yes** |
 | `length:` / `len:` (name length)           | yes    | **yes** |
 | `charset:` / `encoding:`                   | yes    | **partial** (ascii/utf-8/latin1) |
-| `pages:` (PDF)                             | yes    | **no**  |
-| `filecount:` (dir/archive)                 | yes    | **no**  |
+| `pages:` (PDF)                             | yes    | **yes** |
+| `filecount:` (dir/archive)                 | yes    | **yes** |
 | `random:`                                  | yes    | **yes** |
 | fuzzy / glob / regex / size / type / media | yes    | **yes** |
 
@@ -258,7 +258,7 @@ as of the responsive-UI / media-cache work.
 |--------------------------------------------------|-------------------------------------------------------------|
 | Sort by **user / group**                         | Actions exist in Python; not fully implemented there either |
 | Sort waits for **full media coverage**           | C++ sorts on cached meta only (unknowns sort as 0)          |
-| PDF pages / archive file_count in meta DB        | Schema ready to extend; collectors not written              |
+| PDF pages / archive file_count in meta DB        | **done** (schema v2 + probe)                                 |
 | pymediainfo parity fields (bitrate, channels, …) | C++ uses ffprobe subset                                     |
 
 #### Filesystem & VFS
@@ -277,7 +277,7 @@ Python ships many CLIs under `programs/` (find expr engine, fsck, shuffle, deskt
 | Richer preferences (all Python settings keys)  | C++ has a subset                         |
 | Context menu parity (every Python item action) | Improved (new window, paths, thumbs)     |
 | DnD action overlay (Copy/Move/Link)            | **done** (DragActionOverlay)               |
-| DnD cursor themed pixmaps                      | Python `dnd-*.png`; C++ uses Qt defaults |
+| DnD cursor themed pixmaps                      | **done** (`dnd-*.png` + setDragCursor)   |
 | Save file list as                              | Python action                            |
 | Debug mode action                              | Python only                              |
 

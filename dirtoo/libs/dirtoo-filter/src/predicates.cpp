@@ -1709,6 +1709,9 @@ public:
     if (item.is_directory || item.path.empty()) {
       return false;
     }
+    if (const auto meta = lookup_media(item.path); meta && meta->pages) {
+      return apply_len_cmp(op_, static_cast<double>(*meta->pages), value_);
+    }
     const auto pages = probe_pdf_pages(item.path);
     if (!pages) {
       return false;
@@ -1732,6 +1735,9 @@ public:
   {
     if (item.is_directory || item.path.empty()) {
       return false;
+    }
+    if (const auto meta = lookup_media(item.path); meta && meta->file_count) {
+      return apply_len_cmp(op_, static_cast<double>(*meta->file_count), value_);
     }
     if (!looks_like_archive(item.path)) {
       return false;

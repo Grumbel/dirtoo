@@ -213,6 +213,99 @@ std::optional<double> parse_duration_seconds(std::string_view text)
   return any ? std::optional<double>{total} : std::nullopt;
 }
 
+
+namespace {
+
+bool path_ends_with_ci(const std::string& name, std::string_view suffix)
+{
+  if (name.size() < suffix.size()) {
+    return false;
+  }
+  for (std::size_t i = 0; i < suffix.size(); ++i) {
+    const auto a = static_cast<unsigned char>(name[name.size() - suffix.size() + i]);
+    const auto b = static_cast<unsigned char>(suffix[i]);
+    if (std::tolower(a) != std::tolower(b)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+std::string quote_path(const std::string& key)
+{
+  std::string out = "'";
+  for (char c : key) {
+    if (c == '\'') {
+      out += "'\\''";
+    } else {
+      out += c;
+    }
+  }
+  out += "'";
+  return out;
+}
+
+void enrich_pages_and_filecount(const std::filesystem::path& path, MediaInfo& info)
+{
+  const std::string key = path.string();
+  const std::string name = path.filename().string();
+  if (path_ends_with_ci(name, ".pdf") && !info.pages) {
+    const char* pdfinfo = std::getenv("DIRTOO_PDFINFO");
+    const std::string tool = (pdfinfo && pdfinfo[0]) ? pdfinfo : "pdfinfo";
+    if (auto out = run_capture(tool + " " + quote_path(key) + " 2>/dev/null")) {
+      for (std::size_t i = 0; i + 6 < out->size(); ++i) {
+        if ((*out)[i] == 'P' && out->compare(i, 6, "Pages:") == 0) {
+          std::size_t j = i + 6;
+          while (j < out->size() && std::isspace(static_cast<unsigned char>((*out)[j]))) {
+            ++j;
+          }
+          try {
+            info.pages = static_cast<std::uint64_t>(std::stoull(out->substr(j)));
+          } catch (...) {
+          }
+          break;
+        }
+      }
+    }
+  }
+  if (!info.file_count) {
+    static const char* kArch[] = {".zip", ".tar", ".tgz", ".7z", ".rar", ".cbz", ".cbr", ".jar",
+                                  ".apk", ".tar.gz", ".tar.bz2", ".tar.xz"};
+    bool is_arch = false;
+    for (const char* s : kArch) {
+      if (path_ends_with_ci(name, s)) {
+        is_arch = true;
+        break;
+      }
+    }
+    if (is_arch) {
+      if (auto out = run_capture("bsdtar -tf " + quote_path(key) + " 2>/dev/null")) {
+        std::uint64_t n = 0;
+        std::size_t start = 0;
+        while (start < out->size()) {
+          auto end = out->find('\n', start);
+          if (end == std::string::npos) {
+            end = out->size();
+          }
+          if (end > start) {
+            std::string_view line{out->data() + start, end - start};
+            while (!line.empty() && (line.back() == '\r' || line.back() == ' ')) {
+              line.remove_suffix(1);
+            }
+            if (!line.empty() && line.back() != '/') {
+              ++n;
+            }
+          }
+          start = end + 1;
+        }
+        info.file_count = n;
+      }
+    }
+  }
+}
+
+} // namespace
+
 void clear_media_probe_cache()
 {
   std::lock_guard lock(g_cache_mutex);
@@ -251,6 +344,16 @@ std::optional<MediaInfo> probe_media_raw(const std::filesystem::path& path)
     auto info = parse_ffprobe_output(*out);
     if (info.width || info.height || info.duration_ms || info.framerate) {
       result = info;
+    }
+  }
+
+  if (result) {
+    enrich_pages_and_filecount(path, *result);
+  } else {
+    MediaInfo only_meta;
+    enrich_pages_and_filecount(path, only_meta);
+    if (only_meta.pages || only_meta.file_count) {
+      result = only_meta;
     }
   }
 

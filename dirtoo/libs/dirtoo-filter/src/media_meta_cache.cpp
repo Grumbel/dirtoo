@@ -21,7 +21,7 @@
 namespace dirtoo::filter {
 namespace {
 
-constexpr int k_db_user_version = 1;
+constexpr int k_db_user_version = 2;
 constexpr int k_worker_count = 2;
 
 std::optional<MediaInfo> probe_uncached(const std::filesystem::path& path);
@@ -166,6 +166,9 @@ struct MediaMetaCache::Impl {
       db = nullptr;
       return false;
     }
+    // v2: pages + file_count (idempotent ADD COLUMN)
+    sqlite3_exec(db, "ALTER TABLE media_meta ADD COLUMN pages INTEGER;", nullptr, nullptr, nullptr);
+    sqlite3_exec(db, "ALTER TABLE media_meta ADD COLUMN file_count INTEGER;", nullptr, nullptr, nullptr);
     sqlite3_exec(db, ("PRAGMA user_version=" + std::to_string(k_db_user_version) + ";").c_str(),
                  nullptr, nullptr, &err);
     return true;
@@ -180,7 +183,7 @@ struct MediaMetaCache::Impl {
     }
     sqlite3_stmt* stmt = nullptr;
     const char* sql =
-        "SELECT mtime_ns, size, width, height, duration_ms, framerate FROM media_meta WHERE path=?1;";
+        "SELECT mtime_ns, size, width, height, duration_ms, framerate, pages, file_count FROM media_meta WHERE path=?1;";
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
       return std::nullopt;
     }
@@ -203,7 +206,14 @@ struct MediaMetaCache::Impl {
         if (sqlite3_column_type(stmt, 5) != SQLITE_NULL) {
           info.framerate = sqlite3_column_double(stmt, 5);
         }
-        if (info.width || info.height || info.duration_ms || info.framerate) {
+        if (sqlite3_column_type(stmt, 6) != SQLITE_NULL) {
+          info.pages = static_cast<std::uint64_t>(sqlite3_column_int64(stmt, 6));
+        }
+        if (sqlite3_column_type(stmt, 7) != SQLITE_NULL) {
+          info.file_count = static_cast<std::uint64_t>(sqlite3_column_int64(stmt, 7));
+        }
+        if (info.width || info.height || info.duration_ms || info.framerate || info.pages
+            || info.file_count) {
           out = info;
         } else {
           out = std::optional<MediaInfo>{std::nullopt}; // negative hit
@@ -223,8 +233,8 @@ struct MediaMetaCache::Impl {
     sqlite3_stmt* stmt = nullptr;
     const char* sql =
         "INSERT OR REPLACE INTO media_meta"
-        "(path,mtime_ns,size,width,height,duration_ms,framerate,probed_at)"
-        " VALUES(?1,?2,?3,?4,?5,?6,?7,?8);";
+        "(path,mtime_ns,size,width,height,duration_ms,framerate,pages,file_count,probed_at)"
+        " VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10);";
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
       return;
     }
@@ -254,7 +264,17 @@ struct MediaMetaCache::Impl {
     } else {
       sqlite3_bind_null(stmt, 7);
     }
-    sqlite3_bind_int64(stmt, 8, static_cast<sqlite3_int64>(now));
+    if (info && info->pages) {
+      sqlite3_bind_int64(stmt, 8, static_cast<sqlite3_int64>(*info->pages));
+    } else {
+      sqlite3_bind_null(stmt, 8);
+    }
+    if (info && info->file_count) {
+      sqlite3_bind_int64(stmt, 9, static_cast<sqlite3_int64>(*info->file_count));
+    } else {
+      sqlite3_bind_null(stmt, 9);
+    }
+    sqlite3_bind_int64(stmt, 10, static_cast<sqlite3_int64>(now));
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
   }
