@@ -12,6 +12,7 @@
 #include "dirtoo/watcher/directory_watcher.hpp"
 #include "dirops/ops.hpp"
 #include "file_list_model.hpp"
+#include "location_button_bar.hpp"
 #include "transfer_dialog.hpp"
 #include "transfer_worker.hpp"
 
@@ -72,6 +73,10 @@ private slots:
                         const std::filesystem::path& extracted_root);
   void on_archive_failed(const dirtoo::fs::Location& archive_location, const QString& message);
   void on_focus_location();
+  void on_breadcrumb_location(const dirtoo::fs::Location& location);
+  void on_location_edit_requested();
+  void show_location_buttons();
+  void show_location_line_edit();
   void on_copy();
   void on_cut();
   void on_paste();
@@ -134,6 +139,8 @@ private:
   int zoom_index_ = 2;
 
   QLineEdit* location_edit_ = nullptr;
+  LocationButtonBar* location_buttons_ = nullptr;
+  QWidget* location_stack_host_ = nullptr;
   QLineEdit* filter_edit_ = nullptr;
   QStackedWidget* view_stack_ = nullptr;
   QTreeView* tree_view_ = nullptr;

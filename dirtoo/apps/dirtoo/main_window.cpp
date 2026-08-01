@@ -196,10 +196,34 @@ MainWindow::MainWindow(QWidget* parent)
   auto* central = new QWidget(this);
   auto* layout = new QVBoxLayout(central);
 
-  location_edit_ = new QLineEdit(central);
-  location_edit_->setPlaceholderText(QStringLiteral("Location"));
-  connect(location_edit_, &QLineEdit::returnPressed, this, &MainWindow::on_location_entered);
-  layout->addWidget(location_edit_);
+  {
+    auto* loc_host = new QWidget(central);
+    auto* loc_layout = new QVBoxLayout(loc_host);
+    loc_layout->setContentsMargins(0, 0, 0, 0);
+    loc_layout->setSpacing(0);
+
+    location_buttons_ = new LocationButtonBar(loc_host);
+    connect(location_buttons_, &LocationButtonBar::location_activated, this,
+            &MainWindow::on_breadcrumb_location);
+    connect(location_buttons_, &LocationButtonBar::edit_requested, this,
+            &MainWindow::on_location_edit_requested);
+
+    location_edit_ = new QLineEdit(loc_host);
+    location_edit_->setPlaceholderText(QStringLiteral("Location"));
+    connect(location_edit_, &QLineEdit::returnPressed, this, &MainWindow::on_location_entered);
+    connect(location_edit_, &QLineEdit::editingFinished, this, [this] {
+      // Leave edit mode when focus leaves, unless empty.
+      if (!location_edit_->hasFocus()) {
+        show_location_buttons();
+      }
+    });
+    location_edit_->hide();
+
+    loc_layout->addWidget(location_buttons_);
+    loc_layout->addWidget(location_edit_);
+    layout->addWidget(loc_host);
+    location_stack_host_ = loc_host;
+  }
 
   filter_edit_ = new QLineEdit(central);
   filter_edit_->setPlaceholderText(QStringLiteral("Filter by name…"));
@@ -365,6 +389,10 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
   } else {
     location_edit_->setText(QString::fromStdString(location_.as_path().string()));
   }
+  if (location_buttons_ != nullptr) {
+    location_buttons_->set_location(location_);
+  }
+  show_location_buttons();
 
   if (record_history) {
     if (history_index_ >= 0 && history_index_ + 1 < static_cast<int>(history_.size())) {
@@ -1065,8 +1093,41 @@ void MainWindow::on_refresh()
 
 void MainWindow::on_focus_location()
 {
+  show_location_line_edit();
   location_edit_->setFocus(Qt::ShortcutFocusReason);
   location_edit_->selectAll();
+}
+
+void MainWindow::on_breadcrumb_location(const fs::Location& location)
+{
+  open_location(location);
+}
+
+void MainWindow::on_location_edit_requested()
+{
+  show_location_line_edit();
+  location_edit_->setFocus(Qt::MouseFocusReason);
+  location_edit_->selectAll();
+}
+
+void MainWindow::show_location_buttons()
+{
+  if (location_buttons_ != nullptr) {
+    location_buttons_->show();
+  }
+  if (location_edit_ != nullptr) {
+    location_edit_->hide();
+  }
+}
+
+void MainWindow::show_location_line_edit()
+{
+  if (location_buttons_ != nullptr) {
+    location_buttons_->hide();
+  }
+  if (location_edit_ != nullptr) {
+    location_edit_->show();
+  }
 }
 
 void MainWindow::on_open_with()
