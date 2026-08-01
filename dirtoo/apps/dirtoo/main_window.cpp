@@ -2087,6 +2087,30 @@ void MainWindow::on_urls_dropped_to(const QList<QUrl>& urls, Qt::DropAction acti
     return;
   }
 
+  // Refuse dropping a selection into a destination that is itself one of the
+  // sources or a subdirectory of a selected folder (prevents nested self-move).
+  {
+    const auto dest_path = dest.lexically_normal();
+    for (const auto& src : sources) {
+      std::error_code ec;
+      if (std::filesystem::equivalent(src, dest_path, ec)) {
+        if (status_label_ != nullptr) {
+          status_label_->setText(QStringLiteral("Cannot drop an item onto itself"));
+        }
+        return;
+      }
+      if (std::filesystem::is_directory(src, ec)) {
+        const auto rel = dest_path.lexically_relative(src.lexically_normal());
+        if (!rel.empty() && *rel.begin() != "..") {
+          if (status_label_ != nullptr) {
+            status_label_->setText(QStringLiteral("Cannot drop into a selected folder"));
+          }
+          return;
+        }
+      }
+    }
+  }
+
   if (action == Qt::LinkAction) {
     int ok = 0;
     int fail = 0;

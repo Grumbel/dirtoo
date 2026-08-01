@@ -280,6 +280,8 @@ void GraphicsFileView::mouseDoubleClickEvent(QMouseEvent* event)
 void GraphicsFileView::mouseReleaseEvent(QMouseEvent* event)
 {
   QGraphicsView::mouseReleaseEvent(event);
+  // Restore rubber-band as the default empty-area interaction.
+  setDragMode(QGraphicsView::RubberBandDrag);
 }
 
 void GraphicsFileView::contextMenuEvent(QContextMenuEvent* event)
@@ -307,6 +309,12 @@ void GraphicsFileView::mousePressEvent(QMouseEvent* event)
   if (event->button() == Qt::LeftButton) {
     drag_start_pos_ = event->pos();
     drag_started_ = false;
+    // Item press → item drag (no rubber-band). Empty background → rubber-band select.
+    if (qgraphicsitem_cast<GraphicsFileItem*>(itemAt(event->pos())) != nullptr) {
+      setDragMode(QGraphicsView::NoDrag);
+    } else {
+      setDragMode(QGraphicsView::RubberBandDrag);
+    }
   }
   QGraphicsView::mousePressEvent(event);
 }

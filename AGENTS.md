@@ -39,11 +39,7 @@ SPDX headers:
 5. Ignore most CLI utilities under `dirtoo-py/.../programs/` unless useful
    for testing C++ libraries.
 
-Local MVP plumbing (libs, filter DSL, dialogs, packaging) exists, but the
-GUI is **not** yet reliable for large directories, DnD, or polished icon
-layout. See **`TODO.md`** for the live defect queue, parity gaps, and
-explicit out-of-scope items (archive write, remote VFS, full Python
-`programs/*` surface).
+Large-directory mitigations (cheap listing, filter worker, Graphics item reuse, viewport thumbs, soft watcher reload), DnD/Link, and core parity features are in place. See **`TODO.md`** for residual polish (virtualization, incremental FS deltas) and explicit out-of-scope items (archive write, remote VFS, full Python `programs/*`).
 
 ---
 
@@ -109,14 +105,24 @@ workers, signals/slots, and the media meta cache. Bounded content reads
 belong on a worker thread, not in `FileCollection::rebuild_visible` on the
 UI thread.
 
-Known violations (see `TODO.md`): content filters on GUI thread; per-file
-`QMimeDatabase` in thumbnail request path; undebounced watcher → full
-reload; Graphics scene full rebuild on every model reset.
+Prior GUI-thread I/O violations have mitigations (see `TODO.md`). Residual risks: full directory rescan on watch (soft), no list virtualization, non-content filters still apply on the UI thread.
 
 ### Git commit messages
 
 After every coherent series of changes, leave a **detailed suggested commit
 message** for the human (subject ≤ ~72 chars, body explaining why and what).
+
+
+### Documentation (required)
+
+Always keep **`TODO.md`** and **`AGENTS.md`** accurate when you change behavior,
+fix defects, or close/open work items:
+
+- Update the relevant **status tables / checklists** in `TODO.md` in the same
+  change series (mark items done, note mitigations, add new residual risks).
+- Refresh the **Current status** summary in this file when the overall picture
+  shifts (not on every micro-fix).
+- Do not leave stale “missing / broken” rows after features land.
 
 ### What not to do
 
@@ -149,17 +155,18 @@ message** for the human (subject ≤ ~72 chars, body explaining why and what).
 
 | Area | State |
 |------|--------|
-| dirops + CLI tools | done |
-| Main window, nav, bookmarks, history | done |
-| Filter DSL + recursive search + `dt-filter` | done (Contains case fix applied; content filters still UI-thread) |
-| Detail / Icons (Graphics) / Small icons | **improved** — item reuse, viewport thumbs; time-gaps still missing |
-| Thumbnails + media badges + meta cache | **partial** — all-visible requests; no directory montage |
-| Clipboard transfers + conflict/transfer dialogs | done (no symlink/link) |
-| Preferences, properties, about, rename/new folder | done (no “new file”) |
-| Archives read-only | done |
-| DnD | **broken/incomplete** — Copy-biased; folder drop Graphics-only; no Link |
-| Select All / New File / dir thumbs / timegaps | **missing** vs Python |
+| dirops + CLI tools | **done** (`create_file` / `create_symlink` / swap) |
+| Main window, nav, bookmarks, history | **done** |
+| Filter DSL + recursive search + `dt-filter` | **done**; content filters via `FilterWorker` |
+| Detail / Icons (Graphics) / Small icons | **improved** — item reuse, group headers, time gaps, themed captions |
+| Thumbnails + media badges + meta cache | **improved** — viewport batch; directory montages (explicit action) |
+| Clipboard transfers + conflict/transfer dialogs | **done** including Link paste |
+| Preferences, properties, about, rename/new folder/file | **done** |
+| Archives read-only | **done** |
+| DnD | **done** — Move/Copy/Link modifiers; folder drop on list/tree |
+| Select All / Swap Names / Show Full Paths / Time Gaps | **done** |
+| List virtualization / incremental FS deltas | **open** (residual perf) |
 | Archive write / remote VFS / programs/* | **out of scope** |
 
-Priority defect queue and parity matrix: **`TODO.md`**.  
+Priority residual queue and parity matrix: **`TODO.md`**.  
 User-facing overview: **`dirtoo/README.md`**.
