@@ -160,6 +160,7 @@ MainWindow::MainWindow(QWidget* parent)
   dir_thumb_thread_->start();
 
   auto* toolbar = addToolBar(QStringLiteral("Main"));
+  toolbar->setObjectName(QStringLiteral("mainToolBar"));
   toolbar->setMovable(false);
   toolbar->setIconSize(QSize(24, 24));
   toolbar->setToolButtonStyle(Qt::ToolButtonIconOnly);
