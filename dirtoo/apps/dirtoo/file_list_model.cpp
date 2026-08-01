@@ -29,11 +29,10 @@ QFileIconProvider& icon_provider()
   return provider;
 }
 
-QString format_size(std::uint64_t bytes, bool is_directory)
+QString format_size(std::uint64_t bytes, bool /*is_directory*/)
 {
-  if (is_directory) {
-    return QStringLiteral("—"); // replaced by child count when known
-  }
+  // Linux directories still have a st_size (inode/block metadata); show it like files.
+  // Child counts are shown separately as thumbnail badges, not in the size column.
   return QLocale::system().formattedDataSize(static_cast<qint64>(bytes));
 }
 
