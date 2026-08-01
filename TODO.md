@@ -154,7 +154,7 @@ Schema evolution via `PRAGMA user_version` migrations.
 | Graphics View icon scene | May revisit; Model/View for now |
 | Face detect / experiments / most programs/* | Out of scope |
 | Pixel-perfect Python layout | Functional parity only |
-| Media metadata filters | Optional backends later |
+| Archive write support | Read-only by design |
 
 ---
 
@@ -165,6 +165,135 @@ Schema evolution via `PRAGMA user_version` migrations.
 - Still open vs Python: `contains:`. Media width/height/duration/framerate via ffprobe; fuzzy n-gram done.
 
 ---
+
+
+---
+
+## C++ vs Python — detailed feature comparison
+
+Reference: `dirtoo-py/`. Implementation: `dirtoo/`. Status reflects the C++ port
+as of the responsive-UI / media-cache work.
+
+### Architecture
+
+| Area | Python | C++ | Notes |
+|------|--------|-----|-------|
+| Language / UI | Python 3 + PyQt6 | C++23 + Qt6 Widgets | |
+| View tech | `QGraphicsView` + custom `FileItem` scene | `QTreeView` / `QListView` + model/delegate | Graphics scene deferred |
+| FS abstraction | `virtual_filesystem`, Location URLs | `dirtoo-fs::Location` (file + archive) | SFTP/other VFS not started |
+| File ops | In-app + scripts | **`dirops`** lib + `dt-*` CLIs | Stronger separation in C++ |
+| Filtering | `filter/` + pyparsing | **`dirtoo-filter`** (hand parser, Qt-free) | |
+| Collection | SortedList + Sorter + Grouper | **`dirtoo-collection`** + Sorter | Grouper missing |
+| Metadata cache | Per-file XML sidecars | **SQLite** `meta.sqlite` + memory + workers | C++ direction is better for scale |
+| Thumbnails | D-Bus thumbnailer | **`dirtoo-thumbnail`** D-Bus | |
+| Watcher | inotify-style | **`dirtoo-watcher`** | |
+| Archives | ArchiveInfo / extract tools | **`dirtoo-archive`** read-only | Write into archives not planned |
+| Packaging | pip / Nix | CMake libs + Nix flake multi-output | |
+
+### GUI features present in both (done or close)
+
+| Feature | C++ status |
+|---------|------------|
+| Multi-window | done |
+| Detail + icon views | done (no separate “small icon / sequence” mode) |
+| Zoom in/out (+ large zoom steps) | done |
+| Crop thumbnails (cover vs letterbox) | done |
+| Icon caption LOD (name / size / date) | done |
+| Media overlays (WxH, duration, fps) + type badges | done (async meta + Python PNGs) |
+| Location bar ↔ breadcrumbs, trail keep on back | done |
+| Path completion (async) | done |
+| History menu + middle-click new window | done |
+| Bookmarks (file store, middle-click) | done |
+| Parent / Home / Back / Forward | done |
+| Middle-click open in new window | done |
+| Filter show/hide, pin, history | done |
+| Filter DSL + help + `dt-filter` | done (subset of predicates) |
+| Recursive search UI + CLI `-r` | done |
+| Clipboard cut/copy/paste + conflict UI | done |
+| Background transfers | done |
+| Mkdir / rename / delete / properties | done |
+| Open with / terminal | done |
+| Preferences / About / QSettings | done |
+| Message area | done |
+| Leap (type-ahead jump) | done |
+| Show hidden | done |
+| Directory watcher refresh | done |
+| Sort: name (natural), size, ext, date, type, media keys, permissions, random | done (async sort worker) |
+| Directories first / reverse | done |
+| Toolbar theme icons | done |
+| Async directory load | done |
+
+### Missing or incomplete in C++ (priority roughly high → low)
+
+#### View & layout
+| Missing | Python behaviour |
+|---------|------------------|
+| **Small icon / sequence mode** | Third view style (wide rows / list-like icons) |
+| **Graphics View icon scene** | Freer layout, hover overlays, per-item animation |
+| **Group by** (day, directory, duration, none) | `Grouper` + section headers in layout |
+| **Time gaps** in icon layout | Visual spacing by mtime gaps |
+| **Show abspath vs basename** toggle | Caption shows full path |
+| **Show filtered** (keep non-matches greyed?) | Separate from hide |
+| **Hover highlight / overlay on thumbnails** | CompositionMode overlay on hover |
+| **Prepare / reload thumbnails** toolbar actions | Force thumbnail + metadata refresh |
+| **Loading / error / locked / new badge pixmaps** | Assets copied; not fully wired like Python |
+| **Undo / redo** | Present in actions but commented out in Python toolbar too |
+
+#### Filter DSL gaps
+| Predicate | Python | C++ |
+|-----------|--------|-----|
+| `contains:` / `Contains:` (file content) | yes | **no** |
+| `containsre:` content regex | yes | **no** |
+| `containsfuzzy:` | yes | **no** |
+| `date:` / `time:` / `weekday:` | yes | **no** |
+| `length:` / `len:` (name length) | yes | **no** |
+| `charset:` / `encoding:` | yes | **no** |
+| `pages:` (PDF) | yes | **no** |
+| `filecount:` (dir/archive) | yes | **no** |
+| `random:` | yes | **no** |
+| fuzzy / glob / regex / size / type / media | yes | **yes** |
+
+#### Sort / metadata
+| Missing | Notes |
+|---------|--------|
+| Sort by **user / group** | Actions exist in Python; not fully implemented there either |
+| Sort waits for **full media coverage** | C++ sorts on cached meta only (unknowns sort as 0) |
+| PDF pages / archive file_count in meta DB | Schema ready to extend; collectors not written |
+| pymediainfo parity fields (bitrate, channels, …) | C++ uses ffprobe subset |
+
+#### Filesystem & VFS
+| Missing | Notes |
+|---------|--------|
+| **SFTP / remote Location** | Python experiments / VFS hooks; C++ file+archive only |
+| Non-file protocols in Location | Extensible design, no backends yet |
+| Archive **write** / modify | Explicitly deferred both sides |
+
+#### Ops & tools (`programs/*`)
+Python ships many CLIs under `programs/` (find expr engine, fsck, shuffle, desktop, mime, …). C++ has focused **`dt-copy/move/mkdir/rename/swap/filter`** via dirops. Most Python one-offs are **out of scope** unless needed for GUI parity.
+
+#### UX polish
+| Missing | Notes |
+|---------|--------|
+| Richer preferences (all Python settings keys) | C++ has a subset |
+| Context menu parity (every Python item action) | Basic set present |
+| DnD cursor themed pixmaps | Python `dnd-*.png`; C++ uses Qt defaults |
+| Save file list as | Python action |
+| Debug mode action | Python only |
+
+### C++ advantages (not in Python)
+- Modular installable libraries and Nix flake outputs
+- SQLite metadata cache + explicit **no GUI-thread I/O** architecture
+- Async directory load + async sort workers
+- `dirops` as a reusable Qt-free ops library
+- Hand-written filter parser (no pyparsing runtime)
+
+### Recommended next parity work
+1. Filter: `contains:` (bounded size) + `date:` / `length:`  
+2. Group by day/directory (collection + UI headers)  
+3. Small-icon / compact list mode  
+4. Wire remaining badge assets (loading/error/locked)  
+5. Preferences coverage + thumbnail prepare/reload actions  
+
 
 ## Working process
 
