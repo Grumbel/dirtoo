@@ -34,6 +34,15 @@ public:
   void set_thumbnail(const QString& path, const QIcon& icon);
   void clear_thumbnails();
 
+  /// Icon-view caption density (0=none … 4=name+size+date). Detail view ignores this.
+  void set_icon_style(bool enabled);
+  void set_icon_detail_level(int level);
+  [[nodiscard]] int icon_detail_level() const noexcept { return icon_detail_level_; }
+  [[nodiscard]] static constexpr int icon_detail_level_min() { return 0; }
+  [[nodiscard]] static constexpr int icon_detail_level_max() { return 4; }
+  /// Extra text rows under the icon for current LOD (Python k map).
+  [[nodiscard]] int icon_text_rows() const noexcept;
+
   [[nodiscard]] int rowCount(const QModelIndex& parent = {}) const override;
   [[nodiscard]] int columnCount(const QModelIndex& parent = {}) const override;
   [[nodiscard]] QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
@@ -61,6 +70,8 @@ private:
 
   collection::FileCollection* collection_ = nullptr;
   QHash<QString, QIcon> thumbnails_;
+  bool icon_style_ = false;
+  int icon_detail_level_ = 3; // name + size by default (Python-ish)
 };
 
 } // namespace dirtoo::app

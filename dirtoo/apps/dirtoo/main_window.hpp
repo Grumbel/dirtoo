@@ -125,6 +125,9 @@ private slots:
   void on_view_icons();
   void on_zoom_in();
   void on_zoom_out();
+  void on_more_icon_details();
+  void on_less_icon_details();
+  void apply_icon_detail_level();
   void on_thumbnail_ready(const dirtoo::fs::Location& location, const QString& path);
   void on_thumbnail_failed(const dirtoo::fs::Location& location, const QString& message);
   void on_selection_changed();

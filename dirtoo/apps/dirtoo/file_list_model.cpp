@@ -105,6 +105,39 @@ void FileListModel::clear_thumbnails()
   }
 }
 
+void FileListModel::set_icon_style(bool enabled)
+{
+  if (icon_style_ == enabled) {
+    return;
+  }
+  icon_style_ = enabled;
+  if (rowCount() > 0) {
+    emit dataChanged(index(0, 0), index(rowCount() - 1, 0), {Qt::DisplayRole, Qt::TextAlignmentRole});
+  }
+}
+
+void FileListModel::set_icon_detail_level(int level)
+{
+  level = std::clamp(level, icon_detail_level_min(), icon_detail_level_max());
+  if (icon_detail_level_ == level) {
+    return;
+  }
+  icon_detail_level_ = level;
+  if (rowCount() > 0) {
+    emit dataChanged(index(0, 0), index(rowCount() - 1, static_cast<int>(FileListColumn::Count) - 1),
+                     {Qt::DisplayRole});
+  }
+}
+
+int FileListModel::icon_text_rows() const noexcept
+{
+  // Matches Python IconMode: k = [0, 1, 1, 2, 3][level]
+  static constexpr int kRows[] = {0, 1, 1, 2, 3};
+  const int lvl = std::clamp(icon_detail_level_, 0, 4);
+  return kRows[lvl];
+}
+
+
 QIcon FileListModel::icon_for(const fs::FileInfo& fi) const
 {
   const QString path = QString::fromStdString(fi.path().string());
@@ -148,8 +181,26 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
 
   if (role == Qt::DisplayRole) {
     switch (static_cast<FileListColumn>(index.column())) {
-    case FileListColumn::Name:
-      return QString::fromStdString(fi->basename());
+    case FileListColumn::Name: {
+      const QString name = QString::fromStdString(fi->basename());
+      if (!icon_style_ || icon_detail_level_ <= 0) {
+        return name;
+      }
+      // Icon captions: LOD mirrors Python FileItemRenderer.paint_text_items
+      QString caption = name;
+      if (icon_detail_level_ > 2) {
+        caption += QLatin1Char('\n');
+        caption += format_size(fi->size(), fi->is_directory());
+      }
+      if (icon_detail_level_ > 3) {
+        const QString mtime = format_mtime_from_path(fi->path());
+        if (!mtime.isEmpty()) {
+          caption += QLatin1Char('\n');
+          caption += mtime;
+        }
+      }
+      return caption;
+    }
     case FileListColumn::Size:
       return format_size(fi->size(), fi->is_directory());
     case FileListColumn::Modified:
@@ -161,8 +212,13 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
     }
   }
 
-  if (role == Qt::TextAlignmentRole && index.column() == static_cast<int>(FileListColumn::Size)) {
-    return static_cast<int>(Qt::AlignRight | Qt::AlignVCenter);
+  if (role == Qt::TextAlignmentRole) {
+    if (index.column() == static_cast<int>(FileListColumn::Size)) {
+      return static_cast<int>(Qt::AlignRight | Qt::AlignVCenter);
+    }
+    if (icon_style_ && index.column() == static_cast<int>(FileListColumn::Name)) {
+      return static_cast<int>(Qt::AlignHCenter | Qt::AlignTop);
+    }
   }
 
   if (role == Qt::UserRole) {

@@ -11,6 +11,7 @@ namespace dirtoo::app {
 struct AppSettings {
   QString view_mode = QStringLiteral("detail");
   int zoom_index = 2;
+  int icon_detail_level = 3;
   bool show_hidden = false;
   bool show_filter = true;
   bool filter_pinned = false;

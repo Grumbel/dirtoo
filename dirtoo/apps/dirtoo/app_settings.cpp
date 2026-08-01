@@ -13,6 +13,7 @@ AppSettings load_settings()
   AppSettings out;
   out.view_mode = s.value(QStringLiteral("ui/view_mode"), out.view_mode).toString();
   out.zoom_index = s.value(QStringLiteral("ui/zoom_index"), out.zoom_index).toInt();
+  out.icon_detail_level = s.value(QStringLiteral("ui/icon_detail_level"), out.icon_detail_level).toInt();
   out.show_hidden = s.value(QStringLiteral("ui/show_hidden"), out.show_hidden).toBool();
   out.show_filter = s.value(QStringLiteral("ui/show_filter"), out.show_filter).toBool();
   out.filter_pinned = s.value(QStringLiteral("ui/filter_pinned"), out.filter_pinned).toBool();
@@ -27,6 +28,7 @@ void save_settings(const AppSettings& settings)
   QSettings s(QStringLiteral("dirtoo"), QStringLiteral("dirtoo"));
   s.setValue(QStringLiteral("ui/view_mode"), settings.view_mode);
   s.setValue(QStringLiteral("ui/zoom_index"), settings.zoom_index);
+  s.setValue(QStringLiteral("ui/icon_detail_level"), settings.icon_detail_level);
   s.setValue(QStringLiteral("ui/show_hidden"), settings.show_hidden);
   s.setValue(QStringLiteral("ui/show_filter"), settings.show_filter);
   s.setValue(QStringLiteral("ui/filter_pinned"), settings.filter_pinned);
