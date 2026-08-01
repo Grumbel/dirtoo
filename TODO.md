@@ -274,7 +274,7 @@ Python ships many CLIs under `programs/` (find expr engine, fsck, shuffle, deskt
 #### UX polish
 | Missing                                        | Notes                                    |
 |------------------------------------------------|------------------------------------------|
-| Richer preferences (all Python settings keys)  | C++ has a subset                         |
+| Richer preferences (all Python settings keys)  | Expanded (group, dirs-first, crop, detail) |
 | Context menu parity (every Python item action) | Improved (new window, paths, thumbs)     |
 | DnD action overlay (Copy/Move/Link)            | **done** (DragActionOverlay)               |
 | DnD cursor themed pixmaps                      | **done** (`dnd-*.png` + setDragCursor)   |

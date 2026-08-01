@@ -20,7 +20,7 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
 
   QDialog dialog(parent);
   dialog.setWindowTitle(QStringLiteral("Preferences"));
-  dialog.setMinimumWidth(400);
+  dialog.setMinimumWidth(420);
 
   auto* form = new QFormLayout();
 
@@ -47,8 +47,29 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   icon_detail->setValue(settings->icon_detail_level);
   icon_detail->setToolTip(QStringLiteral("0=none … 4=name+size+date under icons"));
 
+  auto* group = new QComboBox(&dialog);
+  group->addItem(QStringLiteral("None"), QStringLiteral("none"));
+  group->addItem(QStringLiteral("Day"), QStringLiteral("day"));
+  group->addItem(QStringLiteral("Directory"), QStringLiteral("directory"));
+  group->addItem(QStringLiteral("Duration"), QStringLiteral("duration"));
+  {
+    const QString gm = settings->group_mode.toLower();
+    int gi = 0;
+    if (gm == QLatin1String("day")) {
+      gi = 1;
+    } else if (gm == QLatin1String("directory")) {
+      gi = 2;
+    } else if (gm == QLatin1String("duration")) {
+      gi = 3;
+    }
+    group->setCurrentIndex(gi);
+  }
+
   auto* crop = new QCheckBox(QStringLiteral("Crop thumbnails (cover instead of letterbox)"), &dialog);
   crop->setChecked(settings->crop_thumbnails);
+
+  auto* dirs_first = new QCheckBox(QStringLiteral("Directories first when sorting"), &dialog);
+  dirs_first->setChecked(settings->directories_first);
 
   auto* hidden = new QCheckBox(QStringLiteral("Show hidden files"), &dialog);
   hidden->setChecked(settings->show_hidden);
@@ -62,7 +83,9 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   form->addRow(QStringLiteral("Default view:"), view);
   form->addRow(QStringLiteral("Zoom level:"), zoom);
   form->addRow(QStringLiteral("Icon caption detail:"), icon_detail);
+  form->addRow(QStringLiteral("Group by:"), group);
   form->addRow(crop);
+  form->addRow(dirs_first);
   form->addRow(hidden);
   form->addRow(show_filter);
   form->addRow(pin_filter);
@@ -82,7 +105,9 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   settings->view_mode = view->currentData().toString();
   settings->zoom_index = zoom->value();
   settings->icon_detail_level = icon_detail->value();
+  settings->group_mode = group->currentData().toString();
   settings->crop_thumbnails = crop->isChecked();
+  settings->directories_first = dirs_first->isChecked();
   settings->show_hidden = hidden->isChecked();
   settings->show_filter = show_filter->isChecked();
   settings->filter_pinned = pin_filter->isChecked();

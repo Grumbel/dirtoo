@@ -322,6 +322,24 @@ MainWindow::MainWindow(QWidget* parent)
         group_actions->addAction(act);
         connect(act, &QAction::triggered, this, [this, mode] {
           collection_.set_group_mode(mode);
+          {
+            AppSettings s = load_settings();
+            switch (mode) {
+            case collection::GroupMode::Day:
+              s.group_mode = QStringLiteral("day");
+              break;
+            case collection::GroupMode::Directory:
+              s.group_mode = QStringLiteral("directory");
+              break;
+            case collection::GroupMode::Duration:
+              s.group_mode = QStringLiteral("duration");
+              break;
+            default:
+              s.group_mode = QStringLiteral("none");
+              break;
+            }
+            save_settings(s);
+          }
           if (model_ != nullptr) {
             model_->refresh();
           }
@@ -389,6 +407,11 @@ MainWindow::MainWindow(QWidget* parent)
       act->setChecked(true);
       connect(act, &QAction::toggled, this, [this](bool on) {
         collection_.sorter().set_directories_first(on);
+        {
+          AppSettings s = load_settings();
+          s.directories_first = on;
+          save_settings(s);
+        }
         request_async_sort();
       });
     }
@@ -2377,6 +2400,22 @@ void MainWindow::on_preferences()
   s.show_hidden = collection_.show_hidden();
   s.show_filter = show_filter_act_ != nullptr && show_filter_act_->isChecked();
   s.filter_pinned = filter_pinned_;
+  s.directories_first = collection_.sorter().directories_first();
+  switch (collection_.group_mode()) {
+  case collection::GroupMode::Day:
+    s.group_mode = QStringLiteral("day");
+    break;
+  case collection::GroupMode::Directory:
+    s.group_mode = QStringLiteral("directory");
+    break;
+  case collection::GroupMode::Duration:
+    s.group_mode = QStringLiteral("duration");
+    break;
+  case collection::GroupMode::None:
+  default:
+    s.group_mode = QStringLiteral("none");
+    break;
+  }
   if (!show_preferences_dialog(this, &s)) {
     return;
   }
@@ -2408,6 +2447,19 @@ void MainWindow::apply_settings(const AppSettings& s)
   if (show_hidden_act_ != nullptr) {
     show_hidden_act_->setChecked(s.show_hidden);
   }
+  collection_.sorter().set_directories_first(s.directories_first);
+  {
+    collection::GroupMode gm = collection::GroupMode::None;
+    const QString g = s.group_mode.toLower();
+    if (g == QLatin1String("day")) {
+      gm = collection::GroupMode::Day;
+    } else if (g == QLatin1String("directory")) {
+      gm = collection::GroupMode::Directory;
+    } else if (g == QLatin1String("duration")) {
+      gm = collection::GroupMode::Duration;
+    }
+    collection_.set_group_mode(gm);
+  }
   filter_pinned_ = s.filter_pinned;
   if (pin_filter_act_ != nullptr) {
     pin_filter_act_->setChecked(s.filter_pinned);
@@ -2418,6 +2470,7 @@ void MainWindow::apply_settings(const AppSettings& s)
   if (filter_edit_ != nullptr) {
     filter_edit_->setVisible(s.show_filter || s.filter_pinned);
   }
+  request_async_sort();
   refresh_list();
 }
 

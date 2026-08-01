@@ -16,6 +16,8 @@ struct AppSettings {
   bool show_hidden = false;
   bool show_filter = true;
   bool filter_pinned = false;
+  bool directories_first = true;
+  QString group_mode = QStringLiteral("none"); // none|day|directory|duration
   QByteArray window_geometry;
   QByteArray window_state;
   QString last_location;
