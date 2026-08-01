@@ -39,3 +39,11 @@ TEST_CASE("parse empty clipboard text", "[clipboard]")
   const auto p = parse_dirtoo_clipboard_text(QString());
   REQUIRE(p.paths.empty());
 }
+
+TEST_CASE("parse_dirtoo_clipboard_text link", "[clipboard]")
+{
+  const auto p = parse_dirtoo_clipboard_text(QStringLiteral("link\n/tmp/a\n/tmp/b\n"));
+  REQUIRE(p.mode == ClipboardMode::Link);
+  REQUIRE(p.paths.size() == 2);
+  REQUIRE(p.paths[0] == std::filesystem::path{"/tmp/a"});
+}

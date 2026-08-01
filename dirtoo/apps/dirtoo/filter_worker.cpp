@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cctype>
 #include <chrono>
+#include <optional>
 
 namespace dirtoo::app {
 namespace {
@@ -27,12 +28,14 @@ filter::FilterItem to_filter_item(const fs::FileInfo& fi)
       .size = fi.size(),
       .is_directory = fi.is_directory(),
       .path = fi.path(),
+      .mtime_sec = std::nullopt,
   };
   try {
     const auto sctp = std::chrono::clock_cast<std::chrono::system_clock>(fi.mtime());
     item.mtime_sec =
         std::chrono::duration_cast<std::chrono::seconds>(sctp.time_since_epoch()).count();
   } catch (...) {
+    // leave mtime_sec as nullopt for synthetic / unset times
   }
   return item;
 }

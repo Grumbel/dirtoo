@@ -236,16 +236,11 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
   // Caption — multi-line from model (icon detail level); theme-aware colors.
   if (!text.isEmpty() && caption_h > 0) {
     QRect text_rect = br.toRect().adjusted(4, thumb.bottom() + 2, -4, -2);
-    painter->setPen(selected ? pal.color(QPalette::HighlightedText).name().isEmpty()
-                                   ? text_color
-                                   : pal.color(QPalette::WindowText)
-                             : text_color);
-    // Prefer readable text on selection highlight.
     if (selected) {
-      painter->setPen(pal.color(QPalette::HighlightedText));
-      if (painter->pen().color().alpha() == 0) {
-        painter->setPen(text_color);
-      }
+      QColor ht = pal.color(QPalette::HighlightedText);
+      painter->setPen(ht.alpha() > 0 ? ht : text_color);
+    } else {
+      painter->setPen(text_color);
     }
     const QFontMetrics fm(painter->font());
     const QStringList lines = text.split(QLatin1Char('\n'));

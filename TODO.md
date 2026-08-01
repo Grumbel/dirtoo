@@ -34,7 +34,7 @@ Ordered by user impact. File references are under `dirtoo/` unless noted.
 | Filter I/O on GUI thread | `file_collection.cpp` / `filter_worker.cpp` | **Mitigated**: content predicates go through `FilterWorker` + generation-safe `replace_visible`. Non-content filters remain sync. |
 | Graphics full scene rebuild | `graphics_file_view.cpp` `rebuild_items` | **Mitigated**: reuses items (shrink/grow/update). `FileListModel::refresh` uses layoutChanged instead of full reset. |
 | Thumbnails for every visible row | `main_window.cpp` `request_thumbnails_for_visible` | **Mitigated**: viewport-scoped batch (cap 64), no GUI mime DB, scroll-driven requests; directory cache probe. |
-| Watcher → full rescan, no debounce | `main_window.cpp` ↔ `directory_watcher.cpp` | **Mitigated**: 200ms debounce + **soft reload** (keep listing until scan finishes); load worker can supersede in-flight lists. |
+| Watcher → full rescan, no debounce | `main_window.cpp` ↔ `directory_watcher.cpp` | **Mitigated**: 200ms debounce + **soft reload** (keep listing until scan finishes); prune vanished thumbs; load worker can supersede in-flight lists. |
 | Double model refresh | `on_directory_loaded` + `on_sort_finished` | Unsorted paint then sorted paint; each `refresh_list` → `beginResetModel` → Graphics rebuild. |
 
 ### 2. Drag & drop broken / incomplete

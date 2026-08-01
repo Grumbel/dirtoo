@@ -1177,19 +1177,26 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
   // Mark paths that appeared since the last listing of this location (watcher refresh).
   if (model_ != nullptr) {
     model_->clear_new_marks();
+    QSet<QString> next_paths;
+    next_paths.reserve(static_cast<int>(items.size()));
+    for (const auto& fi : items) {
+      next_paths.insert(QString::fromStdString(fi.path().string()));
+    }
     if (known_paths_location_ == location_ && !known_paths_.empty()) {
-      for (const auto& fi : items) {
-        const QString p = QString::fromStdString(fi.path().string());
+      for (const QString& p : next_paths) {
         if (!known_paths_.contains(p)) {
           model_->mark_new(p);
         }
       }
+      // Drop cached thumbs for paths that vanished (soft reload path).
+      for (const QString& p : known_paths_) {
+        if (!next_paths.contains(p)) {
+          model_->clear_thumbnail(p);
+        }
+      }
     }
-    known_paths_.clear();
+    known_paths_ = next_paths;
     known_paths_location_ = location_;
-    for (const auto& fi : items) {
-      known_paths_.insert(QString::fromStdString(fi.path().string()));
-    }
   }
   collection_.sorter().set_ascending(sort_ascending_);
   // Show entries ASAP; order refined by SortWorker.

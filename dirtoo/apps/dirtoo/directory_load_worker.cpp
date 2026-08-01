@@ -16,13 +16,12 @@ DirectoryLoadWorker::DirectoryLoadWorker(QObject* parent)
 
 void DirectoryLoadWorker::cancel()
 {
-  // Invalidate any in-flight load; load() bails when generation no longer matches.
-  cancel_generation_.fetch_add(1, std::memory_order_relaxed);
+  // Force any in-flight load() to observe a mismatched generation.
+  cancel_generation_.store(0, std::memory_order_relaxed);
 }
 
 void DirectoryLoadWorker::load(const QString& path, quint64 generation)
 {
-  // Track the generation this call is serving; cancel()/newer loads may supersede it.
   cancel_generation_.store(generation, std::memory_order_relaxed);
 
   try {
@@ -37,7 +36,7 @@ void DirectoryLoadWorker::load(const QString& path, quint64 generation)
         continue;
       }
       if (cancel_generation_.load(std::memory_order_relaxed) != generation) {
-        return; // superseded by a newer load or cancel()
+        return; // superseded
       }
       items.push_back(fs::FileInfo::from_directory_entry(entry));
     }
