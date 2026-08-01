@@ -281,17 +281,20 @@ private:
     for (char& ch : c) {
       ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
     }
-    if (c == "glob" || c == "g") {
-      return make_glob(arg, false);
-    }
+    // Case-sensitive forms (capital command names) must be checked before the
+    // lowercased aliases; otherwise e.g. "Contains" lowers to "contains" and
+    // always takes the insensitive branch.
     if (cmd == "Glob" || cmd == "G") {
       return make_glob(arg, true);
     }
-    if (c == "regex" || c == "re" || c == "r" || c == "rx") {
-      return make_regex(arg, false);
+    if (c == "glob" || c == "g") {
+      return make_glob(arg, false);
     }
     if (cmd == "Regex" || cmd == "Re" || cmd == "R" || cmd == "Rx") {
       return make_regex(arg, true);
+    }
+    if (c == "regex" || c == "re" || c == "r" || c == "rx") {
+      return make_regex(arg, false);
     }
     if (c == "size") {
       return make_size(arg);
@@ -311,11 +314,11 @@ private:
     if (c == "framerate" || c == "fps" || c == "fr") {
       return make_framerate(arg);
     }
-    if (c == "fuzzy" || c == "fuz" || c == "fuzz" || c == "f") {
-      return make_fuzzy(arg, false);
-    }
     if (cmd == "Fuzzy" || cmd == "Fuz" || cmd == "Fuzz" || cmd == "F") {
       return make_fuzzy(arg, true);
+    }
+    if (c == "fuzzy" || c == "fuz" || c == "fuzz" || c == "f") {
+      return make_fuzzy(arg, false);
     }
     if (c == "length" || c == "len") {
       return make_length(arg);
@@ -323,17 +326,17 @@ private:
     if (c == "date") {
       return make_date(arg);
     }
-    if (c == "contains") {
-      return make_contains(arg, false);
-    }
     if (cmd == "Contains") {
       return make_contains(arg, true);
     }
-    if (c == "containsre" || c == "contains_regex" || c == "cre") {
-      return make_contains_regex(arg, false);
+    if (c == "contains") {
+      return make_contains(arg, false);
     }
     if (cmd == "Containsre" || cmd == "ContainsRe" || cmd == "ContainsRegex" || cmd == "Cre") {
       return make_contains_regex(arg, true);
+    }
+    if (c == "containsre" || c == "contains_regex" || c == "cre") {
+      return make_contains_regex(arg, false);
     }
     if (c == "containsfuzzy" || c == "contains_fuzzy" || c == "cfuzzy" || c == "cfuz") {
       return make_contains_fuzzy(arg);
