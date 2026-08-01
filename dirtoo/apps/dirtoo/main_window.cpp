@@ -298,6 +298,19 @@ MainWindow::MainWindow(QWidget* parent)
       act->setStatusTip(QStringLiteral("Show absolute paths instead of basenames in the Name column"));
       connect(act, &QAction::toggled, this, &MainWindow::on_toggle_show_abspath);
     }
+    {
+      auto* act = view_menu->addAction(QStringLiteral("Show Time Gaps"));
+      act->setCheckable(true);
+      act->setStatusTip(QStringLiteral("Show separators when consecutive items are far apart in modification time"));
+      connect(act, &QAction::toggled, this, [this](bool on) {
+        if (model_ != nullptr) {
+          model_->set_show_timegaps(on);
+        }
+        if (tree_view_ != nullptr) {
+          tree_view_->doItemsLayout();
+        }
+      });
+    }
     view_menu->addSeparator();
     show_filter_act_ = view_menu->addAction(QStringLiteral("Show Filter"));
     show_filter_act_->setCheckable(true);
@@ -641,7 +654,7 @@ MainWindow::MainWindow(QWidget* parent)
   tree_view_ = new FileTreeView(view_stack_);
   tree_view_->setModel(model_);
   tree_view_->setRootIsDecorated(false);
-  tree_view_->setUniformRowHeights(true);
+  tree_view_->setUniformRowHeights(false); // group headers + time gaps need variable height
   tree_view_->setSelectionMode(QAbstractItemView::ExtendedSelection);
   tree_view_->setSelectionBehavior(QAbstractItemView::SelectRows);
   tree_view_->setSortingEnabled(false);
@@ -656,6 +669,7 @@ MainWindow::MainWindow(QWidget* parent)
   tree_view_->setColumnWidth(0, 320);
   tree_view_->setColumnWidth(1, 100);
   tree_view_->setColumnWidth(2, 160);
+  tree_view_->setItemDelegate(new FileItemDelegate(model_, tree_view_));
   connect(tree_view_, &QTreeView::activated, this, &MainWindow::on_item_activated);
   tree_view_->viewport()->installEventFilter(this);
   connect(tree_view_, &QWidget::customContextMenuRequested, this, &MainWindow::on_context_menu);

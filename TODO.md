@@ -8,8 +8,7 @@ Python reference: `dirtoo-py/`. Active code: `dirtoo/`.
 
 Core plumbing and the Critical queue mitigations (listing cost, filter
 worker, Graphics reuse, viewport thumbs, watcher debounce, DnD/Link,
-directory montages) are in place. Remaining polish: time-gap rows,
-incremental watcher deltas, richer 5–9 tile montages. Treat large-dir
+directory montages) are in place. Remaining polish: incremental watcher deltas. Treat large-dir
 responsiveness as improved but not fully virtualized.
 
 ### Parity freeze (still intentionally out of scope)
@@ -82,7 +81,7 @@ Ordered by user impact. File references are under `dirtoo/` unless noted.
 | **Directory thumbnails** | `DirectoryThumbnailer` | **done** (Make Directory Thumbnails) |
 | **Swap Names** | `dirops.swap_names` / programs | **done** |
 | **Show abspath vs basename** | view toggles | **done** (Show Full Paths) |
-| **Time gaps** in list | `toggle_timegaps` | **Missing** |
+| **Time gaps** in list | `toggle_timegaps` | **done** (Show Time Gaps, ≥6h separator) |
 | Filter line **history** | Python filter toolbar history | **done** (Up/Down in filter line) |
 | Transfer **error** / **request** dialogs | dedicated dialogs | Partially folded into transfer/conflict |
 | Undo menu entries | present (may be stub) | **Missing** |

@@ -3,6 +3,9 @@
 
 #include "file_list_model.hpp"
 
+#include <chrono>
+#include <cstdlib>
+
 #include <QTimer>
 
 #include <filesystem>
@@ -222,6 +225,19 @@ void FileListModel::set_show_abspath(bool show)
   }
 }
 
+void FileListModel::set_show_timegaps(bool show)
+{
+  if (show_timegaps_ == show) {
+    return;
+  }
+  show_timegaps_ = show;
+  if (rowCount() > 0) {
+    // sizeHint and paint depend on TimeGapSecondsRole
+    emit layoutAboutToBeChanged();
+    emit layoutChanged();
+  }
+}
+
 void FileListModel::set_icon_style(bool enabled)
 {
   if (icon_style_ == enabled) {
@@ -350,6 +366,24 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
 
   if (role == IsNewRole) {
     return is_new(QString::fromStdString(fi->path().string()));
+  }
+
+  if (role == TimeGapSecondsRole) {
+    if (!show_timegaps_ || index.row() <= 0) {
+      return QVariant::fromValue(static_cast<qint64>(0));
+    }
+    const auto* prev = file_at(index.row() - 1);
+    if (prev == nullptr) {
+      return QVariant::fromValue(static_cast<qint64>(0));
+    }
+    try {
+      const auto a = std::chrono::clock_cast<std::chrono::system_clock>(prev->mtime());
+      const auto b = std::chrono::clock_cast<std::chrono::system_clock>(fi->mtime());
+      const auto secs = std::chrono::duration_cast<std::chrono::seconds>(a - b).count();
+      return QVariant::fromValue(static_cast<qint64>(std::llabs(secs)));
+    } catch (...) {
+      return QVariant::fromValue(static_cast<qint64>(0));
+    }
   }
 
   if (role == AccessDeniedRole) {

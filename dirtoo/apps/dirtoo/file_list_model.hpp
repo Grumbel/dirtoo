@@ -29,6 +29,8 @@ enum FileListRole {
   ThumbnailStatusRole = Qt::UserRole + 3,
   AccessDeniedRole = Qt::UserRole + 4,
   IsNewRole = Qt::UserRole + 5,
+  /// Seconds between this row and previous (0 if none / disabled).
+  TimeGapSecondsRole = Qt::UserRole + 6,
 };
 
 enum class ThumbnailStatus {
@@ -70,6 +72,8 @@ public:
   void set_crop_thumbnails(bool crop);
   void set_show_abspath(bool show);
   [[nodiscard]] bool show_abspath() const noexcept { return show_abspath_; }
+  void set_show_timegaps(bool show);
+  [[nodiscard]] bool show_timegaps() const noexcept { return show_timegaps_; }
   [[nodiscard]] bool crop_thumbnails() const noexcept { return crop_thumbnails_; }
   [[nodiscard]] static constexpr int icon_detail_level_min() { return 0; }
   [[nodiscard]] static constexpr int icon_detail_level_max() { return 4; }
@@ -111,6 +115,7 @@ private:
   int icon_detail_level_ = 3; // name + size by default (Python-ish)
   bool crop_thumbnails_ = false;
   bool show_abspath_ = false;
+  bool show_timegaps_ = false;
   bool group_refresh_pending_ = false;
 };
 

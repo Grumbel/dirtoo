@@ -15,6 +15,7 @@
 #include <QStyle>
 #include <QStyleOptionViewItem>
 
+#include <algorithm>
 #include <cmath>
 #include <cctype>
 #include <optional>
@@ -205,6 +206,12 @@ QSize FileItemDelegate::sizeHint(const QStyleOptionViewItem& option, const QMode
       sz.setHeight(sz.height() + option.fontMetrics.height() + 8);
     }
   }
+  if (index.isValid()) {
+    const qint64 gap = index.data(TimeGapSecondsRole).toLongLong();
+    if (gap >= kTimeGapThresholdSecs) {
+      sz.setHeight(sz.height() + option.fontMetrics.height() + 6);
+    }
+  }
   return sz;
 }
 
@@ -230,6 +237,27 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
       painter->drawText(header_rect.adjusted(8, 0, -4, 0), Qt::AlignVCenter | Qt::AlignLeft, label);
       painter->restore();
       opt.rect.setTop(opt.rect.top() + header_h);
+    }
+  }
+
+  // Time-gap separator when consecutive items are far apart in mtime.
+  if (index.isValid()) {
+    const qint64 gap = index.data(TimeGapSecondsRole).toLongLong();
+    if (gap >= kTimeGapThresholdSecs) {
+      const int gap_h = option.fontMetrics.height() + 6;
+      QRect gap_rect = opt.rect;
+      gap_rect.setHeight(gap_h);
+      painter->save();
+      painter->fillRect(gap_rect, option.palette.mid().color().lighter(130));
+      painter->setPen(option.palette.color(QPalette::PlaceholderText));
+      QFont f = option.font;
+      f.setItalic(true);
+      f.setPointSizeF(std::max(8.0, f.pointSizeF() - 1.0));
+      painter->setFont(f);
+      painter->drawText(gap_rect.adjusted(8, 0, -4, 0), Qt::AlignVCenter | Qt::AlignLeft,
+                        format_time_gap(gap));
+      painter->restore();
+      opt.rect.setTop(opt.rect.top() + gap_h);
     }
   }
 

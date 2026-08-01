@@ -62,7 +62,7 @@ bool build_montage(const QString& dir_path, const QString& out_path)
   for (const QString& name : entries) {
     if (is_image_ext(name)) {
       images.push_back(dir.absoluteFilePath(name));
-      if (images.size() >= 4) {
+      if (images.size() >= 9) {
         break;
       }
     }
@@ -79,24 +79,48 @@ bool build_montage(const QString& dir_path, const QString& out_path)
   painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
 
   const int n = images.size();
-  // Layouts: 1 full, 2 side-by-side, 3 left+stack, 4 grid.
+  // Normalized cell rects for 1..9 tiles (Python DirectoryThumbnailer-inspired).
   struct Cell {
     double x1, y1, x2, y2;
   };
-  std::array<std::array<Cell, 4>, 5> layouts{};
-  layouts[1] = {Cell{0, 0, 1, 1}};
-  layouts[2] = {Cell{0, 0, 0.5, 1}, Cell{0.5, 0, 1, 1}};
-  layouts[3] = {Cell{0, 0, 0.5, 1}, Cell{0.5, 0, 1, 0.5}, Cell{0.5, 0.5, 1, 1}};
-  layouts[4] = {Cell{0, 0, 0.5, 0.5}, Cell{0.5, 0, 1, 0.5}, Cell{0, 0.5, 0.5, 1},
-                Cell{0.5, 0.5, 1, 1}};
+  const Cell* cells = nullptr;
+  int cell_count = n;
+  static const Cell k1[] = {{0, 0, 1, 1}};
+  static const Cell k2[] = {{0, 0, 0.5, 1}, {0.5, 0, 1, 1}};
+  static const Cell k3[] = {{0, 0, 0.5, 1}, {0.5, 0, 1, 0.5}, {0.5, 0.5, 1, 1}};
+  static const Cell k4[] = {{0, 0, 0.5, 0.5}, {0.5, 0, 1, 0.5}, {0, 0.5, 0.5, 1}, {0.5, 0.5, 1, 1}};
+  static const Cell k5[] = {{0, 0, 0.333, 0.5}, {0.666, 0, 1, 0.5}, {0.333, 0, 0.666, 1},
+                            {0, 0.5, 0.333, 1}, {0.666, 0.5, 1, 1}};
+  static const Cell k6[] = {{0, 0, 0.333, 0.5}, {0.333, 0, 0.666, 0.5}, {0.666, 0, 1, 0.5},
+                            {0, 0.5, 0.333, 1}, {0.333, 0.5, 0.666, 1}, {0.666, 0.5, 1, 1}};
+  static const Cell k7[] = {{0, 0, 0.333, 0.5}, {0.333, 0, 0.666, 0.333}, {0.666, 0, 1, 0.5},
+                            {0.333, 0.333, 0.666, 0.666}, {0, 0.5, 0.333, 1},
+                            {0.333, 0.666, 0.666, 1}, {0.666, 0.5, 1, 1}};
+  static const Cell k8[] = {{0, 0, 0.333, 0.333}, {0.333, 0, 0.666, 0.333}, {0.666, 0, 1, 0.333},
+                            {0, 0.333, 0.5, 0.666}, {0.5, 0.333, 1, 0.666},
+                            {0, 0.666, 0.333, 1}, {0.333, 0.666, 0.666, 1}, {0.666, 0.666, 1, 1}};
+  static const Cell k9[] = {{0, 0, 0.333, 0.333}, {0.333, 0, 0.666, 0.333}, {0.666, 0, 1, 0.333},
+                            {0, 0.333, 0.333, 0.666}, {0.333, 0.333, 0.666, 0.666},
+                            {0.666, 0.333, 1, 0.666}, {0, 0.666, 0.333, 1},
+                            {0.333, 0.666, 0.666, 1}, {0.666, 0.666, 1, 1}};
+  switch (n) {
+  case 1: cells = k1; break;
+  case 2: cells = k2; break;
+  case 3: cells = k3; break;
+  case 4: cells = k4; break;
+  case 5: cells = k5; break;
+  case 6: cells = k6; break;
+  case 7: cells = k7; break;
+  case 8: cells = k8; break;
+  default: cells = k9; cell_count = 9; break;
+  }
 
-  const auto& cells = layouts[static_cast<std::size_t>(n)];
-  for (int i = 0; i < n; ++i) {
+  for (int i = 0; i < cell_count; ++i) {
     QImage img = load_scaled(images[i], kSize);
     if (img.isNull()) {
       continue;
     }
-    const auto& c = cells[static_cast<std::size_t>(i)];
+    const auto& c = cells[i];
     QRect dst(static_cast<int>(c.x1 * kSize), static_cast<int>(c.y1 * kSize),
               static_cast<int>((c.x2 - c.x1) * kSize), static_cast<int>((c.y2 - c.y1) * kSize));
     QImage cropped = crop_center(img, dst.width(), dst.height());
