@@ -159,6 +159,14 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
     painter->drawRoundedRect(br.adjusted(1, 1, -1, -1), 4, 4);
   }
 
+  // File cursor outline (dirtoo-py is_cursor): light fill + black border, independent of selection.
+  if (view_ != nullptr && view_->is_cursor_row(row_)) {
+    painter->setOpacity(1.0);
+    painter->setPen(QPen(QColor(0, 0, 0), 1));
+    painter->setBrush(QColor(255, 255, 255, 96));
+    painter->drawRect(br.adjusted(0.5, 0.5, -0.5, -0.5));
+  }
+
   // Group section header above the first item of a group (matches FileItemDelegate).
   int top_pad = 4;
   if (idx.data(IsGroupStartRole).toBool()) {

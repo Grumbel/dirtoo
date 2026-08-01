@@ -44,6 +44,14 @@ public:
   void select_row(int row, bool clear_others = true);
   void select_all();
 
+  /// Keyboard "file cursor" (dirtoo-py FileView._cursor_item): independent of
+  /// multi-selection; arrow keys move it; Shift extends selection.
+  [[nodiscard]] int cursor_row() const noexcept { return cursor_row_; }
+  [[nodiscard]] bool is_cursor_row(int row) const noexcept { return row >= 0 && row == cursor_row_; }
+  void set_cursor_row(int row, bool ensure_visible = true);
+  void clear_cursor();
+  void cursor_move(int dx, int dy);
+
   void notify_activated(const QModelIndex& index);
   void notify_middle_clicked(const QModelIndex& index);
   void notify_context_menu(const QPoint& global_pos, const QModelIndex& index);
@@ -70,6 +78,8 @@ protected:
   void dropEvent(QDropEvent* event) override;
   void scrollContentsBy(int dx, int dy) override;
   void changeEvent(QEvent* event) override;
+  void keyPressEvent(QKeyEvent* event) override;
+  void focusInEvent(QFocusEvent* event) override;
 
 private slots:
   void on_model_reset();
@@ -103,8 +113,12 @@ private:
   int layout_max_row_ = 0;
   /// Rows selected even when their tile is outside the viewport window.
   mutable QSet<int> selected_row_set_;
+  /// Keyboard focus tile (−1 = none). Drawn as a light outline over selection.
+  int cursor_row_ = -1;
 
   void start_drag();
+  void ensure_cursor_visible();
+  void update_cursor_item_visuals(int old_row, int new_row);
 };
 
 } // namespace dirtoo::app

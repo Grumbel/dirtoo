@@ -28,6 +28,7 @@
 #include <QAction>
 #include <QActionGroup>
 #include <QApplication>
+#include <QCoreApplication>
 #include <QClipboard>
 #include <QCloseEvent>
 #include <QShowEvent>
@@ -3201,7 +3202,7 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event)
     }
   }
 
-  // Home/End + type-ahead when a file view (or its viewport) has focus.
+  // Home/End + type-ahead + graphics file-cursor when a file view has focus.
   const bool is_file_view =
       (tree_view_ != nullptr && (obj == tree_view_ || obj == tree_view_->viewport()))
       || (icon_view_ != nullptr && (obj == icon_view_ || obj == icon_view_->viewport()))
@@ -3218,6 +3219,21 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event)
         jump_to_row(model_->rowCount() - 1);
       }
       return true;
+    }
+    // Graphics Icons mode: forward cursor keys from the viewport into the view
+    // (viewport often holds focus; sendEvent to the view avoids re-entering this
+    // filter on graphics_view_ itself).
+    if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr
+        && obj == graphics_view_->viewport()) {
+      const int k = ke->key();
+      const bool cursor_key =
+          k == Qt::Key_Left || k == Qt::Key_Right || k == Qt::Key_Up || k == Qt::Key_Down
+          || k == Qt::Key_Return || k == Qt::Key_Enter || k == Qt::Key_Escape
+          || (k == Qt::Key_Space && (ke->modifiers() & Qt::ControlModifier));
+      if (cursor_key) {
+        QCoreApplication::sendEvent(graphics_view_, ke);
+        return true;
+      }
     }
     // Type-ahead: printable text without Ctrl/Alt/Meta opens the leap overlay.
     if (!(ke->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))
@@ -3356,9 +3372,13 @@ void MainWindow::on_leap(const QString& text, bool forward, bool from_key)
 
   int start = 0;
   if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr) {
-    const auto sel = graphics_view_->selected_rows();
-    if (!sel.empty()) {
-      start = sel.front();
+    if (graphics_view_->cursor_row() >= 0) {
+      start = graphics_view_->cursor_row();
+    } else {
+      const auto sel = graphics_view_->selected_rows();
+      if (!sel.empty()) {
+        start = sel.front();
+      }
     }
   } else if (auto* view = current_view(); view != nullptr && view->selectionModel() != nullptr) {
     const auto sel = view->selectionModel()->selectedIndexes();
