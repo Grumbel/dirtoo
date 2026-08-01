@@ -61,6 +61,20 @@
 
 namespace dirtoo::app {
 
+namespace {
+
+QIcon theme_icon(const char* name, const char* fallback = nullptr)
+{
+  QIcon icon = QIcon::fromTheme(QString::fromUtf8(name));
+  if (icon.isNull() && fallback != nullptr) {
+    icon = QIcon::fromTheme(QString::fromUtf8(fallback));
+  }
+  return icon;
+}
+
+} // namespace
+
+
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
 {
@@ -82,40 +96,47 @@ MainWindow::MainWindow(QWidget* parent)
 
   auto* toolbar = addToolBar(QStringLiteral("Main"));
   toolbar->setMovable(false);
+  toolbar->setIconSize(QSize(24, 24));
+  toolbar->setToolButtonStyle(Qt::ToolButtonIconOnly);
 
-  back_act_ = toolbar->addAction(QStringLiteral("Back"), this, &MainWindow::on_go_back);
-  forward_act_ = toolbar->addAction(QStringLiteral("Forward"), this, &MainWindow::on_go_forward);
-  parent_act_ = toolbar->addAction(QStringLiteral("Parent"), this, &MainWindow::on_go_parent);
+  back_act_ = toolbar->addAction(theme_icon("go-previous", "arrow-left"), QStringLiteral("Back"), this,
+                                 &MainWindow::on_go_back);
+  forward_act_ = toolbar->addAction(theme_icon("go-next", "arrow-right"), QStringLiteral("Forward"), this,
+                                    &MainWindow::on_go_forward);
+  parent_act_ = toolbar->addAction(theme_icon("go-up", "arrow-up"), QStringLiteral("Parent"), this,
+                                   &MainWindow::on_go_parent);
   // Middle-click Parent → open parent in a new window.
   if (auto* btn = qobject_cast<QToolButton*>(toolbar->widgetForAction(parent_act_))) {
     btn->installEventFilter(this);
   }
-  toolbar->addAction(QStringLiteral("Home"), this, &MainWindow::on_go_home);
+  toolbar->addAction(theme_icon("go-home", "user-home"), QStringLiteral("Home"), this, &MainWindow::on_go_home);
   toolbar->addSeparator();
-  toolbar->addAction(QStringLiteral("New Folder"), this, &MainWindow::on_mkdir);
+  toolbar->addAction(theme_icon("folder-new"), QStringLiteral("New Folder"), this, &MainWindow::on_mkdir);
   toolbar->addSeparator();
-  toolbar->addAction(QStringLiteral("Cut"), this, &MainWindow::on_cut);
-  toolbar->addAction(QStringLiteral("Copy"), this, &MainWindow::on_copy);
-  paste_act_ = toolbar->addAction(QStringLiteral("Paste"), this, &MainWindow::on_paste);
+  toolbar->addAction(theme_icon("edit-cut"), QStringLiteral("Cut"), this, &MainWindow::on_cut);
+  toolbar->addAction(theme_icon("edit-copy"), QStringLiteral("Copy"), this, &MainWindow::on_copy);
+  paste_act_ = toolbar->addAction(theme_icon("edit-paste"), QStringLiteral("Paste"), this, &MainWindow::on_paste);
   toolbar->addSeparator();
 
-  auto* view_group = new QActionGroup(this);
-  detail_act_ = toolbar->addAction(QStringLiteral("Detail"));
-  icons_act_ = toolbar->addAction(QStringLiteral("Icons"));
+  detail_act_ = toolbar->addAction(theme_icon("view-list-details", "view-list"), QStringLiteral("Detail"));
+  icons_act_ = toolbar->addAction(theme_icon("view-grid", "view-list-icons"), QStringLiteral("Icons"));
   detail_act_->setCheckable(true);
   icons_act_->setCheckable(true);
-  detail_act_->setChecked(true);
+  auto* view_group = new QActionGroup(this);
   view_group->addAction(detail_act_);
   view_group->addAction(icons_act_);
   connect(detail_act_, &QAction::triggered, this, &MainWindow::on_view_detail);
   connect(icons_act_, &QAction::triggered, this, &MainWindow::on_view_icons);
+  detail_act_->setChecked(true);
 
   toolbar->addSeparator();
-  toolbar->addAction(QStringLiteral("Zoom −"), this, &MainWindow::on_zoom_out);
-  toolbar->addAction(QStringLiteral("Zoom +"), this, &MainWindow::on_zoom_in);
+  toolbar->addAction(theme_icon("zoom-out"), QStringLiteral("Zoom −"), this, &MainWindow::on_zoom_out);
+  toolbar->addAction(theme_icon("zoom-in"), QStringLiteral("Zoom +"), this, &MainWindow::on_zoom_in);
   toolbar->addSeparator();
-  toolbar->addAction(QStringLiteral("Less detail"), this, &MainWindow::on_less_icon_details);
-  toolbar->addAction(QStringLiteral("More detail"), this, &MainWindow::on_more_icon_details);
+  toolbar->addAction(theme_icon("zoom-original", "list-remove"), QStringLiteral("Less detail"), this,
+                     &MainWindow::on_less_icon_details);
+  toolbar->addAction(theme_icon("zoom-fit-best", "list-add"), QStringLiteral("More detail"), this,
+                     &MainWindow::on_more_icon_details);
 
   // Menu bar
   {
@@ -550,9 +571,15 @@ void MainWindow::apply_icon_zoom()
   const int size = kZoomLevels[zoom_index_];
   icon_view_->setIconSize(QSize(size, size));
   const int text_rows = model_ != nullptr ? model_->icon_text_rows() : 1;
-  // ~14px per caption line + padding under the icon
-  const int text_h = 4 + text_rows * 16;
-  icon_view_->setGridSize(QSize(size + 28, size + text_h + 12));
+  // Caption lines under the icon (name / size / date). Use a generous line height so
+  // multi-line text is not clipped by the grid cell.
+  const int text_h = 6 + text_rows * 18;
+  // Cell must be at least as wide as the thumbnail; prefer a bit of side margin for
+  // long names and for media badges that sit on the icon edges.
+  const int cell_w = std::max(size + 40, 96);
+  const int cell_h = size + text_h + 16;
+  icon_view_->setGridSize(QSize(cell_w, cell_h));
+  icon_view_->setSpacing(8);
   const int detail = std::max(16, size / 4);
   tree_view_->setIconSize(QSize(detail, detail));
 }

@@ -174,6 +174,7 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
 
   QStyleOptionViewItem opt = option;
   initStyleOption(&opt, index);
+  painter->setClipRect(opt.rect);
 
   // Selection / hover background
   if (opt.state & QStyle::State_Selected) {
@@ -186,8 +187,13 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
 
   const QIcon icon = opt.icon;
   const QString text = opt.text;
-  const int icon_side = opt.decorationSize.width() > 0 ? opt.decorationSize.width()
-                                                       : std::min(opt.rect.width() - 8, opt.rect.height() / 2);
+  const int text_rows = model_ != nullptr ? model_->icon_text_rows() : 0;
+  const int caption_budget = text_rows > 0 ? (6 + text_rows * 18) : 0;
+  int icon_side = opt.decorationSize.width() > 0 ? opt.decorationSize.width()
+                                                 : std::min(opt.rect.width() - 8, opt.rect.height() / 2);
+  // Keep enough vertical space under the icon for the caption lines.
+  icon_side = std::min(icon_side, std::max(16, opt.rect.height() - caption_budget - 8));
+  icon_side = std::min(icon_side, opt.rect.width() - 8);
   QRect thumb(0, 0, icon_side, icon_side);
   thumb.moveCenter(QPoint(opt.rect.center().x(), opt.rect.top() + icon_side / 2 + 4));
 
@@ -246,17 +252,30 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     }
   }
 
-  // Caption under thumbnail
+  // Caption under thumbnail — elide each line so long names/sizes stay inside the cell.
   if (!text.isEmpty() && model_->icon_detail_level() > 0) {
-    QRect text_rect = opt.rect.adjusted(2, thumb.bottom() + 2, -2, -2);
-    QPen pen = painter->pen();
-    if (opt.state & QStyle::State_Selected) {
-      painter->setPen(opt.palette.highlightedText().color());
-    } else {
-      painter->setPen(opt.palette.text().color());
+    QRect text_rect = opt.rect.adjusted(4, thumb.bottom() + 4, -4, -2);
+    if (text_rect.height() > 0 && text_rect.width() > 0) {
+      QPen pen = painter->pen();
+      if (opt.state & QStyle::State_Selected) {
+        painter->setPen(opt.palette.highlightedText().color());
+      } else {
+        painter->setPen(opt.palette.text().color());
+      }
+      const QFontMetrics fm(painter->font());
+      const QStringList lines = text.split(QLatin1Char('\n'));
+      int y = text_rect.top();
+      for (const QString& line : lines) {
+        if (y + fm.height() > text_rect.bottom()) {
+          break;
+        }
+        const QString elided = fm.elidedText(line, Qt::ElideMiddle, text_rect.width());
+        painter->drawText(QRect(text_rect.left(), y, text_rect.width(), fm.height()),
+                          Qt::AlignHCenter | Qt::AlignVCenter, elided);
+        y += fm.height() + 1;
+      }
+      painter->setPen(pen);
     }
-    painter->drawText(text_rect, Qt::AlignHCenter | Qt::AlignTop | Qt::TextWordWrap, text);
-    painter->setPen(pen);
   }
 
   painter->restore();
