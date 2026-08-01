@@ -160,14 +160,28 @@ void GraphicsFileView::layout_items()
     cols = std::max(1, (vp_w - padding_) / std::max(cell_w, 160));
   }
 
+  // Flow left-to-right. When a group starts mid-row, break to a new row so the
+  // section header painted on the first tile of the group has a full line.
+  int col = 0;
+  int row = 0;
+  int max_row = 0;
   for (std::size_t i = 0; i < items_.size(); ++i) {
-    const int col = static_cast<int>(i % static_cast<std::size_t>(cols));
-    const int row = static_cast<int>(i / static_cast<std::size_t>(cols));
+    if (model_ != nullptr) {
+      const QModelIndex idx = model_->index(static_cast<int>(i), 0);
+      if (idx.data(IsGroupStartRole).toBool() && i > 0 && col != 0) {
+        col = 0;
+        ++row;
+      }
+    }
     items_[i]->setPos(padding_ + col * cell_w, padding_ + row * cell_h);
+    max_row = std::max(max_row, row);
+    ++col;
+    if (col >= cols) {
+      col = 0;
+      ++row;
+    }
   }
-  const int rows = static_cast<int>((items_.size() + static_cast<std::size_t>(cols) - 1)
-                                   / static_cast<std::size_t>(cols));
-  scene_->setSceneRect(0, 0, padding_ * 2 + cols * cell_w, padding_ * 2 + rows * cell_h);
+  scene_->setSceneRect(0, 0, padding_ * 2 + cols * cell_w, padding_ * 2 + (max_row + 1) * cell_h);
 }
 
 QModelIndex GraphicsFileView::index_at(const QPoint& view_pos) const

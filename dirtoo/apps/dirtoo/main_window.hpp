@@ -21,6 +21,7 @@
 #include "directory_load_worker.hpp"
 #include "sort_worker.hpp"
 #include "filter_worker.hpp"
+#include "directory_thumbnail_worker.hpp"
 #include "leap_widget.hpp"
 #include "location_button_bar.hpp"
 #include "transfer_dialog.hpp"
@@ -101,6 +102,7 @@ private slots:
   void on_preferences();
   void on_reload_thumbnails();
   void on_prepare_thumbnails();
+  void on_make_directory_thumbnails();
   void apply_settings(const AppSettings& settings);
   void on_archive_ready(const dirtoo::fs::Location& archive_location,
                         const std::filesystem::path& extracted_root);
@@ -236,6 +238,8 @@ private:
   QThread* filter_thread_ = nullptr;
   FilterWorker* filter_worker_ = nullptr;
   quint64 filter_generation_ = 0;
+  QThread* dir_thumb_thread_ = nullptr;
+  DirectoryThumbnailWorker* dir_thumb_worker_ = nullptr;
   QStringListModel* path_completion_model_ = nullptr;
   QCompleter* path_completer_ = nullptr;
   QTimer* path_completion_timer_ = nullptr;

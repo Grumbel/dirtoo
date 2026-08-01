@@ -56,6 +56,8 @@ qt_add_executable(dirtoo-app
   sort_worker.hpp
   filter_worker.cpp
   filter_worker.hpp
+  directory_thumbnail_worker.cpp
+  directory_thumbnail_worker.hpp
   resources.qrc
 )
 

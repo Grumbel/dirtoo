@@ -118,21 +118,47 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
   const bool selected = option != nullptr && (option->state & QStyle::State_Selected);
   const bool hover = option != nullptr && (option->state & QStyle::State_MouseOver);
 
+  const QModelIndex idx = model_index();
+  const QPalette pal = (widget != nullptr) ? widget->palette() : QPalette();
+  const QColor highlight = pal.color(QPalette::Highlight);
+  const QColor text_color = pal.color(QPalette::Text);
+  const QColor base_color = pal.color(QPalette::Base);
+
   if (selected) {
-    painter->fillRect(br, QColor(60, 120, 220, 80));
+    QColor fill = highlight;
+    fill.setAlpha(90);
+    painter->fillRect(br, fill);
   } else if (hover) {
-    painter->fillRect(br, QColor(60, 120, 220, 35));
+    QColor fill = highlight;
+    fill.setAlpha(40);
+    painter->fillRect(br, fill);
   }
 
-  const QModelIndex idx = model_index();
+  // Group section header above the first item of a group (matches FileItemDelegate).
+  int top_pad = 4;
+  if (idx.data(IsGroupStartRole).toBool()) {
+    const QString label = idx.data(GroupLabelRole).toString();
+    if (!label.isEmpty()) {
+      const QFontMetrics fm(painter->font());
+      const int header_h = fm.height() + 8;
+      QRect header_rect = br.toRect();
+      header_rect.setHeight(header_h);
+      painter->fillRect(header_rect, pal.color(QPalette::AlternateBase));
+      painter->setPen(pal.color(QPalette::WindowText));
+      painter->drawText(header_rect.adjusted(6, 0, -4, 0), Qt::AlignVCenter | Qt::AlignLeft, label);
+      top_pad = header_h + 4;
+    }
+  }
+
   const QIcon icon = idx.data(Qt::DecorationRole).value<QIcon>();
   const QString text = idx.data(Qt::DisplayRole).toString();
 
-  const int caption_h = 36;
-  int icon_side = std::min(tile_size_.width() - 8, tile_size_.height() - caption_h - 8);
+  const int text_rows = model_->icon_text_rows();
+  const int caption_h = text_rows > 0 ? (6 + text_rows * 16) : 0;
+  int icon_side = std::min(tile_size_.width() - 8, tile_size_.height() - caption_h - top_pad - 4);
   icon_side = std::max(16, icon_side);
   QRect thumb(0, 0, icon_side, icon_side);
-  thumb.moveCenter(QPoint(static_cast<int>(br.center().x()), 4 + icon_side / 2));
+  thumb.moveCenter(QPoint(static_cast<int>(br.center().x()), top_pad + icon_side / 2));
 
   if (!icon.isNull()) {
     const QPixmap pm = icon.pixmap(QSize(icon_side * 2, icon_side * 2));
@@ -207,23 +233,37 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
     }
   }
 
-  // Caption
-  if (!text.isEmpty()) {
-    QRect text_rect = br.toRect().adjusted(4, thumb.bottom() + 4, -4, -2);
-    painter->setPen(selected ? QColor(20, 40, 80) : QColor(30, 30, 30));
+  // Caption — multi-line from model (icon detail level); theme-aware colors.
+  if (!text.isEmpty() && caption_h > 0) {
+    QRect text_rect = br.toRect().adjusted(4, thumb.bottom() + 2, -4, -2);
+    painter->setPen(selected ? pal.color(QPalette::HighlightedText).name().isEmpty()
+                                   ? text_color
+                                   : pal.color(QPalette::WindowText)
+                             : text_color);
+    // Prefer readable text on selection highlight.
+    if (selected) {
+      painter->setPen(pal.color(QPalette::HighlightedText));
+      if (painter->pen().color().alpha() == 0) {
+        painter->setPen(text_color);
+      }
+    }
     const QFontMetrics fm(painter->font());
     const QStringList lines = text.split(QLatin1Char('\n'));
     int y = text_rect.top();
+    int drawn = 0;
     for (const QString& line : lines) {
-      if (y + fm.height() > text_rect.bottom()) {
+      if (y + fm.height() > text_rect.bottom() || (text_rows > 0 && drawn >= text_rows)) {
         break;
       }
       const QString elided = fm.elidedText(line, Qt::ElideMiddle, text_rect.width());
       painter->drawText(QRect(text_rect.left(), y, text_rect.width(), fm.height()),
-                        Qt::AlignHCenter | Qt::AlignVCenter, elided);
+                        Qt::AlignHCenter | Qt::AlignTop, elided);
       y += fm.height() + 1;
+      ++drawn;
     }
   }
+
+  (void)base_color;
 }
 
 void GraphicsFileItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)

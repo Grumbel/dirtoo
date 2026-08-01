@@ -3,6 +3,7 @@
 
 #include "main_window.hpp"
 #include "filter_worker.hpp"
+#include "directory_thumbnail_worker.hpp"
 #include "file_views.hpp"
 #include "graphics_file_view.hpp"
 #include "graphics_file_item.hpp"
@@ -135,6 +136,21 @@ MainWindow::MainWindow(QWidget* parent)
   connect(filter_worker_, &FilterWorker::filtered, this, &MainWindow::on_filter_finished);
   qRegisterMetaType<dirtoo::collection::GroupMode>("dirtoo::collection::GroupMode");
   filter_thread_->start();
+
+  dir_thumb_worker_ = new DirectoryThumbnailWorker;
+  dir_thumb_thread_ = new QThread(this);
+  dir_thumb_worker_->moveToThread(dir_thumb_thread_);
+  connect(dir_thumb_thread_, &QThread::finished, dir_thumb_worker_, &QObject::deleteLater);
+  connect(dir_thumb_worker_, &DirectoryThumbnailWorker::thumbnail_ready, this,
+          &MainWindow::on_thumbnail_ready);
+  connect(dir_thumb_worker_, &DirectoryThumbnailWorker::finished, this,
+          [this](int ok, int fail) {
+            if (status_label_ != nullptr) {
+              status_label_->setText(
+                  QStringLiteral("Directory thumbnails: %1 ok, %2 failed").arg(ok).arg(fail));
+            }
+          });
+  dir_thumb_thread_->start();
 
   auto* toolbar = addToolBar(QStringLiteral("Main"));
   toolbar->setMovable(false);
@@ -311,6 +327,11 @@ MainWindow::MainWindow(QWidget* parent)
       auto* act = view_menu->addAction(QStringLiteral("Prepare Thumbnails"), this,
                                        &MainWindow::on_prepare_thumbnails);
       act->setStatusTip(QStringLiteral("Request thumbnails for all visible items"));
+    }
+    {
+      auto* act = view_menu->addAction(QStringLiteral("Make Directory Thumbnails"), this,
+                                       &MainWindow::on_make_directory_thumbnails);
+      act->setStatusTip(QStringLiteral("Build montage thumbnails for folders (selection or all visible)"));
     }
     {
       auto* act = view_menu->addAction(QStringLiteral("Recursive Search…"), this,
@@ -746,6 +767,10 @@ MainWindow::~MainWindow()
   if (filter_thread_ != nullptr) {
     filter_thread_->quit();
     filter_thread_->wait(3000);
+  }
+  if (dir_thumb_thread_ != nullptr) {
+    dir_thumb_thread_->quit();
+    dir_thumb_thread_->wait(3000);
   }
 }
 
@@ -1254,7 +1279,16 @@ void MainWindow::request_thumbnails_for_visible()
         continue;
       }
       const auto& fi = visible[static_cast<std::size_t>(r)];
-      if (fi.is_directory() || fi.is_synthetic() || location_.is_archive()) {
+      if (fi.is_synthetic() || location_.is_archive()) {
+        continue;
+      }
+      if (fi.is_directory()) {
+        // Use an existing XDG/cache montage if present; do not auto-generate here.
+        const QString cache = thumbnail::Thumbnailer::cache_path_for(fi.location(),
+                                                                     QStringLiteral("large"));
+        if (QFile::exists(cache) && model_ != nullptr) {
+          model_->set_thumbnail(QString::fromStdString(fi.path().string()), QIcon(cache));
+        }
         continue;
       }
       const QString path = QString::fromStdString(fi.path().string());
@@ -1507,6 +1541,7 @@ void MainWindow::on_context_menu(const QPoint& pos)
   menu.addSeparator();
   menu.addAction(QStringLiteral("Reload Thumbnails"), this, &MainWindow::on_reload_thumbnails);
   menu.addAction(QStringLiteral("Prepare Thumbnails"), this, &MainWindow::on_prepare_thumbnails);
+  menu.addAction(QStringLiteral("Make Directory Thumbnails"), this, &MainWindow::on_make_directory_thumbnails);
   menu.addSeparator();
   menu.addAction(QStringLiteral("New Folder…"), this, &MainWindow::on_mkdir);
   menu.addAction(QStringLiteral("New File…"), this, &MainWindow::on_create_file);
@@ -2768,6 +2803,46 @@ void MainWindow::on_reload_thumbnails()
   if (status_label_ != nullptr) {
     status_label_->setText(QStringLiteral("Reloading %1 thumbnail(s)…").arg(locs.size()));
   }
+}
+
+
+void MainWindow::on_make_directory_thumbnails()
+{
+  if (dir_thumb_worker_ == nullptr) {
+    return;
+  }
+  QStringList dirs;
+  auto selected = selected_fileinfos();
+  if (selected.empty()) {
+    // All visible directories
+    for (const auto& fi : collection_.visible_items()) {
+      if (fi.is_directory() && !fi.is_synthetic()) {
+        dirs << QString::fromStdString(fi.path().string());
+      }
+    }
+  } else {
+    for (const auto& fi : selected) {
+      if (fi.is_directory() && !fi.is_synthetic()) {
+        dirs << QString::fromStdString(fi.path().string());
+      }
+    }
+  }
+  if (dirs.isEmpty()) {
+    if (status_label_ != nullptr) {
+      status_label_->setText(QStringLiteral("No directories to thumbnail"));
+    }
+    return;
+  }
+  if (status_label_ != nullptr) {
+    status_label_->setText(QStringLiteral("Building %1 directory thumbnail(s)…").arg(dirs.size()));
+  }
+  for (const QString& d : dirs) {
+    if (model_ != nullptr) {
+      model_->set_thumbnail_pending(d);
+    }
+  }
+  QMetaObject::invokeMethod(dir_thumb_worker_, "generate", Qt::QueuedConnection,
+                            Q_ARG(QStringList, dirs));
 }
 
 void MainWindow::on_prepare_thumbnails()

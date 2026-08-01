@@ -222,8 +222,8 @@ Use:
 4. [x] **Thumbnails**: viewport-scoped batch (cap 64); skip `QMimeDatabase` on GUI.  
 5. [x] **Filter**: `FilterWorker` for content predicates; generation-safe apply.  
 6. [x] **DnD**: Shift→Move; folder drop on list/tree; Graphics modifier handling.  
-7. [partial] **Icons**: palette base background; GraphicsFileView constructed; progressive thumbs on scroll. Caption/group headers still open.  
-8. [partial] **Parity**: Select All + New File + Paste as Link / Copy as Link + Link DnD; dir thumbs still open.
+7. [x] **Icons**: palette-aware tiles/captions; group headers in Graphics; group-aware layout.  
+8. [x] **Parity**: Select All, New File, Link paste/DnD, directory montage thumbnails (Make Directory Thumbnails).
 
 ---
 
