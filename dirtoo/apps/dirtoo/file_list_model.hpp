@@ -59,6 +59,7 @@ public:
   void clear_thumbnail(const QString& path);
   void mark_new(const QString& path);
   void clear_new_marks();
+  void prune_new_marks(const QSet<QString>& keep_paths);
 
   [[nodiscard]] ThumbnailStatus thumbnail_status(const QString& path) const;
   [[nodiscard]] bool is_new(const QString& path) const;

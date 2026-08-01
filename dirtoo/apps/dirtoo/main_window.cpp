@@ -1436,27 +1436,32 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
   if (generation != dir_load_generation_ || search_active_) {
     return;
   }
-  // Mark paths that appeared since the last listing of this location (watcher refresh).
+  // "New" badge: paths that appeared since we last listed this location.
+  // Keep marks across soft watcher reloads (Python keeps _new until the item
+  // is gone / the directory is left). Only clear when navigating away.
   if (model_ != nullptr) {
-    model_->clear_new_marks();
     model_->clear_child_counts();
     QSet<QString> next_paths;
     next_paths.reserve(static_cast<int>(items.size()));
     for (const auto& fi : items) {
       next_paths.insert(QString::fromStdString(fi.path().string()));
     }
-    if (known_paths_location_ == location_ && !known_paths_.empty()) {
+    if (known_paths_location_ != location_) {
+      // Different folder (or first load): no "new" stickers for the initial set.
+      model_->clear_new_marks();
+    } else if (!known_paths_.empty()) {
       for (const QString& p : next_paths) {
         if (!known_paths_.contains(p)) {
           model_->mark_new(p);
         }
       }
-      // Drop cached thumbs for paths that vanished (soft reload path).
+      // Drop thumbs for paths that vanished; drop "new" marks for those too.
       for (const QString& p : known_paths_) {
         if (!next_paths.contains(p)) {
           model_->clear_thumbnail(p);
         }
       }
+      model_->prune_new_marks(next_paths);
     }
     known_paths_ = next_paths;
     known_paths_location_ = location_;
@@ -1489,13 +1494,13 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
     refresh_list();
   }
   set_status(QStringLiteral("%1 items").arg(
-        soft ? known_paths_.size() : collection_.visible_items().size()));
-    // After soft path, visible may still be old until sort/filter apply; status updated again later.
-  }
+      soft ? known_paths_.size() : collection_.visible_items().size()));
+  // After soft path, visible may still be old until sort/filter apply; status updated again later.
   // Content filters own the visible list via FilterWorker; replace_items_sorted would
   // rebuild_visible with matchers (GUI I/O) or wipe the async filter result.
   if (!content_filter) {
-    request_async_sort()
+    request_async_sort();
+  }
   request_thumbnails_for_visible();
 }
 

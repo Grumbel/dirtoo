@@ -154,6 +154,28 @@ void FileListModel::clear_new_marks()
   }
 }
 
+void FileListModel::prune_new_marks(const QSet<QString>& keep_paths)
+{
+  if (new_paths_.isEmpty()) {
+    return;
+  }
+  QSet<QString> removed;
+  for (const QString& p : new_paths_) {
+    if (!keep_paths.contains(p)) {
+      removed.insert(p);
+    }
+  }
+  if (removed.isEmpty()) {
+    return;
+  }
+  for (const QString& p : removed) {
+    new_paths_.remove(p);
+  }
+  if (rowCount() > 0) {
+    emit dataChanged(index(0, 0), index(rowCount() - 1, 0), {IsNewRole});
+  }
+}
+
 ThumbnailStatus FileListModel::thumbnail_status(const QString& path) const
 {
   return thumbnail_status_.value(path, ThumbnailStatus::None);

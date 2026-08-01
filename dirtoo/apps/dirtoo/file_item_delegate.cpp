@@ -191,18 +191,19 @@ void draw_status_overlays(QPainter* painter, const QRect& thumb, const QModelInd
 
 void draw_type_badge(QPainter* painter, const QRect& thumb, MediaKind kind)
 {
-  if (kind == MediaKind::None) {
+  if (kind == MediaKind::None || thumb.isEmpty()) {
     return;
   }
   const QPixmap& pm = badge_pixmap(kind);
   if (pm.isNull()) {
     return;
   }
-  // Match Python FileItemRenderer: 24x24 bottom-right, semi-transparent.
-  const int s = 24;
-  QRect r(thumb.right() - s - 2, thumb.bottom() - s - 2, s, s);
+  // Match Python FileItemRenderer: ~24x24 bottom-right, semi-transparent.
+  const int s = std::min(24, std::max(16, thumb.width() / 5));
+  const QRect r(thumb.right() - s - 2, thumb.bottom() - s - 2, s, s);
   painter->save();
-  painter->setOpacity(0.5);
+  painter->setOpacity(0.55);
+  painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
   painter->drawPixmap(r, pm);
   painter->restore();
 }
@@ -432,10 +433,12 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
       draw_badge(painter, thumb, top_left, Qt::AlignLeft | Qt::AlignTop);
       draw_badge(painter, thumb, top_right, Qt::AlignRight | Qt::AlignTop);
       draw_badge(painter, thumb, bottom_left, Qt::AlignLeft | Qt::AlignBottom);
-      draw_type_badge(painter, thumb, kind);
-    } else if (kind != MediaKind::None) {
-      draw_type_badge(painter, thumb, kind);
     }
+  }
+
+  // Type sticker after text badges; before status overlays so loading/new stay on top.
+  if (fi != nullptr && !fi->is_directory()) {
+    draw_type_badge(painter, thumb, kind);
   }
 
   draw_status_overlays(painter, thumb, index);
