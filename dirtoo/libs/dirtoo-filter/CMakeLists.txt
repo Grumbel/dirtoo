@@ -26,6 +26,7 @@ add_library(dirtoo-filter
   src/parser.cpp
   src/predicates.cpp
   src/search.cpp
+  src/media_probe.cpp
 )
 add_library(dirtoo-filter::dirtoo-filter ALIAS dirtoo-filter)
 add_library(dirtoo::filter ALIAS dirtoo-filter)

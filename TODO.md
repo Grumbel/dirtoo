@@ -33,7 +33,7 @@ Core file manager MVP is **done**. Filter DSL, multi-window, dirops, archives
 | Filter help | **done** (Help → Filter expression help) |
 | CLI filter tool | **done** (`dt-filter`) |
 | Content / recursive search | partial: recursive name/filter search done; content `contains:` still open |
-| Media metadata predicates | **todo** (optional deps) |
+| Media metadata predicates | **done** (ffprobe: width/height/duration/framerate) |
 
 ### View & chrome
 
@@ -88,7 +88,7 @@ Core file manager MVP is **done**. Filter DSL, multi-window, dirops, archives
 
 - Parentheses grouping fixed vs Python.
 - Modular Qt-free library; `dt-filter '<expr>' [dir]` for CLI testing.
-- Still open vs Python: `contains:`, fuzzy, width/height/duration.
+- Still open vs Python: `contains:`, fuzzy. Media width/height/duration/framerate via ffprobe.
 
 ---
 

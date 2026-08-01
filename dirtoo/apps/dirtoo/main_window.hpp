@@ -37,6 +37,9 @@ class QAction;
 class QStackedWidget;
 class QAbstractItemView;
 class QCloseEvent;
+class QStringListModel;
+class QCompleter;
+class QTimer;
 
 namespace dirtoo::app {
 
@@ -197,9 +200,9 @@ private:
   SearchWorker* search_worker_ = nullptr;
   QThread* path_completion_thread_ = nullptr;
   PathCompletionWorker* path_completion_worker_ = nullptr;
-  class QStringListModel* path_completion_model_ = nullptr;
-  class QCompleter* path_completer_ = nullptr;
-  class QTimer* path_completion_timer_ = nullptr;
+  QStringListModel* path_completion_model_ = nullptr;
+  QCompleter* path_completer_ = nullptr;
+  QTimer* path_completion_timer_ = nullptr;
   QString path_completion_pending_;
   quint64 path_completion_request_id_ = 0;
   QStackedWidget* view_stack_ = nullptr;

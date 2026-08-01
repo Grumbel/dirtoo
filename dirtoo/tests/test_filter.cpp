@@ -4,6 +4,7 @@
 #include "dirtoo/filter/parser.hpp"
 #include "dirtoo/filter/filter_item.hpp"
 #include "dirtoo/filter/search.hpp"
+#include "dirtoo/filter/media_probe.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -124,4 +125,34 @@ TEST_CASE("search_directory respects cancel", "[filter][search]")
   });
   REQUIRE(hits == 3);
   fs::remove_all(dir);
+}
+
+
+TEST_CASE("parse_duration_seconds", "[filter][media]")
+{
+  using dirtoo::filter::parse_duration_seconds;
+  REQUIRE(parse_duration_seconds("90"));
+  REQUIRE(*parse_duration_seconds("90") == 90.0);
+  REQUIRE(*parse_duration_seconds("1:30") == 90.0);
+  REQUIRE(*parse_duration_seconds("1:02:03") == 3723.0);
+  REQUIRE(*parse_duration_seconds("1h2m3s") == 3723.0);
+  REQUIRE(*parse_duration_seconds("2m") == 120.0);
+  REQUIRE_FALSE(parse_duration_seconds(""));
+  REQUIRE_FALSE(parse_duration_seconds("nope"));
+}
+
+TEST_CASE("filter media commands parse", "[filter][media]")
+{
+  auto m = parse_filter("width:>=1920");
+  REQUIRE(m);
+  m = parse_filter("height:=1080");
+  REQUIRE(m);
+  m = parse_filter("duration:>1m");
+  REQUIRE(m);
+  m = parse_filter("framerate:>29.9");
+  REQUIRE(m);
+  m = parse_filter("type:file width:>=640");
+  REQUIRE(m);
+  // directories never match media predicates
+  REQUIRE_FALSE((*m)->matches(dir("folder")));
 }

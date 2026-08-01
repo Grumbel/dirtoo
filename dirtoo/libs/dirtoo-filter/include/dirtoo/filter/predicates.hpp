@@ -16,5 +16,9 @@ namespace dirtoo::filter {
 [[nodiscard]] MatchFuncPtr make_regex(std::string pattern, bool case_sensitive = false);
 [[nodiscard]] MatchFuncPtr make_type(std::string argument); // file|dir|folder|link|...
 [[nodiscard]] MatchFuncPtr make_size(std::string argument); // e.g. >1M, <=100k, 10K-2M
+[[nodiscard]] MatchFuncPtr make_width(std::string argument);  // e.g. >=1920, =640
+[[nodiscard]] MatchFuncPtr make_height(std::string argument);
+[[nodiscard]] MatchFuncPtr make_duration(std::string argument); // seconds; >1m, 1:30
+[[nodiscard]] MatchFuncPtr make_framerate(std::string argument);
 
 } // namespace dirtoo::filter

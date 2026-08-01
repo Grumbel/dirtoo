@@ -299,6 +299,18 @@ private:
     if (c == "type" || c == "t") {
       return make_type(arg);
     }
+    if (c == "width" || c == "w") {
+      return make_width(arg);
+    }
+    if (c == "height" || c == "h") {
+      return make_height(arg);
+    }
+    if (c == "duration" || c == "dur") {
+      return make_duration(arg);
+    }
+    if (c == "framerate" || c == "fps" || c == "fr") {
+      return make_framerate(arg);
+    }
     // Unknown command → never match (visible failure)
     return std::make_shared<AlwaysFalse>();
   }
@@ -325,6 +337,10 @@ Terms (juxtaposition = AND, OR joins alternatives):
   regex:^a.*      regex on basename (re:, r:)
   size:>1M        size compare (K/M/G); also size:10K-2M
   type:dir        type:file | type:dir (t:)
+  width:>=1920    image/video width (needs ffprobe)
+  height:=1080    image/video height
+  duration:>1m    media duration (seconds; 1h2m / 1:30)
+  framerate:>30   video frame rate (fps)
   -term           exclude / NOT term   (also ^term or not term)
   ( a OR b )      grouping with parentheses
 

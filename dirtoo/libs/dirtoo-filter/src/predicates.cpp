@@ -3,6 +3,8 @@
 
 #include "dirtoo/filter/predicates.hpp"
 
+#include "dirtoo/filter/media_probe.hpp"
+
 #include <algorithm>
 #include <cctype>
 #include <charconv>
@@ -301,5 +303,212 @@ MatchFuncPtr make_size(std::string argument)
   }
   return std::make_shared<SizeMatch>(op, *val);
 }
+
+
+namespace {
+
+enum class Cmp { Eq, Ne, Lt, Le, Gt, Ge };
+
+std::pair<Cmp, std::string_view> split_cmp(std::string_view arg)
+{
+  while (!arg.empty() && std::isspace(static_cast<unsigned char>(arg.front()))) {
+    arg.remove_prefix(1);
+  }
+  if (arg.starts_with(">=")) {
+    return {Cmp::Ge, arg.substr(2)};
+  }
+  if (arg.starts_with("<=")) {
+    return {Cmp::Le, arg.substr(2)};
+  }
+  if (arg.starts_with("!=") || arg.starts_with("<>")) {
+    return {Cmp::Ne, arg.substr(2)};
+  }
+  if (arg.starts_with(">")) {
+    return {Cmp::Gt, arg.substr(1)};
+  }
+  if (arg.starts_with("<")) {
+    return {Cmp::Lt, arg.substr(1)};
+  }
+  if (arg.starts_with("=")) {
+    return {Cmp::Eq, arg.substr(1)};
+  }
+  return {Cmp::Eq, arg};
+}
+
+bool apply_cmp(Cmp op, double a, double b)
+{
+  switch (op) {
+  case Cmp::Eq:
+    return a == b;
+  case Cmp::Ne:
+    return a != b;
+  case Cmp::Lt:
+    return a < b;
+  case Cmp::Le:
+    return a <= b;
+  case Cmp::Gt:
+    return a > b;
+  case Cmp::Ge:
+    return a >= b;
+  }
+  return false;
+}
+
+class WidthMatch : public MatchFunc {
+public:
+  WidthMatch(Cmp op, double value)
+      : op_(op)
+      , value_(value)
+  {
+  }
+  bool matches(const FilterItem& item) const override
+  {
+    if (item.is_directory || item.path.empty()) {
+      return false;
+    }
+    const auto meta = probe_media(item.path);
+    if (!meta || !meta->width) {
+      return false;
+    }
+    return apply_cmp(op_, static_cast<double>(*meta->width), value_);
+  }
+
+private:
+  Cmp op_;
+  double value_;
+};
+
+class HeightMatch : public MatchFunc {
+public:
+  HeightMatch(Cmp op, double value)
+      : op_(op)
+      , value_(value)
+  {
+  }
+  bool matches(const FilterItem& item) const override
+  {
+    if (item.is_directory || item.path.empty()) {
+      return false;
+    }
+    const auto meta = probe_media(item.path);
+    if (!meta || !meta->height) {
+      return false;
+    }
+    return apply_cmp(op_, static_cast<double>(*meta->height), value_);
+  }
+
+private:
+  Cmp op_;
+  double value_;
+};
+
+class DurationMatch : public MatchFunc {
+public:
+  DurationMatch(Cmp op, double seconds)
+      : op_(op)
+      , ms_(seconds * 1000.0)
+  {
+  }
+  bool matches(const FilterItem& item) const override
+  {
+    if (item.is_directory || item.path.empty()) {
+      return false;
+    }
+    const auto meta = probe_media(item.path);
+    if (!meta || !meta->duration_ms) {
+      return false;
+    }
+    return apply_cmp(op_, static_cast<double>(*meta->duration_ms), ms_);
+  }
+
+private:
+  Cmp op_;
+  double ms_;
+};
+
+class FramerateMatch : public MatchFunc {
+public:
+  FramerateMatch(Cmp op, double value)
+      : op_(op)
+      , value_(value)
+  {
+  }
+  bool matches(const FilterItem& item) const override
+  {
+    if (item.is_directory || item.path.empty()) {
+      return false;
+    }
+    const auto meta = probe_media(item.path);
+    if (!meta || !meta->framerate) {
+      return false;
+    }
+    return apply_cmp(op_, *meta->framerate, value_);
+  }
+
+private:
+  Cmp op_;
+  double value_;
+};
+
+std::optional<double> parse_number_arg(std::string_view rest)
+{
+  while (!rest.empty() && std::isspace(static_cast<unsigned char>(rest.front()))) {
+    rest.remove_prefix(1);
+  }
+  while (!rest.empty() && std::isspace(static_cast<unsigned char>(rest.back()))) {
+    rest.remove_suffix(1);
+  }
+  if (rest.empty()) {
+    return std::nullopt;
+  }
+  try {
+    return std::stod(std::string{rest});
+  } catch (...) {
+    return std::nullopt;
+  }
+}
+
+} // namespace
+
+MatchFuncPtr make_width(std::string argument)
+{
+  const auto [op, rest] = split_cmp(argument);
+  const auto val = parse_number_arg(rest);
+  if (!val) {
+    return std::make_shared<AlwaysFalse>();
+  }
+  return std::make_shared<WidthMatch>(op, *val);
+}
+
+MatchFuncPtr make_height(std::string argument)
+{
+  const auto [op, rest] = split_cmp(argument);
+  const auto val = parse_number_arg(rest);
+  if (!val) {
+    return std::make_shared<AlwaysFalse>();
+  }
+  return std::make_shared<HeightMatch>(op, *val);
+}
+
+MatchFuncPtr make_duration(std::string argument)
+{
+  const auto [op, rest] = split_cmp(argument);
+  const auto secs = parse_duration_seconds(rest);
+  if (!secs) {
+    return std::make_shared<AlwaysFalse>();
+  }
+  return std::make_shared<DurationMatch>(op, *secs);
+}
+
+MatchFuncPtr make_framerate(std::string argument)
+{
+  const auto [op, rest] = split_cmp(argument);
+  const auto val = parse_number_arg(rest);
+  if (!val) {
+    return std::make_shared<AlwaysFalse>();
+  }
+  return std::make_shared<FramerateMatch>(op, *val);
+}
+
 
 } // namespace dirtoo::filter
