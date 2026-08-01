@@ -54,6 +54,11 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QPushButton>
+#include <QTextBrowser>
+#include <QAbstractButton>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QMimeDatabase>
 #include <QPixmap>
 #include <QProcess>
@@ -434,11 +439,13 @@ MainWindow::MainWindow(QWidget* parent)
     show_filter_act_->setChecked(true);
     show_filter_act_->setShortcut(QKeySequence(QStringLiteral("Ctrl+F")));
     connect(show_filter_act_, &QAction::toggled, this, [this](bool on) {
-      if (filter_edit_ != nullptr) {
+      if (filter_row_ != nullptr) {
+        filter_row_->setVisible(on);
+      } else if (filter_edit_ != nullptr) {
         filter_edit_->setVisible(on);
-        if (on) {
-          filter_edit_->setFocus(Qt::ShortcutFocusReason);
-        }
+      }
+      if (on && filter_edit_ != nullptr) {
+        filter_edit_->setFocus(Qt::ShortcutFocusReason);
       }
     });
     pin_filter_act_ = view_menu->addAction(QStringLiteral("Pin Filter"));
@@ -645,10 +652,8 @@ MainWindow::MainWindow(QWidget* parent)
     connect(history_menu_, &QMenu::aboutToShow, this, &MainWindow::on_rebuild_history_menu);
 
     auto* help_menu = menuBar()->addMenu(QStringLiteral("&Help"));
-    help_menu->addAction(QStringLiteral("Filter expression help"), this, [this] {
-      QMessageBox::information(this, QStringLiteral("Filter help"),
-                               QString::fromStdString(dirtoo::filter::filter_help_text()));
-    });
+    help_menu->addAction(QStringLiteral("Filter expression help"), this,
+                         &MainWindow::on_show_filter_help);
     help_menu->addAction(QStringLiteral("About dirtoo"), this, &MainWindow::on_about);
   }
 
@@ -753,19 +758,54 @@ MainWindow::MainWindow(QWidget* parent)
     location_stack_host_ = loc_host;
   }
 
-  filter_edit_ = new QLineEdit(central);
-  filter_edit_->setPlaceholderText(QStringLiteral("Filter by name or glob (e.g. *.png)…"));
-  filter_edit_->installEventFilter(this);
-  connect(filter_edit_, &QLineEdit::textChanged, this, &MainWindow::on_filter_changed);
-  layout->addWidget(filter_edit_);
+  // Filter row: label + line edit + Help (parity with dirtoo-py filter toolbar).
+  {
+    auto* filter_row = new QWidget(central);
+    auto* filter_layout = new QHBoxLayout(filter_row);
+    filter_layout->setContentsMargins(0, 0, 0, 0);
+    filter_layout->setSpacing(6);
+    auto* filter_label = new QLabel(QStringLiteral("Filter:"), filter_row);
+    filter_edit_ = new QLineEdit(filter_row);
+    filter_edit_->setPlaceholderText(
+        QStringLiteral("Filter by name, glob, or expression (e.g. *.png, size:>1M)…"));
+    filter_edit_->installEventFilter(this);
+    connect(filter_edit_, &QLineEdit::textChanged, this, &MainWindow::on_filter_changed);
+    filter_label->setBuddy(filter_edit_);
+    auto* filter_help_btn = new QPushButton(QStringLiteral("Help"), filter_row);
+    filter_help_btn->setToolTip(QStringLiteral("Filter expression language help"));
+    filter_help_btn->setFlat(false);
+    connect(filter_help_btn, &QPushButton::clicked, this, &MainWindow::on_show_filter_help);
+    filter_layout->addWidget(filter_label);
+    filter_layout->addWidget(filter_edit_, 1);
+    filter_layout->addWidget(filter_help_btn);
+    filter_row_ = filter_row;
+    layout->addWidget(filter_row);
+  }
 
-  search_edit_ = new QLineEdit(central);
-  search_edit_->setPlaceholderText(
-      QStringLiteral("Recursive search (filter expression, Enter to run, Esc to close)…"));
-  search_edit_->setVisible(false);
-  search_edit_->installEventFilter(this);
-  connect(search_edit_, &QLineEdit::returnPressed, this, &MainWindow::on_search_submitted);
-  layout->addWidget(search_edit_);
+  // Search row: same expression language + Help.
+  {
+    auto* search_row = new QWidget(central);
+    auto* search_layout = new QHBoxLayout(search_row);
+    search_layout->setContentsMargins(0, 0, 0, 0);
+    search_layout->setSpacing(6);
+    auto* search_label = new QLabel(QStringLiteral("Search:"), search_row);
+    search_edit_ = new QLineEdit(search_row);
+    search_edit_->setPlaceholderText(
+        QStringLiteral("Recursive search (filter expression, Enter to run, Esc to close)…"));
+    search_edit_->setVisible(true);
+    search_edit_->installEventFilter(this);
+    connect(search_edit_, &QLineEdit::returnPressed, this, &MainWindow::on_search_submitted);
+    search_label->setBuddy(search_edit_);
+    auto* search_help_btn = new QPushButton(QStringLiteral("Help"), search_row);
+    search_help_btn->setToolTip(QStringLiteral("Filter expression language help"));
+    connect(search_help_btn, &QPushButton::clicked, this, &MainWindow::on_show_filter_help);
+    search_layout->addWidget(search_label);
+    search_layout->addWidget(search_edit_, 1);
+    search_layout->addWidget(search_help_btn);
+    search_row->setVisible(false);
+    search_row_ = search_row;
+    layout->addWidget(search_row);
+  }
 
   message_area_ = new MessageArea(central);
   layout->addWidget(message_area_);
@@ -1116,8 +1156,13 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
   stop_search();
   search_active_ = false;
   search_results_.clear();
-  if (search_edit_ != nullptr && search_edit_->isVisible()) {
-    search_edit_->hide();
+  if (search_row_ != nullptr ? search_row_->isVisible()
+      : (search_edit_ != nullptr && search_edit_->isVisible())) {
+    if (search_row_ != nullptr) {
+      search_row_->hide();
+    } else if (search_edit_ != nullptr) {
+      search_edit_->hide();
+    }
   }
   // Reset filter on directory change unless Pin Filter is active.
   if (!filter_pinned_ && filter_edit_ != nullptr && !filter_edit_->text().isEmpty()) {
@@ -1608,6 +1653,26 @@ void MainWindow::on_thumbnail_failed(const fs::Location& location, const QString
   if (model_ != nullptr) {
     model_->set_thumbnail_failed(QString::fromStdString(location.as_path().string()));
   }
+}
+
+void MainWindow::on_show_filter_help()
+{
+  auto* dlg = new QDialog(this);
+  dlg->setAttribute(Qt::WA_DeleteOnClose);
+  dlg->setWindowTitle(QStringLiteral("Filter expression help"));
+  dlg->resize(560, 720);
+  auto* v = new QVBoxLayout(dlg);
+  auto* browser = new QTextBrowser(dlg);
+  browser->setOpenExternalLinks(false);
+  browser->setHtml(QString::fromStdString(dirtoo::filter::filter_help_html()));
+  v->addWidget(browser, 1);
+  auto* buttons = new QDialogButtonBox(QDialogButtonBox::Close, dlg);
+  connect(buttons, &QDialogButtonBox::rejected, dlg, &QDialog::reject);
+  connect(buttons, &QDialogButtonBox::accepted, dlg, &QDialog::accept);
+  // Close button maps to rejected for Close-only box
+  connect(buttons, &QDialogButtonBox::clicked, dlg, [dlg](QAbstractButton*) { dlg->close(); });
+  v->addWidget(buttons);
+  dlg->show();
 }
 
 void MainWindow::on_filter_changed(const QString& text)
@@ -2791,7 +2856,11 @@ void MainWindow::on_show_search()
   if (search_edit_ == nullptr) {
     return;
   }
-  search_edit_->setVisible(true);
+  if (search_row_ != nullptr) {
+    search_row_->setVisible(true);
+  } else if (search_edit_ != nullptr) {
+    search_edit_->setVisible(true);
+  }
   search_edit_->setFocus(Qt::ShortcutFocusReason);
   search_edit_->selectAll();
 }
@@ -2942,11 +3011,16 @@ void MainWindow::on_archive_failed(const fs::Location& archive_location, const Q
 
 void MainWindow::on_clear_filter()
 {
-  if (search_edit_ != nullptr && search_edit_->isVisible()) {
+  if (search_row_ != nullptr ? search_row_->isVisible()
+      : (search_edit_ != nullptr && search_edit_->isVisible())) {
     stop_search();
     search_active_ = false;
     search_results_.clear();
-    search_edit_->hide();
+    if (search_row_ != nullptr) {
+      search_row_->hide();
+    } else if (search_edit_ != nullptr) {
+      search_edit_->hide();
+    }
     search_edit_->clear();
     on_directory_changed();
     return;
@@ -2955,7 +3029,9 @@ void MainWindow::on_clear_filter()
     filter_edit_->clear();
     return;
   }
-  if (filter_edit_ != nullptr && filter_edit_->isVisible() && !filter_pinned_
+  if ((filter_row_ != nullptr ? filter_row_->isVisible()
+         : (filter_edit_ != nullptr && filter_edit_->isVisible()))
+      && !filter_pinned_
       && show_filter_act_ != nullptr && show_filter_act_->isChecked()) {
     show_filter_act_->setChecked(false);
     return;
@@ -3072,7 +3148,11 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event)
       stop_search();
       search_active_ = false;
       search_results_.clear();
-      search_edit_->hide();
+      if (search_row_ != nullptr) {
+        search_row_->hide();
+      } else if (search_edit_ != nullptr) {
+        search_edit_->hide();
+      }
       search_edit_->clear();
       on_directory_changed();
       return true;

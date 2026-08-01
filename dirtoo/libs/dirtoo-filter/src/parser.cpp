@@ -374,8 +374,8 @@ std::expected<MatchFuncPtr, ParseError> parse_filter(std::string_view input)
 
 std::string filter_help_text()
 {
+  // Plain-text fallback (CLI / logs). Prefer filter_help_html() in the GUI.
   return R"(Filter expression language
-===========================
 
 Terms (juxtaposition = AND, OR joins alternatives):
   word            basename contains word (case-insensitive)
@@ -414,6 +414,99 @@ Examples:
   length:>20 contains:TODO
   date:today type:file
 )";
+}
+
+std::string filter_help_html()
+{
+  return R"(<html><body style="font-family:sans-serif; font-size:11pt;">
+<h2>Filter expression language</h2>
+<p>Combine terms with <b>juxtaposition</b> (AND) or the keyword
+<code>OR</code>. Prefix a term with <code>-</code>, <code>^</code>, or
+<code>not</code> to exclude it. Group with parentheses.</p>
+
+<h3>Basic matching</h3>
+<table cellspacing="4" cellpadding="2">
+<tr><td><code>word</code></td>
+    <td>Basename contains <i>word</i> (case-insensitive)</td></tr>
+<tr><td><code>"quoted text"</code></td>
+    <td>Same, allows spaces</td></tr>
+<tr><td><code>glob:*.png</code> / <code>g:</code></td>
+    <td>Glob match (case-insensitive)</td></tr>
+<tr><td><code>Glob:*.PNG</code> / <code>G:</code></td>
+    <td>Case-sensitive glob</td></tr>
+<tr><td><code>regex:^a.*</code> / <code>re:</code> / <code>r:</code></td>
+    <td>Regular expression on basename</td></tr>
+<tr><td><code>fuzzy:speling</code> / <code>f:</code></td>
+    <td>N-gram fuzzy basename (default threshold 0.5; optional
+        <code>@0.6</code>)</td></tr>
+<tr><td><code>Fuzzy:Speling</code></td>
+    <td>Case-sensitive fuzzy match</td></tr>
+<tr><td><code>length:&gt;10</code> / <code>len:</code></td>
+    <td>Basename character length</td></tr>
+</table>
+
+<h3>File attributes</h3>
+<table cellspacing="4" cellpadding="2">
+<tr><td><code>size:&gt;1M</code></td>
+    <td>Size compare (<code>K</code>/<code>M</code>/<code>G</code>);
+        also ranges like <code>size:10K-2M</code></td></tr>
+<tr><td><code>type:dir</code> / <code>t:file</code></td>
+    <td><code>file</code> or <code>dir</code></td></tr>
+<tr><td><code>date:today</code></td>
+    <td>Modification date; also <code>date:&gt;=2024-01-01</code>,
+        <code>date:2024-*-01</code></td></tr>
+<tr><td><code>time:&gt;=15:00</code></td>
+    <td>Modification time of day (local <code>HH:MM</code>)</td></tr>
+<tr><td><code>weekday:mon</code> / <code>wday:</code></td>
+    <td>Weekday (<code>mon</code>–<code>sun</code> or <code>0</code>–<code>6</code>);
+        supports comparisons</td></tr>
+<tr><td><code>charset:ascii</code></td>
+    <td>Basename encodable as charset (<code>utf-8</code>, <code>latin1</code>, …)</td></tr>
+<tr><td><code>random:0.5</code></td>
+    <td>Match with the given probability</td></tr>
+</table>
+
+<h3>Media &amp; archives</h3>
+<table cellspacing="4" cellpadding="2">
+<tr><td><code>width:&gt;=1920</code> / <code>w:</code></td>
+    <td>Image/video width (needs ffprobe)</td></tr>
+<tr><td><code>height:=1080</code> / <code>h:</code></td>
+    <td>Image/video height</td></tr>
+<tr><td><code>duration:&gt;1m</code> / <code>dur:</code></td>
+    <td>Media duration (seconds, or <code>1h2m</code> / <code>1:30</code>)</td></tr>
+<tr><td><code>framerate:&gt;30</code> / <code>fps:</code></td>
+    <td>Video frame rate</td></tr>
+<tr><td><code>pages:&gt;=10</code></td>
+    <td>PDF page count</td></tr>
+<tr><td><code>filecount:&gt;5</code> / <code>files:</code></td>
+    <td>Archive member count</td></tr>
+</table>
+
+<h3>Content search</h3>
+<p>Content predicates read up to 1&nbsp;MiB of each file (off the GUI thread).</p>
+<table cellspacing="4" cellpadding="2">
+<tr><td><code>contains:foo</code></td>
+    <td>Substring, case-insensitive</td></tr>
+<tr><td><code>Contains:Foo</code></td>
+    <td>Substring, case-sensitive</td></tr>
+<tr><td><code>containsre:a.*b</code> / <code>cre:</code></td>
+    <td>Content regex</td></tr>
+<tr><td><code>Containsre:</code></td>
+    <td>Case-sensitive content regex</td></tr>
+<tr><td><code>containsfuzzy:speling</code> / <code>cfuzzy:</code></td>
+    <td>Fuzzy match against content lines (optional <code>@0.6</code>)</td></tr>
+</table>
+
+<h3>Examples</h3>
+<ul>
+<li><code>*.png OR *.jpg</code></li>
+<li><code>type:file size:&gt;1M</code></li>
+<li><code>(readme OR license) -*.bak</code></li>
+<li><code>glob:*.cpp regex:main</code></li>
+<li><code>length:&gt;20 contains:TODO</code></li>
+<li><code>date:today type:file</code></li>
+</ul>
+</body></html>)";
 }
 
 } // namespace dirtoo::filter

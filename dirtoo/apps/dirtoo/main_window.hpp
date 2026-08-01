@@ -86,6 +86,7 @@ private slots:
   void on_sort_finished(quint64 generation, std::vector<dirtoo::fs::FileInfo> items);
   void request_async_sort();
   void update_detail_row_heights();
+  void on_show_filter_help();
   void on_filter_changed(const QString& text);
   void on_filter_finished(quint64 generation, std::vector<dirtoo::fs::FileInfo> visible, bool parse_ok);
   /// @param keep_previous_visible Soft reload: do not clear the list until filter finishes.
@@ -226,9 +227,11 @@ private:
   Bookmarks bookmarks_{Bookmarks::default_path()};
   std::vector<fs::Location> location_history_unique_;
   QWidget* location_stack_host_ = nullptr;
+  QWidget* filter_row_ = nullptr;
   QLineEdit* filter_edit_ = nullptr;
   QStringList filter_history_;
   int filter_history_index_ = -1;
+  QWidget* search_row_ = nullptr;
   QLineEdit* search_edit_ = nullptr;
   bool search_active_ = false;
   std::vector<fs::FileInfo> search_results_;

@@ -30,7 +30,10 @@ struct ParseError {
 /// Built-in commands: glob, Glob, regex, Regex, re, size, type, t
 [[nodiscard]] std::expected<MatchFuncPtr, ParseError> parse_filter(std::string_view input);
 
-/// Human-readable short help for the expression language.
+/// Human-readable short help for the expression language (plain text; CLI/logs).
 [[nodiscard]] std::string filter_help_text();
+
+/// Qt-rich-text / HTML help for the expression language (GUI dialogs).
+[[nodiscard]] std::string filter_help_html();
 
 } // namespace dirtoo::filter
