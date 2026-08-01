@@ -62,3 +62,9 @@ install(FILES
   DESTINATION share/icons/hicolor/scalable/apps
   RENAME dirtoo.svg
 )
+
+install(FILES
+  ${CMAKE_SOURCE_DIR}/resources/dirtoo.metainfo.xml
+  DESTINATION share/metainfo
+  RENAME dirtoo.metainfo.xml
+)

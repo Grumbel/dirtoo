@@ -99,6 +99,10 @@ MainWindow::MainWindow(QWidget* parent)
   // Menu bar
   {
     auto* file_menu = menuBar()->addMenu(QStringLiteral("&File"));
+    {
+      auto* act = file_menu->addAction(QStringLiteral("New Window"), this, &MainWindow::on_new_window);
+      act->setShortcut(QKeySequence::New); // Ctrl+N
+    }
     file_menu->addAction(QStringLiteral("New Folder…"), this, &MainWindow::on_mkdir);
     file_menu->addSeparator();
     {
@@ -206,6 +210,8 @@ MainWindow::MainWindow(QWidget* parent)
     location_buttons_ = new LocationButtonBar(loc_host);
     connect(location_buttons_, &LocationButtonBar::location_activated, this,
             &MainWindow::on_breadcrumb_location);
+    connect(location_buttons_, &LocationButtonBar::location_activated_new_window, this,
+            &MainWindow::on_breadcrumb_location_new_window);
     connect(location_buttons_, &LocationButtonBar::edit_requested, this,
             &MainWindow::on_location_edit_requested);
     connect(location_buttons_, &LocationButtonBar::urls_dropped, this,
@@ -1100,6 +1106,28 @@ void MainWindow::on_focus_location()
   show_location_line_edit();
   location_edit_->setFocus(Qt::ShortcutFocusReason);
   location_edit_->selectAll();
+}
+
+
+MainWindow* MainWindow::open_new_window(const fs::Location& location)
+{
+  auto* win = new MainWindow;
+  win->setAttribute(Qt::WA_DeleteOnClose);
+  win->open_location(location);
+  win->show();
+  win->raise();
+  win->activateWindow();
+  return win;
+}
+
+void MainWindow::on_new_window()
+{
+  open_new_window(location_);
+}
+
+void MainWindow::on_breadcrumb_location_new_window(const fs::Location& location)
+{
+  open_new_window(location);
 }
 
 void MainWindow::on_breadcrumb_location(const fs::Location& location)

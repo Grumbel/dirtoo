@@ -61,3 +61,9 @@ GPL-3.0-or-later (SPDX headers on all sources).
 Double-click a supported archive (zip, tar, tar.gz, 7z, rar, …) to browse its
 contents. Extraction uses external tools (`bsdtar`, `tar`, `unzip`, or `7z`)
 into a cache under the user cache directory. Archive views are read-only.
+
+
+## Windows
+
+- **File → New Window** (Ctrl+N) opens another browser window.
+- **Middle-click** a breadcrumb segment to open that path in a new window.

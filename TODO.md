@@ -101,8 +101,8 @@ SPDX, no hacks, VERSION file is sole version source. Archives are **read-only**.
 2. [x] DnD files onto breadcrumb buttons (drop into that directory)
 3. [x] Cancel thumbnail requests when leaving a directory
 4. [x] Glob filter (`*.png`)
-5. [ ] Breadcrumb middle-click / “open in new window” (if multi-window added)
-6. [ ] AppStream / packaging polish
+5. [x] Breadcrumb middle-click / open in new window
+6. [x] AppStream metainfo
 
 ---
 

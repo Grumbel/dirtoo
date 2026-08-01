@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+  SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<component type="desktop-application">
+  <id>dirtoo</id>
+  <name>dirtoo</name>
+  <summary>Modular Qt file manager</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <description>
+    <p>
+      dirtoo is a modular filesystem browser built with Qt 6 and modern C++.
+      File mutations are provided by the dirops library. Archive browsing is
+      read-only (table-of-contents listing with on-demand extraction).
+    </p>
+  </description>
+  <launchable type="desktop-id">dirtoo.desktop</launchable>
+  <url type="homepage">https://github.com/grumbel/dirtoo</url>
+  <provides>
+    <binary>dirtoo</binary>
+  </provides>
+  <categories>
+    <category>FileManager</category>
+    <category>FileTools</category>
+    <category>System</category>
+  </categories>
+  <content_rating type="oars-1.1" />
+</component>

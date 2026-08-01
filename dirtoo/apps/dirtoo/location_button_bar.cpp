@@ -48,8 +48,19 @@ public:
   }
 
   std::function<void(const fs::Location&, const QList<QUrl>&, Qt::DropAction)> on_drop;
+  std::function<void(const fs::Location&)> on_middle_click;
 
 protected:
+  void mouseReleaseEvent(QMouseEvent* event) override
+  {
+    if (event->button() == Qt::MiddleButton && on_middle_click) {
+      on_middle_click(location_);
+      event->accept();
+      return;
+    }
+    QPushButton::mouseReleaseEvent(event);
+  }
+
   void dragEnterEvent(QDragEnterEvent* event) override
   {
     if (event->mimeData() != nullptr && event->mimeData()->hasUrls()) {
@@ -201,6 +212,9 @@ void LocationButtonBar::rebuild()
     connect(btn, &QPushButton::clicked, this, [this, target] { emit location_activated(target); });
     btn->on_drop = [this](const fs::Location& dest, const QList<QUrl>& urls, Qt::DropAction action) {
       emit urls_dropped(dest, urls, action);
+    };
+    btn->on_middle_click = [this](const fs::Location& dest) {
+      emit location_activated_new_window(dest);
     };
     layout_->addWidget(btn);
     last = btn;

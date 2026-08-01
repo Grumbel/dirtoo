@@ -47,6 +47,9 @@ public:
 
   void open_location(const fs::Location& location, bool record_history = true);
 
+  /// Open an independent MainWindow (Qt::WA_DeleteOnClose).
+  static MainWindow* open_new_window(const fs::Location& location);
+
 protected:
   void closeEvent(QCloseEvent* event) override;
 
@@ -74,6 +77,8 @@ private slots:
   void on_archive_failed(const dirtoo::fs::Location& archive_location, const QString& message);
   void on_focus_location();
   void on_breadcrumb_location(const dirtoo::fs::Location& location);
+  void on_breadcrumb_location_new_window(const dirtoo::fs::Location& location);
+  void on_new_window();
   void on_breadcrumb_drop(const dirtoo::fs::Location& target, const QList<QUrl>& urls,
                          Qt::DropAction action);
   void on_clear_filter();

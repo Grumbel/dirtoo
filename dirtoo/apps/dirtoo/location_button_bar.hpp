@@ -28,6 +28,7 @@ public:
 
 signals:
   void location_activated(const dirtoo::fs::Location& location);
+  void location_activated_new_window(const dirtoo::fs::Location& location);
   void edit_requested();
   /// Files dropped onto a breadcrumb segment (target directory location).
   void urls_dropped(const dirtoo::fs::Location& target, const QList<QUrl>& urls,
