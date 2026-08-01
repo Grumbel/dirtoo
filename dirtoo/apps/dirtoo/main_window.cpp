@@ -1128,6 +1128,10 @@ void MainWindow::reload_directory(bool soft)
   }
   soft_directory_reload_ = soft;
   if (!soft) {
+    // Navigation/explicit refresh supersedes any pending soft watcher tick.
+    if (watcher_reload_timer_ != nullptr) {
+      watcher_reload_timer_->stop();
+    }
     thumbnailer_.cancel_all();
     if (model_ != nullptr) {
       model_->clear_thumbnails();
@@ -1137,6 +1141,7 @@ void MainWindow::reload_directory(bool soft)
 
   // In-memory archive index: apply on UI thread (no directory walk).
   if (location_.is_archive() && archive_listing_ok_) {
+    soft_directory_reload_ = false;
     auto items = archive::fileinfos_for_prefix(location_, archive_entries_);
     collection_.sorter().set_ascending(sort_ascending_);
     collection_.set_items(std::move(items));

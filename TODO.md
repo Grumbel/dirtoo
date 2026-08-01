@@ -33,7 +33,7 @@ parity features are in place. Build/tests green (50/50 as of last Nix check).
 | Content filter I/O on GUI thread | **Mitigated** — `FilterWorker` + `replace_visible` |
 | Graphics full scene rebuild | **Mitigated** — item reuse; softer `layoutChanged` refresh |
 | Thumbnails for every visible row | **Mitigated** — viewport batch (cap 64), scroll-driven |
-| Watcher full rescan storms | **Mitigated** — debounce + soft reload + **merge_items** + cancel in-flight; **no emit on start** (nav loads explicitly) |
+| Watcher full rescan storms | **Mitigated** — debounce + soft reload + **merge_items** + cancel in-flight; **no emit on start**; hard nav cancels pending soft timer |
 | Double paint unsorted→sorted | **Mitigated** for soft watcher reloads (skip intermediate paint; refresh after sort) |
 | Full-range dataChanged on every refresh | **Mitigated** — `FileListModel::refresh` uses layoutChanged only |
 | No list virtualization | **Mitigated** for Icons/Graphics — viewport window + precomputed slots; selection persists off-window; Detail/Small still full model |
