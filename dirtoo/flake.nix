@@ -21,21 +21,32 @@
         # Repo root must be available so libs can read ../../VERSION and tools paths.
         src = ./.;
 
+        # RelWithDebInfo: optimised but keeps symbols for gdb/backtraces.
+        # Override when iterating:  nix build .#dirtoo --override-input ...
+        # or set cmakeBuildType = "Debug" on a package below for full -O0.
+        cmakeBuildType = "RelWithDebInfo";
+
         dirops = pkgs.stdenv.mkDerivation {
           pname = "dirops";
-          inherit version src;
+          inherit version src cmakeBuildType;
           nativeBuildInputs = with pkgs; [ cmake ninja ];
+          # Keep symbols in $out (handy with nix develop / gdb).
+          dontStrip = true;
           cmakeFlags = [
             versionFlag
             # Installs dt-copy/move/rename/mkdir/mkfile/rm/symlink/swap from tools/
             "-DDIROPS_BUILD_TOOLS=ON"
           ];
           postUnpack = ''sourceRoot+=/libs/dirops'';
+          preConfigure = ''
+            echo "dirops: version=''${version} cmakeBuildType=''${cmakeBuildType:-}"
+          '';
         };
 
         dirtoo-fs = pkgs.stdenv.mkDerivation {
           pname = "dirtoo-fs";
-          inherit version src;
+          inherit version src cmakeBuildType;
+          dontStrip = true;
           nativeBuildInputs = with pkgs; [ cmake ninja ];
           postUnpack = ''sourceRoot+=/libs/dirtoo-fs'';
           cmakeFlags = [ versionFlag ];
@@ -43,7 +54,8 @@
 
         dirtoo-filter = pkgs.stdenv.mkDerivation {
           pname = "dirtoo-filter";
-          inherit version src;
+          inherit version src cmakeBuildType;
+          dontStrip = true;
           nativeBuildInputs = with pkgs; [ cmake ninja ];
           buildInputs = with pkgs; [ sqlite ];
           postUnpack = ''sourceRoot+=/libs/dirtoo-filter'';
@@ -53,7 +65,8 @@
 
         dirtoo-collection = pkgs.stdenv.mkDerivation {
           pname = "dirtoo-collection";
-          inherit version src;
+          inherit version src cmakeBuildType;
+          dontStrip = true;
           nativeBuildInputs = with pkgs; [ cmake ninja ];
           buildInputs = [ dirtoo-fs dirtoo-filter pkgs.sqlite ];
           postUnpack = ''sourceRoot+=/libs/dirtoo-collection'';
@@ -62,7 +75,8 @@
 
         dirtoo-watcher = pkgs.stdenv.mkDerivation {
           pname = "dirtoo-watcher";
-          inherit version src;
+          inherit version src cmakeBuildType;
+          dontStrip = true;
           nativeBuildInputs = with pkgs; [ cmake ninja qt6.wrapQtAppsHook ];
           buildInputs = [ dirtoo-fs pkgs.qt6.qtbase ];
           postUnpack = ''sourceRoot+=/libs/dirtoo-watcher'';
@@ -71,7 +85,8 @@
 
         dirtoo-thumbnail = pkgs.stdenv.mkDerivation {
           pname = "dirtoo-thumbnail";
-          inherit version src;
+          inherit version src cmakeBuildType;
+          dontStrip = true;
           nativeBuildInputs = with pkgs; [ cmake ninja qt6.wrapQtAppsHook ];
           buildInputs = [ dirtoo-fs pkgs.qt6.qtbase ];
           postUnpack = ''sourceRoot+=/libs/dirtoo-thumbnail'';
@@ -80,7 +95,8 @@
 
         dirtoo-archive = pkgs.stdenv.mkDerivation {
           pname = "dirtoo-archive";
-          inherit version src;
+          inherit version src cmakeBuildType;
+          dontStrip = true;
           nativeBuildInputs = with pkgs; [ cmake ninja qt6.wrapQtAppsHook ];
           buildInputs = [ dirtoo-fs pkgs.qt6.qtbase ];
           propagatedBuildInputs = with pkgs; [ libarchive unzip gnutar p7zip ];
@@ -94,7 +110,8 @@
         # when installing only .#dirtoo.
         dirtoo = pkgs.stdenv.mkDerivation {
           pname = "dirtoo";
-          inherit version src;
+          inherit version src cmakeBuildType;
+          dontStrip = true;
           nativeBuildInputs = with pkgs; [ cmake ninja pkg-config qt6.wrapQtAppsHook ];
           buildInputs = [
             dirops
@@ -123,6 +140,12 @@
             "-DDIRTOO_BUILD_TESTS=ON"
             "-DDIRTOO_BUILD_TOOLS=ON"
           ];
+          preConfigure = ''
+            echo "dirtoo: version=$version"
+            echo "dirtoo: cmakeBuildType=$cmakeBuildType"
+            echo "dirtoo: cmakeFlags=$cmakeFlags"
+            echo "dirtoo: hostPlatform=$stdenv"
+          '';
           doCheck = true;
           checkPhase = ''
             runHook preCheck
@@ -196,12 +219,23 @@
           ];
           inputsFrom = [ dirtoo ];
           shellHook = ''
-            echo "dirtoo — libraries under libs/; tools under tools/"
+            echo "dirtoo devShell"
+            echo "  version:    ${version}"
+            echo "  system:     ${system}"
+            echo "  rev:        ${gitRev}"
+            echo "  build type: ${cmakeBuildType} (dontStrip on packages)"
+            echo "  qtbase:     ${pkgs.qt6.qtbase}"
+            echo "  qtsvg:      ${pkgs.qt6.qtsvg}"
+            echo "  QT_PLUGIN_PATH (if set): ''${QT_PLUGIN_PATH:-<empty>}"
+            echo "  QT_QPA_PLATFORMTHEME:    ''${QT_QPA_PLATFORMTHEME:-<empty>}"
+            echo ""
+            echo "Commands:"
             echo "  nix build .#dirtoo          # GUI + all dt-* tools"
             echo "  nix build .#dirtoo-tools    # CLI aggregate"
             echo "  nix build .#dirops          # dt-copy/move/rename/…"
             echo "  nix build .#dirtoo-filter   # dt-filter"
             echo "  nix run .#dirtoo"
+            echo "  nix build -L .#dirtoo       # log full build output"
           '';
         };
       });
