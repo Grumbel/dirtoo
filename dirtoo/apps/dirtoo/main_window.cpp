@@ -3809,19 +3809,20 @@ void MainWindow::start_watcher_for_location()
 {
   watcher_.stop();
   if (location_.is_archive()) {
-    // Prefer the extracted tree so soft reloads pick up on-disk changes under
-    // the extract cache. Fall back to watching the archive *file* (fileChanged)
-    // so replacing the archive on disk still refreshes.
+    // Watch the archive *file* (TOC / replacement) and the extract tree when
+    // ready (member content under the cache).
+    std::vector<std::filesystem::path> paths;
+    paths.push_back(location_.as_path());
     if (const auto resolved = archive_manager_.resolved_directory(location_)) {
-      watcher_.set_location(fs::Location::from_path(*resolved));
-      watcher_.start();
-      return;
+      paths.push_back(*resolved);
     }
-    watcher_.set_location(fs::Location::from_path(location_.as_path()));
+    watcher_.set_location(fs::Location::from_archive(location_.as_path(), location_.entry_path()));
+    watcher_.set_watch_paths(std::move(paths));
     watcher_.start();
     return;
   }
   watcher_.set_location(location_);
+  watcher_.set_extra_paths({});
   watcher_.start();
 }
 

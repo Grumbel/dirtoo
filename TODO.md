@@ -180,7 +180,7 @@ Go to Folder, Clear. Storage: SQLite at `$XDG_STATE_HOME/dirtoo/operations-histo
 | Operations history log | **done** — SQLite under `$XDG_STATE_HOME/dirtoo/`; full sources+items; no rollback |
 | Location URL encoding | **Promoted** — see *Audit findings* (systemic) |
 | Archive member thumbnails | Weak; needs extract path or special URI |
-| Watcher richness | **Improved** — extract tree or archive file; TOC `refresh_if_stale` on soft reload |
+| Watcher richness | **Improved** — multi-path watch (archive file + extract tree); TOC `refresh_if_stale` |
 | MainWindow factoring | **Partial** — ArchiveListing, archive_member_cache; NavigationHistory, Search, Transfer, Devices |
 | True incremental FS watcher deltas | **Partial** — merge_items after soft rescan; still O(n) readdir (no inotify names) |
 | List / Graphics virtualization | **Graphics viewport window done**; Detail uses uniform row heights when no group/time-gap; Qt paints only visible rows |

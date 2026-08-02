@@ -7,10 +7,13 @@
 
 #include <QObject>
 
+#include <filesystem>
+#include <vector>
+
 namespace dirtoo::watcher {
 
-/// Watches a directory for changes. Phase 1 uses QFileSystemWatcher;
-/// a dedicated inotify backend can replace it later for richer events.
+/// Watches one or more filesystem paths for changes (QFileSystemWatcher).
+/// A dedicated inotify backend can replace it later for richer events.
 class DirectoryWatcher : public QObject {
   Q_OBJECT
 
@@ -18,14 +21,22 @@ public:
   explicit DirectoryWatcher(QObject* parent = nullptr);
   ~DirectoryWatcher() override;
 
+  /// Logical location (used by callers); primary path watched is location.as_path()
+  /// unless extra paths are set via set_extra_paths / set_watch_paths.
   void set_location(const fs::Location& location);
   [[nodiscard]] const fs::Location& location() const;
+
+  /// Additional paths to watch alongside location().as_path() (e.g. archive extract root).
+  void set_extra_paths(std::vector<std::filesystem::path> paths);
+
+  /// Replace the full watch set (does not change logical location()).
+  void set_watch_paths(std::vector<std::filesystem::path> paths);
 
   void start();
   void stop();
 
 signals:
-  /// Emitted after initial scan and whenever the directory changes.
+  /// Emitted whenever any watched directory or file changes.
   void directory_changed();
   void message(const QString& text);
 

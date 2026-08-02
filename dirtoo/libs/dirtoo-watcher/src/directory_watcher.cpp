@@ -5,11 +5,16 @@
 
 #include <QFileSystemWatcher>
 
+#include <unordered_set>
+
 namespace dirtoo::watcher {
 
 class DirectoryWatcher::Impl {
 public:
   fs::Location location;
+  std::vector<std::filesystem::path> extra_paths;
+  /// If non-empty, overrides location+extra for the actual watch set.
+  std::vector<std::filesystem::path> override_paths;
   QFileSystemWatcher watcher;
   bool running = false;
 };
@@ -18,14 +23,12 @@ DirectoryWatcher::DirectoryWatcher(QObject* parent)
     : QObject(parent)
     , impl_(new Impl)
 {
-  // Directory listings and archive extract trees.
   QObject::connect(&impl_->watcher, &QFileSystemWatcher::directoryChanged, this,
                    [this](const QString&) {
                      if (impl_->running) {
                        emit directory_changed();
                      }
                    });
-  // Archive *files* (zip/tar) so replacing the archive on disk reloads the view.
   QObject::connect(&impl_->watcher, &QFileSystemWatcher::fileChanged, this,
                    [this](const QString&) {
                      if (impl_->running) {
@@ -44,6 +47,7 @@ void DirectoryWatcher::set_location(const fs::Location& location)
 {
   stop();
   impl_->location = location;
+  impl_->override_paths.clear();
 }
 
 const fs::Location& DirectoryWatcher::location() const
@@ -51,22 +55,72 @@ const fs::Location& DirectoryWatcher::location() const
   return impl_->location;
 }
 
+void DirectoryWatcher::set_extra_paths(std::vector<std::filesystem::path> paths)
+{
+  const bool was_running = impl_->running;
+  stop();
+  impl_->extra_paths = std::move(paths);
+  impl_->override_paths.clear();
+  if (was_running) {
+    start();
+  }
+}
+
+void DirectoryWatcher::set_watch_paths(std::vector<std::filesystem::path> paths)
+{
+  const bool was_running = impl_->running;
+  stop();
+  impl_->override_paths = std::move(paths);
+  if (was_running) {
+    start();
+  }
+}
+
 void DirectoryWatcher::start()
 {
-  if (impl_->location.empty()) {
-    emit message(QStringLiteral("DirectoryWatcher: empty location"));
-    return;
-  }
-  const QString path = QString::fromStdString(impl_->location.as_path().string());
-  if (!impl_->watcher.directories().contains(path) && !impl_->watcher.files().contains(path)) {
-    if (!impl_->watcher.addPath(path)) {
-      emit message(QStringLiteral("DirectoryWatcher: failed to watch %1").arg(path));
-      return;
+  std::vector<std::filesystem::path> paths;
+  if (!impl_->override_paths.empty()) {
+    paths = impl_->override_paths;
+  } else {
+    if (!impl_->location.empty()) {
+      paths.push_back(impl_->location.as_path());
+    }
+    for (const auto& p : impl_->extra_paths) {
+      paths.push_back(p);
     }
   }
+
+  if (paths.empty()) {
+    emit message(QStringLiteral("DirectoryWatcher: no paths to watch"));
+    return;
+  }
+
+  std::unordered_set<std::string> seen;
+  int added = 0;
+  for (const auto& p : paths) {
+    if (p.empty()) {
+      continue;
+    }
+    const auto key = p.lexically_normal().string();
+    if (!seen.insert(key).second) {
+      continue;
+    }
+    const QString qpath = QString::fromStdString(key);
+    if (impl_->watcher.directories().contains(qpath) || impl_->watcher.files().contains(qpath)) {
+      ++added;
+      continue;
+    }
+    if (impl_->watcher.addPath(qpath)) {
+      ++added;
+    } else {
+      emit message(QStringLiteral("DirectoryWatcher: failed to watch %1").arg(qpath));
+    }
+  }
+  if (added == 0) {
+    emit message(QStringLiteral("DirectoryWatcher: failed to watch any path"));
+    return;
+  }
   impl_->running = true;
-  // Do not emit directory_changed() here — navigation already loads explicitly.
-  // Emitting would debounce another soft reload ~200ms after every open_location.
 }
 
 void DirectoryWatcher::stop()
