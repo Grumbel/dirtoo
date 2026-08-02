@@ -4,6 +4,7 @@
 #pragma once
 
 #include <QObject>
+#include <QPoint>
 #include <QString>
 
 class QListWidget;

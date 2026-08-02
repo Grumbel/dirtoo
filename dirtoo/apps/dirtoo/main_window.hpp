@@ -17,6 +17,7 @@
 #include "navigation_history.hpp"
 #include "search_controller.hpp"
 #include "transfer_controller.hpp"
+#include "devices_controller.hpp"
 #include "history_menu.hpp"
 #include "message_area.hpp"
 #include "search_worker.hpp"
@@ -58,8 +59,6 @@ class QTimer;
 class QToolButton;
 
 namespace dirtoo::app {
-
-class DevicesController;
 
 enum class ViewMode {
   Detail,

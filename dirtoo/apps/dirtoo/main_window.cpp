@@ -5,6 +5,7 @@
 #include "badge_icons.hpp"
 #include "directory_tree_model.hpp"
 #include "udisks_client.hpp"
+#include "devices_controller.hpp"
 #include "filter_worker.hpp"
 #include "directory_thumbnail_worker.hpp"
 #include "file_views.hpp"
