@@ -352,10 +352,13 @@ MainWindow::MainWindow(QWidget* parent)
   connect(show_sidebar_act_, &QAction::toggled, this, &MainWindow::on_toggle_sidebar);
   toolbar->addSeparator();
 
-  // Sort / Group popup buttons (icon-only like Python toolbar)
+  // Sort / Group popup buttons — show current choice like a combo box.
   {
-    auto* sort_btn = new QToolButton(toolbar);
+    sort_toolbar_btn_ = new QToolButton(toolbar);
+    auto* sort_btn = sort_toolbar_btn_;
     sort_btn->setIcon(theme_icon("view-sort-ascending", "view-sort"));
+    sort_btn->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    sort_btn->setText(QStringLiteral("Name"));
     sort_btn->setToolTip(QStringLiteral("Sort"));
     sort_btn->setPopupMode(QToolButton::InstantPopup);
     auto* sort_menu = new QMenu(sort_btn);
@@ -366,7 +369,8 @@ MainWindow::MainWindow(QWidget* parent)
       act->setCheckable(true);
       act->setChecked(checked);
       sort_group->addAction(act);
-      connect(act, &QAction::triggered, this, [this, key] {
+      connect(act, &QAction::triggered, this, [this, sort_btn, title, key] {
+        sort_btn->setText(title);
         sort_ascending_ = true;
         collection_.sorter().set_ascending(true);
         collection_.sorter().set_key(key);
@@ -416,8 +420,11 @@ MainWindow::MainWindow(QWidget* parent)
     toolbar->addWidget(sort_btn);
   }
   {
-    auto* group_btn = new QToolButton(toolbar);
+    group_toolbar_btn_ = new QToolButton(toolbar);
+    auto* group_btn = group_toolbar_btn_;
     group_btn->setIcon(theme_icon("view-list-tree", "view-list"));
+    group_btn->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    group_btn->setText(QStringLiteral("None"));
     group_btn->setToolTip(QStringLiteral("Group by"));
     group_btn->setPopupMode(QToolButton::InstantPopup);
     auto* group_menu = new QMenu(group_btn);
@@ -428,7 +435,8 @@ MainWindow::MainWindow(QWidget* parent)
       act->setCheckable(true);
       act->setChecked(checked);
       group_actions->addAction(act);
-      connect(act, &QAction::triggered, this, [this, mode] {
+      connect(act, &QAction::triggered, this, [this, group_btn, title, mode] {
+        group_btn->setText(title);
         collection_.set_group_mode(mode);
         update_detail_row_heights();
         {
@@ -2991,6 +2999,17 @@ void MainWindow::restore_settings()
     }
     collection_.set_group_mode(gm);
     update_detail_row_heights();
+    if (group_toolbar_btn_ != nullptr) {
+      if (gm == collection::GroupMode::Day) {
+        group_toolbar_btn_->setText(QStringLiteral("Day"));
+      } else if (gm == collection::GroupMode::Directory) {
+        group_toolbar_btn_->setText(QStringLiteral("Directory"));
+      } else if (gm == collection::GroupMode::Duration) {
+        group_toolbar_btn_->setText(QStringLiteral("Duration"));
+      } else {
+        group_toolbar_btn_->setText(QStringLiteral("None"));
+      }
+    }
   }
   if (s.view_mode == QLatin1String("icons")) {
     set_view_mode(ViewMode::Icons);

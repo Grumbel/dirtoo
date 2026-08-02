@@ -54,6 +54,7 @@ class QCloseEvent;
 class QStringListModel;
 class QCompleter;
 class QTimer;
+class QToolButton;
 
 namespace dirtoo::app {
 
@@ -290,6 +291,8 @@ private:
   QAction* detail_act_ = nullptr;
   QAction* icons_act_ = nullptr;
   QAction* small_icons_act_ = nullptr;
+  QToolButton* sort_toolbar_btn_ = nullptr;
+  QToolButton* group_toolbar_btn_ = nullptr;
   QAction* crop_thumbnails_act_ = nullptr;
   QAction* show_hidden_act_ = nullptr;
 };
