@@ -5,7 +5,41 @@
 
 #include <system_error>
 
+#if !defined(_WIN32)
+#  include <sys/stat.h>
+#  include <sys/types.h>
+#endif
+
 namespace dirtoo::fs {
+namespace {
+
+/// Directory metadata size (st_size) and file sizes. std::filesystem::file_size
+/// is only defined for regular files and fails on directories, which left every
+/// folder at 0 B despite ls/stat reporting a non-zero inode size.
+[[nodiscard]] std::uint64_t read_size_bytes(const std::filesystem::path& path, bool is_directory,
+                                            bool is_regular_file)
+{
+  if (!is_directory && !is_regular_file) {
+    return 0;
+  }
+#if !defined(_WIN32)
+  struct stat st {};
+  // lstat: size of the symlink itself when applicable; for dirs/files matches ls -l.
+  if (::lstat(path.c_str(), &st) == 0) {
+    return static_cast<std::uint64_t>(st.st_size);
+  }
+  return 0;
+#else
+  std::error_code ec;
+  const auto sz = std::filesystem::file_size(path, ec);
+  if (!ec) {
+    return static_cast<std::uint64_t>(sz);
+  }
+  return 0;
+#endif
+}
+
+} // namespace
 
 FileInfo FileInfo::from_path(const std::filesystem::path& path)
 {
@@ -24,15 +58,7 @@ FileInfo FileInfo::from_path(const std::filesystem::path& path)
   info.is_directory_ = std::filesystem::is_directory(status);
   info.is_regular_file_ = std::filesystem::is_regular_file(status);
   info.permissions_ = status.permissions();
-
-  // Regular files and directories both expose st_size (dir metadata size on Linux).
-  if (info.is_regular_file_ || info.is_directory_) {
-    const auto sz = std::filesystem::file_size(path, ec);
-    if (!ec) {
-      info.size_ = static_cast<std::uint64_t>(sz);
-    }
-  }
-
+  info.size_ = read_size_bytes(path, info.is_directory_, info.is_regular_file_);
   info.mtime_ = std::filesystem::last_write_time(path, ec);
   return info;
 }
@@ -105,15 +131,7 @@ FileInfo FileInfo::from_directory_entry(const std::filesystem::directory_entry& 
   info.is_directory_ = std::filesystem::is_directory(status);
   info.is_regular_file_ = std::filesystem::is_regular_file(status);
   info.permissions_ = status.permissions();
-
-  // Regular files and directories both expose st_size (dir metadata size on Linux).
-  if (info.is_regular_file_ || info.is_directory_) {
-    info.size_ = static_cast<std::uint64_t>(entry.file_size(ec));
-    if (ec) {
-      info.size_ = 0;
-    }
-  }
-
+  info.size_ = read_size_bytes(entry.path(), info.is_directory_, info.is_regular_file_);
   info.mtime_ = entry.last_write_time(ec);
   return info;
 }

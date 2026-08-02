@@ -417,16 +417,19 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
     }
     case FileListColumn::Size:
       if (fi->is_directory()) {
+        // Metadata size (st_size), same order of magnitude as `ls -l` / `stat`.
+        // Child count is additional context when the async probe has finished.
         const QString path = QString::fromStdString(fi->path().string());
+        const QString bytes = format_size(fi->size(), true);
         const auto it = child_counts_.constFind(path);
         if (it == child_counts_.constEnd()) {
           const_cast<FileListModel*>(this)->request_child_count(path);
-          return QStringLiteral("…");
+          return bytes;
         }
         if (it.value() < 0) {
-          return QStringLiteral("…");
+          return bytes;
         }
-        return QStringLiteral("%1 items").arg(it.value());
+        return QStringLiteral("%1 · %2 items").arg(bytes).arg(it.value());
       }
       return format_size(fi->size(), false);
     case FileListColumn::Width:
