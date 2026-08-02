@@ -10,9 +10,9 @@ Critical freezes, DnD/Link, content-filter offload, Graphics reuse, and core
 parity features are in place. Catch suite: 57 cases (Overwrite-directory test
 aligned with into-dir resolution + `remove_for_overwrite` safety).
 
-**Residual focus:** optional polish (list virtualization; further MainWindow
-factoring; true incremental watcher / inotify names). Context menu extracted
-to file_context_menu; theme_icons and multi-path archive watch in place.
+**Residual focus:** optional polish (list virtualization; true incremental
+watcher / inotify names). MainWindow constructor split into setup_* methods;
+context menu, theme_icons, multi-path archive watch in place.
 
 Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 
@@ -212,7 +212,7 @@ smells, and gaps worth scheduling. Not every item is a user-visible crash.
 |----|-------|--------------|-----------|
 | S1 | **Archive listing/extract shells out to `bsdtar` / `tar` / `unzip` / `7z`** | Fragile verbose-text parsers | **Done** — **libarchive required** (CMake `REQUIRED`, flake); no CLI fallback (see AGENTS.md) |
 | S2 | **`std::filesystem::remove_all` as the Overwrite primitive** | Same as A3 — policy API looks like “replace file” but implementation is “delete subtree” | **Done (refuse path)** — Overwrite is file/symlink only; dirs rejected at API + UI |
-| S3 | **MainWindow ~4.3k LOC** | Constructor split started | **Partial** — setup_background_workers; location_menu_helpers; file_context_menu; ArchiveListing; theme_icons |
+| S3 | **MainWindow ctor ~20 LOC** | Constructor split into setup_* | **Improved** — setup_background_workers/toolbar/menus/shortcuts/central_ui/status_and_services; file_context_menu; ArchiveListing; theme_icons |
 | S4 | **Dual icon paint paths** | `GraphicsFileItem` and `FileItemDelegate` must stay twin for montage/badges | **Done** — `icon_tile_paint.hpp` (badge, directory montage, status stickers) shared by both |
 
 ### P2 — reliability / scale / UX

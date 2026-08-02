@@ -207,6 +207,11 @@ private:
   /// Watch real dir, archive extract tree, or archive file as appropriate.
   void start_watcher_for_location();
   void setup_background_workers();
+  void setup_toolbar();
+  void setup_menus();
+  void setup_shortcuts();
+  void setup_central_ui();
+  void setup_status_and_services();
   void restore_settings();
   void persist_settings() const;
   [[nodiscard]] std::vector<fs::FileInfo> selected_fileinfos() const;
