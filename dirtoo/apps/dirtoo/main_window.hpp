@@ -29,6 +29,7 @@
 #include "graphics_file_view.hpp"
 
 #include <QMainWindow>
+class QListWidgetItem;
 #include <QSet>
 #include <QThread>
 
@@ -111,6 +112,9 @@ private slots:
   void on_toggle_sidebar(bool checked);
   void on_sidebar_activated(const QModelIndex& index);
   void sync_sidebar_to_location();
+  void rebuild_sidebar_places();
+  void on_udisks_volumes_changed();
+  void on_devices_item_activated(QListWidgetItem* item);
   void on_about();
   void on_preferences();
   void on_reload_thumbnails();
@@ -240,6 +244,9 @@ private:
   QWidget* sidebar_widget_ = nullptr;
   QTreeView* sidebar_tree_ = nullptr;
   class DirectoryTreeModel* directory_tree_model_ = nullptr;
+  class UDisksClient* udisks_client_ = nullptr;
+  class QListWidget* devices_list_ = nullptr;
+  class QLabel* devices_label_ = nullptr;
   QAction* show_sidebar_act_ = nullptr;
   QWidget* filter_row_ = nullptr;
   QLineEdit* filter_edit_ = nullptr;

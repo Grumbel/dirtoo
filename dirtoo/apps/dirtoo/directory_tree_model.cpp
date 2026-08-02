@@ -308,4 +308,84 @@ QModelIndex DirectoryTreeModel::index_for_path(const QString& path) const
   return find(const_cast<Node*>(&root_));
 }
 
+
+QModelIndex DirectoryTreeModel::ensure_path_visible(const QString& path)
+{
+  if (path.isEmpty()) {
+    return {};
+  }
+  namespace fs = std::filesystem;
+  std::error_code ec;
+  const fs::path target = fs::weakly_canonical(fs::path(path.toStdString()), ec);
+  const QString want = QString::fromStdString(ec ? path.toStdString() : target.string());
+
+  // Find the deepest root that is a prefix of want.
+  Node* root_match = nullptr;
+  for (Node* r : root_.children) {
+    if (want == r->path || want.startsWith(r->path + QLatin1Char('/'))
+        || (r->path == QLatin1String("/") && want.startsWith(QLatin1Char('/')))) {
+      if (root_match == nullptr || r->path.size() > root_match->path.size()) {
+        root_match = r;
+      }
+    }
+  }
+  if (root_match == nullptr) {
+    return index_for_path(want);
+  }
+
+  // Walk components from root_match down.
+  Node* cur = root_match;
+  if (!cur->loaded && !cur->loading) {
+    fetchMore(index_from_node(cur));
+  }
+  QString remaining = want;
+  // Normalize: strip root path prefix
+  if (cur->path == QLatin1String("/")) {
+    remaining = want;
+  } else if (want.startsWith(cur->path)) {
+    remaining = want.mid(cur->path.size());
+  }
+  while (remaining.startsWith(QLatin1Char('/'))) {
+    remaining.remove(0, 1);
+  }
+  if (remaining.isEmpty() || want == cur->path) {
+    return index_from_node(cur);
+  }
+
+  const QStringList parts = remaining.split(QLatin1Char('/'), Qt::SkipEmptyParts);
+  QString built = cur->path;
+  if (built.endsWith(QLatin1Char('/'))) {
+    built.chop(1);
+  }
+  for (const QString& part : parts) {
+    if (built == QLatin1String("/")) {
+      built = QLatin1Char('/') + part;
+    } else {
+      built += QLatin1Char('/') + part;
+    }
+    if (!cur->loaded) {
+      // Not listed yet — trigger fetch; caller may retry after volumes/list settle.
+      if (!cur->loading) {
+        fetchMore(index_from_node(cur));
+      }
+      return index_from_node(cur);
+    }
+    Node* next = nullptr;
+    for (Node* c : cur->children) {
+      if (c->path == built || QFileInfo(c->path).fileName() == part) {
+        next = c;
+        break;
+      }
+    }
+    if (next == nullptr) {
+      return index_from_node(cur);
+    }
+    cur = next;
+    if (!cur->loaded && !cur->loading) {
+      fetchMore(index_from_node(cur));
+    }
+  }
+  return index_from_node(cur);
+}
+
 } // namespace dirtoo::app

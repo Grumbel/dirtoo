@@ -3,6 +3,7 @@
 
 #include "main_window.hpp"
 #include "directory_tree_model.hpp"
+#include "udisks_client.hpp"
 #include "filter_worker.hpp"
 #include "directory_thumbnail_worker.hpp"
 #include "file_views.hpp"
@@ -39,6 +40,7 @@
 #include <QTimer>
 #include <QEvent>
 #include <QFile>
+#include <QFileInfo>
 #include <QFrame>
 #include <QFileDialog>
 #include <QTextStream>
@@ -57,6 +59,7 @@
 #include <QLocale>
 #include <QLineEdit>
 #include <QListView>
+#include <QListWidget>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
@@ -732,26 +735,27 @@ MainWindow::MainWindow(QWidget* parent)
   auto* sidebar_layout = new QVBoxLayout(sidebar_widget_);
   sidebar_layout->setContentsMargins(0, 0, 0, 0);
   sidebar_layout->setSpacing(0);
+  devices_label_ = new QLabel(QStringLiteral("Devices"), sidebar_widget_);
+  devices_label_->setStyleSheet(QStringLiteral("font-weight: bold; padding: 4px 6px 2px 6px;"));
+  sidebar_layout->addWidget(devices_label_);
+  devices_list_ = new QListWidget(sidebar_widget_);
+  devices_list_->setFrameShape(QFrame::NoFrame);
+  devices_list_->setMaximumHeight(140);
+  devices_list_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  connect(devices_list_, &QListWidget::itemActivated, this, &MainWindow::on_devices_item_activated);
+  connect(devices_list_, &QListWidget::itemClicked, this, &MainWindow::on_devices_item_activated);
+  sidebar_layout->addWidget(devices_list_);
+
+  auto* places_label = new QLabel(QStringLiteral("Places"), sidebar_widget_);
+  places_label->setStyleSheet(QStringLiteral("font-weight: bold; padding: 6px 6px 2px 6px;"));
+  sidebar_layout->addWidget(places_label);
+
   directory_tree_model_ = new DirectoryTreeModel(this);
-  {
-    QStringList roots;
-    QStringList labels;
-    const QString home = QDir::homePath();
-    roots << home;
-    labels << QStringLiteral("Home");
-    roots << QStringLiteral("/");
-    labels << QStringLiteral("Filesystem");
-    for (auto loc : {QStandardPaths::DesktopLocation, QStandardPaths::DocumentsLocation,
-                     QStandardPaths::DownloadLocation, QStandardPaths::MusicLocation,
-                     QStandardPaths::PicturesLocation, QStandardPaths::MoviesLocation}) {
-      const QString p = QStandardPaths::writableLocation(loc);
-      if (!p.isEmpty() && QDir(p).exists() && p != home && !roots.contains(p)) {
-        roots << p;
-        labels << QStandardPaths::displayName(loc);
-      }
-    }
-    directory_tree_model_->reset_roots(roots, labels);
-  }
+  rebuild_sidebar_places();
+  udisks_client_ = new UDisksClient(this);
+  connect(udisks_client_, &UDisksClient::volumes_changed, this, &MainWindow::on_udisks_volumes_changed);
+  udisks_client_->refresh();
+
   sidebar_tree_ = new QTreeView(sidebar_widget_);
   sidebar_tree_->setModel(directory_tree_model_);
   sidebar_tree_->setHeaderHidden(true);
@@ -3833,6 +3837,7 @@ void MainWindow::on_toggle_bookmark()
     }
   }
   set_status(now ? QStringLiteral("Bookmarked") : QStringLiteral("Bookmark removed"));
+  rebuild_sidebar_places();
 }
 
 void MainWindow::on_rebuild_bookmarks_menu()
@@ -3915,16 +3920,105 @@ void MainWindow::sync_sidebar_to_location()
     return;
   }
   const QString path = QString::fromStdString(location_.as_path().string());
-  const QModelIndex ix = directory_tree_model_->index_for_path(path);
+  const QModelIndex ix = directory_tree_model_->ensure_path_visible(path);
   if (!ix.isValid()) {
     return;
   }
+  for (QModelIndex parent = ix.parent(); parent.isValid(); parent = parent.parent()) {
+    sidebar_tree_->expand(parent);
+  }
+  sidebar_tree_->expand(ix);
   sidebar_tree_->setCurrentIndex(ix);
   sidebar_tree_->scrollTo(ix, QAbstractItemView::PositionAtCenter);
-  // Expand ancestors
-  for (QModelIndex p = ix.parent(); p.isValid(); p = p.parent()) {
-    sidebar_tree_->expand(p);
+}
+
+
+void MainWindow::rebuild_sidebar_places()
+{
+  if (directory_tree_model_ == nullptr) {
+    return;
   }
+  QStringList roots;
+  QStringList labels;
+  const QString home = QDir::homePath();
+  roots << home;
+  labels << QStringLiteral("Home");
+  roots << QStringLiteral("/");
+  labels << QStringLiteral("Filesystem");
+  for (auto loc : {QStandardPaths::DesktopLocation, QStandardPaths::DocumentsLocation,
+                   QStandardPaths::DownloadLocation, QStandardPaths::MusicLocation,
+                   QStandardPaths::PicturesLocation, QStandardPaths::MoviesLocation}) {
+    const QString path = QStandardPaths::writableLocation(loc);
+    if (!path.isEmpty() && QDir(path).exists() && path != home && !roots.contains(path)) {
+      roots << path;
+      labels << QStandardPaths::displayName(loc);
+    }
+  }
+  for (const auto& loc : bookmarks_.entries()) {
+    if (!loc.is_file()) {
+      continue;
+    }
+    const QString path = QString::fromStdString(loc.as_path().string());
+    if (path.isEmpty() || roots.contains(path)) {
+      continue;
+    }
+    roots << path;
+    labels << QFileInfo(path).fileName();
+  }
+  directory_tree_model_->reset_roots(roots, labels);
+}
+
+void MainWindow::on_udisks_volumes_changed()
+{
+  if (devices_list_ == nullptr) {
+    return;
+  }
+  devices_list_->clear();
+  const bool avail = udisks_client_ != nullptr && udisks_client_->available();
+  if (devices_label_ != nullptr) {
+    devices_label_->setVisible(true);
+  }
+  devices_list_->setVisible(true);
+  if (udisks_client_ == nullptr) {
+    return;
+  }
+  const auto vols = udisks_client_->volumes();
+  if (!avail) {
+    auto* item = new QListWidgetItem(QStringLiteral("Disks unavailable"));
+    item->setFlags(item->flags() & ~Qt::ItemIsEnabled);
+    devices_list_->addItem(item);
+    return;
+  }
+  if (vols.isEmpty()) {
+    auto* item = new QListWidgetItem(QStringLiteral("No mounted volumes"));
+    item->setFlags(item->flags() & ~Qt::ItemIsEnabled);
+    devices_list_->addItem(item);
+    return;
+  }
+  for (const auto& v : vols) {
+    QString text = v.label;
+    if (!v.mount_point.isEmpty()) {
+      text += QStringLiteral("  —  ") + v.mount_point;
+    }
+    auto* item = new QListWidgetItem(text);
+    item->setData(Qt::UserRole, v.mount_point);
+    item->setToolTip(v.device + (v.fstype.isEmpty() ? QString() : QStringLiteral(" (") + v.fstype + QLatin1Char(')')));
+    item->setIcon(QIcon::fromTheme(QStringLiteral("drive-harddisk"),
+                                   QIcon::fromTheme(QStringLiteral("folder"))));
+    devices_list_->addItem(item);
+  }
+}
+
+void MainWindow::on_devices_item_activated(QListWidgetItem* item)
+{
+  if (item == nullptr) {
+    return;
+  }
+  const QString mp = item->data(Qt::UserRole).toString();
+  if (mp.isEmpty()) {
+    return;
+  }
+  open_location(fs::Location::from_path(std::filesystem::path(mp.toStdString())), true);
 }
 
 } // namespace dirtoo::app

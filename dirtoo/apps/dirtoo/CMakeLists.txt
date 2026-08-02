@@ -62,6 +62,8 @@ qt_add_executable(dirtoo-app
   directory_thumbnail_worker.hpp
   directory_tree_model.cpp
   directory_tree_model.hpp
+  udisks_client.cpp
+  udisks_client.hpp
   badge_icons.hpp
 )
 
@@ -87,6 +89,7 @@ target_link_libraries(dirtoo-app
     Qt6::Gui
     Qt6::Widgets
     Qt6::Concurrent
+    Qt6::DBus
 )
 
 install(TARGETS dirtoo-app RUNTIME DESTINATION bin)

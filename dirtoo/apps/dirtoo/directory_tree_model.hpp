@@ -30,6 +30,9 @@ public:
 
   [[nodiscard]] QString path_for_index(const QModelIndex& index) const;
   [[nodiscard]] QModelIndex index_for_path(const QString& path) const;
+  /// Expand ancestors and return index when the path exists under a root (sync path
+  /// walk for already-loaded nodes; schedules fetchMore for missing segments).
+  QModelIndex ensure_path_visible(const QString& path);
 
   // QAbstractItemModel
   [[nodiscard]] QModelIndex index(int row, int column,
