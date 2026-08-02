@@ -4,13 +4,20 @@
 #include "conflict_dialog.hpp"
 #include "size_format.hpp"
 
+#include "dirtoo/fs/location.hpp"
+#include "dirtoo/thumbnail/thumbnailer.hpp"
+
 #include <QCheckBox>
 #include <QDialog>
 #include <QDialogButtonBox>
+#include <QFileIconProvider>
+#include <QFileInfo>
 #include <QFormLayout>
 #include <QGroupBox>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QLocale>
+#include <QPixmap>
 #include <QPushButton>
 #include <QVBoxLayout>
 
@@ -41,7 +48,35 @@ QString format_mtime(const std::filesystem::file_time_type& ftp)
   return QStringLiteral("—");
 }
 
-void fill_file_info(QFormLayout* form, const std::filesystem::path& path, const QString& fallback_name)
+/// Prefer freedesktop thumbnail cache; fall back to theme/file icon.
+QPixmap thumbnail_for(const std::filesystem::path& path, int edge = 96)
+{
+  if (path.empty()) {
+    return {};
+  }
+  try {
+    const auto loc = dirtoo::fs::Location::from_path(path);
+    const QString cached =
+        dirtoo::thumbnail::Thumbnailer::cache_path_for(loc, QStringLiteral("normal"));
+    QPixmap pm(cached);
+    if (!pm.isNull()) {
+      return pm.scaled(edge, edge, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
+    const QString large =
+        dirtoo::thumbnail::Thumbnailer::cache_path_for(loc, QStringLiteral("large"));
+    pm = QPixmap(large);
+    if (!pm.isNull()) {
+      return pm.scaled(edge, edge, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
+  } catch (...) {
+  }
+  QFileIconProvider provider;
+  const QIcon icon = provider.icon(QFileInfo(QString::fromStdString(path.string())));
+  return icon.pixmap(edge, edge);
+}
+
+void fill_file_info(QFormLayout* form, const std::filesystem::path& path, const QString& fallback_name,
+                    QLabel* thumb_label)
 {
   QString name = fallback_name;
   QString size = QStringLiteral("—");
@@ -60,6 +95,17 @@ void fill_file_info(QFormLayout* form, const std::filesystem::path& path, const 
       }
     }
   }
+  if (thumb_label != nullptr) {
+    const QPixmap pm = thumbnail_for(path);
+    if (!pm.isNull()) {
+      thumb_label->setPixmap(pm);
+    } else {
+      thumb_label->setText(QStringLiteral("—"));
+    }
+    thumb_label->setAlignment(Qt::AlignCenter);
+    thumb_label->setFixedSize(104, 104);
+    thumb_label->setStyleSheet(QStringLiteral("QLabel { background: palette(base); border: 1px solid palette(mid); }"));
+  }
   form->addRow(QStringLiteral("Name:"), new QLabel(name));
   form->addRow(QStringLiteral("Size:"), new QLabel(size));
   form->addRow(QStringLiteral("Modified:"), new QLabel(mtime));
@@ -75,7 +121,7 @@ std::optional<ConflictDecision> ask_conflict_policy(QWidget* parent,
   QDialog dialog(parent);
   dialog.setWindowTitle(QStringLiteral("Confirm to replace files"));
   dialog.setModal(true);
-  dialog.setMinimumWidth(420);
+  dialog.setMinimumWidth(520);
 
   auto* layout = new QVBoxLayout(&dialog);
 
@@ -91,13 +137,21 @@ std::optional<ConflictDecision> ask_conflict_policy(QWidget* parent,
                                &dialog));
 
   auto* source_box = new QGroupBox(QStringLiteral("New / Source:"), &dialog);
-  auto* source_form = new QFormLayout(source_box);
-  fill_file_info(source_form, source_path, destination_name);
+  auto* source_row = new QHBoxLayout(source_box);
+  auto* source_thumb = new QLabel(source_box);
+  auto* source_form = new QFormLayout();
+  fill_file_info(source_form, source_path, destination_name, source_thumb);
+  source_row->addWidget(source_thumb);
+  source_row->addLayout(source_form, 1);
   layout->addWidget(source_box);
 
   auto* dest_box = new QGroupBox(QStringLiteral("Existing / Destination:"), &dialog);
-  auto* dest_form = new QFormLayout(dest_box);
-  fill_file_info(dest_form, destination_path, destination_name);
+  auto* dest_row = new QHBoxLayout(dest_box);
+  auto* dest_thumb = new QLabel(dest_box);
+  auto* dest_form = new QFormLayout();
+  fill_file_info(dest_form, destination_path, destination_name, dest_thumb);
+  dest_row->addWidget(dest_thumb);
+  dest_row->addLayout(dest_form, 1);
   layout->addWidget(dest_box);
 
   auto* apply_all = new QCheckBox(QStringLiteral("Repeat action for all files"), &dialog);

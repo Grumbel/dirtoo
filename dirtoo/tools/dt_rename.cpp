@@ -10,11 +10,45 @@ namespace {
 
 void usage()
 {
-  std::cerr << "usage: dt-rename [options] <from> <to>\n"
-               "  -n, --dry-run\n"
-               "  -v, --verbose\n"
-               "  -Y, --always / -N, --never / --conflict=…\n"
-               "  -h, --help\n";
+  std::cerr
+      << "Usage: dt-rename [options] <from> <to>\n"
+         "\n"
+         "Rename or move a single path to a new path (same or different directory).\n"
+         "Unlike dt-move, this accepts an explicit destination path rather than a\n"
+         "target directory.\n"
+         "\n"
+         "Arguments:\n"
+         "  <from>                       Existing source path\n"
+         "  <to>                         New path (file or directory name)\n"
+         "\n"
+         "Options:\n"
+         "  -n, --dry-run                Print the planned rename; do not change the FS\n"
+         "  -v, --verbose                Print the rename when it succeeds\n"
+         "  -Y, --always                 If <to> exists, overwrite it\n"
+         "  -N, --never                  If <to> exists, skip (no error)\n"
+         "  --conflict=POLICY            What to do when the destination already exists:\n"
+         "                                 fail       — error (default)\n"
+         "                                 overwrite  — remove destination then rename\n"
+         "                                 rename     — pick a free name: stem (N).ext\n"
+         "                                              e.g. report.pdf → report (2).pdf\n"
+         "                                 skip       — leave both paths unchanged\n"
+         "  -V, --version                Print version and exit\n"
+         "  -h, --help                   Show this help\n"
+         "\n"
+         "Conflict resolution details:\n"
+         "  fail        Returns an error if <to> already exists; nothing is changed.\n"
+         "  overwrite   Deletes the existing <to> (recursively if a directory), then\n"
+         "              renames <from> onto that path. Cross-device moves are not done\n"
+         "              here — use dt-move for cross-filesystem transfers.\n"
+         "  rename      Leaves the existing <to> alone and renames <from> to the first\n"
+         "              free name in the destination directory matching\n"
+         "              \"<stem> (N)<ext>\" with N starting at 2.\n"
+         "  skip        Treats a conflict as success with a skipped item; <from> stays.\n"
+         "\n"
+         "Examples:\n"
+         "  dt-rename old.txt new.txt\n"
+         "  dt-rename --conflict=rename photo.jpg photo.jpg\n"
+         "  dt-rename -n -v notes.md archive/notes-2024.md\n";
 }
 
 } // namespace

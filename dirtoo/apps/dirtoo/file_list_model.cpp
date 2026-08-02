@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "file_list_model.hpp"
+#include "dirtoo/filter/media_meta_cache.hpp"
 #include "size_format.hpp"
 
 #include <chrono>
@@ -428,6 +429,58 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
         return QStringLiteral("%1 items").arg(it.value());
       }
       return format_size(fi->size(), false);
+    case FileListColumn::Dimensions: {
+      if (fi->is_directory()) {
+        return {};
+      }
+      const auto meta = filter::MediaMetaCache::instance().try_get(fi->path());
+      if (!meta || !meta->width || !meta->height) {
+        if (!fi->path().empty() && !filter::MediaMetaCache::instance().is_negative(fi->path())) {
+          const int row = index.row();
+          filter::MediaMetaCache::instance().request(
+              fi->path(), 0,
+              [this, row](const std::string&, std::optional<filter::MediaInfo>, std::uint64_t) {
+                QMetaObject::invokeMethod(const_cast<FileListModel*>(this), "notify_row_changed",
+                                          Qt::QueuedConnection, Q_ARG(int, row));
+              });
+        }
+        return {};
+      }
+      QString dims = QStringLiteral("%1×%2").arg(*meta->width).arg(*meta->height);
+      if (meta->framerate && *meta->framerate > 0.0) {
+        dims += QStringLiteral(" @ %1").arg(*meta->framerate, 0, 'f', 2);
+      }
+      return dims;
+    }
+    case FileListColumn::Duration: {
+      if (fi->is_directory()) {
+        return {};
+      }
+      const auto meta = filter::MediaMetaCache::instance().try_get(fi->path());
+      if (!meta || !meta->duration_ms) {
+        if (!fi->path().empty() && !filter::MediaMetaCache::instance().is_negative(fi->path())) {
+          const int row = index.row();
+          filter::MediaMetaCache::instance().request(
+              fi->path(), 0,
+              [this, row](const std::string&, std::optional<filter::MediaInfo>, std::uint64_t) {
+                QMetaObject::invokeMethod(const_cast<FileListModel*>(this), "notify_row_changed",
+                                          Qt::QueuedConnection, Q_ARG(int, row));
+              });
+        }
+        return {};
+      }
+      const auto total_s = static_cast<qint64>(*meta->duration_ms / 1000);
+      const qint64 h = total_s / 3600;
+      const qint64 m = (total_s % 3600) / 60;
+      const qint64 s = total_s % 60;
+      if (h > 0) {
+        return QStringLiteral("%1:%2:%3")
+            .arg(h)
+            .arg(m, 2, 10, QLatin1Char('0'))
+            .arg(s, 2, 10, QLatin1Char('0'));
+      }
+      return QStringLiteral("%1:%2").arg(m).arg(s, 2, 10, QLatin1Char('0'));
+    }
     case FileListColumn::Modified:
       return format_mtime(fi->mtime());
     case FileListColumn::Type:
@@ -544,6 +597,10 @@ QVariant FileListModel::headerData(int section, Qt::Orientation orientation, int
     return QStringLiteral("Name");
   case FileListColumn::Size:
     return QStringLiteral("Size");
+  case FileListColumn::Dimensions:
+    return QStringLiteral("Dimensions");
+  case FileListColumn::Duration:
+    return QStringLiteral("Duration");
   case FileListColumn::Modified:
     return QStringLiteral("Modified");
   case FileListColumn::Type:

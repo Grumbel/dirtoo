@@ -14,8 +14,19 @@ namespace {
 
 void usage()
 {
-  std::cerr << "usage: dt-mkfile [--dry-run] <path> [path…]\n"
-               "  Create empty regular file(s). Fails if a path already exists.\n";
+  std::cerr
+      << "Usage: dt-mkfile [options] <path> [path…]\n"
+         "\n"
+         "Create empty regular files. Fails if a path already exists (no overwrite).\n"
+         "\n"
+         "Options:\n"
+         "  -n, --dry-run                Print planned creates; do not write\n"
+         "  -V, --version                Print version and exit\n"
+         "  -h, --help                   Show this help\n"
+         "\n"
+         "Examples:\n"
+         "  dt-mkfile notes.txt\n"
+         "  dt-mkfile --dry-run a.bin b.bin\n";
 }
 
 } // namespace
@@ -33,7 +44,7 @@ int main(int argc, char* argv[])
   int argi = 1;
   while (argi < argc && std::string_view(argv[argi]).starts_with('-')) {
     const std::string_view a{argv[argi]};
-    if (a == "--dry-run") {
+    if (a == "--dry-run" || a == "-n") {
       opt.dry_run = true;
     } else if (a == "--help" || a == "-h") {
       usage();

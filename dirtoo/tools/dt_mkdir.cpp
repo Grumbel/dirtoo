@@ -14,11 +14,22 @@ namespace {
 
 void usage()
 {
-  std::cerr << "usage: dt-mkdir [options] <path> [path…]\n"
-               "  -p, --parents     Create parent directories as needed\n"
-               "  -n, --dry-run\n"
-               "  -v, --verbose\n"
-               "  -h, --help\n";
+  std::cerr
+      << "Usage: dt-mkdir [options] <path> [path…]\n"
+         "\n"
+         "Create directories. Without -p, only a single directory is created\n"
+         "(parents must already exist), matching dirops::create_directory.\n"
+         "\n"
+         "Options:\n"
+         "  -p, --parents                Create missing parent directories (mkdir -p)\n"
+         "  -n, --dry-run                Print planned mkdir; do not create\n"
+         "  -v, --verbose                Print each created directory\n"
+         "  -V, --version                Print version and exit\n"
+         "  -h, --help                   Show this help\n"
+         "\n"
+         "Examples:\n"
+         "  dt-mkdir newdir\n"
+         "  dt-mkdir -p path/to/nested/dir\n";
 }
 
 } // namespace

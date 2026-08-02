@@ -16,8 +16,22 @@ namespace {
 
 void usage()
 {
-  std::cerr << "usage: dt-rm [--dry-run] [--verbose] <path> [path…]\n"
-               "  Remove files or directories (recursive). Python: programs/rmdir.py + delete.\n";
+  std::cerr
+      << "Usage: dt-rm [options] <path> [path…]\n"
+         "\n"
+         "Remove files or directories. Directories are removed recursively\n"
+         "(equivalent to rm -rf for each argument).\n"
+         "\n"
+         "Options:\n"
+         "  -n, --dry-run                List paths that would be removed\n"
+         "  -v, --verbose                Print each removed path\n"
+         "  -V, --version                Print version and exit\n"
+         "  -h, --help                   Show this help\n"
+         "\n"
+         "Examples:\n"
+         "  dt-rm obsolete.txt\n"
+         "  dt-rm -v build/ tmp/cache\n"
+         "  dt-rm --dry-run /tmp/scratch\n";
 }
 
 } // namespace
@@ -36,7 +50,7 @@ int main(int argc, char* argv[])
   int argi = 1;
   while (argi < argc && std::string_view(argv[argi]).starts_with('-')) {
     const std::string_view a{argv[argi]};
-    if (a == "--dry-run") {
+    if (a == "--dry-run" || a == "-n") {
       opt.dry_run = true;
     } else if (a == "--verbose" || a == "-v") {
       opt.verbose = true;

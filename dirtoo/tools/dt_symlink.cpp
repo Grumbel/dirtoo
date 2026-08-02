@@ -14,8 +14,19 @@ namespace {
 
 void usage()
 {
-  std::cerr << "usage: dt-symlink [--dry-run] <target> <link-path>\n"
-               "  Create a symbolic link at <link-path> pointing to <target>.\n";
+  std::cerr
+      << "Usage: dt-symlink [options] <target> <link-path>\n"
+         "\n"
+         "Create a symbolic link at <link-path> pointing to <target>.\n"
+         "Fails if <link-path> already exists.\n"
+         "\n"
+         "Options:\n"
+         "  -n, --dry-run                Print the planned symlink; do not create\n"
+         "  -V, --version                Print version and exit\n"
+         "  -h, --help                   Show this help\n"
+         "\n"
+         "Example:\n"
+         "  dt-symlink /usr/share/doc docs-link\n";
 }
 
 } // namespace
@@ -33,7 +44,7 @@ int main(int argc, char* argv[])
   int argi = 1;
   while (argi < argc && std::string_view(argv[argi]).starts_with('-')) {
     const std::string_view a{argv[argi]};
-    if (a == "--dry-run") {
+    if (a == "--dry-run" || a == "-n") {
       opt.dry_run = true;
     } else if (a == "--help" || a == "-h") {
       usage();

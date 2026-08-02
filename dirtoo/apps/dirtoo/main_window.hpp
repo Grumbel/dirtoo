@@ -61,7 +61,7 @@ namespace dirtoo::app {
 enum class ViewMode {
   Detail,
   Icons,
-  SmallIcons, // compact list-like icon rows (Python SequenceMode / small icon view)
+  SmallIcons, // compact multi-column icon grid
 };
 
 class MainWindow : public QMainWindow {

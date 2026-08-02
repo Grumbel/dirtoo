@@ -10,11 +10,20 @@ namespace {
 
 void usage()
 {
-  std::cerr << "usage: dt-swap [options] <file1> <file2>\n"
-               "  Swap the names of two files (same filesystem).\n"
-               "  -n, --dry-run    Do not execute\n"
-               "  -v, --verbose    Print actions\n"
-               "  -h, --help\n";
+  std::cerr
+      << "Usage: dt-swap [options] <file1> <file2>\n"
+         "\n"
+         "Swap the names of two existing paths on the same filesystem using a\n"
+         "temporary intermediate name. Both paths must exist.\n"
+         "\n"
+         "Options:\n"
+         "  -n, --dry-run                Print the planned swap; do not rename\n"
+         "  -v, --verbose                Print the swap when it succeeds\n"
+         "  -V, --version                Print version and exit\n"
+         "  -h, --help                   Show this help\n"
+         "\n"
+         "Example:\n"
+         "  dt-swap a.txt b.txt\n";
 }
 
 } // namespace

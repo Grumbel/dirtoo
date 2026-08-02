@@ -1262,23 +1262,24 @@ QAbstractItemView* MainWindow::current_view() const
 void MainWindow::apply_icon_zoom()
 {
   if (view_mode_ == ViewMode::SmallIcons) {
-    // List mode: thumbnail on the left, filename to the right (one row per file).
+    // Compact multi-column icon grid (not one-file-per-row list mode).
     static constexpr int kSmall[] = {16, 24, 32, 48, 64, 96, 128};
     const int zi = std::clamp(zoom_index_, 0, static_cast<int>(std::size(kSmall)) - 1);
     const int size = kSmall[zi];
-    icon_view_->setViewMode(QListView::ListMode);
-    icon_view_->setFlow(QListView::TopToBottom);
-    icon_view_->setWrapping(false);
+    icon_view_->setViewMode(QListView::IconMode);
+    icon_view_->setFlow(QListView::LeftToRight);
+    icon_view_->setWrapping(true);
     icon_view_->setResizeMode(QListView::Adjust);
     icon_view_->setMovement(QListView::Static);
     icon_view_->setUniformItemSizes(true);
-    icon_view_->setWordWrap(false);
+    icon_view_->setWordWrap(true);
     icon_view_->setIconSize(QSize(size, size));
-    icon_view_->setSpacing(1);
-    icon_view_->setGridSize(QSize()); // list mode uses row height from icon/sizeHint
+    icon_view_->setSpacing(4);
+    const int cell_w = std::max(size + 24, 64);
+    const int cell_h = size + 28; // icon + single-line caption
+    icon_view_->setGridSize(QSize(cell_w, cell_h));
     if (model_ != nullptr) {
-      // Styled paint: decoration left, DisplayRole text right (not under the icon).
-      model_->set_icon_style(false);
+      model_->set_icon_style(true);
       model_->set_icon_detail_level(1);
     }
     if (tree_view_ != nullptr) {
@@ -2231,22 +2232,24 @@ void MainWindow::on_context_menu(const QPoint& pos)
     const fs::FileInfo* primary = single ? &selected.front() : nullptr;
 
     if (primary != nullptr && primary->is_directory()) {
-      menu.addAction(theme_icon("folder"), QStringLiteral("Open Folder"), this, [this, primary] {
-        open_location(primary->location());
-      });
+      // Capture Location by value — `primary` points into the local `selected` vector.
+      const fs::Location open_loc = primary->location();
+      menu.addAction(theme_icon("folder"), QStringLiteral("Open Folder"), this,
+                     [this, open_loc] { open_location(open_loc); });
       menu.addAction(theme_icon("window-new"), QStringLiteral("Open Folder in New Window"), this,
-                     [this, loc = primary->location()] {
+                     [this, open_loc] {
                        auto* win = new MainWindow();
                        win->setAttribute(Qt::WA_DeleteOnClose);
                        win->show();
-                       win->open_location(loc);
+                       win->open_location(open_loc);
                      });
       menu.addSeparator();
     } else if (primary != nullptr && fs::looks_like_archive(primary->path())
                && !location_.is_archive()) {
+      const std::filesystem::path archive_path = primary->path();
       menu.addAction(theme_icon("package-x-generic"), QStringLiteral("Open Archive"), this,
-                     [this, primary] {
-                       open_location(fs::Location::from_archive(primary->path(), {}));
+                     [this, archive_path] {
+                       open_location(fs::Location::from_archive(archive_path, {}));
                      });
       menu.addSeparator();
     }
@@ -2260,16 +2263,17 @@ void MainWindow::on_context_menu(const QPoint& pos)
     menu.addSeparator();
 
     if (primary != nullptr) {
+      // By-value capture avoids use-after-free when the action fires after `selected` dies.
+      const fs::Location parent_loc = primary->location().parent();
       menu.addAction(theme_icon("folder"), QStringLiteral("Open Containing Folder"), this,
-                     [this, primary] {
-                       open_location(primary->location().parent());
-                     });
+                     [this, parent_loc] { open_location(parent_loc); });
       menu.addSeparator();
     }
 
     if (primary != nullptr && primary->is_directory()) {
+      const std::filesystem::path dir = primary->path();
       menu.addAction(theme_icon("utilities-terminal"), QStringLiteral("Open Terminal Here"), this,
-                     [this, dir = primary->path()] {
+                     [this, dir] {
                        if (!open_in_terminal(dir)) {
                          set_status(QStringLiteral("Could not launch a terminal emulator"));
                        }

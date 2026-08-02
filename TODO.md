@@ -59,7 +59,7 @@ Source audit: **`AUDIT.md`** (file inventory + parity notes, 2026-08).
 | Directory composite thumbs | **Fixed** — up to 9-tile montage (explicit action) |
 | Caption / tile geometry | **Partial** — themed captions; no shadow/outline renderer |
 | Small-icons grid uneven | **Mitigated** — fixed IconMode grid cells |
-| Dual icon paths (Graphics + QListView) | **Acceptable** — Small Icons uses list mode by design |
+| Dual icon paths (Graphics + QListView) | **Acceptable** — Small Icons is compact IconMode grid; full Icons use Graphics view |
 
 ### 4. Filter correctness
 
@@ -456,11 +456,17 @@ Python reference: experimental `dirtoo-py/experiments/udisks/` (`udisksqt.py`); 
       (mimeData emits Location URL file://…//archive:entry; external extract-on-drop optional)
 - [x] use human-friendly ISO date/time: "2011-12-21 16:14"
 - [x] in About page, use actual URL, not "Project Page" text on link
-- [ ] Segfault on "Open Containing Folder"
-- [ ] Detail View should show file metadata (fps, dimension, duration, ...)
-- [ ] Small Icon view is only showing one item per line, it should
+- [x] Segfault on "Open Containing Folder"
+      (context menu captured FileInfo* into local vector; capture Location by value)
+- [x] Detail View should show file metadata (fps, dimension, duration, ...)
+      (Dimensions + Duration columns via MediaMetaCache; fps still in Properties)
+- [x] Small Icon view is only showing one item per line, it should
       show multiple in a grid style view
-- [ ] --help options of some tools/ look small and miserable, should be long and detailed
-- [ ] remove dt-move <from> <to>, `-t` should be required
-- [ ] document rename conflict resolution
-- [ ] conflict dialog should show thumbnails of the affected files
+      (IconMode + wrapping grid instead of ListMode)
+- [x] --help options of some tools/ look small and miserable, should be long and detailed
+      (dt-move/copy/rename/rm/mkdir/mkfile/swap/symlink expanded)
+- [x] remove dt-move <from> <to>, `-t` should be required
+- [x] document rename conflict resolution
+      (dt-rename --help + dirops ConflictPolicy docs; rename → stem (N).ext)
+- [x] conflict dialog should show thumbnails of the affected files
+      (cache lookup + QFileIconProvider fallback)

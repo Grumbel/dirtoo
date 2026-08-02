@@ -16,18 +16,35 @@ namespace {
 void usage()
 {
   std::cerr
-      << "usage:\n"
-      << "  dt-move [options] <from> <to>\n"
-      << "  dt-move [options] -t <dir> <file> [file…]\n\n"
-      << "Options (aligned with dirtoo-py programs/move.py):\n"
-      << "  -t, --target-directory DIR   Move into DIR (multiple sources)\n"
-      << "  -R, --relative               Preserve path prefix under DIR\n"
-      << "  -n, --dry-run                Print actions only\n"
-      << "  -v, --verbose                Print each move\n"
-      << "  -Y, --always                 Overwrite on conflict\n"
-      << "  -N, --never                  Skip on conflict\n"
-      << "  --conflict=fail|overwrite|rename|skip\n"
-      << "  -h, --help\n";
+      << "Usage: dt-move [options] -t <dir> <file> [file…]\n"
+         "\n"
+         "Move one or more files or directories into a target directory.\n"
+         "The two-argument form `dt-move <from> <to>` is not supported; always\n"
+         "pass -t/--target-directory. For a single-file rename/move to a new path\n"
+         "use dt-rename instead.\n"
+         "\n"
+         "Required:\n"
+         "  -t, --target-directory DIR   Destination directory (must exist)\n"
+         "\n"
+         "Options:\n"
+         "  -R, --relative               Preserve path prefix under DIR\n"
+         "                               (e.g. a/b.txt → DIR/a/b.txt; creates parents)\n"
+         "  -n, --dry-run                Print planned moves; do not touch the filesystem\n"
+         "  -v, --verbose                Print each successful move\n"
+         "  -Y, --always                 On name conflict, overwrite the destination\n"
+         "  -N, --never                  On name conflict, skip the source\n"
+         "  --conflict=POLICY            Conflict policy when the destination exists:\n"
+         "                                 fail       — error and abort that item (default)\n"
+         "                                 overwrite  — replace existing (same as -Y)\n"
+         "                                 rename     — unique name, e.g. file (2).txt\n"
+         "                                 skip       — leave destination unchanged (same as -N)\n"
+         "  -V, --version                Print version and exit\n"
+         "  -h, --help                   Show this help\n"
+         "\n"
+         "Examples:\n"
+         "  dt-move -t /tmp/out photo.jpg notes.txt\n"
+         "  dt-move -R -t /backup home/user/docs/a.pdf\n"
+         "  dt-move -n -v --conflict=rename -t ./dest ./*.png\n";
 }
 
 } // namespace
@@ -94,43 +111,37 @@ int main(int argc, char* argv[])
     files.emplace_back(argv[i]);
   }
 
-  if (have_target) {
-    if (files.empty()) {
-      usage();
-      return 2;
-    }
-    std::error_code ec;
-    if (!fs::is_directory(target_dir, ec) || ec) {
-      std::cerr << "dt-move: target directory does not exist: " << target_dir.string() << '\n';
-      return 1;
-    }
-    int failures = 0;
-    for (const auto& src : files) {
-      const fs::path dest = dtcli::dest_under_target(src, target_dir, relative);
-      if (relative) {
-        std::error_code mec;
-        fs::create_directories(dest.parent_path(), mec);
-      }
-      auto result = dirops::move_path(src, dest, opt);
-      if (!result) {
-        std::cerr << result.error().to_string() << '\n';
-        ++failures;
-        continue;
-      }
-      dtcli::print_result_items(*result, "move", opt.verbose, opt.dry_run);
-    }
-    return failures == 0 ? 0 : 1;
-  }
-
-  if (files.size() != 2) {
+  if (!have_target) {
+    std::cerr << "dt-move: -t/--target-directory is required\n\n";
     usage();
     return 2;
   }
-  auto result = dirops::move_path(files[0], files[1], opt);
-  if (!result) {
-    std::cerr << result.error().to_string() << '\n';
+  if (files.empty()) {
+    std::cerr << "dt-move: at least one source path is required\n\n";
+    usage();
+    return 2;
+  }
+
+  std::error_code ec;
+  if (!fs::is_directory(target_dir, ec) || ec) {
+    std::cerr << "dt-move: target directory does not exist: " << target_dir.string() << '\n';
     return 1;
   }
-  dtcli::print_result_items(*result, "move", opt.verbose, opt.dry_run);
-  return 0;
+
+  int failures = 0;
+  for (const auto& src : files) {
+    const fs::path dest = dtcli::dest_under_target(src, target_dir, relative);
+    if (relative) {
+      std::error_code mec;
+      fs::create_directories(dest.parent_path(), mec);
+    }
+    auto result = dirops::move_path(src, dest, opt);
+    if (!result) {
+      std::cerr << result.error().to_string() << '\n';
+      ++failures;
+      continue;
+    }
+    dtcli::print_result_items(*result, "move", opt.verbose, opt.dry_run);
+  }
+  return failures == 0 ? 0 : 1;
 }
