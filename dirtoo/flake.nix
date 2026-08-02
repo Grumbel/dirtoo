@@ -106,6 +106,7 @@
             dirtoo-thumbnail
             dirtoo-archive
             pkgs.qt6.qtbase
+            pkgs.qt6.qtsvg
             pkgs.catch2_3
           ];
           # Runtime helpers used by mediainfo / archive tools / GUI.
@@ -188,7 +189,7 @@
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             cmake ninja pkg-config gcc
-            qt6.qtbase qt6.qttools
+            qt6.qtbase qt6.qtsvg qt6.qttools
             libarchive unzip gnutar p7zip catch2_3
             sqlite ffmpeg
             gdb clang-tools

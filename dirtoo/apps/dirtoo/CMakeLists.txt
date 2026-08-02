@@ -90,6 +90,7 @@ target_link_libraries(dirtoo-app
     Qt6::Widgets
     Qt6::Concurrent
     Qt6::DBus
+    Qt6::Svg
 )
 
 install(TARGETS dirtoo-app RUNTIME DESTINATION bin)

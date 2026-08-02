@@ -54,6 +54,8 @@
 #include <QHeaderView>
 #include <QHash>
 #include <QIcon>
+#include <QPainter>
+#include <QSvgRenderer>
 #include <QKeyEvent>
 #include <QItemSelectionModel>
 #include <QKeySequence>
@@ -122,6 +124,7 @@ QIcon theme_icon(const char* name, const char* fallback = nullptr)
 
   // Load a known bundled asset; log once per missing filename (not for speculative
   // name.svg / name.png probes).
+  // SVGs need Qt Svg (QSvgRenderer): QIcon(path) alone fails without the svg image plugin.
   const auto load_bundled = [](const QString& file, bool required) -> QIcon {
     const QString dir = icon_directory();
     if (dir.isEmpty() || file.isEmpty()) {
@@ -138,7 +141,34 @@ QIcon theme_icon(const char* name, const char* fallback = nullptr)
       }
       return {};
     }
-    QIcon icon(path);
+
+    QIcon icon;
+    if (path.endsWith(QLatin1String(".svg"), Qt::CaseInsensitive)) {
+      QSvgRenderer renderer(path);
+      if (!renderer.isValid()) {
+        if (required) {
+          static QStringList logged_svg;
+          if (!logged_svg.contains(path)) {
+            logged_svg.append(path);
+            qWarning().noquote() << QStringLiteral("dirtoo: invalid SVG icon:") << path;
+          }
+        }
+        return {};
+      }
+      // Multi-resolution pixmaps so toolbars stay sharp at different DPI/sizes.
+      for (int s : {16, 22, 24, 32, 48, 64}) {
+        QPixmap pm(s, s);
+        pm.fill(Qt::transparent);
+        QPainter painter(&pm);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        renderer.render(&painter);
+        painter.end();
+        icon.addPixmap(pm);
+      }
+    } else {
+      icon = QIcon(path);
+    }
+
     if (icon.isNull() && required) {
       static QStringList logged_null;
       if (!logged_null.contains(path)) {
