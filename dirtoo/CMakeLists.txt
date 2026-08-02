@@ -27,6 +27,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(GNUInstallDirs)
 
+# So qDebug/qWarning fill QMessageLogContext::{file,line,function}.
+add_compile_definitions(QT_MESSAGELOGCONTEXT)
+
 option(DIRTOO_BUILD_APP "Build the dirtoo GUI" ON)
 option(DIRTOO_BUILD_TOOLS "Build dt-* tools (requires dirops package)" OFF)
 option(DIRTOO_BUILD_TESTS "Build unit tests" ON)
@@ -71,6 +74,8 @@ add_library(dirtoo_warnings INTERFACE)
 target_compile_options(dirtoo_warnings INTERFACE
   $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic>
 )
+# Populate QMessageLogContext file/line/function for qDebug/qWarning/…
+target_compile_definitions(dirtoo_warnings INTERFACE QT_MESSAGELOGCONTEXT)
 
 if(DIRTOO_BUILD_APP)
   add_subdirectory(apps/dirtoo)

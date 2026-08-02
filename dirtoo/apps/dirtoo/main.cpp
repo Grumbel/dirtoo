@@ -18,6 +18,7 @@
 
 #include <filesystem>
 #include <iostream>
+#include <string_view>
 
 #ifndef DIRTOO_VERSION
 #  define DIRTOO_VERSION "0.0.0-unknown"
@@ -26,6 +27,20 @@
 namespace {
 
 QtMsgType g_min_level = QtWarningMsg;
+
+const char* path_basename(const char* path)
+{
+  if (path == nullptr || path[0] == '\0') {
+    return nullptr;
+  }
+  const char* slash = path;
+  for (const char* p = path; *p != '\0'; ++p) {
+    if (*p == '/' || *p == '\\') {
+      slash = p + 1;
+    }
+  }
+  return slash;
+}
 
 void dirtoo_message_handler(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
@@ -52,10 +67,32 @@ void dirtoo_message_handler(QtMsgType type, const QMessageLogContext& context, c
   }
   const QString stamp = QDateTime::currentDateTime().toString(QStringLiteral("hh:mm:ss.zzz"));
   std::cerr << stamp.toStdString() << " [" << level << "] ";
-  if (context.category != nullptr && context.category[0] != '\0'
-      && QLatin1String(context.category) != QLatin1String("default")) {
+
+  // Source location (requires QT_MESSAGELOGCONTEXT at compile time).
+  const char* file = path_basename(context.file);
+  if (file != nullptr && file[0] != '\0') {
+    std::cerr << file;
+    if (context.line > 0) {
+      std::cerr << ':' << context.line;
+    }
+    std::cerr << ' ';
+  }
+  if (context.function != nullptr && context.function[0] != '\0') {
+    // Prefer a short function token: strip return type if present is hard;
+    // print the full signature Qt provides, truncated for readability.
+    std::string_view fn{context.function};
+    if (fn.size() > 96) {
+      std::cerr.write(fn.data(), 93);
+      std::cerr << "...";
+    } else {
+      std::cerr << context.function;
+    }
+    std::cerr << ": ";
+  } else if (context.category != nullptr && context.category[0] != '\0'
+             && QLatin1String(context.category) != QLatin1String("default")) {
     std::cerr << context.category << ": ";
   }
+
   std::cerr << msg.toStdString() << '\n';
   if (type == QtFatalMsg) {
     std::abort();
