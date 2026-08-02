@@ -196,6 +196,8 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
     }
   }
 
+  const fs::FileInfo* fi = model_->file_at(row_);
+
   // Directory montage overlay (shared with FileItemDelegate).
   if (fi != nullptr && fi->is_directory()
       && idx.data(ThumbnailStatusRole).toInt() == static_cast<int>(ThumbnailStatus::Ready)
@@ -204,7 +206,7 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
   }
 
   // Non-recursive file count for folders.
-  if (const auto* fi = model_->file_at(row_); fi != nullptr && fi->is_directory()) {
+  if (fi != nullptr && fi->is_directory()) {
     const qint64 n = idx.data(ChildCountRole).toLongLong();
     if (n >= 0) {
       paint_tile_badge(painter, thumb, QStringLiteral("%1").arg(n), Qt::AlignRight | Qt::AlignBottom);
@@ -212,7 +214,7 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
   }
 
   // Image/video type stickers always; text meta when detail > 1 (dirtoo-py).
-  if (const auto* fi = model_->file_at(row_); fi != nullptr && !fi->is_directory()) {
+  if (fi != nullptr && !fi->is_directory()) {
     std::string ext = fi->extension();
     if (!ext.empty() && ext[0] == '.') {
       ext.erase(ext.begin());
