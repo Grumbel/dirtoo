@@ -1075,7 +1075,7 @@ MainWindow::MainWindow(QWidget* parent)
   tree_view_->setDropIndicatorShown(true);
   tree_view_->setDragDropMode(QAbstractItemView::DragDrop);
   tree_view_->setDefaultDropAction(Qt::CopyAction);
-  tree_view_->setIconSize(QSize(24, 24));
+  tree_view_->setIconSize(QSize(32, 32));
   tree_view_->header()->setStretchLastSection(true);
   tree_view_->setColumnWidth(0, 320);
   tree_view_->setColumnWidth(1, 100);
@@ -1086,6 +1086,8 @@ MainWindow::MainWindow(QWidget* parent)
   tree_view_->installEventFilter(this);
   connect(tree_view_, &QWidget::customContextMenuRequested, this, &MainWindow::on_context_menu);
   connect(tree_view_->header(), &QHeaderView::sectionClicked, this, &MainWindow::on_header_clicked);
+  connect(tree_view_->verticalScrollBar(), &QScrollBar::valueChanged, this,
+          [this](int) { request_thumbnails_for_visible(); });
   view_stack_->addWidget(tree_view_);
 
   icon_view_ = new FileListView(view_stack_);
@@ -1260,31 +1262,29 @@ QAbstractItemView* MainWindow::current_view() const
 void MainWindow::apply_icon_zoom()
 {
   if (view_mode_ == ViewMode::SmallIcons) {
-    // Compact icon grid (even cells). Single-line basename captions via icon-style
-    // delegate (must stay enabled — default styled paint only showed the first tile).
+    // List mode: thumbnail on the left, filename to the right (one row per file).
     static constexpr int kSmall[] = {16, 24, 32, 48, 64, 96, 128};
     const int zi = std::clamp(zoom_index_, 0, static_cast<int>(std::size(kSmall)) - 1);
     const int size = kSmall[zi];
-    icon_view_->setViewMode(QListView::IconMode);
-    icon_view_->setFlow(QListView::LeftToRight);
-    icon_view_->setWrapping(true);
+    icon_view_->setViewMode(QListView::ListMode);
+    icon_view_->setFlow(QListView::TopToBottom);
+    icon_view_->setWrapping(false);
     icon_view_->setResizeMode(QListView::Adjust);
     icon_view_->setMovement(QListView::Static);
     icon_view_->setUniformItemSizes(true);
     icon_view_->setWordWrap(false);
     icon_view_->setIconSize(QSize(size, size));
-    icon_view_->setSpacing(4);
-    // Fixed cell: icon + room for elided basename under the icon.
-    const int caption_h = icon_view_->fontMetrics().height() + 8;
-    const int cell_w = std::max(size + 48, 72);
-    const int cell_h = size + caption_h + 12;
-    icon_view_->setGridSize(QSize(cell_w, cell_h));
+    icon_view_->setSpacing(1);
+    icon_view_->setGridSize(QSize()); // list mode uses row height from icon/sizeHint
     if (model_ != nullptr) {
-      model_->set_icon_style(true);
-      model_->set_icon_detail_level(1); // name only under icon
+      // Styled paint: decoration left, DisplayRole text right (not under the icon).
+      model_->set_icon_style(false);
+      model_->set_icon_detail_level(1);
     }
-    const int detail = std::max(16, size / 2);
-    tree_view_->setIconSize(QSize(detail, detail));
+    if (tree_view_ != nullptr) {
+      const int detail = std::max(16, size / 2);
+      tree_view_->setIconSize(QSize(detail, detail));
+    }
     return;
   }
 
@@ -1381,10 +1381,13 @@ void MainWindow::set_view_mode(ViewMode mode)
     if (detail_act_ != nullptr) {
       detail_act_->setChecked(true);
     }
+    if (tree_view_ != nullptr && tree_view_->iconSize().width() < 24) {
+      tree_view_->setIconSize(QSize(32, 32));
+    }
+    request_thumbnails_for_visible();
   } else if (mode == ViewMode::SmallIcons) {
-    // Icon-style delegate paints captions under each tile; must stay enabled.
     if (model_ != nullptr) {
-      model_->set_icon_style(true);
+      model_->set_icon_style(false);
       model_->set_icon_detail_level(1);
     }
     view_stack_->setCurrentWidget(icon_view_);
@@ -1824,14 +1827,8 @@ void MainWindow::on_directory_load_failed(quint64 generation, QString error)
 
 void MainWindow::request_thumbnails_for_visible()
 {
-  if (view_mode_ == ViewMode::Detail) {
-    return;
-  }
   // Debounce rapid refresh/scroll storms (generation-safe via singleShot capturing this).
   QTimer::singleShot(80, this, [this] {
-    if (view_mode_ == ViewMode::Detail) {
-      return;
-    }
     const auto& visible = collection_.visible_items();
     if (visible.empty()) {
       return;
