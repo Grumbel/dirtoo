@@ -7,11 +7,12 @@ Python reference: `dirtoo-py/`. Active code: `dirtoo/`.
 ## MVP status (revised)
 
 Critical freezes, DnD/Link, content-filter offload, Graphics reuse, and core
-parity features are in place. Build/tests green (50/50 as of last Nix check).
+parity features are in place. Catch suite: 57 cases (Overwrite-directory test
+aligned with into-dir resolution + `remove_for_overwrite` safety).
 
-**Residual focus:** see **Audit findings** below (overwrite safety, Location
-encoding, libarchive vs shell-out, extract cache). Optional: richer watcher,
-transfer error dialog.
+**Residual focus:** optional polish (archive external DnD extract-on-drop,
+list virtualization, editable permissions, richer watcher). P0 audit items
+A1–A3 and libarchive (S1) are done.
 
 Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 
@@ -224,7 +225,7 @@ smells, and gaps worth scheduling. Not every item is a user-visible crash.
 | B4 | Icon dir discovery | **Mostly done** — CMake installs full icon set to `share/dirtoo/icons`; runtime probes that path |
 | B5 | Bookmarks sorted by URL (order lost) | **Done** — load preserves file order; dedup keeps first |
 | B6 | Open With incomplete Desktop Entry / empty menu on mixed MIME | Document limits; improve intersection messaging |
-| B7 | Conflict dialog wording for directories | Tied to A3 — never imply “Replace” is a single-file overwrite when dest is a directory |
+| B7 | Conflict dialog wording for directories | **Done** — header says folder when dest is dir; Replace disabled + tooltip; body explains Rename/Skip only |
 
 ### P3 — tests to add (cheap, high value)
 
@@ -232,6 +233,7 @@ smells, and gaps worth scheduling. Not every item is a user-visible crash.
 - [x] Verbose archive listing fixtures → non-zero sizes (`test_archive_index` or new parse unit tests)
 - [x] Location round-trip with space, `#`, non-ASCII (after A1)
 - [x] dirops: Overwrite of **file** OK; Overwrite of **directory** refused (after A3)
+      (`remove_for_overwrite`; Catch covers rename + copy/move when resolved dest is a dir)
 
 ### Explicit non-bugs (OOS / intentional)
 

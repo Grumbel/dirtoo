@@ -127,19 +127,26 @@ std::optional<ConflictDecision> ask_conflict_policy(QWidget* parent,
 
   auto* layout = new QVBoxLayout(&dialog);
 
-  auto* header = new QLabel(
-      QStringLiteral("<big>This folder already contains a file named <b>%1</b></big>")
-          .arg(destination_name.toHtmlEscaped()),
-      &dialog);
-  header->setTextFormat(Qt::RichText);
-  header->setWordWrap(true);
-  layout->addWidget(header);
-
   std::error_code dest_ec;
   const bool dest_is_dir =
       !destination_path.empty()
       && std::filesystem::is_directory(destination_path, dest_ec)
       && !dest_ec;
+
+  // Header must not call a folder a "file" — Replace is disabled for directories.
+  auto* header = new QLabel(&dialog);
+  if (dest_is_dir) {
+    header->setText(
+        QStringLiteral("<big>This folder already contains a <b>folder</b> named <b>%1</b></big>")
+            .arg(destination_name.toHtmlEscaped()));
+  } else {
+    header->setText(
+        QStringLiteral("<big>This folder already contains a file named <b>%1</b></big>")
+            .arg(destination_name.toHtmlEscaped()));
+  }
+  header->setTextFormat(Qt::RichText);
+  header->setWordWrap(true);
+  layout->addWidget(header);
 
   auto* question = new QLabel(&dialog);
   if (dest_is_dir) {
