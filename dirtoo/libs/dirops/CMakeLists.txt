@@ -82,7 +82,7 @@ option(DIROPS_BUILD_TOOLS "Build dt-* CLI tools" ON)
 if(DIROPS_BUILD_TOOLS AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../tools/dt_copy.cpp")
   # Tools live at repo tools/; only when building from monorepo layout.
   set(DIROPS_TOOLS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../tools")
-  foreach(tool rename mkdir copy move swap)
+  foreach(tool rename mkdir copy move swap rm mkfile symlink)
     add_executable(dt-${tool} ${DIROPS_TOOLS_DIR}/dt_${tool}.cpp)
     target_link_libraries(dt-${tool} PRIVATE dirops::dirops)
     target_compile_definitions(dt-${tool} PRIVATE DIRTOO_VERSION="${PROJECT_VERSION_FULL}")

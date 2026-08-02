@@ -47,7 +47,7 @@ Run the GUI:
 | `libs/dirtoo-thumbnail` | Freedesktop D-Bus thumbnailer client |
 | `libs/dirtoo-archive` | Read-only archive TOC + extract-on-demand |
 | `apps/dirtoo` | GUI application |
-| `tools/` | Small CLIs (`dt-copy`, `dt-move`, `dt-filter`, …) |
+| `tools/` | CLIs: `dt-copy/move/rename/mkdir/mkfile/rm/symlink/swap`, `dt-filter`, `dt-mediainfo`, `dt-archiveinfo` |
 | `tests/` | Catch2 unit tests |
 | `resources/` | Icons, badges, DnD cursors, `.qrc` |
 
