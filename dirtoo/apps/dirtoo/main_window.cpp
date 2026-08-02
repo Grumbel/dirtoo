@@ -921,10 +921,7 @@ MainWindow::MainWindow(QWidget* parent)
   devices_list_->setFrameShape(QFrame::NoFrame);
   devices_list_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   devices_list_->setContextMenuPolicy(Qt::CustomContextMenu);
-  connect(devices_list_, &QListWidget::itemActivated, this, &MainWindow::on_devices_item_activated);
-  connect(devices_list_, &QListWidget::itemClicked, this, &MainWindow::on_devices_item_activated);
-  connect(devices_list_, &QWidget::customContextMenuRequested, this,
-          &MainWindow::on_devices_context_menu);
+  // Devices list wired in DevicesController setup (after udisks client creation).
   devices_layout->addWidget(devices_list_, 1);
 
   // Places + directory tree (bottom of vertical sidebar splitter).
@@ -938,11 +935,20 @@ MainWindow::MainWindow(QWidget* parent)
 
   directory_tree_model_ = new DirectoryTreeModel(this);
   rebuild_sidebar_places();
-  udisks_client_ = new UDisksClient(this);
-  connect(udisks_client_, &UDisksClient::volumes_changed, this, &MainWindow::on_udisks_volumes_changed);
-  connect(udisks_client_, &UDisksClient::operation_finished, this,
-          &MainWindow::on_udisks_operation_finished);
-  udisks_client_->refresh();
+  devices_controller_ = new DevicesController(this);
+  devices_controller_->set_list_widget(devices_list_);
+  devices_controller_->set_parent_widget(this);
+  connect(devices_list_, &QListWidget::itemActivated, devices_controller_,
+          &DevicesController::on_item_activated);
+  connect(devices_list_, &QListWidget::itemClicked, devices_controller_,
+          &DevicesController::on_item_activated);
+  connect(devices_list_, &QWidget::customContextMenuRequested, devices_controller_,
+          &DevicesController::on_context_menu);
+  connect(devices_controller_, &DevicesController::open_path, this, [this](const QString& path) {
+    open_location(fs::Location::from_path(std::filesystem::path(path.toStdString())), true);
+  });
+  connect(devices_controller_, &DevicesController::status_message, this, &MainWindow::set_status);
+  devices_controller_->refresh();
 
   sidebar_tree_ = new QTreeView(places_panel);
   sidebar_tree_->setModel(directory_tree_model_);
@@ -4463,153 +4469,5 @@ void MainWindow::apply_detail_column_visibility()
   tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Type), !visible("type"));
 }
 
-void MainWindow::on_udisks_volumes_changed()
-{
-  if (devices_list_ == nullptr) {
-    return;
-  }
-  devices_list_->clear();
-  const bool avail = udisks_client_ != nullptr && udisks_client_->available();
-  if (devices_label_ != nullptr) {
-    devices_label_->setVisible(true);
-  }
-  devices_list_->setVisible(true);
-  if (udisks_client_ == nullptr) {
-    return;
-  }
-  const auto vols = udisks_client_->volumes();
-  if (!avail) {
-    auto* item = new QListWidgetItem(QStringLiteral("Disks unavailable"));
-    item->setFlags(item->flags() & ~Qt::ItemIsEnabled);
-    devices_list_->addItem(item);
-    return;
-  }
-  if (vols.isEmpty()) {
-    auto* item = new QListWidgetItem(QStringLiteral("No volumes"));
-    item->setFlags(item->flags() & ~Qt::ItemIsEnabled);
-    devices_list_->addItem(item);
-    return;
-  }
-  for (const auto& v : vols) {
-    QString text = v.label;
-    if (v.mounted && !v.mount_point.isEmpty()) {
-      text += QStringLiteral("  —  ") + v.mount_point;
-    } else if (!v.mounted) {
-      text += QStringLiteral("  (not mounted)");
-    }
-    auto* item = new QListWidgetItem(text);
-    // UserRole+0 mount point; +1 object path; +2 mounted; +3 ejectable
-    item->setData(Qt::UserRole, v.mount_point);
-    item->setData(Qt::UserRole + 1, v.object_path);
-    item->setData(Qt::UserRole + 2, v.mounted);
-    item->setData(Qt::UserRole + 3, v.ejectable || v.removable || v.optical);
-    QString tip = v.device;
-    if (!v.fstype.isEmpty()) {
-      tip += QStringLiteral(" (") + v.fstype + QLatin1Char(')');
-    }
-    if (v.size > 0) {
-      tip += QStringLiteral(" · ") + format_byte_size(v.size);
-    }
-    item->setToolTip(tip);
-    QString icon_name = QStringLiteral("drive-harddisk");
-    if (v.optical) {
-      icon_name = QStringLiteral("drive-optical");
-    } else if (v.removable || v.ejectable) {
-      icon_name = QStringLiteral("drive-removable-media");
-    }
-    item->setIcon(QIcon::fromTheme(icon_name, QIcon::fromTheme(QStringLiteral("folder"))));
-    if (!v.mounted) {
-      item->setForeground(palette().color(QPalette::Disabled, QPalette::WindowText));
-    }
-    devices_list_->addItem(item);
-  }
-}
-
-void MainWindow::on_devices_item_activated(QListWidgetItem* item)
-{
-  if (item == nullptr || udisks_client_ == nullptr) {
-    return;
-  }
-  const QString mp = item->data(Qt::UserRole).toString();
-  const bool mounted = item->data(Qt::UserRole + 2).toBool();
-  const QString object_path = item->data(Qt::UserRole + 1).toString();
-  if (mounted && !mp.isEmpty()) {
-    open_location(fs::Location::from_path(std::filesystem::path(mp.toStdString())), true);
-    return;
-  }
-  // Unmounted: request mount; open happens on operation_finished if message is mount path.
-  if (!object_path.isEmpty()) {
-    set_status(QStringLiteral("Mounting %1…").arg(item->text()));
-    udisks_client_->mount(object_path);
-  }
-}
-
-void MainWindow::on_devices_context_menu(const QPoint& pos)
-{
-  if (devices_list_ == nullptr || udisks_client_ == nullptr) {
-    return;
-  }
-  QListWidgetItem* item = devices_list_->itemAt(pos);
-  if (item == nullptr) {
-    return;
-  }
-  const QString object_path = item->data(Qt::UserRole + 1).toString();
-  if (object_path.isEmpty()) {
-    return;
-  }
-  const QString mp = item->data(Qt::UserRole).toString();
-  const bool mounted = item->data(Qt::UserRole + 2).toBool();
-  const bool can_eject = item->data(Qt::UserRole + 3).toBool();
-
-  QMenu menu(this);
-  if (mounted && !mp.isEmpty()) {
-    menu.addAction(theme_icon("folder-open", "folder"), QStringLiteral("Open"), this, [this, mp] {
-      open_location(fs::Location::from_path(std::filesystem::path(mp.toStdString())), true);
-    });
-    menu.addSeparator();
-    menu.addAction(theme_icon("media-eject", "drive-harddisk"), QStringLiteral("Unmount"), this,
-                   [this, object_path] {
-                     set_status(QStringLiteral("Unmounting…"));
-                     udisks_client_->unmount(object_path);
-                   });
-  } else {
-    menu.addAction(theme_icon("media-mount", "drive-harddisk"), QStringLiteral("Mount"), this,
-                   [this, object_path] {
-                     set_status(QStringLiteral("Mounting…"));
-                     udisks_client_->mount(object_path);
-                   });
-  }
-  if (can_eject) {
-    menu.addAction(theme_icon("media-eject"), QStringLiteral("Eject"), this, [this, object_path] {
-      set_status(QStringLiteral("Ejecting…"));
-      udisks_client_->eject(object_path);
-    });
-  }
-  if (menu.actions().isEmpty()) {
-    return;
-  }
-  menu.exec(devices_list_->mapToGlobal(pos));
-}
-
-void MainWindow::on_udisks_operation_finished(const QString& object_path, bool ok,
-                                              const QString& message)
-{
-  if (!ok) {
-    set_status(QStringLiteral("Disk operation failed: %1").arg(message));
-    return;
-  }
-  // Mount returns the mount path in message; open it when present.
-  if (!message.isEmpty() && message.startsWith(QLatin1Char('/'))) {
-    set_status(QStringLiteral("Mounted at %1").arg(message));
-    open_location(fs::Location::from_path(std::filesystem::path(message.toStdString())), true);
-    return;
-  }
-  if (message.isEmpty()) {
-    set_status(QStringLiteral("Disk operation finished"));
-  } else {
-    set_status(message);
-  }
-  (void)object_path;
-}
 
 } // namespace dirtoo::app

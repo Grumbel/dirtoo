@@ -59,6 +59,8 @@ class QToolButton;
 
 namespace dirtoo::app {
 
+class DevicesController;
+
 enum class ViewMode {
   Detail,
   Icons,
@@ -118,10 +120,6 @@ private slots:
   void on_sidebar_activated(const QModelIndex& index);
   void sync_sidebar_to_location();
   void rebuild_sidebar_places();
-  void on_udisks_volumes_changed();
-  void on_devices_item_activated(QListWidgetItem* item);
-  void on_devices_context_menu(const QPoint& pos);
-  void on_udisks_operation_finished(const QString& object_path, bool ok, const QString& message);
   void on_about();
   void on_preferences();
   void on_reload_thumbnails();
@@ -257,7 +255,7 @@ private:
   QWidget* sidebar_widget_ = nullptr;
   QTreeView* sidebar_tree_ = nullptr;
   class DirectoryTreeModel* directory_tree_model_ = nullptr;
-  class UDisksClient* udisks_client_ = nullptr;
+  DevicesController* devices_controller_ = nullptr;
   class QListWidget* devices_list_ = nullptr;
   class QLabel* devices_label_ = nullptr;
   QAction* show_sidebar_act_ = nullptr;

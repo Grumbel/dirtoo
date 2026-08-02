@@ -26,6 +26,8 @@ qt_add_executable(dirtoo-app
   transfer_worker.hpp
   transfer_controller.cpp
   transfer_controller.hpp
+  devices_controller.cpp
+  devices_controller.hpp
   navigation_history.cpp
   navigation_history.hpp
   search_controller.cpp
