@@ -320,6 +320,78 @@ void MainWindow::on_directory_changed()
   reload_directory(false);
 }
 
+void MainWindow::on_entries_changed(const QStringList& created, const QStringList& removed,
+                                    const QStringList& modified)
+{
+  // Prefer incremental updates when the change set is small and we are not in a
+  // mode that needs a full rescan (search, archive index, content filter).
+  if (search_active_ || location_.is_archive()) {
+    if (watcher_reload_timer_ != nullptr) {
+      watcher_reload_timer_->start();
+    }
+    return;
+  }
+  const int n = created.size() + removed.size() + modified.size();
+  if (n == 0) {
+    return;
+  }
+  // Large bursts (e.g. unpack) — fall back to soft full merge.
+  if (n > 48) {
+    if (watcher_reload_timer_ != nullptr) {
+      watcher_reload_timer_->start();
+    }
+    return;
+  }
+  if (filter_edit_ != nullptr && !filter_edit_->text().isEmpty()) {
+    // Content/name filter: cheaper to soft-reload and re-filter than patch visible.
+    if (watcher_reload_timer_ != nullptr) {
+      watcher_reload_timer_->start();
+    }
+    return;
+  }
+
+  bool changed = false;
+  for (const QString& path : removed) {
+    const auto loc = fs::Location::from_path(std::filesystem::path{path.toStdString()});
+    if (collection_.remove(loc)) {
+      changed = true;
+    }
+  }
+  auto upsert = [this, &changed](const QString& path) {
+    std::error_code ec;
+    const std::filesystem::path p{path.toStdString()};
+    if (!std::filesystem::exists(p, ec) || ec) {
+      return;
+    }
+    auto info = fs::FileInfo::from_path(p);
+    if (const auto idx = collection_.index_of(info.location())) {
+      // Replace via merge of a single-item list would drop others; use remove+add.
+      collection_.remove(info.location());
+      collection_.add(std::move(info));
+    } else {
+      collection_.add(std::move(info));
+    }
+    changed = true;
+  };
+  for (const QString& path : created) {
+    upsert(path);
+  }
+  for (const QString& path : modified) {
+    upsert(path);
+  }
+  if (!changed) {
+    return;
+  }
+  // Keep sort stable for small patches; optional async sort if user prefers name order
+  // of brand-new files at the end until next explicit sort.
+  if (model_ != nullptr) {
+    model_->refresh();
+  }
+  update_status_selection();
+  request_thumbnails_for_visible();
+}
+
+
 void MainWindow::reload_directory(bool soft)
 {
   if (search_active_) {

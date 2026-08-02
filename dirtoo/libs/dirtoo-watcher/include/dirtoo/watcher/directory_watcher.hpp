@@ -6,14 +6,16 @@
 #include "dirtoo/fs/location.hpp"
 
 #include <QObject>
+#include <QStringList>
 
 #include <filesystem>
 #include <vector>
 
 namespace dirtoo::watcher {
 
-/// Watches one or more filesystem paths for changes (QFileSystemWatcher).
-/// A dedicated inotify backend can replace it later for richer events.
+/// Watches one or more filesystem paths for changes.
+/// On Linux, uses inotify for per-name create/delete/modify when possible;
+/// falls back to QFileSystemWatcher (directory/file changed only).
 class DirectoryWatcher : public QObject {
   Q_OBJECT
 
@@ -35,9 +37,18 @@ public:
   void start();
   void stop();
 
+  /// True when the last start() successfully armed inotify for at least one directory.
+  [[nodiscard]] bool has_name_deltas() const noexcept;
+
 signals:
-  /// Emitted whenever any watched directory or file changes.
+  /// Emitted whenever any watched directory or file changes (always; coarse signal).
   void directory_changed();
+
+  /// Per-name deltas when inotify is active. Paths are absolute. May be empty
+  /// lists for some categories. Coalesced briefly by the watcher.
+  void entries_changed(const QStringList& created, const QStringList& removed,
+                       const QStringList& modified);
+
   void message(const QString& text);
 
 private:

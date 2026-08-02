@@ -1053,6 +1053,8 @@ void MainWindow::setup_status_and_services()
     watcher_reload_timer_->start();
   }
   });
+  connect(&watcher_, &watcher::DirectoryWatcher::entries_changed, this,
+          &MainWindow::on_entries_changed);
   connect(&watcher_, &watcher::DirectoryWatcher::message, this, [this](const QString& msg) {
   set_status(msg);
   });

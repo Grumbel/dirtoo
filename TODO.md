@@ -10,9 +10,8 @@ Critical freezes, DnD/Link, content-filter offload, Graphics reuse, and core
 parity features are in place. Catch suite: 57 cases (Overwrite-directory test
 aligned with into-dir resolution + `remove_for_overwrite` safety).
 
-**Residual focus:** optional polish (list virtualization; true incremental
-watcher / inotify names). MainWindow constructor split into setup_* methods;
-context menu, theme_icons, multi-path archive watch in place.
+**Residual focus:** optional polish (list virtualization). Inotify name deltas
+on Linux with incremental collection patches; multi-path archive watch; MainWindow multi-TU.
 
 Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 
@@ -180,9 +179,9 @@ Go to Folder, Clear. Storage: SQLite at `$XDG_STATE_HOME/dirtoo/operations-histo
 | Operations history log | **done** — SQLite under `$XDG_STATE_HOME/dirtoo/`; full sources+items; no rollback |
 | Location URL encoding | **Promoted** — see *Audit findings* (systemic) |
 | Archive member thumbnails | Weak; needs extract path or special URI |
-| Watcher richness | **Improved** — multi-path watch (archive file + extract tree); TOC `refresh_if_stale` |
+| Watcher richness | **Improved** — multi-path + Linux inotify names; TOC `refresh_if_stale` |
 | MainWindow factoring | **Partial** — ArchiveListing, archive_member_cache; NavigationHistory, Search, Transfer, Devices |
-| True incremental FS watcher deltas | **Partial** — merge_items after soft rescan; still O(n) readdir (no inotify names) |
+| True incremental FS watcher deltas | **Improved** — Linux inotify name deltas + small-set incremental collection patch; large bursts soft-merge |
 | List / Graphics virtualization | **Graphics viewport window done**; Detail uses uniform row heights when no group/time-gap; Qt paints only visible rows |
 | Rubber-band vs item drag | **done** |
 | Nested drop into own selection | **done** |
@@ -221,7 +220,7 @@ smells, and gaps worth scheduling. Not every item is a user-visible crash.
 |----|-------|-----------|
 | B1 | Archive member **size 0** when verbose parse fails | Fixed properly by S1 (libarchive sizes); until then, fixture tests for `parse_tv_lines` / `unzip -l` |
 | B2 | Search jank on huge result sets | **Done** — batched `append_visible_items` + `notify_rows_appended` (32); Graphics `on_rows_inserted` relayouts without clearing tiles/selection |
-| B3 | Watcher: directory-only events, full soft rescan | Optional inotify names later; low priority while merge_items works |
+| B3 | Watcher: directory-only events, full soft rescan | **Improved** — inotify names + incremental patch (≤48); else soft merge |
 | B4 | Icon dir discovery | **Mostly done** — CMake installs full icon set to `share/dirtoo/icons`; runtime probes that path |
 | B5 | Bookmarks sorted by URL (order lost) | **Done** — load preserves file order; dedup keeps first |
 | B6 | Open With incomplete Desktop Entry / empty menu on mixed MIME | Document limits; improve intersection messaging |
