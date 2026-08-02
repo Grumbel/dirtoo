@@ -60,73 +60,73 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 
 | Status | Path |
 |--------|------|
-| ⬜ | `dirtoo/apps/dirtoo/CMakeLists.txt` |
-| ⬜ | `dirtoo/apps/dirtoo/about_dialog.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/about_dialog.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/app_settings.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/app_settings.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/badge_icons.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/bookmarks.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/bookmarks.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/clipboard.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/clipboard.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/conflict_dialog.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/conflict_dialog.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/directory_load_worker.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/directory_load_worker.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/directory_thumbnail_worker.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/directory_thumbnail_worker.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/directory_tree_model.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/directory_tree_model.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/drag_action_overlay.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/drag_action_overlay.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/file_item_delegate.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/file_item_delegate.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/file_list_model.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/file_list_model.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/file_views.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/filter_worker.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/filter_worker.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/graphics_file_item.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/graphics_file_item.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/graphics_file_view.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/graphics_file_view.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/history_menu.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/history_menu.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/leap_widget.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/leap_widget.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/location_button_bar.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/location_button_bar.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/main.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/main_window.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/main_window.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/message_area.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/message_area.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/name_input_dialog.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/name_input_dialog.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/open_history.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/open_history.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/open_with.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/open_with.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/path_completion_worker.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/path_completion_worker.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/preferences_dialog.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/preferences_dialog.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/properties_dialog.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/properties_dialog.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/resources.qrc` |
-| ⬜ | `dirtoo/apps/dirtoo/search_worker.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/search_worker.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/size_format.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/size_format.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/sort_worker.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/sort_worker.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/transfer_dialog.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/transfer_dialog.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/transfer_worker.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/transfer_worker.hpp` |
-| ⬜ | `dirtoo/apps/dirtoo/udisks_client.cpp` |
-| ⬜ | `dirtoo/apps/dirtoo/udisks_client.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/CMakeLists.txt` |
+| ✅ | `dirtoo/apps/dirtoo/about_dialog.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/about_dialog.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/app_settings.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/app_settings.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/badge_icons.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/bookmarks.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/bookmarks.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/clipboard.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/clipboard.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/conflict_dialog.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/conflict_dialog.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/directory_load_worker.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/directory_load_worker.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/directory_thumbnail_worker.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/directory_thumbnail_worker.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/directory_tree_model.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/directory_tree_model.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/drag_action_overlay.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/drag_action_overlay.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/file_item_delegate.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/file_item_delegate.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/file_list_model.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/file_list_model.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/file_views.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/filter_worker.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/filter_worker.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/graphics_file_item.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/graphics_file_item.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/graphics_file_view.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/graphics_file_view.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/history_menu.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/history_menu.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/leap_widget.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/leap_widget.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/location_button_bar.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/location_button_bar.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/main.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/main_window.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/main_window.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/message_area.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/message_area.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/name_input_dialog.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/name_input_dialog.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/open_history.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/open_history.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/open_with.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/open_with.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/path_completion_worker.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/path_completion_worker.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/preferences_dialog.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/preferences_dialog.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/properties_dialog.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/properties_dialog.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/resources.qrc` |
+| ✅ | `dirtoo/apps/dirtoo/search_worker.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/search_worker.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/size_format.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/size_format.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/sort_worker.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/sort_worker.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/transfer_dialog.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/transfer_dialog.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/transfer_worker.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/transfer_worker.hpp` |
+| ✅ | `dirtoo/apps/dirtoo/udisks_client.cpp` |
+| ✅ | `dirtoo/apps/dirtoo/udisks_client.hpp` |
 
 ### `dirtoo/libs`
 
@@ -220,34 +220,34 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 
 | Status | Path |
 |--------|------|
-| ⬜ | `dirtoo/tests/CMakeLists.txt` |
-| ⬜ | `dirtoo/tests/test_archive_index.cpp` |
-| ⬜ | `dirtoo/tests/test_clipboard_text.cpp` |
-| ⬜ | `dirtoo/tests/test_collection.cpp` |
-| ⬜ | `dirtoo/tests/test_dirops.cpp` |
-| ⬜ | `dirtoo/tests/test_dirops_rename.cpp` |
-| ⬜ | `dirtoo/tests/test_filter.cpp` |
-| ⬜ | `dirtoo/tests/test_location.cpp` |
+| ✅ | `dirtoo/tests/CMakeLists.txt` |
+| ✅ | `dirtoo/tests/test_archive_index.cpp` |
+| ✅ | `dirtoo/tests/test_clipboard_text.cpp` |
+| ✅ | `dirtoo/tests/test_collection.cpp` |
+| ✅ | `dirtoo/tests/test_dirops.cpp` |
+| ✅ | `dirtoo/tests/test_dirops_rename.cpp` |
+| ✅ | `dirtoo/tests/test_filter.cpp` |
+| ✅ | `dirtoo/tests/test_location.cpp` |
 
 ### `dirtoo/tools`
 
 
 | Status | Path |
 |--------|------|
-| ⬜ | `dirtoo/tools/CMakeLists.txt` |
-| ⬜ | `dirtoo/tools/cli_common.hpp` |
-| ⬜ | `dirtoo/tools/dt_archiveinfo.cpp` |
-| ⬜ | `dirtoo/tools/dt_copy.cpp` |
-| ⬜ | `dirtoo/tools/dt_mediainfo.cpp` |
-| ⬜ | `dirtoo/tools/dt_mkdir.cpp` |
-| ⬜ | `dirtoo/tools/dt_mkfile.cpp` |
-| ⬜ | `dirtoo/tools/dt_move.cpp` |
-| ⬜ | `dirtoo/tools/dt_rename.cpp` |
-| ⬜ | `dirtoo/tools/dt_rm.cpp` |
-| ⬜ | `dirtoo/tools/dt_rmdir.cpp` |
-| ⬜ | `dirtoo/tools/dt_swap.cpp` |
-| ⬜ | `dirtoo/tools/dt_symlink.cpp` |
-| ⬜ | `dirtoo/tools/json_util.hpp` |
+| ✅ | `dirtoo/tools/CMakeLists.txt` |
+| ✅ | `dirtoo/tools/cli_common.hpp` |
+| ✅ | `dirtoo/tools/dt_archiveinfo.cpp` |
+| ✅ | `dirtoo/tools/dt_copy.cpp` |
+| ✅ | `dirtoo/tools/dt_mediainfo.cpp` |
+| ✅ | `dirtoo/tools/dt_mkdir.cpp` |
+| ✅ | `dirtoo/tools/dt_mkfile.cpp` |
+| ✅ | `dirtoo/tools/dt_move.cpp` |
+| ✅ | `dirtoo/tools/dt_rename.cpp` |
+| ✅ | `dirtoo/tools/dt_rm.cpp` |
+| ✅ | `dirtoo/tools/dt_rmdir.cpp` |
+| ✅ | `dirtoo/tools/dt_swap.cpp` |
+| ✅ | `dirtoo/tools/dt_symlink.cpp` |
+| ✅ | `dirtoo/tools/json_util.hpp` |
 
 ### `dirtoo/`
 
@@ -308,9 +308,9 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 | ✅ | `dirtoo-py/src/dirtoo/archive/libarchive_extractor.py` |
 | ✅ | `dirtoo-py/src/dirtoo/archive/rar_extractor.py` |
 | ✅ | `dirtoo-py/src/dirtoo/archive/sevenzip_extractor.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/bookmark/__init__.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/bookmark/bookmarks.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/bookmark/bookmarks_provider.py` |
+| ✅ | `dirtoo-py/src/dirtoo/bookmark/__init__.py` |
+| ✅ | `dirtoo-py/src/dirtoo/bookmark/bookmarks.py` |
+| ✅ | `dirtoo-py/src/dirtoo/bookmark/bookmarks_provider.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/dbus_thumbnail_cache.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/dbus_thumbnailer.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/duration.py` |
@@ -329,33 +329,33 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 | ✅ | `dirtoo-py/src/dirtoo/filesystem/lazy_file_info.py` |
 | ✅ | `dirtoo-py/src/dirtoo/filesystem/location.py` |
 | ✅ | `dirtoo-py/src/dirtoo/filesystem/stdio_filesystem.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/__init__.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/actions.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/application.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/application_actions.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/controller.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/executor.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/file_graphics_scene.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/file_item.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/file_item_renderer.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/file_view.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/file_view_style.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/file_view_window.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/filelist_stream.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/filesystem_operations.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/gnome.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/gui.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/layout.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/layout_builder.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/mode.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/path_completion.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/rename_operation.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/return_value.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/scaler.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/search_stream.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/settings.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/virtual_filesystem.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fileview/worker_thread.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/__init__.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/actions.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/application.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/application_actions.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/controller.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/executor.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/file_graphics_scene.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/file_item.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/file_item_renderer.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/file_view.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/file_view_style.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/file_view_window.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/filelist_stream.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/filesystem_operations.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/gnome.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/gui.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/layout.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/layout_builder.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/mode.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/path_completion.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/rename_operation.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/return_value.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/scaler.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/search_stream.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/settings.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/virtual_filesystem.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fileview/worker_thread.py` |
 | ✅ | `dirtoo-py/src/dirtoo/filter/__init__.py` |
 | ✅ | `dirtoo-py/src/dirtoo/filter/filter_command_parser.py` |
 | ✅ | `dirtoo-py/src/dirtoo/filter/filter_expr_parser.py` |
@@ -371,33 +371,33 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 | ⬜ | `dirtoo-py/src/dirtoo/format.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/fuzzy.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/glob.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/gui/__init__.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/gui/about_dialog.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/gui/conflict_dialog.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/gui/create_dialog.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/gui/directory_context_menu.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/gui/drag_widget.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/gui/filter_line_edit.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/gui/history_menu.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/gui/item_context_menu.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/gui/label.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/gui/leap_widget.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/gui/location_buttonbar.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/gui/location_lineedit.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/gui/menu.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/gui/message_area.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/gui/preferences_dialog.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/gui/properties_dialog.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/gui/push_button.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/gui/rename_dialog.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/gui/search_line_edit.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/gui/tool_button.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/gui/transfer_dialog.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/gui/transfer_error_dialog.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/gui/transfer_request_dialog.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/history/__init__.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/history/history.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/history/history_provider.py` |
+| ✅ | `dirtoo-py/src/dirtoo/gui/__init__.py` |
+| ✅ | `dirtoo-py/src/dirtoo/gui/about_dialog.py` |
+| ✅ | `dirtoo-py/src/dirtoo/gui/conflict_dialog.py` |
+| ✅ | `dirtoo-py/src/dirtoo/gui/create_dialog.py` |
+| ✅ | `dirtoo-py/src/dirtoo/gui/directory_context_menu.py` |
+| ✅ | `dirtoo-py/src/dirtoo/gui/drag_widget.py` |
+| ✅ | `dirtoo-py/src/dirtoo/gui/filter_line_edit.py` |
+| ✅ | `dirtoo-py/src/dirtoo/gui/history_menu.py` |
+| ✅ | `dirtoo-py/src/dirtoo/gui/item_context_menu.py` |
+| ✅ | `dirtoo-py/src/dirtoo/gui/label.py` |
+| ✅ | `dirtoo-py/src/dirtoo/gui/leap_widget.py` |
+| ✅ | `dirtoo-py/src/dirtoo/gui/location_buttonbar.py` |
+| ✅ | `dirtoo-py/src/dirtoo/gui/location_lineedit.py` |
+| ✅ | `dirtoo-py/src/dirtoo/gui/menu.py` |
+| ✅ | `dirtoo-py/src/dirtoo/gui/message_area.py` |
+| ✅ | `dirtoo-py/src/dirtoo/gui/preferences_dialog.py` |
+| ✅ | `dirtoo-py/src/dirtoo/gui/properties_dialog.py` |
+| ✅ | `dirtoo-py/src/dirtoo/gui/push_button.py` |
+| ✅ | `dirtoo-py/src/dirtoo/gui/rename_dialog.py` |
+| ✅ | `dirtoo-py/src/dirtoo/gui/search_line_edit.py` |
+| ✅ | `dirtoo-py/src/dirtoo/gui/tool_button.py` |
+| ✅ | `dirtoo-py/src/dirtoo/gui/transfer_dialog.py` |
+| ✅ | `dirtoo-py/src/dirtoo/gui/transfer_error_dialog.py` |
+| ✅ | `dirtoo-py/src/dirtoo/gui/transfer_request_dialog.py` |
+| ✅ | `dirtoo-py/src/dirtoo/history/__init__.py` |
+| ✅ | `dirtoo-py/src/dirtoo/history/history.py` |
+| ✅ | `dirtoo-py/src/dirtoo/history/history_provider.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/icons/README.md` |
 | ⬜ | `dirtoo-py/src/dirtoo/icons/compress.gif` |
 | ➖ | `dirtoo-py/src/dirtoo/icons/dirtoo.png` |
@@ -439,34 +439,34 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 | ✅ | `dirtoo-py/src/dirtoo/posix/filesystem.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/profiler/__init__.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/profiler/profiler.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/__init__.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/archive_extractor.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/archiveinfo.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/chomp.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/desktop.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/dirtool.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/expr.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/fileview.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/find.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/fsck.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/fuzzy.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/glob.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/guessarchivename.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/guitest.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/icon.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/mediainfo.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/metadata.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/mime.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/mkevil.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/mktest.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/move.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/rmdir.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/shuffle.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/sleep.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/swap.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/thumbnailer.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/unidecode.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/programs/watch.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/__init__.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/archive_extractor.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/archiveinfo.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/chomp.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/desktop.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/dirtool.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/expr.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/fileview.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/find.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/fsck.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/fuzzy.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/glob.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/guessarchivename.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/guitest.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/icon.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/mediainfo.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/metadata.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/mime.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/mkevil.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/mktest.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/move.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/rmdir.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/shuffle.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/sleep.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/swap.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/thumbnailer.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/unidecode.py` |
+| ✅ | `dirtoo-py/src/dirtoo/programs/watch.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/sort.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/stream/__init__.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/stream/stream_manager.py` |
@@ -664,6 +664,118 @@ Bare words → case-insensitive substring via implicit `*word*` glob.
 `tests/test_filter.cpp` covers parser/predicates; keep media/cache edge cases under regression when touching SQLite schema.
 
 ---
+
+#### `dirtoo/apps/dirtoo/` — GUI (2026-08-02)
+
+Largest surface (~13k LOC). Review is by **feature group**; `main_window.cpp` (~4200 lines) is the integration hub.
+
+##### Shell / entry
+| Files | Role |
+|-------|------|
+| `main.cpp` | QApplication, logging handler, CLI verbose/debug, **GnomeButtonOrderStyle** |
+| `CMakeLists.txt` / `resources.qrc` | App target, SVG/PNG install, Qt Svg |
+| `app_settings.*` | QSettings persistence: view mode, zoom, icon detail, crop, hidden, filter, sidebar, group, size units, geometry, location history |
+| `badge_icons.hpp` | Bundled badge/icon load + missing-asset warnings |
+| `size_format.*` | SI/IEC size strings |
+
+##### Navigation & location
+| Files | Role |
+|-------|------|
+| `location_button_bar.*` | Breadcrumb bar, drag targets |
+| `path_completion_worker.*` | Async path completion for location edit |
+| `directory_load_worker.*` | Off-thread directory listing |
+| `leap_widget.*` | Quick jump UI |
+| `history_menu.*` | Menu that tracks middle-click |
+| `bookmarks.*` | Bookmark store |
+| `open_history.*` | File-open history (app + paths), dialog, recent menu |
+
+**Present:** parent/home/back/forward, history, bookmarks, open location from path/URL, archive locations via archive manager, path completion.
+
+##### Views & models
+| Files | Role |
+|-------|------|
+| `file_list_model.*` | Qt model over FileCollection visible items |
+| `file_item_delegate.*` | Detail/list painting, thumbs, badges |
+| `file_views.hpp` | Shared view helpers |
+| `graphics_file_view.*` / `graphics_file_item.*` | Icon/graphics view |
+| `filter_worker.*` / `sort_worker.*` | Content filter + sort off UI thread |
+| `directory_tree_model.*` | Sidebar tree |
+| `directory_thumbnail_worker.*` | Folder collage thumbs |
+
+**Present:** Detail / Icons / Small icons, zoom, icon detail levels, crop thumbs, group modes, natural sort + media sorts.
+
+##### Clipboard / transfer / DnD
+| Files | Role |
+|-------|------|
+| `clipboard.*` | Copy/cut URIs + text |
+| `transfer_worker.*` / `transfer_dialog.*` | Progress UI + dirops-backed work |
+| `conflict_dialog.*` | Replace / Rename / Skip / Cancel |
+| `drag_action_overlay.*` | DnD action cursor/overlay |
+
+**Present:** copy, cut, paste, paste-as-link, DnD with drop target directory, conflict policy.
+
+##### Open with / properties / dialogs
+| Files | Role |
+|-------|------|
+| `open_with.*` | Desktop apps, default open, command dialog, terminal, history record |
+| `properties_dialog.*` | Metadata display (permissions **display**, not edit) |
+| `preferences_dialog.*` | App prefs |
+| `about_dialog.*` / `name_input_dialog.*` | About, rename/mkdir name entry |
+| `message_area.*` | Status/message strip |
+
+##### Devices / search
+| Files | Role |
+|-------|------|
+| `udisks_client.*` | Volume list (UDisks2) |
+| `search_worker.*` | Recursive search via `dirtoo-filter::search_directory` |
+
+##### Feature presence vs Python gaps (GUI-focused)
+
+| Feature | C++ | Notes |
+|---------|-----|-------|
+| Three view modes + zoom | Yes | |
+| Filter + pinned filter + help | Yes | |
+| Recursive search | Yes | Results in collection, not `search://` Location |
+| Bookmarks / location history | Yes | |
+| Recently Opened + open history | Yes | C++ addition / strengthened |
+| Clipboard + Link paste + DnD | Yes | |
+| Transfers + conflicts | Yes | |
+| Sidebar tree + Devices | Yes | Mount/eject: check `udisks_client` completeness |
+| Thumbnails + dir thumbs | Yes | Archive file thumbs weak |
+| Archive browse | Yes | Via ArchiveManager |
+| Undo | **No** | Python also largely stub-level historically |
+| Editable permissions | **No** | Display only |
+| Virtual FS abstraction | **No** | Python `virtual_filesystem.py` — C++ uses Location + archive extract |
+| Kinetic/layout builder complexity | **No** | Python layout modules richer; C++ graphics view simpler |
+| Executor / action controller split | Partial | Logic concentrated in `MainWindow` |
+
+**Architecture smell:** `main_window.cpp` is very large — controllers, menus, transfer, search, devices, and view wiring live together. Not a functional bug, but future work should peel controllers (transfer, search, navigation) into helpers to match Python’s `controller` / `actions` split.
+
+**GUI I/O rule:** Directory load, sort, content filter, path completion, search, transfer, thumbnails are worker-based. Residual risk: some property/stat paths and filter non-content matching still on UI thread (acceptable for name filters).
+
+---
+
+#### `dirtoo/tools/` + `dirtoo/tests/` (2026-08-02)
+
+##### CLI tools
+| Tool | Backend |
+|------|---------|
+| `dt_copy/move/rename/rm/mkdir/mkfile/symlink/swap` | `dirops` |
+| `dt_rmdir` | app-linked / collection side |
+| `dt_mediainfo` | filter media probe |
+| `dt_archiveinfo` | archive index |
+| `dt_filter` | lives under `dirtoo-filter/tools` |
+
+Shared: `cli_common.hpp`, `json_util.hpp`.
+
+**vs Python `programs/`:** Large Python toolbox (fsck, shuffle, desktop, fuzzy, find, …) is **mostly OOS** for the C++ port. C++ keeps the mutation helpers + media/archive/filter CLIs that support the GUI and testing.
+
+##### Tests (Catch2)
+`test_location`, `test_filter`, `test_collection`, `test_dirops` (+ rename), `test_archive_index`, `test_clipboard_text`.
+
+**Gaps:** No automated GUI tests; limited archive/media integration tests; no watcher/thumbnail unit tests (Qt/D-Bus heavy).
+
+---
 ### Python reference notes
 
 #### `dirtoo-py/src/dirtoo/filesystem/` (2026-08-02)
@@ -723,6 +835,22 @@ Python `Filesystem` class is a broad low-level toolkit (listdir, scandir, copy w
 | `archive/` | `dirtoo-archive` | Python multi-extractor classes; C++ external tools + index |
 
 
+
+#### `dirtoo-py` fileview / gui / bookmark / history (2026-08-02)
+
+| Package | Role | C++ home |
+|---------|------|----------|
+| `fileview/` | Window, controller, graphics scene, actions, workers | `apps/dirtoo` especially `main_window`, graphics view, workers |
+| `gui/` | Dialogs, menus, location bar, messages | matching `*_dialog`, `location_button_bar`, etc. |
+| `bookmark/` | Bookmarks store | `bookmarks.*` |
+| `history/` | Location history helpers | embedded in MainWindow + settings |
+
+**Python-only weight**
+- `virtual_filesystem.py`, richer `layout*` / kinetic ideas
+- `executor.py` / `application_actions.py` structure (logic factoring)
+- Some transfer request/error dialog variants merged into C++ transfer/conflict dialogs
+
+
 ## Feature parity (draft — refine after file reviews)
 
 Seeded from `TODO.md` / `AGENTS.md`; will be rewritten once inventories are annotated.
@@ -735,12 +863,12 @@ Seeded from `TODO.md` / `AGENTS.md`; will be rewritten once inventories are anno
 | Thumbnails + badges | Present | D-Bus Thumbnailer1; archive members weak |
 | Clipboard + DnD + Link | Present | |
 | Archives read-only | Present | External tools; full extract cache; write OOS |
-| Sidebar tree + UDisks devices | Present | Mount/eject partial |
+| Sidebar tree + UDisks devices | Present | List via udisks_client; verify mount/eject UX |
 | Open history | Present | Recently Opened menu |
-| Undo | Missing | Python may be stub |
-| Editable permissions | Missing | Display-only |
+| Undo | Missing | Not implemented (Python historically weak) |
+| Editable permissions | Missing | Properties dialog is display-only |
 | Archive file thumbnails | Partial / weak | Needs extracted paths or special URIs |
-| Full `programs/*` CLI | OOS | Helpers only |
+| Full `programs/*` CLI | OOS | C++ has dt-* helpers only; most Python programs not ported |
 | Remote VFS | OOS | |
 | Kinetic graphics layout | OOS | |
 
@@ -748,11 +876,10 @@ Seeded from `TODO.md` / `AGENTS.md`; will be rewritten once inventories are anno
 
 ## Next step
 
-**Done:** All `dirtoo/libs/*` core libraries and matching Python packages (filesystem, posix, filter/expr/find, filecollection, watcher, thumbnail, archive).
+**Done:** Libraries, GUI, tools, tests, and major Python packages through programs/fileview/gui.
 
 **Continue with:**
 
-1. `dirtoo/apps/dirtoo/` (GUI — largest surface)
-2. `dirtoo/tools/` + `tests/`
-3. Root CMake / flake / docs polish if needed
+1. Root packaging / resources / docs (`flake.nix`, top CMake, `resources/`)
+2. Final **Feature parity** matrix rewrite from accumulated notes
 
