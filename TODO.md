@@ -10,10 +10,10 @@ Critical freezes, DnD/Link, content-filter offload, Graphics reuse, and core
 parity features are in place. Catch suite: 57 cases (Overwrite-directory test
 aligned with into-dir resolution + `remove_for_overwrite` safety).
 
-**Residual focus:** optional polish (external-app archive DnD still Location
-URL only; list virtualization; further MainWindow factoring). Editable
-permissions, archive extract-dir/file watch, and ArchiveListing extraction
-landed. P0 audit items A1–A3 and libarchive (S1) are done.
+**Residual focus:** optional polish (list virtualization; further MainWindow
+factoring; true incremental watcher). External archive DnD extracts to
+file:// on drag; search batching/status throttle improved. P0 audit items
+A1–A3 and libarchive (S1) are done.
 
 Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 
@@ -519,8 +519,8 @@ Python reference: experimental `dirtoo-py/experiments/udisks/` (`udisksqt.py`); 
        map extracted path → archive model key)
 - [x] drag&drop of files from inside an archive just gives a filename
       pointing to the archive
-      (same-app drop resolves Location URL, extract_member off-thread, then copy;
-       Move/Link forced to Copy; external apps still see Location URL only)
+      (same-app drop resolves Location URL / extract cache; drag mimeData extracts
+       members to cache and sets file:// for external apps + x-dirtoo-locations)
 - [x] use human-friendly ISO date/time: "2011-12-21 16:14"
 - [x] in About page, use actual URL, not "Project Page" text on link
 - [x] Segfault on "Open Containing Folder"
@@ -547,8 +547,8 @@ Python reference: experimental `dirtoo-py/experiments/udisks/` (`udisksqt.py`); 
       (type:video|image|archive|audio via extension regex; help text updated)
 - [x] file size doesn't show for archives
       (bsdtar/tar -tvf + unzip -l parsers populate ArchiveEntry.size)
-- [partial] Search across big directory can still lock the UI
-      (no per-hit FileInfo::from_path/stat; synthetic entries; refresh every 128;
-       still model reset on interval — further virtualization optional)
+- [x] Search across big directory can still lock the UI
+      (synthetic hits; batch append 48 + 50ms deferred flush; status throttle;
+       notify_rows_appended — Detail virtualization still optional)
 
 

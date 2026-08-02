@@ -271,6 +271,7 @@ private:
   bool search_active_ = false;
   std::vector<fs::FileInfo> search_results_;
   std::vector<fs::FileInfo> search_batch_;
+  quint64 search_status_matched_ = 0; ///< last match count shown in status (throttle)
   SearchController search_controller_;
   QThread* path_completion_thread_ = nullptr;
   PathCompletionWorker* path_completion_worker_ = nullptr;

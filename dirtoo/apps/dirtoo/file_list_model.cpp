@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "file_list_model.hpp"
+#include "dirtoo/archive/archive_index.hpp"
 #include "dirtoo/filter/media_meta_cache.hpp"
 #include "size_format.hpp"
 
 #include <chrono>
 #include <cstdlib>
+#include <string>
 
 #include <QTimer>
 
@@ -19,6 +21,7 @@
 #include <QMetaObject>
 #include <QMimeData>
 #include <QModelIndex>
+#include <QStandardPaths>
 #include <QThreadPool>
 #include <QUrl>
 
@@ -693,18 +696,47 @@ QStringList FileListModel::mimeTypes() const
 QMimeData* FileListModel::mimeData(const QModelIndexList& indexes) const
 {
   QList<QUrl> urls;
+  QStringList location_urls;
   std::vector<int> rows;
   for (const QModelIndex& idx : indexes) {
     rows.push_back(idx.row());
   }
   std::sort(rows.begin(), rows.end());
   rows.erase(std::unique(rows.begin(), rows.end()), rows.end());
+
+  const QString drop_cache =
+      QStandardPaths::writableLocation(QStandardPaths::CacheLocation)
+      + QStringLiteral("/dirtoo-archive-drop");
+
   for (int row : rows) {
     if (const fs::FileInfo* fi = file_at(row)) {
-      // Archive / synthetic entries: use Location URL (file://…//archive:entry) so
-      // receivers can distinguish members from the archive file itself. Real paths
-      // stay as local file URLs for external apps.
-      if (fi->is_synthetic() || fi->location().is_archive()) {
+      if (fi->location().is_archive()) {
+        location_urls.push_back(QString::fromStdString(fi->location().as_url()));
+        // External apps need a real path. Prefer extract-to-cache so file://
+        // URLs work outside dirtoo; same-app drop still sees Location URLs.
+        if (!fi->location().entry_path().empty()) {
+          const auto archive_file = fi->location().as_path();
+          const auto member = fi->location().entry_path();
+          const auto dest_dir =
+              std::filesystem::path{drop_cache.toStdString()}
+              / std::to_string(std::hash<std::string>{}(archive_file.string()));
+          auto extracted =
+              archive::extract_member(archive_file, member, dest_dir);
+          if (extracted) {
+            urls.push_back(
+                QUrl::fromLocalFile(QString::fromStdString(extracted->string())));
+            continue;
+          }
+        } else {
+          // Archive root entry → the archive file itself.
+          urls.push_back(
+              QUrl::fromLocalFile(QString::fromStdString(fi->location().as_path().string())));
+          continue;
+        }
+        // Extract failed: fall back to Location URL only.
+        urls.push_back(QUrl(QString::fromStdString(fi->location().as_url())));
+      } else if (fi->is_synthetic()) {
+        location_urls.push_back(QString::fromStdString(fi->location().as_url()));
         urls.push_back(QUrl(QString::fromStdString(fi->location().as_url())));
       } else {
         urls.push_back(QUrl::fromLocalFile(QString::fromStdString(fi->path().string())));
@@ -716,6 +748,10 @@ QMimeData* FileListModel::mimeData(const QModelIndexList& indexes) const
   }
   auto* mime = new QMimeData;
   mime->setUrls(urls);
+  if (!location_urls.isEmpty()) {
+    mime->setData(QStringLiteral("application/x-dirtoo-locations"),
+                  location_urls.join(QLatin1Char('\n')).toUtf8());
+  }
   return mime;
 }
 

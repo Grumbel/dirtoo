@@ -3718,6 +3718,7 @@ void MainWindow::on_search_submitted()
   stop_search();
   search_results_.clear();
   search_batch_.clear();
+  search_status_matched_ = 0;
   search_active_ = true;
   collection_.clear();
   collection_.clear_filter();
@@ -3744,8 +3745,17 @@ void MainWindow::on_search_match(const QString& path, bool is_directory, quint64
   search_results_.push_back(info);
   search_batch_.push_back(std::move(info));
   // Incremental inserts (batched) beat periodic full layoutChanged on large sets.
-  if (search_batch_.size() >= 32 || search_results_.size() < 16) {
+  // Early results flush soon for responsiveness; larger batches later reduce model churn.
+  if (search_batch_.size() >= 48 || search_results_.size() < 24) {
     flush_search_batch();
+  } else if (search_batch_.size() == 1) {
+    // Schedule a deferred flush so a trickle of hits still paints without waiting
+    // for a full batch (or search end).
+    QTimer::singleShot(50, this, [this] {
+      if (search_active_) {
+        flush_search_batch();
+      }
+    });
   }
 }
 
@@ -3768,7 +3778,14 @@ void MainWindow::flush_search_batch()
 void MainWindow::on_search_progress(quint64 visited, quint64 matched)
 {
   (void)visited;
-  set_status(QStringLiteral("Searching… %1 matches").arg(matched));
+  // Throttle status updates — progress can fire very frequently on huge trees.
+  if (matched == search_status_matched_) {
+    return;
+  }
+  if (matched < 32 || matched - search_status_matched_ >= 32) {
+    search_status_matched_ = matched;
+    set_status(QStringLiteral("Searching… %1 matches").arg(matched));
+  }
 }
 
 void MainWindow::on_search_finished(quint64 matched, quint64 visited, const QString& error)
