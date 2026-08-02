@@ -42,15 +42,23 @@ std::vector<fs::Location> Bookmarks::entries() const
       // ignore bad lines
     }
   }
-  std::sort(result.begin(), result.end(), [](const fs::Location& a, const fs::Location& b) {
-    return a.as_url() < b.as_url();
-  });
-  result.erase(std::unique(result.begin(), result.end(),
-                           [](const fs::Location& a, const fs::Location& b) {
-                             return a.as_url() == b.as_url();
-                           }),
-               result.end());
-  return result;
+  // Preserve file order (append order). Dedup by URL keeping first occurrence.
+  std::vector<fs::Location> unique;
+  unique.reserve(result.size());
+  for (const auto& loc : result) {
+    const auto url = loc.as_url();
+    bool seen = false;
+    for (const auto& u : unique) {
+      if (u.as_url() == url) {
+        seen = true;
+        break;
+      }
+    }
+    if (!seen) {
+      unique.push_back(loc);
+    }
+  }
+  return unique;
 }
 
 bool Bookmarks::contains(const fs::Location& location) const

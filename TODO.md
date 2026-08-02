@@ -222,7 +222,7 @@ smells, and gaps worth scheduling. Not every item is a user-visible crash.
 | B2 | Search jank on huge result sets | **Done** — batched `append_visible_items` + `notify_rows_appended` (32); Graphics `on_rows_inserted` relayouts without clearing tiles/selection |
 | B3 | Watcher: directory-only events, full soft rescan | Optional inotify names later; low priority while merge_items works |
 | B4 | Icon dir discovery | **Mostly done** — CMake installs full icon set to `share/dirtoo/icons`; runtime probes that path |
-| B5 | Bookmarks sorted by URL (order lost) | Preserve append order if product wants it |
+| B5 | Bookmarks sorted by URL (order lost) | **Done** — load preserves file order; dedup keeps first |
 | B6 | Open With incomplete Desktop Entry / empty menu on mixed MIME | Document limits; improve intersection messaging |
 | B7 | Conflict dialog wording for directories | Tied to A3 — never imply “Replace” is a single-file overwrite when dest is a directory |
 
