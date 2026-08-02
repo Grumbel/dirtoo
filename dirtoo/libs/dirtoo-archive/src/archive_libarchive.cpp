@@ -14,7 +14,7 @@ namespace dirtoo::archive {
 namespace {
 
 struct ArchiveReadGuard {
-  archive* a = nullptr;
+  ::archive* a = nullptr;
   ~ArchiveReadGuard()
   {
     if (a != nullptr) {
@@ -24,7 +24,7 @@ struct ArchiveReadGuard {
 };
 
 struct ArchiveWriteGuard {
-  archive* a = nullptr;
+  ::archive* a = nullptr;
   ~ArchiveWriteGuard()
   {
     if (a != nullptr) {
@@ -33,7 +33,7 @@ struct ArchiveWriteGuard {
   }
 };
 
-int copy_data(archive* ar, archive* aw)
+int copy_data(::archive* ar, ::archive* aw)
 {
   const void* buff = nullptr;
   size_t size = 0;
@@ -53,7 +53,7 @@ int copy_data(archive* ar, archive* aw)
   }
 }
 
-std::string archive_err(archive* a, const char* fallback)
+std::string archive_err(::archive* a, const char* fallback)
 {
   const char* msg = archive_error_string(a);
   return msg != nullptr ? std::string{msg} : std::string{fallback};
