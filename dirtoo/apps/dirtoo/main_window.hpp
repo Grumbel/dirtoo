@@ -206,6 +206,7 @@ private:
                                const std::filesystem::path& dest_dir);
   /// Watch real dir, archive extract tree, or archive file as appropriate.
   void start_watcher_for_location();
+  void setup_background_workers();
   void restore_settings();
   void persist_settings() const;
   [[nodiscard]] std::vector<fs::FileInfo> selected_fileinfos() const;

@@ -122,62 +122,7 @@ MainWindow::MainWindow(QWidget* parent)
   setWindowTitle(QStringLiteral("dirtoo"));
   resize(960, 640);
 
-  // Background transfer worker
-  connect(&transfer_controller_, &TransferController::item_started, this,
-          &MainWindow::on_transfer_item_started);
-  connect(&transfer_controller_, &TransferController::byte_progress, this,
-          &MainWindow::on_transfer_byte_progress);
-  connect(&transfer_controller_, &TransferController::conflict_required, this,
-          &MainWindow::on_transfer_conflict);
-  connect(&transfer_controller_, &TransferController::finished, this,
-          &MainWindow::on_transfer_finished);
-  connect(&transfer_controller_, &TransferController::log_line, this, [this](const QString& line) {
-    qInfo().noquote() << QStringLiteral("transfer: %1").arg(line);
-    if (transfer_controller_.dialog() != nullptr) {
-      transfer_controller_.dialog()->append_log(line);
-    }
-  });
-
-  connect(&search_controller_, &SearchController::match_found, this, &MainWindow::on_search_match);
-  connect(&search_controller_, &SearchController::progress, this, &MainWindow::on_search_progress);
-  connect(&search_controller_, &SearchController::finished, this, &MainWindow::on_search_finished);
-
-  dir_load_worker_ = new DirectoryLoadWorker;
-  dir_load_thread_ = new QThread(this);
-  dir_load_worker_->moveToThread(dir_load_thread_);
-  connect(dir_load_thread_, &QThread::finished, dir_load_worker_, &QObject::deleteLater);
-  connect(dir_load_worker_, &DirectoryLoadWorker::loaded, this, &MainWindow::on_directory_loaded);
-  connect(dir_load_worker_, &DirectoryLoadWorker::failed, this, &MainWindow::on_directory_load_failed);
-  qRegisterMetaType<std::vector<dirtoo::fs::FileInfo>>("std::vector<dirtoo::fs::FileInfo>");
-  dir_load_thread_->start();
-
-  sort_worker_ = new SortWorker;
-  sort_thread_ = new QThread(this);
-  sort_worker_->moveToThread(sort_thread_);
-  connect(sort_thread_, &QThread::finished, sort_worker_, &QObject::deleteLater);
-  connect(sort_worker_, &SortWorker::sorted, this, &MainWindow::on_sort_finished);
-  qRegisterMetaType<dirtoo::collection::SortKey>("dirtoo::collection::SortKey");
-  sort_thread_->start();
-
-  filter_worker_ = new FilterWorker;
-  filter_thread_ = new QThread(this);
-  filter_worker_->moveToThread(filter_thread_);
-  connect(filter_thread_, &QThread::finished, filter_worker_, &QObject::deleteLater);
-  connect(filter_worker_, &FilterWorker::filtered, this, &MainWindow::on_filter_finished);
-  qRegisterMetaType<dirtoo::collection::GroupMode>("dirtoo::collection::GroupMode");
-  filter_thread_->start();
-
-  dir_thumb_worker_ = new DirectoryThumbnailWorker;
-  dir_thumb_thread_ = new QThread(this);
-  dir_thumb_worker_->moveToThread(dir_thumb_thread_);
-  connect(dir_thumb_thread_, &QThread::finished, dir_thumb_worker_, &QObject::deleteLater);
-  connect(dir_thumb_worker_, &DirectoryThumbnailWorker::thumbnail_ready, this,
-          &MainWindow::on_thumbnail_ready);
-  connect(dir_thumb_worker_, &DirectoryThumbnailWorker::finished, this,
-          [this](int ok, int fail) {
-            set_status(QStringLiteral("Directory thumbnails: %1 ok, %2 failed").arg(ok).arg(fail));
-          });
-  dir_thumb_thread_->start();
+  setup_background_workers();
 
   auto* toolbar = addToolBar(QStringLiteral("Main"));
   toolbar->setObjectName(QStringLiteral("mainToolBar"));
@@ -1161,6 +1106,66 @@ QAbstractItemView* MainWindow::current_view() const
     return tree_view_;
   }
   return icon_view_;
+}
+
+
+void MainWindow::setup_background_workers()
+{
+  connect(&transfer_controller_, &TransferController::item_started, this,
+          &MainWindow::on_transfer_item_started);
+  connect(&transfer_controller_, &TransferController::byte_progress, this,
+          &MainWindow::on_transfer_byte_progress);
+  connect(&transfer_controller_, &TransferController::conflict_required, this,
+          &MainWindow::on_transfer_conflict);
+  connect(&transfer_controller_, &TransferController::finished, this,
+          &MainWindow::on_transfer_finished);
+  connect(&transfer_controller_, &TransferController::log_line, this, [this](const QString& line) {
+    qInfo().noquote() << QStringLiteral("transfer: %1").arg(line);
+    if (transfer_controller_.dialog() != nullptr) {
+      transfer_controller_.dialog()->append_log(line);
+    }
+  });
+
+  connect(&search_controller_, &SearchController::match_found, this, &MainWindow::on_search_match);
+  connect(&search_controller_, &SearchController::progress, this, &MainWindow::on_search_progress);
+  connect(&search_controller_, &SearchController::finished, this, &MainWindow::on_search_finished);
+
+  dir_load_worker_ = new DirectoryLoadWorker;
+  dir_load_thread_ = new QThread(this);
+  dir_load_worker_->moveToThread(dir_load_thread_);
+  connect(dir_load_thread_, &QThread::finished, dir_load_worker_, &QObject::deleteLater);
+  connect(dir_load_worker_, &DirectoryLoadWorker::loaded, this, &MainWindow::on_directory_loaded);
+  connect(dir_load_worker_, &DirectoryLoadWorker::failed, this, &MainWindow::on_directory_load_failed);
+  qRegisterMetaType<std::vector<dirtoo::fs::FileInfo>>("std::vector<dirtoo::fs::FileInfo>");
+  dir_load_thread_->start();
+
+  sort_worker_ = new SortWorker;
+  sort_thread_ = new QThread(this);
+  sort_worker_->moveToThread(sort_thread_);
+  connect(sort_thread_, &QThread::finished, sort_worker_, &QObject::deleteLater);
+  connect(sort_worker_, &SortWorker::sorted, this, &MainWindow::on_sort_finished);
+  qRegisterMetaType<dirtoo::collection::SortKey>("dirtoo::collection::SortKey");
+  sort_thread_->start();
+
+  filter_worker_ = new FilterWorker;
+  filter_thread_ = new QThread(this);
+  filter_worker_->moveToThread(filter_thread_);
+  connect(filter_thread_, &QThread::finished, filter_worker_, &QObject::deleteLater);
+  connect(filter_worker_, &FilterWorker::filtered, this, &MainWindow::on_filter_finished);
+  qRegisterMetaType<dirtoo::collection::GroupMode>("dirtoo::collection::GroupMode");
+  filter_thread_->start();
+
+  dir_thumb_worker_ = new DirectoryThumbnailWorker;
+  dir_thumb_thread_ = new QThread(this);
+  dir_thumb_worker_->moveToThread(dir_thumb_thread_);
+  connect(dir_thumb_thread_, &QThread::finished, dir_thumb_worker_, &QObject::deleteLater);
+  connect(dir_thumb_worker_, &DirectoryThumbnailWorker::thumbnail_ready, this,
+          &MainWindow::on_thumbnail_ready);
+  connect(dir_thumb_worker_, &DirectoryThumbnailWorker::finished, this,
+          [this](int ok, int fail) {
+            set_status(QStringLiteral("Directory thumbnails: %1 ok, %2 failed").arg(ok).arg(fail));
+          });
+  dir_thumb_thread_->start();
 }
 
 void MainWindow::apply_icon_zoom()
