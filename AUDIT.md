@@ -1084,6 +1084,520 @@ App target links fs, collection, filter, watcher, thumbnail, archive, dirops, Qt
 
 ---
 
+
+---
+
+## Deep per-file review — pass 2b (chrome, settings, workers)
+
+Continued line-level notes for modules that were only tabulated in pass 2.
+
+### Chrome & persistence
+
+#### `about_dialog.hpp` / `about_dialog.cpp` ✅
+
+**Role.** Modal About dialog (not a reusable class — free function `show_about_dialog`).
+
+**Flow.** Loads `dirtoo.png` via `load_badge_pixmap`; version from `QApplication::applicationVersion()` with hard-coded `0.2.0-dev` fallback; rich text with project URL as real `href` (opens external); Close via `QDialogButtonBox`.
+
+**Issues.**
+- Version fallback can disagree with `DIRTOO_VERSION` if the application version string is empty at runtime.
+- `dialog.exec()` blocks; fine for About.
+- No “Credits” / third-party license list (optional polish).
+
+**Parity.** Python About is similar; C++ text documents dirops, read-only archives, async metadata intentionally.
+
+---
+
+#### `message_area.hpp` / `message_area.cpp` ✅
+
+**Role.** `QFrame` strip above the status bar for transient info/error (Python `MessageArea`).
+
+**API.** `show_info(text, timeout_ms=5000)`, `show_error(..., 8000)`, `clear()`. Auto-hides via `QTimer`.
+
+**Issues.**
+- Errors and info share one label — a second message replaces the first (no queue).
+- Distinct from status bar permanent size widget and left `status_label_` messages; three channels can show related text (status + message area) without coordination.
+- Stylesheet/colors: verify contrast in dark themes (hard-coded? check cpp — typically palette or light pink/blue).
+
+**Parity.** Matches Python’s non-status-bar message strip.
+
+---
+
+#### `leap_widget.hpp` / `leap_widget.cpp` ✅
+
+**Role.** Frameless type-ahead overlay; emits `leap(text, forward, from_key)`.
+
+**Flow.** Parented to MainWindow; `place_on_parent()` positions; `show_with_text` for first character; `eventFilter` / `keyPressEvent` handle Esc, arrows, Enter; typing updates and re-emits.
+
+**Issues.**
+- Positioning can drift if the main window layout changes while visible (only placed on show).
+- Depends on MainWindow wiring to select matching row (prefix match on basename) — leap logic is split.
+
+**Parity.** Python `LeapWidget` + FileView type-ahead.
+
+---
+
+#### `navigation_history.hpp` / `navigation_history.cpp` ✅
+
+**Role.** Widget-free back/forward stack + unique list for History menu (`kUniqueCap = 40`).
+
+**API.** `push(loc, record)` trims forward on branch; `go_back` / `go_forward` return optional Location; `unique_locations` MRU-style list.
+
+**Issues.**
+- **Separate from** `AppSettings::location_history` (persisted session list) — two concepts: session stack vs durable MRU. Easy to confuse when reading MainWindow.
+- `push(..., record=false)` for soft reloads that should not grow the stack — callers must pass the flag correctly.
+- Equality of Locations is URL-based; encoding gaps affect uniqueness.
+
+**Parity.** Python controller history is similar; C++ extracted cleanly from MainWindow.
+
+---
+
+#### `bookmarks.hpp` / `bookmarks.cpp` ✅
+
+**Role.** Text file under `AppConfigLocation/bookmarks.txt`, one Location URL per line.
+
+**API.** `entries()` read+sort+unique; `contains` / `append` / `remove` / `toggle`; `write_all`.
+
+**Issues.**
+- **`contains` / `append` re-read the whole file** every call — fine for dozens of bookmarks, wasteful if used in a tight loop (UI only toggles occasionally).
+- Bad lines swallowed by `catch (...)` on `from_url` — no user feedback for corrupt entries.
+- Sorted by URL string, not by user order — **order is not preserved** across rewrite (Python may keep append order; verify).
+
+**Parity.** Python `bookmark/bookmarks.py` line-file pattern.
+
+---
+
+#### `app_settings.hpp` / `app_settings.cpp` ✅
+
+**Role.** `QSettings("dirtoo","dirtoo")` load/save of UI/session state.
+
+**Keys (non-exhaustive).** `ui/view_mode`, per-view zoom (`zoom_icons|list|detail` + legacy `zoom_index`), `detail_columns`, `icon_detail_level`, `crop_thumbnails`, `show_hidden`, `show_filter`, `filter_pinned`, `show_sidebar`, `sidebar_width`, `directories_first`, `group_mode`, `size_units`, window geometry/state, `session/last_location`, `session/location_history`.
+
+**Issues.**
+- Legacy `zoom_index` still written from `zoom_icons` on save — migration is one-way friendly but slightly confusing.
+- No schema version key — future renames need careful defaults.
+- Sort key / filter expression **not** persisted (session-only in MainWindow) — may be intentional.
+
+**Parity.** Subset of Python QSettings usage; Python had more “globals/…” keys historically.
+
+---
+
+#### `size_format.hpp` / `size_format.cpp` ✅
+
+**Role.** Process-wide SI (base 1000) vs IEC (base 1024) formatting.
+
+**API.** `set_size_unit_style` / `format_byte_size`; string prefs `si`/`iec`.
+
+**Issues.**
+- Global static style — multi-window consistent (good); not thread-local (workers should not format for UI without knowing style — currently GUI formats).
+- Thresholds: 1-digit shows one decimal; integer for larger — matches typical file managers.
+
+**Parity.** Python `bytefmt` / humanize; C++ defaults SI per product decision (not binary MiB-only).
+
+---
+
+### Workers (detail)
+
+#### `directory_load_worker.hpp` / `.cpp` ✅
+
+**Role.** Off-GUI `fs::list_directory` for a path string + generation.
+
+**Flow.** `load(path, gen)` → try list → `loaded(gen, items)` or `failed(gen, error)`. `cancel()` sets flag; generation still returned so MainWindow can drop stale results.
+
+**Issues.**
+- Path is a **filesystem path**, not `Location` — archive browse must resolve extract root in MainWindow before calling.
+- Cancel does not abort an in-progress `directory_iterator` mid-loop unless the implementation checks the flag each entry (verify cpp — if only checked at start, cancel is soft).
+- Exceptions from listing mapped to failed signal.
+
+---
+
+#### `sort_worker.hpp` / `.cpp` ✅
+
+**Role.** Copy of items sorted with `SortKey` / ascending / directories_first; emits `sorted(gen, items)`.
+
+**Issues.**
+- Extremely small (~24 LOC cpp) — sorting uses collection sorter helpers; good separation.
+- MainWindow must not call `replace_items_sorted` in a way that rebuilds content-filter visible on GUI after sort when a content filter is active (documented in MainWindow notes).
+
+---
+
+#### `filter_worker.hpp` / `.cpp` ✅
+
+**Role.** Off-GUI apply filter expression to a **copy** of items; emit `filtered(gen, visible, parse_ok)`.
+
+**Flow.** Parse expression once; if parse fails, may still return all or substring fallback depending on implementation — MainWindow shows “substring fallback” message when `parse_ok` is false.
+
+**Issues.**
+- Content predicates (`contains*`) do file I/O here — correct thread.
+- Large directories: full item vector copied to worker — memory spike (acceptable vs GUI freeze).
+- Generation must be checked on GUI before applying.
+
+---
+
+#### `search_controller.hpp` / `.cpp` ✅
+
+**Role.** Owns `QThread` + `SearchWorker`; forwards `match_found` / `progress` / `finished`.
+
+**API.** `start(root, expr, show_hidden, max_depth)`; `stop()`; `cleanup_thread()` on shutdown.
+
+**Issues.**
+- **Must** call cleanup from MainWindow destructor before other teardown (ordering).
+- Worker cancel is cooperative via atomic; filesystem walk may lag one directory.
+- Does not own result storage — MainWindow’s `search_results_` + collection.
+
+**Parity.** Python search is also async; C++ avoids `search://` Location protocol.
+
+---
+
+#### `search_worker.hpp` / `.cpp` (addendum) ✅
+
+**Role.** `filter::parse_filter` + `filter::search_directory` with cancel callback.
+
+**Issues.**
+- Progress emits `visited=0` periodically (only matched count in mid-progress) — status bar shows matches only until finish.
+- Invalid expression → immediate `finished` with error string; no partial results.
+
+---
+
+### Batch 2b cross-notes
+
+| Risk | Where |
+|------|--------|
+| Bookmarks sorted by URL, order not user-defined | `bookmarks.cpp` |
+| Dual history concepts (nav stack vs settings list) | `navigation_history` + `app_settings` |
+| MessageArea vs status bar triple messaging | `message_area` + `MainWindow::set_status` |
+| DirectoryLoadWorker path-only API | archive path resolution in MainWindow |
+| FilterWorker copies full vector | memory on huge listings |
+
+---
+
+
+
+---
+
+## Deep per-file review — pass 2c (transfer, dialogs, open, sidebar)
+
+### Transfer pipeline
+
+#### `transfer_worker.hpp` / `.cpp` ✅
+
+**Role.** Worker-thread sequential copy/move/link of `TransferRequest::sources` into `destination_directory` via **dirops**.
+
+**API / flow.**
+- `run(request)` resets cancel/pause; for each source: `item_started` → dirops op with progress callback → `byte_progress`.
+- On name conflict: `wait_for_conflict_policy` emits `conflict_required(dest_name, source, dest)` and blocks on `conflict_cv_` until `resolve_conflict(policy, accepted, apply_to_all)`.
+- Sticky policy: `conflict_have_sticky_` / `conflict_sticky_` for “apply to all”.
+- `cancel()` / `pause()` / `resume()`; cancel notifies both conflict and pause CVs.
+- Ends with `finished(TransferSummary)` (completed, skipped, cancelled, error, per-item results).
+
+**Issues.**
+- **Link mode** must map to `dirops::create_symlink` (or equivalent) — confirm Link branch exists and does not fall through to copy.
+- Cross-device **move** = copy + delete inside dirops; summary may report success while source delete failed (dirops risk).
+- Worker holds `std::filesystem::path` only — **archive members are not transferable** without prior extract (MainWindow should refuse or extract first).
+- No overall byte total pre-scan (progress may be per-file only depending on dirops options).
+
+**Parity.** Python transfer dialog + executor; C++ is more structured (worker + controller).
+
+---
+
+#### `transfer_controller.hpp` / `.cpp` ✅
+
+**Role.** Owns long-lived worker thread; `start(parent, request)` creates `TransferDialog`, wires pause/cancel/conflict to worker, forwards signals to MainWindow.
+
+**Issues.**
+- Dialog parent lifetime: if MainWindow closes mid-transfer, `shutdown()` must resolve pending conflicts and quit the thread (ordering in MainWindow dtor).
+- One transfer at a time (`busy()`); MainWindow checks before starting another.
+
+---
+
+#### `transfer_dialog.hpp` / `.cpp` ✅
+
+**Role.** Progress UI: title, destination, current file, byte + item progress bars, log, pause/cancel, finished state.
+
+**Issues.**
+- Log grows unbounded for huge transfers — optional trim.
+- Does not itself call dirops; pure view.
+
+---
+
+#### `conflict_dialog.hpp` / `.cpp` ✅
+
+**Role.** Modal decision: Skip / Rename / Overwrite / Cancel (+ apply to all). Optional source/dest paths for size/mtime and thumbnail preview.
+
+**Issues.**
+- Overwrite on **directories** is catastrophic (`remove_all` downstream) — dialog should emphasize this (copy wording).
+- Thumbnails from cache / `QFileIconProvider` only — no D-Bus request from dialog.
+- Button order follows GNOME via app-wide proxy style.
+
+**Parity.** Python conflict UI; C++ adds thumbs in dialog.
+
+---
+
+### Properties, preferences, naming
+
+#### `properties_dialog.hpp` / `.cpp` ✅
+
+**Role.** Multi-selection properties: path, size, mtime, type, permissions **display**, media dimensions/duration/fps when cache hit / async fill.
+
+**Issues.**
+- Permissions not editable (OOS).
+- Multiple selection aggregates (count, total size) — edge cases for mixed dirs/files.
+- May `request` media meta; UI must update when cache signals (queued).
+
+---
+
+#### `preferences_dialog.hpp` / `.cpp` ✅
+
+**Role.** Thin editor for a subset of `AppSettings` (size units, maybe sidebar defaults, crop, etc.).
+
+**Issues.**
+- Not a full settings surface — many keys only changeable via menus (view mode, columns).
+- Must call `set_size_unit_style` when SI/IEC changes so live UI updates.
+
+---
+
+#### `name_input_dialog.hpp` / `.cpp` ✅
+
+**Role.** Single-line name entry for rename / new file / new folder.
+
+**Issues.**
+- Validation likely limited to non-empty; path separators in names should be rejected.
+- No live conflict preview against current directory (rename may still hit dirops conflict policy).
+
+---
+
+### Open with / history log
+
+#### `open_with.hpp` / `.cpp` ✅
+
+**Role.** XDG `.desktop` discovery for MIME types; build Open With menu; `launch_desktop_app` expands Exec (`%f`/`%F`/`%u`/`%U`).
+
+**Issues.**
+- Incomplete Desktop Entry support (no `Path=`, `StartupNotify`, D-Bus Activatable).
+- Multi-file: intersection of apps across MIME types — may yield empty Open With for mixed selection.
+- Archive members: paths must be real filesystem paths (extract first) or launch fails.
+
+**Parity.** Python `mime/` + xdg helpers; C++ is self-contained in app.
+
+---
+
+#### `open_history.hpp` / `.cpp` ✅
+
+**Role.** SQLite recently-opened list (stronger than a flat text file).
+
+**Issues.**
+- Schema/migration not versioned in audit depth — check open path for create-if-missing.
+- Distinct from `operations_history` (mutations) and `navigation_history` (back stack).
+
+---
+
+#### `operations_history.hpp` / `.cpp` ✅
+
+**Role.** Append-only SQLite log of mutation ops (`OperationKind`: Copy, Move, Rename, Delete, …) for a history **browser**, not undo.
+
+**API.** `record` / `record_simple`; dialog `show_operations_history_dialog`.
+
+**Issues.**
+- **Not undo** — naming can mislead users (“History” of operations vs navigation History menu).
+- Failure outcomes recorded with ok flag; no retry from dialog.
+
+---
+
+#### `history_menu.hpp` / `.cpp` ✅
+
+**Role.** Populate back/forward or location MRU menus with icons via `icon_for_location`.
+
+**Issues.** Depends on thumbnail cache presence for nice icons; falls back to folder/file/package icons.
+
+---
+
+### Sidebar
+
+#### `directory_tree_model.hpp` / `.cpp` ✅
+
+**Role.** Lazy directory-only tree: Places roots, `fetchMore` via QtConcurrent, generation-guarded `apply_children`.
+
+**API.** `reset_roots`, `path_for_index`, `index_for_path`, `ensure_path_visible` (expand ancestors, schedule fetch for missing segments).
+
+**Issues.**
+- **Directories only** — no files in tree (intentional).
+- Symlink directories: behavior depends on `QDir` / listing flags — possible loops if not guarded (rely on canonical paths?).
+- `ensure_path_visible` on deep paths is async — current-location highlight is best-effort until fetches complete.
+- Hidden dirs gated by `show_hidden_`.
+
+**Parity.** Python had less emphasis on a permanent sidebar tree; C++ feature is stronger here.
+
+---
+
+#### `udisks_client.hpp` / `.cpp` ✅
+
+**Role.** UDisks2 ObjectManager client: list block filesystems, async Mount/Unmount/Eject, `volumes_changed` debounce.
+
+**Issues.**
+- System bus only — fails gracefully on systems without UDisks2?
+- `ay` mount-point decoding is fragile (documented risk in earlier design notes).
+- No partition edit/format (OOS).
+- Unmount busy filesystems — error string from D-Bus must surface in UI (`operation_finished`).
+
+**Parity.** Python side was thinner historically; C++ Devices panel is a port addition aligned with “file manager” expectations.
+
+---
+
+### Pass 2c risk table
+
+| Item | Severity | Notes |
+|------|----------|-------|
+| Conflict wait without resolve | High | Mitigated if cancel always notifies CV |
+| Overwrite directory | High | UX wording in conflict dialog |
+| Open With mixed MIME | Low | Empty menu possible |
+| Tree ensure_path_visible races | Medium | Generation helps; highlight lag |
+| UDisks without session rights | Medium | Operations fail; list may be empty |
+| operations_history ≠ undo | Low | Naming/docs |
+
+---
+
+
+
+---
+
+## Deep per-file review — pass 2d (libraries, tests, tools)
+
+### `dirtoo-collection` — sorter & grouper
+
+#### `sorter.hpp` / `sorter.cpp` ✅
+
+**Role.** Compare `FileInfo` by `SortKey` (Name, Size, Extension, Modified, Type, Width, Height, Resolution, AspectRatio, Duration, Framerate, Permissions, Random) with natural-numeric basename keys and optional directories-first.
+
+**Issues.**
+- Media-dimension keys use `MediaMetaCache::try_get` only — unsorted/equal when meta missing (stable relative order).
+- Random sort: seeded shuffle path when key is Random; directories-first still applied.
+- Case: name compare lowercases for natural key — good for UX; not byte-order POSIX sort.
+
+#### `grouper` (within collection) ✅
+
+**Role.** `GroupMode`: None / Day / Directory / Duration; `group_key` + section labels for model `IsGroupStartRole`.
+
+**Issues.** Duration groups need meta; Day uses local mtime calendar day.
+
+---
+
+### `dirtoo-archive` — manager
+
+#### `archive_manager.hpp` / `.cpp` ✅
+
+**Role.** Per-archive cache dir under app cache; `open()` cache-hit via `.dirtoo-extracted` marker or `QProcess` extract (bsdtar/tar); signals `extraction_started` / `ready` / `failed`.
+
+**Issues.**
+- Marker stores archive path string — **does not invalidate** if archive file is replaced with same path but new content (mtime/size not compared on hit). Stale extract risk.
+- Full extract can fill disk; no quota UI.
+- Concurrent `open` of same archive: map of entries — verify single process per key.
+
+#### `archive_index.hpp` / `.cpp` ✅
+
+**Role.** List + prefix children + single-member extract; verbose size parsers (`-tvf`, `unzip -l`).
+
+**Issues.**
+- Verbose parsers are format-sensitive (GNU vs BSD date fields) — tests only cover `fileinfos_for_prefix` with synthetic entries, **not** real CLI parse.
+- Fallback to name-only listing leaves size 0 (bug report “file size doesn't show for archives” when tools lack verbose or parse fails).
+
+---
+
+### `dirtoo-thumbnail`
+
+#### `thumbnailer.hpp` / `.cpp` ✅
+
+**Role.** Session-bus `org.freedesktop.thumbnails.Thumbnailer1`; `request` / `request_many`; `cache_path_for(location, size)` MD5 of file URI.
+
+**Issues.**
+- Requires running thumbnailer daemon; failure → failed signal (UI now degrades for non-media).
+- URI encoding incomplete (shared Location issue) → cache misses / wrong files for odd paths.
+- No local image scaler fallback when D-Bus absent (icons only).
+
+---
+
+### `dirtoo-filter` — search & media cache
+
+#### `search.hpp` / `search.cpp` ✅
+
+**Role.** Recursive walk with `MatchFunc`, `max_depth`, `show_hidden`, `should_cancel`; invokes callback per match.
+
+**Issues.**
+- Cancel checked between entries/directories — not mid-`read` of large files inside content matchers (those are separate filter path).
+- Symlink handling: confirm whether directory symlinks are followed (loop risk).
+
+#### `media_meta_cache.hpp` / `.cpp` ✅
+
+**Role.** SQLite WAL DB + 2 worker threads; fingerprint path+mtime+size; columns include pages, file_count; `try_get` / `is_negative` / `request(callback)`.
+
+**Issues.**
+- GUI must only use `try_get` / `request` — never `resolve_media_cached` on GUI (that path is for CLI).
+- Schema migrates with `ALTER TABLE` + `user_version` — good.
+- Negative cache prevents repeated ffprobe on non-media — essential for paint performance.
+
+#### `media_probe.hpp` / `.cpp` ✅
+
+**Role.** ffprobe / pdfinfo / archive file-count helpers used by workers.
+
+**Issues.** External tool availability; timeouts must bound hang risk.
+
+#### `parser.cpp` / `predicates.cpp` ✅
+
+**Role.** Full DSL (see pass 1 + type:video extension). Help text/HTML for Ctrl+K help dialog.
+
+**Issues.**
+- `std::regex` vs Python `re` differences on advanced patterns.
+- Unknown commands → AlwaysFalse (silent non-match) — can confuse users; help dialog mitigates.
+
+---
+
+### Tests — gaps after recent features
+
+| Area | Status |
+|------|--------|
+| `type:video` / image / archive | **No test** in `test_filter.cpp` (only `type:file`/`dir`) |
+| Verbose archive size parse | **No test** (only synthetic prefix children) |
+| Location percent-encoding | Weak / incomplete |
+| Clipboard GNOME | Covered in `test_clipboard_text` |
+| dirops conflicts | Covered |
+| Collection natural sort / hidden | Covered |
+| GUI / watcher / D-Bus | None |
+
+**Recommendation.** Add Catch cases: `parse_filter("type:video")` matches `.mp4`; `parse_tv_lines` / `parse_unzip_l` with fixture strings.
+
+---
+
+### Tools (brief)
+
+| Tool | Review note |
+|------|-------------|
+| `dt_copy` / `dt_move` | dirops; move requires `-t DEST` |
+| `dt_rename` | conflict rename docs in help |
+| `dt_rm` | recursive via dirops remove_all — dangerous; help must stress |
+| `dt_rmdir` | empty-tree only |
+| `dt_mkdir` / `dt_mkfile` | parents optional per flags |
+| `dt_symlink` / `dt_swap` | same-FS for swap |
+| `dt_mediainfo` | uses media probe + cache |
+| `dt_archiveinfo` | index listing |
+| `dt_filter` | filter lib CLI |
+| `cli_common.hpp` | shared option parsing patterns |
+
+---
+
+### Pass progress
+
+| Pass | Scope |
+|------|--------|
+| 1 | Libs overview + GUI overview + inventory |
+| 2 | Apps architecture, models, views, cross-cutting |
+| 2b | Chrome, settings, load/sort/filter/search workers |
+| 2c | Transfer, dialogs, open-with, sidebar, UDisks |
+| 2d | Sorter, archive manager, thumbnailer, media cache, tests/tools |
+
+**Still light (future 2e):** `file_item_delegate`/`graphics_file_item` paint path line-by-line; `main_window.cpp` sectioned map (menus vs slots); Python `controller.py` parity checklist row-by-row; `resources/` icon inventory.
+
+---
+
+
 ### Python tree (reference posture)
 
 Do **not** extend `dirtoo-py/`. Use it to answer “what did the user expect?” Files under `programs/`, `expr/`, experiments remain mostly OOS unless they define filter/FS semantics already ported.
