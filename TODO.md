@@ -180,7 +180,7 @@ Go to Folder, Clear. Storage: SQLite at `$XDG_STATE_HOME/dirtoo/operations-histo
 | Location URL encoding | **Promoted** — see *Audit findings* (systemic) |
 | Archive member thumbnails | Weak; needs extract path or special URI |
 | Watcher richness | **Improved** — multi-path + Linux inotify names; TOC `refresh_if_stale` |
-| MainWindow factoring | **Partial** — ArchiveListing, archive_member_cache; NavigationHistory, Search, Transfer, Devices |
+| MainWindow factoring | **Improved** — 9 TUs incl. nav; setup/view/filter/thumbs/transfer/events/settings |
 | True incremental FS watcher deltas | **Improved** — Linux inotify name deltas + small-set incremental collection patch; large bursts soft-merge |
 | List / Graphics virtualization | **Graphics viewport window done**; Detail uses uniform row heights when no group/time-gap; Qt paints only visible rows |
 | Rubber-band vs item drag | **done** |
@@ -211,7 +211,7 @@ smells, and gaps worth scheduling. Not every item is a user-visible crash.
 |----|-------|--------------|-----------|
 | S1 | **Archive listing/extract shells out to `bsdtar` / `tar` / `unzip` / `7z`** | Fragile verbose-text parsers | **Done** — **libarchive required** (CMake `REQUIRED`, flake); no CLI fallback (see AGENTS.md) |
 | S2 | **`std::filesystem::remove_all` as the Overwrite primitive** | Same as A3 — policy API looks like “replace file” but implementation is “delete subtree” | **Done (refuse path)** — Overwrite is file/symlink only; dirs rejected at API + UI |
-| S3 | **MainWindow multi-TU** | Core ~1.7k + setup/view/filter/thumbs/transfer/events/settings | **Improved** — 8 TUs; ctor setup_*; file_context_menu; ArchiveListing |
+| S3 | **MainWindow multi-TU** | Core ~1.3k + setup/nav/view/filter/thumbs/transfer/events/settings | **Improved** — 9 TUs; inotify deltas; file_context_menu |
 | S4 | **Dual icon paint paths** | `GraphicsFileItem` and `FileItemDelegate` must stay twin for montage/badges | **Done** — `icon_tile_paint.hpp` (badge, directory montage, status stickers) shared by both |
 
 ### P2 — reliability / scale / UX
