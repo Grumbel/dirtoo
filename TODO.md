@@ -205,6 +205,152 @@ thumbnail work. `dirops` remains Qt-free.
 
 ---
 
+---
+
+## Planned: directory tree sidebar + UDisks2 volumes
+
+**Status:** design only — not started. Larger than a single UI tweak; implement in phases.
+
+**User goals**
+
+1. Left **directory tree** sidebar for hierarchical navigation (like classic file managers).
+2. Surface **disks / partitions / mounts** via **UDisks2** D-Bus (not only `$HOME` paths).
+3. **Toolbar/menu control** to show/hide the tree sidebar (persisted).
+
+Python reference: experimental `dirtoo-py/experiments/udisks/` (`udisksqt.py`); main GUI does **not** ship a production tree+volumes UI — C++ can design cleanly rather than clone incomplete experiment code.
+
+### Architecture sketch
+
+```
+┌──────────── MainWindow ─────────────────────────────────────────┐
+│  Toolbar … [Toggle Tree] …                                      │
+│  Location bar / breadcrumbs                                     │
+│ ┌─ QSplitter ─────────────────────────────────────────────────┐ │
+│ │ Sidebar          │  Existing central column                 │ │
+│ │ ┌──────────────┐ │  (location chrome, message area,         │ │
+│ │ │ Places/Vols  │ │   view_stack_ Detail|Icons|Small,        │ │
+│ │ │ (UDisks2 +   │ │   filter bar)                            │ │
+│ │ │ bookmarks)   │ │                                          │ │
+│ │ ├──────────────┤ │                                          │ │
+│ │ │ Dir tree     │ │                                          │ │
+│ │ │ QTreeView    │ │                                          │ │
+│ │ └──────────────┘ │                                          │ │
+│ └──────────────────┴──────────────────────────────────────────┘ │
+│  Status bar                                                     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Layout**
+
+- Wrap the current central content in a horizontal **`QSplitter`**.
+- Left pane: sidebar widget (min width ~160–200px, default ~220px).
+- Right pane: existing vertical layout (location, views, filter).
+- Sidebar visibility toggled by hiding/showing the left widget (or collapsing splitter sizes to 0); **do not** destroy the tree model on hide so expand state can survive short toggles.
+
+**Toggle UX**
+
+- Toolbar button (icon `view-sidetree` / `sidebar-show-left` / `view-list-tree`) checkable.
+- View menu item **“Show Directory Tree”** (checkable), shortcut e.g. **F9** (common in file managers; confirm no conflict).
+- Persist in `AppSettings`: `ui/sidebar_visible` (bool), `ui/sidebar_width` (int).
+
+### Directory tree (phase 1 — local FS only)
+
+| Piece | Responsibility |
+|-------|----------------|
+| `DirectoryTreeModel` | Lazy `QAbstractItemModel`: roots = configured places; children = subdirs only (not files). Populate on `canFetchMore` / `fetchMore`. |
+| `DirectoryTreeView` | `QTreeView`, single selection, expand on double-click or single-click policy TBD. |
+| Integration | Activate path → `MainWindow::open_location`. Current location → expand+select matching node (best-effort, async if deep). |
+
+**Constraints (match project rules)**
+
+- **No directory listing on the GUI thread** for large trees: use a small worker or Qt concurrent for `directory_iterator` of one parent; cache results.
+- Ignore non-directories; respect “show hidden” only if we later sync that preference (default: hide dot-dirs in the tree).
+- Archives: **out of scope for v1** of the tree (opening an archive stays in the main view only). Optional later: synthetic archive nodes.
+
+**Sync rules**
+
+- Navigating from the tree opens that folder in the main view.
+- Navigating from the main view (breadcrumb, double-click folder) updates tree selection/expansion when the sidebar is visible.
+- Watcher: optional soft refresh of the expanded parent only (v1 can rescan one directory node on inotify for that path).
+
+### UDisks2 (phase 2 — volumes / disks)
+
+| Piece | Responsibility |
+|-------|----------------|
+| `libs/dirtoo-volumes` (new) or `apps/dirtoo/udisks_client.*` | Thin Qt D-Bus client for `org.freedesktop.UDisks2`. Prefer a small library if CLIs or tests need it later; start in-app if faster. |
+| ObjectManager | Subscribe to `InterfacesAdded` / `InterfacesRemoved` / property changes. |
+| Models | Drive / Block / Filesystem / Partition tables as needed. |
+
+**Data to expose (minimum useful set)**
+
+- Drive: model, vendor, size, connection bus (USB/SATA), media removable.
+- Block: device file (`/dev/…`), size, id label, id UUID, hint name.
+- Filesystem: mount points, type (ext4, vfat, …), size.
+- Partition: number, type UUID (optional).
+
+**UI placement**
+
+- Top of sidebar: **“Devices”** section (or separate small list above the tree).
+- Rows: label or device node + mount point if mounted; icon by bus/media (disk, usb, optical).
+- Click mounted volume → `open_location(mount_point)`.
+- Context menu (phase 2b): Mount / Unmount / Eject via UDisks2 methods (`Filesystem.Mount`, `Filesystem.Unmount`, `Drive.Eject`) with error reporting in the message area — **requires** careful async D-Bus calls and polkit interaction (user may see system auth dialogs).
+
+**Graceful degradation**
+
+- If the session bus or UDisks2 service is missing: hide Devices section or show “Disks unavailable”; tree still works for local paths.
+- No hard dependency at build time beyond Qt6 DBus (already used for thumbnails).
+
+**Security / safety**
+
+- Read-only property queries first; mount/unmount only from explicit user action.
+- Never run privileged helpers ourselves; always go through UDisks2.
+
+### Places / bookmarks (phase 1.5)
+
+- Fixed roots: Home, Filesystem root `/`, optional XDG user dirs (Desktop, Documents, Downloads) if they exist.
+- Reuse existing bookmarks store if present for user “Places”.
+- Devices from UDisks2 appear above or below Places, clearly grouped.
+
+### Settings & accessibility
+
+- `AppSettings`: sidebar visible, width, maybe “tree show hidden directories”.
+- Keyboard: tree view participates in tab order; arrows expand/collapse; Enter opens.
+- High-contrast: use palette, not hard-coded sidebar colors.
+
+### Implementation phases (recommended order)
+
+1. **Splitter + empty sidebar shell + toggle + settings** — no model yet; prove layout/persist.
+2. **`DirectoryTreeModel` lazy local dirs + navigation sync** with main view.
+3. **Places roots** (Home, `/`, XDG dirs, bookmarks).
+4. **UDisks2 client** + Devices list (mounted volumes only first).
+5. **UDisks2** unmounted volumes + Mount/Unmount/Eject actions + live updates.
+6. **Polish**: icons, context menus, hidden-dir preference, watcher refresh of expanded nodes.
+
+### Explicit non-goals (for this feature track)
+
+- Full network VFS in the tree (SMB/SFTP) — still out of scope.
+- Partition editing / format / resize.
+- Optical burn / RAID management.
+- Replacing the main Detail/Icons/Small stack with the sidebar tree.
+
+### Files likely touched
+
+- `apps/dirtoo/main_window.cpp/.hpp` — splitter, toggle action, settings.
+- New: `directory_tree_model.*`, `directory_tree_view.*`, `sidebar_widget.*` (or similar).
+- New: `udisks_client.*` or `libs/dirtoo-volumes/`.
+- `app_settings.*` — sidebar keys.
+- `resources/` — optional icons.
+- `flake.nix` / CMake — only if a new library target is added.
+- Tests: model unit tests with a temp directory tree; UDisks2 mocked or optional integration.
+
+### Risks
+
+- Lazy tree + current-location sync can be racy on deep paths — expand step-by-step with generation tokens.
+- UDisks2 property variants (`ay` mount points) need careful QDBus decoding.
+- Mount/Unmount without blocking the GUI (async pending calls).
+
+---
+
 ## Working process
 
 - Suggest a detailed commit message after each change series.
