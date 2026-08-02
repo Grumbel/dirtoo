@@ -1715,38 +1715,18 @@ void MainWindow::reload_directory(bool soft)
   }
 
   // In-memory archive index: apply on UI thread (no directory walk).
+  // Soft watcher ticks refresh the TOC only when the archive file stamp changes.
+  if (location_.is_archive()) {
+    std::string list_err;
+    (void)archive_listing_.refresh_if_stale(location_.as_path(), &list_err);
+  }
   if (location_.is_archive() && archive_listing_.ok()) {
     soft_directory_reload_ = false;
     auto items = archive_listing_.fileinfos_for(location_);
-    // Pre-fill non-recursive child counts for archive directories from the index.
     if (model_ != nullptr) {
       model_->clear_child_counts();
-      const std::string prefix = location_.entry_path().lexically_normal().generic_string();
-      for (const auto& fi : items) {
-        if (!fi.is_directory()) {
-          continue;
-        }
-        const std::string name = fi.basename();
-        const std::string needed =
-            prefix.empty() ? name + "/" : prefix + "/" + name + "/";
-        qint64 n = 0;
-        std::set<std::string> seen;
-        for (const auto& entry : archive_listing_.entries()) {
-          std::string rel = entry.path.generic_string();
-          if (!rel.starts_with(needed)) {
-            continue;
-          }
-          rel = rel.substr(needed.size());
-          if (rel.empty()) {
-            continue;
-          }
-          const auto slash = rel.find('/');
-          const std::string child = (slash == std::string::npos) ? rel : rel.substr(0, slash);
-          if (seen.insert(child).second) {
-            ++n;
-          }
-        }
-        model_->set_child_count(QString::fromStdString(fi.path().string()), n);
+      for (const auto& [path, n] : archive_listing_.child_counts_for(location_)) {
+        model_->set_child_count(QString::fromStdString(path), static_cast<qint64>(n));
       }
     }
     collection_.sorter().set_ascending(sort_ascending_);

@@ -11,9 +11,8 @@ parity features are in place. Catch suite: 57 cases (Overwrite-directory test
 aligned with into-dir resolution + `remove_for_overwrite` safety).
 
 **Residual focus:** optional polish (list virtualization; further MainWindow
-factoring; true incremental watcher). External archive DnD extracts to
-file:// on drag; search batching/status throttle improved. P0 audit items
-A1–A3 and libarchive (S1) are done.
+factoring; true incremental watcher / inotify names). Archive TOC refreshes
+when the archive file stamp changes under the watcher.
 
 Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 
@@ -181,8 +180,8 @@ Go to Folder, Clear. Storage: SQLite at `$XDG_STATE_HOME/dirtoo/operations-histo
 | Operations history log | **done** — SQLite under `$XDG_STATE_HOME/dirtoo/`; full sources+items; no rollback |
 | Location URL encoding | **Promoted** — see *Audit findings* (systemic) |
 | Archive member thumbnails | Weak; needs extract path or special URI |
-| Watcher richness | **Improved** — watches extract tree when ready, else archive file (`fileChanged`) |
-| MainWindow factoring | **Partial** — ArchiveListing extracted; NavigationHistory, Search, Transfer, Devices |
+| Watcher richness | **Improved** — extract tree or archive file; TOC `refresh_if_stale` on soft reload |
+| MainWindow factoring | **Partial** — ArchiveListing (+child counts); NavigationHistory, Search, Transfer, Devices |
 | True incremental FS watcher deltas | **Partial** — merge_items after soft rescan; still O(n) readdir (no inotify names) |
 | List / Graphics virtualization | **Graphics viewport window done**; Detail uses uniform row heights when no group/time-gap; Qt paints only visible rows |
 | Rubber-band vs item drag | **done** |
