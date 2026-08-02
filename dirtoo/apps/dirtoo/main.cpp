@@ -9,6 +9,10 @@
 #include "dirtoo/fs/location.hpp"
 
 #include <QApplication>
+#include <QDialogButtonBox>
+#include <QProxyStyle>
+#include <QStyle>
+#include <QStyleFactory>
 #include <QCommandLineParser>
 #include <QDateTime>
 #include <QDir>
@@ -99,11 +103,37 @@ void dirtoo_message_handler(QtMsgType type, const QMessageLogContext& context, c
   }
 }
 
+
+/// Force GNOME dialog button order: [Cancel] … [OK] (affirmative on the right).
+class GnomeButtonOrderStyle : public QProxyStyle {
+public:
+  explicit GnomeButtonOrderStyle(QStyle* base = nullptr)
+      : QProxyStyle(base)
+  {
+  }
+
+  int styleHint(StyleHint hint, const QStyleOption* option = nullptr,
+                const QWidget* widget = nullptr,
+                QStyleHintReturn* returnData = nullptr) const override
+  {
+    if (hint == QStyle::SH_DialogButtonLayout) {
+      return QDialogButtonBox::GnomeLayout;
+    }
+    return QProxyStyle::styleHint(hint, option, widget, returnData);
+  }
+};
+
 } // namespace
 
 int main(int argc, char* argv[])
 {
   QApplication app(argc, argv);
+  // GNOME-style dialog buttons: Cancel to the left of OK (and similar pairs).
+  {
+    const QString base_name = app.style() != nullptr ? app.style()->name() : QString();
+    QStyle* base = base_name.isEmpty() ? nullptr : QStyleFactory::create(base_name);
+    app.setStyle(new GnomeButtonOrderStyle(base));
+  }
   QApplication::setApplicationName(QStringLiteral("dirtoo"));
   QApplication::setOrganizationName(QStringLiteral("dirtoo"));
   QApplication::setApplicationVersion(QStringLiteral(DIRTOO_VERSION));

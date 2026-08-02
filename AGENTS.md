@@ -96,6 +96,17 @@ Use **C++23**, Qt6 (Core, Gui, Widgets, DBus as needed), CMake 3.25+.
 - Logging: structured, leveled. When diagnosing hard bugs, **add debug
   logs** — do not paper over with silent catches.
 
+
+### Dialog button order (GNOME)
+
+Use **GNOME button order** for dialogs: dismissive actions on the left,
+affirmative on the right — e.g. **`[Cancel] [OK]`**, not Windows-style
+`[OK] [Cancel]`. Prefer `QDialogButtonBox` so roles map correctly; the app
+installs a style hint (`QDialogButtonBox::GnomeLayout`) at startup so this
+holds for `QDialogButtonBox` and `QMessageBox` even when the platform theme
+would use a Windows-like layout. Do not hard-code right-to-left button rows
+that fight the style.
+
 ### GUI / I/O rule
 
 **The GUI thread must not perform filesystem or network I/O** for directory
