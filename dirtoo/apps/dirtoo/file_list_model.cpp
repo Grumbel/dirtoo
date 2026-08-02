@@ -720,6 +720,14 @@ QMimeData* FileListModel::mimeData(const QModelIndexList& indexes) const
           const auto dest_dir =
               std::filesystem::path{drop_cache.toStdString()}
               / std::to_string(std::hash<std::string>{}(archive_file.string()));
+          // Reuse prior extract so repeated drags do not block the UI thread.
+          const auto cached = dest_dir / member;
+          std::error_code exists_ec;
+          if (std::filesystem::is_regular_file(cached, exists_ec) && !exists_ec) {
+            urls.push_back(
+                QUrl::fromLocalFile(QString::fromStdString(cached.string())));
+            continue;
+          }
           auto extracted =
               archive::extract_member(archive_file, member, dest_dir);
           if (extracted) {

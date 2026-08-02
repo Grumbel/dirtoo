@@ -276,6 +276,29 @@ TEST_CASE("dry_run does not touch filesystem", "[dirops]")
   fs::remove_all(dir);
 }
 
+TEST_CASE("set_permissions changes mode bits", "[dirops]")
+{
+  const auto dir = make_temp_dir("dirtoo-test-chmod");
+  const auto path = dir / "perm.txt";
+  write_file(path, "x");
+
+  auto result = dirops::set_permissions(path, 0640);
+  REQUIRE(result.has_value());
+
+  std::error_code ec;
+  const auto st = fs::status(path, ec);
+  REQUIRE_FALSE(ec);
+  const auto perms = st.permissions();
+  using fs::perms;
+  REQUIRE((perms & perms::owner_read) != perms::none);
+  REQUIRE((perms & perms::owner_write) != perms::none);
+  REQUIRE((perms & perms::group_read) != perms::none);
+  REQUIRE((perms & perms::group_write) == perms::none);
+  REQUIRE((perms & perms::others_read) == perms::none);
+
+  fs::remove_all(dir);
+}
+
 TEST_CASE("create_file makes empty file", "[dirops]")
 {
   const auto dir = make_temp_dir("dirtoo-test-create-file");
