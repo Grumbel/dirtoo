@@ -6,6 +6,7 @@
 #include "theme_icons.hpp"
 #include "location_icons.hpp"
 #include "location_url.hpp"
+#include "location_menu_helpers.hpp"
 #include "directory_tree_model.hpp"
 #include "udisks_client.hpp"
 #include "devices_controller.hpp"
@@ -3914,23 +3915,16 @@ void MainWindow::on_rebuild_history_menu()
   history_menu_->addSeparator();
 
   // Folder / location history — most recent first.
+  std::vector<fs::Location> locs;
   int count = 0;
   for (auto it = nav_history_.unique_locations().rbegin();
        it != nav_history_.unique_locations().rend() && count < 35; ++it, ++count) {
-    const fs::Location loc = *it;
-    QString label = loc.is_archive() ? QString::fromStdString(loc.as_url())
-                                     : QString::fromStdString(loc.as_path().string());
-    auto* act = history_menu_->addAction(icon_for_location(loc), label);
-    connect(act, &QAction::triggered, this, [this, loc] {
-      if (history_menu_ != nullptr && history_menu_->middle_pressed()) {
-        open_new_window(loc);
-      } else if (QApplication::keyboardModifiers() & Qt::ShiftModifier) {
-        open_new_window(loc);
-      } else {
-        open_location(loc);
-      }
-    });
+    locs.push_back(*it);
   }
+  add_location_menu_entries(
+      history_menu_, locs, this,
+      [this](const fs::Location& loc) { open_location(loc); },
+      [this](const fs::Location& loc) { open_new_window(loc); });
 }
 
 void MainWindow::on_rebuild_recent_opens_menu()
@@ -4202,20 +4196,10 @@ void MainWindow::on_rebuild_bookmarks_menu()
     return;
   }
 
-  for (const auto& loc : entries) {
-    QString label = loc.is_archive() ? QString::fromStdString(loc.as_url())
-                                     : QString::fromStdString(loc.as_path().string());
-    auto* act = bookmarks_menu_->addAction(icon_for_location(loc), label);
-    connect(act, &QAction::triggered, this, [this, loc] {
-      if (bookmarks_menu_ != nullptr && bookmarks_menu_->middle_pressed()) {
-        open_new_window(loc);
-      } else if (QApplication::keyboardModifiers() & Qt::ShiftModifier) {
-        open_new_window(loc);
-      } else {
-        open_location(loc);
-      }
-    });
-  }
+  add_location_menu_entries(
+      bookmarks_menu_, entries, this,
+      [this](const fs::Location& loc) { open_location(loc); },
+      [this](const fs::Location& loc) { open_new_window(loc); });
 }
 
 
