@@ -456,4 +456,11 @@ Python reference: experimental `dirtoo-py/experiments/udisks/` (`udisksqt.py`); 
       (mimeData emits Location URL file://…//archive:entry; external extract-on-drop optional)
 - [x] use human-friendly ISO date/time: "2011-12-21 16:14"
 - [x] in About page, use actual URL, not "Project Page" text on link
-
+- [ ] Segfault on "Open Containing Folder"
+- [ ] Detail View should show file metadata (fps, dimension, duration, ...)
+- [ ] Small Icon view is only showing one item per line, it should
+      show multiple in a grid style view
+- [ ] --help options of some tools/ look small and miserable, should be long and detailed
+- [ ] remove dt-move <from> <to>, `-t` should be required
+- [ ] document rename conflict resolution
+- [ ] conflict dialog should show thumbnails of the affected files
