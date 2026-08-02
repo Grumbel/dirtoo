@@ -1593,7 +1593,7 @@ Continued line-level notes for modules that were only tabulated in pass 2.
 | 2c | Transfer, dialogs, open-with, sidebar, UDisks |
 | 2d | Sorter, archive manager, thumbnailer, media cache, tests/tools |
 
-**Pass 2e–2f done:** MainWindow map, paint twin, windowing, context menu, eventFilter. **Still light (2g):** Devices/UDisks UI; icon assets; Python controller parity table.
+**Pass 2e–2g done:** MainWindow map through Devices/icons/controller parity. **Still light (2h):** residual Python packages; flake/CMake packaging notes.
 
 ---
 
@@ -1782,7 +1782,8 @@ Two painters implement the same product rules: **GraphicsFileItem::paint** (Icon
 |------|--------|
 | 2e | MainWindow section map; paint twin; graphics windowing |
 | 2f | Context menu builder; eventFilter matrix |
-| **2g next** | Devices/UDisks UI wiring; icon asset inventory; Python `controller.py` parity table |
+| 2g | Devices/UDisks UI; icon inventory; controller parity |
+| **2h next** | Residual Python packages; packaging/flake |
 
 ---
 
@@ -1800,6 +1801,117 @@ High-value Python reads for future parity questions:
 
 ---
 
+
+
+
+---
+
+## Deep per-file review — pass 2g (Devices, icons, controller parity)
+
+### Devices sidebar + `UDisksClient`
+
+#### Wiring (`main_window.cpp` ~913–945, ~4446–end)
+
+**UI.** Sidebar splitter hosts Places tree + **Devices** `QListWidget`. Label always visible; list shows volumes or placeholders.
+
+**Data on items.** `UserRole` = mount point; `+1` = D-Bus object path; `+2` = mounted; `+3` = ejectable/removable/optical.
+
+**Activation.** Mounted + mount point → `open_location(mount_point)`. Unmounted → `udisks_client_->mount(object_path)` with status “Mounting…”.
+
+**Context menu.** Open (if mounted), Unmount / Mount, Eject when `can_eject`.
+
+**Operation finished.** Failure → status error. Success with message starting with `/` → treat as mount path, status + `open_location`. Otherwise generic status.
+
+#### `udisks_client.cpp` (code-level)
+
+**Role.** System-bus ObjectManager client; parse filesystem volumes; async Mount/Unmount/Eject; debounced `volumes_changed`.
+
+**Issues.**
+- **Unavailable** path: UI shows “Disks unavailable” (good); no retry button (refresh only via client signals).
+- Mount busy / permission errors rely on D-Bus message strings — quality varies by polkit interaction (user may see auth dialog outside app).
+- Eject vs Unmount: both offered when ejectable; optical uses drive-optical icon.
+- **No** auto-refresh on mount from outside dirtoo except ObjectManager signals (usually OK).
+- Click and activate both call `on_devices_item_activated` — single click navigates (aggressive vs tree double-click; intentional for devices).
+
+**Parity.** Stronger than historical Python devices support; closer to a desktop FM.
+
+---
+
+### Icon / badge asset inventory
+
+#### On-disk (`dirtoo/resources/icons/`)
+
+| Asset | Use |
+|-------|-----|
+| `dirtoo.png` / `.svg` | About / window icon |
+| `badge-video/image/loading/error/locked/new.png` | Tile stickers |
+| `dnd-copy/move/link/none/ask.png` | Drag action overlay |
+| `view-*.svg`, `zoom-*.svg`, `icon-detail-*.svg`, `crop-thumbnails.svg` | Toolbar |
+
+#### Load path (`badge_icons.hpp`)
+
+`icon_directory()` probes once (static): `DIRTOO_ICON_DIR`, `/usr[/local]/share/dirtoo/icons`, paths relative to executable (`../share/...`, `../../resources/icons`). Probe file: `badge-image.png` or `dirtoo.png` or `view-icons.svg`. Missing dir → one `qWarning`; missing file → per-call warning; null pixmap.
+
+#### `resources.qrc`
+
+Embeds subset: dirtoo + badges + dnd (not the view/zoom SVGs). **Runtime prefers filesystem** via `load_badge_pixmap` / toolbar helpers that use `icon_directory()`, not `:/icons/...` — qrc is fallback/redundancy depending on toolbar code paths.
+
+**Issues.**
+- Toolbar SVG path must resolve via `icon_directory()` or theme icons; if build without `DIRTOO_ICON_DIR` and not installed, **empty toolbar icons**.
+- `badge-locked` used in delegate, not graphics item path — minor asymmetry.
+- No `resources.qrc` entry for view SVGs while they exist on disk — fine if FS load works.
+
+---
+
+### Python `fileview/controller.py` ↔ C++ parity table
+
+Controller is the Python orchestration analog of `MainWindow` (+ extracted controllers).
+
+| Python API | C++ analog | Status |
+|------------|------------|--------|
+| `set_location` / `_set_directory_location` | `open_location` | Yes |
+| `go_back` / `go_forward` / `go_home` | same | Yes |
+| `parent_directory(new_window)` | `on_go_parent` / `on_parent_new_window` | Yes |
+| `view_*` / `zoom_*` / `more/less_details` | view mode + zoom + icon detail | Yes |
+| `set_filter` / `clear_filter` / pin | filter edit + pinned | Yes |
+| `show_filter_help` / search help | filter help dialog; search help thinner | Partial |
+| `show_search` / `start_search` / `close_search` | search row + SearchController | Yes (no `search://` Location) |
+| `on_edit_cut/copy/paste` / `paste_into` | clipboard + transfer | Yes |
+| `on_files_drop` | `on_urls_dropped` / `_to` | Yes |
+| `create_directory` / `create_file` | `on_mkdir` / `on_create_file` | Yes |
+| `show_rename_dialog` | `on_rename_selected` | Yes |
+| `select_all` / `clear_selection` | yes | Yes |
+| `request_thumbnail` / `receive_thumbnail` | Thumbnailer signals | Yes |
+| `make_directory_thumbnails` / `prepare` / `reload_thumbnails` | same menu actions | Yes |
+| `request_metadata` / `receive_metadata` | MediaMetaCache request | Yes (cache-centric) |
+| `set_grouper_by_*` | group mode menu | Yes |
+| `toggle_bookmark` / `has_bookmark` | Bookmarks | Yes |
+| `show_location_buttonbar` / toolbar | location chrome | Yes |
+| `leap_to` | `on_leap` | Yes |
+| `new_controller` | `on_new_window` | Yes (new MainWindow) |
+| `show_file_history` | open history menu | Partial / stronger SQLite |
+| `save_as` | `on_save_file_list` | Partial |
+| `set_files` (explicit file list mode) | **No** dedicated mode | Gap |
+| `toggle_timegaps` | time-gap role exists | Partial (UI toggle?) |
+| `show_abspath` / `show_basename` | `on_toggle_show_abspath` | Yes |
+| `on_click` open semantics | `on_item_activated` | Yes |
+| `selection_to_mimedata` | model mimeData + clipboard helpers | Yes |
+| `show_preferences` / about / properties | dialogs | Yes |
+| `hide_all` (chrome density) | **No** | Gap / OOS |
+| Undo stack | **No** (ops history log only) | Gap intentional |
+
+**Architectural delta.** Python: Controller owns FileCollection + services, window is a view. C++: MainWindow owns almost everything; thin controllers for search/transfer only. Behavior parity is high for core FM; structure parity is low.
+
+---
+
+### Pass progress
+
+| Pass | Scope |
+|------|--------|
+| 2g | Devices/UDisks UI; icon inventory; controller parity table |
+| **2h next** | Residual Python packages (`expr`, `posix`, `mime`); flake/CMake packaging |
+
+---
 
 ### Python reference notes
 
