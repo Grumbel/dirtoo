@@ -36,6 +36,8 @@ qt_add_executable(dirtoo-app
   properties_dialog.hpp
   archive_listing.cpp
   archive_listing.hpp
+  file_context_menu.cpp
+  file_context_menu.hpp
   archive_member_cache.cpp
   archive_member_cache.hpp
   app_settings.cpp

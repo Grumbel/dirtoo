@@ -10,6 +10,7 @@
 #include "filter_worker.hpp"
 #include "directory_thumbnail_worker.hpp"
 #include "file_views.hpp"
+#include "file_context_menu.hpp"
 #include "file_list_model.hpp"
 #include "graphics_file_view.hpp"
 #include "graphics_file_item.hpp"
@@ -2366,153 +2367,56 @@ void MainWindow::on_context_menu(const QPoint& pos)
     }
   }
 
-  const bool on_item = under.isValid();
-  QMenu menu(this);
+  FileContextMenuCallbacks cb;
+  cb.current_location = location_;
+  cb.mkdir = [this] { on_mkdir(); };
+  cb.create_file = [this] { on_create_file(); };
+  cb.paste = [this] { on_paste(); };
+  cb.select_all = [this] { on_select_all(); };
+  cb.cut = [this] { on_cut(); };
+  cb.copy = [this] { on_copy(); };
+  cb.delete_selected = [this] { on_delete_selected(); };
+  cb.rename_selected = [this] { on_rename_selected(); };
+  cb.properties_selected = [this] { on_properties(); };
+  cb.reload_thumbnails = [this] { on_reload_thumbnails(); };
+  cb.prepare_thumbnails = [this] { on_prepare_thumbnails(); };
+  cb.make_directory_thumbnails = [this] { on_make_directory_thumbnails(); };
+  cb.open_location = [this](const fs::Location& loc) { open_location(loc); };
+  cb.open_location_new_window = [this](const fs::Location& loc) {
+    auto* win = new MainWindow();
+    win->setAttribute(Qt::WA_DeleteOnClose);
+    win->show();
+    win->open_location(loc);
+  };
+  cb.open_terminal = [this](const std::filesystem::path& dir) {
+    if (!open_in_terminal(dir)) {
+      set_status(QStringLiteral("Could not launch a terminal emulator"));
+    }
+  };
+  cb.paste_into = [this](const std::filesystem::path& dest) {
+    const ClipboardPayload payload =
+        parse_clipboard_mime(QApplication::clipboard()->mimeData());
+    if (payload.paths.empty()) {
+      set_status(QStringLiteral("Clipboard has no files"));
+      return;
+    }
+    TransferRequest req;
+    req.mode = payload.mode;
+    req.sources = payload.paths;
+    req.destination_directory = dest;
+    start_transfer(req);
+  };
+  cb.set_status = [this](const QString& s) { set_status(s); };
+  cb.show_properties = [this](const std::vector<fs::FileInfo>& items) {
+    show_properties_dialog(this, items);
+  };
 
-  if (!on_item) {
-    // --- Directory / background context menu (dirtoo-py DirectoryContextMenu) ---
-    menu.addAction(theme_icon("folder-new"), QStringLiteral("Create Directory…"), this,
-                   &MainWindow::on_mkdir);
-    menu.addAction(theme_icon("document-new"), QStringLiteral("Create Empty File…"), this,
-                   &MainWindow::on_create_file);
-    menu.addSeparator();
-    menu.addAction(theme_icon("edit-paste"), QStringLiteral("Paste"), this, &MainWindow::on_paste);
-    menu.addSeparator();
-    menu.addAction(theme_icon("utilities-terminal"), QStringLiteral("Open Terminal Here"), this,
-                   [this] {
-                     if (!open_in_terminal(location_.as_path())) {
-                       set_status(QStringLiteral("Could not launch a terminal emulator"));
-                     }
-                   });
-    menu.addSeparator();
-    menu.addAction(theme_icon("edit-select-all"), QStringLiteral("Select All"), this,
-                   &MainWindow::on_select_all);
-    menu.addSeparator();
-    menu.addAction(theme_icon("document-properties"), QStringLiteral("Properties…"), this,
-                   [this] {
-                     std::vector<fs::FileInfo> items;
-                     items.push_back(fs::FileInfo::from_path(location_.as_path()));
-                     show_properties_dialog(this, items);
-                   });
+  const QPoint global = graphics ? graphics_view_->mapToGlobal(pos)
+                                 : view->viewport()->mapToGlobal(pos);
+  if (!under.isValid()) {
+    exec_directory_context_menu(this, global, cb);
   } else {
-    // --- Item context menu (dirtoo-py ItemContextMenu) ---
-    const auto selected = selected_fileinfos();
-    std::vector<std::filesystem::path> paths;
-    paths.reserve(selected.size());
-    for (const auto& fi : selected) {
-      paths.push_back(fi.path());
-    }
-
-    const bool single = selected.size() == 1;
-    const fs::FileInfo* primary = single ? &selected.front() : nullptr;
-
-    if (primary != nullptr && primary->is_directory()) {
-      // Capture Location by value — `primary` points into the local `selected` vector.
-      const fs::Location open_loc = primary->location();
-      menu.addAction(theme_icon("folder"), QStringLiteral("Open Folder"), this,
-                     [this, open_loc] { open_location(open_loc); });
-      menu.addAction(theme_icon("window-new"), QStringLiteral("Open Folder in New Window"), this,
-                     [this, open_loc] {
-                       auto* win = new MainWindow();
-                       win->setAttribute(Qt::WA_DeleteOnClose);
-                       win->show();
-                       win->open_location(open_loc);
-                     });
-      menu.addSeparator();
-    } else if (primary != nullptr && fs::looks_like_archive(primary->path())
-               && !location_.is_archive()) {
-      const std::filesystem::path archive_path = primary->path();
-      menu.addAction(theme_icon("package-x-generic"), QStringLiteral("Open Archive"), this,
-                     [this, archive_path] {
-                       open_location(fs::Location::from_archive(archive_path, {}));
-                     });
-      menu.addSeparator();
-    }
-
-    // Default handlers as top-level "Open With <App>" (Python style).
-    add_default_open_actions(&menu, paths);
-    {
-      auto* open_with = menu.addMenu(theme_icon("system-run"), QStringLiteral("Open with…"));
-      populate_open_with_menu(open_with, paths);
-    }
-    menu.addSeparator();
-
-    if (primary != nullptr) {
-      // By-value capture avoids use-after-free when the action fires after `selected` dies.
-      const fs::Location parent_loc = primary->location().parent();
-      menu.addAction(theme_icon("folder"), QStringLiteral("Open Containing Folder"), this,
-                     [this, parent_loc] { open_location(parent_loc); });
-      menu.addSeparator();
-    }
-
-    if (primary != nullptr && primary->is_directory()) {
-      const std::filesystem::path dir = primary->path();
-      menu.addAction(theme_icon("utilities-terminal"), QStringLiteral("Open Terminal Here"), this,
-                     [this, dir] {
-                       if (!open_in_terminal(dir)) {
-                         set_status(QStringLiteral("Could not launch a terminal emulator"));
-                       }
-                     });
-      menu.addSeparator();
-    }
-
-    menu.addAction(theme_icon("edit-cut"), QStringLiteral("Cut"), this, &MainWindow::on_cut);
-    menu.addAction(theme_icon("edit-copy"), QStringLiteral("Copy"), this, &MainWindow::on_copy);
-    {
-      auto* paste_into =
-          menu.addAction(theme_icon("edit-paste"), QStringLiteral("Paste Into Folder"));
-      const bool can_paste_into = primary != nullptr && primary->is_directory();
-      paste_into->setEnabled(can_paste_into);
-      if (can_paste_into) {
-        const std::filesystem::path dest = primary->path();
-        connect(paste_into, &QAction::triggered, this, [this, dest] {
-          const ClipboardPayload payload =
-              parse_clipboard_mime(QApplication::clipboard()->mimeData());
-          if (payload.paths.empty()) {
-            set_status(QStringLiteral("Clipboard has no files"));
-            return;
-          }
-          TransferRequest req;
-          req.mode = payload.mode;
-          req.sources = payload.paths;
-          req.destination_directory = dest;
-          start_transfer(req);
-        });
-      }
-    }
-    menu.addAction(theme_icon("edit-copy"), QStringLiteral("Copy Path"), this, [this, paths] {
-      QStringList lines;
-      for (const auto& p : paths) {
-        lines << QString::fromStdString(p.string());
-      }
-      QApplication::clipboard()->setText(lines.join(QLatin1Char('\n')));
-      set_status(QStringLiteral("Copied %1 path(s)").arg(lines.size()));
-    });
-    menu.addSeparator();
-    menu.addAction(theme_icon("edit-delete"), QStringLiteral("Delete…"), this,
-                   &MainWindow::on_delete_selected);
-    menu.addSeparator();
-    menu.addAction(theme_icon("edit-rename", "document-edit"), QStringLiteral("Rename…"), this,
-                   &MainWindow::on_rename_selected);
-    menu.addSeparator();
-
-    auto* actions = menu.addMenu(QStringLiteral("Actions"));
-    actions->addAction(theme_icon("view-refresh"), QStringLiteral("Reload Thumbnails"), this,
-                       &MainWindow::on_reload_thumbnails);
-    actions->addAction(theme_icon("image-x-generic"), QStringLiteral("Prepare Thumbnails"), this,
-                       &MainWindow::on_prepare_thumbnails);
-    actions->addAction(theme_icon("folder"), QStringLiteral("Make Directory Thumbnails"), this,
-                       &MainWindow::on_make_directory_thumbnails);
-
-    menu.addSeparator();
-    menu.addAction(theme_icon("document-properties"), QStringLiteral("Properties…"), this,
-                   &MainWindow::on_properties);
-  }
-
-  if (graphics) {
-    menu.exec(graphics_view_->mapToGlobal(pos));
-  } else {
-    menu.exec(view->viewport()->mapToGlobal(pos));
+    exec_item_context_menu(this, global, selected_fileinfos(), cb);
   }
 }
 
