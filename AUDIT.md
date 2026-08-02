@@ -1593,7 +1593,7 @@ Continued line-level notes for modules that were only tabulated in pass 2.
 | 2c | Transfer, dialogs, open-with, sidebar, UDisks |
 | 2d | Sorter, archive manager, thumbnailer, media cache, tests/tools |
 
-**Pass 2e–2g done:** MainWindow map through Devices/icons/controller parity. **Still light (2h):** residual Python packages; flake/CMake packaging notes.
+**Pass 2e–2h done:** Full deep-review series through packaging. Optional later: line-level residual files only as bugs appear.
 
 ---
 
@@ -1783,7 +1783,7 @@ Two painters implement the same product rules: **GraphicsFileItem::paint** (Icon
 | 2e | MainWindow section map; paint twin; graphics windowing |
 | 2f | Context menu builder; eventFilter matrix |
 | 2g | Devices/UDisks UI; icon inventory; controller parity |
-| **2h next** | Residual Python packages; packaging/flake |
+| 2h | Residual Python packages; packaging/flake |
 
 ---
 
@@ -1910,6 +1910,145 @@ Controller is the Python orchestration analog of `MainWindow` (+ extracted contr
 |------|--------|
 | 2g | Devices/UDisks UI; icon inventory; controller parity table |
 | **2h next** | Residual Python packages (`expr`, `posix`, `mime`); flake/CMake packaging |
+
+---
+
+
+
+---
+
+## Deep per-file review — pass 2h (residual Python packages, packaging)
+
+### Python packages still relevant as reference only
+
+#### `expr/` (OOS for C++ port)
+
+**Role.** PyParsing-based arithmetic/boolean expression language (`Number`, `String`, `Variable`, `Operator`, `Function`, `Context`). Used by Python `programs/expr.py` and historically some filter edges.
+
+**C++ status.** **Not ported.** Filter DSL is a separate language in `dirtoo-filter` (predicates, not general expr AST). Do not confuse `expr` with filter expressions.
+
+**Issues in Python (for awareness).** Logical and/or lack short-circuit (noted in source FIXMEs); side-effect-free assumption.
+
+---
+
+#### `posix/filesystem.py` (reference for mutations)
+
+**Role.** Python `Filesystem` class: copy/move/remove/mkdir with progress callbacks — behavioral ancestor of **dirops**.
+
+**C++ status.** Replaced by `libs/dirops`. Compare when debugging conflict/cross-device semantics, not for porting API 1:1.
+
+---
+
+#### `mime/mime_database.py` (reference)
+
+**Role.** MIME lookup helpers for Open With / icons.
+
+**C++ status.** `open_with.cpp` uses XDG `.desktop` + Qt/`QMimeDatabase`-style paths; no separate `dirtoo-mime` lib. Adequate for GUI; incomplete Desktop Entry keys already noted in 2c.
+
+---
+
+#### `archive/` (Python)
+
+**Role.** Extractor factory: libarchive, rar, 7z special cases; `ArchiveManager` extract cache.
+
+**C++ status.** `dirtoo-archive` uses external **bsdtar/tar/unzip** processes rather than libarchive link. Feature parity: read TOC + extract member/full tree. **Gap:** rare formats that only Python rar/7z extractors handled may fail if system tools missing.
+
+---
+
+#### `thumbnail/`, `watcher/`, `filecollection/`, `filter/`, `filesystem/`
+
+Already mapped in passes 1–2d. Use when behavior disagrees; do not extend Python.
+
+---
+
+#### `programs/` (mostly OOS)
+
+| Program | Port interest |
+|---------|----------------|
+| `fileview.py` | App entry analog — C++ `main.cpp` |
+| `mediainfo.py` / `archiveinfo.py` / `move` / `rmdir` / `swap` | CLI analogs exist as `dt-*` |
+| `find.py` / `fuzzy.py` / `glob.py` / `expr.py` | Filter DSL covers subset; full find language OOS |
+| `fsck.py` / `shuffle.py` / `chomp.py` / `mkevil.py` / `mktest.py` | Test/util OOS |
+| `desktop.py` / `icon.py` / `mime.py` / `thumbnailer.py` | Helpers OOS |
+| `watch.py` / `sleep.py` / `unidecode.py` / `guitest.py` | OOS |
+| `dirtool.py` | Meta launcher OOS |
+
+AGENTS.md explicitly: ignore most of `programs/` unless useful for parity of a **ported** feature.
+
+---
+
+#### Other Python roots
+
+| Area | Note |
+|------|------|
+| `bookmark/` / `history/` | Parity via C++ bookmarks + navigation/open history |
+| `gui/` | Widgets; C++ has Qt ports of the important ones |
+| `image/` | Icon load helpers → `badge_icons.hpp` |
+| `dbus_thumbnail*` | → `dirtoo-thumbnail` |
+| `experiments/` | OOS |
+
+---
+
+### Packaging — CMake + Nix flake
+
+#### Top-level `CMakeLists.txt`
+
+- C++23, `QT_MESSAGELOGCONTEXT`, version from `VERSION` file  
+- Options: `DIRTOO_BUILD_APP`, `DIRTOO_BUILD_TOOLS`, `DIRTOO_BUILD_TESTS`  
+- `find_package` for all libs (dirops, fs, filter, collection, watcher, thumbnail, archive) + Qt6 (Core Gui Widgets DBus Concurrent Svg)  
+- Namespace aliases `dirtoo::*` for link-line compatibility  
+
+**Issues.** Tools default **OFF** at top-level (flake may enable differently); tests ON. Consuming libs requires them already installed/built — monorepo uses flake multi-derivation instead of `add_subdirectory(libs/...)`.
+
+#### `flake.nix`
+
+Separate derivations:
+
+| Package | Provides |
+|---------|----------|
+| `dirops` | lib + dt-copy/move/rename/… |
+| `dirtoo-fs` | lib |
+| `dirtoo-filter` | lib + dt-filter |
+| `dirtoo-collection` | lib |
+| `dirtoo-watcher` | lib |
+| `dirtoo-thumbnail` | lib |
+| `dirtoo-archive` | lib |
+| `dirtoo` | GUI app + dt-rmdir/mediainfo/archiveinfo |
+
+`devShell` aggregates build inputs and prints nix build hints. `cmakeBuildType` / version flags passed through.
+
+**Issues.**
+- App derivation must receive `DIRTOO_ICON_DIR` or install icons to `$out/share/dirtoo/icons` — verify install rules copy `resources/icons`.
+- Qt wrapping via `wrapQtAppsHook` on GUI/watcher/thumbnail/archive packages that link Qt.
+- No CI matrix documented in AUDIT (optional).
+
+#### Install / runtime deps (implicit)
+
+- **bsdtar** or **tar**, **unzip** for archives  
+- **ffprobe** (ffmpeg) for media meta  
+- **pdfinfo** optional for pages  
+- Freedesktop **thumbnailer** daemon for thumbs  
+- **UDisks2** on system bus for Devices  
+
+Missing tools degrade features rather than hard-failing the whole app (except archive open may fail clearly).
+
+---
+
+### Deep-review series status
+
+| Pass | Scope | Status |
+|------|--------|--------|
+| 1 | Inventory + lib/GUI overview | done |
+| 2 | Apps architecture, models, views | done |
+| 2b | Chrome, settings, workers | done |
+| 2c | Transfer, dialogs, open-with, sidebar | done |
+| 2d | Libs (sorter, archive, thumbs, media), tests | done |
+| 2e | MainWindow map, paint twin, windowing | done |
+| 2f | Context menu, eventFilter | done |
+| 2g | Devices, icons, controller parity | done |
+| 2h | Residual Python, packaging | done |
+
+**Recommended stop** for broad AUDIT work. Further notes only when fixing a specific bug or closing a gap from the Feature parity / Highest-value gaps lists.
 
 ---
 
@@ -2080,11 +2219,12 @@ Status: **present** / **partial** / **missing** / **OOS** (out of scope for the 
 
 ## Next step
 
-**Done (first full pass):** Inventories marked; libs, GUI, tools, tests, packaging, and major Python packages reviewed; **Feature parity** matrix rewritten.
+**Done:** Inventory + pass 1 notes + deep review passes **2–2h** (apps, libs, Devices, icons, controller parity, residual Python, packaging).
 
 **Optional follow-ups:**
 
-1. Deep-dive any single 🔍 file (e.g. line-level `main_window.cpp` sections)
-2. Devices mount/eject UX verification
-3. Track gap list items into `TODO.md`
+1. Track **Highest-value remaining gaps** into `TODO.md` with acceptance criteria
+2. Add Catch tests for `type:video` and verbose archive size parsers
+3. Verify flake installs icons to `share/dirtoo/icons` and GUI finds them without `DIRTOO_ICON_DIR`
+4. Only re-open AUDIT for file-level notes when a bug fix needs a permanent record
 
