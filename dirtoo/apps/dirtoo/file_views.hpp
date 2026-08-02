@@ -8,6 +8,7 @@
 
 #include <QApplication>
 #include <QDrag>
+#include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QDragMoveEvent>
 #include <QListView>
@@ -67,6 +68,59 @@ inline Qt::DropAction drop_action_from_event(const QDropEvent* event)
   return Qt::CopyAction;
 }
 
+inline Qt::DropAction default_drag_action()
+{
+  const auto mods = QApplication::keyboardModifiers();
+  if ((mods & Qt::ControlModifier) && (mods & Qt::ShiftModifier)) {
+    return Qt::LinkAction;
+  }
+  if (mods & Qt::AltModifier) {
+    return Qt::LinkAction;
+  }
+  if (mods & Qt::ShiftModifier) {
+    return Qt::MoveAction;
+  }
+  if (mods & Qt::ControlModifier) {
+    return Qt::CopyAction;
+  }
+  return Qt::CopyAction;
+}
+
+/// Column-0 indexes only (SelectRows yields every column).
+inline QModelIndexList column0_indexes(const QModelIndexList& all)
+{
+  QModelIndexList out;
+  out.reserve(all.size());
+  for (const QModelIndex& idx : all) {
+    if (idx.isValid() && idx.column() == 0) {
+      out.append(idx);
+    }
+  }
+  return out;
+}
+
+inline bool accept_url_drag(QDragEnterEvent* event)
+{
+  if (event->mimeData() != nullptr && event->mimeData()->hasUrls()) {
+    event->setDropAction(drop_action_from_event(event));
+    event->accept();
+    return true;
+  }
+  event->ignore();
+  return false;
+}
+
+inline bool accept_url_drag_move(QDragMoveEvent* event)
+{
+  if (event->mimeData() != nullptr && event->mimeData()->hasUrls()) {
+    event->setDropAction(drop_action_from_event(event));
+    event->accept();
+    return true;
+  }
+  event->ignore();
+  return false;
+}
+
 } // namespace
 
 /// QTreeView that shows themed DnD cursors + Copy/Move/Link action overlay.
@@ -78,12 +132,16 @@ protected:
   void startDrag(Qt::DropActions supportedActions) override
   {
     begin_drag_action_overlay();
-    const QModelIndexList indexes = selectedIndexes();
-    if (indexes.isEmpty() || model() == nullptr) {
+    if (model() == nullptr) {
+      return;
+    }
+    const QModelIndexList indexes = column0_indexes(selectedIndexes());
+    if (indexes.isEmpty()) {
       return;
     }
     QMimeData* mime = model()->mimeData(indexes);
-    if (mime == nullptr) {
+    if (mime == nullptr || !mime->hasUrls()) {
+      delete mime;
       return;
     }
     auto* drag = new QDrag(this);
@@ -97,28 +155,18 @@ protected:
         drag->setHotSpot(QPoint(pm.width() / 2, pm.height() / 2));
       }
     }
-    const auto mods = QApplication::keyboardModifiers();
-    Qt::DropAction def = defaultDropAction();
-    if ((mods & Qt::ControlModifier) && (mods & Qt::ShiftModifier)) {
-      def = Qt::LinkAction;
-    } else if (mods & Qt::AltModifier) {
-      def = Qt::LinkAction;
-    } else if (mods & Qt::ShiftModifier) {
-      def = Qt::MoveAction;
-    } else if (mods & Qt::ControlModifier) {
-      def = Qt::CopyAction;
-    }
-    drag->exec(supportedActions | Qt::LinkAction, def);
+    const Qt::DropActions actions = supportedActions | Qt::CopyAction | Qt::MoveAction | Qt::LinkAction;
+    drag->exec(actions, default_drag_action());
+  }
+
+  void dragEnterEvent(QDragEnterEvent* event) override
+  {
+    accept_url_drag(event);
   }
 
   void dragMoveEvent(QDragMoveEvent* event) override
   {
-    if (event->mimeData() != nullptr && event->mimeData()->hasUrls()) {
-      event->setDropAction(drop_action_from_event(event));
-      event->accept();
-    } else {
-      event->ignore();
-    }
+    accept_url_drag_move(event);
   }
 
   void dropEvent(QDropEvent* event) override
@@ -131,10 +179,9 @@ protected:
     const QModelIndex idx = indexAt(event->position().toPoint());
     // OnItem: pass the directory index as parent so the model resolves dest_dir.
     const QModelIndex parent = idx.isValid() ? idx : QModelIndex();
-    const int row = idx.isValid() ? -1 : -1;
-    if (model()->dropMimeData(event->mimeData(), action, row, 0, parent)) {
+    if (model()->dropMimeData(event->mimeData(), action, -1, 0, parent)) {
       event->setDropAction(action);
-      event->acceptProposedAction();
+      event->accept();
     } else {
       event->ignore();
     }
@@ -150,12 +197,16 @@ protected:
   void startDrag(Qt::DropActions supportedActions) override
   {
     begin_drag_action_overlay();
-    const QModelIndexList indexes = selectedIndexes();
-    if (indexes.isEmpty() || model() == nullptr) {
+    if (model() == nullptr) {
+      return;
+    }
+    const QModelIndexList indexes = column0_indexes(selectedIndexes());
+    if (indexes.isEmpty()) {
       return;
     }
     QMimeData* mime = model()->mimeData(indexes);
-    if (mime == nullptr) {
+    if (mime == nullptr || !mime->hasUrls()) {
+      delete mime;
       return;
     }
     auto* drag = new QDrag(this);
@@ -169,28 +220,18 @@ protected:
         drag->setHotSpot(QPoint(pm.width() / 2, pm.height() / 2));
       }
     }
-    const auto mods = QApplication::keyboardModifiers();
-    Qt::DropAction def = defaultDropAction();
-    if ((mods & Qt::ControlModifier) && (mods & Qt::ShiftModifier)) {
-      def = Qt::LinkAction;
-    } else if (mods & Qt::AltModifier) {
-      def = Qt::LinkAction;
-    } else if (mods & Qt::ShiftModifier) {
-      def = Qt::MoveAction;
-    } else if (mods & Qt::ControlModifier) {
-      def = Qt::CopyAction;
-    }
-    drag->exec(supportedActions | Qt::LinkAction, def);
+    const Qt::DropActions actions = supportedActions | Qt::CopyAction | Qt::MoveAction | Qt::LinkAction;
+    drag->exec(actions, default_drag_action());
+  }
+
+  void dragEnterEvent(QDragEnterEvent* event) override
+  {
+    accept_url_drag(event);
   }
 
   void dragMoveEvent(QDragMoveEvent* event) override
   {
-    if (event->mimeData() != nullptr && event->mimeData()->hasUrls()) {
-      event->setDropAction(drop_action_from_event(event));
-      event->accept();
-    } else {
-      event->ignore();
-    }
+    accept_url_drag_move(event);
   }
 
   void dropEvent(QDropEvent* event) override
@@ -201,12 +242,10 @@ protected:
     }
     const Qt::DropAction action = drop_action_from_event(event);
     const QModelIndex idx = indexAt(event->position().toPoint());
-    // OnItem: pass the directory index as parent so the model resolves dest_dir.
     const QModelIndex parent = idx.isValid() ? idx : QModelIndex();
-    const int row = idx.isValid() ? -1 : -1;
-    if (model()->dropMimeData(event->mimeData(), action, row, 0, parent)) {
+    if (model()->dropMimeData(event->mimeData(), action, -1, 0, parent)) {
       event->setDropAction(action);
-      event->acceptProposedAction();
+      event->accept();
     } else {
       event->ignore();
     }

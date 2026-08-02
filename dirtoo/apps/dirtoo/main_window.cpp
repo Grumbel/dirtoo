@@ -1138,9 +1138,11 @@ MainWindow::MainWindow(QWidget* parent)
   tree_view_->setContextMenuPolicy(Qt::CustomContextMenu);
   tree_view_->setDragEnabled(true);
   tree_view_->setAcceptDrops(true);
+  tree_view_->viewport()->setAcceptDrops(true);
   tree_view_->setDropIndicatorShown(true);
   tree_view_->setDragDropMode(QAbstractItemView::DragDrop);
   tree_view_->setDefaultDropAction(Qt::CopyAction);
+  tree_view_->setDragDropOverwriteMode(false);
   tree_view_->setIconSize(QSize(32, 32));
   tree_view_->header()->setStretchLastSection(true);
   tree_view_->header()->setSectionsClickable(true);
@@ -1171,9 +1173,11 @@ MainWindow::MainWindow(QWidget* parent)
   icon_view_->setContextMenuPolicy(Qt::CustomContextMenu);
   icon_view_->setDragEnabled(true);
   icon_view_->setAcceptDrops(true);
+  icon_view_->viewport()->setAcceptDrops(true);
   icon_view_->setDropIndicatorShown(true);
   icon_view_->setDragDropMode(QAbstractItemView::DragDrop);
   icon_view_->setDefaultDropAction(Qt::CopyAction);
+  icon_view_->setDragDropOverwriteMode(false);
   connect(icon_view_, &QListView::activated, this, &MainWindow::on_item_activated);
   icon_view_->viewport()->installEventFilter(this);
   icon_view_->installEventFilter(this);
