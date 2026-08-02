@@ -169,9 +169,8 @@ LocationButtonBar::segments_for(const fs::Location& location) const
       QString label;
       if (parts[i] == parts[i].root_path()) {
         label = QStringLiteral("/");
-      } else if (is_last_file_seg) {
-        label = QString::fromStdString(parts[i].filename().string()) + QStringLiteral(" [archive]");
       } else {
+        // Archive container is marked with a package icon in rebuild(), not text.
         label = QString::fromStdString(parts[i].filename().string());
       }
 
@@ -250,6 +249,19 @@ void LocationButtonBar::rebuild()
       }
     } else {
       btn = new SegmentButton(loc, label, this);
+      // Archive container segment: package icon before the filename (replaces
+      // the old " [archive]" text suffix).
+      if (loc.is_archive() && loc.entry_path().empty()) {
+        const QIcon pkg = QIcon::fromTheme(
+            QStringLiteral("package-x-generic"),
+            QIcon::fromTheme(QStringLiteral("application-x-archive"),
+                             QIcon::fromTheme(QStringLiteral("folder-tar"))));
+        if (!pkg.isNull()) {
+          btn->setIcon(pkg);
+          btn->setIconSize(QSize(16, 16));
+        }
+        btn->setToolTip(QStringLiteral("Archive: %1").arg(label));
+      }
     }
     const bool is_current = (i + 1 == segs.size());
     btn->set_current(is_current);
