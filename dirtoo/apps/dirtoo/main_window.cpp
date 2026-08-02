@@ -370,34 +370,21 @@ MainWindow::MainWindow(QWidget* parent)
       act->setCheckable(true);
       act->setChecked(checked);
       sort_group->addAction(act);
-      connect(act, &QAction::triggered, this, [this, sort_btn, title, key] {
-        sort_btn->setText(title);
-        sort_ascending_ = true;
-        collection_.sorter().set_ascending(true);
-        collection_.sorter().set_key(key);
-        switch (key) {
-        case dirtoo::collection::SortKey::Name:
-          sort_column_ = SortColumn::Name;
-          break;
-        case dirtoo::collection::SortKey::Size:
-          sort_column_ = SortColumn::Size;
-          break;
-        case dirtoo::collection::SortKey::Modified:
-          sort_column_ = SortColumn::Modified;
-          break;
-        case dirtoo::collection::SortKey::Type:
-          sort_column_ = SortColumn::Type;
-          break;
-        default:
-          break;
-        }
-        request_async_sort();
+      connect(act, &QAction::triggered, this, [this, key] {
+        apply_sort_key(key, /*toggle_if_same=*/false);
       });
     };
     add_sort(QStringLiteral("Name"), dirtoo::collection::SortKey::Name, true);
     add_sort(QStringLiteral("Size"), dirtoo::collection::SortKey::Size, false);
     add_sort(QStringLiteral("Modified"), dirtoo::collection::SortKey::Modified, false);
     add_sort(QStringLiteral("Type"), dirtoo::collection::SortKey::Type, false);
+    sort_menu->addSeparator();
+    add_sort(QStringLiteral("Width"), dirtoo::collection::SortKey::Width, false);
+    add_sort(QStringLiteral("Height"), dirtoo::collection::SortKey::Height, false);
+    add_sort(QStringLiteral("Dimensions"), dirtoo::collection::SortKey::Resolution, false);
+    add_sort(QStringLiteral("Aspect"), dirtoo::collection::SortKey::AspectRatio, false);
+    add_sort(QStringLiteral("Duration"), dirtoo::collection::SortKey::Duration, false);
+    add_sort(QStringLiteral("FPS"), dirtoo::collection::SortKey::Framerate, false);
     sort_menu->addSeparator();
     auto* asc = sort_menu->addAction(QStringLiteral("Ascending"));
     asc->setCheckable(true);
@@ -406,6 +393,10 @@ MainWindow::MainWindow(QWidget* parent)
       sort_ascending_ = true;
       collection_.sorter().set_ascending(true);
       asc->setChecked(true);
+      if (tree_view_ != nullptr && tree_view_->header() != nullptr) {
+        tree_view_->header()->setSortIndicator(
+            tree_view_->header()->sortIndicatorSection(), Qt::AscendingOrder);
+      }
       request_async_sort();
     });
     auto* desc = sort_menu->addAction(QStringLiteral("Descending"));
@@ -415,6 +406,10 @@ MainWindow::MainWindow(QWidget* parent)
       collection_.sorter().set_ascending(false);
       desc->setChecked(true);
       asc->setChecked(false);
+      if (tree_view_ != nullptr && tree_view_->header() != nullptr) {
+        tree_view_->header()->setSortIndicator(
+            tree_view_->header()->sortIndicatorSection(), Qt::DescendingOrder);
+      }
       request_async_sort();
     });
     sort_btn->setMenu(sort_menu);
@@ -607,6 +602,7 @@ MainWindow::MainWindow(QWidget* parent)
           {"width", "Width"},
           {"height", "Height"},
           {"dimensions", "Dimensions"},
+          {"aspectratio", "Aspect"},
           {"framerate", "FPS"},
           {"duration", "Duration"},
           {"modified", "Modified"},
@@ -808,28 +804,7 @@ MainWindow::MainWindow(QWidget* parent)
       act->setChecked(checked);
       sort_group->addAction(act);
       connect(act, &QAction::triggered, this, [this, key] {
-        sort_ascending_ = true;
-        collection_.sorter().set_ascending(true);
-        collection_.sorter().set_key(key);
-        // Map header-related keys
-        switch (key) {
-        case dirtoo::collection::SortKey::Name:
-          sort_column_ = SortColumn::Name;
-          break;
-        case dirtoo::collection::SortKey::Size:
-          sort_column_ = SortColumn::Size;
-          break;
-        case dirtoo::collection::SortKey::Modified:
-          sort_column_ = SortColumn::Modified;
-          break;
-        case dirtoo::collection::SortKey::Type:
-        case dirtoo::collection::SortKey::Extension:
-          sort_column_ = SortColumn::Type;
-          break;
-        default:
-          break;
-        }
-        request_async_sort();
+        apply_sort_key(key, /*toggle_if_same=*/false);
       });
       return act;
     };
@@ -1122,6 +1097,8 @@ MainWindow::MainWindow(QWidget* parent)
   tree_view_->setDefaultDropAction(Qt::CopyAction);
   tree_view_->setIconSize(QSize(32, 32));
   tree_view_->header()->setStretchLastSection(true);
+  tree_view_->header()->setSectionsClickable(true);
+  tree_view_->header()->setSortIndicatorShown(true);
   tree_view_->setColumnWidth(0, 320);
   tree_view_->setColumnWidth(1, 100);
   tree_view_->setColumnWidth(2, 160);
@@ -2149,34 +2126,144 @@ void MainWindow::on_filter_finished(quint64 generation, std::vector<dirtoo::fs::
   set_status(QStringLiteral("%1 items").arg(collection_.visible_items().size()));
 }
 
-void MainWindow::on_header_clicked(int section)
+void MainWindow::apply_sort_key(collection::SortKey key, bool toggle_if_same)
 {
-  const auto col = static_cast<SortColumn>(section);
-  if (sort_column_ == col) {
+  if (toggle_if_same && sort_key_ == key) {
     sort_ascending_ = !sort_ascending_;
   } else {
-    sort_column_ = col;
+    sort_key_ = key;
     sort_ascending_ = true;
   }
-  using dirtoo::collection::SortKey;
-  SortKey key = SortKey::Name;
-  switch (col) {
-  case SortColumn::Name:
-    key = SortKey::Name;
+  collection_.sorter().set_key(key);
+  collection_.sorter().set_ascending(sort_ascending_);
+  update_sort_toolbar_label();
+  if (tree_view_ != nullptr && tree_view_->header() != nullptr) {
+    tree_view_->header()->setSortIndicatorShown(true);
+    // Map SortKey → visible FileListColumn for indicator when possible.
+    int section = static_cast<int>(FileListColumn::Name);
+    switch (key) {
+    case collection::SortKey::Size:
+      section = static_cast<int>(FileListColumn::Size);
+      break;
+    case collection::SortKey::Width:
+      section = static_cast<int>(FileListColumn::Width);
+      break;
+    case collection::SortKey::Height:
+      section = static_cast<int>(FileListColumn::Height);
+      break;
+    case collection::SortKey::Resolution:
+      section = static_cast<int>(FileListColumn::Dimensions);
+      break;
+    case collection::SortKey::AspectRatio:
+      section = static_cast<int>(FileListColumn::AspectRatio);
+      break;
+    case collection::SortKey::Framerate:
+      section = static_cast<int>(FileListColumn::Framerate);
+      break;
+    case collection::SortKey::Duration:
+      section = static_cast<int>(FileListColumn::Duration);
+      break;
+    case collection::SortKey::Modified:
+      section = static_cast<int>(FileListColumn::Modified);
+      break;
+    case collection::SortKey::Type:
+    case collection::SortKey::Extension:
+      section = static_cast<int>(FileListColumn::Type);
+      break;
+    default:
+      section = static_cast<int>(FileListColumn::Name);
+      break;
+    }
+    tree_view_->header()->setSortIndicator(
+        section, sort_ascending_ ? Qt::AscendingOrder : Qt::DescendingOrder);
+  }
+  request_async_sort();
+}
+
+void MainWindow::update_sort_toolbar_label()
+{
+  if (sort_toolbar_btn_ == nullptr) {
+    return;
+  }
+  QString title = QStringLiteral("Name");
+  switch (sort_key_) {
+  case collection::SortKey::Size:
+    title = QStringLiteral("Size");
     break;
-  case SortColumn::Size:
-    key = SortKey::Size;
+  case collection::SortKey::Modified:
+    title = QStringLiteral("Modified");
     break;
-  case SortColumn::Modified:
-    key = SortKey::Modified;
+  case collection::SortKey::Type:
+  case collection::SortKey::Extension:
+    title = QStringLiteral("Type");
     break;
-  case SortColumn::Type:
-    key = SortKey::Type;
+  case collection::SortKey::Width:
+    title = QStringLiteral("Width");
+    break;
+  case collection::SortKey::Height:
+    title = QStringLiteral("Height");
+    break;
+  case collection::SortKey::Resolution:
+    title = QStringLiteral("Dimensions");
+    break;
+  case collection::SortKey::AspectRatio:
+    title = QStringLiteral("Aspect");
+    break;
+  case collection::SortKey::Duration:
+    title = QStringLiteral("Duration");
+    break;
+  case collection::SortKey::Framerate:
+    title = QStringLiteral("FPS");
+    break;
+  case collection::SortKey::Random:
+    title = QStringLiteral("Random");
+    break;
+  default:
+    title = QStringLiteral("Name");
     break;
   }
-  collection_.sorter().set_ascending(sort_ascending_);
-  collection_.sorter().set_key(key);
-  request_async_sort();
+  sort_toolbar_btn_->setText(title);
+}
+
+void MainWindow::on_header_clicked(int section)
+{
+  using collection::SortKey;
+  SortKey key = SortKey::Name;
+  switch (static_cast<FileListColumn>(section)) {
+  case FileListColumn::Name:
+    key = SortKey::Name;
+    break;
+  case FileListColumn::Size:
+    key = SortKey::Size;
+    break;
+  case FileListColumn::Width:
+    key = SortKey::Width;
+    break;
+  case FileListColumn::Height:
+    key = SortKey::Height;
+    break;
+  case FileListColumn::Dimensions:
+    key = SortKey::Resolution; // width * height
+    break;
+  case FileListColumn::AspectRatio:
+    key = SortKey::AspectRatio;
+    break;
+  case FileListColumn::Framerate:
+    key = SortKey::Framerate;
+    break;
+  case FileListColumn::Duration:
+    key = SortKey::Duration;
+    break;
+  case FileListColumn::Modified:
+    key = SortKey::Modified;
+    break;
+  case FileListColumn::Type:
+    key = SortKey::Type;
+    break;
+  case FileListColumn::Count:
+    return;
+  }
+  apply_sort_key(key, /*toggle_if_same=*/true);
 }
 
 void MainWindow::on_item_activated(const QModelIndex& index)
@@ -4261,6 +4348,7 @@ void MainWindow::apply_detail_column_visibility()
   tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Width), !visible("width"));
   tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Height), !visible("height"));
   tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Dimensions), !visible("dimensions"));
+  tree_view_->setColumnHidden(static_cast<int>(FileListColumn::AspectRatio), !visible("aspectratio"));
   tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Framerate), !visible("framerate"));
   tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Duration), !visible("duration"));
   tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Modified), !visible("modified"));

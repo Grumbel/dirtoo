@@ -22,8 +22,9 @@ struct AppSettings {
   /// Detail-view columns that are visible (logical names). Name is always on.
   /// Defaults include Dimensions+Framerate+Duration; Width/Height optional.
   QStringList detail_columns{QStringLiteral("size"), QStringLiteral("dimensions"),
-                             QStringLiteral("framerate"), QStringLiteral("duration"),
-                             QStringLiteral("modified"), QStringLiteral("type")};
+                             QStringLiteral("aspectratio"), QStringLiteral("framerate"),
+                             QStringLiteral("duration"), QStringLiteral("modified"),
+                             QStringLiteral("type")};
   bool show_hidden = false;
   bool show_filter = true;
   bool filter_pinned = false;

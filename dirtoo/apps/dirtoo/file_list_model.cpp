@@ -432,6 +432,7 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
     case FileListColumn::Width:
     case FileListColumn::Height:
     case FileListColumn::Dimensions:
+    case FileListColumn::AspectRatio:
     case FileListColumn::Framerate: {
       if (fi->is_directory()) {
         return {};
@@ -462,11 +463,25 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
         }
         return QStringLiteral("%1").arg(*meta->framerate, 0, 'f', 2);
       }
-      // Dimensions
-      if (!meta->width || !meta->height) {
+      if (!meta->width || !meta->height || *meta->width == 0 || *meta->height == 0) {
         return {};
       }
-      return QStringLiteral("%1×%2").arg(*meta->width).arg(*meta->height);
+      const auto w = static_cast<std::uint32_t>(*meta->width);
+      const auto h = static_cast<std::uint32_t>(*meta->height);
+      if (col == FileListColumn::AspectRatio) {
+        auto gcd = [](std::uint32_t a, std::uint32_t b) {
+          while (b != 0) {
+            const auto t = b;
+            b = a % b;
+            a = t;
+          }
+          return a;
+        };
+        const auto g = gcd(w, h);
+        return QStringLiteral("%1:%2").arg(w / g).arg(h / g);
+      }
+      // Dimensions
+      return QStringLiteral("%1×%2").arg(w).arg(h);
     }
     case FileListColumn::Duration: {
       if (fi->is_directory()) {
@@ -509,7 +524,8 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
   if (role == Qt::TextAlignmentRole) {
     const auto col = static_cast<FileListColumn>(index.column());
     if (col == FileListColumn::Size || col == FileListColumn::Width || col == FileListColumn::Height
-        || col == FileListColumn::Framerate || col == FileListColumn::Duration) {
+        || col == FileListColumn::AspectRatio || col == FileListColumn::Framerate
+        || col == FileListColumn::Duration) {
       return static_cast<int>(Qt::AlignRight | Qt::AlignVCenter);
     }
     if (icon_style_ && index.column() == static_cast<int>(FileListColumn::Name)) {
@@ -621,6 +637,8 @@ QVariant FileListModel::headerData(int section, Qt::Orientation orientation, int
     return QStringLiteral("Height");
   case FileListColumn::Dimensions:
     return QStringLiteral("Dimensions");
+  case FileListColumn::AspectRatio:
+    return QStringLiteral("Aspect");
   case FileListColumn::Framerate:
     return QStringLiteral("FPS");
   case FileListColumn::Duration:

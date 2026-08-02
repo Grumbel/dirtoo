@@ -220,9 +220,11 @@ private:
   TransferController transfer_controller_;
   NavigationHistory nav_history_;
 
-  enum class SortColumn { Name, Size, Modified, Type };
-  SortColumn sort_column_ = SortColumn::Name;
+  /// Tracks current sort for toolbar label / header toggle (mirrors collection SortKey).
+  collection::SortKey sort_key_ = collection::SortKey::Name;
   bool sort_ascending_ = true;
+  void apply_sort_key(collection::SortKey key, bool toggle_if_same);
+  void update_sort_toolbar_label();
   ViewMode view_mode_ = ViewMode::Detail;
 
   static constexpr int kZoomLevels[] = {48, 64, 96, 128, 192, 256, 384, 512, 768, 1024};
