@@ -36,4 +36,10 @@ extract_member(const std::filesystem::path& archive_file,
                const std::filesystem::path& member,
                const std::filesystem::path& dest_dir);
 
+/// Test/helper: parse bsdtar/tar -tvf style listing text into entries.
+[[nodiscard]] std::vector<ArchiveEntry> parse_tv_listing_text(const std::string& text);
+
+/// Test/helper: parse unzip -l style listing text into entries.
+[[nodiscard]] std::vector<ArchiveEntry> parse_unzip_listing_text(const std::string& text);
+
 } // namespace dirtoo::archive

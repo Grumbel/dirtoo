@@ -201,7 +201,7 @@ smells, and gaps worth scheduling. Not every item is a user-visible crash.
 | ID | Issue | Why | Direction |
 |----|-------|-----|-----------|
 | A1 | **Location URL encoding incomplete** | Only `%20`. `#`, `?`, non-ASCII break `as_url` round-trips, bookmark identity, thumbnail MD5 keys | **Done** — general percent encode/decode in `location.cpp`; Catch tests for space/`#`/`?`/archive entry |
-| A2 | **Archive extract cache can go stale** | `.dirtoo-extracted` marker matches path only, not archive mtime/size | On cache hit, compare archive file mtime/size (or content hash) to marker metadata; invalidate + re-extract |
+| A2 | **Archive extract cache can go stale** | `.dirtoo-extracted` marker matches path only, not archive mtime/size | **Done** — cache dir stamp is mtime+size; Ready state revalidated against current stamp on `open()` |
 | A3 | **Conflict Overwrite uses `remove_all` on existing destinations** | `dirops` Overwrite deletes the whole existing tree before write/rename. Overwriting a **directory** is catastrophic; dialog does not strongly distinguish file vs dir | **Done** — `remove_for_overwrite` refuses directories; conflict dialog disables Replace for dirs; Catch tests |
 | A4 | **Transfer conflict CV lifecycle** | Worker blocks until UI `resolve_conflict`; shutdown without notify can hang the thread | **Mostly done already** — `cancel()` clears pending + notifies; dialog reject → cancel; re-verify on next transfer hang |
 
@@ -228,8 +228,8 @@ smells, and gaps worth scheduling. Not every item is a user-visible crash.
 
 ### P3 — tests to add (cheap, high value)
 
-- [ ] `parse_filter("type:video")` / `type:image` / `type:archive` matches expected extensions (`test_filter`)
-- [ ] Verbose archive listing fixtures → non-zero sizes (`test_archive_index` or new parse unit tests)
+- [x] `parse_filter("type:video")` / `type:image` / `type:archive` matches expected extensions (`test_filter`)
+- [x] Verbose archive listing fixtures → non-zero sizes (`test_archive_index` or new parse unit tests)
 - [x] Location round-trip with space, `#`, non-ASCII (after A1)
 - [x] dirops: Overwrite of **file** OK; Overwrite of **directory** refused (after A3)
 

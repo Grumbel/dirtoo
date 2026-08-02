@@ -356,3 +356,23 @@ TEST_CASE("filter pages and filecount parse", "[filter]")
   // Non-pdf / non-archive → no match
   REQUIRE_FALSE((*m)->matches(file("readme.txt")));
 }
+
+TEST_CASE("filter type:video image archive audio", "[filter]")
+{
+  auto video = parse_filter("type:video");
+  REQUIRE(video);
+  REQUIRE((*video)->matches(file("clip.mp4")));
+  REQUIRE_FALSE((*video)->matches(file("notes.txt")));
+
+  auto image = parse_filter("type:image");
+  REQUIRE(image);
+  REQUIRE((*image)->matches(file("photo.PNG")));
+
+  auto arch = parse_filter("type:archive");
+  REQUIRE(arch);
+  REQUIRE((*arch)->matches(file("pack.zip")));
+
+  auto audio = parse_filter("type:audio");
+  REQUIRE(audio);
+  REQUIRE((*audio)->matches(file("song.flac")));
+}

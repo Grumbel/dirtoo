@@ -12,7 +12,6 @@
 #include <set>
 
 namespace dirtoo::archive {
-namespace {
 
 std::expected<QString, std::string> run_capture(const QString& program, const QStringList& args)
 {
@@ -155,7 +154,18 @@ std::vector<ArchiveEntry> parse_unzip_l(const QString& output)
   return out;
 }
 
-} // namespace
+
+std::vector<ArchiveEntry> parse_tv_listing_text(const std::string& text)
+{
+  return parse_tv_lines(QString::fromStdString(text));
+}
+
+std::vector<ArchiveEntry> parse_unzip_listing_text(const std::string& text)
+{
+  return parse_unzip_l(QString::fromStdString(text));
+}
+
+
 
 std::expected<std::vector<ArchiveEntry>, std::string>
 list_archive_entries(const std::filesystem::path& archive_file)

@@ -46,8 +46,10 @@ std::filesystem::path ArchiveManager::cache_dir_for(const std::filesystem::path&
                                QCryptographicHash::Sha1)
           .toHex();
   QFileInfo fi(QString::fromStdString(archive_file.string()));
-  const auto stamp = QString::number(fi.lastModified().toSecsSinceEpoch());
-  return cache_root_ / (hash + "-" + stamp.toStdString()).toStdString();
+  // mtime + size so a replaced archive (same path) does not reuse a stale extract.
+  const QString stamp = QString::number(fi.lastModified().toSecsSinceEpoch()) + QLatin1Char('-')
+                        + QString::number(fi.size());
+  return cache_root_ / (hash + "-" + stamp.toUtf8()).toStdString();
 }
 
 std::optional<std::filesystem::path>
@@ -105,16 +107,25 @@ void ArchiveManager::open(const fs::Location& archive_location)
 
   const std::string key = key_of(archive_root);
   auto& entry = entries_[key];
+  const auto expected_dir = cache_dir_for(archive_root.as_path());
 
+  // In-session: Ready must still match current archive mtime/size stamp.
   if (entry.status == ExtractStatus::Ready) {
-    emit extraction_ready(archive_root, entry.cache_dir);
-    return;
+    if (entry.cache_dir == expected_dir
+        && std::filesystem::exists(entry.cache_dir / ".dirtoo-extracted")) {
+      emit extraction_ready(archive_root, entry.cache_dir);
+      return;
+    }
+    // Archive file changed (or cache wiped) — drop stale Ready state.
+    entry.status = ExtractStatus::Idle;
+    entry.cache_dir.clear();
+    entry.error.clear();
   }
   if (entry.status == ExtractStatus::Working) {
     return;
   }
 
-  entry.cache_dir = cache_dir_for(archive_root.as_path());
+  entry.cache_dir = expected_dir;
   const auto marker = entry.cache_dir / ".dirtoo-extracted";
   if (std::filesystem::is_directory(entry.cache_dir) && std::filesystem::exists(marker)) {
     entry.status = ExtractStatus::Ready;
@@ -207,6 +218,7 @@ void ArchiveManager::finish_ok(const fs::Location& archive_location)
   it->second.status = ExtractStatus::Ready;
   std::ofstream marker(it->second.cache_dir / ".dirtoo-extracted");
   marker << archive_location.as_path().string() << '\n';
+  marker << it->second.cache_dir.filename().string() << '\n'; // stamp segment (mtime-size)
   emit extraction_ready(archive_location, it->second.cache_dir);
 }
 
