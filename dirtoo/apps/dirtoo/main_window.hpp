@@ -61,7 +61,7 @@ namespace dirtoo::app {
 enum class ViewMode {
   Detail,
   Icons,
-  SmallIcons, // compact multi-column icon grid
+  SmallIcons, // List view: icon+name rows in columns (Win95 Explorer List)
 };
 
 class MainWindow : public QMainWindow {
@@ -282,7 +282,7 @@ private:
   quint64 path_completion_request_id_ = 0;
   QStackedWidget* view_stack_ = nullptr;
   QTreeView* tree_view_ = nullptr;
-  QListView* icon_view_ = nullptr; // SmallIcons list mode
+  QListView* icon_view_ = nullptr; // List view (and fallback if no Graphics)
   GraphicsFileView* graphics_view_ = nullptr; // Icons Graphics View
   QLabel* status_label_ = nullptr;
   MessageArea* message_area_ = nullptr;

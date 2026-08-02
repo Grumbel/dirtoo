@@ -218,6 +218,25 @@ FileItemDelegate::FileItemDelegate(FileListModel* model, QObject* parent)
 
 QSize FileItemDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
+  // List view (icon left of name): row a bit taller than icon/font; width ≈ column.
+  if (model_ != nullptr && !model_->icon_style_active()) {
+    const int icon = option.decorationSize.height() > 0 ? option.decorationSize.height() : 16;
+    const int text_h = option.fontMetrics.height();
+    int h = std::max(icon, text_h) + 6;
+    if (index.isValid() && index.data(IsGroupStartRole).toBool()
+        && !index.data(GroupLabelRole).toString().isEmpty()) {
+      h += option.fontMetrics.height() + 8;
+    }
+    if (index.isValid()) {
+      const qint64 gap = index.data(TimeGapSecondsRole).toLongLong();
+      if (gap >= kTimeGapThresholdSecs) {
+        h += option.fontMetrics.height() + 6;
+      }
+    }
+    const int w = std::max(option.decorationSize.width() + 12 + 140, 180);
+    return QSize(w, h);
+  }
+
   QSize sz = QStyledItemDelegate::sizeHint(option, index);
   if (index.isValid() && index.data(IsGroupStartRole).toBool()) {
     const QString label = index.data(GroupLabelRole).toString();

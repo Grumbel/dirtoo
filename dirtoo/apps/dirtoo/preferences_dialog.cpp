@@ -27,7 +27,7 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   auto* view = new QComboBox(&dialog);
   view->addItem(QStringLiteral("Detail"), QStringLiteral("detail"));
   view->addItem(QStringLiteral("Icons"), QStringLiteral("icons"));
-  view->addItem(QStringLiteral("Small Icons"), QStringLiteral("small"));
+  view->addItem(QStringLiteral("List"), QStringLiteral("small"));
   if (settings->view_mode == QLatin1String("icons")) {
     view->setCurrentIndex(1);
   } else if (settings->view_mode == QLatin1String("small")
@@ -40,7 +40,7 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   auto* zoom = new QSpinBox(&dialog);
   zoom->setRange(0, 9);
   zoom->setValue(settings->zoom_index);
-  zoom->setToolTip(QStringLiteral("Icon zoom level index (0–9 for grid; 0–6 for small icons)"));
+  zoom->setToolTip(QStringLiteral("Icon zoom level index (0–9 for grid; 0–6 for List view)"));
 
   auto* icon_detail = new QSpinBox(&dialog);
   icon_detail->setRange(0, 4);

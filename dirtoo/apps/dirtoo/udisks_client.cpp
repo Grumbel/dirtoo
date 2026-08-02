@@ -167,7 +167,7 @@ void UDisksClient::connect_object_manager()
   if (signals_connected_) {
     return;
   }
-  auto& bus = QDBusConnection::systemBus();
+  QDBusConnection bus = QDBusConnection::systemBus();
   // ObjectManager lives on /org/freedesktop/UDisks2
   const bool added = bus.connect(QString::fromLatin1(kService), QString::fromLatin1(kObjectManagerPath),
                                  QStringLiteral("org.freedesktop.DBus.ObjectManager"),

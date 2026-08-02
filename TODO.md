@@ -463,7 +463,8 @@ Python reference: experimental `dirtoo-py/experiments/udisks/` (`udisksqt.py`); 
       (Dimensions + Duration columns via MediaMetaCache; fps still in Properties)
 - [x] Small Icon view is only showing one item per line, it should
       show multiple in a grid style view
-      (IconMode + wrapping grid instead of ListMode)
+      (renamed to List; ListMode + TopToBottom + wrapping = Win95 columns;
+       icon left of filename via icon_style=false + QStyledItemDelegate)
 - [x] --help options of some tools/ look small and miserable, should be long and detailed
       (dt-move/copy/rename/rm/mkdir/mkfile/swap/symlink expanded)
 - [x] remove dt-move <from> <to>, `-t` should be required

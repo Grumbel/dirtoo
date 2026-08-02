@@ -5,6 +5,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QTimer>
 #include <QVector>
 
 namespace dirtoo::app {
@@ -64,7 +65,7 @@ private:
   QVector<VolumeInfo> volumes_;
   bool available_ = false;
   bool signals_connected_ = false;
-  class QTimer* refresh_debounce_ = nullptr;
+  QTimer* refresh_debounce_ = nullptr;
 };
 
 } // namespace dirtoo::app

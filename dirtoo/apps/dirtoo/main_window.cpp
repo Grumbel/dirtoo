@@ -471,10 +471,10 @@ MainWindow::MainWindow(QWidget* parent)
   }
 
   toolbar->addSeparator();
-  // View modes: Icons, Small Icons, Detail (Python order)
+  // View modes: Icons, List (Win95-style), Detail
   icons_act_ = toolbar->addAction(theme_icon("view-grid", "view-list-icons"), QStringLiteral("Icons"));
   small_icons_act_ = toolbar->addAction(theme_icon("view-list", "view-list-details"),
-                                        QStringLiteral("Small Icons"));
+                                        QStringLiteral("List"));
   detail_act_ = toolbar->addAction(theme_icon("view-list-details", "view-list"), QStringLiteral("Detail"));
   detail_act_->setCheckable(true);
   icons_act_->setCheckable(true);
@@ -1267,24 +1267,27 @@ QAbstractItemView* MainWindow::current_view() const
 void MainWindow::apply_icon_zoom()
 {
   if (view_mode_ == ViewMode::SmallIcons) {
-    // Compact multi-column icon grid (not one-file-per-row list mode).
+    // Windows 95 Explorer "List" view: small icon left of filename, columns
+    // filled top-to-bottom then left-to-right.
     static constexpr int kSmall[] = {16, 24, 32, 48, 64, 96, 128};
     const int zi = std::clamp(zoom_index_, 0, static_cast<int>(std::size(kSmall)) - 1);
     const int size = kSmall[zi];
-    icon_view_->setViewMode(QListView::IconMode);
-    icon_view_->setFlow(QListView::LeftToRight);
+    icon_view_->setViewMode(QListView::ListMode);
+    icon_view_->setFlow(QListView::TopToBottom);
     icon_view_->setWrapping(true);
     icon_view_->setResizeMode(QListView::Adjust);
     icon_view_->setMovement(QListView::Static);
     icon_view_->setUniformItemSizes(true);
-    icon_view_->setWordWrap(true);
+    icon_view_->setWordWrap(false);
     icon_view_->setIconSize(QSize(size, size));
-    icon_view_->setSpacing(4);
-    const int cell_w = std::max(size + 24, 64);
-    const int cell_h = size + 28; // icon + single-line caption
-    icon_view_->setGridSize(QSize(cell_w, cell_h));
+    icon_view_->setSpacing(2);
+    // Row a little taller than the icon/filename; column wide enough for a name.
+    const int row_h = std::max(size, 16) + 6;
+    const int col_w = std::max(size + 12 + 140, 180);
+    icon_view_->setGridSize(QSize(col_w, row_h));
     if (model_ != nullptr) {
-      model_->set_icon_style(true);
+      // List layout: Decoration left, DisplayRole text to the right (not under icon).
+      model_->set_icon_style(false);
       model_->set_icon_detail_level(1);
     }
     if (tree_view_ != nullptr) {
@@ -1405,7 +1408,7 @@ void MainWindow::set_view_mode(ViewMode mode)
   } else {
     if (model_ != nullptr) {
       model_->set_icon_style(true);
-      // Small Icons forces detail level 1; restore a useful multi-line caption LOD.
+      // List view forces detail level 1; restore a useful multi-line caption LOD for Icons.
       if (model_->icon_detail_level() <= 1) {
         model_->set_icon_detail_level(3);
       }
