@@ -429,12 +429,15 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
         return QStringLiteral("%1 items").arg(it.value());
       }
       return format_size(fi->size(), false);
-    case FileListColumn::Dimensions: {
+    case FileListColumn::Width:
+    case FileListColumn::Height:
+    case FileListColumn::Dimensions:
+    case FileListColumn::Framerate: {
       if (fi->is_directory()) {
         return {};
       }
       const auto meta = filter::MediaMetaCache::instance().try_get(fi->path());
-      if (!meta || !meta->width || !meta->height) {
+      if (!meta) {
         if (!fi->path().empty() && !filter::MediaMetaCache::instance().is_negative(fi->path())) {
           const int row = index.row();
           filter::MediaMetaCache::instance().request(
@@ -446,11 +449,24 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
         }
         return {};
       }
-      QString dims = QStringLiteral("%1×%2").arg(*meta->width).arg(*meta->height);
-      if (meta->framerate && *meta->framerate > 0.0) {
-        dims += QStringLiteral(" @ %1").arg(*meta->framerate, 0, 'f', 2);
+      const auto col = static_cast<FileListColumn>(index.column());
+      if (col == FileListColumn::Width) {
+        return meta->width ? QVariant(static_cast<qulonglong>(*meta->width)) : QVariant{};
       }
-      return dims;
+      if (col == FileListColumn::Height) {
+        return meta->height ? QVariant(static_cast<qulonglong>(*meta->height)) : QVariant{};
+      }
+      if (col == FileListColumn::Framerate) {
+        if (!meta->framerate || *meta->framerate <= 0.0) {
+          return {};
+        }
+        return QStringLiteral("%1").arg(*meta->framerate, 0, 'f', 2);
+      }
+      // Dimensions
+      if (!meta->width || !meta->height) {
+        return {};
+      }
+      return QStringLiteral("%1×%2").arg(*meta->width).arg(*meta->height);
     }
     case FileListColumn::Duration: {
       if (fi->is_directory()) {
@@ -491,7 +507,9 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
   }
 
   if (role == Qt::TextAlignmentRole) {
-    if (index.column() == static_cast<int>(FileListColumn::Size)) {
+    const auto col = static_cast<FileListColumn>(index.column());
+    if (col == FileListColumn::Size || col == FileListColumn::Width || col == FileListColumn::Height
+        || col == FileListColumn::Framerate || col == FileListColumn::Duration) {
       return static_cast<int>(Qt::AlignRight | Qt::AlignVCenter);
     }
     if (icon_style_ && index.column() == static_cast<int>(FileListColumn::Name)) {
@@ -597,8 +615,14 @@ QVariant FileListModel::headerData(int section, Qt::Orientation orientation, int
     return QStringLiteral("Name");
   case FileListColumn::Size:
     return QStringLiteral("Size");
+  case FileListColumn::Width:
+    return QStringLiteral("Width");
+  case FileListColumn::Height:
+    return QStringLiteral("Height");
   case FileListColumn::Dimensions:
     return QStringLiteral("Dimensions");
+  case FileListColumn::Framerate:
+    return QStringLiteral("FPS");
   case FileListColumn::Duration:
     return QStringLiteral("Duration");
   case FileListColumn::Modified:

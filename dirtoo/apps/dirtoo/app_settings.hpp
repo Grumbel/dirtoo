@@ -11,9 +11,19 @@ namespace dirtoo::app {
 
 struct AppSettings {
   QString view_mode = QStringLiteral("detail");
+  /// Per-view zoom indices (Icons / List / Detail).
+  int zoom_icons = 2;
+  int zoom_list = 2;
+  int zoom_detail = 2;
+  /// @deprecated migrated into zoom_* ; kept for one-shot load from old configs.
   int zoom_index = 2;
   int icon_detail_level = 3;
   bool crop_thumbnails = false;
+  /// Detail-view columns that are visible (logical names). Name is always on.
+  /// Defaults include Dimensions+Framerate+Duration; Width/Height optional.
+  QStringList detail_columns{QStringLiteral("size"), QStringLiteral("dimensions"),
+                             QStringLiteral("framerate"), QStringLiteral("duration"),
+                             QStringLiteral("modified"), QStringLiteral("type")};
   bool show_hidden = false;
   bool show_filter = true;
   bool filter_pinned = false;
@@ -21,7 +31,7 @@ struct AppSettings {
   int sidebar_width = 220;
   bool directories_first = true;
   QString group_mode = QStringLiteral("none"); // none|day|directory|duration
-  /// Size display units: "si" (KB/MB, base 1000) or "iec" (KiB/MiB, base 1024).
+  /// Size display units: "si" (kB/MB, base 1000) or "iec" (KiB/MiB, base 1024).
   QString size_units = QStringLiteral("si");
   QByteArray window_geometry;
   QByteArray window_state;

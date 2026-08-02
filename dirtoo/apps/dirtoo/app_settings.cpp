@@ -13,6 +13,12 @@ AppSettings load_settings()
   AppSettings out;
   out.view_mode = s.value(QStringLiteral("ui/view_mode"), out.view_mode).toString();
   out.zoom_index = s.value(QStringLiteral("ui/zoom_index"), out.zoom_index).toInt();
+  out.zoom_icons = s.value(QStringLiteral("ui/zoom_icons"), out.zoom_index).toInt();
+  out.zoom_list = s.value(QStringLiteral("ui/zoom_list"), out.zoom_index).toInt();
+  out.zoom_detail = s.value(QStringLiteral("ui/zoom_detail"), out.zoom_index).toInt();
+  if (s.contains(QStringLiteral("ui/detail_columns"))) {
+    out.detail_columns = s.value(QStringLiteral("ui/detail_columns")).toStringList();
+  }
   out.icon_detail_level = s.value(QStringLiteral("ui/icon_detail_level"), out.icon_detail_level).toInt();
   out.crop_thumbnails = s.value(QStringLiteral("ui/crop_thumbnails"), out.crop_thumbnails).toBool();
   out.show_hidden = s.value(QStringLiteral("ui/show_hidden"), out.show_hidden).toBool();
@@ -34,7 +40,11 @@ void save_settings(const AppSettings& settings)
 {
   QSettings s(QStringLiteral("dirtoo"), QStringLiteral("dirtoo"));
   s.setValue(QStringLiteral("ui/view_mode"), settings.view_mode);
-  s.setValue(QStringLiteral("ui/zoom_index"), settings.zoom_index);
+  s.setValue(QStringLiteral("ui/zoom_index"), settings.zoom_icons); // legacy single key
+  s.setValue(QStringLiteral("ui/zoom_icons"), settings.zoom_icons);
+  s.setValue(QStringLiteral("ui/zoom_list"), settings.zoom_list);
+  s.setValue(QStringLiteral("ui/zoom_detail"), settings.zoom_detail);
+  s.setValue(QStringLiteral("ui/detail_columns"), settings.detail_columns);
   s.setValue(QStringLiteral("ui/icon_detail_level"), settings.icon_detail_level);
   s.setValue(QStringLiteral("ui/crop_thumbnails"), settings.crop_thumbnails);
   s.setValue(QStringLiteral("ui/show_hidden"), settings.show_hidden);

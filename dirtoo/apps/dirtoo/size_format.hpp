@@ -11,7 +11,7 @@ namespace dirtoo::app {
 
 /// How file sizes are shown in the UI.
 enum class SizeUnitStyle {
-  /// Base 1000: B, KB, MB, GB, TB (dirtoo-py / SI default).
+  /// Base 1000: B, kB, MB, GB, TB (dirtoo-py / SI default).
   Si = 0,
   /// Base 1024: B, KiB, MiB, GiB, TiB (IEC).
   Iec = 1,

@@ -299,8 +299,76 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     }
   }
 
+  // Detail / List: square icon (optionally cropped) left of the name.
   if (model_ == nullptr || !model_->icon_style_active()) {
-    QStyledItemDelegate::paint(painter, opt, index);
+    if (index.column() != 0) {
+      QStyledItemDelegate::paint(painter, opt, index);
+      return;
+    }
+    const QStyle* style = opt.widget != nullptr ? opt.widget->style() : QApplication::style();
+    style->drawPrimitive(QStyle::PE_PanelItemViewItem, &opt, painter, opt.widget);
+
+    const int icon = opt.decorationSize.isValid()
+                         ? std::max(opt.decorationSize.width(), opt.decorationSize.height())
+                         : 16;
+    const int side = std::min(icon, std::max(12, opt.rect.height() - 4));
+    QRect thumb(opt.rect.left() + 2, opt.rect.top() + (opt.rect.height() - side) / 2, side, side);
+
+    QIcon icon_obj = opt.icon;
+    if (icon_obj.isNull() && index.isValid()) {
+      icon_obj = index.data(Qt::DecorationRole).value<QIcon>();
+    }
+    if (!icon_obj.isNull()) {
+      const QPixmap pm = icon_obj.pixmap(QSize(side * 2, side * 2));
+      if (!pm.isNull()) {
+        painter->save();
+        painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+        painter->setClipRect(thumb);
+        if (model_ != nullptr && model_->crop_thumbnails()) {
+          // Cover: fill square, crop overflow.
+          const qreal sx = static_cast<qreal>(pm.width()) / static_cast<qreal>(thumb.width());
+          const qreal sy = static_cast<qreal>(pm.height()) / static_cast<qreal>(thumb.height());
+          const qreal scale = std::min(sx, sy);
+          QRectF srcrect(0, 0, thumb.width() * scale, thumb.height() * scale);
+          srcrect.moveCenter(QRectF(pm.rect()).center());
+          if (srcrect.left() < 0) {
+            srcrect.moveLeft(0);
+          }
+          if (srcrect.top() < 0) {
+            srcrect.moveTop(0);
+          }
+          if (srcrect.right() > pm.width()) {
+            srcrect.setWidth(pm.width());
+          }
+          if (srcrect.bottom() > pm.height()) {
+            srcrect.setHeight(pm.height());
+          }
+          painter->drawPixmap(thumb, pm, srcrect.toRect());
+        } else {
+          // Fit inside square (letterbox).
+          const QSize scaled = pm.size().scaled(thumb.size(), Qt::KeepAspectRatio);
+          QRect dest(0, 0, scaled.width(), scaled.height());
+          dest.moveCenter(thumb.center());
+          painter->fillRect(thumb, opt.palette.base());
+          painter->drawPixmap(dest, pm);
+        }
+        painter->restore();
+      }
+    }
+
+    QString text = opt.text;
+    if (text.isEmpty() && index.isValid()) {
+      text = index.data(Qt::DisplayRole).toString();
+    }
+    if (!text.isEmpty()) {
+      QRect text_rect = opt.rect.adjusted(thumb.right() + 6 - opt.rect.left(), 0, -4, 0);
+      text_rect.setLeft(thumb.right() + 6);
+      const QFontMetrics fm(opt.font);
+      const QString elided = fm.elidedText(text, Qt::ElideMiddle, text_rect.width());
+      painter->setPen(opt.palette.color(opt.state & QStyle::State_Selected ? QPalette::HighlightedText
+                                                                         : QPalette::Text));
+      painter->drawText(text_rect, Qt::AlignVCenter | Qt::AlignLeft, elided);
+    }
     return;
   }
 

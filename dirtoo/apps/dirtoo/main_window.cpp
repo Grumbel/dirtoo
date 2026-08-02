@@ -8,6 +8,7 @@
 #include "filter_worker.hpp"
 #include "directory_thumbnail_worker.hpp"
 #include "file_views.hpp"
+#include "file_list_model.hpp"
 #include "graphics_file_view.hpp"
 #include "graphics_file_item.hpp"
 #include "file_item_delegate.hpp"
@@ -508,6 +509,9 @@ MainWindow::MainWindow(QWidget* parent)
       if (icon_view_ != nullptr) {
         icon_view_->viewport()->update();
       }
+      if (tree_view_ != nullptr) {
+        tree_view_->viewport()->update();
+      }
       if (graphics_view_ != nullptr) {
         graphics_view_->viewport()->update();
       }
@@ -591,6 +595,42 @@ MainWindow::MainWindow(QWidget* parent)
     view_menu->addAction(icons_act_);
     view_menu->addAction(small_icons_act_);
     view_menu->addAction(detail_act_);
+    view_menu->addSeparator();
+    {
+      auto* cols = view_menu->addMenu(QStringLiteral("Detail Columns"));
+      struct ColOpt {
+        const char* key;
+        const char* label;
+      };
+      static constexpr ColOpt kCols[] = {
+          {"size", "Size"},
+          {"width", "Width"},
+          {"height", "Height"},
+          {"dimensions", "Dimensions"},
+          {"framerate", "FPS"},
+          {"duration", "Duration"},
+          {"modified", "Modified"},
+          {"type", "Type"},
+      };
+      for (const auto& c : kCols) {
+        auto* act = cols->addAction(QString::fromUtf8(c.label));
+        act->setCheckable(true);
+        const QString key = QString::fromUtf8(c.key);
+        act->setChecked(detail_columns_.contains(key)
+                        || (detail_columns_.isEmpty()
+                            && key != QLatin1String("width") && key != QLatin1String("height")));
+        connect(act, &QAction::toggled, this, [this, key](bool on) {
+          if (on) {
+            if (!detail_columns_.contains(key)) {
+              detail_columns_.append(key);
+            }
+          } else {
+            detail_columns_.removeAll(key);
+          }
+          apply_detail_column_visibility();
+        });
+      }
+    }
     view_menu->addSeparator();
     if (show_hidden_act_ != nullptr) {
       view_menu->addAction(show_hidden_act_);
@@ -1270,7 +1310,7 @@ void MainWindow::apply_icon_zoom()
     // Windows 95 Explorer "List" view: small icon left of filename, columns
     // filled top-to-bottom then left-to-right.
     static constexpr int kSmall[] = {16, 24, 32, 48, 64, 96, 128};
-    const int zi = std::clamp(zoom_index_, 0, static_cast<int>(std::size(kSmall)) - 1);
+    const int zi = std::clamp(zoom_list_, 0, static_cast<int>(std::size(kSmall)) - 1);
     const int size = kSmall[zi];
     icon_view_->setViewMode(QListView::ListMode);
     icon_view_->setFlow(QListView::TopToBottom);
@@ -1290,14 +1330,20 @@ void MainWindow::apply_icon_zoom()
       model_->set_icon_style(false);
       model_->set_icon_detail_level(1);
     }
+    return;
+  }
+
+  if (view_mode_ == ViewMode::Detail) {
+    static constexpr int kDetail[] = {16, 24, 32, 48, 64, 96, 128};
+    const int zi = std::clamp(zoom_detail_, 0, static_cast<int>(std::size(kDetail)) - 1);
+    const int size = kDetail[zi];
     if (tree_view_ != nullptr) {
-      const int detail = std::max(16, size / 2);
-      tree_view_->setIconSize(QSize(detail, detail));
+      tree_view_->setIconSize(QSize(size, size));
     }
     return;
   }
 
-  const int size = kZoomLevels[std::clamp(zoom_index_, 0, static_cast<int>(std::size(kZoomLevels)) - 1)];
+  const int size = kZoomLevels[std::clamp(zoom_icons_, 0, static_cast<int>(std::size(kZoomLevels)) - 1)];
   if (view_mode_ == ViewMode::Icons) {
     icon_view_->setViewMode(QListView::IconMode);
     icon_view_->setFlow(QListView::LeftToRight);
@@ -1359,21 +1405,49 @@ void MainWindow::on_less_icon_details()
   apply_icon_detail_level();
 }
 
+int& MainWindow::zoom_for_current_view()
+{
+  switch (view_mode_) {
+  case ViewMode::SmallIcons:
+    return zoom_list_;
+  case ViewMode::Detail:
+    return zoom_detail_;
+  case ViewMode::Icons:
+  default:
+    return zoom_icons_;
+  }
+}
+
+int MainWindow::zoom_for_current_view() const
+{
+  switch (view_mode_) {
+  case ViewMode::SmallIcons:
+    return zoom_list_;
+  case ViewMode::Detail:
+    return zoom_detail_;
+  case ViewMode::Icons:
+  default:
+    return zoom_icons_;
+  }
+}
+
 void MainWindow::on_zoom_in()
 {
-  const int max_zi = (view_mode_ == ViewMode::SmallIcons)
-                         ? 6
-                         : static_cast<int>(std::size(kZoomLevels)) - 1;
-  if (zoom_index_ < max_zi) {
-    ++zoom_index_;
+  const int max_zi = (view_mode_ == ViewMode::Icons)
+                         ? static_cast<int>(std::size(kZoomLevels)) - 1
+                         : 6;
+  int& zi = zoom_for_current_view();
+  if (zi < max_zi) {
+    ++zi;
     apply_icon_zoom();
   }
 }
 
 void MainWindow::on_zoom_out()
 {
-  if (zoom_index_ > 0) {
-    --zoom_index_;
+  int& zi = zoom_for_current_view();
+  if (zi > 0) {
+    --zi;
     apply_icon_zoom();
   }
 }
@@ -1390,9 +1464,8 @@ void MainWindow::set_view_mode(ViewMode mode)
     if (detail_act_ != nullptr) {
       detail_act_->setChecked(true);
     }
-    if (tree_view_ != nullptr && tree_view_->iconSize().width() < 24) {
-      tree_view_->setIconSize(QSize(32, 32));
-    }
+    apply_icon_zoom();
+    apply_detail_column_visibility();
     request_thumbnails_for_visible();
   } else if (mode == ViewMode::SmallIcons) {
     if (model_ != nullptr) {
@@ -2972,10 +3045,14 @@ void MainWindow::restore_settings()
   if (crop_thumbnails_act_ != nullptr) {
     crop_thumbnails_act_->setChecked(s.crop_thumbnails);
   }
-  if (s.zoom_index >= 0 && s.zoom_index < static_cast<int>(std::size(kZoomLevels))) {
-    zoom_index_ = s.zoom_index;
-    apply_icon_zoom();
+  zoom_icons_ = std::clamp(s.zoom_icons, 0, static_cast<int>(std::size(kZoomLevels)) - 1);
+  zoom_list_ = std::clamp(s.zoom_list, 0, 6);
+  zoom_detail_ = std::clamp(s.zoom_detail, 0, 6);
+  if (!s.detail_columns.isEmpty()) {
+    detail_columns_ = s.detail_columns;
   }
+  apply_detail_column_visibility();
+  apply_icon_zoom();
   collection_.set_show_hidden(s.show_hidden);
   if (show_hidden_act_ != nullptr) {
     show_hidden_act_->setChecked(s.show_hidden);
@@ -3062,7 +3139,11 @@ void MainWindow::persist_settings() const
   } else {
     s.view_mode = QStringLiteral("detail");
   }
-  s.zoom_index = zoom_index_;
+  s.zoom_icons = zoom_icons_;
+  s.zoom_list = zoom_list_;
+  s.zoom_detail = zoom_detail_;
+  s.zoom_index = zoom_icons_;
+  s.detail_columns = detail_columns_;
   if (model_ != nullptr) {
     s.icon_detail_level = model_->icon_detail_level();
     s.crop_thumbnails = model_->crop_thumbnails();
@@ -3901,7 +3982,11 @@ void MainWindow::on_preferences()
   } else {
     s.view_mode = QStringLiteral("detail");
   }
-  s.zoom_index = zoom_index_;
+  s.zoom_icons = zoom_icons_;
+  s.zoom_list = zoom_list_;
+  s.zoom_detail = zoom_detail_;
+  s.zoom_index = zoom_icons_;
+  s.detail_columns = detail_columns_;
   if (model_ != nullptr) {
     s.icon_detail_level = model_->icon_detail_level();
     s.crop_thumbnails = model_->crop_thumbnails();
@@ -3942,10 +4027,14 @@ void MainWindow::apply_settings(const AppSettings& s)
       crop_thumbnails_act_->setChecked(s.crop_thumbnails);
     }
   }
-  if (s.zoom_index >= 0 && s.zoom_index < static_cast<int>(std::size(kZoomLevels))) {
-    zoom_index_ = s.zoom_index;
-    apply_icon_zoom();
+  zoom_icons_ = std::clamp(s.zoom_icons, 0, static_cast<int>(std::size(kZoomLevels)) - 1);
+  zoom_list_ = std::clamp(s.zoom_list, 0, 6);
+  zoom_detail_ = std::clamp(s.zoom_detail, 0, 6);
+  if (!s.detail_columns.isEmpty()) {
+    detail_columns_ = s.detail_columns;
   }
+  apply_detail_column_visibility();
+  apply_icon_zoom();
   if (s.view_mode == QLatin1String("icons")) {
     set_view_mode(ViewMode::Icons);
   } else if (s.view_mode == QLatin1String("small") || s.view_mode == QLatin1String("smallicons")) {
@@ -4151,6 +4240,31 @@ void MainWindow::rebuild_sidebar_places()
     labels << QFileInfo(path).fileName();
   }
   directory_tree_model_->reset_roots(roots, labels);
+}
+
+
+void MainWindow::apply_detail_column_visibility()
+{
+  if (tree_view_ == nullptr || model_ == nullptr) {
+    return;
+  }
+  // Name (0) always visible.
+  auto visible = [this](const char* key) {
+    if (detail_columns_.isEmpty()) {
+      // Defaults: everything except optional Width/Height.
+      return QLatin1String(key) != QLatin1String("width")
+          && QLatin1String(key) != QLatin1String("height");
+    }
+    return detail_columns_.contains(QLatin1String(key));
+  };
+  tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Size), !visible("size"));
+  tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Width), !visible("width"));
+  tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Height), !visible("height"));
+  tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Dimensions), !visible("dimensions"));
+  tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Framerate), !visible("framerate"));
+  tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Duration), !visible("duration"));
+  tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Modified), !visible("modified"));
+  tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Type), !visible("type"));
 }
 
 void MainWindow::on_udisks_volumes_changed()

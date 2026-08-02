@@ -17,8 +17,11 @@ namespace dirtoo::app {
 enum class FileListColumn {
   Name = 0,
   Size,
-  Dimensions,  ///< width×height when media meta is known
-  Duration,    ///< media duration (h:mm:ss) when known
+  Width,       ///< media width (px)
+  Height,      ///< media height (px)
+  Dimensions,  ///< width×height
+  Framerate,   ///< fps
+  Duration,    ///< media duration (h:mm:ss)
   Modified,
   Type,
   Count

@@ -62,7 +62,7 @@ QString size_unit_style_to_string(SizeUnitStyle style)
 
 QString format_byte_size(std::uint64_t bytes, SizeUnitStyle style)
 {
-  static constexpr const char* kSi[] = {"B", "KB", "MB", "GB", "TB", "PB"};
+  static constexpr const char* kSi[] = {"B", "kB", "MB", "GB", "TB", "PB"};
   static constexpr const char* kIec[] = {"B", "KiB", "MiB", "GiB", "TiB", "PiB"};
   if (style == SizeUnitStyle::Iec) {
     return format_with_base(bytes, 1024.0, kIec, 6);

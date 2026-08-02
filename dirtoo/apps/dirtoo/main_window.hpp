@@ -226,7 +226,13 @@ private:
   ViewMode view_mode_ = ViewMode::Detail;
 
   static constexpr int kZoomLevels[] = {48, 64, 96, 128, 192, 256, 384, 512, 768, 1024};
-  int zoom_index_ = 2;
+  int zoom_icons_ = 2;
+  int zoom_list_ = 2;
+  int zoom_detail_ = 2;
+  QStringList detail_columns_;
+  void apply_detail_column_visibility();
+  [[nodiscard]] int& zoom_for_current_view();
+  [[nodiscard]] int zoom_for_current_view() const;
 
   QLineEdit* location_edit_ = nullptr;
   LocationButtonBar* location_buttons_ = nullptr;
