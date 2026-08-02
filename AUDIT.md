@@ -189,31 +189,31 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 
 | Status | Path |
 |--------|------|
-| ⬜ | `dirtoo/resources/dirtoo.desktop` |
-| ⬜ | `dirtoo/resources/dirtoo.metainfo.xml` |
+| ✅ | `dirtoo/resources/dirtoo.desktop` |
+| ✅ | `dirtoo/resources/dirtoo.metainfo.xml` |
 | ➖ | `dirtoo/resources/icons/badge-error.png` |
 | ➖ | `dirtoo/resources/icons/badge-image.png` |
 | ➖ | `dirtoo/resources/icons/badge-loading.png` |
 | ➖ | `dirtoo/resources/icons/badge-locked.png` |
 | ➖ | `dirtoo/resources/icons/badge-new.png` |
 | ➖ | `dirtoo/resources/icons/badge-video.png` |
-| ⬜ | `dirtoo/resources/icons/crop-thumbnails.svg` |
+| ✅ | `dirtoo/resources/icons/crop-thumbnails.svg` |
 | ➖ | `dirtoo/resources/icons/dirtoo.png` |
-| ⬜ | `dirtoo/resources/icons/dirtoo.svg` |
+| ✅ | `dirtoo/resources/icons/dirtoo.svg` |
 | ➖ | `dirtoo/resources/icons/dnd-ask.png` |
 | ➖ | `dirtoo/resources/icons/dnd-copy.png` |
 | ➖ | `dirtoo/resources/icons/dnd-link.png` |
 | ➖ | `dirtoo/resources/icons/dnd-move.png` |
 | ➖ | `dirtoo/resources/icons/dnd-none.png` |
-| ⬜ | `dirtoo/resources/icons/icon-detail-less.svg` |
-| ⬜ | `dirtoo/resources/icons/icon-detail-more.svg` |
-| ⬜ | `dirtoo/resources/icons/view-detail.svg` |
-| ⬜ | `dirtoo/resources/icons/view-hidden.svg` |
-| ⬜ | `dirtoo/resources/icons/view-icons.svg` |
-| ⬜ | `dirtoo/resources/icons/view-sidebar.svg` |
-| ⬜ | `dirtoo/resources/icons/view-small-icons.svg` |
-| ⬜ | `dirtoo/resources/icons/zoom-in.svg` |
-| ⬜ | `dirtoo/resources/icons/zoom-out.svg` |
+| ✅ | `dirtoo/resources/icons/icon-detail-less.svg` |
+| ✅ | `dirtoo/resources/icons/icon-detail-more.svg` |
+| ✅ | `dirtoo/resources/icons/view-detail.svg` |
+| ✅ | `dirtoo/resources/icons/view-hidden.svg` |
+| ✅ | `dirtoo/resources/icons/view-icons.svg` |
+| ✅ | `dirtoo/resources/icons/view-sidebar.svg` |
+| ✅ | `dirtoo/resources/icons/view-small-icons.svg` |
+| ✅ | `dirtoo/resources/icons/zoom-in.svg` |
+| ✅ | `dirtoo/resources/icons/zoom-out.svg` |
 
 ### `dirtoo/tests`
 
@@ -255,13 +255,13 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 
 | Status | Path |
 |--------|------|
-| ⬜ | `dirtoo/ARCHITECTURE.md` |
-| ⬜ | `dirtoo/CMakeLists.txt` |
-| ⬜ | `dirtoo/README.md` |
-| ⬜ | `dirtoo/STATUS.md` |
-| ⬜ | `dirtoo/VERSION` |
+| ✅ | `dirtoo/ARCHITECTURE.md` |
+| ✅ | `dirtoo/CMakeLists.txt` |
+| ✅ | `dirtoo/README.md` |
+| ✅ | `dirtoo/STATUS.md` |
+| ✅ | `dirtoo/VERSION` |
 | ➖ | `dirtoo/flake.lock` |
-| ⬜ | `dirtoo/flake.nix` |
+| ✅ | `dirtoo/flake.nix` |
 
 ---
 
@@ -271,34 +271,34 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 
 | Status | Path |
 |--------|------|
-| ⬜ | `dirtoo-py/experiments/README.md` |
-| ⬜ | `dirtoo-py/experiments/circularreferences/bar.py` |
-| ⬜ | `dirtoo-py/experiments/circularreferences/circularreferences.py` |
-| ⬜ | `dirtoo-py/experiments/circularreferences/foo.py` |
+| ➖ | `dirtoo-py/experiments/README.md` |
+| ➖ | `dirtoo-py/experiments/circularreferences/bar.py` |
+| ➖ | `dirtoo-py/experiments/circularreferences/circularreferences.py` |
+| ➖ | `dirtoo-py/experiments/circularreferences/foo.py` |
 | ➖ | `dirtoo-py/experiments/facedetect/face.jpg` |
-| ⬜ | `dirtoo-py/experiments/facedetect/facedetect.py` |
-| ⬜ | `dirtoo-py/experiments/filterparser/parser.py` |
-| ⬜ | `dirtoo-py/experiments/gaussian/gaussian.py` |
-| ⬜ | `dirtoo-py/experiments/inotify/inotify.py` |
-| ⬜ | `dirtoo-py/experiments/popup/popup.py` |
-| ⬜ | `dirtoo-py/experiments/pyqtcrash/pyqtcrash.py` |
-| ⬜ | `dirtoo-py/experiments/pyqttest/pyqttest.py` |
-| ⬜ | `dirtoo-py/experiments/qgraphicperf/qgraphicperf.py` |
-| ⬜ | `dirtoo-py/experiments/qmime/qmime.py` |
-| ⬜ | `dirtoo-py/experiments/qmltest/.gitignore` |
-| ⬜ | `dirtoo-py/experiments/qmltest/main.qml` |
-| ⬜ | `dirtoo-py/experiments/qmltest/qmltest.py` |
-| ⬜ | `dirtoo-py/experiments/qnotify/qnotify.py` |
-| ⬜ | `dirtoo-py/experiments/qtinotify/qtinotify.py` |
-| ⬜ | `dirtoo-py/experiments/threadtest/threadtest.py` |
-| ⬜ | `dirtoo-py/experiments/udisks/udisks.py` |
-| ⬜ | `dirtoo-py/experiments/udisks/udisksqt.py` |
+| ➖ | `dirtoo-py/experiments/facedetect/facedetect.py` |
+| ➖ | `dirtoo-py/experiments/filterparser/parser.py` |
+| ➖ | `dirtoo-py/experiments/gaussian/gaussian.py` |
+| ➖ | `dirtoo-py/experiments/inotify/inotify.py` |
+| ➖ | `dirtoo-py/experiments/popup/popup.py` |
+| ➖ | `dirtoo-py/experiments/pyqtcrash/pyqtcrash.py` |
+| ➖ | `dirtoo-py/experiments/pyqttest/pyqttest.py` |
+| ➖ | `dirtoo-py/experiments/qgraphicperf/qgraphicperf.py` |
+| ➖ | `dirtoo-py/experiments/qmime/qmime.py` |
+| ➖ | `dirtoo-py/experiments/qmltest/.gitignore` |
+| ➖ | `dirtoo-py/experiments/qmltest/main.qml` |
+| ➖ | `dirtoo-py/experiments/qmltest/qmltest.py` |
+| ➖ | `dirtoo-py/experiments/qnotify/qnotify.py` |
+| ➖ | `dirtoo-py/experiments/qtinotify/qtinotify.py` |
+| ➖ | `dirtoo-py/experiments/threadtest/threadtest.py` |
+| ➖ | `dirtoo-py/experiments/udisks/udisks.py` |
+| ➖ | `dirtoo-py/experiments/udisks/udisksqt.py` |
 
 ### `dirtoo-py/` — src
 
 | Status | Path |
 |--------|------|
-| ⬜ | `dirtoo-py/src/dirtoo/__init__.py` |
+| ✅ | `dirtoo-py/src/dirtoo/__init__.py` |
 | ✅ | `dirtoo-py/src/dirtoo/archive/__init__.py` |
 | ✅ | `dirtoo-py/src/dirtoo/archive/archive_extractor.py` |
 | ✅ | `dirtoo-py/src/dirtoo/archive/archive_manager.py` |
@@ -311,14 +311,14 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 | ✅ | `dirtoo-py/src/dirtoo/bookmark/__init__.py` |
 | ✅ | `dirtoo-py/src/dirtoo/bookmark/bookmarks.py` |
 | ✅ | `dirtoo-py/src/dirtoo/bookmark/bookmarks_provider.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/dbus_thumbnail_cache.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/dbus_thumbnailer.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/duration.py` |
+| ✅ | `dirtoo-py/src/dirtoo/dbus_thumbnail_cache.py` |
+| ✅ | `dirtoo-py/src/dirtoo/dbus_thumbnailer.py` |
+| ✅ | `dirtoo-py/src/dirtoo/duration.py` |
 | ✅ | `dirtoo-py/src/dirtoo/expr/__init__.py` |
 | ✅ | `dirtoo-py/src/dirtoo/expr/expr.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/ffprobe.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/file_transfer.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/file_type.py` |
+| ✅ | `dirtoo-py/src/dirtoo/ffprobe.py` |
+| ✅ | `dirtoo-py/src/dirtoo/file_transfer.py` |
+| ✅ | `dirtoo-py/src/dirtoo/file_type.py` |
 | ✅ | `dirtoo-py/src/dirtoo/filecollection/__init__.py` |
 | ✅ | `dirtoo-py/src/dirtoo/filecollection/file_collection.py` |
 | ✅ | `dirtoo-py/src/dirtoo/filecollection/filter.py` |
@@ -368,9 +368,9 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 | ✅ | `dirtoo-py/src/dirtoo/find/filter.py` |
 | ✅ | `dirtoo-py/src/dirtoo/find/util.py` |
 | ✅ | `dirtoo-py/src/dirtoo/find/walk.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/format.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/fuzzy.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/glob.py` |
+| ✅ | `dirtoo-py/src/dirtoo/format.py` |
+| ✅ | `dirtoo-py/src/dirtoo/fuzzy.py` |
+| ✅ | `dirtoo-py/src/dirtoo/glob.py` |
 | ✅ | `dirtoo-py/src/dirtoo/gui/__init__.py` |
 | ✅ | `dirtoo-py/src/dirtoo/gui/about_dialog.py` |
 | ✅ | `dirtoo-py/src/dirtoo/gui/conflict_dialog.py` |
@@ -398,47 +398,47 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 | ✅ | `dirtoo-py/src/dirtoo/history/__init__.py` |
 | ✅ | `dirtoo-py/src/dirtoo/history/history.py` |
 | ✅ | `dirtoo-py/src/dirtoo/history/history_provider.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/icons/README.md` |
-| ⬜ | `dirtoo-py/src/dirtoo/icons/compress.gif` |
+| ✅ | `dirtoo-py/src/dirtoo/icons/README.md` |
+| ✅ | `dirtoo-py/src/dirtoo/icons/compress.gif` |
 | ➖ | `dirtoo-py/src/dirtoo/icons/dirtoo.png` |
-| ⬜ | `dirtoo-py/src/dirtoo/icons/dirtoo.svg` |
+| ✅ | `dirtoo-py/src/dirtoo/icons/dirtoo.svg` |
 | ➖ | `dirtoo-py/src/dirtoo/icons/dnd-ask.png` |
 | ➖ | `dirtoo-py/src/dirtoo/icons/dnd-copy.png` |
 | ➖ | `dirtoo-py/src/dirtoo/icons/dnd-link.png` |
 | ➖ | `dirtoo-py/src/dirtoo/icons/dnd-move.png` |
 | ➖ | `dirtoo-py/src/dirtoo/icons/dnd-none.png` |
-| ⬜ | `dirtoo-py/src/dirtoo/icons/gears.gif` |
+| ✅ | `dirtoo-py/src/dirtoo/icons/gears.gif` |
 | ➖ | `dirtoo-py/src/dirtoo/icons/noun_175057_cc.png` |
-| ⬜ | `dirtoo-py/src/dirtoo/icons/noun_175057_cc.xcf` |
+| ✅ | `dirtoo-py/src/dirtoo/icons/noun_175057_cc.xcf` |
 | ➖ | `dirtoo-py/src/dirtoo/icons/noun_236873_cc.png` |
-| ⬜ | `dirtoo-py/src/dirtoo/icons/noun_236873_cc.xcf` |
+| ✅ | `dirtoo-py/src/dirtoo/icons/noun_236873_cc.xcf` |
 | ➖ | `dirtoo-py/src/dirtoo/icons/noun_258297_cc.png` |
-| ⬜ | `dirtoo-py/src/dirtoo/icons/noun_258297_cc.xcf` |
+| ✅ | `dirtoo-py/src/dirtoo/icons/noun_258297_cc.xcf` |
 | ➖ | `dirtoo-py/src/dirtoo/icons/noun_36746_cc.png` |
-| ⬜ | `dirtoo-py/src/dirtoo/icons/noun_36746_cc.xcf` |
+| ✅ | `dirtoo-py/src/dirtoo/icons/noun_36746_cc.xcf` |
 | ➖ | `dirtoo-py/src/dirtoo/icons/noun_386758_cc.png` |
-| ⬜ | `dirtoo-py/src/dirtoo/icons/noun_386758_cc.xcf` |
+| ✅ | `dirtoo-py/src/dirtoo/icons/noun_386758_cc.xcf` |
 | ➖ | `dirtoo-py/src/dirtoo/icons/noun_409399_cc.png` |
-| ⬜ | `dirtoo-py/src/dirtoo/icons/noun_409399_cc.xcf` |
+| ✅ | `dirtoo-py/src/dirtoo/icons/noun_409399_cc.xcf` |
 | ➖ | `dirtoo-py/src/dirtoo/icons/noun_757280_cc.png` |
-| ⬜ | `dirtoo-py/src/dirtoo/icons/noun_757280_cc.xcf` |
-| ⬜ | `dirtoo-py/src/dirtoo/icons/scan.gif` |
-| ⬜ | `dirtoo-py/src/dirtoo/icons/search.gif` |
-| ⬜ | `dirtoo-py/src/dirtoo/image/__init__.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/image/icon.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/image/image_filter.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/list_dict.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/mediainfo.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/metadata/__init__.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/metadata/metadata.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/metadata/metadata_cache.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/metadata/metadata_collector.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/mime/__init__.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/mime/mime_database.py` |
+| ✅ | `dirtoo-py/src/dirtoo/icons/noun_757280_cc.xcf` |
+| ✅ | `dirtoo-py/src/dirtoo/icons/scan.gif` |
+| ✅ | `dirtoo-py/src/dirtoo/icons/search.gif` |
+| ✅ | `dirtoo-py/src/dirtoo/image/__init__.py` |
+| ✅ | `dirtoo-py/src/dirtoo/image/icon.py` |
+| ✅ | `dirtoo-py/src/dirtoo/image/image_filter.py` |
+| ✅ | `dirtoo-py/src/dirtoo/list_dict.py` |
+| ✅ | `dirtoo-py/src/dirtoo/mediainfo.py` |
+| ✅ | `dirtoo-py/src/dirtoo/metadata/__init__.py` |
+| ✅ | `dirtoo-py/src/dirtoo/metadata/metadata.py` |
+| ✅ | `dirtoo-py/src/dirtoo/metadata/metadata_cache.py` |
+| ✅ | `dirtoo-py/src/dirtoo/metadata/metadata_collector.py` |
+| ✅ | `dirtoo-py/src/dirtoo/mime/__init__.py` |
+| ✅ | `dirtoo-py/src/dirtoo/mime/mime_database.py` |
 | ✅ | `dirtoo-py/src/dirtoo/posix/__init__.py` |
 | ✅ | `dirtoo-py/src/dirtoo/posix/filesystem.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/profiler/__init__.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/profiler/profiler.py` |
+| ✅ | `dirtoo-py/src/dirtoo/profiler/__init__.py` |
+| ✅ | `dirtoo-py/src/dirtoo/profiler/profiler.py` |
 | ✅ | `dirtoo-py/src/dirtoo/programs/__init__.py` |
 | ✅ | `dirtoo-py/src/dirtoo/programs/archive_extractor.py` |
 | ✅ | `dirtoo-py/src/dirtoo/programs/archiveinfo.py` |
@@ -467,67 +467,67 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 | ✅ | `dirtoo-py/src/dirtoo/programs/thumbnailer.py` |
 | ✅ | `dirtoo-py/src/dirtoo/programs/unidecode.py` |
 | ✅ | `dirtoo-py/src/dirtoo/programs/watch.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/sort.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/stream/__init__.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/stream/stream_manager.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/tee_io.py` |
+| ✅ | `dirtoo-py/src/dirtoo/sort.py` |
+| ✅ | `dirtoo-py/src/dirtoo/stream/__init__.py` |
+| ✅ | `dirtoo-py/src/dirtoo/stream/stream_manager.py` |
+| ✅ | `dirtoo-py/src/dirtoo/tee_io.py` |
 | ✅ | `dirtoo-py/src/dirtoo/thumbnail/__init__.py` |
 | ✅ | `dirtoo-py/src/dirtoo/thumbnail/directory_thumbnailer.py` |
 | ✅ | `dirtoo-py/src/dirtoo/thumbnail/thumbnail.py` |
 | ✅ | `dirtoo-py/src/dirtoo/thumbnail/thumbnailer.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/unique.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/util.py` |
+| ✅ | `dirtoo-py/src/dirtoo/unique.py` |
+| ✅ | `dirtoo-py/src/dirtoo/util.py` |
 | ✅ | `dirtoo-py/src/dirtoo/watcher/__init__.py` |
 | ✅ | `dirtoo-py/src/dirtoo/watcher/archive_directory_watcher.py` |
 | ✅ | `dirtoo-py/src/dirtoo/watcher/directory_watcher.py` |
 | ✅ | `dirtoo-py/src/dirtoo/watcher/directory_watcher_worker.py` |
 | ✅ | `dirtoo-py/src/dirtoo/watcher/inotify_qt.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/xdg_desktop.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/xdg_mime_associations.py` |
+| ✅ | `dirtoo-py/src/dirtoo/xdg_desktop.py` |
+| ✅ | `dirtoo-py/src/dirtoo/xdg_mime_associations.py` |
 
 ### `dirtoo-py/` — tests
 
 | Status | Path |
 |--------|------|
-| ⬜ | `dirtoo-py/tests/__init__.py` |
-| ⬜ | `dirtoo-py/tests/test.7z` |
-| ⬜ | `dirtoo-py/tests/test.mkv` |
-| ⬜ | `dirtoo-py/tests/test.rar` |
-| ⬜ | `dirtoo-py/tests/test_cmd_metadata.py` |
-| ⬜ | `dirtoo-py/tests/test_duration.py` |
-| ⬜ | `dirtoo-py/tests/test_expr.py` |
-| ⬜ | `dirtoo-py/tests/test_ffprobe.py` |
-| ⬜ | `dirtoo-py/tests/test_file_info.py` |
-| ⬜ | `dirtoo-py/tests/test_fileview_thumbnailer.py` |
-| ⬜ | `dirtoo-py/tests/test_filter_parser.py` |
-| ⬜ | `dirtoo-py/tests/test_format.py` |
-| ⬜ | `dirtoo-py/tests/test_incomplete.7z` |
-| ⬜ | `dirtoo-py/tests/test_incomplete.rar` |
-| ⬜ | `dirtoo-py/tests/test_list_dict.py` |
-| ⬜ | `dirtoo-py/tests/test_location.py` |
-| ⬜ | `dirtoo-py/tests/test_mediainfo.py` |
-| ⬜ | `dirtoo-py/tests/test_metadata_collector.py` |
-| ⬜ | `dirtoo-py/tests/test_rar_extractor_worker.py` |
-| ⬜ | `dirtoo-py/tests/test_sevenzip_extractor_worker.py` |
-| ⬜ | `dirtoo-py/tests/test_tee_io.py` |
-| ⬜ | `dirtoo-py/tests/test_util.py` |
+| ✅ | `dirtoo-py/tests/__init__.py` |
+| ✅ | `dirtoo-py/tests/test.7z` |
+| ✅ | `dirtoo-py/tests/test.mkv` |
+| ✅ | `dirtoo-py/tests/test.rar` |
+| ✅ | `dirtoo-py/tests/test_cmd_metadata.py` |
+| ✅ | `dirtoo-py/tests/test_duration.py` |
+| ✅ | `dirtoo-py/tests/test_expr.py` |
+| ✅ | `dirtoo-py/tests/test_ffprobe.py` |
+| ✅ | `dirtoo-py/tests/test_file_info.py` |
+| ✅ | `dirtoo-py/tests/test_fileview_thumbnailer.py` |
+| ✅ | `dirtoo-py/tests/test_filter_parser.py` |
+| ✅ | `dirtoo-py/tests/test_format.py` |
+| ✅ | `dirtoo-py/tests/test_incomplete.7z` |
+| ✅ | `dirtoo-py/tests/test_incomplete.rar` |
+| ✅ | `dirtoo-py/tests/test_list_dict.py` |
+| ✅ | `dirtoo-py/tests/test_location.py` |
+| ✅ | `dirtoo-py/tests/test_mediainfo.py` |
+| ✅ | `dirtoo-py/tests/test_metadata_collector.py` |
+| ✅ | `dirtoo-py/tests/test_rar_extractor_worker.py` |
+| ✅ | `dirtoo-py/tests/test_sevenzip_extractor_worker.py` |
+| ✅ | `dirtoo-py/tests/test_tee_io.py` |
+| ✅ | `dirtoo-py/tests/test_util.py` |
 
 ### `dirtoo-py/` — Root
 
 | Status | Path |
 |--------|------|
-| ⬜ | `dirtoo-py/.gitattributes` |
-| ⬜ | `dirtoo-py/.gitignore` |
-| ⬜ | `dirtoo-py/LICENSE.txt` |
-| ⬜ | `dirtoo-py/README.md` |
-| ⬜ | `dirtoo-py/VERSION` |
-| ⬜ | `dirtoo-py/dirhier.py` |
-| ⬜ | `dirtoo-py/dirtoo.desktop` |
-| ⬜ | `dirtoo-py/dirtoo.nix` |
+| ✅ | `dirtoo-py/.gitattributes` |
+| ✅ | `dirtoo-py/.gitignore` |
+| ✅ | `dirtoo-py/LICENSE.txt` |
+| ✅ | `dirtoo-py/README.md` |
+| ✅ | `dirtoo-py/VERSION` |
+| ✅ | `dirtoo-py/dirhier.py` |
+| ✅ | `dirtoo-py/dirtoo.desktop` |
+| ✅ | `dirtoo-py/dirtoo.nix` |
 | ➖ | `dirtoo-py/flake.lock` |
-| ⬜ | `dirtoo-py/flake.nix` |
-| ⬜ | `dirtoo-py/pyproject.toml` |
-| ⬜ | `dirtoo-py/setup.py` |
+| ✅ | `dirtoo-py/flake.nix` |
+| ✅ | `dirtoo-py/pyproject.toml` |
+| ✅ | `dirtoo-py/setup.py` |
 
 ---
 
@@ -851,35 +851,103 @@ Python `Filesystem` class is a broad low-level toolkit (listdir, scandir, copy w
 - Some transfer request/error dialog variants merged into C++ transfer/conflict dialogs
 
 
-## Feature parity (draft — refine after file reviews)
+## Feature parity (from file audits)
 
-Seeded from `TODO.md` / `AGENTS.md`; will be rewritten once inventories are annotated.
+Status: **present** / **partial** / **missing** / **OOS** (out of scope for the C++ port).
 
-| Area | C++ status | Notes |
-|------|------------|-------|
-| Local browsing + views | Present | Detail / Icons / Small |
-| Filter DSL + content offload | Present | Full command set + FilterWorker; media cache async |
-| Recursive search | Present | SearchWorker (not a `search://` Location protocol) |
-| Thumbnails + badges | Present | D-Bus Thumbnailer1; archive members weak |
-| Clipboard + DnD + Link | Present | |
-| Archives read-only | Present | External tools; full extract cache; write OOS |
-| Sidebar tree + UDisks devices | Present | List via udisks_client; verify mount/eject UX |
-| Open history | Present | Recently Opened menu |
-| Undo | Missing | Not implemented (Python historically weak) |
-| Editable permissions | Missing | Properties dialog is display-only |
-| Archive file thumbnails | Partial / weak | Needs extracted paths or special URIs |
-| Full `programs/*` CLI | OOS | C++ has dt-* helpers only; most Python programs not ported |
-| Remote VFS | OOS | |
-| Kinetic graphics layout | OOS | |
+### Core browsing
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Local directory browse | present | `dirtoo-fs` + load worker |
+| Detail / Icons / Small-icons views | present | Graphics + list models |
+| Zoom / icon detail levels / crop thumbs | present | App settings |
+| Natural name sort + size/mtime/ext | present | `Sorter` |
+| Media-aware sort (w/h/duration/…) | present | Needs MediaMetaCache fill |
+| Group by day / directory / duration | present | |
+| Show hidden | present | |
+| Filter DSL (name + commands) | present | Strong parity with Python factory |
+| Content filters off UI thread | present | FilterWorker |
+| Recursive search | present | SearchWorker; not `search://` Location |
+| Path / breadcrumb navigation | present | |
+| Location history + bookmarks | present | |
+| Recently Opened (app + files) | present | C++ strengthened vs typical Python use |
+| Sidebar directory tree | present | |
+| Devices (UDisks) | present | Verify mount/eject completeness in UX |
+| Directory watching | partial | QFileSystemWatcher only; soft rescan; no archive watcher |
+| Freedesktop thumbnails | present | D-Bus + cache fallback |
+| Directory collage thumbnails | present | `directory_thumbnail_worker` |
+| Archive member thumbnails | partial | Weak; needs extract/special URI |
+| Archive browse (read-only) | present | Index + extract cache |
+| Archive write / create | OOS | |
+| Nested multi-payload locations | missing | Python Location stacks; C++ single archive layer |
+| `search://` location protocol | missing | Search is a mode, not a Location |
+| Remote / virtual VFS | OOS | |
+
+### Mutations & clipboard
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Copy / move / rename / delete | present | `dirops` + GUI transfer |
+| Mkdir / mkfile / symlink / swap | present | dirops + dialogs / tools |
+| Conflict policies | present | Fail/Overwrite/Rename/Skip + dialog |
+| Clipboard cut/copy/paste | present | |
+| Paste as link | present | |
+| Drag and drop | present | Overlay + drop-to-dir |
+| Cross-device move safety | partial | copy+delete; partial failure → duplicates |
+| Undo | missing | Not implemented |
+| Editable permissions | missing | Properties display-only |
+
+### Open / MIME / metadata
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Open with default / desktop apps | present | `open_with` |
+| Open with command | present | |
+| Open history tracking | present | |
+| Properties dialog | present | Display |
+| Media metadata (ffprobe + SQLite) | present | Async cache |
+| Size units SI/IEC | present | Preferences |
+
+### CLI & tests
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| dt-* mutation CLIs | present | |
+| dt-filter / mediainfo / archiveinfo | present | |
+| Full Python `programs/*` suite | OOS | Intentionally not ported |
+| Unit tests (libs) | present | Catch2 core libs |
+| GUI automated tests | missing | |
+
+### Packaging / UX polish
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Nix flake multi-package | present | |
+| Qt6 + qtsvg | present | |
+| GNOME dialog button order | present | Proxy style |
+| Theme via qt6ct | env | Not app-forced beyond button layout |
+| Incomplete URL percent-encoding | issue | Location only handles `%20` |
+
+### Highest-value remaining gaps (in-scope)
+
+1. **Undo** (even a shallow last-op stack)
+2. **Editable permissions** (optional)
+3. **Richer directory watcher** (event types / archive extract dir)
+4. **Archive member thumbnails**
+5. **Location URL encoding** for non-ASCII / reserved chars
+6. **Mount/eject** polish if incomplete in Devices UI
+7. Slim **`MainWindow`** by extracting controllers
 
 ---
 
 ## Next step
 
-**Done:** Libraries, GUI, tools, tests, and major Python packages through programs/fileview/gui.
+**Done (first full pass):** Inventories marked; libs, GUI, tools, tests, packaging, and major Python packages reviewed; **Feature parity** matrix rewritten.
 
-**Continue with:**
+**Optional follow-ups:**
 
-1. Root packaging / resources / docs (`flake.nix`, top CMake, `resources/`)
-2. Final **Feature parity** matrix rewrite from accumulated notes
+1. Deep-dive any single 🔍 file (e.g. line-level `main_window.cpp` sections)
+2. Devices mount/eject UX verification
+3. Track gap list items into `TODO.md`
 
