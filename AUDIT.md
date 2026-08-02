@@ -1,0 +1,580 @@
+# AUDIT — dirtoo C++ port vs dirtoo-py
+
+Living document for a **top-to-bottom source audit**.
+
+## Process
+
+1. **Inventory** (this section) — list every tracked source/asset file.
+2. **Per-file review** — walk the inventory one file at a time; note:
+   - Role / features implemented
+   - Bugs, smells, incomplete bits
+   - Python parity references (`dirtoo-py/…`)
+3. **Parity matrix** — after both trees are reviewed, compare feature
+   sets and list C++ gaps vs intentional out-of-scope items.
+
+Status legend for file rows:
+
+| Mark | Meaning |
+|------|---------|
+| ⬜ | Not reviewed yet |
+| 🔍 | In progress |
+| ✅ | Reviewed — notes below or in § Per-file notes |
+| ➖ | Skipped (binary / generated / not source) |
+
+---
+
+## Summary counts
+
+| Tree | Files |
+|------|------:|
+| `dirtoo/` (C++) | 171 |
+| `dirtoo-py/` (Python reference) | 242 |
+| **Total** | **413** |
+
+Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT.md`.
+
+---
+
+## Module map (orientation)
+
+| Concern | C++ (`dirtoo/`) | Python (`dirtoo-py/src/dirtoo/`) |
+|---------|-----------------|----------------------------------|
+| FS locations / FileInfo | `libs/dirtoo-fs/` | `filesystem/` |
+| copy/move/rename | `libs/dirops/` + `tools/dt-*` | `posix/`, `programs/` |
+| Filter DSL | `libs/dirtoo-filter/` | `filter/`, `expr/`, `find/` |
+| Sort/group/visible list | `libs/dirtoo-collection/` | `filecollection/` |
+| Directory watch | `libs/dirtoo-watcher/` | `watcher/` |
+| Thumbnails | `libs/dirtoo-thumbnail/` | `thumbnail/`, `dbus_thumbnail*` |
+| Archives (read) | `libs/dirtoo-archive/` | `archive/` |
+| Main GUI | `apps/dirtoo/` | `fileview/`, `gui/` |
+| Bookmarks / history | `apps/dirtoo/bookmarks*`, menus | `bookmark/`, `history/` |
+| Open-with / MIME | `apps/dirtoo/open_with*` | `mime/`, `xdg_*` |
+| CLI utilities | `tools/` | `programs/` |
+
+---
+
+## Inventory — `dirtoo/` (C++)
+
+### `dirtoo/apps`
+
+
+| Status | Path |
+|--------|------|
+| ⬜ | `dirtoo/apps/dirtoo/CMakeLists.txt` |
+| ⬜ | `dirtoo/apps/dirtoo/about_dialog.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/about_dialog.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/app_settings.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/app_settings.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/badge_icons.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/bookmarks.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/bookmarks.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/clipboard.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/clipboard.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/conflict_dialog.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/conflict_dialog.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/directory_load_worker.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/directory_load_worker.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/directory_thumbnail_worker.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/directory_thumbnail_worker.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/directory_tree_model.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/directory_tree_model.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/drag_action_overlay.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/drag_action_overlay.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/file_item_delegate.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/file_item_delegate.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/file_list_model.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/file_list_model.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/file_views.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/filter_worker.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/filter_worker.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/graphics_file_item.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/graphics_file_item.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/graphics_file_view.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/graphics_file_view.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/history_menu.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/history_menu.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/leap_widget.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/leap_widget.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/location_button_bar.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/location_button_bar.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/main.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/main_window.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/main_window.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/message_area.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/message_area.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/name_input_dialog.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/name_input_dialog.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/open_history.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/open_history.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/open_with.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/open_with.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/path_completion_worker.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/path_completion_worker.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/preferences_dialog.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/preferences_dialog.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/properties_dialog.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/properties_dialog.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/resources.qrc` |
+| ⬜ | `dirtoo/apps/dirtoo/search_worker.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/search_worker.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/size_format.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/size_format.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/sort_worker.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/sort_worker.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/transfer_dialog.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/transfer_dialog.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/transfer_worker.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/transfer_worker.hpp` |
+| ⬜ | `dirtoo/apps/dirtoo/udisks_client.cpp` |
+| ⬜ | `dirtoo/apps/dirtoo/udisks_client.hpp` |
+
+### `dirtoo/libs`
+
+
+| Status | Path |
+|--------|------|
+| ⬜ | `dirtoo/libs/dirops/CMakeLists.txt` |
+| ⬜ | `dirtoo/libs/dirops/cmake/diropsConfig.cmake.in` |
+| ⬜ | `dirtoo/libs/dirops/include/dirops/error.hpp` |
+| ⬜ | `dirtoo/libs/dirops/include/dirops/ops.hpp` |
+| ⬜ | `dirtoo/libs/dirops/include/dirops/util.hpp` |
+| ⬜ | `dirtoo/libs/dirops/src/error.cpp` |
+| ⬜ | `dirtoo/libs/dirops/src/ops.cpp` |
+| ⬜ | `dirtoo/libs/dirops/src/util.cpp` |
+| ⬜ | `dirtoo/libs/dirtoo-archive/CMakeLists.txt` |
+| ⬜ | `dirtoo/libs/dirtoo-archive/cmake/dirtoo-archiveConfig.cmake.in` |
+| ⬜ | `dirtoo/libs/dirtoo-archive/include/dirtoo/archive/archive_index.hpp` |
+| ⬜ | `dirtoo/libs/dirtoo-archive/include/dirtoo/archive/archive_manager.hpp` |
+| ⬜ | `dirtoo/libs/dirtoo-archive/src/archive_index.cpp` |
+| ⬜ | `dirtoo/libs/dirtoo-archive/src/archive_manager.cpp` |
+| ⬜ | `dirtoo/libs/dirtoo-collection/CMakeLists.txt` |
+| ⬜ | `dirtoo/libs/dirtoo-collection/cmake/dirtoo-collectionConfig.cmake.in` |
+| ⬜ | `dirtoo/libs/dirtoo-collection/include/dirtoo/collection/file_collection.hpp` |
+| ⬜ | `dirtoo/libs/dirtoo-collection/include/dirtoo/collection/grouper.hpp` |
+| ⬜ | `dirtoo/libs/dirtoo-collection/include/dirtoo/collection/sorter.hpp` |
+| ⬜ | `dirtoo/libs/dirtoo-collection/src/file_collection.cpp` |
+| ⬜ | `dirtoo/libs/dirtoo-collection/src/sorter.cpp` |
+| ⬜ | `dirtoo/libs/dirtoo-filter/CMakeLists.txt` |
+| ⬜ | `dirtoo/libs/dirtoo-filter/cmake/dirtoo-filterConfig.cmake.in` |
+| ⬜ | `dirtoo/libs/dirtoo-filter/include/dirtoo/filter/filter_item.hpp` |
+| ⬜ | `dirtoo/libs/dirtoo-filter/include/dirtoo/filter/match_func.hpp` |
+| ⬜ | `dirtoo/libs/dirtoo-filter/include/dirtoo/filter/media_meta_cache.hpp` |
+| ⬜ | `dirtoo/libs/dirtoo-filter/include/dirtoo/filter/media_probe.hpp` |
+| ⬜ | `dirtoo/libs/dirtoo-filter/include/dirtoo/filter/parser.hpp` |
+| ⬜ | `dirtoo/libs/dirtoo-filter/include/dirtoo/filter/predicates.hpp` |
+| ⬜ | `dirtoo/libs/dirtoo-filter/include/dirtoo/filter/search.hpp` |
+| ⬜ | `dirtoo/libs/dirtoo-filter/src/media_meta_cache.cpp` |
+| ⬜ | `dirtoo/libs/dirtoo-filter/src/media_probe.cpp` |
+| ⬜ | `dirtoo/libs/dirtoo-filter/src/parser.cpp` |
+| ⬜ | `dirtoo/libs/dirtoo-filter/src/predicates.cpp` |
+| ⬜ | `dirtoo/libs/dirtoo-filter/src/search.cpp` |
+| ⬜ | `dirtoo/libs/dirtoo-filter/tools/dt_filter.cpp` |
+| ⬜ | `dirtoo/libs/dirtoo-fs/CMakeLists.txt` |
+| ⬜ | `dirtoo/libs/dirtoo-fs/cmake/dirtoo-fsConfig.cmake.in` |
+| ⬜ | `dirtoo/libs/dirtoo-fs/include/dirtoo/fs/file_info.hpp` |
+| ⬜ | `dirtoo/libs/dirtoo-fs/include/dirtoo/fs/location.hpp` |
+| ⬜ | `dirtoo/libs/dirtoo-fs/src/file_info.cpp` |
+| ⬜ | `dirtoo/libs/dirtoo-fs/src/location.cpp` |
+| ⬜ | `dirtoo/libs/dirtoo-thumbnail/CMakeLists.txt` |
+| ⬜ | `dirtoo/libs/dirtoo-thumbnail/cmake/dirtoo-thumbnailConfig.cmake.in` |
+| ⬜ | `dirtoo/libs/dirtoo-thumbnail/include/dirtoo/thumbnail/thumbnailer.hpp` |
+| ⬜ | `dirtoo/libs/dirtoo-thumbnail/src/thumbnailer.cpp` |
+| ⬜ | `dirtoo/libs/dirtoo-watcher/CMakeLists.txt` |
+| ⬜ | `dirtoo/libs/dirtoo-watcher/cmake/dirtoo-watcherConfig.cmake.in` |
+| ⬜ | `dirtoo/libs/dirtoo-watcher/include/dirtoo/watcher/directory_watcher.hpp` |
+| ⬜ | `dirtoo/libs/dirtoo-watcher/src/directory_watcher.cpp` |
+
+### `dirtoo/resources`
+
+
+| Status | Path |
+|--------|------|
+| ⬜ | `dirtoo/resources/dirtoo.desktop` |
+| ⬜ | `dirtoo/resources/dirtoo.metainfo.xml` |
+| ➖ | `dirtoo/resources/icons/badge-error.png` |
+| ➖ | `dirtoo/resources/icons/badge-image.png` |
+| ➖ | `dirtoo/resources/icons/badge-loading.png` |
+| ➖ | `dirtoo/resources/icons/badge-locked.png` |
+| ➖ | `dirtoo/resources/icons/badge-new.png` |
+| ➖ | `dirtoo/resources/icons/badge-video.png` |
+| ⬜ | `dirtoo/resources/icons/crop-thumbnails.svg` |
+| ➖ | `dirtoo/resources/icons/dirtoo.png` |
+| ⬜ | `dirtoo/resources/icons/dirtoo.svg` |
+| ➖ | `dirtoo/resources/icons/dnd-ask.png` |
+| ➖ | `dirtoo/resources/icons/dnd-copy.png` |
+| ➖ | `dirtoo/resources/icons/dnd-link.png` |
+| ➖ | `dirtoo/resources/icons/dnd-move.png` |
+| ➖ | `dirtoo/resources/icons/dnd-none.png` |
+| ⬜ | `dirtoo/resources/icons/icon-detail-less.svg` |
+| ⬜ | `dirtoo/resources/icons/icon-detail-more.svg` |
+| ⬜ | `dirtoo/resources/icons/view-detail.svg` |
+| ⬜ | `dirtoo/resources/icons/view-hidden.svg` |
+| ⬜ | `dirtoo/resources/icons/view-icons.svg` |
+| ⬜ | `dirtoo/resources/icons/view-sidebar.svg` |
+| ⬜ | `dirtoo/resources/icons/view-small-icons.svg` |
+| ⬜ | `dirtoo/resources/icons/zoom-in.svg` |
+| ⬜ | `dirtoo/resources/icons/zoom-out.svg` |
+
+### `dirtoo/tests`
+
+
+| Status | Path |
+|--------|------|
+| ⬜ | `dirtoo/tests/CMakeLists.txt` |
+| ⬜ | `dirtoo/tests/test_archive_index.cpp` |
+| ⬜ | `dirtoo/tests/test_clipboard_text.cpp` |
+| ⬜ | `dirtoo/tests/test_collection.cpp` |
+| ⬜ | `dirtoo/tests/test_dirops.cpp` |
+| ⬜ | `dirtoo/tests/test_dirops_rename.cpp` |
+| ⬜ | `dirtoo/tests/test_filter.cpp` |
+| ⬜ | `dirtoo/tests/test_location.cpp` |
+
+### `dirtoo/tools`
+
+
+| Status | Path |
+|--------|------|
+| ⬜ | `dirtoo/tools/CMakeLists.txt` |
+| ⬜ | `dirtoo/tools/cli_common.hpp` |
+| ⬜ | `dirtoo/tools/dt_archiveinfo.cpp` |
+| ⬜ | `dirtoo/tools/dt_copy.cpp` |
+| ⬜ | `dirtoo/tools/dt_mediainfo.cpp` |
+| ⬜ | `dirtoo/tools/dt_mkdir.cpp` |
+| ⬜ | `dirtoo/tools/dt_mkfile.cpp` |
+| ⬜ | `dirtoo/tools/dt_move.cpp` |
+| ⬜ | `dirtoo/tools/dt_rename.cpp` |
+| ⬜ | `dirtoo/tools/dt_rm.cpp` |
+| ⬜ | `dirtoo/tools/dt_rmdir.cpp` |
+| ⬜ | `dirtoo/tools/dt_swap.cpp` |
+| ⬜ | `dirtoo/tools/dt_symlink.cpp` |
+| ⬜ | `dirtoo/tools/json_util.hpp` |
+
+### `dirtoo/`
+
+#### Root
+
+| Status | Path |
+|--------|------|
+| ⬜ | `dirtoo/ARCHITECTURE.md` |
+| ⬜ | `dirtoo/CMakeLists.txt` |
+| ⬜ | `dirtoo/README.md` |
+| ⬜ | `dirtoo/STATUS.md` |
+| ⬜ | `dirtoo/VERSION` |
+| ➖ | `dirtoo/flake.lock` |
+| ⬜ | `dirtoo/flake.nix` |
+
+---
+
+## Inventory — `dirtoo-py/` (Python reference)
+
+### `dirtoo-py/` — experiments
+
+| Status | Path |
+|--------|------|
+| ⬜ | `dirtoo-py/experiments/README.md` |
+| ⬜ | `dirtoo-py/experiments/circularreferences/bar.py` |
+| ⬜ | `dirtoo-py/experiments/circularreferences/circularreferences.py` |
+| ⬜ | `dirtoo-py/experiments/circularreferences/foo.py` |
+| ➖ | `dirtoo-py/experiments/facedetect/face.jpg` |
+| ⬜ | `dirtoo-py/experiments/facedetect/facedetect.py` |
+| ⬜ | `dirtoo-py/experiments/filterparser/parser.py` |
+| ⬜ | `dirtoo-py/experiments/gaussian/gaussian.py` |
+| ⬜ | `dirtoo-py/experiments/inotify/inotify.py` |
+| ⬜ | `dirtoo-py/experiments/popup/popup.py` |
+| ⬜ | `dirtoo-py/experiments/pyqtcrash/pyqtcrash.py` |
+| ⬜ | `dirtoo-py/experiments/pyqttest/pyqttest.py` |
+| ⬜ | `dirtoo-py/experiments/qgraphicperf/qgraphicperf.py` |
+| ⬜ | `dirtoo-py/experiments/qmime/qmime.py` |
+| ⬜ | `dirtoo-py/experiments/qmltest/.gitignore` |
+| ⬜ | `dirtoo-py/experiments/qmltest/main.qml` |
+| ⬜ | `dirtoo-py/experiments/qmltest/qmltest.py` |
+| ⬜ | `dirtoo-py/experiments/qnotify/qnotify.py` |
+| ⬜ | `dirtoo-py/experiments/qtinotify/qtinotify.py` |
+| ⬜ | `dirtoo-py/experiments/threadtest/threadtest.py` |
+| ⬜ | `dirtoo-py/experiments/udisks/udisks.py` |
+| ⬜ | `dirtoo-py/experiments/udisks/udisksqt.py` |
+
+### `dirtoo-py/` — src
+
+| Status | Path |
+|--------|------|
+| ⬜ | `dirtoo-py/src/dirtoo/__init__.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/archive/__init__.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/archive/archive_extractor.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/archive/archive_manager.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/archive/archiveinfo.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/archive/extractor.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/archive/extractor_factory.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/archive/libarchive_extractor.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/archive/rar_extractor.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/archive/sevenzip_extractor.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/bookmark/__init__.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/bookmark/bookmarks.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/bookmark/bookmarks_provider.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/dbus_thumbnail_cache.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/dbus_thumbnailer.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/duration.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/expr/__init__.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/expr/expr.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/ffprobe.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/file_transfer.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/file_type.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/filecollection/__init__.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/filecollection/file_collection.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/filecollection/filter.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/filecollection/grouper.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/filecollection/sorter.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/filesystem/__init__.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/filesystem/file_info.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/filesystem/lazy_file_info.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/filesystem/location.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/filesystem/stdio_filesystem.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/__init__.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/actions.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/application.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/application_actions.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/controller.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/executor.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/file_graphics_scene.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/file_item.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/file_item_renderer.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/file_view.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/file_view_style.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/file_view_window.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/filelist_stream.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/filesystem_operations.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/gnome.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/gui.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/layout.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/layout_builder.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/mode.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/path_completion.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/rename_operation.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/return_value.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/scaler.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/search_stream.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/settings.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/virtual_filesystem.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fileview/worker_thread.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/filter/__init__.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/filter/filter_command_parser.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/filter/filter_expr_parser.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/filter/filter_parser.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/filter/match_func.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/filter/match_func_factory.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/find/__init__.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/find/action.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/find/context.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/find/filter.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/find/util.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/find/walk.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/format.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/fuzzy.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/glob.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/gui/__init__.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/gui/about_dialog.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/gui/conflict_dialog.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/gui/create_dialog.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/gui/directory_context_menu.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/gui/drag_widget.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/gui/filter_line_edit.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/gui/history_menu.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/gui/item_context_menu.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/gui/label.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/gui/leap_widget.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/gui/location_buttonbar.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/gui/location_lineedit.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/gui/menu.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/gui/message_area.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/gui/preferences_dialog.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/gui/properties_dialog.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/gui/push_button.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/gui/rename_dialog.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/gui/search_line_edit.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/gui/tool_button.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/gui/transfer_dialog.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/gui/transfer_error_dialog.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/gui/transfer_request_dialog.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/history/__init__.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/history/history.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/history/history_provider.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/icons/README.md` |
+| ⬜ | `dirtoo-py/src/dirtoo/icons/compress.gif` |
+| ➖ | `dirtoo-py/src/dirtoo/icons/dirtoo.png` |
+| ⬜ | `dirtoo-py/src/dirtoo/icons/dirtoo.svg` |
+| ➖ | `dirtoo-py/src/dirtoo/icons/dnd-ask.png` |
+| ➖ | `dirtoo-py/src/dirtoo/icons/dnd-copy.png` |
+| ➖ | `dirtoo-py/src/dirtoo/icons/dnd-link.png` |
+| ➖ | `dirtoo-py/src/dirtoo/icons/dnd-move.png` |
+| ➖ | `dirtoo-py/src/dirtoo/icons/dnd-none.png` |
+| ⬜ | `dirtoo-py/src/dirtoo/icons/gears.gif` |
+| ➖ | `dirtoo-py/src/dirtoo/icons/noun_175057_cc.png` |
+| ⬜ | `dirtoo-py/src/dirtoo/icons/noun_175057_cc.xcf` |
+| ➖ | `dirtoo-py/src/dirtoo/icons/noun_236873_cc.png` |
+| ⬜ | `dirtoo-py/src/dirtoo/icons/noun_236873_cc.xcf` |
+| ➖ | `dirtoo-py/src/dirtoo/icons/noun_258297_cc.png` |
+| ⬜ | `dirtoo-py/src/dirtoo/icons/noun_258297_cc.xcf` |
+| ➖ | `dirtoo-py/src/dirtoo/icons/noun_36746_cc.png` |
+| ⬜ | `dirtoo-py/src/dirtoo/icons/noun_36746_cc.xcf` |
+| ➖ | `dirtoo-py/src/dirtoo/icons/noun_386758_cc.png` |
+| ⬜ | `dirtoo-py/src/dirtoo/icons/noun_386758_cc.xcf` |
+| ➖ | `dirtoo-py/src/dirtoo/icons/noun_409399_cc.png` |
+| ⬜ | `dirtoo-py/src/dirtoo/icons/noun_409399_cc.xcf` |
+| ➖ | `dirtoo-py/src/dirtoo/icons/noun_757280_cc.png` |
+| ⬜ | `dirtoo-py/src/dirtoo/icons/noun_757280_cc.xcf` |
+| ⬜ | `dirtoo-py/src/dirtoo/icons/scan.gif` |
+| ⬜ | `dirtoo-py/src/dirtoo/icons/search.gif` |
+| ⬜ | `dirtoo-py/src/dirtoo/image/__init__.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/image/icon.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/image/image_filter.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/list_dict.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/mediainfo.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/metadata/__init__.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/metadata/metadata.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/metadata/metadata_cache.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/metadata/metadata_collector.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/mime/__init__.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/mime/mime_database.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/posix/__init__.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/posix/filesystem.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/profiler/__init__.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/profiler/profiler.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/__init__.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/archive_extractor.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/archiveinfo.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/chomp.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/desktop.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/dirtool.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/expr.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/fileview.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/find.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/fsck.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/fuzzy.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/glob.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/guessarchivename.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/guitest.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/icon.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/mediainfo.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/metadata.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/mime.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/mkevil.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/mktest.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/move.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/rmdir.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/shuffle.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/sleep.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/swap.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/thumbnailer.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/unidecode.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/programs/watch.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/sort.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/stream/__init__.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/stream/stream_manager.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/tee_io.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/thumbnail/__init__.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/thumbnail/directory_thumbnailer.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/thumbnail/thumbnail.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/thumbnail/thumbnailer.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/unique.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/util.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/watcher/__init__.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/watcher/archive_directory_watcher.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/watcher/directory_watcher.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/watcher/directory_watcher_worker.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/watcher/inotify_qt.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/xdg_desktop.py` |
+| ⬜ | `dirtoo-py/src/dirtoo/xdg_mime_associations.py` |
+
+### `dirtoo-py/` — tests
+
+| Status | Path |
+|--------|------|
+| ⬜ | `dirtoo-py/tests/__init__.py` |
+| ⬜ | `dirtoo-py/tests/test.7z` |
+| ⬜ | `dirtoo-py/tests/test.mkv` |
+| ⬜ | `dirtoo-py/tests/test.rar` |
+| ⬜ | `dirtoo-py/tests/test_cmd_metadata.py` |
+| ⬜ | `dirtoo-py/tests/test_duration.py` |
+| ⬜ | `dirtoo-py/tests/test_expr.py` |
+| ⬜ | `dirtoo-py/tests/test_ffprobe.py` |
+| ⬜ | `dirtoo-py/tests/test_file_info.py` |
+| ⬜ | `dirtoo-py/tests/test_fileview_thumbnailer.py` |
+| ⬜ | `dirtoo-py/tests/test_filter_parser.py` |
+| ⬜ | `dirtoo-py/tests/test_format.py` |
+| ⬜ | `dirtoo-py/tests/test_incomplete.7z` |
+| ⬜ | `dirtoo-py/tests/test_incomplete.rar` |
+| ⬜ | `dirtoo-py/tests/test_list_dict.py` |
+| ⬜ | `dirtoo-py/tests/test_location.py` |
+| ⬜ | `dirtoo-py/tests/test_mediainfo.py` |
+| ⬜ | `dirtoo-py/tests/test_metadata_collector.py` |
+| ⬜ | `dirtoo-py/tests/test_rar_extractor_worker.py` |
+| ⬜ | `dirtoo-py/tests/test_sevenzip_extractor_worker.py` |
+| ⬜ | `dirtoo-py/tests/test_tee_io.py` |
+| ⬜ | `dirtoo-py/tests/test_util.py` |
+
+### `dirtoo-py/` — Root
+
+| Status | Path |
+|--------|------|
+| ⬜ | `dirtoo-py/.gitattributes` |
+| ⬜ | `dirtoo-py/.gitignore` |
+| ⬜ | `dirtoo-py/LICENSE.txt` |
+| ⬜ | `dirtoo-py/README.md` |
+| ⬜ | `dirtoo-py/VERSION` |
+| ⬜ | `dirtoo-py/dirhier.py` |
+| ⬜ | `dirtoo-py/dirtoo.desktop` |
+| ⬜ | `dirtoo-py/dirtoo.nix` |
+| ➖ | `dirtoo-py/flake.lock` |
+| ⬜ | `dirtoo-py/flake.nix` |
+| ⬜ | `dirtoo-py/pyproject.toml` |
+| ⬜ | `dirtoo-py/setup.py` |
+
+---
+
+## Per-file notes
+
+_Filled as each file is reviewed. Newest notes at the bottom of each subsection._
+
+### C++ notes
+
+_(none yet)_
+
+### Python reference notes
+
+_(none yet)_
+
+---
+
+## Feature parity (draft — refine after file reviews)
+
+Seeded from `TODO.md` / `AGENTS.md`; will be rewritten once inventories are annotated.
+
+| Area | C++ status | Notes |
+|------|------------|-------|
+| Local browsing + views | Present | Detail / Icons / Small |
+| Filter DSL + content offload | Present | FilterWorker |
+| Recursive search | Present | SearchWorker |
+| Thumbnails + badges | Present | |
+| Clipboard + DnD + Link | Present | |
+| Archives read-only | Present | Write OOS |
+| Sidebar tree + UDisks devices | Present | Mount/eject partial |
+| Open history | Present | Recently Opened menu |
+| Undo | Missing | Python may be stub |
+| Editable permissions | Missing | Display-only |
+| Archive file thumbnails | Missing / partial | TODO |
+| Full `programs/*` CLI | OOS | Helpers only |
+| Remote VFS | OOS | |
+| Kinetic graphics layout | OOS | |
+
+---
+
+## Next step
+
+Begin per-file review in dependency order:
+
+1. `dirtoo/libs/dirtoo-fs/`
+2. `dirtoo/libs/dirops/`
+3. `dirtoo/libs/dirtoo-filter/`
+4. Remaining libs → `apps/dirtoo/` → `tools/` → tests
+5. Parallel notes on matching `dirtoo-py/src/dirtoo/*` modules
+
