@@ -30,12 +30,13 @@
           PyQt6-stubs = pythonPackages.buildPythonPackage rec {
             name = "PyQt6-stubs";
             src = PyQt6-stubs_src;
-
             nativeCheckInputs = with pythonPackages; [
               libcst
               mypy
               pyqt6
             ];
+            pyproject = true;
+            build-system = [ pythonPackages.setuptools ];
           };
 
           python-ngram = pythonPackages.buildPythonPackage rec {
