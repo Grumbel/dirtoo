@@ -98,8 +98,10 @@
           inherit version src cmakeBuildType;
           dontStrip = true;
           nativeBuildInputs = with pkgs; [ cmake ninja qt6.wrapQtAppsHook ];
-          buildInputs = [ dirtoo-fs pkgs.qt6.qtbase ];
-          propagatedBuildInputs = with pkgs; [ libarchive unzip gnutar p7zip ];
+          buildInputs = [ dirtoo-fs pkgs.qt6.qtbase pkgs.libarchive ];
+          # unzip/tar/7z no longer used by the library (libarchive only); leave out of
+          # the archive package itself. Dependents that still shell out can pull tools.
+          propagatedBuildInputs = with pkgs; [ libarchive ];
           postUnpack = ''sourceRoot+=/libs/dirtoo-archive'';
           cmakeFlags = [ versionFlag ];
         };

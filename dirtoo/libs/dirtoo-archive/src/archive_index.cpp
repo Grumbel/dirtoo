@@ -4,7 +4,6 @@
 #include "dirtoo/archive/archive_index.hpp"
 
 #include <QRegularExpression>
-#include <QStandardPaths>
 #include <QString>
 #include <QStringList>
 

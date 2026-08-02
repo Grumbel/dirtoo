@@ -158,13 +158,15 @@ void ArchiveManager::start_extract(const fs::Location& archive_location, Entry& 
   // libarchive extract off the GUI thread (flake guarantees libarchive).
   std::thread([this, archive_location, archive_path, cache_dir]() {
     const auto ok = extract_archive_libarchive(archive_path, cache_dir);
+    const bool success = static_cast<bool>(ok);
+    const QString err = success ? QString{} : QString::fromStdString(ok.error());
     QMetaObject::invokeMethod(
         this,
-        [this, archive_location, ok]() {
-          if (ok) {
+        [this, archive_location, success, err]() {
+          if (success) {
             finish_ok(archive_location);
           } else {
-            finish_fail(archive_location, QString::fromStdString(ok.error()));
+            finish_fail(archive_location, err);
           }
         },
         Qt::QueuedConnection);
