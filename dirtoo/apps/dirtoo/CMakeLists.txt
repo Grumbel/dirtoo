@@ -34,6 +34,8 @@ qt_add_executable(dirtoo-app
   search_controller.hpp
   properties_dialog.cpp
   properties_dialog.hpp
+  archive_listing.cpp
+  archive_listing.hpp
   app_settings.cpp
   app_settings.hpp
   size_format.cpp

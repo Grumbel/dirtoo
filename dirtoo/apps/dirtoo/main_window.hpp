@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "archive_listing.hpp"
 #include "clipboard.hpp"
 #include "dirtoo/archive/archive_index.hpp"
 #include "dirtoo/archive/archive_manager.hpp"
@@ -203,6 +204,8 @@ private:
   /// Resolve drop/paste URLs to real paths (extract archive members off-thread if needed).
   void begin_transfer_from_urls(const QList<QUrl>& urls, Qt::DropAction action,
                                const std::filesystem::path& dest_dir);
+  /// Watch real dir, archive extract tree, or archive file as appropriate.
+  void start_watcher_for_location();
   void restore_settings();
   void persist_settings() const;
   [[nodiscard]] std::vector<fs::FileInfo> selected_fileinfos() const;
@@ -214,9 +217,7 @@ private:
   thumbnail::Thumbnailer thumbnailer_;
   archive::ArchiveManager archive_manager_;
   fs::Location pending_archive_location_;
-  std::vector<archive::ArchiveEntry> archive_entries_;
-  bool archive_listing_ok_ = false;
-  std::filesystem::path indexed_archive_path_;
+  ArchiveListing archive_listing_;
   FileListModel* model_ = nullptr;
 
   TransferController transfer_controller_;

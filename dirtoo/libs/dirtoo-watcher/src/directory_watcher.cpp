@@ -18,7 +18,15 @@ DirectoryWatcher::DirectoryWatcher(QObject* parent)
     : QObject(parent)
     , impl_(new Impl)
 {
+  // Directory listings and archive extract trees.
   QObject::connect(&impl_->watcher, &QFileSystemWatcher::directoryChanged, this,
+                   [this](const QString&) {
+                     if (impl_->running) {
+                       emit directory_changed();
+                     }
+                   });
+  // Archive *files* (zip/tar) so replacing the archive on disk reloads the view.
+  QObject::connect(&impl_->watcher, &QFileSystemWatcher::fileChanged, this,
                    [this](const QString&) {
                      if (impl_->running) {
                        emit directory_changed();
@@ -50,8 +58,11 @@ void DirectoryWatcher::start()
     return;
   }
   const QString path = QString::fromStdString(impl_->location.as_path().string());
-  if (!impl_->watcher.directories().contains(path)) {
-    impl_->watcher.addPath(path);
+  if (!impl_->watcher.directories().contains(path) && !impl_->watcher.files().contains(path)) {
+    if (!impl_->watcher.addPath(path)) {
+      emit message(QStringLiteral("DirectoryWatcher: failed to watch %1").arg(path));
+      return;
+    }
   }
   impl_->running = true;
   // Do not emit directory_changed() here — navigation already loads explicitly.
@@ -64,6 +75,10 @@ void DirectoryWatcher::stop()
   const auto dirs = impl_->watcher.directories();
   if (!dirs.isEmpty()) {
     impl_->watcher.removePaths(dirs);
+  }
+  const auto files = impl_->watcher.files();
+  if (!files.isEmpty()) {
+    impl_->watcher.removePaths(files);
   }
 }
 

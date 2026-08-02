@@ -1591,29 +1591,25 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
   update_history_actions();
 
   if (location_.is_archive()) {
-    watcher_.stop();
     pending_archive_location_ = location_;
 
     // Reuse index when navigating within the same archive file.
-    if (archive_listing_ok_ && indexed_archive_path_ == location_.as_path()) {
+    if (archive_listing_.ready_for(location_.as_path())) {
+      start_watcher_for_location();
       on_directory_changed();
     } else {
-      archive_listing_ok_ = false;
-      archive_entries_.clear();
       QApplication::setOverrideCursor(Qt::WaitCursor);
-      auto listed = archive::list_archive_entries(location_.as_path());
+      std::string list_err;
+      const bool listed = archive_listing_.load(location_.as_path(), &list_err);
       QApplication::restoreOverrideCursor();
       if (listed) {
-        archive_entries_ = std::move(*listed);
-        archive_listing_ok_ = true;
-        indexed_archive_path_ = location_.as_path();
         set_status(QStringLiteral("Archive index: %1 entries")
-                                   .arg(archive_entries_.size()));
+                                   .arg(archive_listing_.entries().size()));
+        start_watcher_for_location();
         on_directory_changed();
       } else {
-        indexed_archive_path_.clear();
         set_status(QStringLiteral("Listing failed (%1); extracting…")
-                                   .arg(QString::fromStdString(listed.error())));
+                                   .arg(QString::fromStdString(list_err)));
         if (archive_manager_.status(fs::Location::from_archive(location_.as_path(), {}))
             != archive::ExtractStatus::Ready) {
           QApplication::setOverrideCursor(Qt::WaitCursor);
@@ -1622,8 +1618,7 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
       }
     }
   } else {
-    watcher_.set_location(location_);
-    watcher_.start();
+    start_watcher_for_location();
     // Initial listing (watcher no longer emits on start).
     reload_directory(false);
   }
@@ -1716,9 +1711,9 @@ void MainWindow::reload_directory(bool soft)
   }
 
   // In-memory archive index: apply on UI thread (no directory walk).
-  if (location_.is_archive() && archive_listing_ok_) {
+  if (location_.is_archive() && archive_listing_.ok()) {
     soft_directory_reload_ = false;
-    auto items = archive::fileinfos_for_prefix(location_, archive_entries_);
+    auto items = archive_listing_.fileinfos_for(location_);
     // Pre-fill non-recursive child counts for archive directories from the index.
     if (model_ != nullptr) {
       model_->clear_child_counts();
@@ -1732,7 +1727,7 @@ void MainWindow::reload_directory(bool soft)
             prefix.empty() ? name + "/" : prefix + "/" + name + "/";
         qint64 n = 0;
         std::set<std::string> seen;
-        for (const auto& entry : archive_entries_) {
+        for (const auto& entry : archive_listing_.entries()) {
           std::string rel = entry.path.generic_string();
           if (!rel.starts_with(needed)) {
             continue;
@@ -3802,6 +3797,26 @@ void MainWindow::on_about()
 }
 
 
+void MainWindow::start_watcher_for_location()
+{
+  watcher_.stop();
+  if (location_.is_archive()) {
+    // Prefer the extracted tree so soft reloads pick up on-disk changes under
+    // the extract cache. Fall back to watching the archive *file* (fileChanged)
+    // so replacing the archive on disk still refreshes.
+    if (const auto resolved = archive_manager_.resolved_directory(location_)) {
+      watcher_.set_location(fs::Location::from_path(*resolved));
+      watcher_.start();
+      return;
+    }
+    watcher_.set_location(fs::Location::from_path(location_.as_path()));
+    watcher_.start();
+    return;
+  }
+  watcher_.set_location(location_);
+  watcher_.start();
+}
+
 void MainWindow::on_archive_ready(const fs::Location& archive_location,
                                   const std::filesystem::path& extracted_root)
 {
@@ -3813,6 +3828,7 @@ void MainWindow::on_archive_ready(const fs::Location& archive_location,
   }
   set_status(QStringLiteral("Archive ready — %1")
                              .arg(QString::fromStdString(archive_location.as_path().filename().string())));
+  start_watcher_for_location();
   on_directory_changed();
 }
 

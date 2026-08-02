@@ -611,4 +611,39 @@ OpResult swap_names(const std::filesystem::path& a,
   return r;
 }
 
+OpResult set_permissions(const std::filesystem::path& path,
+                         std::uint32_t mode,
+                         const Options& options)
+{
+  if (cancelled(options)) {
+    return Result{.items = {}, .cancelled = true};
+  }
+
+  if (options.dry_run) {
+    Result r;
+    r.items.push_back(ItemResult{.source = path, .destination = path});
+    return r;
+  }
+
+  std::error_code ec;
+  if (!std::filesystem::exists(path, ec)) {
+    return std::unexpected(Error{
+        ec ? ec : std::make_error_code(std::errc::no_such_file_or_directory),
+        path,
+        "path does not exist",
+    });
+  }
+
+  // Keep only permission / special bits; never pass type bits to permissions().
+  const auto perms = static_cast<std::filesystem::perms>(mode & 07777u);
+  std::filesystem::permissions(path, perms, std::filesystem::perm_options::replace, ec);
+  if (ec) {
+    return std::unexpected(Error{ec, path, "set_permissions failed"});
+  }
+
+  Result r;
+  r.items.push_back(ItemResult{.source = path, .destination = path});
+  return r;
+}
+
 } // namespace dirops

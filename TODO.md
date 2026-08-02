@@ -11,9 +11,9 @@ parity features are in place. Catch suite: 57 cases (Overwrite-directory test
 aligned with into-dir resolution + `remove_for_overwrite` safety).
 
 **Residual focus:** optional polish (external-app archive DnD still Location
-URL only; list virtualization; editable permissions; richer watcher). P0
-audit items A1–A3 and libarchive (S1) are done. Same-app archive member
-drop extracts then copies.
+URL only; list virtualization; further MainWindow factoring). Editable
+permissions, archive extract-dir/file watch, and ArchiveListing extraction
+landed. P0 audit items A1–A3 and libarchive (S1) are done.
 
 Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 
@@ -144,7 +144,7 @@ Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 | Rename / New Folder / New File / Swap Names | **done** |
 | Archives read-only | **done** |
 | Thumbnails D-Bus + status badges + dir montage | **done** |
-| Editable permissions | **open** (display-only) |
+| Editable permissions | **done** — Properties OK → `dirops::set_permissions`; ops history |
 | Operations history log | **done** (log + dialog; no rollback) |
 
 ---
@@ -181,8 +181,8 @@ Go to Folder, Clear. Storage: SQLite at `$XDG_STATE_HOME/dirtoo/operations-histo
 | Operations history log | **done** — SQLite under `$XDG_STATE_HOME/dirtoo/`; full sources+items; no rollback |
 | Location URL encoding | **Promoted** — see *Audit findings* (systemic) |
 | Archive member thumbnails | Weak; needs extract path or special URI |
-| Watcher richness | QFileSystemWatcher only; no archive extract-dir watch |
-| MainWindow factoring | **Started** — NavigationHistory, SearchController, TransferController extracted |
+| Watcher richness | **Improved** — watches extract tree when ready, else archive file (`fileChanged`) |
+| MainWindow factoring | **Partial** — ArchiveListing extracted; NavigationHistory, Search, Transfer, Devices |
 | True incremental FS watcher deltas | **Partial** — merge_items after soft rescan; still O(n) readdir (no inotify names) |
 | List / Graphics virtualization | **Graphics viewport window done**; Detail uses uniform row heights when no group/time-gap; Qt paints only visible rows |
 | Rubber-band vs item drag | **done** |
@@ -213,7 +213,7 @@ smells, and gaps worth scheduling. Not every item is a user-visible crash.
 |----|-------|--------------|-----------|
 | S1 | **Archive listing/extract shells out to `bsdtar` / `tar` / `unzip` / `7z`** | Fragile verbose-text parsers | **Done** — **libarchive required** (CMake `REQUIRED`, flake); no CLI fallback (see AGENTS.md) |
 | S2 | **`std::filesystem::remove_all` as the Overwrite primitive** | Same as A3 — policy API looks like “replace file” but implementation is “delete subtree” | **Done (refuse path)** — Overwrite is file/symlink only; dirs rejected at API + UI |
-| S3 | **MainWindow still ~4.6k LOC** | Controllers extracted only partially; menus/archive still centralized | **Partial** — DevicesController extracted (~140 LOC); NavigationHistory, Search, Transfer, Devices |
+| S3 | **MainWindow still ~4.6k LOC** | Controllers extracted only partially; menus/archive still centralized | **Partial** — +`ArchiveListing`; NavigationHistory, Search, Transfer, Devices |
 | S4 | **Dual icon paint paths** | `GraphicsFileItem` and `FileItemDelegate` must stay twin for montage/badges | **Done** — `icon_tile_paint.hpp` (badge, directory montage, status stickers) shared by both |
 
 ### P2 — reliability / scale / UX

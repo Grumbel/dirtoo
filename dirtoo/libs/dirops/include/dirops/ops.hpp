@@ -86,4 +86,9 @@ using OpResult = std::expected<Result, Error>;
                                   const std::filesystem::path& b,
                                   const Options& options = {});
 
+/// Set permission bits (mode & 07777) via chmod. Does not change file type bits.
+[[nodiscard]] OpResult set_permissions(const std::filesystem::path& path,
+                                       std::uint32_t mode,
+                                       const Options& options = {});
+
 } // namespace dirops
