@@ -251,23 +251,24 @@ MainWindow::MainWindow(QWidget* parent)
   resize(960, 640);
 
   // Background transfer worker
-  transfer_worker_ = new TransferWorker;
-  transfer_worker_->moveToThread(&transfer_thread_);
-  connect(&transfer_thread_, &QThread::finished, transfer_worker_, &QObject::deleteLater);
-  connect(transfer_worker_, &TransferWorker::item_started, this,
+  connect(&transfer_controller_, &TransferController::item_started, this,
           &MainWindow::on_transfer_item_started);
-  connect(transfer_worker_, &TransferWorker::byte_progress, this,
+  connect(&transfer_controller_, &TransferController::byte_progress, this,
           &MainWindow::on_transfer_byte_progress);
-  connect(transfer_worker_, &TransferWorker::conflict_required, this,
+  connect(&transfer_controller_, &TransferController::conflict_required, this,
           &MainWindow::on_transfer_conflict);
-  connect(transfer_worker_, &TransferWorker::finished, this, &MainWindow::on_transfer_finished);
-  connect(transfer_worker_, &TransferWorker::log_line, this, [this](const QString& line) {
+  connect(&transfer_controller_, &TransferController::finished, this,
+          &MainWindow::on_transfer_finished);
+  connect(&transfer_controller_, &TransferController::log_line, this, [this](const QString& line) {
     qInfo().noquote() << QStringLiteral("transfer: %1").arg(line);
-    if (transfer_dialog_ != nullptr) {
-      transfer_dialog_->append_log(line);
+    if (transfer_controller_.dialog() != nullptr) {
+      transfer_controller_.dialog()->append_log(line);
     }
   });
-  transfer_thread_.start();
+
+  connect(&search_controller_, &SearchController::match_found, this, &MainWindow::on_search_match);
+  connect(&search_controller_, &SearchController::progress, this, &MainWindow::on_search_progress);
+  connect(&search_controller_, &SearchController::finished, this, &MainWindow::on_search_finished);
 
   dir_load_worker_ = new DirectoryLoadWorker;
   dir_load_thread_ = new QThread(this);
@@ -1211,11 +1212,8 @@ MainWindow::~MainWindow()
     path_completion_thread_->quit();
     path_completion_thread_->wait(2000);
   }
-  if (transfer_worker_ != nullptr) {
-    transfer_worker_->cancel();  // direct: may need to wake conflict/pause wait
-  }
-  transfer_thread_.quit();
-  transfer_thread_.wait(5000);
+  transfer_controller_.shutdown();
+  search_controller_.stop();
   if (dir_load_thread_ != nullptr) {
     dir_load_thread_->quit();
     dir_load_thread_->wait(3000);
@@ -1461,26 +1459,7 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
   }
   show_location_buttons();
 
-  if (record_history) {
-    if (history_index_ >= 0 && history_index_ + 1 < static_cast<int>(history_.size())) {
-      history_.erase(history_.begin() + history_index_ + 1, history_.end());
-    }
-    if (history_.empty() || history_.back().as_url() != location.as_url()) {
-      history_.push_back(location);
-      history_index_ = static_cast<int>(history_.size()) - 1;
-    } else {
-      history_index_ = static_cast<int>(history_.size()) - 1;
-    }
-    // Unique location history for the History menu (most recent last).
-    location_history_unique_.erase(
-        std::remove_if(location_history_unique_.begin(), location_history_unique_.end(),
-                       [&](const fs::Location& loc) { return loc.as_url() == location.as_url(); }),
-        location_history_unique_.end());
-    location_history_unique_.push_back(location);
-    if (location_history_unique_.size() > 40) {
-      location_history_unique_.erase(location_history_unique_.begin());
-    }
-  }
+  nav_history_.push(location, record_history);
   update_history_actions();
 
   if (location_.is_archive()) {
@@ -1549,36 +1528,33 @@ void MainWindow::on_go_home()
 
 void MainWindow::on_go_back()
 {
-  if (history_index_ <= 0) {
-    return;
+  if (const auto loc = nav_history_.go_back()) {
+    open_location(*loc, false);
   }
-  --history_index_;
-  open_location(history_[static_cast<std::size_t>(history_index_)], false);
 }
 
 void MainWindow::on_go_forward()
 {
-  if (history_index_ + 1 >= static_cast<int>(history_.size())) {
-    return;
+  if (const auto loc = nav_history_.go_forward()) {
+    open_location(*loc, false);
   }
-  ++history_index_;
-  open_location(history_[static_cast<std::size_t>(history_index_)], false);
 }
 
 void MainWindow::update_history_actions()
 {
   if (back_act_) {
-    back_act_->setEnabled(history_index_ > 0);
+    back_act_->setEnabled(nav_history_.can_go_back());
   }
   if (forward_act_) {
-    forward_act_->setEnabled(history_index_ + 1 < static_cast<int>(history_.size()));
+    forward_act_->setEnabled(nav_history_.can_go_forward());
   }
 }
+
 
 void MainWindow::update_edit_actions()
 {
   if (paste_act_) {
-    paste_act_->setEnabled(!transfer_busy_
+    paste_act_->setEnabled(!transfer_controller_.busy()
                            && clipboard_has_paths(QApplication::clipboard()->mimeData()));
   }
 }
@@ -2382,12 +2358,10 @@ void MainWindow::on_cut()
 
 void MainWindow::start_transfer(const TransferRequest& request)
 {
-  if (transfer_busy_) {
+  if (transfer_controller_.busy()) {
     set_status(QStringLiteral("A transfer is already in progress"));
     return;
   }
-  transfer_busy_ = true;
-  last_transfer_mode_ = request.mode;
   qInfo().noquote() << QStringLiteral("%1 %2 item(s) → %3")
                            .arg(request.mode == ClipboardMode::Cut ? QStringLiteral("move")
                                                                   : QStringLiteral("copy"))
@@ -2397,36 +2371,7 @@ void MainWindow::start_transfer(const TransferRequest& request)
     qDebug().noquote() << QStringLiteral("  source: %1").arg(QString::fromStdString(src.string()));
   }
   update_edit_actions();
-
-  if (transfer_dialog_ == nullptr) {
-    transfer_dialog_ = new TransferDialog(this);
-    const auto cancel_worker = [this] {
-      if (transfer_worker_ != nullptr) {
-        transfer_worker_->cancel();  // direct: may need to wake conflict/pause wait
-      }
-    };
-    connect(transfer_dialog_, &TransferDialog::cancel_requested, this, cancel_worker);
-    connect(transfer_dialog_, &QDialog::rejected, this, cancel_worker);
-    connect(transfer_dialog_, &TransferDialog::pause_requested, this, [this] {
-      if (transfer_worker_ != nullptr) {
-        transfer_worker_->pause();
-      }
-    });
-    connect(transfer_dialog_, &TransferDialog::resume_requested, this, [this] {
-      if (transfer_worker_ != nullptr) {
-        transfer_worker_->resume();
-      }
-    });
-  }
-  transfer_dialog_->reset();
-  transfer_dialog_->set_title_text(request.mode == ClipboardMode::Cut ? QStringLiteral("Moving…")
-                                                                     : QStringLiteral("Copying…"));
-  transfer_dialog_->set_destination(
-      QString::fromStdString(request.destination_directory.string()));
-  transfer_dialog_->show();
-
-  QMetaObject::invokeMethod(transfer_worker_, [this, request] { transfer_worker_->run(request); },
-                            Qt::QueuedConnection);
+  transfer_controller_.start(this, request);
 }
 
 void MainWindow::on_paste()
@@ -2436,7 +2381,7 @@ void MainWindow::on_paste()
     return;
   }
 
-  if (transfer_busy_) {
+  if (transfer_controller_.busy()) {
     return;
   }
 
@@ -2490,17 +2435,17 @@ void MainWindow::on_paste_link()
 
 void MainWindow::on_transfer_item_started(int index, int total, const QString& path)
 {
-  if (transfer_dialog_ != nullptr) {
-    transfer_dialog_->set_item_progress(index, total);
-    transfer_dialog_->set_current_file(path);
+  if (transfer_controller_.dialog() != nullptr) {
+    transfer_controller_.dialog()->set_item_progress(index, total);
+    transfer_controller_.dialog()->set_current_file(path);
   }
 }
 
 void MainWindow::on_transfer_byte_progress(quint64 done, quint64 total, const QString& path)
 {
-  if (transfer_dialog_ != nullptr) {
-    transfer_dialog_->set_current_file(path);
-    transfer_dialog_->set_progress(done, total);
+  if (transfer_controller_.dialog() != nullptr) {
+    transfer_controller_.dialog()->set_current_file(path);
+    transfer_controller_.dialog()->set_progress(done, total);
   }
 }
 
@@ -2512,17 +2457,17 @@ void MainWindow::on_transfer_conflict(const QString& destination_name, const QSt
                            .arg(destination_name, source_path, destination_path);
   // resolve_conflict / cancel MUST be invoked directly: the worker thread is blocked
   // waiting on conflict_cv_, so a QueuedConnection to the worker would never run (deadlock).
-  if (transfer_worker_ == nullptr) {
+  if (transfer_controller_.worker() == nullptr) {
     return;
   }
   const auto chosen = ask_conflict_policy(
       this, destination_name, std::filesystem::path{source_path.toStdString()},
       std::filesystem::path{destination_path.toStdString()});
   if (!chosen) {
-    transfer_worker_->resolve_conflict(dirops::ConflictPolicy::Fail, false, false);
+    transfer_controller_.resolve_conflict(dirops::ConflictPolicy::Fail, false, false);
   } else {
     const auto decision = *chosen;
-    transfer_worker_->resolve_conflict(decision.policy, true, decision.apply_to_all);
+    transfer_controller_.resolve_conflict(decision.policy, true, decision.apply_to_all);
   }
 }
 
@@ -2534,15 +2479,15 @@ void MainWindow::on_transfer_finished(TransferSummary summary)
                            .arg(summary.cancelled)
                            .arg(summary.error.isEmpty() ? QStringLiteral("-") : summary.error);
 
-  transfer_busy_ = false;
+  /* busy cleared by TransferController */
 
-  if (transfer_dialog_ != nullptr) {
-    transfer_dialog_->mark_finished(summary.cancelled, summary.error);
+  if (transfer_controller_.dialog() != nullptr) {
+    transfer_controller_.dialog()->mark_finished(summary.cancelled, summary.error);
   } else if (!summary.error.isEmpty()) {
     QMessageBox::warning(this, QStringLiteral("Transfer"), summary.error);
   }
 
-  if (last_transfer_mode_ == ClipboardMode::Cut && summary.completed > 0 && !summary.cancelled) {
+  if (transfer_controller_.last_mode() == ClipboardMode::Cut && summary.completed > 0 && !summary.cancelled) {
     QApplication::clipboard()->clear();
   }
 
@@ -2831,7 +2776,7 @@ void MainWindow::on_urls_dropped_to(const QList<QUrl>& urls, Qt::DropAction acti
                            .arg(urls.size())
                            .arg(int(action))
                            .arg(dest_dir.isEmpty() ? QStringLiteral("(cwd)") : dest_dir);
-  if (transfer_busy_ || urls.isEmpty()) {
+  if (transfer_controller_.busy() || urls.isEmpty()) {
     return;
   }
 
@@ -2996,7 +2941,7 @@ void MainWindow::restore_settings()
     restoreState(s.window_state);
   }
   // Restore persistent location history for the History menu.
-  location_history_unique_.clear();
+  std::vector<fs::Location> unique;
   for (const QString& entry : s.location_history) {
     if (entry.isEmpty()) {
       continue;
@@ -3004,13 +2949,14 @@ void MainWindow::restore_settings()
     try {
       if (entry.startsWith(QLatin1String("archive://"))
           || entry.startsWith(QLatin1String("file://"))) {
-        location_history_unique_.push_back(fs::Location::from_url(entry.toStdString()));
+        unique.push_back(fs::Location::from_url(entry.toStdString()));
       } else {
-        location_history_unique_.push_back(fs::Location::from_path(entry.toStdString()));
+        unique.push_back(fs::Location::from_path(entry.toStdString()));
       }
     } catch (...) {
     }
   }
+  nav_history_.set_unique_locations(std::move(unique));
 }
 
 void MainWindow::persist_settings() const
@@ -3058,7 +3004,7 @@ void MainWindow::persist_settings() const
   s.window_state = saveState();
   s.last_location = QString::fromStdString(location_.as_path().string());
   s.location_history.clear();
-  for (const auto& loc : location_history_unique_) {
+  for (const auto& loc : nav_history_.unique_locations()) {
     s.location_history.append(QString::fromStdString(loc.as_url()));
   }
   save_settings(s);
@@ -3279,18 +3225,9 @@ void MainWindow::on_show_search()
 
 void MainWindow::stop_search()
 {
-  if (search_worker_ != nullptr) {
-    search_worker_->cancel();
-  }
-  if (search_thread_ != nullptr) {
-    search_thread_->quit();
-    search_thread_->wait(3000);
-    search_thread_->deleteLater();
-    search_thread_ = nullptr;
-    search_worker_ = nullptr;
-  }
-  search_active_ = false;
+  search_controller_.stop();
 }
+
 
 void MainWindow::on_search_submitted()
 {
@@ -3313,28 +3250,13 @@ void MainWindow::on_search_submitted()
   collection_.clear_filter();
   refresh_list();
 
-  search_thread_ = new QThread(this);
-  search_worker_ = new SearchWorker();
-  search_worker_->moveToThread(search_thread_);
-
-  connect(search_thread_, &QThread::finished, search_worker_, &QObject::deleteLater);
-  connect(search_worker_, &SearchWorker::match_found, this, &MainWindow::on_search_match);
-  connect(search_worker_, &SearchWorker::finished, this, &MainWindow::on_search_finished);
-  connect(search_worker_, &SearchWorker::progress, this, &MainWindow::on_search_progress);
-
   const QString root = QString::fromStdString(location_.as_path().string());
   const bool show_hidden = show_hidden_act_ != nullptr && show_hidden_act_->isChecked();
-
-  connect(search_thread_, &QThread::started, search_worker_,
-          [this, root, expr, show_hidden] {
-            search_worker_->start(root, expr, show_hidden, /*max_depth=*/-1);
-          });
-
   set_status(QStringLiteral("Searching…"));
   if (message_area_ != nullptr) {
     message_area_->show_info(QStringLiteral("Recursive search: %1").arg(expr));
   }
-  search_thread_->start();
+  search_controller_.start(root, expr, show_hidden, /*max_depth=*/-1);
 }
 
 void MainWindow::on_search_match(const QString& path, bool is_directory, quint64 size)
@@ -3378,13 +3300,7 @@ void MainWindow::on_search_finished(quint64 matched, quint64 visited, const QStr
     set_status(
         QStringLiteral("Search done — %1 matches (%2 visited)").arg(matched).arg(visited));
   }
-  if (search_thread_ != nullptr) {
-    search_thread_->quit();
-    search_thread_->wait(1000);
-    search_thread_->deleteLater();
-    search_thread_ = nullptr;
-    search_worker_ = nullptr;
-  }
+  // Thread lifecycle owned by SearchController.
   // Keep search_active_ true so directory watcher does not wipe results until user navigates.
 }
 
@@ -3460,7 +3376,7 @@ void MainWindow::on_breadcrumb_drop(const fs::Location& target, const QList<QUrl
     set_status(QStringLiteral("Cannot drop into an archive (read-only)"));
     return;
   }
-  if (transfer_busy_ || urls.isEmpty()) {
+  if (transfer_controller_.busy() || urls.isEmpty()) {
     return;
   }
   TransferRequest req;
@@ -3763,8 +3679,8 @@ void MainWindow::on_rebuild_history_menu()
 
   // Folder / location history — most recent first.
   int count = 0;
-  for (auto it = location_history_unique_.rbegin();
-       it != location_history_unique_.rend() && count < 35; ++it, ++count) {
+  for (auto it = nav_history_.unique_locations().rbegin();
+       it != nav_history_.unique_locations().rend() && count < 35; ++it, ++count) {
     const fs::Location loc = *it;
     QString label = loc.is_archive() ? QString::fromStdString(loc.as_url())
                                      : QString::fromStdString(loc.as_path().string());

@@ -14,6 +14,9 @@
 #include "app_settings.hpp"
 #include "bookmarks.hpp"
 #include "file_list_model.hpp"
+#include "navigation_history.hpp"
+#include "search_controller.hpp"
+#include "transfer_controller.hpp"
 #include "history_menu.hpp"
 #include "message_area.hpp"
 #include "search_worker.hpp"
@@ -211,14 +214,8 @@ private:
   std::filesystem::path indexed_archive_path_;
   FileListModel* model_ = nullptr;
 
-  QThread transfer_thread_;
-  TransferWorker* transfer_worker_ = nullptr;
-  TransferDialog* transfer_dialog_ = nullptr;
-  bool transfer_busy_ = false;
-  ClipboardMode last_transfer_mode_ = ClipboardMode::Copy;
-
-  std::vector<fs::Location> history_;
-  int history_index_ = -1;
+  TransferController transfer_controller_;
+  NavigationHistory nav_history_;
 
   enum class SortColumn { Name, Size, Modified, Type };
   SortColumn sort_column_ = SortColumn::Name;
@@ -240,7 +237,6 @@ private:
   HistoryMenu* bookmarks_menu_ = nullptr;
   QMenu* recent_opens_menu_ = nullptr;
   Bookmarks bookmarks_{Bookmarks::default_path()};
-  std::vector<fs::Location> location_history_unique_;
   QWidget* location_stack_host_ = nullptr;
   QSplitter* main_splitter_ = nullptr;
   QWidget* sidebar_widget_ = nullptr;
@@ -258,8 +254,7 @@ private:
   QLineEdit* search_edit_ = nullptr;
   bool search_active_ = false;
   std::vector<fs::FileInfo> search_results_;
-  QThread* search_thread_ = nullptr;
-  SearchWorker* search_worker_ = nullptr;
+  SearchController search_controller_;
   QThread* path_completion_thread_ = nullptr;
   PathCompletionWorker* path_completion_worker_ = nullptr;
   QThread* dir_load_thread_ = nullptr;

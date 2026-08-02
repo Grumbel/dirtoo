@@ -41,6 +41,8 @@ SPDX headers:
 
 Large-directory mitigations (cheap listing, filter worker, Graphics item reuse, viewport thumbs, soft watcher reload), DnD/Link, and core parity features are in place. See **`TODO.md`** for residual polish and **`AUDIT.md`** for the full file inventory and parity matrix. Explicit out-of-scope items include archive write, remote VFS, and full Python `programs/*`.
 
+**MainWindow controllers:** navigation (`NavigationHistory`), recursive search (`SearchController`), and clipboard transfers (`TransferController`) live in dedicated helpers under `apps/dirtoo/`; keep new orchestration out of the `main_window.cpp` god-object when practical.
+
 **Operations history (not Undo):** every successful or failed filesystem mutation
 the GUI performs (rename, move, copy, delete, mkdir, mkfile, symlink, swap, and
 future permission changes) should be append-only logged with timestamps and

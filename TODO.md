@@ -179,7 +179,7 @@ now. Persist under XDG data/cache like other history.
 | Location URL encoding | Only `%20` today; non-ASCII / reserved chars |
 | Archive member thumbnails | Weak; needs extract path or special URI |
 | Watcher richness | QFileSystemWatcher only; no archive extract-dir watch |
-| MainWindow factoring | Peel transfer/search/nav controllers from 4k-line hub |
+| MainWindow factoring | **Started** — NavigationHistory, SearchController, TransferController extracted |
 | True incremental FS watcher deltas | **Partial** — merge_items after soft rescan; still O(n) readdir (no inotify names) |
 | List / Graphics virtualization | **Graphics viewport window done**; Detail uses uniform row heights when no group/time-gap; Qt paints only visible rows |
 | Rubber-band vs item drag | **done** |
