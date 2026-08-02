@@ -241,7 +241,7 @@ thumbnail work. `dirops` remains Qt-free.
 
 ## Planned: directory tree sidebar + UDisks2 volumes
 
-**Status:** **Phases 1–2a done** — sidebar tree, Places+bookmarks, UDisks2 mounted devices list. Mount/Unmount/Eject actions still TODO.
+**Status:** **Phases 1–5 done** — sidebar tree, Places+bookmarks, UDisks2 mounted+unmounted volumes, Mount/Unmount/Eject + live updates. Phase 6 polish remaining.
 
 **User goals**
 
@@ -355,7 +355,8 @@ Python reference: experimental `dirtoo-py/experiments/udisks/` (`udisksqt.py`); 
 2. **`DirectoryTreeModel` lazy local dirs + navigation sync** — **done** (QtConcurrent fetch; click opens; best-effort path highlight).
 3. **Places roots** — **done** (Home, `/`, XDG dirs, bookmarks).
 4. **UDisks2 client** + Devices list (mounted volumes only) — **done** (read-only; live refresh on interface changes best-effort).
-5. **UDisks2** unmounted volumes + Mount/Unmount/Eject actions + live updates.
+5. **UDisks2** unmounted volumes + Mount/Unmount/Eject actions + live updates — **done**
+   (async Mount/Unmount/Eject; ObjectManager + PropertiesChanged debounce; devices context menu).
 6. **Polish**: icons, context menus, hidden-dir preference, watcher refresh of expanded nodes.
 
 ### Explicit non-goals (for this feature track)

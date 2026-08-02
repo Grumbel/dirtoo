@@ -119,6 +119,8 @@ private slots:
   void rebuild_sidebar_places();
   void on_udisks_volumes_changed();
   void on_devices_item_activated(QListWidgetItem* item);
+  void on_devices_context_menu(const QPoint& pos);
+  void on_udisks_operation_finished(const QString& object_path, bool ok, const QString& message);
   void on_about();
   void on_preferences();
   void on_reload_thumbnails();
