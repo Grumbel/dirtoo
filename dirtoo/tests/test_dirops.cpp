@@ -147,21 +147,25 @@ TEST_CASE("copy_path conflict Overwrite", "[dirops]")
 
 TEST_CASE("Overwrite refuses directory destination", "[dirops]")
 {
+  // copy/move place the source basename *into* an existing directory destination.
+  // Safety is exercised when that resolved path is itself a directory (would
+  // require deleting a tree to replace it with a file) — never remove_all.
   const auto dir = make_temp_dir("dirtoo-test-conflict-ow-dir");
   write_file(dir / "a.txt", "new");
-  fs::create_directory(dir / "existing_dir");
-  write_file(dir / "existing_dir" / "keep.txt", "important");
+  // target/a.txt is a directory (same final path as copy/move into target).
+  fs::create_directories(dir / "target" / "a.txt");
+  write_file(dir / "target" / "a.txt" / "keep.txt", "important");
 
   dirops::Options opt;
   opt.conflict = dirops::ConflictPolicy::Overwrite;
-  auto result = dirops::copy_path(dir / "a.txt", dir / "existing_dir", opt);
+  auto result = dirops::copy_path(dir / "a.txt", dir / "target", opt);
   REQUIRE_FALSE(result.has_value());
-  REQUIRE(fs::exists(dir / "existing_dir" / "keep.txt"));
-  REQUIRE(read_file(dir / "existing_dir" / "keep.txt") == "important");
+  REQUIRE(fs::exists(dir / "target" / "a.txt" / "keep.txt"));
+  REQUIRE(read_file(dir / "target" / "a.txt" / "keep.txt") == "important");
 
-  auto moved = dirops::move_path(dir / "a.txt", dir / "existing_dir", opt);
+  auto moved = dirops::move_path(dir / "a.txt", dir / "target", opt);
   REQUIRE_FALSE(moved.has_value());
-  REQUIRE(fs::exists(dir / "existing_dir" / "keep.txt"));
+  REQUIRE(fs::exists(dir / "target" / "a.txt" / "keep.txt"));
   REQUIRE(fs::exists(dir / "a.txt"));
 
   fs::remove_all(dir);
