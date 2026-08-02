@@ -1,0 +1,72 @@
+.\" SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+.\" SPDX-License-Identifier: GPL-3.0-or-later
+.TH DT-RENAME 1 "August 2026" "dirtoo tools" "User Commands"
+.SH NAME
+dt-rename \- rename or move a path (dirtoo / dirops)
+.SH SYNOPSIS
+.B dt-rename
+[\fIOPTIONS\fR]
+.I FROM
+.I TO
+.SH DESCRIPTION
+Rename
+.I FROM
+to
+.IR TO .
+.I TO
+may be a new basename in the same directory or a full path.
+Conflict handling follows dirops policies (see
+.BR \-\-conflict ).
+.SH OPTIONS
+.TP
+.BR \-n ", " \-\-dry\-run
+.TQ
+.BR \-v ", " \-\-verbose
+.TQ
+.BR \-\-conflict=\fIPOLICY\fR
+.IR fail ,
+.IR overwrite ,
+.IR rename ,
+or
+.IR skip .
+.TP
+.BR \-V ", " \-\-version
+.TQ
+.BR \-h ", " \-\-help
+.SH NOTES
+With
+.BR rename
+policy, an existing destination yields a unique name such as
+.I file\ (2).txt
+(stem, space, parenthesized number, original extension).
+.SH CONFLICT POLICIES
+When the destination path already exists, the following policies apply
+(via
+.BR \-\-conflict
+or shorthand flags where available):
+.TP
+.B fail
+Abort that item with an error (default for most tools).
+.TP
+.B overwrite
+Replace the existing destination.
+.TP
+.B rename
+Choose a unique name such as
+.I stem\ (N).ext
+.
+.TP
+.B skip
+Leave the destination unchanged and continue.
+.SH SEE ALSO
+.BR dirtoo (1),
+.BR dt-copy (1),
+.BR dt-move (1),
+.BR dt-rename (1),
+.BR dt-rm (1),
+.BR dt-mkdir (1),
+.BR dt-filter (1)
+.SH AUTHOR
+Written for the dirtoo project.
+.SH COPYRIGHT
+Copyright \(co 2026 Ingo Ruhnke. License GPL-3.0-or-later.

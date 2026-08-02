@@ -1,0 +1,90 @@
+.\" SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+.\" SPDX-License-Identifier: GPL-3.0-or-later
+.TH DT-MOVE 1 "August 2026" "dirtoo tools" "User Commands"
+.SH NAME
+dt-move \- move files into a directory (dirtoo / dirops)
+.SH SYNOPSIS
+.B dt-move
+[\fIOPTIONS\fR]
+.B \-t
+.I DIR
+.I FILE\fR...
+.SH DESCRIPTION
+Move one or more files or directories into a target directory.
+The legacy two-argument form
+.B dt-move
+.I from to
+is
+.B not
+supported; always pass
+.BR \-t .
+For renaming a single path to a new name, use
+.BR dt-rename (1).
+.SH OPTIONS
+.TP
+.BR \-t ", " \-\-target\-directory " " \fIDIR\fR
+Destination directory (required).
+.TP
+.BR \-R ", " \-\-relative
+Preserve path prefix under
+.IR DIR .
+.TP
+.BR \-n ", " \-\-dry\-run
+Plan only; do not modify the filesystem.
+.TP
+.BR \-v ", " \-\-verbose
+Print each successful move.
+.TP
+.BR \-Y ", " \-\-always
+Overwrite on conflict.
+.TP
+.BR \-N ", " \-\-never
+Skip on conflict.
+.TP
+.BR \-\-conflict=\fIPOLICY\fR
+.IR fail ,
+.IR overwrite ,
+.IR rename ,
+or
+.IR skip .
+.TP
+.BR \-V ", " \-\-version
+.TQ
+.BR \-h ", " \-\-help
+.SH EXAMPLES
+.nf
+dt-move -t /tmp/out photo.jpg notes.txt
+dt-move -R -t /backup home/user/docs/a.pdf
+dt-move -n -v --conflict=rename -t ./dest ./*.png
+.fi
+.SH CONFLICT POLICIES
+When the destination path already exists, the following policies apply
+(via
+.BR \-\-conflict
+or shorthand flags where available):
+.TP
+.B fail
+Abort that item with an error (default for most tools).
+.TP
+.B overwrite
+Replace the existing destination.
+.TP
+.B rename
+Choose a unique name such as
+.I stem\ (N).ext
+.
+.TP
+.B skip
+Leave the destination unchanged and continue.
+.SH SEE ALSO
+.BR dirtoo (1),
+.BR dt-copy (1),
+.BR dt-move (1),
+.BR dt-rename (1),
+.BR dt-rm (1),
+.BR dt-mkdir (1),
+.BR dt-filter (1)
+.SH AUTHOR
+Written for the dirtoo project.
+.SH COPYRIGHT
+Copyright \(co 2026 Ingo Ruhnke. License GPL-3.0-or-later.

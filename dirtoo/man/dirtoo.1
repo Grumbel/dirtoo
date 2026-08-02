@@ -1,0 +1,86 @@
+.\" SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+.\" SPDX-License-Identifier: GPL-3.0-or-later
+.TH DIRTOO 1 "August 2026" "dirtoo 0.2.0" "User Commands"
+.SH NAME
+dirtoo \- modular Qt6 graphical file manager
+.SH SYNOPSIS
+.B dirtoo
+[\fIOPTIONS\fR]
+[\fIPATH\fR|\fIURL\fR]
+.SH DESCRIPTION
+.B dirtoo
+is a modular graphical file manager built with Qt6 and C++23.
+It supports detail, icon, and list views, a filter expression language,
+recursive search, thumbnails, read-only archive browsing, bookmarks,
+location history, and clipboard-based copy/move operations.
+.PP
+If
+.I PATH
+or a
+.I URL
+is given, that location is opened on startup. Archive locations use the
+form
+.IR file:///path/to.zip//archive
+or
+.IR file:///path/to.zip//archive:entry .
+.SH OPTIONS
+.TP
+.BR \-h ", " \-\-help
+Show command-line help and exit.
+.TP
+.BR \-V ", " \-\-version
+Print version information and exit.
+.TP
+.B \-\-verbose
+Enable informational log messages on stderr.
+.TP
+.B \-\-debug
+Enable debug-level log messages (very verbose).
+.SH VIEWS
+.TP
+.B Icons
+Large icon grid with optional multi-line captions and media badges.
+.TP
+.B List
+Windows 95-style list: small icon left of the filename, multi-column.
+.TP
+.B Detail
+Tabular view with configurable columns (size, dimensions, aspect, FPS,
+duration, modified, type, and optional width/height).
+.SH FILTER EXPRESSIONS
+The filter bar accepts a small DSL, for example:
+.PP
+.nf
+  *.png
+  size:>1M type:file
+  contains:hello
+.fi
+.PP
+See the in-app filter help for the full language.
+.SH FILES
+.TP
+.I ~/.config/dirtoo/dirtoo.conf
+Application settings (view mode, zoom, columns, size units, …).
+.TP
+.I $XDG_CACHE_HOME/dirtoo-*
+Archive extraction and thumbnail helper caches.
+.SH ENVIRONMENT
+.TP
+.B XDG_CONFIG_HOME
+.TQ
+.B XDG_CACHE_HOME
+.TQ
+.B XDG_STATE_HOME
+Standard base directories for config, cache, and state data.
+.SH SEE ALSO
+.BR dirtoo (1),
+.BR dt-copy (1),
+.BR dt-move (1),
+.BR dt-rename (1),
+.BR dt-rm (1),
+.BR dt-mkdir (1),
+.BR dt-filter (1)
+.SH AUTHOR
+Written for the dirtoo project.
+.SH COPYRIGHT
+Copyright \(co 2026 Ingo Ruhnke. License GPL-3.0-or-later.

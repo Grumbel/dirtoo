@@ -25,6 +25,7 @@ mutations with timestamps — **not** a full Undo stack (rollback deferred).
 cmake -B build -G Ninja
 cmake --build build
 ctest --test-dir build
+cmake --install build   # binaries + man pages (man1)
 ```
 
 With Nix:
@@ -53,6 +54,7 @@ Run the GUI:
 | `libs/dirtoo-thumbnail` | Freedesktop D-Bus thumbnailer client |
 | `libs/dirtoo-archive` | Read-only archive TOC + extract-on-demand |
 | `apps/dirtoo` | GUI application |
+| `man/` | Section-1 manual pages (`dirtoo`, `dt-*`) |
 | `tools/` | CLIs: `dt-copy/move/rename/mkdir/mkfile/rm/symlink/swap`, `dt-filter`, `dt-mediainfo`, `dt-archiveinfo` |
 | `tests/` | Catch2 unit tests |
 | `resources/` | Icons, badges, DnD cursors, `.qrc` |

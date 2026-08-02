@@ -1,0 +1,34 @@
+.\" SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+.\" SPDX-License-Identifier: GPL-3.0-or-later
+.TH DT-RM 1 "August 2026" "dirtoo tools" "User Commands"
+.SH NAME
+dt-rm \- remove files or directories recursively
+.SH SYNOPSIS
+.B dt-rm
+[\fIOPTIONS\fR]
+.I PATH\fR...
+.SH DESCRIPTION
+Remove files or directories. Directories are removed recursively
+(equivalent to
+.B rm \-rf
+for each argument) via dirops.
+.SH OPTIONS
+.TP
+.BR \-n ", " \-\-dry\-run
+List paths that would be removed.
+.TP
+.BR \-v ", " \-\-verbose
+Print each removed path.
+.TP
+.BR \-V ", " \-\-version
+.TQ
+.BR \-h ", " \-\-help
+.SH EXAMPLES
+.nf
+dt-rm obsolete.txt
+dt-rm -v build/ tmp/cache
+dt-rm --dry-run /tmp/scratch
+.fi
+.SH SEE ALSO
+.BR dirtoo (1),
+.BR dt-rmdir (1)

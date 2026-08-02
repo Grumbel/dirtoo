@@ -1,0 +1,37 @@
+.\" SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+.\" SPDX-License-Identifier: GPL-3.0-or-later
+.TH DT-SWAP 1 "August 2026" "dirtoo tools" "User Commands"
+.SH NAME
+dt-swap \- exchange the names of two filesystem entries
+.SH SYNOPSIS
+.B dt-swap
+[\fIOPTIONS\fR]
+.I FILE1
+.I FILE2
+.SH DESCRIPTION
+Atomically exchange the names of
+.I FILE1
+and
+.I FILE2
+(when supported by dirops on the platform).
+.SH OPTIONS
+.TP
+.BR \-n ", " \-\-dry\-run
+.TQ
+.BR \-v ", " \-\-verbose
+.TQ
+.BR \-V ", " \-\-version
+.TQ
+.BR \-h ", " \-\-help
+.SH SEE ALSO
+.BR dirtoo (1),
+.BR dt-copy (1),
+.BR dt-move (1),
+.BR dt-rename (1),
+.BR dt-rm (1),
+.BR dt-mkdir (1),
+.BR dt-filter (1)
+.SH AUTHOR
+Written for the dirtoo project.
+.SH COPYRIGHT
+Copyright \(co 2026 Ingo Ruhnke. License GPL-3.0-or-later.

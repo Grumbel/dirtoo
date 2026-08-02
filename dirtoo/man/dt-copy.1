@@ -1,0 +1,80 @@
+.\" SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+.\" SPDX-License-Identifier: GPL-3.0-or-later
+.TH DT-COPY 1 "August 2026" "dirtoo tools" "User Commands"
+.SH NAME
+dt-copy \- copy files and directories (dirtoo / dirops)
+.SH SYNOPSIS
+.B dt-copy
+[\fIOPTIONS\fR]
+.I FROM
+.I TO
+.PP
+.B dt-copy
+[\fIOPTIONS\fR]
+.B \-t
+.I DIR
+.I FILE\fR...
+.SH DESCRIPTION
+Copy files or directory trees. Symbolic links are copied as symbolic links
+(not followed). Uses the same
+.B dirops
+conflict policies as the dirtoo GUI.
+.PP
+In the two-path form, if
+.I TO
+is an existing directory, the source basename is placed inside it.
+With
+.BR \-t ,
+each source is copied into
+.I DIR
+using its basename only.
+.SH OPTIONS
+.TP
+.BR \-t ", " \-\-target\-directory " " \fIDIR\fR
+Multi-source mode: destination directory.
+.TP
+.BR \-n ", " \-\-dry\-run
+Print planned copies; do not write.
+.TP
+.BR \-v ", " \-\-verbose
+Print each successful copy.
+.TP
+.BR \-Y ", " \-\-always
+On conflict, overwrite the destination.
+.TP
+.BR \-N ", " \-\-never
+On conflict, skip the source.
+.TP
+.BR \-\-conflict=\fIPOLICY\fR
+One of
+.BR fail ,
+.BR overwrite ,
+.BR rename ,
+.BR skip
+(default:
+.BR fail ).
+.B rename
+chooses a unique name such as
+.IR file\ (2).txt .
+.TP
+.BR \-V ", " \-\-version
+.TQ
+.BR \-h ", " \-\-help
+.SH CONFLICT POLICIES
+.TP
+.B fail
+Error and abort that item (default).
+.TP
+.B overwrite
+Replace the existing destination.
+.TP
+.B rename
+Unique name:
+.IR stem\ (N).ext .
+.TP
+.B skip
+Leave destination unchanged.
+.SH SEE ALSO
+.BR dirtoo (1),
+.BR dt-move (1),
+.BR dt-rename (1)

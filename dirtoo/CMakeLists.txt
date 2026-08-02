@@ -85,6 +85,9 @@ if(DIRTOO_BUILD_TOOLS)
   add_subdirectory(tools)
 endif()
 
+# Manual pages (GUI + tools); install does not require tools to be built.
+add_subdirectory(man)
+
 if(DIRTOO_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)

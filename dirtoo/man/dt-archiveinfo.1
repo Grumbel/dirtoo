@@ -1,0 +1,32 @@
+.\" SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+.\" SPDX-License-Identifier: GPL-3.0-or-later
+.TH DT-ARCHIVEINFO 1 "August 2026" "dirtoo tools" "User Commands"
+.SH NAME
+dt-archiveinfo \- list archive table of contents
+.SH SYNOPSIS
+.B dt-archiveinfo
+[\fIOPTIONS\fR]
+.I ARCHIVE
+.SH DESCRIPTION
+List members of a read-only archive (zip, tar, and other formats supported
+by the available external tools such as bsdtar, unzip, or tar).
+Does not extract contents unless a specific option in
+.B \-\-help
+requests it.
+.SH OPTIONS
+.TP
+.BR \-h ", " \-\-help
+.TQ
+.BR \-V ", " \-\-version
+.SH SEE ALSO
+.BR dirtoo (1),
+.BR dt-copy (1),
+.BR dt-move (1),
+.BR dt-rename (1),
+.BR dt-rm (1),
+.BR dt-mkdir (1),
+.BR dt-filter (1)
+.SH AUTHOR
+Written for the dirtoo project.
+.SH COPYRIGHT
+Copyright \(co 2026 Ingo Ruhnke. License GPL-3.0-or-later.

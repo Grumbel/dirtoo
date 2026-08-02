@@ -1,0 +1,47 @@
+.\" SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+.\" SPDX-License-Identifier: GPL-3.0-or-later
+.TH DT-FILTER 1 "August 2026" "dirtoo tools" "User Commands"
+.SH NAME
+dt-filter \- evaluate dirtoo filter expressions against paths
+.SH SYNOPSIS
+.B dt-filter
+[\fIOPTIONS\fR]
+.I EXPRESSION
+[\fIPATH\fR...]
+.SH DESCRIPTION
+Parse and apply a dirtoo filter DSL
+.I EXPRESSION
+to the listed paths (or paths read from the environment as documented in
+.BR \-\-help ).
+Useful for scripting and testing filter predicates without the GUI.
+.SH OPTIONS
+.TP
+.BR \-h ", " \-\-help
+Show full help, including expression syntax notes.
+.TP
+.BR \-V ", " \-\-version
+Print version and exit.
+.SH FILTER LANGUAGE
+Examples:
+.PP
+.nf
+  *.png
+  size:>1M type:file
+  width:>=1920
+  contains:hello
+.fi
+.PP
+See the dirtoo GUI filter help and project documentation for the complete
+language.
+.SH SEE ALSO
+.BR dirtoo (1),
+.BR dt-copy (1),
+.BR dt-move (1),
+.BR dt-rename (1),
+.BR dt-rm (1),
+.BR dt-mkdir (1),
+.BR dt-filter (1)
+.SH AUTHOR
+Written for the dirtoo project.
+.SH COPYRIGHT
+Copyright \(co 2026 Ingo Ruhnke. License GPL-3.0-or-later.

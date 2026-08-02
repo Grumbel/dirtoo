@@ -1,0 +1,38 @@
+.\" SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+.\" SPDX-License-Identifier: GPL-3.0-or-later
+.TH DT-MKDIR 1 "August 2026" "dirtoo tools" "User Commands"
+.SH NAME
+dt-mkdir \- create directories
+.SH SYNOPSIS
+.B dt-mkdir
+[\fIOPTIONS\fR]
+.I DIR\fR...
+.SH DESCRIPTION
+Create directories. Without
+.BR \-p ,
+only a single directory is created (parents must already exist).
+With
+.BR \-p ,
+missing parents are created (mkdir \-p style).
+.SH OPTIONS
+.TP
+.BR \-p ", " \-\-parents
+Create missing parent directories.
+.TP
+.BR \-n ", " \-\-dry\-run
+Print planned mkdir; do not create.
+.TP
+.BR \-v ", " \-\-verbose
+Print each created directory.
+.TP
+.BR \-V ", " \-\-version
+.TQ
+.BR \-h ", " \-\-help
+.SH EXAMPLES
+.nf
+dt-mkdir newdir
+dt-mkdir -p path/to/nested/dir
+.fi
+.SH SEE ALSO
+.BR dirtoo (1),
+.BR dt-mkfile (1)
