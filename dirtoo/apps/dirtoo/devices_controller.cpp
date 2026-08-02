@@ -4,9 +4,9 @@
 #include "devices_controller.hpp"
 
 #include "size_format.hpp"
+#include "theme_icons.hpp"
 #include "udisks_client.hpp"
 
-#include <QIcon>
 #include <QListWidget>
 #include <QListWidgetItem>
 #include <QMenu>
@@ -14,14 +14,6 @@
 #include <QPoint>
 
 namespace dirtoo::app {
-namespace {
-
-QIcon theme_icon(const char* name, const char* fallback = "drive-harddisk")
-{
-  return QIcon::fromTheme(QString::fromUtf8(name), QIcon::fromTheme(QString::fromUtf8(fallback)));
-}
-
-} // namespace
 
 DevicesController::DevicesController(QObject* parent)
     : QObject(parent)
