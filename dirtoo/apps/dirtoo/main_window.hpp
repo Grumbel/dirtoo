@@ -295,7 +295,10 @@ private:
   QTreeView* tree_view_ = nullptr;
   QListView* icon_view_ = nullptr; // List view (and fallback if no Graphics)
   GraphicsFileView* graphics_view_ = nullptr; // Icons Graphics View
+  /// Left side of the status bar: current filename / transient messages.
   QLabel* status_label_ = nullptr;
+  /// Right (permanent) side: directory visible/total size and selection size.
+  QLabel* status_info_label_ = nullptr;
   MessageArea* message_area_ = nullptr;
 
   QAction* back_act_ = nullptr;

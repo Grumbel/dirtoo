@@ -1201,9 +1201,12 @@ MainWindow::MainWindow(QWidget* parent)
   central_layout->addWidget(main_splitter_);
   setCentralWidget(central);
 
-  // Real QStatusBar: native size grip (bottom-right) like dirtoo-py.
+  // Real QStatusBar: left = filename / messages, right = size info (dirtoo-py).
   status_label_ = new QLabel(this);
   statusBar()->addWidget(status_label_, 1);
+  status_info_label_ = new QLabel(this);
+  status_info_label_->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+  statusBar()->addPermanentWidget(status_info_label_);
   statusBar()->setSizeGripEnabled(true);
 
   leap_widget_ = new LeapWidget(this);
@@ -3010,40 +3013,55 @@ void MainWindow::on_selection_changed()
 
 void MainWindow::update_status_selection()
 {
+  // Left: filename (or multi-selection summary). Right: directory size stats
+  // (sum of listed item sizes — same idea as dirtoo-py controller._update_info).
+  const auto& all = collection_.items();
+  const auto& visible = collection_.visible_items();
   const auto selected = selected_fileinfos();
-  const int total = model_->rowCount();
-  if (selected.empty()) {
-    set_status(QStringLiteral("%1 items in %2")
-                               .arg(total)
-                               .arg(QString::fromStdString(location_.as_path().string())));
-    return;
+
+  std::uint64_t visible_bytes = 0;
+  for (const auto& fi : visible) {
+    visible_bytes += fi.size();
+  }
+  std::uint64_t total_bytes = 0;
+  for (const auto& fi : all) {
+    total_bytes += fi.size();
   }
 
-  std::uint64_t bytes = 0;
-  int dirs = 0;
-  for (const auto& fi : selected) {
-    if (fi.is_directory()) {
-      ++dirs;
-    } else {
-      bytes += fi.size();
-    }
+  QString info = QStringLiteral("%1 visible (%2)")
+                     .arg(visible.size())
+                     .arg(format_byte_size(visible_bytes));
+  if (all.size() != visible.size()) {
+    info += QStringLiteral(", %1 total (%2)")
+                .arg(all.size())
+                .arg(format_byte_size(total_bytes));
   }
-  QString extra;
-  if (selected.size() == 1) {
-    extra = QString::fromStdString(selected.front().basename());
+
+  if (!selected.empty()) {
+    std::uint64_t selected_bytes = 0;
+    for (const auto& fi : selected) {
+      selected_bytes += fi.size();
+    }
+    info += QStringLiteral(", %1 selected (%2)")
+                .arg(selected.size())
+                .arg(format_byte_size(selected_bytes));
+  }
+
+  if (status_info_label_ != nullptr) {
+    status_info_label_->setText(QStringLiteral("  ") + info);
+  }
+
+  if (selected.empty()) {
+    // Clear left so transient set_status messages (Loading…, etc.) can show;
+    // steady state with no selection leaves the right panel as the summary.
+    if (status_label_ != nullptr) {
+      status_label_->setText(QString());
+    }
+  } else if (selected.size() == 1) {
+    set_status(QString::fromStdString(selected.front().path().string()));
   } else {
-    extra = QStringLiteral("%1 selected").arg(selected.size());
-    if (bytes > 0) {
-      extra += QStringLiteral(" (%1)").arg(format_byte_size(bytes));
-    }
-    if (dirs > 0) {
-      extra += QStringLiteral(", %1 folders").arg(dirs);
-    }
+    set_status(QStringLiteral("%1 selected").arg(selected.size()));
   }
-  set_status(QStringLiteral("%1 — %2 items in %3")
-                             .arg(extra)
-                             .arg(total)
-                             .arg(QString::fromStdString(location_.as_path().string())));
 }
 
 void MainWindow::on_urls_dropped(const QList<QUrl>& urls, Qt::DropAction action)
