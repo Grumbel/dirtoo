@@ -23,7 +23,7 @@ enum class OperationKind {
   Mkfile,
   Symlink,
   Swap,
-  Permissions, // reserved for future editable permissions
+  Permissions,
   Other,
 };
 
@@ -31,20 +31,33 @@ enum class OperationKind {
 [[nodiscard]] OperationKind operation_kind_from_string(const QString& s);
 [[nodiscard]] QString operation_kind_to_string(OperationKind kind);
 
+struct OperationItem {
+  QString source;
+  QString destination;
+  bool skipped = false;
+};
+
 struct OperationHistoryEntry {
+  qint64 id = 0;
   QDateTime when;
   OperationKind kind = OperationKind::Other;
   QStringList sources;
-  QString destination; // may be empty (e.g. delete)
-  QString outcome;     // "success" | "skipped" | "failed" | "cancelled" | …
-  QString detail;      // optional error or note
+  QString destination;
+  QStringList destinations;
+  std::vector<OperationItem> items;
+  QString outcome;
+  QString detail;
+  int completed = 0;
+  int skipped = 0;
 };
 
-/// Append-only log of filesystem mutations performed by the GUI.
-/// No rollback — browse and “go to folder” only.
 class OperationsHistory {
 public:
-  explicit OperationsHistory(std::filesystem::path file);
+  explicit OperationsHistory(std::filesystem::path db_path);
+  ~OperationsHistory();
+
+  OperationsHistory(const OperationsHistory&) = delete;
+  OperationsHistory& operator=(const OperationsHistory&) = delete;
 
   [[nodiscard]] static std::filesystem::path default_path();
 
@@ -60,17 +73,16 @@ public:
   [[nodiscard]] const std::filesystem::path& path() const { return path_; }
 
 private:
-  void load();
-  void save() const;
+  void open_db();
+  void close_db();
 
   std::filesystem::path path_;
-  std::vector<OperationHistoryEntry> entries_;
-  static constexpr int kMaxEntries = 500;
+  void* db_ = nullptr;
+  static constexpr int kMaxEntries = 1000;
 };
 
 [[nodiscard]] OperationsHistory& operations_history();
 
-/// Filterable dialog; optional callback to navigate to a directory.
 void show_operations_history_dialog(
     QWidget* parent, std::function<void(const QString& directory)> on_go_to_folder = {});
 

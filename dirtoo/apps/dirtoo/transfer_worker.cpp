@@ -113,6 +113,9 @@ void TransferWorker::run(TransferRequest request)
     conflict_have_sticky_ = false;
   }
   TransferSummary summary;
+  summary.mode = request.mode;
+  summary.destination_directory = request.destination_directory;
+  summary.sources = request.sources;
 
   emit log_line(request.mode == ClipboardMode::Cut ? QStringLiteral("Starting move…")
                                                    : QStringLiteral("Starting copy…"));
@@ -175,10 +178,30 @@ void TransferWorker::run(TransferRequest request)
       emit log_line(QStringLiteral("Cancelled"));
       break;
     }
-    if (!result->items.empty() && result->items.front().skipped) {
-      ++summary.skipped;
-      emit log_line(QStringLiteral("Skipped %1").arg(QString::fromStdString(src.filename().string())));
+    if (!result->items.empty()) {
+      for (const auto& it : result->items) {
+        TransferItemResult tir;
+        tir.source = it.source;
+        tir.destination = it.destination;
+        tir.skipped = it.skipped;
+        summary.items.push_back(std::move(tir));
+        if (it.skipped) {
+          ++summary.skipped;
+        } else {
+          ++summary.completed;
+        }
+      }
+      if (result->items.front().skipped) {
+        emit log_line(QStringLiteral("Skipped %1").arg(QString::fromStdString(src.filename().string())));
+      } else {
+        emit log_line(QStringLiteral("Done %1").arg(QString::fromStdString(src.filename().string())));
+      }
     } else {
+      TransferItemResult tir;
+      tir.source = src;
+      tir.destination = dest;
+      tir.skipped = false;
+      summary.items.push_back(std::move(tir));
       ++summary.completed;
       emit log_line(QStringLiteral("Done %1").arg(QString::fromStdString(src.filename().string())));
     }

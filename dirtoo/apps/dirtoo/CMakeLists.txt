@@ -85,6 +85,8 @@ target_compile_definitions(dirtoo-app PRIVATE
   "DIRTOO_ICON_DIR=\"${CMAKE_SOURCE_DIR}/resources/icons\""
 )
 
+find_package(SQLite3 REQUIRED)
+
 target_link_libraries(dirtoo-app
   PRIVATE
     dirtoo_warnings
@@ -101,6 +103,7 @@ target_link_libraries(dirtoo-app
     Qt6::Concurrent
     Qt6::DBus
     Qt6::Svg
+    SQLite::SQLite3
 )
 
 install(TARGETS dirtoo-app RUNTIME DESTINATION bin)

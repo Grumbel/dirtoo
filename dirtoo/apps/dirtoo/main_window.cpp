@@ -2518,15 +2518,33 @@ void MainWindow::on_transfer_finished(TransferSummary summary)
   {
     OperationHistoryEntry e;
     e.when = QDateTime::currentDateTime();
-    e.kind = transfer_controller_.last_mode() == ClipboardMode::Cut ? OperationKind::Move
-                                                                   : OperationKind::Copy;
+    e.kind = summary.mode == ClipboardMode::Cut ? OperationKind::Move : OperationKind::Copy;
     e.outcome = summary.cancelled ? QStringLiteral("cancelled")
                 : (!summary.error.isEmpty() ? QStringLiteral("failed")
-                                            : QStringLiteral("success"));
+                   : (summary.skipped > 0 && summary.completed > 0 ? QStringLiteral("partial")
+                                                                   : QStringLiteral("success")));
     e.detail = summary.error.isEmpty()
                    ? QStringLiteral("%1 done, %2 skipped").arg(summary.completed).arg(summary.skipped)
                    : summary.error;
-    e.destination = QString::fromStdString(location_.as_path().string());
+    e.completed = summary.completed;
+    e.skipped = summary.skipped;
+    e.destination = QString::fromStdString(summary.destination_directory.string());
+    if (e.destination.isEmpty()) {
+      e.destination = QString::fromStdString(location_.as_path().string());
+    }
+    for (const auto& src : summary.sources) {
+      e.sources << QString::fromStdString(src.string());
+    }
+    for (const auto& it : summary.items) {
+      OperationItem oi;
+      oi.source = QString::fromStdString(it.source.string());
+      oi.destination = QString::fromStdString(it.destination.string());
+      oi.skipped = it.skipped;
+      e.items.push_back(std::move(oi));
+      if (!oi.destination.isEmpty()) {
+        e.destinations << oi.destination;
+      }
+    }
     operations_history().record(std::move(e));
   }
 

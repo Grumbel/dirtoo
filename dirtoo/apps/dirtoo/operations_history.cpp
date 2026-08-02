@@ -6,19 +6,21 @@
 #include <QAbstractItemView>
 #include <QDialog>
 #include <QDialogButtonBox>
-#include <QFile>
 #include <QFileInfo>
-#include <QHBoxLayout>
 #include <QHeaderView>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
-#include <QStandardPaths>
-#include <QTextStream>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QVBoxLayout>
 
+#include <sqlite3.h>
+
+#include <cstdlib>
 #include <utility>
 
 namespace dirtoo::app {
@@ -41,9 +43,79 @@ QString parent_dir_of(const QString& path)
   if (fi.exists()) {
     return fi.isDir() ? fi.absoluteFilePath() : fi.absolutePath();
   }
-  // Path may no longer exist (delete); still use parent of the string path.
   const auto p = std::filesystem::path{path.toStdString()}.parent_path();
   return QString::fromStdString(p.string());
+}
+
+QString json_string_array(const QStringList& list)
+{
+  QJsonArray arr;
+  for (const QString& s : list) {
+    arr.append(s);
+  }
+  return QString::fromUtf8(QJsonDocument(arr).toJson(QJsonDocument::Compact));
+}
+
+QStringList parse_json_string_array(const QString& json)
+{
+  QStringList out;
+  if (json.isEmpty()) {
+    return out;
+  }
+  const QJsonDocument doc = QJsonDocument::fromJson(json.toUtf8());
+  if (!doc.isArray()) {
+    return out;
+  }
+  for (const QJsonValue& v : doc.array()) {
+    out << v.toString();
+  }
+  return out;
+}
+
+QString json_items(const std::vector<OperationItem>& items)
+{
+  QJsonArray arr;
+  for (const auto& it : items) {
+    QJsonObject o;
+    o.insert(QStringLiteral("source"), it.source);
+    o.insert(QStringLiteral("destination"), it.destination);
+    o.insert(QStringLiteral("skipped"), it.skipped);
+    arr.append(o);
+  }
+  return QString::fromUtf8(QJsonDocument(arr).toJson(QJsonDocument::Compact));
+}
+
+std::vector<OperationItem> parse_json_items(const QString& json)
+{
+  std::vector<OperationItem> out;
+  if (json.isEmpty()) {
+    return out;
+  }
+  const QJsonDocument doc = QJsonDocument::fromJson(json.toUtf8());
+  if (!doc.isArray()) {
+    return out;
+  }
+  for (const QJsonValue& v : doc.array()) {
+    const QJsonObject o = v.toObject();
+    OperationItem it;
+    it.source = o.value(QStringLiteral("source")).toString();
+    it.destination = o.value(QStringLiteral("destination")).toString();
+    it.skipped = o.value(QStringLiteral("skipped")).toBool();
+    out.push_back(std::move(it));
+  }
+  return out;
+}
+
+std::filesystem::path xdg_state_home()
+{
+  if (const char* env = std::getenv("XDG_STATE_HOME"); env != nullptr && env[0] != '\0') {
+    return std::filesystem::path{env};
+  }
+  const char* home = std::getenv("HOME");
+  if (home != nullptr && home[0] != '\0') {
+    return std::filesystem::path{home} / ".local" / "state";
+  }
+  return std::filesystem::path{"."} / ".local" / "state";
 }
 
 } // namespace
@@ -135,19 +207,23 @@ OperationKind operation_kind_from_string(const QString& s)
   return OperationKind::Other;
 }
 
-OperationsHistory::OperationsHistory(std::filesystem::path file)
-    : path_(std::move(file))
+OperationsHistory::OperationsHistory(std::filesystem::path db_path)
+    : path_(std::move(db_path))
 {
-  load();
+  open_db();
+}
+
+OperationsHistory::~OperationsHistory()
+{
+  close_db();
 }
 
 std::filesystem::path OperationsHistory::default_path()
 {
-  const QString base = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-  std::filesystem::path dir{base.toStdString()};
+  const auto dir = xdg_state_home() / "dirtoo";
   std::error_code ec;
   std::filesystem::create_directories(dir, ec);
-  return dir / "operations-history.txt";
+  return dir / "operations-history.sqlite";
 }
 
 OperationsHistory& operations_history()
@@ -156,16 +232,108 @@ OperationsHistory& operations_history()
   return instance;
 }
 
+void OperationsHistory::close_db()
+{
+  if (db_ != nullptr) {
+    sqlite3_close(static_cast<sqlite3*>(db_));
+    db_ = nullptr;
+  }
+}
+
+void OperationsHistory::open_db()
+{
+  close_db();
+  sqlite3* raw = nullptr;
+  if (sqlite3_open(path_.string().c_str(), &raw) != SQLITE_OK) {
+    if (raw != nullptr) {
+      sqlite3_close(raw);
+    }
+    db_ = nullptr;
+    return;
+  }
+  db_ = raw;
+  char* err = nullptr;
+  const char* schema =
+      "CREATE TABLE IF NOT EXISTS operations ("
+      "  id INTEGER PRIMARY KEY AUTOINCREMENT,"
+      "  when_iso TEXT NOT NULL,"
+      "  kind TEXT NOT NULL,"
+      "  outcome TEXT NOT NULL,"
+      "  destination TEXT,"
+      "  detail TEXT,"
+      "  completed INTEGER DEFAULT 0,"
+      "  skipped INTEGER DEFAULT 0,"
+      "  sources_json TEXT NOT NULL DEFAULT '[]',"
+      "  destinations_json TEXT NOT NULL DEFAULT '[]',"
+      "  items_json TEXT NOT NULL DEFAULT '[]'"
+      ");"
+      "CREATE INDEX IF NOT EXISTS idx_operations_when ON operations(when_iso);";
+  if (sqlite3_exec(raw, schema, nullptr, nullptr, &err) != SQLITE_OK) {
+    if (err != nullptr) {
+      sqlite3_free(err);
+    }
+  }
+}
+
 void OperationsHistory::record(OperationHistoryEntry entry)
 {
+  if (db_ == nullptr) {
+    open_db();
+  }
+  if (db_ == nullptr) {
+    return;
+  }
   if (!entry.when.isValid()) {
     entry.when = QDateTime::currentDateTime();
   }
-  entries_.push_back(std::move(entry));
-  while (static_cast<int>(entries_.size()) > kMaxEntries) {
-    entries_.erase(entries_.begin());
+  if (entry.sources.isEmpty() && !entry.items.empty()) {
+    for (const auto& it : entry.items) {
+      if (!it.source.isEmpty()) {
+        entry.sources << it.source;
+      }
+      if (!it.destination.isEmpty()) {
+        entry.destinations << it.destination;
+      }
+    }
   }
-  save();
+  if (entry.destination.isEmpty() && !entry.destinations.isEmpty()) {
+    entry.destination = entry.destinations.front();
+  }
+
+  sqlite3* raw = static_cast<sqlite3*>(db_);
+  sqlite3_stmt* stmt = nullptr;
+  const char* sql =
+      "INSERT INTO operations(when_iso, kind, outcome, destination, detail, completed, skipped, "
+      "sources_json, destinations_json, items_json) VALUES (?,?,?,?,?,?,?,?,?,?);";
+  if (sqlite3_prepare_v2(raw, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+    return;
+  }
+  const QByteArray when = entry.when.toString(Qt::ISODate).toUtf8();
+  const QByteArray kind = operation_kind_to_string(entry.kind).toUtf8();
+  const QByteArray outcome = entry.outcome.toUtf8();
+  const QByteArray dest = entry.destination.toUtf8();
+  const QByteArray detail = entry.detail.toUtf8();
+  const QByteArray sources = json_string_array(entry.sources).toUtf8();
+  const QByteArray dests = json_string_array(entry.destinations).toUtf8();
+  const QByteArray items = json_items(entry.items).toUtf8();
+
+  sqlite3_bind_text(stmt, 1, when.constData(), when.size(), SQLITE_TRANSIENT);
+  sqlite3_bind_text(stmt, 2, kind.constData(), kind.size(), SQLITE_TRANSIENT);
+  sqlite3_bind_text(stmt, 3, outcome.constData(), outcome.size(), SQLITE_TRANSIENT);
+  sqlite3_bind_text(stmt, 4, dest.constData(), dest.size(), SQLITE_TRANSIENT);
+  sqlite3_bind_text(stmt, 5, detail.constData(), detail.size(), SQLITE_TRANSIENT);
+  sqlite3_bind_int(stmt, 6, entry.completed);
+  sqlite3_bind_int(stmt, 7, entry.skipped);
+  sqlite3_bind_text(stmt, 8, sources.constData(), sources.size(), SQLITE_TRANSIENT);
+  sqlite3_bind_text(stmt, 9, dests.constData(), dests.size(), SQLITE_TRANSIENT);
+  sqlite3_bind_text(stmt, 10, items.constData(), items.size(), SQLITE_TRANSIENT);
+  sqlite3_step(stmt);
+  sqlite3_finalize(stmt);
+
+  sqlite3_exec(raw,
+               "DELETE FROM operations WHERE id NOT IN "
+               "(SELECT id FROM operations ORDER BY id DESC LIMIT 1000);",
+               nullptr, nullptr, nullptr);
 }
 
 void OperationsHistory::record_simple(OperationKind kind,
@@ -181,73 +349,69 @@ void OperationsHistory::record_simple(OperationKind kind,
   }
   if (!destination.empty()) {
     e.destination = QString::fromStdString(destination.string());
+    e.destinations << e.destination;
+  }
+  if (e.sources.isEmpty() && !e.destination.isEmpty()) {
+    OperationItem it;
+    it.destination = e.destination;
+    e.items.push_back(std::move(it));
+  } else {
+    for (const QString& src : e.sources) {
+      OperationItem it;
+      it.source = src;
+      it.destination = e.destination;
+      e.items.push_back(std::move(it));
+    }
   }
   e.outcome = ok ? QStringLiteral("success") : QStringLiteral("failed");
   e.detail = detail;
+  e.completed = ok ? static_cast<int>(e.sources.isEmpty() ? 1 : e.sources.size()) : 0;
   record(std::move(e));
 }
 
 std::vector<OperationHistoryEntry> OperationsHistory::entries() const
 {
-  return entries_;
+  std::vector<OperationHistoryEntry> out;
+  if (db_ == nullptr) {
+    return out;
+  }
+  sqlite3* raw = static_cast<sqlite3*>(db_);
+  sqlite3_stmt* stmt = nullptr;
+  const char* sql =
+      "SELECT id, when_iso, kind, outcome, destination, detail, completed, skipped, "
+      "sources_json, destinations_json, items_json FROM operations ORDER BY id ASC;";
+  if (sqlite3_prepare_v2(raw, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+    return out;
+  }
+  while (sqlite3_step(stmt) == SQLITE_ROW) {
+    OperationHistoryEntry e;
+    e.id = sqlite3_column_int64(stmt, 0);
+    const auto col = [](sqlite3_stmt* s, int i) {
+      const unsigned char* p = sqlite3_column_text(s, i);
+      return p ? QString::fromUtf8(reinterpret_cast<const char*>(p)) : QString();
+    };
+    e.when = QDateTime::fromString(col(stmt, 1), Qt::ISODate);
+    e.kind = operation_kind_from_string(col(stmt, 2));
+    e.outcome = col(stmt, 3);
+    e.destination = col(stmt, 4);
+    e.detail = col(stmt, 5);
+    e.completed = sqlite3_column_int(stmt, 6);
+    e.skipped = sqlite3_column_int(stmt, 7);
+    e.sources = parse_json_string_array(col(stmt, 8));
+    e.destinations = parse_json_string_array(col(stmt, 9));
+    e.items = parse_json_items(col(stmt, 10));
+    out.push_back(std::move(e));
+  }
+  sqlite3_finalize(stmt);
+  return out;
 }
 
 void OperationsHistory::clear()
 {
-  entries_.clear();
-  save();
-}
-
-void OperationsHistory::load()
-{
-  entries_.clear();
-  QFile f(QString::fromStdString(path_.string()));
-  if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) {
+  if (db_ == nullptr) {
     return;
   }
-  QTextStream in(&f);
-  while (!in.atEnd()) {
-    const QString line = in.readLine();
-    if (line.isEmpty() || line.startsWith(QLatin1Char('#'))) {
-      continue;
-    }
-    // when_iso | kind | outcome | dest | detail | path1 | path2 | …
-    const QStringList parts = line.split(QLatin1Char('\t'));
-    if (parts.size() < 5) {
-      continue;
-    }
-    OperationHistoryEntry e;
-    e.when = QDateTime::fromString(parts[0], Qt::ISODate);
-    e.kind = operation_kind_from_string(parts[1]);
-    e.outcome = parts[2];
-    e.destination = parts[3];
-    e.detail = parts[4];
-    for (int i = 5; i < parts.size(); ++i) {
-      if (!parts[i].isEmpty()) {
-        e.sources << parts[i];
-      }
-    }
-    entries_.push_back(std::move(e));
-  }
-}
-
-void OperationsHistory::save() const
-{
-  QFile f(QString::fromStdString(path_.string()));
-  if (!f.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
-    return;
-  }
-  QTextStream out(&f);
-  out << QStringLiteral("# dirtoo operations history (tab-separated)\n");
-  for (const auto& e : entries_) {
-    out << e.when.toString(Qt::ISODate) << QLatin1Char('\t')
-        << operation_kind_to_string(e.kind) << QLatin1Char('\t') << e.outcome
-        << QLatin1Char('\t') << e.destination << QLatin1Char('\t') << e.detail;
-    for (const QString& s : e.sources) {
-      out << QLatin1Char('\t') << s;
-    }
-    out << QLatin1Char('\n');
-  }
+  sqlite3_exec(static_cast<sqlite3*>(db_), "DELETE FROM operations;", nullptr, nullptr, nullptr);
 }
 
 void show_operations_history_dialog(
@@ -256,7 +420,7 @@ void show_operations_history_dialog(
   auto* dialog = new QDialog(parent);
   dialog->setAttribute(Qt::WA_DeleteOnClose);
   dialog->setWindowTitle(QStringLiteral("Operations History"));
-  dialog->resize(820, 440);
+  dialog->resize(900, 480);
 
   auto* layout = new QVBoxLayout(dialog);
   auto* filter = new QLineEdit(dialog);
@@ -269,15 +433,14 @@ void show_operations_history_dialog(
   tree->setHeaderLabels({QStringLiteral("When"), QStringLiteral("Operation"),
                          QStringLiteral("Outcome"), QStringLiteral("Destination"),
                          QStringLiteral("Sources")});
-  tree->setRootIsDecorated(false);
+  tree->setRootIsDecorated(true);
   tree->setAlternatingRowColors(true);
   tree->setSelectionMode(QAbstractItemView::SingleSelection);
-  tree->setUniformRowHeights(true);
   tree->header()->setStretchLastSection(true);
   tree->header()->resizeSection(0, 150);
   tree->header()->resizeSection(1, 100);
-  tree->header()->resizeSection(2, 80);
-  tree->header()->resizeSection(3, 220);
+  tree->header()->resizeSection(2, 90);
+  tree->header()->resizeSection(3, 240);
   layout->addWidget(tree, 1);
 
   const auto refill = [tree](const QString& needle) {
@@ -288,9 +451,12 @@ void show_operations_history_dialog(
       const OperationHistoryEntry& e = *it;
       const QString sources = paths_label(e.sources);
       if (!n.isEmpty()) {
-        const QString blob =
+        QString blob =
             (operation_kind_label(e.kind) + e.outcome + e.destination + sources + e.detail)
                 .toLower();
+        for (const auto& sub : e.items) {
+          blob += sub.source.toLower() + sub.destination.toLower();
+        }
         if (!blob.contains(n)) {
           continue;
         }
@@ -305,12 +471,24 @@ void show_operations_history_dialog(
       if (!e.detail.isEmpty()) {
         item->setToolTip(2, e.detail);
       }
-      // Store a navigable path in UserRole.
       QString go = e.destination;
       if (go.isEmpty() && !e.sources.isEmpty()) {
         go = e.sources.front();
       }
       item->setData(0, Qt::UserRole, go);
+
+      for (const auto& sub : e.items) {
+        if (e.items.size() == 1 && sub.destination == e.destination
+            && sub.source == (e.sources.isEmpty() ? QString() : e.sources.front())) {
+          continue;
+        }
+        auto* child = new QTreeWidgetItem(item);
+        child->setText(0, sub.skipped ? QStringLiteral("skipped") : QString());
+        child->setText(3, sub.destination.isEmpty() ? QStringLiteral("—") : sub.destination);
+        child->setText(4, sub.source);
+        child->setData(0, Qt::UserRole,
+                       sub.destination.isEmpty() ? sub.source : sub.destination);
+      }
     }
   };
   refill({});
@@ -320,7 +498,8 @@ void show_operations_history_dialog(
 
   auto* buttons = new QDialogButtonBox(dialog);
   auto* go_btn = buttons->addButton(QStringLiteral("Go to Folder"), QDialogButtonBox::ActionRole);
-  auto* clear_btn = buttons->addButton(QStringLiteral("Clear History"), QDialogButtonBox::ActionRole);
+  auto* clear_btn =
+      buttons->addButton(QStringLiteral("Clear History"), QDialogButtonBox::ActionRole);
   buttons->addButton(QDialogButtonBox::Close);
   layout->addWidget(buttons);
 

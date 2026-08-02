@@ -23,11 +23,21 @@ struct TransferRequest {
   std::vector<std::filesystem::path> sources;
 };
 
+struct TransferItemResult {
+  std::filesystem::path source;
+  std::filesystem::path destination;
+  bool skipped = false;
+};
+
 struct TransferSummary {
   int completed = 0;
   int skipped = 0;
   bool cancelled = false;
   QString error;
+  ClipboardMode mode = ClipboardMode::Copy;
+  std::filesystem::path destination_directory;
+  std::vector<std::filesystem::path> sources;
+  std::vector<TransferItemResult> items;
 };
 
 /// Runs copy/move on a worker thread. Conflict resolution is requested via

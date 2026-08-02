@@ -162,9 +162,9 @@ Instead, track an **operations history log**:
 | Outcome | success / skipped / failed (+ short error) |
 | App context | Optional: window location, user-visible label |
 
-**UI (suggested):** top-level or Tools menu **Operations History…** (similar to
-Open History) — filterable list, open containing folder, no “undo” button for
-now. Persist under XDG data/cache like other history.
+**UI:** **Edit → Operations History…** — filterable tree (per-item source→dest),
+Go to Folder, Clear. Storage: SQLite at `$XDG_STATE_HOME/dirtoo/operations-history.sqlite`
+(fallback `~/.local/state/dirtoo/…`). JSON columns for sources/items.
 
 **Wiring:** record from `TransferWorker` / paste / rename / dirops call sites
 (and future permission changes). CLI `dt-*` tools may log optionally later.
@@ -175,7 +175,7 @@ now. Persist under XDG data/cache like other history.
 
 | Item | Notes |
 |------|--------|
-| Operations history log | **done** — Edit → Operations History…; persist under AppData; no rollback |
+| Operations history log | **done** — SQLite under `$XDG_STATE_HOME/dirtoo/`; full sources+items; no rollback |
 | Location URL encoding | Only `%20` today; non-ASCII / reserved chars |
 | Archive member thumbnails | Weak; needs extract path or special URI |
 | Watcher richness | QFileSystemWatcher only; no archive extract-dir watch |
