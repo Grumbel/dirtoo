@@ -322,13 +322,9 @@ void populate_recent_opens_menu(QMenu* menu, int limit)
         QStringLiteral("%1 — %2").arg(e.app_name.isEmpty() ? QStringLiteral("App") : e.app_name,
                                       files_label(e.paths));
     auto* act = menu->addAction(app_icon_for(e), label);
-    act->setToolTip(e.paths.join(QLatin1Char('\n')));
+    act->setToolTip(e.paths.join(QStringLiteral("\n")));
     QObject::connect(act, &QAction::triggered, menu, [e] { reopen_entry(e); });
   }
-  menu->addSeparator();
-  menu->addAction(QStringLiteral("Show Open History…"), menu, [menu] {
-    show_open_history_dialog(menu != nullptr ? menu->window() : nullptr);
-  });
 }
 
 void show_open_history_dialog(QWidget* parent,

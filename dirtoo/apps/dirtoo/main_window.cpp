@@ -830,6 +830,9 @@ MainWindow::MainWindow(QWidget* parent)
     menuBar()->addMenu(history_menu_);
     connect(history_menu_, &QMenu::aboutToShow, this, &MainWindow::on_rebuild_history_menu);
 
+    recent_opens_menu_ = menuBar()->addMenu(QStringLiteral("Recently &Opened"));
+    connect(recent_opens_menu_, &QMenu::aboutToShow, this, &MainWindow::on_rebuild_recent_opens_menu);
+
     auto* help_menu = menuBar()->addMenu(QStringLiteral("&Help"));
     help_menu->addAction(theme_icon("help-contents"), QStringLiteral("Filter expression help"), this,
                          &MainWindow::on_show_filter_help);
@@ -3776,19 +3779,22 @@ void MainWindow::on_rebuild_history_menu()
       }
     });
   }
-
-  history_menu_->addSeparator();
-  auto* recent = history_menu_->addMenu(theme_icon("document-open-recent", "document-open"),
-                                        QStringLiteral("Recently Opened"));
-  populate_recent_opens_menu(recent, 20);
-  history_menu_->addAction(theme_icon("view-history", "document-open-recent"),
-                           QStringLiteral("Open History…"), this, [this] {
-                             show_open_history_dialog(this, [this](const QString& dir) {
-                               open_location(fs::Location::from_path(dir.toStdString()));
-                             });
-                           });
 }
 
+void MainWindow::on_rebuild_recent_opens_menu()
+{
+  if (recent_opens_menu_ == nullptr) {
+    return;
+  }
+  populate_recent_opens_menu(recent_opens_menu_, 30);
+  recent_opens_menu_->addSeparator();
+  recent_opens_menu_->addAction(theme_icon("view-history", "document-open-recent"),
+                                QStringLiteral("Open History…"), this, [this] {
+                                  show_open_history_dialog(this, [this](const QString& dir) {
+                                    open_location(fs::Location::from_path(dir.toStdString()));
+                                  });
+                                });
+}
 
 
 void MainWindow::on_reload_thumbnails()

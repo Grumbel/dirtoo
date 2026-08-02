@@ -148,6 +148,7 @@ private slots:
   void on_path_completions_ready(quint64 request_id, const QString& longest,
                                 const QStringList& candidates);
   void on_rebuild_history_menu();
+  void on_rebuild_recent_opens_menu();
   void on_rebuild_bookmarks_menu();
   void on_toggle_bookmark();
   void on_parent_new_window();
@@ -237,6 +238,7 @@ private:
   bool show_abspath_ = false;
   HistoryMenu* history_menu_ = nullptr;
   HistoryMenu* bookmarks_menu_ = nullptr;
+  QMenu* recent_opens_menu_ = nullptr;
   Bookmarks bookmarks_{Bookmarks::default_path()};
   std::vector<fs::Location> location_history_unique_;
   QWidget* location_stack_host_ = nullptr;
