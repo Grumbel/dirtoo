@@ -438,14 +438,16 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
 
   const fs::FileInfo* fi = model_->file_at(index.row());
 
-  // Directory with a montage/thumbnail: keep a folder emblem so it stays recognizable.
+  // Directory montage: whitened full-size folder overlay (dirtoo-py paint_icon).
+  // Hidden on hover so the montage is fully visible while still reading as a folder at rest.
   if (fi != nullptr && fi->is_directory()
-      && index.data(ThumbnailStatusRole).toInt() == static_cast<int>(ThumbnailStatus::Ready)) {
+      && index.data(ThumbnailStatusRole).toInt() == static_cast<int>(ThumbnailStatus::Ready)
+      && !(opt.state & QStyle::State_MouseOver)) {
     static QFileIconProvider provider;
     const QIcon folder_icon = provider.icon(QFileIconProvider::Folder);
-    const int emblem = std::max(16, thumb.width() / 3);
-    const QRect emblem_rect(thumb.left() + 2, thumb.bottom() - emblem - 2, emblem, emblem);
-    folder_icon.paint(painter, emblem_rect, Qt::AlignCenter);
+    painter->fillRect(thumb, QColor(255, 255, 255, 160));
+    const int m = std::max(2, thumb.width() / 16);
+    folder_icon.paint(painter, thumb.adjusted(m, m, -m, -m), Qt::AlignCenter);
   }
 
   // Non-recursive file count for folders (async ChildCountRole).

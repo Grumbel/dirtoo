@@ -222,15 +222,18 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
     }
   }
 
-  // Directory with a montage/thumbnail: folder emblem so it stays recognizable.
+  // Directory montage: whitened full-size folder overlay (dirtoo-py paint_icon).
+  // Hidden on hover so the montage is fully visible while still reading as a folder at rest.
   if (const auto* fi = model_->file_at(row_);
       fi != nullptr && fi->is_directory()
-      && idx.data(ThumbnailStatusRole).toInt() == static_cast<int>(ThumbnailStatus::Ready)) {
+      && idx.data(ThumbnailStatusRole).toInt() == static_cast<int>(ThumbnailStatus::Ready)
+      && !hover) {
     static QFileIconProvider provider;
     const QIcon folder_icon = provider.icon(QFileIconProvider::Folder);
-    const int emblem = std::max(16, icon_side / 3);
-    const QRect emblem_rect(thumb.left() + 2, thumb.bottom() - emblem - 2, emblem, emblem);
-    folder_icon.paint(painter, emblem_rect, Qt::AlignCenter);
+    painter->fillRect(thumb, QColor(255, 255, 255, 160));
+    // Slightly inset so the folder glyph does not sit on the tile edge.
+    const int m = std::max(2, icon_side / 16);
+    folder_icon.paint(painter, thumb.adjusted(m, m, -m, -m), Qt::AlignCenter);
   }
 
   // Non-recursive file count for folders.
