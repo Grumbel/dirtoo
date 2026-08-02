@@ -1998,16 +1998,18 @@ void MainWindow::request_thumbnails_for_visible()
                 std::filesystem::path{cache_root.toStdString()}
                 / std::to_string(std::hash<std::string>{}(archive_file.string()));
             auto extracted = archive::extract_member(archive_file, member, dest_dir);
-            QMetaObject::invokeMethod(this, [this, extracted, key, mime_copy]() {
-              if (!extracted) {
+            const bool ok = static_cast<bool>(extracted);
+            const std::filesystem::path out_path = ok ? *extracted : std::filesystem::path{};
+            QMetaObject::invokeMethod(this, [this, ok, out_path, key, mime_copy]() {
+              if (!ok) {
                 if (model_ != nullptr) {
                   model_->set_thumbnail_failed(key);
                 }
                 return;
               }
-              const QString real_path = QString::fromStdString(extracted->string());
+              const QString real_path = QString::fromStdString(out_path.string());
               thumb_alias_.insert(real_path, key);
-              thumbnailer_.request(fs::Location::from_path(*extracted), mime_copy,
+              thumbnailer_.request(fs::Location::from_path(out_path), mime_copy,
                                    QStringLiteral("large"));
             }, Qt::QueuedConnection);
           });
