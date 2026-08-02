@@ -209,7 +209,7 @@ smells, and gaps worth scheduling. Not every item is a user-visible crash.
 
 | ID | Smell | Why it hurts | Direction |
 |----|-------|--------------|-----------|
-| S1 | **Archive listing/extract shells out to `bsdtar` / `tar` / `unzip` / `7z`** | Fragile verbose-text parsers; format drift (GNU vs BSD `tvf`); extra process + PATH dependency; sizes silently 0 when parse fails. Python used libarchive/rar/7z extractors | **Prefer linking [libarchive](https://libarchive.org/)** (`archive_read_*`) for TOC + extract in `dirtoo-archive`. Keep CLI fallback only if libarchive missing at build time. Drop hand-rolled `-tvf` parsers once libarchive is primary |
+| S1 | **Archive listing/extract shells out to `bsdtar` / `tar` / `unzip` / `7z`** | Fragile verbose-text parsers; format drift (GNU vs BSD `tvf`); extra process + PATH dependency; sizes silently 0 when parse fails. Python used libarchive/rar/7z extractors | **Done (optional)** — `archive_libarchive.cpp` + `DIRTOO_HAS_LIBARCHIVE` when LibArchive found; TOC/extract/member + full extract prefer native; CLI remains fallback |
 | S2 | **`std::filesystem::remove_all` as the Overwrite primitive** | Same as A3 — policy API looks like “replace file” but implementation is “delete subtree” | **Done (refuse path)** — Overwrite is file/symlink only; dirs rejected at API + UI |
 | S3 | **MainWindow still ~4.6k LOC** | Controllers extracted only partially; menus/archive/devices still centralized | Continue peeling Navigation / Listing / ShellMenus / Devices helpers |
 | S4 | **Dual icon paint paths** | `GraphicsFileItem` and `FileItemDelegate` must stay twin for montage/badges | Shared paint helper or single renderer used by both |

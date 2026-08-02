@@ -19,7 +19,24 @@ struct ArchiveEntry {
   std::uint64_t size = 0;
 };
 
-/// List archive members using external tools (bsdtar -tf, unzip -Z1, 7z l).
+/// True when this build linked libarchive for native TOC/extract.
+[[nodiscard]] bool libarchive_available();
+
+/// List members via libarchive (preferred). Falls back is handled by list_archive_entries.
+[[nodiscard]] std::expected<std::vector<ArchiveEntry>, std::string>
+list_archive_entries_libarchive(const std::filesystem::path& archive_file);
+
+/// Extract full archive tree into dest_dir using libarchive.
+[[nodiscard]] std::expected<void, std::string>
+extract_archive_libarchive(const std::filesystem::path& archive_file,
+                           const std::filesystem::path& dest_dir);
+
+[[nodiscard]] std::expected<std::filesystem::path, std::string>
+extract_member_libarchive(const std::filesystem::path& archive_file,
+                          const std::filesystem::path& member,
+                          const std::filesystem::path& dest_dir);
+
+/// List archive members (libarchive when available, else bsdtar/unzip/tar).
 /// Does not extract data.
 [[nodiscard]] std::expected<std::vector<ArchiveEntry>, std::string>
 list_archive_entries(const std::filesystem::path& archive_file);

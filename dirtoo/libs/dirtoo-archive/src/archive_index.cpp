@@ -170,10 +170,19 @@ std::vector<ArchiveEntry> parse_unzip_listing_text(const std::string& text)
 std::expected<std::vector<ArchiveEntry>, std::string>
 list_archive_entries(const std::filesystem::path& archive_file)
 {
+  // Prefer native libarchive (sizes + formats without text parsing).
+  if (libarchive_available()) {
+    auto native = list_archive_entries_libarchive(archive_file);
+    if (native && !native->empty()) {
+      return native;
+    }
+    // Fall through to CLI tools if libarchive open fails or returns empty.
+  }
+
   const QString archive = QString::fromStdString(archive_file.string());
   const QString lower = archive.toLower();
 
-  // Prefer verbose listings so ArchiveEntry.size is populated for the Size column.
+  // CLI fallback: verbose listings so ArchiveEntry.size is populated.
   if (!QStandardPaths::findExecutable(QStringLiteral("bsdtar")).isEmpty()) {
     auto out = run_capture(QStringLiteral("bsdtar"), {QStringLiteral("-tvf"), archive});
     if (out) {
@@ -275,6 +284,14 @@ extract_member(const std::filesystem::path& archive_file,
                const std::filesystem::path& member,
                const std::filesystem::path& dest_dir)
 {
+  if (libarchive_available()) {
+    auto native = extract_member_libarchive(archive_file, member, dest_dir);
+    if (native) {
+      return native;
+    }
+    // Fall through to CLI on failure.
+  }
+
   std::error_code ec;
   std::filesystem::create_directories(dest_dir, ec);
   if (ec) {

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "dirtoo/archive/archive_manager.hpp"
+#include "dirtoo/archive/archive_index.hpp"
 
 #include <QCryptographicHash>
 #include <QDir>
@@ -152,6 +153,17 @@ void ArchiveManager::start_extract(const fs::Location& archive_location, Entry& 
 
   const QString archive = QString::fromStdString(archive_location.as_path().string());
   const QString out_dir = QString::fromStdString(entry.cache_dir.string());
+
+  // Prefer in-process libarchive extract (no PATH dependency, correct sizes already used for TOC).
+  if (libarchive_available()) {
+    auto ok = extract_archive_libarchive(archive_location.as_path(), entry.cache_dir);
+    if (ok) {
+      finish_ok(archive_location);
+      return;
+    }
+    // Fall through to external tools if libarchive extract fails.
+    entry.error = QString::fromStdString(ok.error());
+  }
 
   auto* process = new QProcess(this);
   entry.process = process;

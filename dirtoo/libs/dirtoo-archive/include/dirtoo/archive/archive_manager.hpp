@@ -26,7 +26,8 @@ enum class ExtractStatus {
 /// Extracts archives into a cache directory and maps archive Locations to
 /// real filesystem paths that can be listed with std::filesystem.
 ///
-/// Extraction uses external tools (bsdtar, tar, unzip, 7z) when available.
+/// Extraction prefers libarchive when built with DIRTOO_HAS_LIBARCHIVE; else
+/// external tools (bsdtar, tar, unzip, 7z).
 class ArchiveManager : public QObject {
   Q_OBJECT
 
