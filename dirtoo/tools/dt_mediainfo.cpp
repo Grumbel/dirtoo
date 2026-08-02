@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "dirtoo/filter/media_probe.hpp"
+#include "json_util.hpp"
 
 #include <cstdint>
 #include <filesystem>
@@ -21,15 +22,23 @@ namespace {
 void usage()
 {
   std::cerr << "usage: dt-mediainfo [options] <path> [path…]\n"
-               "  -p, --println FMT   Print FMT then newline (Python -p)\n"
-               "  -P, --print FMT     Print FMT without newline (Python -P)\n"
+               "  -j, --json          Machine-readable JSON array\n"
+               "  -p, --println FMT   Print FMT then newline\n"
+               "  -P, --print FMT     Print FMT without newline\n"
                "  -h, --help\n\n"
                "Placeholders: {filename} {width} {height} {resolution}\n"
                "  {duration} {hours} {minutes} {seconds} {framerate} {pages} {file_count}\n";
 }
 
 struct Fields {
+  std::string path;
   std::string filename;
+  bool has_width = false;
+  bool has_height = false;
+  bool has_duration = false;
+  bool has_framerate = false;
+  bool has_pages = false;
+  bool has_file_count = false;
   std::uint32_t width = 0;
   std::uint32_t height = 0;
   std::uint64_t duration_ms = 0;
@@ -41,13 +50,32 @@ struct Fields {
 Fields from_info(const std::filesystem::path& path, const dirtoo::filter::MediaInfo& info)
 {
   Fields f;
+  f.path = path.string();
   f.filename = path.filename().string();
-  if (info.width) f.width = *info.width;
-  if (info.height) f.height = *info.height;
-  if (info.duration_ms) f.duration_ms = *info.duration_ms;
-  if (info.framerate) f.framerate = *info.framerate;
-  if (info.pages) f.pages = *info.pages;
-  if (info.file_count) f.file_count = *info.file_count;
+  if (info.width) {
+    f.has_width = true;
+    f.width = *info.width;
+  }
+  if (info.height) {
+    f.has_height = true;
+    f.height = *info.height;
+  }
+  if (info.duration_ms) {
+    f.has_duration = true;
+    f.duration_ms = *info.duration_ms;
+  }
+  if (info.framerate) {
+    f.has_framerate = true;
+    f.framerate = *info.framerate;
+  }
+  if (info.pages) {
+    f.has_pages = true;
+    f.pages = *info.pages;
+  }
+  if (info.file_count) {
+    f.has_file_count = true;
+    f.file_count = *info.file_count;
+  }
   return f;
 }
 
@@ -55,7 +83,9 @@ std::string replace_all(std::string s, std::string_view key, std::string_view va
 {
   for (;;) {
     const auto pos = s.find(key);
-    if (pos == std::string::npos) break;
+    if (pos == std::string::npos) {
+      break;
+    }
     s.replace(pos, key.size(), value);
   }
   return s;
@@ -86,6 +116,39 @@ std::string format_line(const std::string& fmt, const Fields& f)
   return out;
 }
 
+void write_json_object(std::ostream& out, const Fields& f)
+{
+  out << '{';
+  bool first = true;
+  dtjson::write_kv_string(out, "path", f.path, first);
+  dtjson::write_kv_string(out, "filename", f.filename, first);
+  if (f.has_width) {
+    dtjson::write_kv_uint(out, "width", f.width, first);
+  }
+  if (f.has_height) {
+    dtjson::write_kv_uint(out, "height", f.height, first);
+  }
+  if (f.has_width || f.has_height) {
+    std::ostringstream res;
+    res << f.width << 'x' << f.height;
+    dtjson::write_kv_string(out, "resolution", res.str(), first);
+  }
+  if (f.has_duration) {
+    dtjson::write_kv_uint(out, "duration_ms", f.duration_ms, first);
+    dtjson::write_kv_double(out, "duration_s", f.duration_ms / 1000.0, first);
+  }
+  if (f.has_framerate) {
+    dtjson::write_kv_double(out, "framerate", f.framerate, first);
+  }
+  if (f.has_pages) {
+    dtjson::write_kv_uint(out, "pages", f.pages, first);
+  }
+  if (f.has_file_count) {
+    dtjson::write_kv_uint(out, "file_count", f.file_count, first);
+  }
+  out << '}';
+}
+
 const char* kDefaultFmt =
     "{hours}h:{minutes}m:{seconds}s  {framerate}fps  {resolution}  {filename}\n";
 
@@ -102,6 +165,7 @@ int main(int argc, char* argv[])
 
   std::string fmt = kDefaultFmt;
   bool add_newline = false;
+  bool json = false;
   std::vector<std::filesystem::path> paths;
 
   for (int i = 1; i < argc; ++i) {
@@ -109,6 +173,10 @@ int main(int argc, char* argv[])
     if (a == "-h" || a == "--help") {
       usage();
       return 0;
+    }
+    if (a == "-j" || a == "--json") {
+      json = true;
+      continue;
     }
     if (a == "-p" || a == "--println") {
       if (i + 1 >= argc) {
@@ -142,6 +210,26 @@ int main(int argc, char* argv[])
   }
 
   int failures = 0;
+  if (json) {
+    std::cout << '[';
+    bool first_obj = true;
+    for (const auto& path : paths) {
+      auto info = dirtoo::filter::probe_media(path);
+      if (!info) {
+        std::cerr << path.string() << ": no media metadata\n";
+        ++failures;
+        continue;
+      }
+      if (!first_obj) {
+        std::cout << ',';
+      }
+      first_obj = false;
+      write_json_object(std::cout, from_info(path, *info));
+    }
+    std::cout << "]\n";
+    return failures == 0 ? 0 : 1;
+  }
+
   for (const auto& path : paths) {
     auto info = dirtoo::filter::probe_media(path);
     if (!info) {

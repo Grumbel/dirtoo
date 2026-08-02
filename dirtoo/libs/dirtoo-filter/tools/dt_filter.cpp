@@ -13,7 +13,31 @@
 
 namespace fs = std::filesystem;
 
-static void usage(const char* argv0)
+namespace {
+
+void write_json_string(std::ostream& out, std::string_view s)
+{
+  out << '"';
+  for (unsigned char c : s) {
+    switch (c) {
+    case '"': out << "\\\""; break;
+    case '\\': out << "\\\\"; break;
+    case '\n': out << "\\n"; break;
+    case '\r': out << "\\r"; break;
+    case '\t': out << "\\t"; break;
+    default:
+      if (c < 0x20) {
+        static const char* hex = "0123456789abcdef";
+        out << "\\u00" << hex[c >> 4] << hex[c & 0xf];
+      } else {
+        out << static_cast<char>(c);
+      }
+    }
+  }
+  out << '"';
+}
+
+void usage(const char* argv0)
 {
   std::cerr
       << "Usage: " << argv0
@@ -23,9 +47,12 @@ static void usage(const char* argv0)
       << "  -d, --max-depth N     Limit recursion depth (requires -r; 0 = one level)\n"
       << "  -a, --all             Include hidden (dot) files\n"
       << "  -0, --null            Separate paths with NUL instead of newline\n"
+      << "  -j, --json            Print matching paths as a JSON string array\n"
       << "  -h, --help            Show this help\n\n"
       << dirtoo::filter::filter_help_text();
 }
+
+} // namespace
 
 int main(int argc, char** argv)
 {
@@ -33,6 +60,7 @@ int main(int argc, char** argv)
   int max_depth = -1;
   bool show_hidden = false;
   bool null_sep = false;
+  bool json = false;
   std::vector<std::string> positional;
 
   for (int i = 1; i < argc; ++i) {
@@ -51,6 +79,10 @@ int main(int argc, char** argv)
     }
     if (a == "-0" || a == "--null") {
       null_sep = true;
+      continue;
+    }
+    if (a == "-j" || a == "--json") {
+      json = true;
       continue;
     }
     if (a == "-d" || a == "--max-depth") {
@@ -79,6 +111,10 @@ int main(int argc, char** argv)
     usage(argv[0]);
     return 2;
   }
+  if (json && null_sep) {
+    std::cerr << "dt-filter: --json and --null are mutually exclusive\n";
+    return 2;
+  }
 
   const std::string& expr = positional[0];
   fs::path dir = ".";
@@ -96,6 +132,25 @@ int main(int argc, char** argv)
   dirtoo::filter::SearchOptions opt;
   opt.show_hidden = show_hidden;
   opt.max_depth = recursive ? max_depth : 0;
+
+  if (json) {
+    std::cout << '[';
+    bool first = true;
+    const auto stats = dirtoo::filter::search_directory(
+        dir, **parsed, opt, [&](const dirtoo::filter::FilterItem& item) {
+          if (!first) {
+            std::cout << ',';
+          }
+          first = false;
+          write_json_string(std::cout, item.path.string());
+        });
+    std::cout << "]\n";
+    if (stats.errors > 0 && stats.matched == 0 && stats.visited == 0) {
+      std::cerr << "search failed (path missing or not a directory?)\n";
+      return 1;
+    }
+    return 0;
+  }
 
   const char sep = null_sep ? '\0' : '\n';
   const auto stats = dirtoo::filter::search_directory(
