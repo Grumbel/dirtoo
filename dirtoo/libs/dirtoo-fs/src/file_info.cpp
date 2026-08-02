@@ -51,7 +51,13 @@ FileInfo FileInfo::synthetic(Location location, std::string display_name, bool i
   FileInfo info;
   info.location_ = std::move(location);
   info.display_name_ = std::move(display_name);
-  info.path_ = info.location_.as_path();
+  // Archive members all share the container path via as_path(); use the full
+  // location URL so model keys (thumbnails, child counts, PathRole) stay unique.
+  if (info.location_.is_archive()) {
+    info.path_ = std::filesystem::path{info.location_.as_url()};
+  } else {
+    info.path_ = info.location_.as_path();
+  }
   info.size_ = size;
   info.is_directory_ = is_directory;
   info.is_regular_file_ = !is_directory;

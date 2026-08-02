@@ -451,7 +451,9 @@ Python reference: experimental `dirtoo-py/experiments/udisks/` (`udisksqt.py`); 
 - [x] only the first now in "Small Icons" has a filename, filename is
       invisible everywhere else
       (icon-style delegate kept enabled; taller grid for caption)
-- [ ] files in archives don't get thumbnails
+- [x] files in archives don't get thumbnails
+      (unique path key via location URL; extract member off-thread then Thumbnailer1;
+       map extracted path → archive model key)
 - [partial] drag&drop of files from inside an archive just gives a filename
       pointing to the archive
       (mimeData emits Location URL file://…//archive:entry; external extract-on-drop optional)

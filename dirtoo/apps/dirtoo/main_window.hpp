@@ -33,6 +33,7 @@
 
 #include <QMainWindow>
 class QListWidgetItem;
+#include <QHash>
 #include <QSet>
 #include <QThread>
 
@@ -232,6 +233,8 @@ private:
   int zoom_list_ = 2;
   int zoom_detail_ = 2;
   QStringList detail_columns_;
+  /// Extracted-file path → model key (archive URL) for thumbnail Ready mapping.
+  QHash<QString, QString> thumb_alias_;
   void apply_detail_column_visibility();
   [[nodiscard]] int& zoom_for_current_view();
   [[nodiscard]] int zoom_for_current_view() const;
