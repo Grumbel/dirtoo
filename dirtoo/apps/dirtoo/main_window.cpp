@@ -4,6 +4,8 @@
 #include "main_window.hpp"
 #include "badge_icons.hpp"
 #include "theme_icons.hpp"
+#include "location_icons.hpp"
+#include "location_url.hpp"
 #include "directory_tree_model.hpp"
 #include "udisks_client.hpp"
 #include "devices_controller.hpp"
@@ -111,78 +113,6 @@
 #include <optional>
 
 namespace dirtoo::app {
-
-namespace {
-
-/// Icon for a location in History / Bookmarks menus: cached thumbnail when
-/// present, otherwise the system folder/file icon (or archive package icon).
-QIcon icon_for_location(const fs::Location& loc)
-{
-  if (loc.is_archive()) {
-    const QIcon pkg = QIcon::fromTheme(QStringLiteral("package-x-generic"));
-    if (!pkg.isNull()) {
-      return pkg;
-    }
-    return QIcon::fromTheme(QStringLiteral("folder"));
-  }
-
-  const QString large =
-      thumbnail::Thumbnailer::cache_path_for(loc, QStringLiteral("large"));
-  if (QFileInfo::exists(large)) {
-    return QIcon(large);
-  }
-  const QString normal =
-      thumbnail::Thumbnailer::cache_path_for(loc, QStringLiteral("normal"));
-  if (QFileInfo::exists(normal)) {
-    return QIcon(normal);
-  }
-
-  QFileIconProvider provider;
-  const QFileInfo fi(QString::fromStdString(loc.as_path().string()));
-  if (fi.isDir() || !fi.exists()) {
-    // Non-existent paths still show as folders in history (navigated dirs).
-    return provider.icon(QFileIconProvider::Folder);
-  }
-  return provider.icon(fi);
-}
-
-/// Best-effort Location from a drop URL (plain file or Python-style archive URL).
-std::optional<fs::Location> location_from_drop_url(const QUrl& url)
-{
-  // Prefer the string form so "//archive:entry" survives Qt path normalization.
-  const QString s = url.toString();
-  if (s.contains(QLatin1String("//archive")) || s.startsWith(QLatin1String("archive://"))) {
-    try {
-      return fs::Location::from_url(s.toStdString());
-    } catch (...) {
-      // fall through
-    }
-  }
-  const QByteArray enc = url.toEncoded();
-  if (!enc.isEmpty()) {
-    const std::string es = enc.toStdString();
-    if (es.find("//archive") != std::string::npos || es.starts_with("archive://")) {
-      try {
-        return fs::Location::from_url(es);
-      } catch (...) {
-      }
-    }
-  }
-  if (url.isLocalFile()) {
-    const QString local = url.toLocalFile();
-    // toLocalFile may leave "//archive:…" in the path for our custom URLs.
-    if (local.contains(QLatin1String("//archive"))) {
-      try {
-        return fs::Location::from_url(("file://" + local).toStdString());
-      } catch (...) {
-      }
-    }
-    return fs::Location::from_path(std::filesystem::path{local.toStdString()});
-  }
-  return std::nullopt;
-}
-
-} // namespace
 
 
 MainWindow::MainWindow(QWidget* parent)
