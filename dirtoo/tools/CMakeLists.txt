@@ -11,6 +11,15 @@ foreach(tool ${_dirops_tools})
   install(TARGETS dt-${tool} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endforeach()
 
+# Empty-directory removal (Python programs/rmdir.py); no recursive file delete.
+add_executable(dt-rmdir dt_rmdir.cpp)
+if(TARGET dirtoo_warnings)
+  target_link_libraries(dt-rmdir PRIVATE dirtoo_warnings)
+endif()
+target_compile_definitions(dt-rmdir PRIVATE DIRTOO_VERSION="${PROJECT_VERSION_FULL}")
+install(TARGETS dt-rmdir RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+
 if(TARGET dirtoo::filter OR TARGET dirtoo-filter::dirtoo-filter)
   if(NOT TARGET dt-filter AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../libs/dirtoo-filter/tools/dt_filter.cpp")
     add_executable(dt-filter ../libs/dirtoo-filter/tools/dt_filter.cpp)
