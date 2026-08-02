@@ -6,6 +6,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
+#include <QDebug>
 #include <QPixmap>
 #include <QString>
 #include <QStringList>
@@ -16,7 +17,7 @@
 
 namespace dirtoo::app {
 
-/// Directory containing badge / dnd / app PNGs (build tree or installed share).
+/// Directory containing badge / dnd / app icons (build tree or installed share).
 inline QString icon_directory()
 {
   static const QString cached = [] {
@@ -43,6 +44,10 @@ inline QString icon_directory()
         return QDir(dir).absolutePath();
       }
     }
+    qWarning().noquote() << QStringLiteral(
+        "dirtoo: icon directory not found (tried build DIRTOO_ICON_DIR, "
+        "/usr[/local]/share/dirtoo/icons, and paths relative to the executable); "
+        "bundled toolbar/badge assets will be missing");
     return QString{};
   }();
   return cached;
@@ -52,13 +57,19 @@ inline QPixmap load_badge_pixmap(const QString& file_name)
 {
   const QString dir = icon_directory();
   if (dir.isEmpty()) {
+    // icon_directory() already logged once.
     return {};
   }
   const QString path = dir + QLatin1Char('/') + file_name;
   if (!QFile::exists(path)) {
+    qWarning().noquote() << QStringLiteral("dirtoo: icon asset not found:") << path;
     return {};
   }
-  return QPixmap(path);
+  QPixmap pm(path);
+  if (pm.isNull()) {
+    qWarning().noquote() << QStringLiteral("dirtoo: failed to load icon asset:") << path;
+  }
+  return pm;
 }
 
 } // namespace dirtoo::app

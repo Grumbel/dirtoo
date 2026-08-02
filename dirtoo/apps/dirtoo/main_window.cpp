@@ -120,29 +120,46 @@ QIcon theme_icon(const char* name, const char* fallback = nullptr)
       {QStringLiteral("crop-thumbnails"), QStringLiteral("crop-thumbnails.svg")},
   };
 
-  const auto load_bundled = [](const QString& file) -> QIcon {
+  // Load a known bundled asset; log once per missing filename (not for speculative
+  // name.svg / name.png probes).
+  const auto load_bundled = [](const QString& file, bool required) -> QIcon {
     const QString dir = icon_directory();
     if (dir.isEmpty() || file.isEmpty()) {
       return {};
     }
     const QString path = dir + QLatin1Char('/') + file;
     if (!QFile::exists(path)) {
+      if (required) {
+        static QStringList logged;
+        if (!logged.contains(path)) {
+          logged.append(path);
+          qWarning().noquote() << QStringLiteral("dirtoo: bundled icon asset not found:") << path;
+        }
+      }
       return {};
     }
-    return QIcon(path);
+    QIcon icon(path);
+    if (icon.isNull() && required) {
+      static QStringList logged_null;
+      if (!logged_null.contains(path)) {
+        logged_null.append(path);
+        qWarning().noquote() << QStringLiteral("dirtoo: failed to load bundled icon:") << path;
+      }
+    }
+    return icon;
   };
 
   const QString key = QString::fromUtf8(name);
   if (const auto it = kBundled.constFind(key); it != kBundled.cend()) {
-    if (QIcon icon = load_bundled(*it); !icon.isNull()) {
+    if (QIcon icon = load_bundled(*it, /*required=*/true); !icon.isNull()) {
       return icon;
     }
   }
-  // Direct filename try: name.svg / name.png
-  if (QIcon icon = load_bundled(key + QStringLiteral(".svg")); !icon.isNull()) {
+  // Direct filename try: name.svg / name.png (optional; theme fallback may apply).
+  if (QIcon icon = load_bundled(key + QStringLiteral(".svg"), /*required=*/false); !icon.isNull()) {
     return icon;
   }
-  if (QIcon icon = load_bundled(key + QStringLiteral(".png")); !icon.isNull()) {
+  if (QIcon icon = load_bundled(key + QStringLiteral(".png"), /*required=*/false); !icon.isNull()) {
     return icon;
   }
 
@@ -150,7 +167,7 @@ QIcon theme_icon(const char* name, const char* fallback = nullptr)
   if (icon.isNull() && fallback != nullptr) {
     const QString fb = QString::fromUtf8(fallback);
     if (const auto it = kBundled.constFind(fb); it != kBundled.cend()) {
-      if (QIcon b = load_bundled(*it); !b.isNull()) {
+      if (QIcon b = load_bundled(*it, /*required=*/true); !b.isNull()) {
         return b;
       }
     }

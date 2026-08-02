@@ -125,6 +125,16 @@ install(FILES
   ${CMAKE_SOURCE_DIR}/resources/icons/dnd-link.png
   ${CMAKE_SOURCE_DIR}/resources/icons/dnd-none.png
   ${CMAKE_SOURCE_DIR}/resources/icons/dnd-ask.png
+  ${CMAKE_SOURCE_DIR}/resources/icons/crop-thumbnails.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/icon-detail-less.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/icon-detail-more.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/view-detail.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/view-hidden.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/view-icons.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/view-sidebar.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/view-small-icons.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/zoom-in.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/zoom-out.svg
   DESTINATION share/dirtoo/icons
 )
 
