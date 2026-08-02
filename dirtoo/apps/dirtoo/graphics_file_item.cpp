@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "graphics_file_item.hpp"
+#include "icon_tile_paint.hpp"
 #include "badge_icons.hpp"
 
 #include "file_list_model.hpp"
@@ -38,33 +39,6 @@ QString format_duration_ms(std::uint64_t ms)
         .arg(s, 2, 10, QLatin1Char('0'));
   }
   return QStringLiteral("%1:%2").arg(m).arg(s, 2, 10, QLatin1Char('0'));
-}
-
-void draw_badge(QPainter* painter, const QRect& thumb, const QString& text, Qt::Alignment align)
-{
-  if (text.isEmpty()) {
-    return;
-  }
-  const QFontMetrics fm(painter->font());
-  const int pad_x = 3;
-  const int h = fm.height() + 2;
-  const int w = fm.horizontalAdvance(text) + pad_x * 2;
-  QRect badge(0, 0, w, h);
-  if (align & Qt::AlignRight) {
-    badge.moveRight(thumb.right() - 1);
-  } else {
-    badge.moveLeft(thumb.left() + 1);
-  }
-  if (align & Qt::AlignBottom) {
-    badge.moveBottom(thumb.bottom() - 1);
-  } else {
-    badge.moveTop(thumb.top() + 1);
-  }
-  painter->setPen(Qt::NoPen);
-  painter->setBrush(QColor(255, 255, 255, 170));
-  painter->drawRoundedRect(badge, 2, 2);
-  painter->setPen(Qt::black);
-  painter->drawText(badge.adjusted(pad_x, 0, -pad_x, 0), Qt::AlignVCenter | Qt::AlignLeft, text);
 }
 
 } // namespace
@@ -222,25 +196,18 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
     }
   }
 
-  // Directory montage: whitened full-size folder overlay (dirtoo-py paint_icon).
-  // Hidden on hover so the montage is fully visible while still reading as a folder at rest.
-  if (const auto* fi = model_->file_at(row_);
-      fi != nullptr && fi->is_directory()
+  // Directory montage overlay (shared with FileItemDelegate).
+  if (fi != nullptr && fi->is_directory()
       && idx.data(ThumbnailStatusRole).toInt() == static_cast<int>(ThumbnailStatus::Ready)
       && !hover) {
-    static QFileIconProvider provider;
-    const QIcon folder_icon = provider.icon(QFileIconProvider::Folder);
-    painter->fillRect(thumb, QColor(255, 255, 255, 160));
-    // Slightly inset so the folder glyph does not sit on the tile edge.
-    const int m = std::max(2, icon_side / 16);
-    folder_icon.paint(painter, thumb.adjusted(m, m, -m, -m), Qt::AlignCenter);
+    paint_directory_montage_overlay(painter, thumb);
   }
 
   // Non-recursive file count for folders.
   if (const auto* fi = model_->file_at(row_); fi != nullptr && fi->is_directory()) {
     const qint64 n = idx.data(ChildCountRole).toLongLong();
     if (n >= 0) {
-      draw_badge(painter, thumb, QStringLiteral("%1").arg(n), Qt::AlignRight | Qt::AlignBottom);
+      paint_tile_badge(painter, thumb, QStringLiteral("%1").arg(n), Qt::AlignRight | Qt::AlignBottom);
     }
   }
 
@@ -305,9 +272,9 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
           bottom_left = QStringLiteral("%1×%2").arg(*meta->width).arg(*meta->height);
         }
       }
-      draw_badge(painter, thumb, top_left, Qt::AlignLeft | Qt::AlignTop);
-      draw_badge(painter, thumb, top_right, Qt::AlignRight | Qt::AlignTop);
-      draw_badge(painter, thumb, bottom_left, Qt::AlignLeft | Qt::AlignBottom);
+      paint_tile_badge(painter, thumb, top_left, Qt::AlignLeft | Qt::AlignTop);
+      paint_tile_badge(painter, thumb, top_right, Qt::AlignRight | Qt::AlignTop);
+      paint_tile_badge(painter, thumb, bottom_left, Qt::AlignLeft | Qt::AlignBottom);
     }
 
     // Type sticker: bottom-right (Python paint_metadata / SharedPixmaps).
@@ -340,31 +307,7 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
     }
   }
 
-  // Status roles
-  if (idx.data(IsNewRole).toBool()) {
-    static const QPixmap k_new(load_badge_pixmap(QStringLiteral("badge-new.png")));
-    if (!k_new.isNull()) {
-      painter->setOpacity(0.9);
-      painter->drawPixmap(QRect(thumb.left() + 2, thumb.top() + 2, 20, 20), k_new);
-      painter->setOpacity(1.0);
-    }
-  }
-  const auto status = static_cast<ThumbnailStatus>(idx.data(ThumbnailStatusRole).toInt());
-  if (status == ThumbnailStatus::Pending) {
-    static const QPixmap k_loading(load_badge_pixmap(QStringLiteral("badge-loading.png")));
-    if (!k_loading.isNull()) {
-      painter->setOpacity(0.55);
-      painter->drawPixmap(QRect(thumb.right() - 22, thumb.top() + 2, 20, 20), k_loading);
-      painter->setOpacity(1.0);
-    }
-  } else if (status == ThumbnailStatus::Failed) {
-    static const QPixmap k_error(load_badge_pixmap(QStringLiteral("badge-error.png")));
-    if (!k_error.isNull()) {
-      painter->setOpacity(0.75);
-      painter->drawPixmap(QRect(thumb.right() - 22, thumb.top() + 2, 20, 20), k_error);
-      painter->setOpacity(1.0);
-    }
-  }
+  paint_tile_status_overlays(painter, thumb, idx);
 
   // Captions: basename in normal text color; size/date in gray (dirtoo-py).
   // No outline; selection keeps black text (selection fill provides contrast).

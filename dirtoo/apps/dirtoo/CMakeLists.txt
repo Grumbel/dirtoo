@@ -75,6 +75,7 @@ qt_add_executable(dirtoo-app
   udisks_client.cpp
   udisks_client.hpp
   badge_icons.hpp
+  icon_tile_paint.hpp
 )
 
 set_target_properties(dirtoo-app PROPERTIES OUTPUT_NAME dirtoo)

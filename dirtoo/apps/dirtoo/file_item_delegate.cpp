@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "file_item_delegate.hpp"
+#include "icon_tile_paint.hpp"
 #include "badge_icons.hpp"
 
 #include "file_list_model.hpp"
@@ -40,38 +41,6 @@ QString format_time_gap(qint64 secs)
     return QStringLiteral("%1h gap").arg(secs / 3600);
   }
   return QStringLiteral("%1d gap").arg(secs / 86400);
-}
-
-void draw_badge(QPainter* painter, const QRect& thumb, const QString& text, Qt::Alignment align)
-{
-  if (text.isEmpty()) {
-    return;
-  }
-  QFont font = painter->font();
-  font.setPointSizeF(std::max(8.0, font.pointSizeF() * 0.85));
-  painter->setFont(font);
-  const QFontMetrics fm(font);
-  const int pad_x = 3;
-  const int h = fm.height() + 2;
-  const int w = fm.horizontalAdvance(text) + pad_x * 2;
-
-  QRect badge(0, 0, w, h);
-  if (align & Qt::AlignRight) {
-    badge.moveRight(thumb.right() - 1);
-  } else {
-    badge.moveLeft(thumb.left() + 1);
-  }
-  if (align & Qt::AlignBottom) {
-    badge.moveBottom(thumb.bottom() - 1);
-  } else {
-    badge.moveTop(thumb.top() + 1);
-  }
-
-  painter->setPen(Qt::NoPen);
-  painter->setBrush(QColor(255, 255, 255, 170));
-  painter->drawRoundedRect(badge, 2, 2);
-  painter->setPen(QColor(20, 20, 20));
-  painter->drawText(badge.adjusted(pad_x, 0, -pad_x, 0), Qt::AlignVCenter | Qt::AlignLeft, text);
 }
 
 QString format_duration_ms(std::uint64_t ms)
@@ -139,56 +108,6 @@ const QPixmap& badge_pixmap(MediaKind kind)
   return k_empty;
 }
 
-
-void draw_status_pixmap(QPainter* painter, const QRect& thumb, const QPixmap& pm, Qt::Alignment align,
-                        qreal opacity = 0.55)
-{
-  if (pm.isNull() || thumb.isEmpty()) {
-    return;
-  }
-  const int side = std::min(32, std::max(16, thumb.width() / 4));
-  QRect r(0, 0, side, side);
-  if (align & Qt::AlignRight) {
-    r.moveRight(thumb.right() - 2);
-  } else {
-    r.moveLeft(thumb.left() + 2);
-  }
-  if (align & Qt::AlignBottom) {
-    r.moveBottom(thumb.bottom() - 2);
-  } else {
-    r.moveTop(thumb.top() + 2);
-  }
-  painter->save();
-  painter->setOpacity(opacity);
-  painter->drawPixmap(r, pm);
-  painter->restore();
-}
-
-void draw_status_overlays(QPainter* painter, const QRect& thumb, const QModelIndex& index)
-{
-  static const QPixmap k_loading(load_badge_pixmap(QStringLiteral("badge-loading.png")));
-  static const QPixmap k_error(load_badge_pixmap(QStringLiteral("badge-error.png")));
-  static const QPixmap k_locked(load_badge_pixmap(QStringLiteral("badge-locked.png")));
-  static const QPixmap k_new(load_badge_pixmap(QStringLiteral("badge-new.png")));
-
-  if (index.data(IsNewRole).toBool() && !k_new.isNull()) {
-    draw_status_pixmap(painter, thumb, k_new, Qt::AlignLeft | Qt::AlignTop, 0.9);
-  }
-  if (index.data(AccessDeniedRole).toBool() && !k_locked.isNull()) {
-    const int m = std::max(4, thumb.width() / 8);
-    QRect r = thumb.adjusted(m, m, -m, -m);
-    painter->save();
-    painter->setOpacity(0.5);
-    painter->drawPixmap(r, k_locked);
-    painter->restore();
-  }
-  const auto status = static_cast<ThumbnailStatus>(index.data(ThumbnailStatusRole).toInt());
-  if (status == ThumbnailStatus::Pending && !k_loading.isNull()) {
-    draw_status_pixmap(painter, thumb, k_loading, Qt::AlignRight | Qt::AlignTop);
-  } else if (status == ThumbnailStatus::Failed && !k_error.isNull()) {
-    draw_status_pixmap(painter, thumb, k_error, Qt::AlignRight | Qt::AlignTop, 0.75);
-  }
-}
 
 void draw_type_badge(QPainter* painter, const QRect& thumb, MediaKind kind)
 {
@@ -437,24 +356,21 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
   }
 
   const fs::FileInfo* fi = model_->file_at(index.row());
+  const bool is_dir = fi != nullptr && fi->is_directory();
+  const bool hover = (opt.state & QStyle::State_MouseOver);
 
-  // Directory montage: whitened full-size folder overlay (dirtoo-py paint_icon).
-  // Hidden on hover so the montage is fully visible while still reading as a folder at rest.
-  if (fi != nullptr && fi->is_directory()
+  // Directory montage overlay (shared with GraphicsFileItem).
+  if (is_dir
       && index.data(ThumbnailStatusRole).toInt() == static_cast<int>(ThumbnailStatus::Ready)
-      && !(opt.state & QStyle::State_MouseOver)) {
-    static QFileIconProvider provider;
-    const QIcon folder_icon = provider.icon(QFileIconProvider::Folder);
-    painter->fillRect(thumb, QColor(255, 255, 255, 160));
-    const int m = std::max(2, thumb.width() / 16);
-    folder_icon.paint(painter, thumb.adjusted(m, m, -m, -m), Qt::AlignCenter);
+      && !hover) {
+    paint_directory_montage_overlay(painter, thumb);
   }
 
   // Non-recursive file count for folders (async ChildCountRole).
   if (fi != nullptr && fi->is_directory()) {
     const qint64 n = index.data(ChildCountRole).toLongLong();
     if (n >= 0) {
-      draw_badge(painter, thumb, QStringLiteral("%1").arg(n), Qt::AlignRight | Qt::AlignBottom);
+      paint_tile_badge(painter, thumb, QStringLiteral("%1").arg(n), Qt::AlignRight | Qt::AlignBottom);
     }
   }
 
@@ -519,9 +435,9 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
         bottom_left = QStringLiteral("%1×%2").arg(*meta->width).arg(*meta->height);
       }
 
-      draw_badge(painter, thumb, top_left, Qt::AlignLeft | Qt::AlignTop);
-      draw_badge(painter, thumb, top_right, Qt::AlignRight | Qt::AlignTop);
-      draw_badge(painter, thumb, bottom_left, Qt::AlignLeft | Qt::AlignBottom);
+      paint_tile_badge(painter, thumb, top_left, Qt::AlignLeft | Qt::AlignTop);
+      paint_tile_badge(painter, thumb, top_right, Qt::AlignRight | Qt::AlignTop);
+      paint_tile_badge(painter, thumb, bottom_left, Qt::AlignLeft | Qt::AlignBottom);
     }
   }
 
@@ -530,7 +446,7 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     draw_type_badge(painter, thumb, kind);
   }
 
-  draw_status_overlays(painter, thumb, index);
+  paint_tile_status_overlays(painter, thumb, index);
 
   // Captions: basename in normal text; size/date in gray (dirtoo-py). No outline.
   if (!text.isEmpty() && model_->icon_detail_level() > 0) {
