@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "file_list_model.hpp"
-#include "dirtoo/archive/archive_index.hpp"
+#include "archive_member_cache.hpp"
 #include "dirtoo/filter/media_meta_cache.hpp"
 #include "size_format.hpp"
 
@@ -704,9 +704,7 @@ QMimeData* FileListModel::mimeData(const QModelIndexList& indexes) const
   std::sort(rows.begin(), rows.end());
   rows.erase(std::unique(rows.begin(), rows.end()), rows.end());
 
-  const QString drop_cache =
-      QStandardPaths::writableLocation(QStandardPaths::CacheLocation)
-      + QStringLiteral("/dirtoo-archive-drop");
+  const auto drop_cache = archive_member_cache_root("dirtoo-archive-drop");
 
   for (int row : rows) {
     if (const fs::FileInfo* fi = file_at(row)) {
@@ -717,20 +715,9 @@ QMimeData* FileListModel::mimeData(const QModelIndexList& indexes) const
         if (!fi->location().entry_path().empty()) {
           const auto archive_file = fi->location().as_path();
           const auto member = fi->location().entry_path();
-          const auto dest_dir =
-              std::filesystem::path{drop_cache.toStdString()}
-              / std::to_string(std::hash<std::string>{}(archive_file.string()));
-          // Reuse prior extract so repeated drags do not block the UI thread.
-          const auto cached = dest_dir / member;
-          std::error_code exists_ec;
-          if (std::filesystem::is_regular_file(cached, exists_ec) && !exists_ec) {
-            urls.push_back(
-                QUrl::fromLocalFile(QString::fromStdString(cached.string())));
-            continue;
-          }
-          auto extracted =
-              archive::extract_member(archive_file, member, dest_dir);
-          if (extracted) {
+          const auto dest_dir = archive_member_dest_dir(drop_cache, archive_file);
+          if (auto extracted =
+                  ensure_archive_member_extracted(archive_file, member, dest_dir)) {
             urls.push_back(
                 QUrl::fromLocalFile(QString::fromStdString(extracted->string())));
             continue;

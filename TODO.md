@@ -132,7 +132,7 @@ Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 | Group by day / directory / duration (headers) | **done** (list + Graphics) |
 | Message area / async path completion / save file list | **done** |
 | Select all / time gaps / directory thumbnails | **done** |
-| List virtualization | **open** |
+| List virtualization | **Partial** — viewport row sampling for thumbs; model still full; Graphics windowed |
 
 ### Ops & dialogs
 
@@ -181,7 +181,7 @@ Go to Folder, Clear. Storage: SQLite at `$XDG_STATE_HOME/dirtoo/operations-histo
 | Location URL encoding | **Promoted** — see *Audit findings* (systemic) |
 | Archive member thumbnails | Weak; needs extract path or special URI |
 | Watcher richness | **Improved** — extract tree or archive file; TOC `refresh_if_stale` on soft reload |
-| MainWindow factoring | **Partial** — ArchiveListing (+child counts); NavigationHistory, Search, Transfer, Devices |
+| MainWindow factoring | **Partial** — ArchiveListing, archive_member_cache; NavigationHistory, Search, Transfer, Devices |
 | True incremental FS watcher deltas | **Partial** — merge_items after soft rescan; still O(n) readdir (no inotify names) |
 | List / Graphics virtualization | **Graphics viewport window done**; Detail uses uniform row heights when no group/time-gap; Qt paints only visible rows |
 | Rubber-band vs item drag | **done** |

@@ -28,6 +28,7 @@
 #include "operations_history.hpp"
 #include "preferences_dialog.hpp"
 #include "properties_dialog.hpp"
+#include "archive_member_cache.hpp"
 #include "dirtoo/fs/file_info.hpp"
 #include "dirtoo/thumbnail/thumbnailer.hpp"
 #include "dirops/ops.hpp"
@@ -1937,17 +1938,30 @@ void MainWindow::request_thumbnails_for_visible()
       rows.erase(std::unique(rows.begin(), rows.end()), rows.end());
     } else if (QAbstractItemView* view = current_view()) {
       const QRect vp = view->viewport()->rect();
-      // Sample top/mid/bottom of the viewport for a cheap row range estimate.
-      const QModelIndex top = view->indexAt(vp.topLeft() + QPoint(4, 4));
-      const QModelIndex bot = view->indexAt(vp.bottomLeft() + QPoint(4, -4));
-      int first = top.isValid() ? top.row() : 0;
-      int last = bot.isValid() ? bot.row() : first;
+      // Walk the viewport by approximate row step so Detail/List only queue
+      // thumbnails for on-screen rows (plus a small pad), not a huge range.
+      const int step = std::max(8, view->sizeHintForRow(0) > 0 ? view->sizeHintForRow(0) : 24);
+      int first = model_->rowCount();
+      int last = -1;
+      for (int y = 0; y < vp.height(); y += step) {
+        const QModelIndex idx = view->indexAt(QPoint(4, y));
+        if (!idx.isValid()) {
+          continue;
+        }
+        first = std::min(first, idx.row());
+        last = std::max(last, idx.row());
+      }
+      if (last < 0) {
+        const QModelIndex top = view->indexAt(vp.topLeft() + QPoint(4, 4));
+        const QModelIndex bot = view->indexAt(vp.bottomLeft() + QPoint(4, -4));
+        first = top.isValid() ? top.row() : 0;
+        last = bot.isValid() ? bot.row() : first;
+      }
       if (last < first) {
         std::swap(first, last);
       }
-      // Pad a few screens worth.
-      first = std::max(0, first - 8);
-      last = std::min(model_->rowCount() - 1, last + 24);
+      first = std::max(0, first - 4);
+      last = std::min(model_->rowCount() - 1, last + 8);
       for (int r = first; r <= last; ++r) {
         rows.push_back(r);
       }
@@ -2013,15 +2027,12 @@ void MainWindow::request_thumbnails_for_visible()
           const auto member = fi.location().entry_path();
           const QString key = model_key;
           const QString mime_copy = mime;
-          QString cache_root =
-              QStandardPaths::writableLocation(QStandardPaths::CacheLocation)
-              + QStringLiteral("/dirtoo-archive-thumbs");
+          const auto cache_root = archive_member_cache_root("dirtoo-archive-thumbs");
           (void)QtConcurrent::run([this, archive_file, member, key, mime_copy, cache_root]() {
-            const auto dest_dir =
-                std::filesystem::path{cache_root.toStdString()}
-                / std::to_string(std::hash<std::string>{}(archive_file.string()));
-            auto extracted = archive::extract_member(archive_file, member, dest_dir);
-            const bool ok = static_cast<bool>(extracted);
+            const auto dest_dir = archive_member_dest_dir(cache_root, archive_file);
+            auto extracted =
+                ensure_archive_member_extracted(archive_file, member, dest_dir);
+            const bool ok = extracted.has_value();
             const std::filesystem::path out_path = ok ? *extracted : std::filesystem::path{};
             QMetaObject::invokeMethod(this, [this, ok, out_path, key, mime_copy]() {
               if (!ok) {
@@ -3238,16 +3249,12 @@ void MainWindow::begin_transfer_from_urls(const QList<QUrl>& urls, Qt::DropActio
   }
 
   set_status(QStringLiteral("Extracting %1 archive member(s)…").arg(pending.size()));
-  const QString cache_root =
-      QStandardPaths::writableLocation(QStandardPaths::CacheLocation)
-      + QStringLiteral("/dirtoo-archive-drop");
+  const auto cache_root = archive_member_cache_root("dirtoo-archive-drop");
   (void)QtConcurrent::run([this, pending, ready, cache_root, finish]() mutable {
     for (const auto& p : pending) {
-      const auto dest =
-          std::filesystem::path{cache_root.toStdString()}
-          / std::to_string(std::hash<std::string>{}(p.archive_file.string()));
-      auto extracted = archive::extract_member(p.archive_file, p.member, dest);
-      if (extracted) {
+      const auto dest = archive_member_dest_dir(cache_root, p.archive_file);
+      if (auto extracted =
+              ensure_archive_member_extracted(p.archive_file, p.member, dest)) {
         ready.push_back(*extracted);
       }
     }
