@@ -44,11 +44,27 @@ filter::FilterItem to_filter_item(const fs::FileInfo& fi)
 
 bool filter_expression_needs_content_io(const QString& expression)
 {
-  // Token-ish scan: any contains / containsre / containsfuzzy command (any case).
+  // Predicates that may read file contents or run ffprobe/pdfinfo/bsdtar.
+  // Must not run on the GUI thread (lookup_media → resolve_media_cached).
   const QString lower = expression.toLower();
   static const char* keys[] = {
-      "contains:", "containsre:", "contains_regex:", "cre:", "containsfuzzy:",
-      "contains_fuzzy:", "cfuzzy:", "cfuz:",
+      "contains:",
+      "containsre:",
+      "contains_regex:",
+      "cre:",
+      "containsfuzzy:",
+      "contains_fuzzy:",
+      "cfuzzy:",
+      "cfuz:",
+      "duration:",
+      "width:",
+      "height:",
+      "framerate:",
+      "fps:",
+      "pages:",
+      "filecount:",
+      "file_count:",
+      "nfiles:",
   };
   for (const char* k : keys) {
     if (lower.contains(QLatin1String(k))) {

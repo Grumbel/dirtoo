@@ -890,6 +890,8 @@ MainWindow::MainWindow(QWidget* parent)
   // Filter row at bottom (parity with dirtoo-py BottomToolBarArea filter toolbar).
   {
     auto* filter_row = new QWidget(central);
+    filter_row->setAutoFillBackground(true);
+    filter_row->setBackgroundRole(QPalette::Window);
     auto* filter_layout = new QHBoxLayout(filter_row);
     filter_layout->setContentsMargins(6, 2, 6, 2);
     filter_layout->setSpacing(6);
@@ -1730,35 +1732,45 @@ void MainWindow::on_show_filter_help()
 
 void MainWindow::update_filter_chrome(bool filtered)
 {
-  // Light blue view background when a filter is active (dirtoo-py set_filtered).
+  // Tint only the file views when a filter is active (dirtoo-py set_filtered).
+  // Keep the filter bar on the window/chrome palette so it does not pick up the
+  // view Base color (which made the bar look “merged” into the list).
   const QColor tint(220, 220, 255);
-  auto apply_bg = [&](QWidget* w) {
+  const QColor app_base = qApp->palette().color(QPalette::Base);
+  const QColor app_window = qApp->palette().color(QPalette::Window);
+
+  auto apply_view_bg = [&](QWidget* w) {
     if (w == nullptr) {
       return;
     }
     QPalette pal = w->palette();
-    if (filtered) {
-      pal.setColor(QPalette::Base, tint);
-    } else {
-      pal.setColor(QPalette::Base, qApp->palette().color(QPalette::Base));
-    }
+    pal.setColor(QPalette::Base, filtered ? tint : app_base);
     w->setPalette(pal);
   };
-  apply_bg(tree_view_);
-  apply_bg(icon_view_);
+  apply_view_bg(tree_view_);
+  apply_view_bg(icon_view_);
   if (graphics_view_ != nullptr) {
     if (filtered) {
       graphics_view_->setBackgroundBrush(QBrush(tint));
     } else {
-      graphics_view_->setBackgroundBrush(graphics_view_->palette().base());
+      graphics_view_->setBackgroundBrush(QBrush(app_base));
     }
   }
+
   if (filter_row_ != nullptr) {
-    if (filtered) {
-      filter_row_->setStyleSheet(QStringLiteral("QWidget { background-color: rgb(220, 220, 255); }"));
-    } else {
-      filter_row_->setStyleSheet(QString());
-    }
+    // Explicit chrome background; never inherit the tinted view Base.
+    filter_row_->setAutoFillBackground(true);
+    QPalette bar_pal = filter_row_->palette();
+    bar_pal.setColor(QPalette::Window, app_window);
+    bar_pal.setColor(QPalette::Base, app_base);
+    filter_row_->setPalette(bar_pal);
+    filter_row_->setStyleSheet(QString());
+  }
+  if (filter_edit_ != nullptr) {
+    QPalette edit_pal = filter_edit_->palette();
+    edit_pal.setColor(QPalette::Base, app_base);
+    edit_pal.setColor(QPalette::Window, app_base);
+    filter_edit_->setPalette(edit_pal);
   }
 }
 
