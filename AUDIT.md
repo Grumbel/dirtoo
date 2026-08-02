@@ -1593,12 +1593,201 @@ Continued line-level notes for modules that were only tabulated in pass 2.
 | 2c | Transfer, dialogs, open-with, sidebar, UDisks |
 | 2d | Sorter, archive manager, thumbnailer, media cache, tests/tools |
 
-**Still light (future 2e):** `file_item_delegate`/`graphics_file_item` paint path line-by-line; `main_window.cpp` sectioned map (menus vs slots); Python `controller.py` parity checklist row-by-row; `resources/` icon inventory.
+**Pass 2e–2f done:** MainWindow map, paint twin, windowing, context menu, eventFilter. **Still light (2g):** Devices/UDisks UI; icon assets; Python controller parity table.
 
 ---
 
 
-### Python tree (reference posture)
+## Deep per-file review — pass 2e (MainWindow map, paint paths, graphics view)
+
+### `main_window.cpp` section map (~4595 LOC, ~116 methods)
+
+Ctor (~252–1250) builds chrome, connects workers, restores settings. Dtor (~1251) must shut down transfer/search threads before deleting views.
+
+| Line band (approx) | Concern | Key methods |
+|--------------------|---------|-------------|
+| 1281–1508 | View mode / zoom / status | `current_view`, `apply_icon_zoom`, `set_view_mode`, `set_status` |
+| 1510–1890 | Navigation + directory pipeline | `open_location`, reload/load/sort/fail handlers |
+| 1893–2076 | Thumbnails | `request_thumbnails_for_visible`, ready/fail (media-only error badge) |
+| 2078–2256 | Filter | chrome tint, debounce change, async filter, sort key |
+| 2303–2580 | Activate / context menu | open dir vs file, archive enter, menu actions |
+| 2587–2805 | Clipboard + transfer | copy/cut/paste/link, conflict, finished → history + refresh |
+| 2807–3080 | Mutations | mkdir, create file, swap, rename, delete (dirops) |
+| 3031–3180 | Status + DnD | `update_status_selection`, drop into cwd/folder |
+| 3214–3450 | Settings + location chrome | restore/persist, breadcrumb ↔ line edit |
+| 3451–3650 | Open with, terminal, hidden, path completion, **search** | synthetic matches, batch refresh |
+| 3662–3720 | Archive signals | ready → list prefix; failed → message |
+| 3746–4010 | Event filter, leap, middle-click | keyboard routing into graphics cursor |
+| 4012–4330 | Menus rebuild, thumbs prep, prefs, bookmarks | |
+| 4335–end | Sidebar + UDisks Devices | sync highlight, mount actions |
+
+**Extraction candidates (architecture).**
+1. `NavigationController` — open_location, history, breadcrumb, path completion  
+2. `ListingController` — load/sort/filter generation tokens  
+3. `ShellMenus` — context menu + open-with building  
+4. Keep transfer/search controllers as now  
+
+**GUI-thread rules enforced here.** Content filter → FilterWorker; listing → DirectoryLoadWorker; sort → SortWorker; never `resolve_media_cached` in paint path (model uses cache try_get/request only).
+
+**Search path residual.** `on_search_match` uses synthetic FileInfo; `refresh_list` every 128 hits still `beginResetModel` territory via model refresh — large searches can hitch. Better: incremental `beginInsertRows` if collection supports append-only visible updates.
+
+**Archive path.** `open_location` on archive URL → ArchiveManager; on ready, `fileinfos_for_prefix` into collection. Mutations blocked with read-only status when `location_.is_archive()`.
+
+---
+
+### Icon paint pipelines (must stay twin)
+
+Two painters implement the same product rules: **GraphicsFileItem::paint** (Icons mode) and **FileItemDelegate** icon-style path (List / detail decoration).
+
+#### Shared paint order (both)
+
+1. Selection / hover / drop-target background  
+2. Optional group header (first row of group)  
+3. Thumbnail rect geometry (LOD caption budget reserved below)  
+4. Decoration pixmap: crop vs letterbox (`crop_thumbnails`)  
+5. **Directory montage overlay** if Ready && !hover: white α160 + full-size folder icon  
+6. Directory child-count badge  
+7. Media text badges (duration, dimensions) when detail LOD high  
+8. Type stickers (image/video)  
+9. Status overlays: new, loading (Pending), error (Failed)  
+10. Caption / name lines under icon (LOD)
+
+#### `graphics_file_item.cpp` specifics
+
+- Hover from `QStyle::State_MouseOver` (requires `setAcceptHoverEvents(true)` — set).  
+- File cursor outline separate from selection (`view_->is_cursor_row`) — Python parity.  
+- Child count via `ChildCountRole` (async from model).  
+- Double-click / context menu forwarded to view signals.
+
+#### `file_item_delegate.cpp` specifics
+
+- Detail mode: standard text columns + icon in decoration; time-gap rows.  
+- List mode: icon left of text via non-icon_style layout.  
+- Hover overlay hide uses `State_MouseOver` on the option (view must track mouse).  
+- `draw_status_overlays` centralized for Pending/Failed/new.
+
+#### Drift risks
+
+| Feature | Must update both |
+|---------|------------------|
+| Directory white + folder overlay | item + delegate |
+| Error badge policy | mainly MainWindow status; both paint Failed |
+| Crop thumbnails | both |
+| Type stickers asset paths | both (`badge_icons`) |
+| Child count badge | both |
+
+**Missing vs Python renderer.** White outline glow on folder icon (`white_outline`); animation timer hover effects; archive treated like directory for overlay (C++ overlay is `is_directory()` only — archive **files** in a normal folder listing do not get package overlay on the tile, only breadcrumb package icon).
+
+---
+
+### `graphics_file_view.cpp` — windowing & selection
+
+**Layout.** `compute_layout_slots()` assigns top-left per model row (group headers add vertical gap). `update_visible_window()`:
+
+- Maps viewport to scene Y range + margin  
+- Binary search first/last visible slots  
+- **Destroys** off-window `GraphicsFileItem`s; creates on-window  
+- Persists selection in `selected_row_set_` across destroy/create  
+
+**Selection correctness.**
+- `select_all()` must mark all model rows in `selected_row_set_`, not only live items (implemented — critical for “select all then scroll”).  
+- Scene selection signals suppressed while syncing to avoid feedback loops.
+
+**Cursor.** Independent of Qt selection: `cursor_row_`, arrow keys, type-ahead leap integration via MainWindow.
+
+**DnD.** `drag_entered_` guard; drop target folder highlight; modifiers map to copy/move/link; `files_dropped` with optional dest dir path.
+
+**Issues.**
+- Full `rebuild_items()` clears selection set — model reset during search refresh drops multi-select (often acceptable).  
+- Binary search assumes non-decreasing slot Y (true for current grid).  
+- Middle-click / activate go through view signals to MainWindow.
+
+---
+
+### `file_list_model.cpp` paint-related roles (addendum)
+
+- `DecorationRole`: thumbnail icon if Ready, else `QFileIconProvider`.  
+- Archive/synthetic keys: Location URL string for thumb maps (not bare container path).  
+- `notify_row_changed` queued for media meta arrival → delegate/item repaint without full reset.
+
+---
+
+### Pass 2e residual / next (2f)
+
+| Item | Why |
+|------|-----|
+| Context menu builder in `on_context_menu` | Large; archive read-only filtering easy to get wrong |
+| `eventFilter` keyboard matrix | Focus conflicts location edit vs view vs leap |
+| Devices list widget wiring | Mount busy errors UX |
+| Python `controller.py` method-by-method parity table | Explicit gap list for paste/drop/info |
+| `resources/` / installed icons vs `badge_icons` search paths | Missing asset → silent empty pixmap |
+
+---
+
+
+---
+
+## Deep per-file review — pass 2f (context menu, eventFilter)
+
+### `MainWindow::on_context_menu` ✅
+
+**Role.** Single builder for background vs item menus; mirrors Python `DirectoryContextMenu` / `ItemContextMenu` split.
+
+**Flow.**
+1. Map pointer → `QModelIndex` (graphics `index_at` or view `indexAt`).
+2. If under item and not already selected → clear+select that row (standard FM behavior).
+3. **Background menu:** Create Directory/File, Paste, Terminal Here, Select All, Properties (cwd `FileInfo::from_path`).
+4. **Item menu:** Open Folder / Open Archive (if `looks_like_archive` and not already inside archive), Open With defaults + submenu, Open Containing Folder, Terminal on dirs, Cut/Copy/Paste Into, Rename, Delete, Actions (thumbnails), Properties.
+
+**Code-quality notes.**
+- **Open Containing Folder** captures `fs::Location parent_loc` **by value** (fixes prior UAF when capturing `FileInfo*`).
+- Open Folder in New Window allocates `MainWindow` with `WA_DeleteOnClose`.
+- Paste Into Folder enabled only when primary is a directory.
+
+**Issues / gaps.**
+- **Inside archive:** mutation actions should stay disabled — audit any new menu entries for `location_.is_archive()` guards.
+- **Open Archive** only when not already inside an archive; nested archive members may need extract-first.
+- Background Properties on an archive location may stat the container path oddly.
+- Graphics vs widget `menu.exec` uses different `mapToGlobal` bases (correct as written).
+
+**Parity.** Python item menus historically richer (external scripts). C++ covers core FM operations.
+
+---
+
+### `MainWindow::eventFilter` ✅
+
+**Role.** Cross-cutting input policy without subclassing every view.
+
+| Event | Object | Behavior |
+|-------|--------|----------|
+| Right-button press | tree/list viewport | If index already selected, **swallow** press so multi-select is not cleared; context menu still fires |
+| Middle-button release | parent tool button | Open parent in new window |
+| Middle-button release | tree/list viewport | Middle-click open path |
+| Key press | graphics focus path | Cursor keys → `GraphicsFileView`; printable → leap overlay |
+| Key press | search edit | Esc stops search and restores directory listing |
+| Key press | filter edit | Up/Down filter history (max 50); Enter records history |
+
+**Issues.**
+- Graphics multi-select right-click: context path only selects under cursor if not already selected (good).
+- Leap keys gated on graphics path — must not steal focus from line edits.
+- Filter history is memory-only (not in `AppSettings`).
+
+**Parity.** Python handled more inside FileView; C++ centralizes in MainWindow + graphics view.
+
+---
+
+### Pass progress
+
+| Pass | Scope |
+|------|--------|
+| 2e | MainWindow section map; paint twin; graphics windowing |
+| 2f | Context menu builder; eventFilter matrix |
+| **2g next** | Devices/UDisks UI wiring; icon asset inventory; Python `controller.py` parity table |
+
+---
+
+
+osture)
 
 Do **not** extend `dirtoo-py/`. Use it to answer “what did the user expect?” Files under `programs/`, `expr/`, experiments remain mostly OOS unless they define filter/FS semantics already ported.
 
