@@ -16,13 +16,15 @@ namespace dirops {
 /// How to handle an existing destination path.
 ///
 /// - Fail: return an error; leave both paths unchanged (default).
-/// - Overwrite: remove the existing destination, then write/rename onto it.
+/// - Overwrite: replace an existing **file or symlink** (unlink one node), then
+///   write/rename onto that path. **Refuses directories** — wiping a tree via
+///   `remove_all` is not offered; use Rename or Skip (or delete explicitly).
 /// - Rename: leave the existing destination alone; pick a free name via
 ///   unique_path(), e.g. "report.pdf" → "report (2).pdf".
 /// - Skip: treat as success with ItemResult::skipped = true; source unchanged.
 enum class ConflictPolicy {
   Fail,       ///< Return an error if the target exists
-  Overwrite,  ///< Replace existing target
+  Overwrite,  ///< Replace existing file/symlink only (not directories)
   Rename,     ///< Choose a non-conflicting name (stem (N).ext)
   Skip,       ///< Leave existing target unchanged
 };

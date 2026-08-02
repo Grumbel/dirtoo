@@ -23,15 +23,44 @@ std::filesystem::path normalize_file_path(std::filesystem::path path)
   return path;
 }
 
+bool is_hex_digit(char c)
+{
+  return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+}
+
+int hex_value(char c)
+{
+  if (c >= '0' && c <= '9') {
+    return c - '0';
+  }
+  if (c >= 'a' && c <= 'f') {
+    return 10 + (c - 'a');
+  }
+  if (c >= 'A' && c <= 'F') {
+    return 10 + (c - 'A');
+  }
+  return -1;
+}
+
+/// Encode a filesystem path for use inside a file:// URL.
+/// Keeps '/' separators and unreserved ASCII; percent-encodes spaces, '#', '?',
+/// '%', control chars, non-ASCII bytes, and other reserved delimiters.
 std::string percent_encode_path(const std::string& path)
 {
+  static constexpr char kHex[] = "0123456789ABCDEF";
   std::string out;
-  out.reserve(path.size());
-  for (char c : path) {
-    if (c == ' ') {
-      out += "%20";
-    } else {
+  out.reserve(path.size() + 8);
+  for (unsigned char uc : path) {
+    const char c = static_cast<char>(uc);
+    const bool unreserved =
+        (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')
+        || c == '-' || c == '.' || c == '_' || c == '~' || c == '/';
+    if (unreserved) {
       out += c;
+    } else {
+      out += '%';
+      out += kHex[uc >> 4];
+      out += kHex[uc & 0x0F];
     }
   }
   return out;
@@ -42,13 +71,12 @@ std::string percent_decode(std::string_view in)
   std::string out;
   out.reserve(in.size());
   for (std::size_t i = 0; i < in.size(); ++i) {
-    if (in[i] == '%' && i + 2 < in.size()) {
-      const auto hex = std::string{in.substr(i + 1, 2)};
-      if (hex == "20") {
-        out += ' ';
-        i += 2;
-        continue;
-      }
+    if (in[i] == '%' && i + 2 < in.size() && is_hex_digit(in[i + 1]) && is_hex_digit(in[i + 2])) {
+      const int hi = hex_value(in[i + 1]);
+      const int lo = hex_value(in[i + 2]);
+      out += static_cast<char>((hi << 4) | lo);
+      i += 2;
+      continue;
     }
     out += in[i];
   }

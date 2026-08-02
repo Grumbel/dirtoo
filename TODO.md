@@ -200,17 +200,17 @@ smells, and gaps worth scheduling. Not every item is a user-visible crash.
 
 | ID | Issue | Why | Direction |
 |----|-------|-----|-----------|
-| A1 | **Location URL encoding incomplete** | Only `%20`. `#`, `?`, non-ASCII break `as_url` round-trips, bookmark identity, thumbnail MD5 keys | Percent-encode reserved + UTF-8 properly in `Location` (encode + decode); add Catch tests with awkward paths |
+| A1 | **Location URL encoding incomplete** | Only `%20`. `#`, `?`, non-ASCII break `as_url` round-trips, bookmark identity, thumbnail MD5 keys | **Done** — general percent encode/decode in `location.cpp`; Catch tests for space/`#`/`?`/archive entry |
 | A2 | **Archive extract cache can go stale** | `.dirtoo-extracted` marker matches path only, not archive mtime/size | On cache hit, compare archive file mtime/size (or content hash) to marker metadata; invalidate + re-extract |
-| A3 | **Conflict Overwrite uses `remove_all` on existing destinations** | `dirops` Overwrite deletes the whole existing tree before write/rename. Overwriting a **directory** is catastrophic; dialog does not strongly distinguish file vs dir | **Do not offer bare Overwrite for directories** (or require an explicit “Replace entire folder” with clear copy). Prefer merge policy, Rename, or Skip. Document in conflict dialog + `ConflictPolicy` comments. Consider `remove` (single node) for files only |
-| A4 | **Transfer conflict CV lifecycle** | Worker blocks until UI `resolve_conflict`; shutdown without notify can hang the thread | Ensure `cancel` / MainWindow dtor / dialog reject always notify `conflict_cv_`; add regression test or assert |
+| A3 | **Conflict Overwrite uses `remove_all` on existing destinations** | `dirops` Overwrite deletes the whole existing tree before write/rename. Overwriting a **directory** is catastrophic; dialog does not strongly distinguish file vs dir | **Done** — `remove_for_overwrite` refuses directories; conflict dialog disables Replace for dirs; Catch tests |
+| A4 | **Transfer conflict CV lifecycle** | Worker blocks until UI `resolve_conflict`; shutdown without notify can hang the thread | **Mostly done already** — `cancel()` clears pending + notifies; dialog reject → cancel; re-verify on next transfer hang |
 
 ### P1 — architecture smells (not “bugs”, but wrong long-term shape)
 
 | ID | Smell | Why it hurts | Direction |
 |----|-------|--------------|-----------|
 | S1 | **Archive listing/extract shells out to `bsdtar` / `tar` / `unzip` / `7z`** | Fragile verbose-text parsers; format drift (GNU vs BSD `tvf`); extra process + PATH dependency; sizes silently 0 when parse fails. Python used libarchive/rar/7z extractors | **Prefer linking [libarchive](https://libarchive.org/)** (`archive_read_*`) for TOC + extract in `dirtoo-archive`. Keep CLI fallback only if libarchive missing at build time. Drop hand-rolled `-tvf` parsers once libarchive is primary |
-| S2 | **`std::filesystem::remove_all` as the Overwrite primitive** | Same as A3 — policy API looks like “replace file” but implementation is “delete subtree” | Split policies: `OverwriteFile` vs `ReplaceDirectory` (or refuse dir overwrite in API). GUI never passes Overwrite for `is_directory()` destinations without extra confirmation |
+| S2 | **`std::filesystem::remove_all` as the Overwrite primitive** | Same as A3 — policy API looks like “replace file” but implementation is “delete subtree” | **Done (refuse path)** — Overwrite is file/symlink only; dirs rejected at API + UI |
 | S3 | **MainWindow still ~4.6k LOC** | Controllers extracted only partially; menus/archive/devices still centralized | Continue peeling Navigation / Listing / ShellMenus / Devices helpers |
 | S4 | **Dual icon paint paths** | `GraphicsFileItem` and `FileItemDelegate` must stay twin for montage/badges | Shared paint helper or single renderer used by both |
 
@@ -230,8 +230,8 @@ smells, and gaps worth scheduling. Not every item is a user-visible crash.
 
 - [ ] `parse_filter("type:video")` / `type:image` / `type:archive` matches expected extensions (`test_filter`)
 - [ ] Verbose archive listing fixtures → non-zero sizes (`test_archive_index` or new parse unit tests)
-- [ ] Location round-trip with space, `#`, non-ASCII (after A1)
-- [ ] dirops: Overwrite of **file** OK; Overwrite of **directory** either refused or clearly tested as Replace (after A3)
+- [x] Location round-trip with space, `#`, non-ASCII (after A1)
+- [x] dirops: Overwrite of **file** OK; Overwrite of **directory** refused (after A3)
 
 ### Explicit non-bugs (OOS / intentional)
 

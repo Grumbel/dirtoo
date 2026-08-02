@@ -145,6 +145,45 @@ TEST_CASE("copy_path conflict Overwrite", "[dirops]")
   fs::remove_all(dir);
 }
 
+TEST_CASE("Overwrite refuses directory destination", "[dirops]")
+{
+  const auto dir = make_temp_dir("dirtoo-test-conflict-ow-dir");
+  write_file(dir / "a.txt", "new");
+  fs::create_directory(dir / "existing_dir");
+  write_file(dir / "existing_dir" / "keep.txt", "important");
+
+  dirops::Options opt;
+  opt.conflict = dirops::ConflictPolicy::Overwrite;
+  auto result = dirops::copy_path(dir / "a.txt", dir / "existing_dir", opt);
+  REQUIRE_FALSE(result.has_value());
+  REQUIRE(fs::exists(dir / "existing_dir" / "keep.txt"));
+  REQUIRE(read_file(dir / "existing_dir" / "keep.txt") == "important");
+
+  auto moved = dirops::move_path(dir / "a.txt", dir / "existing_dir", opt);
+  REQUIRE_FALSE(moved.has_value());
+  REQUIRE(fs::exists(dir / "existing_dir" / "keep.txt"));
+  REQUIRE(fs::exists(dir / "a.txt"));
+
+  fs::remove_all(dir);
+}
+
+TEST_CASE("rename_path Overwrite refuses directory", "[dirops]")
+{
+  const auto dir = make_temp_dir("dirtoo-test-rename-ow-dir");
+  write_file(dir / "a.txt", "x");
+  fs::create_directory(dir / "b");
+  write_file(dir / "b" / "keep.txt", "y");
+
+  dirops::Options opt;
+  opt.conflict = dirops::ConflictPolicy::Overwrite;
+  auto result = dirops::rename_path(dir / "a.txt", dir / "b", opt);
+  REQUIRE_FALSE(result.has_value());
+  REQUIRE(fs::exists(dir / "b" / "keep.txt"));
+  REQUIRE(fs::exists(dir / "a.txt"));
+
+  fs::remove_all(dir);
+}
+
 TEST_CASE("copy_path conflict Rename", "[dirops]")
 {
   const auto dir = make_temp_dir("dirtoo-test-conflict-ren");

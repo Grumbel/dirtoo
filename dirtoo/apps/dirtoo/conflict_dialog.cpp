@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "conflict_dialog.hpp"
+
+#include <filesystem>
 #include "size_format.hpp"
 
 #include "dirtoo/fs/location.hpp"
@@ -133,8 +135,25 @@ std::optional<ConflictDecision> ask_conflict_policy(QWidget* parent,
   header->setWordWrap(true);
   layout->addWidget(header);
 
-  layout->addWidget(new QLabel(QStringLiteral("Replace the existing file in the destination folder?"),
-                               &dialog));
+  std::error_code dest_ec;
+  const bool dest_is_dir =
+      !destination_path.empty()
+      && std::filesystem::is_directory(destination_path, dest_ec)
+      && !dest_ec;
+
+  auto* question = new QLabel(&dialog);
+  if (dest_is_dir) {
+    question->setText(
+        QStringLiteral(
+            "The destination is a <b>folder</b>. Replacing it would delete the entire "
+            "folder tree, which is not offered. Choose <b>Rename</b> (keep both) or "
+            "<b>Skip</b>."));
+    question->setTextFormat(Qt::RichText);
+  } else {
+    question->setText(QStringLiteral("Replace the existing file in the destination folder?"));
+  }
+  question->setWordWrap(true);
+  layout->addWidget(question);
 
   auto* source_box = new QGroupBox(QStringLiteral("New / Source:"), &dialog);
   auto* source_row = new QHBoxLayout(source_box);
@@ -162,7 +181,14 @@ std::optional<ConflictDecision> ask_conflict_policy(QWidget* parent,
   auto* rename = buttons->addButton(QStringLiteral("Rename"), QDialogButtonBox::ActionRole);
   auto* skip = buttons->addButton(QStringLiteral("Skip"), QDialogButtonBox::NoRole);
   buttons->addButton(QDialogButtonBox::Cancel);
-  overwrite->setDefault(true);
+  if (dest_is_dir) {
+    overwrite->setEnabled(false);
+    overwrite->setToolTip(
+        QStringLiteral("Refusing to replace a folder (would delete the whole tree)"));
+    rename->setDefault(true);
+  } else {
+    overwrite->setDefault(true);
+  }
   layout->addWidget(buttons);
 
   std::optional<ConflictDecision> chosen;

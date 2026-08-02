@@ -59,6 +59,34 @@ std::expected<ResolvedDest, Error> resolve_destination(const std::filesystem::pa
   return ResolvedDest{.path = to};
 }
 
+/// Unlink a single existing destination for Overwrite.
+/// Refuses directories (including non-empty trees) — never calls remove_all.
+std::expected<void, Error> remove_for_overwrite(const std::filesystem::path& path)
+{
+  namespace fs = std::filesystem;
+  std::error_code ec;
+  const auto st = fs::symlink_status(path, ec);
+  if (ec) {
+    return std::unexpected(Error{ec, path, "failed to stat destination for overwrite"});
+  }
+  if (!fs::exists(st)) {
+    return {};
+  }
+  // Symlink-to-directory: symlink_status is symlink, not directory — safe to remove.
+  if (fs::is_directory(st)) {
+    return std::unexpected(Error{
+        std::make_error_code(std::errc::is_a_directory),
+        path,
+        "refusing to overwrite directory (would delete tree); use Rename or Skip",
+    });
+  }
+  fs::remove(path, ec);
+  if (ec) {
+    return std::unexpected(Error{ec, path, "failed to remove existing destination"});
+  }
+  return {};
+}
+
 OpResult copy_regular_file(const std::filesystem::path& from,
                            const std::filesystem::path& to,
                            const Options& options)
@@ -84,10 +112,8 @@ OpResult copy_regular_file(const std::filesystem::path& from,
   }
 
   if (options.conflict == ConflictPolicy::Overwrite && fs::exists(dest)) {
-    std::error_code ec;
-    fs::remove(dest, ec);
-    if (ec) {
-      return std::unexpected(Error{ec, dest, "failed to remove existing destination"});
+    if (auto rm = remove_for_overwrite(dest); !rm) {
+      return std::unexpected(rm.error());
     }
   }
 
@@ -164,7 +190,9 @@ OpResult copy_directory_recursive(const std::filesystem::path& from,
           return std::unexpected(Error{lec, src, "read_symlink failed"});
         }
         if (options.conflict == ConflictPolicy::Overwrite && fs::exists(dst)) {
-          fs::remove(dst, lec);
+          if (auto rm = remove_for_overwrite(dst); !rm) {
+            return std::unexpected(rm.error());
+          }
         }
         fs::create_symlink(target, dst, lec);
         if (lec) {
@@ -241,7 +269,9 @@ OpResult copy_path(const std::filesystem::path& from,
         return std::unexpected(Error{lec, from, "read_symlink failed"});
       }
       if (options.conflict == ConflictPolicy::Overwrite && fs::exists(resolved->path)) {
-        fs::remove(resolved->path, lec);
+        if (auto rm = remove_for_overwrite(resolved->path); !rm) {
+          return std::unexpected(rm.error());
+        }
       }
       fs::create_symlink(target, resolved->path, lec);
       if (lec) {
@@ -300,9 +330,8 @@ OpResult move_path(const std::filesystem::path& from,
   // Prefer atomic rename when on the same filesystem.
   if (same_filesystem(from, dest)) {
     if (options.conflict == ConflictPolicy::Overwrite && fs::exists(dest)) {
-      fs::remove_all(dest, ec);
-      if (ec) {
-        return std::unexpected(Error{ec, dest, "failed to remove existing destination"});
+      if (auto rm = remove_for_overwrite(dest); !rm) {
+        return std::unexpected(rm.error());
       }
     }
     fs::rename(from, dest, ec);
@@ -367,9 +396,8 @@ OpResult rename_path(const std::filesystem::path& from,
   if (options.conflict == ConflictPolicy::Overwrite
       && std::filesystem::exists(resolved->path)
       && resolved->path != from) {
-    std::filesystem::remove_all(resolved->path, ec);
-    if (ec) {
-      return std::unexpected(Error{ec, resolved->path, "failed to remove existing destination"});
+    if (auto rm = remove_for_overwrite(resolved->path); !rm) {
+      return std::unexpected(rm.error());
     }
   }
 
@@ -509,9 +537,8 @@ OpResult create_symlink(const std::filesystem::path& target, const std::filesyst
       return r;
     }
     if (options.conflict == ConflictPolicy::Overwrite) {
-      std::filesystem::remove(link_path, ec);
-      if (ec) {
-        return std::unexpected(Error{ec, link_path, "failed to remove existing path for symlink"});
+      if (auto rm = remove_for_overwrite(link_path); !rm) {
+        return std::unexpected(rm.error());
       }
     }
   }

@@ -73,3 +73,34 @@ TEST_CASE("archive parent leaves archive at root", "[location]")
   REQUIRE(up.is_archive());
   REQUIRE(up.entry_path() == "a");
 }
+
+TEST_CASE("Location percent-encoding roundtrip", "[location]")
+{
+  // Space
+  {
+    const auto loc = dirtoo::fs::Location::from_path_unchecked("/tmp/my file.txt");
+    const std::string url = loc.as_url();
+    REQUIRE(url.find("%20") != std::string::npos);
+    REQUIRE(url.find(' ') == std::string::npos);
+    const auto again = dirtoo::fs::Location::from_url(url);
+    REQUIRE(again.as_path() == loc.as_path());
+  }
+  // Hash and question mark (would break naive URL parsing / cache keys)
+  {
+    const auto loc = dirtoo::fs::Location::from_path_unchecked("/tmp/a#b?c.txt");
+    const std::string url = loc.as_url();
+    REQUIRE(url.find("%23") != std::string::npos);
+    REQUIRE(url.find("%3F") != std::string::npos);
+    const auto again = dirtoo::fs::Location::from_url(url);
+    REQUIRE(again.as_path() == loc.as_path());
+  }
+  // Archive entry with space
+  {
+    const auto loc = dirtoo::fs::Location::from_archive("/tmp/demo.zip", "docs/my notes.txt");
+    const std::string url = loc.as_url();
+    REQUIRE(url.find("%20") != std::string::npos);
+    const auto again = dirtoo::fs::Location::from_url(url);
+    REQUIRE(again.is_archive());
+    REQUIRE(again.entry_path() == loc.entry_path());
+  }
+}
