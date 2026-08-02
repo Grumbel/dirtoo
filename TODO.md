@@ -212,7 +212,7 @@ smells, and gaps worth scheduling. Not every item is a user-visible crash.
 |----|-------|--------------|-----------|
 | S1 | **Archive listing/extract shells out to `bsdtar` / `tar` / `unzip` / `7z`** | Fragile verbose-text parsers | **Done** — **libarchive required** (CMake `REQUIRED`, flake); no CLI fallback (see AGENTS.md) |
 | S2 | **`std::filesystem::remove_all` as the Overwrite primitive** | Same as A3 — policy API looks like “replace file” but implementation is “delete subtree” | **Done (refuse path)** — Overwrite is file/symlink only; dirs rejected at API + UI |
-| S3 | **MainWindow split across TUs** | Core ~2.3k LOC + setup/thumbs/transfer/events/settings | **Improved** — multi-file MainWindow; ctor setup_*; file_context_menu; ArchiveListing; theme_icons |
+| S3 | **MainWindow multi-TU** | Core ~1.7k + setup/view/filter/thumbs/transfer/events/settings | **Improved** — 8 TUs; ctor setup_*; file_context_menu; ArchiveListing |
 | S4 | **Dual icon paint paths** | `GraphicsFileItem` and `FileItemDelegate` must stay twin for montage/badges | **Done** — `icon_tile_paint.hpp` (badge, directory montage, status stickers) shared by both |
 
 ### P2 — reliability / scale / UX
