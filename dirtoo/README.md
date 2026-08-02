@@ -8,10 +8,16 @@ active codebase.
 
 ## Status
 
-Local GUI **MVP parity** is in place: navigation, filter DSL, thumbnails,
-clipboard transfers, dialogs, archives (read-only), and Icons mode via
-`QGraphicsView`. See `../TODO.md` for the checklist and intentional out-of-scope
-items (archive write, remote VFS, Python `programs/*`).
+Local GUI **MVP parity** is in place: navigation, filter DSL, recursive search,
+thumbnails, clipboard transfers, dialogs, archives (read-only), three view modes,
+bookmarks, location history, and Recently Opened (file open history).
+
+See **`../TODO.md`** for residual work and **`../AUDIT.md`** for the full source
+audit / parity matrix. Intentional out-of-scope items: archive write, remote VFS,
+full Python `programs/*`.
+
+**Operations history (planned):** log rename/move/copy/delete and related
+mutations with timestamps — **not** a full Undo stack (rollback deferred).
 
 ## Build
 
@@ -43,7 +49,7 @@ Run the GUI:
 | `libs/dirtoo-fs` | `Location`, `FileInfo`, directory listing |
 | `libs/dirtoo-collection` | Sorted / filtered / grouped file list |
 | `libs/dirtoo-filter` | Filter DSL parser + predicates + media meta cache |
-| `libs/dirtoo-watcher` | Directory change notifications (inotify) |
+| `libs/dirtoo-watcher` | Directory change notifications (QFileSystemWatcher) |
 | `libs/dirtoo-thumbnail` | Freedesktop D-Bus thumbnailer client |
 | `libs/dirtoo-archive` | Read-only archive TOC + extract-on-demand |
 | `apps/dirtoo` | GUI application |

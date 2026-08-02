@@ -931,7 +931,7 @@ Status: **present** / **partial** / **missing** / **OOS** (out of scope for the 
 
 ### Highest-value remaining gaps (in-scope)
 
-1. **Undo** (even a shallow last-op stack)
+1. **Operations history log** (timestamped mutations; no rollback yet)
 2. **Editable permissions** (optional)
 3. **Richer directory watcher** (event types / archive extract dir)
 4. **Archive member thumbnails**

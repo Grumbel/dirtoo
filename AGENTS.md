@@ -39,7 +39,14 @@ SPDX headers:
 5. Ignore most CLI utilities under `dirtoo-py/.../programs/` unless useful
    for testing C++ libraries.
 
-Large-directory mitigations (cheap listing, filter worker, Graphics item reuse, viewport thumbs, soft watcher reload), DnD/Link, and core parity features are in place. See **`TODO.md`** for residual polish (virtualization, incremental FS deltas) and explicit out-of-scope items (archive write, remote VFS, full Python `programs/*`).
+Large-directory mitigations (cheap listing, filter worker, Graphics item reuse, viewport thumbs, soft watcher reload), DnD/Link, and core parity features are in place. See **`TODO.md`** for residual polish and **`AUDIT.md`** for the full file inventory and parity matrix. Explicit out-of-scope items include archive write, remote VFS, and full Python `programs/*`.
+
+**Operations history (not Undo):** every successful or failed filesystem mutation
+the GUI performs (rename, move, copy, delete, mkdir, mkfile, symlink, swap, and
+future permission changes) should be append-only logged with timestamps and
+paths. **Do not** promise transactional rollback — complex ops are not reliably
+reversible; a history browser is enough until a careful, limited “revert this
+one rename” design exists.
 
 ---
 

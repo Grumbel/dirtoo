@@ -9,8 +9,10 @@ Python reference: `dirtoo-py/`. Active code: `dirtoo/`.
 Critical freezes, DnD/Link, content-filter offload, Graphics reuse, and core
 parity features are in place. Build/tests green (50/50 as of last Nix check).
 
-**Residual focus:** inotify per-entry events (optional add/remove without full rescan);
-transfer dedicated error dialog; remaining DnD edge cases.
+**Residual focus:** operations history log (see below); inotify per-entry events
+(optional); transfer dedicated error dialog; remaining DnD edge cases.
+
+Source audit: **`AUDIT.md`** (file inventory + parity notes, 2026-08).
 
 ### Parity freeze (still intentionally out of scope)
 
@@ -84,7 +86,7 @@ transfer dedicated error dialog; remaining DnD edge cases.
 | Time gaps | **done** (≥6h separator) |
 | Filter line history | **done** (Up/Down) |
 | Transfer error / request dialogs | **partial** (folded into transfer/conflict) |
-| Undo menu | **missing** (Python may be stub) |
+| Operations history log | **missing** (see residual; replaces Undo) |
 
 ### Acceptable gaps / out of scope
 
@@ -140,7 +142,32 @@ transfer dedicated error dialog; remaining DnD edge cases.
 | Archives read-only | **done** |
 | Thumbnails D-Bus + status badges + dir montage | **done** |
 | Editable permissions | **open** (display-only) |
-| Undo | **open** |
+| Operations history log | **open** (no rollback yet) |
+
+---
+
+## Operations history (replaces Undo)
+
+**Do not implement full Undo/rollback** for complex filesystem ops (cross-device
+moves, partial tree copies, permission batches are not reliably reversible).
+
+Instead, track an **operations history log**:
+
+| Field | Content |
+|-------|---------|
+| Timestamp | When the op started / finished |
+| Operation | rename, move, copy, delete, mkdir, mkfile, symlink, swap, permissions (when editable) |
+| Sources | Path(s) involved |
+| Destination | Target path when applicable |
+| Outcome | success / skipped / failed (+ short error) |
+| App context | Optional: window location, user-visible label |
+
+**UI (suggested):** top-level or Tools menu **Operations History…** (similar to
+Open History) — filterable list, open containing folder, no “undo” button for
+now. Persist under XDG data/cache like other history.
+
+**Wiring:** record from `TransferWorker` / paste / rename / dirops call sites
+(and future permission changes). CLI `dt-*` tools may log optionally later.
 
 ---
 
@@ -148,6 +175,11 @@ transfer dedicated error dialog; remaining DnD edge cases.
 
 | Item | Notes |
 |------|--------|
+| Operations history log | Timestamped rename/move/copy/delete/…; **no rollback** |
+| Location URL encoding | Only `%20` today; non-ASCII / reserved chars |
+| Archive member thumbnails | Weak; needs extract path or special URI |
+| Watcher richness | QFileSystemWatcher only; no archive extract-dir watch |
+| MainWindow factoring | Peel transfer/search/nav controllers from 4k-line hub |
 | True incremental FS watcher deltas | **Partial** — merge_items after soft rescan; still O(n) readdir (no inotify names) |
 | List / Graphics virtualization | **Graphics viewport window done**; Detail uses uniform row heights when no group/time-gap; Qt paints only visible rows |
 | Rubber-band vs item drag | **done** |
