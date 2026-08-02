@@ -312,6 +312,25 @@ void clear_media_probe_cache()
   g_cache.clear();
 }
 
+bool is_archive_or_document_name(const std::string& name)
+{
+  // Types we never send to ffprobe (it only emits "Invalid data…" noise).
+  static constexpr const char* kSkip[] = {
+      ".zip",  ".tar",  ".tgz", ".7z",  ".rar",  ".cbz", ".cbr", ".jar", ".apk",
+      ".tar.gz", ".tar.bz2", ".tar.xz", ".gz", ".bz2", ".xz", ".pdf",
+      ".iso", ".img", ".dmg", ".exe", ".dll", ".so", ".a", ".o", ".class",
+      ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".odt", ".ods", ".odp",
+      ".txt", ".md", ".json", ".xml", ".html", ".htm", ".css", ".js", ".ts",
+      ".py", ".cpp", ".hpp", ".c", ".h", ".rs", ".go", ".java", ".kt",
+  };
+  for (const char* s : kSkip) {
+    if (path_ends_with_ci(name, s)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 std::optional<MediaInfo> probe_media_raw(const std::filesystem::path& path)
 {
   const std::string key = path.string();
@@ -322,28 +341,26 @@ std::optional<MediaInfo> probe_media_raw(const std::filesystem::path& path)
     }
   }
 
-  const std::string ffprobe = find_ffprobe();
-  // Stream + format entries; nw=1 prints key=value lines without section headers.
-  std::string cmd = ffprobe + " -v error -show_entries "
-                    "stream=width,height,r_frame_rate,avg_frame_rate:format=duration "
-                    "-of default=noprint_wrappers=1:nokey=0 ";
-  // Quote path for the shell.
-  cmd += '\'';
-  for (char c : key) {
-    if (c == '\'') {
-      cmd += "'\\''";
-    } else {
-      cmd += c;
-    }
-  }
-  cmd += '\'';
-
-  auto out = run_capture(cmd);
+  const std::string name = path.filename().string();
   std::optional<MediaInfo> result;
-  if (out) {
-    auto info = parse_ffprobe_output(*out);
-    if (info.width || info.height || info.duration_ms || info.framerate) {
-      result = info;
+
+  // Skip ffprobe for archives/PDFs/docs — they only produce FFmpeg stderr noise
+  // ("Invalid data found when processing input"). File counts / PDF pages come
+  // from enrich_pages_and_filecount (bsdtar / pdfinfo) instead.
+  if (!is_archive_or_document_name(name)) {
+    const std::string ffprobe = find_ffprobe();
+    // Redirect stderr so unknown/non-media files cannot spam the console.
+    std::string cmd = ffprobe + " -v error -show_entries "
+                      "stream=width,height,r_frame_rate,avg_frame_rate:format=duration "
+                      "-of default=noprint_wrappers=1:nokey=0 ";
+    cmd += quote_path(key);
+    cmd += " 2>/dev/null";
+
+    if (auto out = run_capture(cmd)) {
+      auto info = parse_ffprobe_output(*out);
+      if (info.width || info.height || info.duration_ms || info.framerate) {
+        result = info;
+      }
     }
   }
 
