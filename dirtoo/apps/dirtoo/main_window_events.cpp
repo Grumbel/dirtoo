@@ -1,0 +1,227 @@
+#include "main_window.hpp"
+#include "theme_icons.hpp"
+
+#include <QApplication>
+#include <QEvent>
+#include <QKeyEvent>
+#include <QMouseEvent>
+#include <QToolButton>
+#include <QTreeView>
+#include <QListView>
+
+namespace dirtoo::app {
+
+bool MainWindow::eventFilter(QObject* obj, QEvent* event)
+{
+  // Right-click on an already-selected row must not clear multi-selection.
+  if (event->type() == QEvent::MouseButtonPress) {
+    auto* me = static_cast<QMouseEvent*>(event);
+    if (me->button() == Qt::RightButton) {
+      QAbstractItemView* av = nullptr;
+      if (tree_view_ != nullptr && obj == tree_view_->viewport()) {
+        av = tree_view_;
+      } else if (icon_view_ != nullptr && obj == icon_view_->viewport()) {
+        av = icon_view_;
+      }
+      if (av != nullptr && av->selectionModel() != nullptr) {
+        const QModelIndex under = av->indexAt(me->pos());
+        if (under.isValid() && av->selectionModel()->isSelected(under)) {
+          // Swallow the press so the view does not re-select (clearing multi-select).
+          // Context menu still arrives via customContextMenuRequested.
+          return true;
+        }
+      }
+    }
+  }
+
+  if (event->type() == QEvent::MouseButtonRelease) {
+    auto* me = static_cast<QMouseEvent*>(event);
+    if (me->button() == Qt::MiddleButton && parent_act_ != nullptr) {
+      if (auto* tb = qobject_cast<QToolButton*>(obj)) {
+        if (tb->defaultAction() == parent_act_) {
+          on_parent_new_window();
+          return true;
+        }
+      }
+    }
+    if (me->button() == Qt::MiddleButton) {
+      QModelIndex index;
+      if (obj == tree_view_->viewport()) {
+        index = tree_view_->indexAt(me->pos());
+      } else if (obj == icon_view_->viewport()) {
+        index = icon_view_->indexAt(me->pos());
+      }
+      if (index.isValid()) {
+        on_view_middle_click(index);
+        return true;
+      }
+    }
+  }
+
+  // Home/End + type-ahead + graphics file-cursor when a file view has focus.
+  const bool is_file_view =
+      (tree_view_ != nullptr && (obj == tree_view_ || obj == tree_view_->viewport()))
+      || (icon_view_ != nullptr && (obj == icon_view_ || obj == icon_view_->viewport()))
+      || (graphics_view_ != nullptr
+          && (obj == graphics_view_ || obj == graphics_view_->viewport()));
+  if (is_file_view && event->type() == QEvent::KeyPress) {
+    auto* ke = static_cast<QKeyEvent*>(event);
+    if (ke->key() == Qt::Key_Home && ke->modifiers() == Qt::NoModifier) {
+      jump_to_row(0);
+      return true;
+    }
+    if (ke->key() == Qt::Key_End && ke->modifiers() == Qt::NoModifier) {
+      if (model_ != nullptr && model_->rowCount() > 0) {
+        jump_to_row(model_->rowCount() - 1);
+      }
+      return true;
+    }
+    // Graphics Icons mode: forward cursor keys from the viewport into the view
+    // (viewport often holds focus; sendEvent to the view avoids re-entering this
+    // filter on graphics_view_ itself).
+    if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr
+        && obj == graphics_view_->viewport()) {
+      const int k = ke->key();
+      const bool cursor_key =
+          k == Qt::Key_Left || k == Qt::Key_Right || k == Qt::Key_Up || k == Qt::Key_Down
+          || k == Qt::Key_Return || k == Qt::Key_Enter || k == Qt::Key_Escape
+          || (k == Qt::Key_Space && (ke->modifiers() & Qt::ControlModifier));
+      if (cursor_key) {
+        QCoreApplication::sendEvent(graphics_view_, ke);
+        return true;
+      }
+    }
+    // Type-ahead: printable text without Ctrl/Alt/Meta opens the leap overlay.
+    if (!(ke->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))
+        && !ke->text().isEmpty() && ke->text().at(0).isPrint()
+        && !ke->text().at(0).isSpace()) {
+      if (leap_widget_ != nullptr) {
+        leap_widget_->show_with_text(ke->text());
+      }
+      return true;
+    }
+  }
+
+  if (obj == search_edit_ && event->type() == QEvent::KeyPress) {
+    auto* ke = static_cast<QKeyEvent*>(event);
+    if (ke->key() == Qt::Key_Escape) {
+      stop_search();
+      search_active_ = false;
+      search_results_.clear();
+      if (search_row_ != nullptr) {
+        search_row_->hide();
+      } else if (search_edit_ != nullptr) {
+        search_edit_->hide();
+      }
+      search_edit_->clear();
+      on_directory_changed();
+      return true;
+    }
+  }
+
+  if (obj == filter_edit_ && event->type() == QEvent::KeyPress) {
+    auto* ke = static_cast<QKeyEvent*>(event);
+    if (ke->key() == Qt::Key_Up) {
+      if (filter_history_.isEmpty()) {
+        return false; // let QLineEdit handle cursor / default
+      }
+      if (filter_history_index_ < 0) {
+        filter_history_index_ = filter_history_.size() - 1;
+      } else if (filter_history_index_ > 0) {
+        --filter_history_index_;
+      }
+      filter_edit_->setText(filter_history_.at(filter_history_index_));
+      return true;
+    }
+    if (ke->key() == Qt::Key_Down) {
+      if (filter_history_.isEmpty() || filter_history_index_ < 0) {
+        return false;
+      }
+      if (filter_history_index_ + 1 < filter_history_.size()) {
+        ++filter_history_index_;
+        filter_edit_->setText(filter_history_.at(filter_history_index_));
+      } else {
+        filter_history_index_ = -1;
+        filter_edit_->clear();
+      }
+      return true;
+    }
+    if (ke->key() == Qt::Key_Return || ke->key() == Qt::Key_Enter) {
+      const QString text = filter_edit_->text();
+      if (!text.isEmpty() && (filter_history_.isEmpty() || filter_history_.last() != text)) {
+        filter_history_.append(text);
+        if (filter_history_.size() > 50) {
+          filter_history_.removeFirst();
+        }
+      }
+      filter_history_index_ = -1;
+    }
+  }
+
+  return QMainWindow::eventFilter(obj, event);
+}
+
+void MainWindow::on_leap(const QString& text, bool forward, bool from_key)
+{
+  (void)from_key;
+  if (text.isEmpty() || model_ == nullptr) {
+    return;
+  }
+  const int rows = model_->rowCount();
+  if (rows <= 0) {
+    return;
+  }
+
+  int start = 0;
+  if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr) {
+    if (graphics_view_->cursor_row() >= 0) {
+      start = graphics_view_->cursor_row();
+    } else {
+      const auto sel = graphics_view_->selected_rows();
+      if (!sel.empty()) {
+        start = sel.front();
+      }
+    }
+  } else if (auto* view = current_view(); view != nullptr && view->selectionModel() != nullptr) {
+    const auto sel = view->selectionModel()->selectedIndexes();
+    if (!sel.isEmpty()) {
+      start = sel.first().row();
+    }
+  }
+
+  const QString needle = text.toLower();
+  auto matches = [&](int row) {
+    const fs::FileInfo* fi = model_->file_at(row);
+    if (fi == nullptr) {
+      return false;
+    }
+    return QString::fromStdString(fi->basename()).toLower().startsWith(needle);
+  };
+
+  int found = -1;
+  if (forward) {
+    for (int i = 1; i <= rows; ++i) {
+      const int row = (start + i) % rows;
+      if (matches(row)) {
+        found = row;
+        break;
+      }
+    }
+  } else {
+    for (int i = 1; i <= rows; ++i) {
+      const int row = (start - i + rows * 2) % rows;
+      if (matches(row)) {
+        found = row;
+        break;
+      }
+    }
+  }
+
+  if (found < 0) {
+    return;
+  }
+  jump_to_row(found);
+}
+
+
+} // namespace dirtoo::app

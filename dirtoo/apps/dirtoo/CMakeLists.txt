@@ -5,6 +5,11 @@ qt_add_executable(dirtoo-app
   main.cpp
   main_window.cpp
   main_window.hpp
+  main_window_setup.cpp
+  main_window_thumbs.cpp
+  main_window_transfer.cpp
+  main_window_events.cpp
+  main_window_settings.cpp
   file_list_model.cpp
   file_list_model.hpp
   file_views.hpp
