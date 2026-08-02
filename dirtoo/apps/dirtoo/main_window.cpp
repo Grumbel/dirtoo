@@ -74,6 +74,7 @@
 #include <QPixmap>
 #include <QProcess>
 #include <QSplitter>
+#include <QStyle>
 #include <QStackedWidget>
 #include <QStatusBar>
 #include <QToolBar>
@@ -781,7 +782,15 @@ MainWindow::MainWindow(QWidget* parent)
 
   main_splitter_ = new QSplitter(Qt::Horizontal, central);
   main_splitter_->setChildrenCollapsible(false);
-  main_splitter_->setHandleWidth(4);
+  // Platform styles often paint a 1px groove; widen the hit/target area so the
+  // drag handle is usable (no custom stylesheet — width only).
+  {
+    int hw = main_splitter_->style()->pixelMetric(QStyle::PM_SplitterWidth, nullptr, main_splitter_);
+    if (hw < 8) {
+      hw = 8;
+    }
+    main_splitter_->setHandleWidth(hw);
+  }
 
   // Left: directory tree sidebar
   sidebar_widget_ = new QWidget(main_splitter_);
