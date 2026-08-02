@@ -9,10 +9,11 @@ Python reference: `dirtoo-py/`. Active code: `dirtoo/`.
 Critical freezes, DnD/Link, content-filter offload, Graphics reuse, and core
 parity features are in place. Build/tests green (50/50 as of last Nix check).
 
-**Residual focus:** operations history log (see below); inotify per-entry events
-(optional); transfer dedicated error dialog; remaining DnD edge cases.
+**Residual focus:** see **Audit findings** below (overwrite safety, Location
+encoding, libarchive vs shell-out, extract cache). Optional: richer watcher,
+transfer error dialog.
 
-Source audit: **`AUDIT.md`** (file inventory + parity notes, 2026-08).
+Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 
 ### Parity freeze (still intentionally out of scope)
 
@@ -176,7 +177,7 @@ Go to Folder, Clear. Storage: SQLite at `$XDG_STATE_HOME/dirtoo/operations-histo
 | Item | Notes |
 |------|--------|
 | Operations history log | **done** — SQLite under `$XDG_STATE_HOME/dirtoo/`; full sources+items; no rollback |
-| Location URL encoding | Only `%20` today; non-ASCII / reserved chars |
+| Location URL encoding | **Promoted** — see *Audit findings* (systemic) |
 | Archive member thumbnails | Weak; needs extract path or special URI |
 | Watcher richness | QFileSystemWatcher only; no archive extract-dir watch |
 | MainWindow factoring | **Started** — NavigationHistory, SearchController, TransferController extracted |
@@ -187,6 +188,66 @@ Go to Folder, Clear. Storage: SQLite at `$XDG_STATE_HOME/dirtoo/operations-histo
 | Small-icons grid metrics | **done** (fixed grid) |
 | Caption shadow/outline | **done** — soft outline on icon captions |
 | Transfer dedicated error dialog | Optional UX split |
+
+---
+
+## Audit findings (2026-08 deep review) — action queue
+
+From `AUDIT.md` passes 2–2h. Core FM is usable; these are the concrete defects,
+smells, and gaps worth scheduling. Not every item is a user-visible crash.
+
+### P0 — correctness / data safety
+
+| ID | Issue | Why | Direction |
+|----|-------|-----|-----------|
+| A1 | **Location URL encoding incomplete** | Only `%20`. `#`, `?`, non-ASCII break `as_url` round-trips, bookmark identity, thumbnail MD5 keys | Percent-encode reserved + UTF-8 properly in `Location` (encode + decode); add Catch tests with awkward paths |
+| A2 | **Archive extract cache can go stale** | `.dirtoo-extracted` marker matches path only, not archive mtime/size | On cache hit, compare archive file mtime/size (or content hash) to marker metadata; invalidate + re-extract |
+| A3 | **Conflict Overwrite uses `remove_all` on existing destinations** | `dirops` Overwrite deletes the whole existing tree before write/rename. Overwriting a **directory** is catastrophic; dialog does not strongly distinguish file vs dir | **Do not offer bare Overwrite for directories** (or require an explicit “Replace entire folder” with clear copy). Prefer merge policy, Rename, or Skip. Document in conflict dialog + `ConflictPolicy` comments. Consider `remove` (single node) for files only |
+| A4 | **Transfer conflict CV lifecycle** | Worker blocks until UI `resolve_conflict`; shutdown without notify can hang the thread | Ensure `cancel` / MainWindow dtor / dialog reject always notify `conflict_cv_`; add regression test or assert |
+
+### P1 — architecture smells (not “bugs”, but wrong long-term shape)
+
+| ID | Smell | Why it hurts | Direction |
+|----|-------|--------------|-----------|
+| S1 | **Archive listing/extract shells out to `bsdtar` / `tar` / `unzip` / `7z`** | Fragile verbose-text parsers; format drift (GNU vs BSD `tvf`); extra process + PATH dependency; sizes silently 0 when parse fails. Python used libarchive/rar/7z extractors | **Prefer linking [libarchive](https://libarchive.org/)** (`archive_read_*`) for TOC + extract in `dirtoo-archive`. Keep CLI fallback only if libarchive missing at build time. Drop hand-rolled `-tvf` parsers once libarchive is primary |
+| S2 | **`std::filesystem::remove_all` as the Overwrite primitive** | Same as A3 — policy API looks like “replace file” but implementation is “delete subtree” | Split policies: `OverwriteFile` vs `ReplaceDirectory` (or refuse dir overwrite in API). GUI never passes Overwrite for `is_directory()` destinations without extra confirmation |
+| S3 | **MainWindow still ~4.6k LOC** | Controllers extracted only partially; menus/archive/devices still centralized | Continue peeling Navigation / Listing / ShellMenus / Devices helpers |
+| S4 | **Dual icon paint paths** | `GraphicsFileItem` and `FileItemDelegate` must stay twin for montage/badges | Shared paint helper or single renderer used by both |
+
+### P2 — reliability / scale / UX
+
+| ID | Issue | Direction |
+|----|-------|-----------|
+| B1 | Archive member **size 0** when verbose parse fails | Fixed properly by S1 (libarchive sizes); until then, fixture tests for `parse_tv_lines` / `unzip -l` |
+| B2 | Search jank on huge result sets | Incremental model inserts instead of periodic full refresh every 128 hits |
+| B3 | Watcher: directory-only events, full soft rescan | Optional inotify names later; low priority while merge_items works |
+| B4 | Icon dir discovery | Flake/install must place icons in `share/dirtoo/icons`; verify without `DIRTOO_ICON_DIR` |
+| B5 | Bookmarks sorted by URL (order lost) | Preserve append order if product wants it |
+| B6 | Open With incomplete Desktop Entry / empty menu on mixed MIME | Document limits; improve intersection messaging |
+| B7 | Conflict dialog wording for directories | Tied to A3 — never imply “Replace” is a single-file overwrite when dest is a directory |
+
+### P3 — tests to add (cheap, high value)
+
+- [ ] `parse_filter("type:video")` / `type:image` / `type:archive` matches expected extensions (`test_filter`)
+- [ ] Verbose archive listing fixtures → non-zero sizes (`test_archive_index` or new parse unit tests)
+- [ ] Location round-trip with space, `#`, non-ASCII (after A1)
+- [ ] dirops: Overwrite of **file** OK; Overwrite of **directory** either refused or clearly tested as Replace (after A3)
+
+### Explicit non-bugs (OOS / intentional)
+
+- Archive **write**, remote VFS, full Python `programs/*`
+- Full undo (operations history is log-only)
+- Python `expr/` language (filter DSL is separate)
+- `search://` Location protocol (search is a GUI mode)
+
+### Suggested order
+
+1. **A3 / S2** — stop treating directory overwrite like file replace (safety)
+2. **A1** — Location encoding
+3. **S1** — libarchive for TOC/extract (kills size parse fragility)
+4. **A2** — extract cache invalidation
+5. **A4** — transfer shutdown
+6. **P3 tests** interleaved with the above
 
 ---
 
@@ -218,11 +279,12 @@ thumbnail work. `dirops` remains Qt-free.
 
 ## Suggested work order (next)
 
-1. [x] Graphics: item-press → drag, empty → rubber-band
-2. [x] Guard drop into own selected folder / nested selection
-3. [x] Graphics viewport windowing — only tiles in view (± margin) exist as QGraphicsItems
-4. [partial] Soft watcher merge via FileCollection::merge_items (still full readdir; no inotify deltas)
-5. [x] Small-icons grid polish — fixed IconMode grid cells
+1. **Audit P0** — directory overwrite safety (A3/S2), Location encoding (A1)
+2. **libarchive** for archive TOC/extract (S1) + size tests
+3. Archive cache invalidation (A2); transfer conflict shutdown (A4)
+4. Search incremental updates (B2); flake icon install check (B4)
+5. Optional: richer watcher / archive thumbs; MainWindow factoring (S3)
+
 
 ### Completed work order
 
