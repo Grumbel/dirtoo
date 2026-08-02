@@ -846,8 +846,10 @@ void GraphicsFileView::start_drag()
 void GraphicsFileView::dragEnterEvent(QDragEnterEvent* event)
 {
   if (event->mimeData() != nullptr && event->mimeData()->hasUrls()) {
+    drag_entered_ = true;
     event->acceptProposedAction();
   } else {
+    drag_entered_ = false;
     event->ignore();
   }
 }
@@ -901,11 +903,19 @@ void GraphicsFileView::dragLeaveEvent(QDragLeaveEvent* event)
       it->set_drop_target(false);
     }
   }
-  QGraphicsView::dragLeaveEvent(event);
+  // Qt warns if dragLeave arrives without a prior accepted dragEnter on this
+  // widget (e.g. child/scene re-entry). Only forward when we had entered.
+  if (drag_entered_) {
+    drag_entered_ = false;
+    QGraphicsView::dragLeaveEvent(event);
+  } else {
+    event->accept();
+  }
 }
 
 void GraphicsFileView::dropEvent(QDropEvent* event)
 {
+  drag_entered_ = false;
   for (GraphicsFileItem* it : items_) {
     if (it != nullptr) {
       it->set_drop_target(false);

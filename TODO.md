@@ -474,10 +474,17 @@ Python reference: experimental `dirtoo-py/experiments/udisks/` (`udisksqt.py`); 
       (dt-rename --help + dirops ConflictPolicy docs; rename → stem (N).ext)
 - [x] conflict dialog should show thumbnails of the affected files
       (cache lookup + QFileIconProvider fallback)
-- [ ] caution icon shows, unclear exactly when (thumbnail isn't ready?)
-- [ ] 16:56:18.357 [warning] QGraphicsView::dragLeaveEvent: drag leave received before drag enter
-- [ ] ensure that filter language has all the dirtoo-py features, e.g. type:video
-- [ ] file size doesn't show for archives
-- [ ] Search across big directory can still lock the UI
+- [x] caution icon shows, unclear exactly when (thumbnail isn't ready?)
+      (error badge only for image/video/pdf/office; other thumbnail failures
+       clear to system icon without sticker)
+- [x] 16:56:18.357 [warning] QGraphicsView::dragLeaveEvent: drag leave received before drag enter
+      (track drag_entered_; only forward leave to QGraphicsView after accept)
+- [x] ensure that filter language has all the dirtoo-py features, e.g. type:video
+      (type:video|image|archive|audio via extension regex; help text updated)
+- [x] file size doesn't show for archives
+      (bsdtar/tar -tvf + unzip -l parsers populate ArchiveEntry.size)
+- [partial] Search across big directory can still lock the UI
+      (no per-hit FileInfo::from_path/stat; synthetic entries; refresh every 128;
+       still model reset on interval — further virtualization optional)
 
 

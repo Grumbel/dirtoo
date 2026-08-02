@@ -107,6 +107,8 @@ private:
   int spacing_ = 12;
   int padding_ = 8;
   bool suppress_selection_signal_ = false;
+  /// True after an accepted dragEnter; avoids Qt "drag leave before enter" warnings.
+  bool drag_entered_ = false;
   QPoint drag_start_pos_;
   bool drag_started_ = false;
   int layout_cols_ = 1;

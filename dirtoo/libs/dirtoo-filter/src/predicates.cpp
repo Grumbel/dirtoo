@@ -255,6 +255,21 @@ MatchFuncPtr make_type(std::string argument)
   if (a == "dir" || a == "directory" || a == "folder" || a == "d") {
     return std::make_shared<TypeMatch>(TypeMatch::Kind::Dir);
   }
+  // Extension-based kinds (dirtoo-py type:video / type:image / type:archive).
+  if (a == "video" || a == "videos" || a == "vid" || a == "vids") {
+    return make_regex(
+        R"(\.(wmv|mp4|mpg|mpeg|m2v|avi|flv|mkv|mov|webm|f4v|divx|ogv|vob|3gp|3g2|qt|asf|amv|m4v|ts)$)",
+        false);
+  }
+  if (a == "image" || a == "images" || a == "img" || a == "imgs") {
+    return make_regex(R"(\.(jpg|jpeg|gif|png|tif|tiff|webp|bmp|xcf|heic|avif|svg)$)", false);
+  }
+  if (a == "archive" || a == "archives" || a == "arch") {
+    return make_regex(R"(\.(zip|rar|tar|gz|xz|bz2|ar|7z|tgz|tbz2|txz|cbz|cbr|jar|apk)$)", false);
+  }
+  if (a == "audio" || a == "audios" || a == "sound") {
+    return make_regex(R"(\.(mp3|flac|ogg|opus|wav|m4a|aac|wma)$)", false);
+  }
   return std::make_shared<AlwaysFalse>();
 }
 

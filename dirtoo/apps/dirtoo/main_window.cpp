@@ -2053,8 +2053,25 @@ void MainWindow::on_thumbnail_failed(const fs::Location& location, const QString
   if (const auto it = thumb_alias_.constFind(key); it != thumb_alias_.cend()) {
     key = it.value();
   }
-  if (model_ != nullptr) {
+  if (model_ == nullptr) {
+    return;
+  }
+  // Only keep a visible error/caution badge for types that normally produce
+  // thumbnails. Text, binaries, etc. often fail the D-Bus thumbnailer — fall
+  // back to the system icon without a warning sticker (dirtoo-py Unavailable).
+  const QString name = QString::fromStdString(location.basename());
+  static QMimeDatabase mime_db;
+  const QMimeType mt = mime_db.mimeTypeForFile(name, QMimeDatabase::MatchExtension);
+  const QString mime = mt.isValid() ? mt.name() : QString{};
+  const bool expect_thumb =
+      mime.startsWith(QLatin1String("image/")) || mime.startsWith(QLatin1String("video/"))
+      || mime == QLatin1String("application/pdf")
+      || mime.contains(QLatin1String("opendocument"))
+      || mime.contains(QLatin1String("officedocument"));
+  if (expect_thumb) {
     model_->set_thumbnail_failed(key);
+  } else {
+    model_->clear_thumbnail(key);
   }
 }
 
@@ -3598,16 +3615,14 @@ void MainWindow::on_search_match(const QString& path, bool is_directory, quint64
   if (!search_active_) {
     return;
   }
-  auto info = fs::FileInfo::from_path(std::filesystem::path{path.toStdString()});
-  if (info.basename().empty()) {
-    info = fs::FileInfo::synthetic(fs::Location::from_path(std::filesystem::path{path.toStdString()}),
-                                   std::filesystem::path{path.toStdString()}.filename().string(),
-                                   is_directory, size);
-  }
+  // Synthetic only: avoid FileInfo::from_path (stat) on the GUI thread for every hit.
+  const std::filesystem::path p{path.toStdString()};
+  auto info = fs::FileInfo::synthetic(fs::Location::from_path(p), p.filename().string(),
+                                      is_directory, size);
   search_results_.push_back(info);
   collection_.add(std::move(info));
-  // Avoid full model reset every hit — refresh periodically.
-  if (search_results_.size() % 32 == 1 || search_results_.size() < 8) {
+  // Coarse UI refresh — full reset is expensive on large result sets.
+  if (search_results_.size() % 128 == 1 || search_results_.size() < 16) {
     refresh_list();
   }
 }

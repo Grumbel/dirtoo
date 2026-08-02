@@ -384,7 +384,7 @@ Terms (juxtaposition = AND, OR joins alternatives):
   Glob:*.PNG      case-sensitive glob
   regex:^a.*      regex on basename (re:, r:)
   size:>1M        size compare (K/M/G); also size:10K-2M
-  type:dir        type:file | type:dir (t:)
+  type:dir        type:file|dir|video|image|archive|audio (t:)
   width:>=1920    image/video width (needs ffprobe)
   height:=1080    image/video height
   duration:>1m    media duration (seconds; 1h2m / 1:30)
@@ -450,8 +450,9 @@ std::string filter_help_html()
 <tr><td><code>size:&gt;1M</code></td>
     <td>Size compare (<code>K</code>/<code>M</code>/<code>G</code>);
         also ranges like <code>size:10K-2M</code></td></tr>
-<tr><td><code>type:dir</code> / <code>t:file</code></td>
-    <td><code>file</code> or <code>dir</code></td></tr>
+<tr><td><code>type:dir</code> / <code>t:video</code> / <code>type:image</code></td>
+    <td><code>file</code>, <code>dir</code>, <code>video</code>, <code>image</code>,
+        <code>archive</code>, or <code>audio</code> (extension-based for media)</td></tr>
 <tr><td><code>date:today</code></td>
     <td>Modification date; also <code>date:&gt;=2024-01-01</code>,
         <code>date:2024-*-01</code></td></tr>
