@@ -6,6 +6,8 @@
 #include "dirtoo/filter/parser.hpp"
 #include "dirtoo/filter/search.hpp"
 
+#include <filesystem>
+
 namespace dirtoo::app {
 
 SearchWorker::SearchWorker(QObject* parent)
@@ -23,39 +25,40 @@ void SearchWorker::start(const QString& root_path, const QString& expression, bo
 {
   cancel_.store(false, std::memory_order_relaxed);
 
-  const auto parsed = filter::parse_filter(expression.toStdString());
+  const std::string expr = expression.toStdString();
+  auto parsed = filter::parse_filter(expr);
   if (!parsed) {
     emit finished(0, 0,
-                  QStringLiteral("parse error at %1: %2")
-                      .arg(parsed.error().position)
+                  QStringLiteral("Invalid filter expression: %1")
                       .arg(QString::fromStdString(parsed.error().message)));
     return;
   }
+  const filter::MatchFuncPtr match = *parsed;
 
-  filter::SearchOptions opt;
-  opt.max_depth = max_depth;
-  opt.show_hidden = show_hidden;
-  opt.should_cancel = [this] { return cancel_.load(std::memory_order_relaxed); };
+  filter::SearchOptions options;
+  options.max_depth = max_depth;
+  options.show_hidden = show_hidden;
+  options.should_cancel = [this] { return cancel_.load(std::memory_order_relaxed); };
+
+  const std::filesystem::path root{root_path.toStdString()};
 
   quint64 matched_so_far = 0;
-  quint64 visited_hint = 0;
   const auto stats = filter::search_directory(
-      std::filesystem::path{root_path.toStdString()}, **parsed, opt,
-      [this, &matched_so_far, &visited_hint](const filter::FilterItem& item) {
+      root, *match, options, [this, &matched_so_far](const filter::FilterItem& item) {
         ++matched_so_far;
-        ++visited_hint;
         emit match_found(QString::fromStdString(item.path.string()), item.is_directory,
                          static_cast<quint64>(item.size));
-        if (matched_so_far % 32 == 0) {
-          emit progress(visited_hint, matched_so_far);
+        // Status bar only displays the match count; visited is finalized on finished().
+        if ((matched_so_far % 16) == 0) {
+          emit progress(0, matched_so_far);
         }
       });
 
-  QString err;
   if (cancel_.load(std::memory_order_relaxed)) {
-    err = QStringLiteral("cancelled");
+    emit finished(stats.matched, stats.visited, QStringLiteral("cancelled"));
+    return;
   }
-  emit finished(stats.matched, stats.visited, err);
+  emit finished(stats.matched, stats.visited, QString{});
 }
 
 } // namespace dirtoo::app

@@ -799,8 +799,8 @@ MainWindow::MainWindow(QWidget* parent)
 
   main_splitter_ = new QSplitter(Qt::Horizontal, central);
   main_splitter_->setChildrenCollapsible(false);
-  // Platform styles often paint a 1px groove; widen the hit/target area so the
-  // drag handle is usable (no custom stylesheet — width only).
+  // Platform styles often paint a near-invisible groove; widen the handle and
+  // paint a dark strip so the sidebar ↔ file-view drag is obvious.
   {
     int hw = main_splitter_->style()->pixelMetric(QStyle::PM_SplitterWidth, nullptr, main_splitter_);
     if (hw < 8) {
@@ -808,26 +808,43 @@ MainWindow::MainWindow(QWidget* parent)
     }
     main_splitter_->setHandleWidth(hw);
   }
+  main_splitter_->setStyleSheet(QStringLiteral(
+      "QSplitter::handle:horizontal {"
+      "  background-color: #3a3a3a;"
+      "}"
+      "QSplitter::handle:horizontal:hover {"
+      "  background-color: #555555;"
+      "}"));
 
   // Left: directory tree sidebar
   sidebar_widget_ = new QWidget(main_splitter_);
   auto* sidebar_layout = new QVBoxLayout(sidebar_widget_);
   sidebar_layout->setContentsMargins(0, 0, 0, 0);
   sidebar_layout->setSpacing(0);
-  devices_label_ = new QLabel(QStringLiteral("Devices"), sidebar_widget_);
+
+  // Devices panel (top of vertical sidebar splitter).
+  auto* devices_panel = new QWidget(sidebar_widget_);
+  auto* devices_layout = new QVBoxLayout(devices_panel);
+  devices_layout->setContentsMargins(0, 0, 0, 0);
+  devices_layout->setSpacing(0);
+  devices_label_ = new QLabel(QStringLiteral("Devices"), devices_panel);
   devices_label_->setStyleSheet(QStringLiteral("font-weight: bold; padding: 4px 6px 2px 6px;"));
-  sidebar_layout->addWidget(devices_label_);
-  devices_list_ = new QListWidget(sidebar_widget_);
+  devices_layout->addWidget(devices_label_);
+  devices_list_ = new QListWidget(devices_panel);
   devices_list_->setFrameShape(QFrame::NoFrame);
-  devices_list_->setMaximumHeight(140);
   devices_list_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   connect(devices_list_, &QListWidget::itemActivated, this, &MainWindow::on_devices_item_activated);
   connect(devices_list_, &QListWidget::itemClicked, this, &MainWindow::on_devices_item_activated);
-  sidebar_layout->addWidget(devices_list_);
+  devices_layout->addWidget(devices_list_, 1);
 
-  auto* places_label = new QLabel(QStringLiteral("Places"), sidebar_widget_);
+  // Places + directory tree (bottom of vertical sidebar splitter).
+  auto* places_panel = new QWidget(sidebar_widget_);
+  auto* places_layout = new QVBoxLayout(places_panel);
+  places_layout->setContentsMargins(0, 0, 0, 0);
+  places_layout->setSpacing(0);
+  auto* places_label = new QLabel(QStringLiteral("Places"), places_panel);
   places_label->setStyleSheet(QStringLiteral("font-weight: bold; padding: 6px 6px 2px 6px;"));
-  sidebar_layout->addWidget(places_label);
+  places_layout->addWidget(places_label);
 
   directory_tree_model_ = new DirectoryTreeModel(this);
   rebuild_sidebar_places();
@@ -835,7 +852,7 @@ MainWindow::MainWindow(QWidget* parent)
   connect(udisks_client_, &UDisksClient::volumes_changed, this, &MainWindow::on_udisks_volumes_changed);
   udisks_client_->refresh();
 
-  sidebar_tree_ = new QTreeView(sidebar_widget_);
+  sidebar_tree_ = new QTreeView(places_panel);
   sidebar_tree_->setModel(directory_tree_model_);
   sidebar_tree_->setHeaderHidden(true);
   sidebar_tree_->setUniformRowHeights(true);
@@ -845,7 +862,25 @@ MainWindow::MainWindow(QWidget* parent)
   sidebar_tree_->setSelectionMode(QAbstractItemView::SingleSelection);
   connect(sidebar_tree_, &QTreeView::activated, this, &MainWindow::on_sidebar_activated);
   connect(sidebar_tree_, &QTreeView::clicked, this, &MainWindow::on_sidebar_activated);
-  sidebar_layout->addWidget(sidebar_tree_);
+  places_layout->addWidget(sidebar_tree_, 1);
+
+  auto* sidebar_splitter = new QSplitter(Qt::Vertical, sidebar_widget_);
+  sidebar_splitter->setChildrenCollapsible(false);
+  sidebar_splitter->setHandleWidth(6);
+  sidebar_splitter->setStyleSheet(QStringLiteral(
+      "QSplitter::handle:vertical {"
+      "  background-color: #3a3a3a;"
+      "}"
+      "QSplitter::handle:vertical:hover {"
+      "  background-color: #555555;"
+      "}"));
+  sidebar_splitter->addWidget(devices_panel);
+  sidebar_splitter->addWidget(places_panel);
+  sidebar_splitter->setStretchFactor(0, 0);
+  sidebar_splitter->setStretchFactor(1, 1);
+  sidebar_splitter->setSizes({140, 400});
+  sidebar_layout->addWidget(sidebar_splitter);
+
   main_splitter_->addWidget(sidebar_widget_);
 
   // Right: existing chrome + file views
