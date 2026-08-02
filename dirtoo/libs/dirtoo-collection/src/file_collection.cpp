@@ -114,6 +114,19 @@ void FileCollection::add(fs::FileInfo info)
   rebuild_visible();
 }
 
+void FileCollection::append_visible_items(std::vector<fs::FileInfo> items)
+{
+  if (items.empty()) {
+    return;
+  }
+  items_.reserve(items_.size() + items.size());
+  visible_.reserve(visible_.size() + items.size());
+  for (auto& info : items) {
+    items_.push_back(info);
+    visible_.push_back(std::move(info));
+  }
+}
+
 bool FileCollection::remove(const fs::Location& location)
 {
   const auto it = std::ranges::find_if(items_, [&](const fs::FileInfo& fi) {

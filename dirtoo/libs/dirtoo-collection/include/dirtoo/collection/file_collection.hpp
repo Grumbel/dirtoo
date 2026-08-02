@@ -33,6 +33,9 @@ public:
   /// except filter_parse_ok when provided.
   void replace_visible(std::vector<fs::FileInfo> visible, std::optional<bool> parse_ok = std::nullopt);
   void add(fs::FileInfo info);
+  /// Append to items_ and visible_ without rebuild_visible (e.g. search hits with
+  /// no active filter). Prefer batching at the call site.
+  void append_visible_items(std::vector<fs::FileInfo> items);
   bool remove(const fs::Location& location);
 
   [[nodiscard]] std::size_t size() const noexcept { return items_.size(); }

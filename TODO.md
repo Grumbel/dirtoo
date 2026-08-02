@@ -219,9 +219,9 @@ smells, and gaps worth scheduling. Not every item is a user-visible crash.
 | ID | Issue | Direction |
 |----|-------|-----------|
 | B1 | Archive member **size 0** when verbose parse fails | Fixed properly by S1 (libarchive sizes); until then, fixture tests for `parse_tv_lines` / `unzip -l` |
-| B2 | Search jank on huge result sets | Incremental model inserts instead of periodic full refresh every 128 hits |
+| B2 | Search jank on huge result sets | **Done** — batched `append_visible_items` + `notify_rows_appended` (32); no periodic full refresh |
 | B3 | Watcher: directory-only events, full soft rescan | Optional inotify names later; low priority while merge_items works |
-| B4 | Icon dir discovery | Flake/install must place icons in `share/dirtoo/icons`; verify without `DIRTOO_ICON_DIR` |
+| B4 | Icon dir discovery | **Mostly done** — CMake installs full icon set to `share/dirtoo/icons`; runtime probes that path |
 | B5 | Bookmarks sorted by URL (order lost) | Preserve append order if product wants it |
 | B6 | Open With incomplete Desktop Entry / empty menu on mixed MIME | Document limits; improve intersection messaging |
 | B7 | Conflict dialog wording for directories | Tied to A3 — never imply “Replace” is a single-file overwrite when dest is a directory |
@@ -279,11 +279,9 @@ thumbnail work. `dirops` remains Qt-free.
 
 ## Suggested work order (next)
 
-1. **Audit P0** — directory overwrite safety (A3/S2), Location encoding (A1)
-2. **libarchive** for archive TOC/extract (S1) + size tests
-3. Archive cache invalidation (A2); transfer conflict shutdown (A4)
-4. Search incremental updates (B2); flake icon install check (B4)
-5. Optional: richer watcher / archive thumbs; MainWindow factoring (S3)
+1. Optional: richer watcher / archive member thumbs
+2. MainWindow factoring (S3); shared icon paint helper (S4)
+3. Transfer dedicated error dialog; remaining UX polish from user testing
 
 
 ### Completed work order

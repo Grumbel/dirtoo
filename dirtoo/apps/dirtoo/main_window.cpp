@@ -3577,6 +3577,7 @@ void MainWindow::on_show_search()
 void MainWindow::stop_search()
 {
   search_controller_.stop();
+  search_batch_.clear();
 }
 
 
@@ -3596,6 +3597,7 @@ void MainWindow::on_search_submitted()
 
   stop_search();
   search_results_.clear();
+  search_batch_.clear();
   search_active_ = true;
   collection_.clear();
   collection_.clear_filter();
@@ -3620,11 +3622,27 @@ void MainWindow::on_search_match(const QString& path, bool is_directory, quint64
   auto info = fs::FileInfo::synthetic(fs::Location::from_path(p), p.filename().string(),
                                       is_directory, size);
   search_results_.push_back(info);
-  collection_.add(std::move(info));
-  // Coarse UI refresh — full reset is expensive on large result sets.
-  if (search_results_.size() % 128 == 1 || search_results_.size() < 16) {
+  search_batch_.push_back(std::move(info));
+  // Incremental inserts (batched) beat periodic full layoutChanged on large sets.
+  if (search_batch_.size() >= 32 || search_results_.size() < 16) {
+    flush_search_batch();
+  }
+}
+
+void MainWindow::flush_search_batch()
+{
+  if (search_batch_.empty()) {
+    return;
+  }
+  const int count = static_cast<int>(search_batch_.size());
+  collection_.append_visible_items(std::move(search_batch_));
+  search_batch_.clear();
+  if (model_ != nullptr) {
+    model_->notify_rows_appended(count);
+  } else {
     refresh_list();
   }
+  update_status_selection();
 }
 
 void MainWindow::on_search_progress(quint64 visited, quint64 matched)
@@ -3635,7 +3653,7 @@ void MainWindow::on_search_progress(quint64 visited, quint64 matched)
 
 void MainWindow::on_search_finished(quint64 matched, quint64 visited, const QString& error)
 {
-  refresh_list();
+  flush_search_batch();
   request_thumbnails_for_visible();
   if (!error.isEmpty() && error != QStringLiteral("cancelled")) {
     set_status(error);

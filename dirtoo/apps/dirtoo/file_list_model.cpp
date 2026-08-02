@@ -18,6 +18,7 @@
 #include <QLocale>
 #include <QMetaObject>
 #include <QMimeData>
+#include <QModelIndex>
 #include <QThreadPool>
 #include <QUrl>
 
@@ -93,6 +94,21 @@ void FileListModel::refresh()
   // delegate/view to re-query all roles after every sort/filter/watcher merge.
   emit layoutAboutToBeChanged();
   emit layoutChanged();
+}
+
+void FileListModel::notify_rows_appended(int count)
+{
+  if (count <= 0 || collection_ == nullptr) {
+    return;
+  }
+  const int total = static_cast<int>(collection_->visible_items().size());
+  const int first = total - count;
+  if (first < 0) {
+    refresh();
+    return;
+  }
+  beginInsertRows(QModelIndex{}, first, total - 1);
+  endInsertRows();
 }
 
 void FileListModel::emit_path_changed(const QString& path)

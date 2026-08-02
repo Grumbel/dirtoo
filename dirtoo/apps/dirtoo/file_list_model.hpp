@@ -57,6 +57,8 @@ public:
 
   void set_collection(collection::FileCollection* collection);
   void refresh();
+  /// Notify views that @p count rows were appended at the end of the visible list.
+  void notify_rows_appended(int count);
 
   void set_thumbnail(const QString& path, const QIcon& icon);
   void set_thumbnail_pending(const QString& path);

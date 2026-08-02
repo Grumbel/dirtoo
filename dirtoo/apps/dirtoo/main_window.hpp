@@ -147,6 +147,7 @@ private slots:
   void on_show_search();
   void on_search_submitted();
   void on_search_match(const QString& path, bool is_directory, quint64 size);
+  void flush_search_batch();
   void on_search_finished(quint64 matched, quint64 visited, const QString& error);
   void on_search_progress(quint64 visited, quint64 matched);
   void stop_search();
@@ -268,6 +269,7 @@ private:
   QLineEdit* search_edit_ = nullptr;
   bool search_active_ = false;
   std::vector<fs::FileInfo> search_results_;
+  std::vector<fs::FileInfo> search_batch_;
   SearchController search_controller_;
   QThread* path_completion_thread_ = nullptr;
   PathCompletionWorker* path_completion_worker_ = nullptr;
