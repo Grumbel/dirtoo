@@ -200,6 +200,9 @@ private:
   void set_clipboard(ClipboardMode mode);
   void request_thumbnails_for_visible();
   void start_transfer(const TransferRequest& request);
+  /// Resolve drop/paste URLs to real paths (extract archive members off-thread if needed).
+  void begin_transfer_from_urls(const QList<QUrl>& urls, Qt::DropAction action,
+                               const std::filesystem::path& dest_dir);
   void restore_settings();
   void persist_settings() const;
   [[nodiscard]] std::vector<fs::FileInfo> selected_fileinfos() const;

@@ -10,9 +10,10 @@ Critical freezes, DnD/Link, content-filter offload, Graphics reuse, and core
 parity features are in place. Catch suite: 57 cases (Overwrite-directory test
 aligned with into-dir resolution + `remove_for_overwrite` safety).
 
-**Residual focus:** optional polish (archive external DnD extract-on-drop,
-list virtualization, editable permissions, richer watcher). P0 audit items
-A1–A3 and libarchive (S1) are done.
+**Residual focus:** optional polish (external-app archive DnD still Location
+URL only; list virtualization; editable permissions; richer watcher). P0
+audit items A1–A3 and libarchive (S1) are done. Same-app archive member
+drop extracts then copies.
 
 Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 
@@ -516,9 +517,10 @@ Python reference: experimental `dirtoo-py/experiments/udisks/` (`udisksqt.py`); 
 - [x] files in archives don't get thumbnails
       (unique path key via location URL; extract member off-thread then Thumbnailer1;
        map extracted path → archive model key)
-- [partial] drag&drop of files from inside an archive just gives a filename
+- [x] drag&drop of files from inside an archive just gives a filename
       pointing to the archive
-      (mimeData emits Location URL file://…//archive:entry; external extract-on-drop optional)
+      (same-app drop resolves Location URL, extract_member off-thread, then copy;
+       Move/Link forced to Copy; external apps still see Location URL only)
 - [x] use human-friendly ISO date/time: "2011-12-21 16:14"
 - [x] in About page, use actual URL, not "Project Page" text on link
 - [x] Segfault on "Open Containing Folder"

@@ -105,6 +105,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <optional>
 
 namespace dirtoo::app {
 
@@ -245,6 +246,42 @@ QIcon icon_for_location(const fs::Location& loc)
     return provider.icon(QFileIconProvider::Folder);
   }
   return provider.icon(fi);
+}
+
+/// Best-effort Location from a drop URL (plain file or Python-style archive URL).
+std::optional<fs::Location> location_from_drop_url(const QUrl& url)
+{
+  // Prefer the string form so "//archive:entry" survives Qt path normalization.
+  const QString s = url.toString();
+  if (s.contains(QLatin1String("//archive")) || s.startsWith(QLatin1String("archive://"))) {
+    try {
+      return fs::Location::from_url(s.toStdString());
+    } catch (...) {
+      // fall through
+    }
+  }
+  const QByteArray enc = url.toEncoded();
+  if (!enc.isEmpty()) {
+    const std::string es = enc.toStdString();
+    if (es.find("//archive") != std::string::npos || es.starts_with("archive://")) {
+      try {
+        return fs::Location::from_url(es);
+      } catch (...) {
+      }
+    }
+  }
+  if (url.isLocalFile()) {
+    const QString local = url.toLocalFile();
+    // toLocalFile may leave "//archive:…" in the path for our custom URLs.
+    if (local.contains(QLatin1String("//archive"))) {
+      try {
+        return fs::Location::from_url(("file://" + local).toStdString());
+      } catch (...) {
+      }
+    }
+    return fs::Location::from_path(std::filesystem::path{local.toStdString()});
+  }
+  return std::nullopt;
 }
 
 } // namespace
@@ -3107,6 +3144,147 @@ void MainWindow::on_select_all()
   }
 }
 
+void MainWindow::begin_transfer_from_urls(const QList<QUrl>& urls, Qt::DropAction action,
+                                         const std::filesystem::path& dest_dir)
+{
+  if (transfer_controller_.busy() || urls.isEmpty()) {
+    return;
+  }
+
+  // Collect plain paths and archive members that still need materialization.
+  std::vector<std::filesystem::path> ready;
+  struct PendingMember {
+    std::filesystem::path archive_file;
+    std::filesystem::path member;
+  };
+  std::vector<PendingMember> pending;
+  bool any_from_archive = false;
+
+  for (const QUrl& url : urls) {
+    const auto loc = location_from_drop_url(url);
+    if (!loc) {
+      continue;
+    }
+    if (loc->is_archive()) {
+      any_from_archive = true;
+      if (loc->entry_path().empty()) {
+        // Drag of the archive root → the archive file itself.
+        ready.push_back(loc->as_path());
+        continue;
+      }
+      const fs::Location archive_root = fs::Location::from_archive(loc->as_path(), {});
+      if (const auto root = archive_manager_.extracted_root(archive_root)) {
+        const auto real = *root / loc->entry_path();
+        std::error_code ec;
+        if (std::filesystem::exists(real, ec) && !ec) {
+          ready.push_back(real);
+          continue;
+        }
+      }
+      pending.push_back(PendingMember{loc->as_path(), loc->entry_path()});
+      continue;
+    }
+    ready.push_back(loc->as_path());
+  }
+
+  if (ready.empty() && pending.empty()) {
+    set_status(QStringLiteral("Drop ignored (no usable paths)"));
+    return;
+  }
+
+  // Archive members are read-only sources: never Move/Link out of the archive.
+  const Qt::DropAction effective =
+      any_from_archive && action != Qt::CopyAction ? Qt::CopyAction : action;
+
+  auto finish = [this, dest_dir, effective](std::vector<std::filesystem::path> sources) {
+    // Refuse dropping a selection into itself / a selected folder.
+    {
+      const auto dest_path = dest_dir.lexically_normal();
+      for (const auto& src : sources) {
+        std::error_code ec;
+        if (std::filesystem::equivalent(src, dest_path, ec)) {
+          set_status(QStringLiteral("Cannot drop an item onto itself"));
+          return;
+        }
+        if (std::filesystem::is_directory(src, ec)) {
+          const auto rel = dest_path.lexically_relative(src.lexically_normal());
+          if (!rel.empty() && *rel.begin() != "..") {
+            set_status(QStringLiteral("Cannot drop into a selected folder"));
+            return;
+          }
+        }
+      }
+    }
+
+    if (effective == Qt::LinkAction) {
+      int ok = 0;
+      int fail = 0;
+      for (const auto& src : sources) {
+        const auto link = dest_dir / src.filename();
+        auto result = dirops::create_symlink(src, link);
+        if (result) {
+          ++ok;
+          operations_history().record_simple(OperationKind::Symlink, {src}, link, true);
+        } else {
+          ++fail;
+          operations_history().record_simple(OperationKind::Symlink, {src}, link, false,
+                                             QString::fromStdString(result.error().to_string()));
+        }
+      }
+      set_status(QStringLiteral("Linked %1 (%2 failed)").arg(ok).arg(fail));
+      on_directory_changed();
+      return;
+    }
+
+    TransferRequest req;
+    req.mode = (effective == Qt::MoveAction) ? ClipboardMode::Cut : ClipboardMode::Copy;
+    req.destination_directory = dest_dir;
+    for (const auto& src : sources) {
+      const auto target = req.destination_directory / src.filename();
+      if (src == req.destination_directory || src == target) {
+        continue;
+      }
+      req.sources.push_back(src);
+    }
+    if (req.sources.empty()) {
+      set_status(QStringLiteral("Drop ignored (invalid targets)"));
+      return;
+    }
+    start_transfer(req);
+  };
+
+  if (pending.empty()) {
+    finish(std::move(ready));
+    return;
+  }
+
+  set_status(QStringLiteral("Extracting %1 archive member(s)…").arg(pending.size()));
+  const QString cache_root =
+      QStandardPaths::writableLocation(QStandardPaths::CacheLocation)
+      + QStringLiteral("/dirtoo-archive-drop");
+  (void)QtConcurrent::run([this, pending, ready, cache_root, finish]() mutable {
+    for (const auto& p : pending) {
+      const auto dest =
+          std::filesystem::path{cache_root.toStdString()}
+          / std::to_string(std::hash<std::string>{}(p.archive_file.string()));
+      auto extracted = archive::extract_member(p.archive_file, p.member, dest);
+      if (extracted) {
+        ready.push_back(*extracted);
+      }
+    }
+    QMetaObject::invokeMethod(
+        this,
+        [this, ready = std::move(ready), finish]() mutable {
+          if (ready.empty()) {
+            set_status(QStringLiteral("Failed to extract archive member(s) for drop"));
+            return;
+          }
+          finish(std::move(ready));
+        },
+        Qt::QueuedConnection);
+  });
+}
+
 void MainWindow::on_urls_dropped_to(const QList<QUrl>& urls, Qt::DropAction action,
                                    const QString& dest_dir)
 {
@@ -3118,78 +3296,16 @@ void MainWindow::on_urls_dropped_to(const QList<QUrl>& urls, Qt::DropAction acti
     return;
   }
 
+  // Dropping into the current view while browsing an archive is read-only.
+  if (dest_dir.isEmpty() && location_.is_archive()) {
+    set_status(QStringLiteral("Cannot drop into an archive (read-only)"));
+    return;
+  }
+
   const auto dest = !dest_dir.isEmpty()
                         ? std::filesystem::path{dest_dir.toStdString()}
                         : location_.as_path();
-  std::vector<std::filesystem::path> sources;
-  for (const QUrl& url : urls) {
-    if (url.isLocalFile()) {
-      sources.emplace_back(url.toLocalFile().toStdString());
-    }
-  }
-  if (sources.empty()) {
-    return;
-  }
-
-  // Refuse dropping a selection into a destination that is itself one of the
-  // sources or a subdirectory of a selected folder (prevents nested self-move).
-  {
-    const auto dest_path = dest.lexically_normal();
-    for (const auto& src : sources) {
-      std::error_code ec;
-      if (std::filesystem::equivalent(src, dest_path, ec)) {
-        set_status(QStringLiteral("Cannot drop an item onto itself"));
-        return;
-      }
-      if (std::filesystem::is_directory(src, ec)) {
-        const auto rel = dest_path.lexically_relative(src.lexically_normal());
-        if (!rel.empty() && *rel.begin() != "..") {
-          set_status(QStringLiteral("Cannot drop into a selected folder"));
-          return;
-        }
-      }
-    }
-  }
-
-  if (action == Qt::LinkAction) {
-    int ok = 0;
-    int fail = 0;
-    for (const auto& src : sources) {
-      const auto link = dest / src.filename();
-      auto result = dirops::create_symlink(src, link);
-      if (result) {
-        ++ok;
-        operations_history().record_simple(OperationKind::Symlink, {src}, link, true);
-      } else {
-        ++fail;
-        operations_history().record_simple(OperationKind::Symlink, {src}, link, false,
-                                           QString::fromStdString(result.error().to_string()));
-      }
-    }
-    set_status(QStringLiteral("Linked %1 (%2 failed)").arg(ok).arg(fail));
-    on_directory_changed();
-    return;
-  }
-
-  TransferRequest req;
-  req.mode = (action == Qt::MoveAction) ? ClipboardMode::Cut : ClipboardMode::Copy;
-  req.destination_directory = dest;
-  req.sources = std::move(sources);
-
-  std::vector<std::filesystem::path> filtered;
-  for (const auto& src : req.sources) {
-    const auto dest = req.destination_directory / src.filename();
-    if (src == req.destination_directory || src == dest) {
-      continue;
-    }
-    filtered.push_back(src);
-  }
-  req.sources = std::move(filtered);
-  if (req.sources.empty()) {
-    set_status(QStringLiteral("Drop ignored (invalid targets)"));
-    return;
-  }
-  start_transfer(req);
+  begin_transfer_from_urls(urls, action, dest);
 }
 
 void MainWindow::on_save_file_list()
@@ -3755,18 +3871,7 @@ void MainWindow::on_breadcrumb_drop(const fs::Location& target, const QList<QUrl
   if (transfer_controller_.busy() || urls.isEmpty()) {
     return;
   }
-  TransferRequest req;
-  req.mode = (action == Qt::MoveAction) ? ClipboardMode::Cut : ClipboardMode::Copy;
-  req.destination_directory = target.as_path();
-  for (const QUrl& url : urls) {
-    if (url.isLocalFile()) {
-      req.sources.emplace_back(url.toLocalFile().toStdString());
-    }
-  }
-  if (req.sources.empty()) {
-    return;
-  }
-  start_transfer(req);
+  begin_transfer_from_urls(urls, action, target.as_path());
 }
 
 
