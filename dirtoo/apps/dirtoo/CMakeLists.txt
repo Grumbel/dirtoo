@@ -32,6 +32,8 @@ qt_add_executable(dirtoo-app
   size_format.hpp
   open_with.cpp
   open_with.hpp
+  open_history.cpp
+  open_history.hpp
   about_dialog.cpp
   about_dialog.hpp
   name_input_dialog.cpp

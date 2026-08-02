@@ -3,6 +3,8 @@
 
 #include "open_with.hpp"
 
+#include "open_history.hpp"
+
 #include <QAction>
 #include <QDesktopServices>
 #include <QDir>
@@ -283,7 +285,21 @@ std::vector<DesktopApp> intersect_apps(const std::vector<std::vector<DesktopApp>
 
 bool open_default(const std::filesystem::path& path)
 {
-  return QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(path.string())));
+  const bool ok =
+      QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(path.string())));
+  if (ok) {
+    QString app_id = QStringLiteral("default");
+    QString app_name = QStringLiteral("Default application");
+    QString app_icon;
+    const auto defaults = default_apps_for_paths({path});
+    if (!defaults.empty()) {
+      app_id = defaults.front().id;
+      app_name = defaults.front().name;
+      app_icon = defaults.front().icon;
+    }
+    open_history().record_open(app_id, app_name, app_icon, {path});
+  }
+  return ok;
 }
 
 bool open_in_terminal(const std::filesystem::path& directory)
@@ -344,7 +360,12 @@ bool open_with_command_dialog(QWidget* parent, const std::vector<std::filesystem
   const QString program = parts.front();
   QStringList full_args = parts.mid(1);
   full_args.append(args);
-  return QProcess::startDetached(program, full_args);
+  const bool launched = QProcess::startDetached(program, full_args);
+  if (launched) {
+    open_history().record_open(QStringLiteral("command:%1").arg(cmd.trimmed()), cmd.trimmed(),
+                               QStringLiteral("system-run"), paths);
+  }
+  return launched;
 }
 
 std::vector<DesktopApp> default_apps_for_mime(const QString& mime_type)
@@ -375,7 +396,11 @@ bool launch_desktop_app(const DesktopApp& app, const std::vector<std::filesystem
   if (argv.isEmpty()) {
     return false;
   }
-  return QProcess::startDetached(argv.front(), argv.mid(1));
+  const bool ok = QProcess::startDetached(argv.front(), argv.mid(1));
+  if (ok) {
+    open_history().record_open(app.id, app.name.isEmpty() ? app.id : app.name, app.icon, paths);
+  }
+  return ok;
 }
 
 std::vector<DesktopApp> default_apps_for_paths(const std::vector<std::filesystem::path>& paths)

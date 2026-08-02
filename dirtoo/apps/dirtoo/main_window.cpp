@@ -22,9 +22,11 @@
 #include "size_format.hpp"
 #include "conflict_dialog.hpp"
 #include "open_with.hpp"
+#include "open_history.hpp"
 #include "preferences_dialog.hpp"
 #include "properties_dialog.hpp"
 #include "dirtoo/fs/file_info.hpp"
+#include "dirtoo/thumbnail/thumbnailer.hpp"
 #include "dirops/ops.hpp"
 #include "dirops/util.hpp"
 
@@ -42,6 +44,7 @@
 #include <QEvent>
 #include <QFile>
 #include <QFileInfo>
+#include <QFileIconProvider>
 #include <QFrame>
 #include <QFileDialog>
 #include <QTextStream>
@@ -204,6 +207,38 @@ QIcon theme_icon(const char* name, const char* fallback = nullptr)
     icon = QIcon::fromTheme(fb);
   }
   return icon;
+}
+
+/// Icon for a location in History / Bookmarks menus: cached thumbnail when
+/// present, otherwise the system folder/file icon (or archive package icon).
+QIcon icon_for_location(const fs::Location& loc)
+{
+  if (loc.is_archive()) {
+    const QIcon pkg = QIcon::fromTheme(QStringLiteral("package-x-generic"));
+    if (!pkg.isNull()) {
+      return pkg;
+    }
+    return QIcon::fromTheme(QStringLiteral("folder"));
+  }
+
+  const QString large =
+      thumbnail::Thumbnailer::cache_path_for(loc, QStringLiteral("large"));
+  if (QFileInfo::exists(large)) {
+    return QIcon(large);
+  }
+  const QString normal =
+      thumbnail::Thumbnailer::cache_path_for(loc, QStringLiteral("normal"));
+  if (QFileInfo::exists(normal)) {
+    return QIcon(normal);
+  }
+
+  QFileIconProvider provider;
+  const QFileInfo fi(QString::fromStdString(loc.as_path().string()));
+  if (fi.isDir() || !fi.exists()) {
+    // Non-existent paths still show as folders in history (navigated dirs).
+    return provider.icon(QFileIconProvider::Folder);
+  }
+  return provider.icon(fi);
 }
 
 } // namespace
@@ -829,22 +864,6 @@ MainWindow::MainWindow(QWidget* parent)
 
   main_splitter_ = new QSplitter(Qt::Horizontal, central);
   main_splitter_->setChildrenCollapsible(false);
-  // Platform styles often paint a near-invisible groove; widen the handle and
-  // paint a dark strip so the sidebar ↔ file-view drag is obvious.
-  {
-    int hw = main_splitter_->style()->pixelMetric(QStyle::PM_SplitterWidth, nullptr, main_splitter_);
-    if (hw < 8) {
-      hw = 8;
-    }
-    main_splitter_->setHandleWidth(hw);
-  }
-  main_splitter_->setStyleSheet(QStringLiteral(
-      "QSplitter::handle:horizontal {"
-      "  background-color: #3a3a3a;"
-      "}"
-      "QSplitter::handle:horizontal:hover {"
-      "  background-color: #555555;"
-      "}"));
 
   // Left: directory tree sidebar
   sidebar_widget_ = new QWidget(main_splitter_);
@@ -896,14 +915,6 @@ MainWindow::MainWindow(QWidget* parent)
 
   auto* sidebar_splitter = new QSplitter(Qt::Vertical, sidebar_widget_);
   sidebar_splitter->setChildrenCollapsible(false);
-  sidebar_splitter->setHandleWidth(6);
-  sidebar_splitter->setStyleSheet(QStringLiteral(
-      "QSplitter::handle:vertical {"
-      "  background-color: #3a3a3a;"
-      "}"
-      "QSplitter::handle:vertical:hover {"
-      "  background-color: #555555;"
-      "}"));
   sidebar_splitter->addWidget(devices_panel);
   sidebar_splitter->addWidget(places_panel);
   sidebar_splitter->setStretchFactor(0, 0);
@@ -3741,18 +3752,20 @@ void MainWindow::on_rebuild_history_menu()
     return;
   }
   history_menu_->clear();
-  history_menu_->addAction(QStringLiteral("Back"), this, &MainWindow::on_go_back);
-  history_menu_->addAction(QStringLiteral("Forward"), this, &MainWindow::on_go_forward);
+  history_menu_->addAction(theme_icon("go-previous", "arrow-left"), QStringLiteral("Back"), this,
+                           &MainWindow::on_go_back);
+  history_menu_->addAction(theme_icon("go-next", "arrow-right"), QStringLiteral("Forward"), this,
+                           &MainWindow::on_go_forward);
   history_menu_->addSeparator();
 
-  // Most recent first.
+  // Folder / location history — most recent first.
   int count = 0;
   for (auto it = location_history_unique_.rbegin();
        it != location_history_unique_.rend() && count < 35; ++it, ++count) {
     const fs::Location loc = *it;
     QString label = loc.is_archive() ? QString::fromStdString(loc.as_url())
                                      : QString::fromStdString(loc.as_path().string());
-    auto* act = history_menu_->addAction(label);
+    auto* act = history_menu_->addAction(icon_for_location(loc), label);
     connect(act, &QAction::triggered, this, [this, loc] {
       if (history_menu_ != nullptr && history_menu_->middle_pressed()) {
         open_new_window(loc);
@@ -3763,6 +3776,17 @@ void MainWindow::on_rebuild_history_menu()
       }
     });
   }
+
+  history_menu_->addSeparator();
+  auto* recent = history_menu_->addMenu(theme_icon("document-open-recent", "document-open"),
+                                        QStringLiteral("Recently Opened"));
+  populate_recent_opens_menu(recent, 20);
+  history_menu_->addAction(theme_icon("view-history", "document-open-recent"),
+                           QStringLiteral("Open History…"), this, [this] {
+                             show_open_history_dialog(this, [this](const QString& dir) {
+                               open_location(fs::Location::from_path(dir.toStdString()));
+                             });
+                           });
 }
 
 
@@ -3995,10 +4019,12 @@ void MainWindow::on_rebuild_bookmarks_menu()
     auto* act = bookmarks_menu_->addAction(QStringLiteral("No location to bookmark"));
     act->setEnabled(false);
   } else if (bookmarks_.contains(location_)) {
-    bookmarks_menu_->addAction(QStringLiteral("Remove Bookmark for This Location"), this,
+    bookmarks_menu_->addAction(theme_icon("bookmark-remove", "list-remove"),
+                               QStringLiteral("Remove Bookmark for This Location"), this,
                                &MainWindow::on_toggle_bookmark);
   } else {
-    bookmarks_menu_->addAction(QStringLiteral("Bookmark This Location"), this,
+    bookmarks_menu_->addAction(theme_icon("bookmark-new", "list-add"),
+                               QStringLiteral("Bookmark This Location"), this,
                                &MainWindow::on_toggle_bookmark);
   }
   bookmarks_menu_->addSeparator();
@@ -4013,7 +4039,7 @@ void MainWindow::on_rebuild_bookmarks_menu()
   for (const auto& loc : entries) {
     QString label = loc.is_archive() ? QString::fromStdString(loc.as_url())
                                      : QString::fromStdString(loc.as_path().string());
-    auto* act = bookmarks_menu_->addAction(label);
+    auto* act = bookmarks_menu_->addAction(icon_for_location(loc), label);
     connect(act, &QAction::triggered, this, [this, loc] {
       if (bookmarks_menu_ != nullptr && bookmarks_menu_->middle_pressed()) {
         open_new_window(loc);
