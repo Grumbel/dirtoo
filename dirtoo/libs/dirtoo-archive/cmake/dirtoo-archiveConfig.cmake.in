@@ -2,5 +2,6 @@
 include(CMakeFindDependencyMacro)
 find_dependency(Qt6 REQUIRED COMPONENTS Core)
 find_dependency(dirtoo-fs CONFIG REQUIRED)
+find_dependency(LibArchive REQUIRED)
 include("${CMAKE_CURRENT_LIST_DIR}/dirtoo-archiveTargets.cmake")
 check_required_components(dirtoo-archive)

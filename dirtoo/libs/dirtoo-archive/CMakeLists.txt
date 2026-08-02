@@ -24,18 +24,33 @@ include(CMakePackageConfigHelpers)
 
 find_package(Qt6 REQUIRED COMPONENTS Core)
 find_package(dirtoo-fs REQUIRED CONFIG)
+find_package(LibArchive REQUIRED)
 qt_standard_project_setup()
 
-find_package(LibArchive REQUIRED)
+add_library(dirtoo-archive
+  include/dirtoo/archive/archive_manager.hpp
+  src/archive_manager.cpp
+  src/archive_index.cpp
+  src/archive_libarchive.cpp
+)
+add_library(dirtoo::archive ALIAS dirtoo-archive)
+add_library(dirtoo-archive::dirtoo-archive ALIAS dirtoo-archive)
+
+target_include_directories(dirtoo-archive PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+target_link_libraries(dirtoo-archive
+  PUBLIC dirtoo-fs::dirtoo-fs Qt6::Core
+  PRIVATE LibArchive::LibArchive
+)
 target_compile_definitions(dirtoo-archive PRIVATE DIRTOO_HAS_LIBARCHIVE=1)
-target_link_libraries(dirtoo-archive PRIVATE LibArchive::LibArchive)
-message(STATUS "dirtoo-archive: libarchive (required)")
-endif()
 target_compile_features(dirtoo-archive PUBLIC cxx_std_23)
 target_compile_options(dirtoo-archive PRIVATE
   $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic>
 )
 set_target_properties(dirtoo-archive PROPERTIES AUTOMOC ON)
+message(STATUS "dirtoo-archive: libarchive (required)")
 
 install(TARGETS dirtoo-archive EXPORT dirtoo-archiveTargets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
