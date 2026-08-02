@@ -3,12 +3,19 @@
 
 #include "dirtoo/filter/parser.hpp"
 
+#include <QApplication>
 #include <QDialog>
 #include <QLineEdit>
+#include <QListView>
 #include <QMessageBox>
+#include <QPalette>
 #include <QTextBrowser>
 #include <QTimer>
+#include <QTreeView>
 #include <QVBoxLayout>
+#include <QWidget>
+#include <QColor>
+#include <QMetaObject>
 
 namespace dirtoo::app {
 

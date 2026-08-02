@@ -262,5 +262,3 @@ void MainWindow::apply_detail_column_visibility()
 
 
 } // namespace dirtoo::app
-
-} // namespace dirtoo::app

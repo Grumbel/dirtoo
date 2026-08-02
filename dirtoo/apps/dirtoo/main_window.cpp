@@ -112,6 +112,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <optional>
+#include <QMetaObject>
 
 namespace dirtoo::app {
 

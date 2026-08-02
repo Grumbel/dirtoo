@@ -15,6 +15,8 @@
 #include <QGraphicsItem>
 
 #include <filesystem>
+#include <QIcon>
+#include <QPixmap>
 
 namespace dirtoo::app {
 

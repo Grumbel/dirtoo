@@ -2,12 +2,14 @@
 #include "archive_member_cache.hpp"
 #include "clipboard.hpp"
 #include "conflict_dialog.hpp"
+#include "operations_history.hpp"
 #include "location_url.hpp"
 
 #include "dirtoo/archive/archive_index.hpp"
 #include "dirops/ops.hpp"
 
 #include <QApplication>
+#include <QDateTime>
 #include <QClipboard>
 #include <QMessageBox>
 #include <QUrl>

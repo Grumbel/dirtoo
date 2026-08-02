@@ -15,6 +15,16 @@
 #include "operations_history.hpp"
 #include "preferences_dialog.hpp"
 #include "open_with.hpp"
+#include "message_area.hpp"
+#include "leap_widget.hpp"
+#include "location_button_bar.hpp"
+#include "path_completion_worker.hpp"
+#include "directory_load_worker.hpp"
+#include "sort_worker.hpp"
+#include "filter_worker.hpp"
+#include "directory_thumbnail_worker.hpp"
+#include "graphics_file_view.hpp"
+#include "file_list_model.hpp"
 
 #include <QActionGroup>
 #include <QApplication>
@@ -38,7 +48,14 @@
 #include <QTreeView>
 #include <QVBoxLayout>
 #include <QKeySequence>
+#include <QPushButton>
 #include <QTimer>
+#include <QAction>
+#include <QListView>
+#include <QWidget>
+#include <QAbstractItemView>
+#include <QItemSelectionModel>
+#include <QThread>
 
 namespace dirtoo::app {
 

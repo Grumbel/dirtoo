@@ -635,26 +635,6 @@ MatchFuncPtr make_fuzzy(std::string argument, bool case_sensitive)
   int n = 3;
   std::string needle = std::move(argument);
 
-  // Split on '@' from the right for optional params
-  auto take_suffix_num = [&](double& out_d, int* out_i) -> bool {
-    const auto at = needle.rfind('@');
-    if (at == std::string::npos || at == 0) {
-      return false;
-    }
-    const std::string tail = needle.substr(at + 1);
-    try {
-      if (out_i != nullptr) {
-        *out_i = std::stoi(tail);
-      } else {
-        out_d = std::stod(tail);
-      }
-      needle.resize(at);
-      return true;
-    } catch (...) {
-      return false;
-    }
-  };
-
   // Optional @n then @threshold — parse trailing @n if integer-looking after threshold attempt
   {
     const auto at = needle.rfind('@');

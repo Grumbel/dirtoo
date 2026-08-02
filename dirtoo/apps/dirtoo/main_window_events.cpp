@@ -8,6 +8,9 @@
 #include <QToolButton>
 #include <QTreeView>
 #include <QListView>
+#include <QLineEdit>
+#include <QAbstractItemView>
+#include <QItemSelectionModel>
 
 namespace dirtoo::app {
 
