@@ -548,5 +548,27 @@ Python reference: experimental `dirtoo-py/experiments/udisks/` (`udisksqt.py`); 
 - [x] Search across big directory can still lock the UI
       (synthetic hits; batch append 48 + 50ms deferred flush; status throttle;
        notify_rows_appended — Detail virtualization still optional)
-
-
+- [ ] implement mount and eject for udisks
+- [ ] give icons for hidden files a different background color, see dirtoo-py/
+- [ ] indicate when files are opened/closed (if that information comes
+      via inotify for free, otherwise ignore for now)
+- [ ] directory thumbnails don't update when the directory content
+      changed, or maybe it's the thumbnailing in general getting
+      stuck?
+- [ ] directory thumbnails should be created automatically, though
+      with very low priority only after everything else is done, as
+      they might get expensive
+- [ ] "Transfering files" dialog only shows progress for file count,
+      should show the byte count transfer for the currently
+      transfering file
+- [ ] a fourth file view that shows icons at their relative size
+      compared to what else is in the directory (do deffer for now)
+- [ ] thumbnail generation doesn't start for new files, "Reload Thumbnails" doesn't make them show up either
+- [ ] add button that switches the whole file manager into read-only
+      mode, no file system manupulation should be possible when that
+      switch is active
+- [ ] add support for more times: atime, ctime, birth
+- [ ] pressing shift selects/unselects the current item
+- [ ] the type ahead quick search should be closable via the Escape key
+- [ ] the fileview should have focus after startup
+- [ ] directory tree panel hide/show should be persistent
