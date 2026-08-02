@@ -141,19 +141,19 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 | ✅ | `dirtoo/libs/dirops/src/error.cpp` |
 | ✅ | `dirtoo/libs/dirops/src/ops.cpp` |
 | ✅ | `dirtoo/libs/dirops/src/util.cpp` |
-| ⬜ | `dirtoo/libs/dirtoo-archive/CMakeLists.txt` |
-| ⬜ | `dirtoo/libs/dirtoo-archive/cmake/dirtoo-archiveConfig.cmake.in` |
-| ⬜ | `dirtoo/libs/dirtoo-archive/include/dirtoo/archive/archive_index.hpp` |
-| ⬜ | `dirtoo/libs/dirtoo-archive/include/dirtoo/archive/archive_manager.hpp` |
-| ⬜ | `dirtoo/libs/dirtoo-archive/src/archive_index.cpp` |
-| ⬜ | `dirtoo/libs/dirtoo-archive/src/archive_manager.cpp` |
-| ⬜ | `dirtoo/libs/dirtoo-collection/CMakeLists.txt` |
-| ⬜ | `dirtoo/libs/dirtoo-collection/cmake/dirtoo-collectionConfig.cmake.in` |
-| ⬜ | `dirtoo/libs/dirtoo-collection/include/dirtoo/collection/file_collection.hpp` |
-| ⬜ | `dirtoo/libs/dirtoo-collection/include/dirtoo/collection/grouper.hpp` |
-| ⬜ | `dirtoo/libs/dirtoo-collection/include/dirtoo/collection/sorter.hpp` |
-| ⬜ | `dirtoo/libs/dirtoo-collection/src/file_collection.cpp` |
-| ⬜ | `dirtoo/libs/dirtoo-collection/src/sorter.cpp` |
+| ✅ | `dirtoo/libs/dirtoo-archive/CMakeLists.txt` |
+| ✅ | `dirtoo/libs/dirtoo-archive/cmake/dirtoo-archiveConfig.cmake.in` |
+| ✅ | `dirtoo/libs/dirtoo-archive/include/dirtoo/archive/archive_index.hpp` |
+| ✅ | `dirtoo/libs/dirtoo-archive/include/dirtoo/archive/archive_manager.hpp` |
+| ✅ | `dirtoo/libs/dirtoo-archive/src/archive_index.cpp` |
+| ✅ | `dirtoo/libs/dirtoo-archive/src/archive_manager.cpp` |
+| ✅ | `dirtoo/libs/dirtoo-collection/CMakeLists.txt` |
+| ✅ | `dirtoo/libs/dirtoo-collection/cmake/dirtoo-collectionConfig.cmake.in` |
+| ✅ | `dirtoo/libs/dirtoo-collection/include/dirtoo/collection/file_collection.hpp` |
+| ✅ | `dirtoo/libs/dirtoo-collection/include/dirtoo/collection/grouper.hpp` |
+| ✅ | `dirtoo/libs/dirtoo-collection/include/dirtoo/collection/sorter.hpp` |
+| ✅ | `dirtoo/libs/dirtoo-collection/src/file_collection.cpp` |
+| ✅ | `dirtoo/libs/dirtoo-collection/src/sorter.cpp` |
 | ✅ | `dirtoo/libs/dirtoo-filter/CMakeLists.txt` |
 | ✅ | `dirtoo/libs/dirtoo-filter/cmake/dirtoo-filterConfig.cmake.in` |
 | ✅ | `dirtoo/libs/dirtoo-filter/include/dirtoo/filter/filter_item.hpp` |
@@ -175,14 +175,14 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 | ✅ | `dirtoo/libs/dirtoo-fs/include/dirtoo/fs/location.hpp` |
 | ✅ | `dirtoo/libs/dirtoo-fs/src/file_info.cpp` |
 | ✅ | `dirtoo/libs/dirtoo-fs/src/location.cpp` |
-| ⬜ | `dirtoo/libs/dirtoo-thumbnail/CMakeLists.txt` |
-| ⬜ | `dirtoo/libs/dirtoo-thumbnail/cmake/dirtoo-thumbnailConfig.cmake.in` |
-| ⬜ | `dirtoo/libs/dirtoo-thumbnail/include/dirtoo/thumbnail/thumbnailer.hpp` |
-| ⬜ | `dirtoo/libs/dirtoo-thumbnail/src/thumbnailer.cpp` |
-| ⬜ | `dirtoo/libs/dirtoo-watcher/CMakeLists.txt` |
-| ⬜ | `dirtoo/libs/dirtoo-watcher/cmake/dirtoo-watcherConfig.cmake.in` |
-| ⬜ | `dirtoo/libs/dirtoo-watcher/include/dirtoo/watcher/directory_watcher.hpp` |
-| ⬜ | `dirtoo/libs/dirtoo-watcher/src/directory_watcher.cpp` |
+| ✅ | `dirtoo/libs/dirtoo-thumbnail/CMakeLists.txt` |
+| ✅ | `dirtoo/libs/dirtoo-thumbnail/cmake/dirtoo-thumbnailConfig.cmake.in` |
+| ✅ | `dirtoo/libs/dirtoo-thumbnail/include/dirtoo/thumbnail/thumbnailer.hpp` |
+| ✅ | `dirtoo/libs/dirtoo-thumbnail/src/thumbnailer.cpp` |
+| ✅ | `dirtoo/libs/dirtoo-watcher/CMakeLists.txt` |
+| ✅ | `dirtoo/libs/dirtoo-watcher/cmake/dirtoo-watcherConfig.cmake.in` |
+| ✅ | `dirtoo/libs/dirtoo-watcher/include/dirtoo/watcher/directory_watcher.hpp` |
+| ✅ | `dirtoo/libs/dirtoo-watcher/src/directory_watcher.cpp` |
 
 ### `dirtoo/resources`
 
@@ -299,15 +299,15 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 | Status | Path |
 |--------|------|
 | ⬜ | `dirtoo-py/src/dirtoo/__init__.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/archive/__init__.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/archive/archive_extractor.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/archive/archive_manager.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/archive/archiveinfo.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/archive/extractor.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/archive/extractor_factory.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/archive/libarchive_extractor.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/archive/rar_extractor.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/archive/sevenzip_extractor.py` |
+| ✅ | `dirtoo-py/src/dirtoo/archive/__init__.py` |
+| ✅ | `dirtoo-py/src/dirtoo/archive/archive_extractor.py` |
+| ✅ | `dirtoo-py/src/dirtoo/archive/archive_manager.py` |
+| ✅ | `dirtoo-py/src/dirtoo/archive/archiveinfo.py` |
+| ✅ | `dirtoo-py/src/dirtoo/archive/extractor.py` |
+| ✅ | `dirtoo-py/src/dirtoo/archive/extractor_factory.py` |
+| ✅ | `dirtoo-py/src/dirtoo/archive/libarchive_extractor.py` |
+| ✅ | `dirtoo-py/src/dirtoo/archive/rar_extractor.py` |
+| ✅ | `dirtoo-py/src/dirtoo/archive/sevenzip_extractor.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/bookmark/__init__.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/bookmark/bookmarks.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/bookmark/bookmarks_provider.py` |
@@ -319,11 +319,11 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 | ⬜ | `dirtoo-py/src/dirtoo/ffprobe.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/file_transfer.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/file_type.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/filecollection/__init__.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/filecollection/file_collection.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/filecollection/filter.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/filecollection/grouper.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/filecollection/sorter.py` |
+| ✅ | `dirtoo-py/src/dirtoo/filecollection/__init__.py` |
+| ✅ | `dirtoo-py/src/dirtoo/filecollection/file_collection.py` |
+| ✅ | `dirtoo-py/src/dirtoo/filecollection/filter.py` |
+| ✅ | `dirtoo-py/src/dirtoo/filecollection/grouper.py` |
+| ✅ | `dirtoo-py/src/dirtoo/filecollection/sorter.py` |
 | ✅ | `dirtoo-py/src/dirtoo/filesystem/__init__.py` |
 | ✅ | `dirtoo-py/src/dirtoo/filesystem/file_info.py` |
 | ✅ | `dirtoo-py/src/dirtoo/filesystem/lazy_file_info.py` |
@@ -471,17 +471,17 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 | ⬜ | `dirtoo-py/src/dirtoo/stream/__init__.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/stream/stream_manager.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/tee_io.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/thumbnail/__init__.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/thumbnail/directory_thumbnailer.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/thumbnail/thumbnail.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/thumbnail/thumbnailer.py` |
+| ✅ | `dirtoo-py/src/dirtoo/thumbnail/__init__.py` |
+| ✅ | `dirtoo-py/src/dirtoo/thumbnail/directory_thumbnailer.py` |
+| ✅ | `dirtoo-py/src/dirtoo/thumbnail/thumbnail.py` |
+| ✅ | `dirtoo-py/src/dirtoo/thumbnail/thumbnailer.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/unique.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/util.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/watcher/__init__.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/watcher/archive_directory_watcher.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/watcher/directory_watcher.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/watcher/directory_watcher_worker.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/watcher/inotify_qt.py` |
+| ✅ | `dirtoo-py/src/dirtoo/watcher/__init__.py` |
+| ✅ | `dirtoo-py/src/dirtoo/watcher/archive_directory_watcher.py` |
+| ✅ | `dirtoo-py/src/dirtoo/watcher/directory_watcher.py` |
+| ✅ | `dirtoo-py/src/dirtoo/watcher/directory_watcher_worker.py` |
+| ✅ | `dirtoo-py/src/dirtoo/watcher/inotify_qt.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/xdg_desktop.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/xdg_mime_associations.py` |
 
@@ -712,6 +712,17 @@ Python `Filesystem` class is a broad low-level toolkit (listdir, scandir, copy w
 
 ---
 
+
+#### `dirtoo-py` filecollection / watcher / thumbnail / archive (2026-08-02)
+
+| Package | C++ counterpart | Gap notes |
+|---------|-----------------|-----------|
+| `filecollection/` | `dirtoo-collection` | Close; pluggable sort key → enum |
+| `watcher/` | `dirtoo-watcher` | C++ is QFileSystemWatcher only; no archive watcher / fine-grained inotify |
+| `thumbnail/` | `dirtoo-thumbnail` + app directory worker | Archive thumbs weak on both sides of port |
+| `archive/` | `dirtoo-archive` | Python multi-extractor classes; C++ external tools + index |
+
+
 ## Feature parity (draft — refine after file reviews)
 
 Seeded from `TODO.md` / `AGENTS.md`; will be rewritten once inventories are annotated.
@@ -721,14 +732,14 @@ Seeded from `TODO.md` / `AGENTS.md`; will be rewritten once inventories are anno
 | Local browsing + views | Present | Detail / Icons / Small |
 | Filter DSL + content offload | Present | Full command set + FilterWorker; media cache async |
 | Recursive search | Present | SearchWorker (not a `search://` Location protocol) |
-| Thumbnails + badges | Present | |
+| Thumbnails + badges | Present | D-Bus Thumbnailer1; archive members weak |
 | Clipboard + DnD + Link | Present | |
-| Archives read-only | Present | Write OOS |
+| Archives read-only | Present | External tools; full extract cache; write OOS |
 | Sidebar tree + UDisks devices | Present | Mount/eject partial |
 | Open history | Present | Recently Opened menu |
 | Undo | Missing | Python may be stub |
 | Editable permissions | Missing | Display-only |
-| Archive file thumbnails | Missing / partial | TODO |
+| Archive file thumbnails | Partial / weak | Needs extracted paths or special URIs |
 | Full `programs/*` CLI | OOS | Helpers only |
 | Remote VFS | OOS | |
 | Kinetic graphics layout | OOS | |
@@ -737,10 +748,11 @@ Seeded from `TODO.md` / `AGENTS.md`; will be rewritten once inventories are anno
 
 ## Next step
 
-**Done:** `dirtoo-fs`, `dirops`, `dirtoo-filter` (+ Python `filesystem/`, `posix/`, `filter/`, `expr/`, `find/`).
+**Done:** All `dirtoo/libs/*` core libraries and matching Python packages (filesystem, posix, filter/expr/find, filecollection, watcher, thumbnail, archive).
 
 **Continue with:**
 
-1. `dirtoo-collection`, `dirtoo-watcher`, `dirtoo-thumbnail`, `dirtoo-archive`
-2. `apps/dirtoo/` → `tools/` → tests
+1. `dirtoo/apps/dirtoo/` (GUI — largest surface)
+2. `dirtoo/tools/` + `tests/`
+3. Root CMake / flake / docs polish if needed
 
