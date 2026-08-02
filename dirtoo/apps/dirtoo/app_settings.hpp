@@ -17,6 +17,8 @@ struct AppSettings {
   bool show_hidden = false;
   bool show_filter = true;
   bool filter_pinned = false;
+  bool show_sidebar = true;
+  int sidebar_width = 220;
   bool directories_first = true;
   QString group_mode = QStringLiteral("none"); // none|day|directory|duration
   /// Size display units: "si" (KB/MB, base 1000) or "iec" (KiB/MiB, base 1024).

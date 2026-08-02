@@ -34,7 +34,7 @@ option(DIRTOO_BUILD_APP "Build the dirtoo GUI" ON)
 option(DIRTOO_BUILD_TOOLS "Build dt-* tools (requires dirops package)" OFF)
 option(DIRTOO_BUILD_TESTS "Build unit tests" ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets DBus)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets DBus Concurrent)
 qt_standard_project_setup()
 
 find_package(dirops REQUIRED CONFIG)

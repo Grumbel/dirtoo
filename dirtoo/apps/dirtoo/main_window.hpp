@@ -37,6 +37,9 @@
 
 class QLineEdit;
 class QTreeView;
+class QSplitter;
+class QListWidget;
+class QLabel;
 class QListView;
 class GraphicsFileView;
 class QLabel;
@@ -105,6 +108,9 @@ private slots:
   void on_open_with();
   void on_open_terminal();
   void on_toggle_hidden(bool checked);
+  void on_toggle_sidebar(bool checked);
+  void on_sidebar_activated(const QModelIndex& index);
+  void sync_sidebar_to_location();
   void on_about();
   void on_preferences();
   void on_reload_thumbnails();
@@ -230,6 +236,11 @@ private:
   Bookmarks bookmarks_{Bookmarks::default_path()};
   std::vector<fs::Location> location_history_unique_;
   QWidget* location_stack_host_ = nullptr;
+  QSplitter* main_splitter_ = nullptr;
+  QWidget* sidebar_widget_ = nullptr;
+  QTreeView* sidebar_tree_ = nullptr;
+  class DirectoryTreeModel* directory_tree_model_ = nullptr;
+  QAction* show_sidebar_act_ = nullptr;
   QWidget* filter_row_ = nullptr;
   QLineEdit* filter_edit_ = nullptr;
   QStringList filter_history_;

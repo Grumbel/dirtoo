@@ -18,6 +18,8 @@ AppSettings load_settings()
   out.show_hidden = s.value(QStringLiteral("ui/show_hidden"), out.show_hidden).toBool();
   out.show_filter = s.value(QStringLiteral("ui/show_filter"), out.show_filter).toBool();
   out.filter_pinned = s.value(QStringLiteral("ui/filter_pinned"), out.filter_pinned).toBool();
+  out.show_sidebar = s.value(QStringLiteral("ui/show_sidebar"), out.show_sidebar).toBool();
+  out.sidebar_width = s.value(QStringLiteral("ui/sidebar_width"), out.sidebar_width).toInt();
   out.directories_first = s.value(QStringLiteral("ui/directories_first"), out.directories_first).toBool();
   out.group_mode = s.value(QStringLiteral("ui/group_mode"), out.group_mode).toString();
   out.size_units = s.value(QStringLiteral("ui/size_units"), out.size_units).toString();
@@ -38,6 +40,8 @@ void save_settings(const AppSettings& settings)
   s.setValue(QStringLiteral("ui/show_hidden"), settings.show_hidden);
   s.setValue(QStringLiteral("ui/show_filter"), settings.show_filter);
   s.setValue(QStringLiteral("ui/filter_pinned"), settings.filter_pinned);
+  s.setValue(QStringLiteral("ui/show_sidebar"), settings.show_sidebar);
+  s.setValue(QStringLiteral("ui/sidebar_width"), settings.sidebar_width);
   s.setValue(QStringLiteral("ui/directories_first"), settings.directories_first);
   s.setValue(QStringLiteral("ui/group_mode"), settings.group_mode);
   s.setValue(QStringLiteral("ui/size_units"), settings.size_units);

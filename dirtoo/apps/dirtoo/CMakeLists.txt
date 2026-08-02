@@ -60,6 +60,8 @@ qt_add_executable(dirtoo-app
   filter_worker.hpp
   directory_thumbnail_worker.cpp
   directory_thumbnail_worker.hpp
+  directory_tree_model.cpp
+  directory_tree_model.hpp
   badge_icons.hpp
 )
 
@@ -84,6 +86,7 @@ target_link_libraries(dirtoo-app
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets
+    Qt6::Concurrent
 )
 
 install(TARGETS dirtoo-app RUNTIME DESTINATION bin)

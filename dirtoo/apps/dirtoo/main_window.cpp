@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window.hpp"
+#include "directory_tree_model.hpp"
 #include "filter_worker.hpp"
 #include "directory_thumbnail_worker.hpp"
 #include "file_views.hpp"
@@ -45,6 +46,7 @@
 #include <QDesktopServices>
 #include <QDebug>
 #include <QDir>
+#include <QStandardPaths>
 #include <set>
 #include <QHeaderView>
 #include <QIcon>
@@ -66,6 +68,7 @@
 #include <QMimeDatabase>
 #include <QPixmap>
 #include <QProcess>
+#include <QSplitter>
 #include <QStackedWidget>
 #include <QStatusBar>
 #include <QToolBar>
@@ -197,6 +200,15 @@ MainWindow::MainWindow(QWidget* parent)
   show_hidden_act_->setCheckable(true);
   show_hidden_act_->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+H")));
   connect(show_hidden_act_, &QAction::toggled, this, &MainWindow::on_toggle_hidden);
+
+  show_sidebar_act_ = toolbar->addAction(theme_icon("view-sidetree", "view-list-tree"),
+                                         QStringLiteral("Directory Tree"));
+  show_sidebar_act_->setCheckable(true);
+  show_sidebar_act_->setChecked(true);
+  show_sidebar_act_->setToolTip(QStringLiteral("Show or hide the directory tree sidebar"));
+  show_sidebar_act_->setShortcut(QKeySequence(Qt::Key_F9));
+  connect(show_sidebar_act_, &QAction::toggled, this, &MainWindow::on_toggle_sidebar);
+  toolbar->addSeparator();
 
   // Sort / Group popup buttons (icon-only like Python toolbar)
   {
@@ -447,6 +459,18 @@ MainWindow::MainWindow(QWidget* parent)
       });
     }
     view_menu->addSeparator();
+    {
+      auto* act = view_menu->addAction(theme_icon("view-sidetree", "view-list-tree"),
+                                      QStringLiteral("Show Directory Tree"));
+      act->setCheckable(true);
+      act->setShortcut(QKeySequence(Qt::Key_F9));
+      if (show_sidebar_act_ != nullptr) {
+        act->setChecked(show_sidebar_act_->isChecked());
+        connect(act, &QAction::toggled, show_sidebar_act_, &QAction::setChecked);
+        connect(show_sidebar_act_, &QAction::toggled, act, &QAction::setChecked);
+      }
+    }
+    view_menu->addSeparator();
     show_filter_act_ = view_menu->addAction(theme_icon("edit-find"), QStringLiteral("Show Filter"));
     show_filter_act_->setCheckable(true);
     show_filter_act_->setChecked(true);
@@ -695,7 +719,55 @@ MainWindow::MainWindow(QWidget* parent)
   }
 
   auto* central = new QWidget(this);
-  auto* layout = new QVBoxLayout(central);
+  auto* central_layout = new QHBoxLayout(central);
+  central_layout->setContentsMargins(0, 0, 0, 0);
+  central_layout->setSpacing(0);
+
+  main_splitter_ = new QSplitter(Qt::Horizontal, central);
+  main_splitter_->setChildrenCollapsible(false);
+  main_splitter_->setHandleWidth(4);
+
+  // Left: directory tree sidebar
+  sidebar_widget_ = new QWidget(main_splitter_);
+  auto* sidebar_layout = new QVBoxLayout(sidebar_widget_);
+  sidebar_layout->setContentsMargins(0, 0, 0, 0);
+  sidebar_layout->setSpacing(0);
+  directory_tree_model_ = new DirectoryTreeModel(this);
+  {
+    QStringList roots;
+    QStringList labels;
+    const QString home = QDir::homePath();
+    roots << home;
+    labels << QStringLiteral("Home");
+    roots << QStringLiteral("/");
+    labels << QStringLiteral("Filesystem");
+    for (auto loc : {QStandardPaths::DesktopLocation, QStandardPaths::DocumentsLocation,
+                     QStandardPaths::DownloadLocation, QStandardPaths::MusicLocation,
+                     QStandardPaths::PicturesLocation, QStandardPaths::MoviesLocation}) {
+      const QString p = QStandardPaths::writableLocation(loc);
+      if (!p.isEmpty() && QDir(p).exists() && p != home && !roots.contains(p)) {
+        roots << p;
+        labels << QStandardPaths::displayName(loc);
+      }
+    }
+    directory_tree_model_->reset_roots(roots, labels);
+  }
+  sidebar_tree_ = new QTreeView(sidebar_widget_);
+  sidebar_tree_->setModel(directory_tree_model_);
+  sidebar_tree_->setHeaderHidden(true);
+  sidebar_tree_->setUniformRowHeights(true);
+  sidebar_tree_->setAnimated(true);
+  sidebar_tree_->setExpandsOnDoubleClick(true);
+  sidebar_tree_->setFrameShape(QFrame::NoFrame);
+  sidebar_tree_->setSelectionMode(QAbstractItemView::SingleSelection);
+  connect(sidebar_tree_, &QTreeView::activated, this, &MainWindow::on_sidebar_activated);
+  connect(sidebar_tree_, &QTreeView::clicked, this, &MainWindow::on_sidebar_activated);
+  sidebar_layout->addWidget(sidebar_tree_);
+  main_splitter_->addWidget(sidebar_widget_);
+
+  // Right: existing chrome + file views
+  auto* right = new QWidget(main_splitter_);
+  auto* layout = new QVBoxLayout(right);
   // Flush to window edges so the view scrollbar sits on the window border
   // (dirtoo-py form margins are 0).
   layout->setContentsMargins(0, 0, 0, 0);
@@ -916,6 +988,11 @@ MainWindow::MainWindow(QWidget* parent)
     layout->addWidget(filter_row);
   }
 
+  main_splitter_->addWidget(right);
+  main_splitter_->setStretchFactor(0, 0);
+  main_splitter_->setStretchFactor(1, 1);
+  main_splitter_->setSizes({220, 800});
+  central_layout->addWidget(main_splitter_);
   setCentralWidget(central);
 
   // Real QStatusBar: native size grip (bottom-right) like dirtoo-py.
@@ -1285,6 +1362,8 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
   if (auto* view = current_view()) {
     view->setFocus(Qt::OtherFocusReason);
   }
+  sync_sidebar_to_location();
+
 }
 
 void MainWindow::on_location_entered()
@@ -2789,6 +2868,13 @@ void MainWindow::persist_settings() const
   }
   s.show_hidden = collection_.show_hidden();
   s.show_filter = show_filter_act_ != nullptr && show_filter_act_->isChecked();
+  s.show_sidebar = show_sidebar_act_ != nullptr && show_sidebar_act_->isChecked();
+  if (main_splitter_ != nullptr) {
+    const QList<int> sizes = main_splitter_->sizes();
+    if (!sizes.isEmpty()) {
+      s.sidebar_width = sizes[0];
+    }
+  }
   s.filter_pinned = filter_pinned_;
   s.directories_first = collection_.sorter().directories_first();
   s.size_units = size_unit_style_to_string(size_unit_style());
@@ -2945,10 +3031,16 @@ void MainWindow::on_toggle_hidden(bool checked)
   const QString expr = filter_edit_ != nullptr ? filter_edit_->text() : QString();
   if (filter_expression_needs_content_io(expr)) {
     collection_.set_show_hidden(checked, false);
+  if (directory_tree_model_ != nullptr) {
+    directory_tree_model_->set_show_hidden(checked);
+  }
     request_async_filter();
     return;
   }
   collection_.set_show_hidden(checked);
+  if (directory_tree_model_ != nullptr) {
+    directory_tree_model_->set_show_hidden(checked);
+  }
   refresh_list();
   request_thumbnails_for_visible();
 }
@@ -3702,6 +3794,22 @@ void MainWindow::apply_settings(const AppSettings& s)
   if (filter_row_ != nullptr) {
     filter_row_->setVisible(s.show_filter || s.filter_pinned);
   }
+  if (show_sidebar_act_ != nullptr) {
+    show_sidebar_act_->setChecked(s.show_sidebar);
+  }
+  if (sidebar_widget_ != nullptr) {
+    sidebar_widget_->setVisible(s.show_sidebar);
+  }
+  if (main_splitter_ != nullptr && s.sidebar_width > 40) {
+    QList<int> sizes = main_splitter_->sizes();
+    if (sizes.size() >= 2) {
+      sizes[0] = s.sidebar_width;
+      main_splitter_->setSizes(sizes);
+    }
+  }
+  if (directory_tree_model_ != nullptr) {
+    directory_tree_model_->set_show_hidden(s.show_hidden);
+  }
   if (filter_edit_ != nullptr) {
     filter_edit_->setVisible(true);
     filter_edit_->setEnabled(true);
@@ -3766,6 +3874,56 @@ void MainWindow::on_rebuild_bookmarks_menu()
         open_location(loc);
       }
     });
+  }
+}
+
+
+void MainWindow::on_toggle_sidebar(bool checked)
+{
+  if (sidebar_widget_ != nullptr) {
+    sidebar_widget_->setVisible(checked);
+  }
+  if (main_splitter_ != nullptr && checked && sidebar_widget_ != nullptr) {
+    // Restore a usable width if collapsed
+    QList<int> sizes = main_splitter_->sizes();
+    if (sizes.size() >= 2 && sizes[0] < 80) {
+      sizes[0] = 220;
+      main_splitter_->setSizes(sizes);
+    }
+  }
+}
+
+void MainWindow::on_sidebar_activated(const QModelIndex& index)
+{
+  if (!index.isValid() || directory_tree_model_ == nullptr) {
+    return;
+  }
+  const QString path = directory_tree_model_->path_for_index(index);
+  if (path.isEmpty()) {
+    return;
+  }
+  open_location(fs::Location::from_path(std::filesystem::path(path.toStdString())), true);
+}
+
+void MainWindow::sync_sidebar_to_location()
+{
+  if (sidebar_tree_ == nullptr || directory_tree_model_ == nullptr || sidebar_widget_ == nullptr
+      || !sidebar_widget_->isVisible()) {
+    return;
+  }
+  if (!location_.is_file()) {
+    return;
+  }
+  const QString path = QString::fromStdString(location_.as_path().string());
+  const QModelIndex ix = directory_tree_model_->index_for_path(path);
+  if (!ix.isValid()) {
+    return;
+  }
+  sidebar_tree_->setCurrentIndex(ix);
+  sidebar_tree_->scrollTo(ix, QAbstractItemView::PositionAtCenter);
+  // Expand ancestors
+  for (QModelIndex p = ix.parent(); p.isValid(); p = p.parent()) {
+    sidebar_tree_->expand(p);
   }
 }
 
