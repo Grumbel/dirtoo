@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window.hpp"
+#include "badge_icons.hpp"
 #include "directory_tree_model.hpp"
 #include "udisks_client.hpp"
 #include "filter_worker.hpp"
@@ -51,6 +52,7 @@
 #include <QStandardPaths>
 #include <set>
 #include <QHeaderView>
+#include <QHash>
 #include <QIcon>
 #include <QKeyEvent>
 #include <QItemSelectionModel>
@@ -96,11 +98,62 @@ namespace dirtoo::app {
 
 namespace {
 
+/// Prefer bundled SVG/PNG under resources/icons, then FreeDesktop theme icons.
 QIcon theme_icon(const char* name, const char* fallback = nullptr)
 {
-  QIcon icon = QIcon::fromTheme(QString::fromUtf8(name));
+  static const QHash<QString, QString> kBundled{
+      {QStringLiteral("view-grid"), QStringLiteral("view-icons.svg")},
+      {QStringLiteral("view-list-icons"), QStringLiteral("view-icons.svg")},
+      {QStringLiteral("view-list"), QStringLiteral("view-small-icons.svg")},
+      {QStringLiteral("view-list-details"), QStringLiteral("view-detail.svg")},
+      {QStringLiteral("view-hidden"), QStringLiteral("view-hidden.svg")},
+      {QStringLiteral("view-filter"), QStringLiteral("view-hidden.svg")},
+      {QStringLiteral("view-sidetree"), QStringLiteral("view-sidebar.svg")},
+      {QStringLiteral("view-list-tree"), QStringLiteral("view-sidebar.svg")},
+      {QStringLiteral("zoom-in"), QStringLiteral("zoom-in.svg")},
+      {QStringLiteral("zoom-out"), QStringLiteral("zoom-out.svg")},
+      {QStringLiteral("zoom-fit-best"), QStringLiteral("icon-detail-more.svg")},
+      {QStringLiteral("list-add"), QStringLiteral("icon-detail-more.svg")},
+      {QStringLiteral("zoom-original"), QStringLiteral("icon-detail-less.svg")},
+      {QStringLiteral("list-remove"), QStringLiteral("icon-detail-less.svg")},
+      {QStringLiteral("crop-thumbnails"), QStringLiteral("crop-thumbnails.svg")},
+  };
+
+  const auto load_bundled = [](const QString& file) -> QIcon {
+    const QString dir = icon_directory();
+    if (dir.isEmpty() || file.isEmpty()) {
+      return {};
+    }
+    const QString path = dir + QLatin1Char('/') + file;
+    if (!QFile::exists(path)) {
+      return {};
+    }
+    return QIcon(path);
+  };
+
+  const QString key = QString::fromUtf8(name);
+  if (const auto it = kBundled.constFind(key); it != kBundled.cend()) {
+    if (QIcon icon = load_bundled(*it); !icon.isNull()) {
+      return icon;
+    }
+  }
+  // Direct filename try: name.svg / name.png
+  if (QIcon icon = load_bundled(key + QStringLiteral(".svg")); !icon.isNull()) {
+    return icon;
+  }
+  if (QIcon icon = load_bundled(key + QStringLiteral(".png")); !icon.isNull()) {
+    return icon;
+  }
+
+  QIcon icon = QIcon::fromTheme(key);
   if (icon.isNull() && fallback != nullptr) {
-    icon = QIcon::fromTheme(QString::fromUtf8(fallback));
+    const QString fb = QString::fromUtf8(fallback);
+    if (const auto it = kBundled.constFind(fb); it != kBundled.cend()) {
+      if (QIcon b = load_bundled(*it); !b.isNull()) {
+        return b;
+      }
+    }
+    icon = QIcon::fromTheme(fb);
   }
   return icon;
 }
@@ -351,7 +404,7 @@ MainWindow::MainWindow(QWidget* parent)
                      &MainWindow::on_less_icon_details);
   toolbar->addSeparator();
   {
-    auto* act = toolbar->addAction(theme_icon("zoom-fit-best"), QStringLiteral("Crop Thumbnails"));
+    auto* act = toolbar->addAction(theme_icon("crop-thumbnails", "zoom-fit-best"), QStringLiteral("Crop Thumbnails"));
     act->setCheckable(true);
     act->setToolTip(QStringLiteral("Crop thumbnails to fill the icon (cover) instead of letterboxing"));
     connect(act, &QAction::toggled, this, [this](bool on) {

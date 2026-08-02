@@ -38,7 +38,8 @@ inline QString icon_directory()
         continue;
       }
       if (QFile::exists(dir + QStringLiteral("/badge-image.png"))
-          || QFile::exists(dir + QStringLiteral("/dirtoo.png"))) {
+          || QFile::exists(dir + QStringLiteral("/dirtoo.png"))
+          || QFile::exists(dir + QStringLiteral("/view-icons.svg"))) {
         return QDir(dir).absolutePath();
       }
     }
