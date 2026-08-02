@@ -219,7 +219,7 @@ smells, and gaps worth scheduling. Not every item is a user-visible crash.
 | ID | Issue | Direction |
 |----|-------|-----------|
 | B1 | Archive member **size 0** when verbose parse fails | Fixed properly by S1 (libarchive sizes); until then, fixture tests for `parse_tv_lines` / `unzip -l` |
-| B2 | Search jank on huge result sets | **Done** — batched `append_visible_items` + `notify_rows_appended` (32); no periodic full refresh |
+| B2 | Search jank on huge result sets | **Done** — batched `append_visible_items` + `notify_rows_appended` (32); Graphics `on_rows_inserted` relayouts without clearing tiles/selection |
 | B3 | Watcher: directory-only events, full soft rescan | Optional inotify names later; low priority while merge_items works |
 | B4 | Icon dir discovery | **Mostly done** — CMake installs full icon set to `share/dirtoo/icons`; runtime probes that path |
 | B5 | Bookmarks sorted by URL (order lost) | Preserve append order if product wants it |

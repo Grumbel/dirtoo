@@ -65,7 +65,7 @@ void GraphicsFileView::set_model(FileListModel* model)
   if (model_ != nullptr) {
     connect(model_, &QAbstractItemModel::modelReset, this, &GraphicsFileView::on_model_reset);
     connect(model_, &QAbstractItemModel::layoutChanged, this, &GraphicsFileView::on_model_reset);
-    connect(model_, &QAbstractItemModel::rowsInserted, this, &GraphicsFileView::on_model_reset);
+    connect(model_, &QAbstractItemModel::rowsInserted, this, &GraphicsFileView::on_rows_inserted);
     connect(model_, &QAbstractItemModel::rowsRemoved, this, &GraphicsFileView::on_model_reset);
     connect(model_, &QAbstractItemModel::dataChanged, this, &GraphicsFileView::on_model_data_changed);
   }
@@ -626,6 +626,25 @@ void GraphicsFileView::on_model_reset()
 {
   rebuild_items();
 }
+
+void GraphicsFileView::on_rows_inserted(const QModelIndex& parent, int first, int last)
+{
+  (void)parent;
+  (void)first;
+  (void)last;
+  if (model_ == nullptr) {
+    return;
+  }
+  // Search (and similar) appends rows without a full model reset. Grow the sparse
+  // item vector and relayout without clearing selection or destroying tiles.
+  const int rows = model_->rowCount();
+  if (static_cast<int>(items_.size()) < rows) {
+    items_.resize(static_cast<std::size_t>(rows), nullptr);
+  }
+  compute_layout_slots();
+  update_visible_window();
+}
+
 
 void GraphicsFileView::on_model_data_changed(const QModelIndex& top_left, const QModelIndex& bottom_right,
                                             const QList<int>& roles)

@@ -83,6 +83,7 @@ protected:
 
 private slots:
   void on_model_reset();
+  void on_rows_inserted(const QModelIndex& parent, int first, int last);
   void on_model_data_changed(const QModelIndex& top_left, const QModelIndex& bottom_right,
                              const QList<int>& roles);
   void on_scene_selection_changed();
