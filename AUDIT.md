@@ -133,14 +133,14 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 
 | Status | Path |
 |--------|------|
-| ⬜ | `dirtoo/libs/dirops/CMakeLists.txt` |
-| ⬜ | `dirtoo/libs/dirops/cmake/diropsConfig.cmake.in` |
-| ⬜ | `dirtoo/libs/dirops/include/dirops/error.hpp` |
-| ⬜ | `dirtoo/libs/dirops/include/dirops/ops.hpp` |
-| ⬜ | `dirtoo/libs/dirops/include/dirops/util.hpp` |
-| ⬜ | `dirtoo/libs/dirops/src/error.cpp` |
-| ⬜ | `dirtoo/libs/dirops/src/ops.cpp` |
-| ⬜ | `dirtoo/libs/dirops/src/util.cpp` |
+| ✅ | `dirtoo/libs/dirops/CMakeLists.txt` |
+| ✅ | `dirtoo/libs/dirops/cmake/diropsConfig.cmake.in` |
+| ✅ | `dirtoo/libs/dirops/include/dirops/error.hpp` |
+| ✅ | `dirtoo/libs/dirops/include/dirops/ops.hpp` |
+| ✅ | `dirtoo/libs/dirops/include/dirops/util.hpp` |
+| ✅ | `dirtoo/libs/dirops/src/error.cpp` |
+| ✅ | `dirtoo/libs/dirops/src/ops.cpp` |
+| ✅ | `dirtoo/libs/dirops/src/util.cpp` |
 | ⬜ | `dirtoo/libs/dirtoo-archive/CMakeLists.txt` |
 | ⬜ | `dirtoo/libs/dirtoo-archive/cmake/dirtoo-archiveConfig.cmake.in` |
 | ⬜ | `dirtoo/libs/dirtoo-archive/include/dirtoo/archive/archive_index.hpp` |
@@ -169,12 +169,12 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 | ⬜ | `dirtoo/libs/dirtoo-filter/src/predicates.cpp` |
 | ⬜ | `dirtoo/libs/dirtoo-filter/src/search.cpp` |
 | ⬜ | `dirtoo/libs/dirtoo-filter/tools/dt_filter.cpp` |
-| ⬜ | `dirtoo/libs/dirtoo-fs/CMakeLists.txt` |
-| ⬜ | `dirtoo/libs/dirtoo-fs/cmake/dirtoo-fsConfig.cmake.in` |
-| ⬜ | `dirtoo/libs/dirtoo-fs/include/dirtoo/fs/file_info.hpp` |
-| ⬜ | `dirtoo/libs/dirtoo-fs/include/dirtoo/fs/location.hpp` |
-| ⬜ | `dirtoo/libs/dirtoo-fs/src/file_info.cpp` |
-| ⬜ | `dirtoo/libs/dirtoo-fs/src/location.cpp` |
+| ✅ | `dirtoo/libs/dirtoo-fs/CMakeLists.txt` |
+| ✅ | `dirtoo/libs/dirtoo-fs/cmake/dirtoo-fsConfig.cmake.in` |
+| ✅ | `dirtoo/libs/dirtoo-fs/include/dirtoo/fs/file_info.hpp` |
+| ✅ | `dirtoo/libs/dirtoo-fs/include/dirtoo/fs/location.hpp` |
+| ✅ | `dirtoo/libs/dirtoo-fs/src/file_info.cpp` |
+| ✅ | `dirtoo/libs/dirtoo-fs/src/location.cpp` |
 | ⬜ | `dirtoo/libs/dirtoo-thumbnail/CMakeLists.txt` |
 | ⬜ | `dirtoo/libs/dirtoo-thumbnail/cmake/dirtoo-thumbnailConfig.cmake.in` |
 | ⬜ | `dirtoo/libs/dirtoo-thumbnail/include/dirtoo/thumbnail/thumbnailer.hpp` |
@@ -324,11 +324,11 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 | ⬜ | `dirtoo-py/src/dirtoo/filecollection/filter.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/filecollection/grouper.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/filecollection/sorter.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/filesystem/__init__.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/filesystem/file_info.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/filesystem/lazy_file_info.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/filesystem/location.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/filesystem/stdio_filesystem.py` |
+| ✅ | `dirtoo-py/src/dirtoo/filesystem/__init__.py` |
+| ✅ | `dirtoo-py/src/dirtoo/filesystem/file_info.py` |
+| ✅ | `dirtoo-py/src/dirtoo/filesystem/lazy_file_info.py` |
+| ✅ | `dirtoo-py/src/dirtoo/filesystem/location.py` |
+| ✅ | `dirtoo-py/src/dirtoo/filesystem/stdio_filesystem.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/fileview/__init__.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/fileview/actions.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/fileview/application.py` |
@@ -435,8 +435,8 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 | ⬜ | `dirtoo-py/src/dirtoo/metadata/metadata_collector.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/mime/__init__.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/mime/mime_database.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/posix/__init__.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/posix/filesystem.py` |
+| ✅ | `dirtoo-py/src/dirtoo/posix/__init__.py` |
+| ✅ | `dirtoo-py/src/dirtoo/posix/filesystem.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/profiler/__init__.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/profiler/profiler.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/programs/__init__.py` |
@@ -537,11 +537,120 @@ _Filled as each file is reviewed. Newest notes at the bottom of each subsection.
 
 ### C++ notes
 
-_(none yet)_
+#### `dirtoo/libs/dirtoo-fs/` (2026-08-02)
 
+Foundation library: locations + directory listing metadata. No Qt. Consumed by almost every other lib and the GUI.
+
+##### `location.hpp` / `location.cpp` ✅
+
+**Role**
+- `Location` models a browsable place: plain `file` path or `archive` (archive file + optional entry path).
+- URL forms: preferred Python-style `file:///path.zip//archive[:entry]`; legacy `archive:///path!/entry` still parsed.
+- Factories: `from_path` (weakly_canonical), `from_path_unchecked` (listing hot path), `from_archive`, `from_url`, `from_human`.
+- Navigation: `parent()`, `join()`, `basename()`, `dirname()`, `as_url()`, `as_path()`.
+- `looks_like_archive()` extension heuristic (zip/tar/gz/7z/rar/… + compound `.tar.*`).
+- `std::hash<Location>` via `as_url()`.
+
+**Issues / risks**
+- **Percent-encoding is incomplete**: only encodes/decodes space (`%20`). Paths with `#`, `?`, non-ASCII, or other reserved characters can break URL round-trips and thumbnail MD5 keys that hash `as_url()`.
+- **`from_url` throws** `std::invalid_argument` on unknown schemes — callers must try/catch (GUI location bar should not assume infallible parse).
+- **`looks_like_archive`**: lone `.gz`/`.bz2`/`.xz` match any file with that extension (including non-archives); acceptable heuristic but can false-positive.
+- **`empty()`** only checks `path_.empty()`; a default-constructed Location is empty, but a root `/` is not — fine; no `is_valid()` distinct from empty.
+- Nested multi-payload locations (Python can stack payloads) are **not modeled** — only one archive layer. Matches current C++ archive browser scope.
+
+**Parity vs Python `filesystem/location.py`**
+- Python supports multi-payload stack and extra protocols (e.g. `search://` with query payload). C++ intentionally narrower: file + single archive level.
+- Python `Location.from_search_query` / search locations: **missing on C++** (search is implemented as a GUI mode over real paths, not a Location protocol).
+
+##### `file_info.hpp` / `file_info.cpp` ✅
+
+**Role**
+- Snapshot of one entry: location, display name, size, mtime, dir/file/symlink flags, permissions, synthetic flag.
+- Builders: `from_path`, `from_location`, `from_directory_entry` (cheap listing), `synthetic` (archive members / virtual rows).
+- `list_directory(Location)` — non-recursive, local FS only; skips permission-denied; **returns empty for archives** (archive listing lives in `dirtoo-archive`).
+
+**Issues / risks**
+- **Symlink directories**: uses `symlink_status` / `is_directory(status)` without following — good for not traversing link loops; UI may need explicit “link to dir” affordance (flag is exposed).
+- **`from_location` for archives** always synthesizes `is_directory=false`, size 0 — wrong if caller expected a directory entry inside an archive; real archive rows should use `synthetic(...)` with correct flags from the archive index.
+- **`list_directory` swallows errors** (clears `ec` and continues) — no error channel to GUI; empty result can mean empty dir *or* unreadable path.
+- No owner/group, no device/inode, no access-time — enough for browser; Properties dialog may need more later.
+- Default `mtime_{}` zero epoch if stat fails — UI should treat carefully.
+
+**Parity vs Python**
+- Python `FileInfo` + `LazyFileInfo` defer stat and carry richer metadata hooks. C++ eagerly stats on construct (except synthetic). Listing path is optimized via `from_directory_entry`.
+- Python `StdioFilesystem` coordinates archive extract cache + watchers — **not in dirtoo-fs**; split across `dirtoo-archive`, `dirtoo-watcher`, and app code. Cleaner modularity; ensure no feature left only in Python’s stdio layer without a C++ home.
+
+##### Build files ✅
+
+- Standalone CMake package, C++23, install + config package. No issues for audit scope.
+
+---
+
+
+#### `dirtoo/libs/dirops/` (2026-08-02)
+
+Qt-free filesystem mutation library. GUI and CLI tools must call this instead of ad-hoc `std::filesystem` writes.
+
+##### API surface (`ops.hpp`, `error.hpp`, `util.hpp`) ✅
+
+| Op | Purpose |
+|----|---------|
+| `copy_path` | File or recursive directory; symlinks copied as links |
+| `move_path` | Rename same-FS or copy+delete cross-device |
+| `rename_path` | Name change with conflict policy |
+| `remove_path` | `remove_all` (recursive) |
+| `create_directory` | Single directory (not parents) |
+| `create_file` | Empty regular file |
+| `create_symlink` | Symlink at link path |
+| `swap_names` | Atomic-ish swap on same filesystem |
+| `unique_path` | `file (2).txt` style conflict rename |
+| `same_filesystem` | Device comparison for move strategy |
+
+**Options:** `dry_run`, `verbose`, `ConflictPolicy` {Fail, Overwrite, Rename, Skip}, `on_progress`, `is_cancelled`.
+
+**Errors:** `std::expected<Result, Error>` — no exceptions across API for ordinary failures (`Error` holds `error_code`, path, message).
+
+##### Implementation notes / issues (`ops.cpp` ~587 lines)
+
+- **Progress / cancel** wired for multi-file copy paths; verify every loop polls `is_cancelled` (audit: present on recursive copy; confirm single-file paths).
+- **Cross-device move**: copy then `remove_all` source — if copy succeeds and delete fails, data is duplicated (documented risk; no transaction).
+- **`create_directory`** does not create parents (unlike `dt-mkdir -p` which uses `create_directories` in the tool). Consistent with POSIX `mkdir` vs `mkdir -p`.
+- **Directory merge on move into existing dir** — behavior depends on resolve_destination; worth a dedicated test against Python `dt-move` merge semantics.
+- Good test coverage in `tests/test_dirops.cpp` (conflicts, dry-run, swap, symlink).
+
+##### Build ✅
+
+Standalone package; CLI tools link this from `tools/` and flake `dirops` derivation.
+
+---
 ### Python reference notes
 
-_(none yet)_
+#### `dirtoo-py/src/dirtoo/filesystem/` (2026-08-02)
+
+| File | Role | C++ counterpart |
+|------|------|-----------------|
+| `location.py` | Multi-payload Location, search protocol, URL parse | `dirtoo-fs` Location (subset) |
+| `file_info.py` | Eager-ish file metadata | `FileInfo` |
+| `lazy_file_info.py` | Lazy stat / access | Partial: cheap `from_directory_entry` |
+| `stdio_filesystem.py` | FS + archive manager facade | Split: archive lib + app |
+| `__init__.py` | Re-exports | n/a |
+
+**Python-only capabilities to track in parity matrix**
+- Nested/stacked archive payloads in one Location
+- `search://` location type
+- LazyFileInfo deferred stat and metadata bag
+- StdioFilesystem as single entry for watchers + extractors
+
+#### `dirtoo-py/src/dirtoo/posix/` (2026-08-02)
+
+| File | Role | C++ |
+|------|------|-----|
+| `filesystem.py` | Non-destructive-by-default FS ops, progress callbacks | `dirops` |
+| `__init__.py` | Package | n/a |
+
+Python `Filesystem` class is a broad low-level toolkit (listdir, scandir, copy with buffer, etc.). C++ splits **read** (`dirtoo-fs`) from **mutate** (`dirops`). CLI merge/move semantics live partly in Python `programs/move.py` — compare when auditing `tools/dt_move.cpp`.
+
+
 
 ---
 
@@ -553,7 +662,7 @@ Seeded from `TODO.md` / `AGENTS.md`; will be rewritten once inventories are anno
 |------|------------|-------|
 | Local browsing + views | Present | Detail / Icons / Small |
 | Filter DSL + content offload | Present | FilterWorker |
-| Recursive search | Present | SearchWorker |
+| Recursive search | Present | SearchWorker (not a `search://` Location protocol) |
 | Thumbnails + badges | Present | |
 | Clipboard + DnD + Link | Present | |
 | Archives read-only | Present | Write OOS |
@@ -570,11 +679,11 @@ Seeded from `TODO.md` / `AGENTS.md`; will be rewritten once inventories are anno
 
 ## Next step
 
-Begin per-file review in dependency order:
+**Done:** `dirtoo-fs`, `dirops`, and matching Python `filesystem/` + `posix/`.
 
-1. `dirtoo/libs/dirtoo-fs/`
-2. `dirtoo/libs/dirops/`
-3. `dirtoo/libs/dirtoo-filter/`
-4. Remaining libs → `apps/dirtoo/` → `tools/` → tests
-5. Parallel notes on matching `dirtoo-py/src/dirtoo/*` modules
+**Continue with:**
+
+1. `dirtoo/libs/dirtoo-filter/` (+ Python `filter/`, `expr/`, `find/`)
+2. `dirtoo-collection`, `watcher`, `thumbnail`, `archive`
+3. `apps/dirtoo/` → `tools/` → tests
 
