@@ -154,21 +154,21 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 | ⬜ | `dirtoo/libs/dirtoo-collection/include/dirtoo/collection/sorter.hpp` |
 | ⬜ | `dirtoo/libs/dirtoo-collection/src/file_collection.cpp` |
 | ⬜ | `dirtoo/libs/dirtoo-collection/src/sorter.cpp` |
-| ⬜ | `dirtoo/libs/dirtoo-filter/CMakeLists.txt` |
-| ⬜ | `dirtoo/libs/dirtoo-filter/cmake/dirtoo-filterConfig.cmake.in` |
-| ⬜ | `dirtoo/libs/dirtoo-filter/include/dirtoo/filter/filter_item.hpp` |
-| ⬜ | `dirtoo/libs/dirtoo-filter/include/dirtoo/filter/match_func.hpp` |
-| ⬜ | `dirtoo/libs/dirtoo-filter/include/dirtoo/filter/media_meta_cache.hpp` |
-| ⬜ | `dirtoo/libs/dirtoo-filter/include/dirtoo/filter/media_probe.hpp` |
-| ⬜ | `dirtoo/libs/dirtoo-filter/include/dirtoo/filter/parser.hpp` |
-| ⬜ | `dirtoo/libs/dirtoo-filter/include/dirtoo/filter/predicates.hpp` |
-| ⬜ | `dirtoo/libs/dirtoo-filter/include/dirtoo/filter/search.hpp` |
-| ⬜ | `dirtoo/libs/dirtoo-filter/src/media_meta_cache.cpp` |
-| ⬜ | `dirtoo/libs/dirtoo-filter/src/media_probe.cpp` |
-| ⬜ | `dirtoo/libs/dirtoo-filter/src/parser.cpp` |
-| ⬜ | `dirtoo/libs/dirtoo-filter/src/predicates.cpp` |
-| ⬜ | `dirtoo/libs/dirtoo-filter/src/search.cpp` |
-| ⬜ | `dirtoo/libs/dirtoo-filter/tools/dt_filter.cpp` |
+| ✅ | `dirtoo/libs/dirtoo-filter/CMakeLists.txt` |
+| ✅ | `dirtoo/libs/dirtoo-filter/cmake/dirtoo-filterConfig.cmake.in` |
+| ✅ | `dirtoo/libs/dirtoo-filter/include/dirtoo/filter/filter_item.hpp` |
+| ✅ | `dirtoo/libs/dirtoo-filter/include/dirtoo/filter/match_func.hpp` |
+| ✅ | `dirtoo/libs/dirtoo-filter/include/dirtoo/filter/media_meta_cache.hpp` |
+| ✅ | `dirtoo/libs/dirtoo-filter/include/dirtoo/filter/media_probe.hpp` |
+| ✅ | `dirtoo/libs/dirtoo-filter/include/dirtoo/filter/parser.hpp` |
+| ✅ | `dirtoo/libs/dirtoo-filter/include/dirtoo/filter/predicates.hpp` |
+| ✅ | `dirtoo/libs/dirtoo-filter/include/dirtoo/filter/search.hpp` |
+| ✅ | `dirtoo/libs/dirtoo-filter/src/media_meta_cache.cpp` |
+| ✅ | `dirtoo/libs/dirtoo-filter/src/media_probe.cpp` |
+| ✅ | `dirtoo/libs/dirtoo-filter/src/parser.cpp` |
+| ✅ | `dirtoo/libs/dirtoo-filter/src/predicates.cpp` |
+| ✅ | `dirtoo/libs/dirtoo-filter/src/search.cpp` |
+| ✅ | `dirtoo/libs/dirtoo-filter/tools/dt_filter.cpp` |
 | ✅ | `dirtoo/libs/dirtoo-fs/CMakeLists.txt` |
 | ✅ | `dirtoo/libs/dirtoo-fs/cmake/dirtoo-fsConfig.cmake.in` |
 | ✅ | `dirtoo/libs/dirtoo-fs/include/dirtoo/fs/file_info.hpp` |
@@ -314,8 +314,8 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 | ⬜ | `dirtoo-py/src/dirtoo/dbus_thumbnail_cache.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/dbus_thumbnailer.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/duration.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/expr/__init__.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/expr/expr.py` |
+| ✅ | `dirtoo-py/src/dirtoo/expr/__init__.py` |
+| ✅ | `dirtoo-py/src/dirtoo/expr/expr.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/ffprobe.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/file_transfer.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/file_type.py` |
@@ -356,18 +356,18 @@ Root meta (outside both trees): `AGENTS.md`, `README.md`, `TODO.md`, this `AUDIT
 | ⬜ | `dirtoo-py/src/dirtoo/fileview/settings.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/fileview/virtual_filesystem.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/fileview/worker_thread.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/filter/__init__.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/filter/filter_command_parser.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/filter/filter_expr_parser.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/filter/filter_parser.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/filter/match_func.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/filter/match_func_factory.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/find/__init__.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/find/action.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/find/context.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/find/filter.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/find/util.py` |
-| ⬜ | `dirtoo-py/src/dirtoo/find/walk.py` |
+| ✅ | `dirtoo-py/src/dirtoo/filter/__init__.py` |
+| ✅ | `dirtoo-py/src/dirtoo/filter/filter_command_parser.py` |
+| ✅ | `dirtoo-py/src/dirtoo/filter/filter_expr_parser.py` |
+| ✅ | `dirtoo-py/src/dirtoo/filter/filter_parser.py` |
+| ✅ | `dirtoo-py/src/dirtoo/filter/match_func.py` |
+| ✅ | `dirtoo-py/src/dirtoo/filter/match_func_factory.py` |
+| ✅ | `dirtoo-py/src/dirtoo/find/__init__.py` |
+| ✅ | `dirtoo-py/src/dirtoo/find/action.py` |
+| ✅ | `dirtoo-py/src/dirtoo/find/context.py` |
+| ✅ | `dirtoo-py/src/dirtoo/find/filter.py` |
+| ✅ | `dirtoo-py/src/dirtoo/find/util.py` |
+| ✅ | `dirtoo-py/src/dirtoo/find/walk.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/format.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/fuzzy.py` |
 | ⬜ | `dirtoo-py/src/dirtoo/glob.py` |
@@ -623,6 +623,47 @@ Qt-free filesystem mutation library. GUI and CLI tools must call this instead of
 Standalone package; CLI tools link this from `tools/` and flake `dirops` derivation.
 
 ---
+
+#### `dirtoo/libs/dirtoo-filter/` (2026-08-02)
+
+Filter DSL, recursive search walk, and media metadata (ffprobe + SQLite cache). No Qt. ~3.6k LOC.
+
+##### Core types ✅
+
+| Piece | Role |
+|-------|------|
+| `FilterItem` | Minimal match input: name, size, is_directory, path, optional mtime |
+| `MatchFunc` hierarchy | AlwaysTrue/False, And/Or/Not, shared_ptr composition |
+| `parse_filter` | Recursive-descent DSL → MatchFunc; `std::expected` + position |
+| `search_directory` | Cooperative walk with depth/hidden/symlink options |
+| `MediaMetaCache` | Async SQLite + ffprobe; generation bump for cancel |
+| `probe_media` | Sync ffprobe (CLI / workers) |
+| `dt_filter` | CLI tool |
+
+##### DSL commands (parity with Python factory)
+
+Implemented: `glob`/`Glob`, `regex`/`Regex`, `type`/`t`, `size`, `width`, `height`, `duration`, `framerate`, `fuzzy`, `length`/`len`, `date`, `time`, `weekday`, `contains`/`Contains`, `containsre`/`Containsre`, `containsfuzzy`, `random`, `charset`, `pages`, `filecount`.
+
+Boolean: `and`/`or`/`not`, juxtaposition = AND, `-`/`^` unary not, parentheses.
+
+Bare words → case-insensitive substring via implicit `*word*` glob.
+
+##### Issues / risks
+
+- **`FilterItem` has no `is_symlink`** — `type:link` must `lstat`/`is_symlink` on path inside the predicate (extra I/O; OK if done carefully). Confirm implementation does not rely on a missing flag alone.
+- **Content predicates** (`contains*`) read up to 1 MiB synchronously when matching — GUI uses FilterWorker for content filters; **search** and **dt-filter** can block if used carelessly on huge trees.
+- **Media predicates** (width/height/duration/…) depend on cache/probe; on cache miss may return false until async fill — GUI must refresh when meta arrives (known architecture).
+- **Percent / URL encoding** not relevant here; paths are filesystem paths.
+- **Parser** documents “fixes missing parentheses from the Python DSL” — intentional stricter grammar; some Python expressions with ambiguous juxtaposition may need parens on C++.
+- **Python `pick:`** was commented out in factory — still absent on C++; fine.
+- **`expr/` package** in Python is a separate expression evaluator; C++ folded logic into `parser` + `predicates`.
+- **`find/` package** (walk + actions) ≈ C++ `search_directory` without Python’s action pipeline (print/delete/etc. CLI actions) — OOS unless needed for tools.
+
+##### Tests
+
+`tests/test_filter.cpp` covers parser/predicates; keep media/cache edge cases under regression when touching SQLite schema.
+
+---
 ### Python reference notes
 
 #### `dirtoo-py/src/dirtoo/filesystem/` (2026-08-02)
@@ -651,6 +692,23 @@ Standalone package; CLI tools link this from `tools/` and flake `dirops` derivat
 Python `Filesystem` class is a broad low-level toolkit (listdir, scandir, copy with buffer, etc.). C++ splits **read** (`dirtoo-fs`) from **mutate** (`dirops`). CLI merge/move semantics live partly in Python `programs/move.py` — compare when auditing `tools/dt_move.cpp`.
 
 
+#### `dirtoo-py` filter / expr / find (2026-08-02)
+
+| Package | Role | C++ |
+|---------|------|-----|
+| `filter/` | DSL parsers + MatchFunc factory + match funcs | `dirtoo-filter` |
+| `expr/` | Expression AST helpers | folded into parser |
+| `find/` | Walk + action context | `search_directory` (match only) |
+
+**Python-only / deferred**
+- Find **actions** (delete, exec, print beyond dt-filter)
+- `pick:` match (disabled in Python too)
+- Separate command vs expr parser modules — C++ single recursive descent
+
+**Parity assessment:** Command set is largely **complete** for GUI filtering and recursive search. Media + content filters are the heavy pieces and are present.
+
+
+
 
 ---
 
@@ -661,7 +719,7 @@ Seeded from `TODO.md` / `AGENTS.md`; will be rewritten once inventories are anno
 | Area | C++ status | Notes |
 |------|------------|-------|
 | Local browsing + views | Present | Detail / Icons / Small |
-| Filter DSL + content offload | Present | FilterWorker |
+| Filter DSL + content offload | Present | Full command set + FilterWorker; media cache async |
 | Recursive search | Present | SearchWorker (not a `search://` Location protocol) |
 | Thumbnails + badges | Present | |
 | Clipboard + DnD + Link | Present | |
@@ -679,11 +737,10 @@ Seeded from `TODO.md` / `AGENTS.md`; will be rewritten once inventories are anno
 
 ## Next step
 
-**Done:** `dirtoo-fs`, `dirops`, and matching Python `filesystem/` + `posix/`.
+**Done:** `dirtoo-fs`, `dirops`, `dirtoo-filter` (+ Python `filesystem/`, `posix/`, `filter/`, `expr/`, `find/`).
 
 **Continue with:**
 
-1. `dirtoo/libs/dirtoo-filter/` (+ Python `filter/`, `expr/`, `find/`)
-2. `dirtoo-collection`, `watcher`, `thumbnail`, `archive`
-3. `apps/dirtoo/` → `tools/` → tests
+1. `dirtoo-collection`, `dirtoo-watcher`, `dirtoo-thumbnail`, `dirtoo-archive`
+2. `apps/dirtoo/` → `tools/` → tests
 
