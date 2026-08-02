@@ -86,7 +86,7 @@ Source audit: **`AUDIT.md`** (file inventory + parity notes, 2026-08).
 | Time gaps | **done** (≥6h separator) |
 | Filter line history | **done** (Up/Down) |
 | Transfer error / request dialogs | **partial** (folded into transfer/conflict) |
-| Operations history log | **missing** (see residual; replaces Undo) |
+| Operations history log | **done** (log + dialog; no rollback) |
 
 ### Acceptable gaps / out of scope
 
@@ -142,7 +142,7 @@ Source audit: **`AUDIT.md`** (file inventory + parity notes, 2026-08).
 | Archives read-only | **done** |
 | Thumbnails D-Bus + status badges + dir montage | **done** |
 | Editable permissions | **open** (display-only) |
-| Operations history log | **open** (no rollback yet) |
+| Operations history log | **done** (log + dialog; no rollback) |
 
 ---
 
@@ -175,7 +175,7 @@ now. Persist under XDG data/cache like other history.
 
 | Item | Notes |
 |------|--------|
-| Operations history log | Timestamped rename/move/copy/delete/…; **no rollback** |
+| Operations history log | **done** — Edit → Operations History…; persist under AppData; no rollback |
 | Location URL encoding | Only `%20` today; non-ASCII / reserved chars |
 | Archive member thumbnails | Weak; needs extract path or special URI |
 | Watcher richness | QFileSystemWatcher only; no archive extract-dir watch |

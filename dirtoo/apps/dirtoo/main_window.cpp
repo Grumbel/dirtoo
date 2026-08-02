@@ -23,6 +23,7 @@
 #include "conflict_dialog.hpp"
 #include "open_with.hpp"
 #include "open_history.hpp"
+#include "operations_history.hpp"
 #include "preferences_dialog.hpp"
 #include "properties_dialog.hpp"
 #include "dirtoo/fs/file_info.hpp"
@@ -34,6 +35,7 @@
 #include <QAction>
 #include <QActionGroup>
 #include <QApplication>
+#include <QDateTime>
 #include <QCoreApplication>
 #include <QClipboard>
 #include <QCloseEvent>
@@ -543,6 +545,13 @@ MainWindow::MainWindow(QWidget* parent)
     edit_menu->addAction(theme_icon("edit-copy"), QStringLiteral("Copy as Link"), this, [this] {
       set_clipboard(ClipboardMode::Link);
     });
+    edit_menu->addSeparator();
+    edit_menu->addAction(theme_icon("view-history", "document-open-recent"),
+                         QStringLiteral("Operations History…"), this, [this] {
+                           show_operations_history_dialog(this, [this](const QString& dir) {
+                             open_location(fs::Location::from_path(dir.toStdString()));
+                           });
+                         });
     {
       auto* act = edit_menu->addAction(theme_icon("edit-select-all"), QStringLiteral("Select All"), this, &MainWindow::on_select_all);
       act->setShortcut(QKeySequence::SelectAll);
@@ -2422,8 +2431,11 @@ void MainWindow::on_paste_link()
     auto result = dirops::create_symlink(src, dest);
     if (result) {
       ++ok;
+      operations_history().record_simple(OperationKind::Symlink, {src}, dest, true);
     } else {
       ++fail;
+      operations_history().record_simple(OperationKind::Symlink, {src}, dest, false,
+                                         QString::fromStdString(result.error().to_string()));
       if (message_area_ != nullptr) {
         message_area_->show_error(QString::fromStdString(result.error().to_string()));
       }
@@ -2503,6 +2515,21 @@ void MainWindow::on_transfer_finished(TransferSummary summary)
                                .arg(summary.skipped));
   }
 
+  {
+    OperationHistoryEntry e;
+    e.when = QDateTime::currentDateTime();
+    e.kind = transfer_controller_.last_mode() == ClipboardMode::Cut ? OperationKind::Move
+                                                                   : OperationKind::Copy;
+    e.outcome = summary.cancelled ? QStringLiteral("cancelled")
+                : (!summary.error.isEmpty() ? QStringLiteral("failed")
+                                            : QStringLiteral("success"));
+    e.detail = summary.error.isEmpty()
+                   ? QStringLiteral("%1 done, %2 skipped").arg(summary.completed).arg(summary.skipped)
+                   : summary.error;
+    e.destination = QString::fromStdString(location_.as_path().string());
+    operations_history().record(std::move(e));
+  }
+
   on_directory_changed();
   update_edit_actions();
 }
@@ -2551,10 +2578,13 @@ void MainWindow::on_mkdir()
 
   auto result = dirops::create_directory(dest);
   if (!result) {
+    operations_history().record_simple(OperationKind::Mkdir, {}, dest, false,
+                                       QString::fromStdString(result.error().to_string()));
     QMessageBox::warning(this, QStringLiteral("New Folder"),
                          QString::fromStdString(result.error().to_string()));
     return;
   }
+  operations_history().record_simple(OperationKind::Mkdir, {}, dest, true);
   on_directory_changed();
 }
 
@@ -2580,10 +2610,13 @@ void MainWindow::on_create_file()
   }
   auto result = dirops::create_file(dest);
   if (!result) {
+    operations_history().record_simple(OperationKind::Mkfile, {}, dest, false,
+                                       QString::fromStdString(result.error().to_string()));
     QMessageBox::warning(this, QStringLiteral("New File"),
                          QString::fromStdString(result.error().to_string()));
     return;
   }
+  operations_history().record_simple(OperationKind::Mkfile, {}, dest, true);
   on_directory_changed();
 }
 
@@ -2601,10 +2634,15 @@ void MainWindow::on_swap_names()
   }
   auto result = dirops::swap_names(selected[0].path(), selected[1].path());
   if (!result) {
+    operations_history().record_simple(
+        OperationKind::Swap, {selected[0].path(), selected[1].path()}, {}, false,
+        QString::fromStdString(result.error().to_string()));
     QMessageBox::warning(this, QStringLiteral("Swap Names"),
                          QString::fromStdString(result.error().to_string()));
     return;
   }
+  operations_history().record_simple(OperationKind::Swap,
+                                     {selected[0].path(), selected[1].path()}, {}, true);
   on_directory_changed();
 }
 
@@ -2654,10 +2692,13 @@ void MainWindow::on_rename_selected()
 
   auto result = dirops::rename_path(fi.path(), dest, opt);
   if (!result) {
+    operations_history().record_simple(OperationKind::Rename, {fi.path()}, dest, false,
+                                       QString::fromStdString(result.error().to_string()));
     QMessageBox::warning(this, QStringLiteral("Rename"),
                          QString::fromStdString(result.error().to_string()));
     return;
   }
+  operations_history().record_simple(OperationKind::Rename, {fi.path()}, dest, true);
   on_directory_changed();
 }
 
@@ -2684,10 +2725,13 @@ void MainWindow::on_delete_selected()
   for (const auto& fi : selected) {
     auto result = dirops::remove_path(fi.path());
     if (!result) {
+      operations_history().record_simple(OperationKind::Delete, {fi.path()}, {}, false,
+                                         QString::fromStdString(result.error().to_string()));
       QMessageBox::warning(this, QStringLiteral("Delete"),
                            QString::fromStdString(result.error().to_string()));
       break;
     }
+    operations_history().record_simple(OperationKind::Delete, {fi.path()}, {}, true);
   }
   on_directory_changed();
 }
@@ -2821,8 +2865,11 @@ void MainWindow::on_urls_dropped_to(const QList<QUrl>& urls, Qt::DropAction acti
       auto result = dirops::create_symlink(src, link);
       if (result) {
         ++ok;
+        operations_history().record_simple(OperationKind::Symlink, {src}, link, true);
       } else {
         ++fail;
+        operations_history().record_simple(OperationKind::Symlink, {src}, link, false,
+                                           QString::fromStdString(result.error().to_string()));
       }
     }
     set_status(QStringLiteral("Linked %1 (%2 failed)").arg(ok).arg(fail));
