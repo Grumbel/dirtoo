@@ -160,7 +160,31 @@ fix defects, or close/open work items:
 - Target for development: **Linux** (inotify, freedesktop thumbnailer, XDG).
   Keep platform-specific code isolated.
 
+
 ---
+
+## Dependencies & Nix flake (no optional fallbacks)
+
+Build and run via the **Nix flake** (`dirtoo/flake.nix`). Flake inputs pin
+the full dependency set (Qt6, libarchive, sqlite, ffmpeg tools as needed, …).
+
+**Do not add runtime “try tool A then tool B” fallbacks** for libraries or
+binaries the flake already provides. If a dependency is required for a
+feature, **require it at CMake configure time** (`find_package(... REQUIRED)`)
+and call it directly. Missing deps are a packaging bug, not something the
+application should paper over with alternate code paths.
+
+Examples:
+
+- Archives: **libarchive only** for TOC and extract (no bsdtar/unzip/7z
+  process spawn as a secondary path).
+- Prefer explicit hard errors over silent degradation when a guaranteed
+  dependency fails at runtime (corrupt archive, I/O error, …).
+
+Optional *product* features (e.g. UDisks when no system bus) may still
+degrade gracefully; that is not the same as dual-stacking two
+implementations of the same library capability.
+
 
 ## Working with the Python tree
 

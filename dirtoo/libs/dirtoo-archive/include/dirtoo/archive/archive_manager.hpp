@@ -12,8 +12,6 @@
 #include <optional>
 #include <unordered_map>
 
-class QProcess;
-
 namespace dirtoo::archive {
 
 enum class ExtractStatus {
@@ -26,8 +24,7 @@ enum class ExtractStatus {
 /// Extracts archives into a cache directory and maps archive Locations to
 /// real filesystem paths that can be listed with std::filesystem.
 ///
-/// Extraction prefers libarchive when built with DIRTOO_HAS_LIBARCHIVE; else
-/// external tools (bsdtar, tar, unzip, 7z).
+/// Uses **libarchive** only (required dependency via the Nix flake).
 class ArchiveManager : public QObject {
   Q_OBJECT
 
@@ -61,7 +58,6 @@ private:
     ExtractStatus status = ExtractStatus::Idle;
     std::filesystem::path cache_dir;
     QString error;
-    QProcess* process = nullptr;
   };
 
   [[nodiscard]] std::filesystem::path cache_dir_for(const std::filesystem::path& archive_file) const;

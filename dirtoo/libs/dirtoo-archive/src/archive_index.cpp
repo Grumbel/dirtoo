@@ -3,7 +3,6 @@
 
 #include "dirtoo/archive/archive_index.hpp"
 
-#include <QProcess>
 #include <QRegularExpression>
 #include <QStandardPaths>
 #include <QString>
@@ -12,54 +11,6 @@
 #include <set>
 
 namespace dirtoo::archive {
-
-std::expected<QString, std::string> run_capture(const QString& program, const QStringList& args)
-{
-  if (QStandardPaths::findExecutable(program).isEmpty()) {
-    return std::unexpected("executable not found: " + program.toStdString());
-  }
-  QProcess proc;
-  proc.start(program, args);
-  if (!proc.waitForStarted(5000)) {
-    return std::unexpected("failed to start " + program.toStdString());
-  }
-  if (!proc.waitForFinished(120000)) {
-    proc.kill();
-    return std::unexpected("timeout running " + program.toStdString());
-  }
-  if (proc.exitStatus() != QProcess::NormalExit || proc.exitCode() != 0) {
-    const QString err = QString::fromLocal8Bit(proc.readAllStandardError());
-    return std::unexpected(err.isEmpty() ? ("exit code " + std::to_string(proc.exitCode()))
-                                         : err.toStdString());
-  }
-  return QString::fromLocal8Bit(proc.readAllStandardOutput());
-}
-
-std::vector<ArchiveEntry> parse_tf_lines(const QString& output)
-{
-  std::vector<ArchiveEntry> out;
-  const QStringList lines = output.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
-  out.reserve(static_cast<std::size_t>(lines.size()));
-  for (QString line : lines) {
-    line = line.trimmed();
-    if (line.isEmpty()) {
-      continue;
-    }
-    if (line.startsWith(QLatin1String("./"))) {
-      line = line.mid(2);
-    }
-    ArchiveEntry e;
-    if (line.endsWith(QLatin1Char('/'))) {
-      e.is_directory = true;
-      line.chop(1);
-    }
-    e.path = std::filesystem::path{line.toStdString()}.lexically_normal();
-    if (!e.path.empty()) {
-      out.push_back(std::move(e));
-    }
-  }
-  return out;
-}
 
 /// Parse `bsdtar -tvf` / `tar -tvf` lines: mode links owner group size date… name
 std::vector<ArchiveEntry> parse_tv_lines(const QString& output)
@@ -170,63 +121,8 @@ std::vector<ArchiveEntry> parse_unzip_listing_text(const std::string& text)
 std::expected<std::vector<ArchiveEntry>, std::string>
 list_archive_entries(const std::filesystem::path& archive_file)
 {
-  // Prefer native libarchive (sizes + formats without text parsing).
-  if (libarchive_available()) {
-    auto native = list_archive_entries_libarchive(archive_file);
-    if (native && !native->empty()) {
-      return native;
-    }
-    // Fall through to CLI tools if libarchive open fails or returns empty.
-  }
-
-  const QString archive = QString::fromStdString(archive_file.string());
-  const QString lower = archive.toLower();
-
-  // CLI fallback: verbose listings so ArchiveEntry.size is populated.
-  if (!QStandardPaths::findExecutable(QStringLiteral("bsdtar")).isEmpty()) {
-    auto out = run_capture(QStringLiteral("bsdtar"), {QStringLiteral("-tvf"), archive});
-    if (out) {
-      auto entries = parse_tv_lines(*out);
-      if (!entries.empty()) {
-        return entries;
-      }
-    }
-    out = run_capture(QStringLiteral("bsdtar"), {QStringLiteral("-tf"), archive});
-    if (out) {
-      return parse_tf_lines(*out);
-    }
-  }
-
-  if (lower.endsWith(QLatin1String(".zip"))
-      && !QStandardPaths::findExecutable(QStringLiteral("unzip")).isEmpty()) {
-    auto out = run_capture(QStringLiteral("unzip"), {QStringLiteral("-l"), archive});
-    if (out) {
-      auto entries = parse_unzip_l(*out);
-      if (!entries.empty()) {
-        return entries;
-      }
-    }
-    out = run_capture(QStringLiteral("unzip"), {QStringLiteral("-Z1"), archive});
-    if (out) {
-      return parse_tf_lines(*out);
-    }
-  }
-
-  if (!QStandardPaths::findExecutable(QStringLiteral("tar")).isEmpty()) {
-    auto out = run_capture(QStringLiteral("tar"), {QStringLiteral("-tvf"), archive});
-    if (out) {
-      auto entries = parse_tv_lines(*out);
-      if (!entries.empty()) {
-        return entries;
-      }
-    }
-    out = run_capture(QStringLiteral("tar"), {QStringLiteral("-tf"), archive});
-    if (out) {
-      return parse_tf_lines(*out);
-    }
-  }
-
-  return std::unexpected("no suitable archive listing tool found (bsdtar, unzip, tar)");
+  // Flake guarantees libarchive; no CLI fallback.
+  return list_archive_entries_libarchive(archive_file);
 }
 
 std::vector<fs::FileInfo>
@@ -284,45 +180,8 @@ extract_member(const std::filesystem::path& archive_file,
                const std::filesystem::path& member,
                const std::filesystem::path& dest_dir)
 {
-  if (libarchive_available()) {
-    auto native = extract_member_libarchive(archive_file, member, dest_dir);
-    if (native) {
-      return native;
-    }
-    // Fall through to CLI on failure.
-  }
-
-  std::error_code ec;
-  std::filesystem::create_directories(dest_dir, ec);
-  if (ec) {
-    return std::unexpected(ec.message());
-  }
-
-  const QString archive = QString::fromStdString(archive_file.string());
-  const QString out_dir = QString::fromStdString(dest_dir.string());
-  const QString mem = QString::fromStdString(member.generic_string());
-
-  if (!QStandardPaths::findExecutable(QStringLiteral("bsdtar")).isEmpty()) {
-    auto out = run_capture(QStringLiteral("bsdtar"),
-                           {QStringLiteral("-xf"), archive, QStringLiteral("-C"), out_dir, mem});
-    if (!out) {
-      return std::unexpected(out.error());
-    }
-  } else if (!QStandardPaths::findExecutable(QStringLiteral("tar")).isEmpty()) {
-    auto out = run_capture(QStringLiteral("tar"),
-                           {QStringLiteral("-xf"), archive, QStringLiteral("-C"), out_dir, mem});
-    if (!out) {
-      return std::unexpected(out.error());
-    }
-  } else {
-    return std::unexpected("no extractor for single member");
-  }
-
-  const auto dest = dest_dir / member;
-  if (!std::filesystem::exists(dest)) {
-    return std::unexpected("extracted member not found at " + dest.string());
-  }
-  return dest;
+  // Flake guarantees libarchive; no CLI fallback.
+  return extract_member_libarchive(archive_file, member, dest_dir);
 }
 
 } // namespace dirtoo::archive

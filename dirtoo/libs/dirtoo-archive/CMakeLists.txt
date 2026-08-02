@@ -26,32 +26,10 @@ find_package(Qt6 REQUIRED COMPONENTS Core)
 find_package(dirtoo-fs REQUIRED CONFIG)
 qt_standard_project_setup()
 
-option(DIRTOO_ARCHIVE_USE_LIBARCHIVE "Use libarchive for TOC/extract when available" ON)
-
-add_library(dirtoo-archive
-  include/dirtoo/archive/archive_manager.hpp
-  src/archive_manager.cpp
-  src/archive_index.cpp
-  src/archive_libarchive.cpp
-)
-add_library(dirtoo::archive ALIAS dirtoo-archive)
-add_library(dirtoo-archive::dirtoo-archive ALIAS dirtoo-archive)
-
-target_include_directories(dirtoo-archive PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-)
-target_link_libraries(dirtoo-archive PUBLIC dirtoo-fs::dirtoo-fs Qt6::Core)
-
-if(DIRTOO_ARCHIVE_USE_LIBARCHIVE)
-  find_package(LibArchive)
-  if(LibArchive_FOUND)
-    target_compile_definitions(dirtoo-archive PRIVATE DIRTOO_HAS_LIBARCHIVE=1)
-    target_link_libraries(dirtoo-archive PRIVATE LibArchive::LibArchive)
-    message(STATUS "dirtoo-archive: libarchive enabled")
-  else()
-    message(STATUS "dirtoo-archive: libarchive not found; using CLI tools (bsdtar/tar/unzip)")
-  endif()
+find_package(LibArchive REQUIRED)
+target_compile_definitions(dirtoo-archive PRIVATE DIRTOO_HAS_LIBARCHIVE=1)
+target_link_libraries(dirtoo-archive PRIVATE LibArchive::LibArchive)
+message(STATUS "dirtoo-archive: libarchive (required)")
 endif()
 target_compile_features(dirtoo-archive PUBLIC cxx_std_23)
 target_compile_options(dirtoo-archive PRIVATE

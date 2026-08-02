@@ -7,10 +7,11 @@
 #include <QCryptographicHash>
 #include <QDir>
 #include <QFileInfo>
-#include <QProcess>
+#include <QMetaObject>
 #include <QStandardPaths>
 
 #include <fstream>
+#include <thread>
 
 namespace dirtoo::archive {
 namespace {
@@ -151,74 +152,23 @@ void ArchiveManager::start_extract(const fs::Location& archive_location, Entry& 
   entry.error.clear();
   emit extraction_started(archive_location);
 
-  const QString archive = QString::fromStdString(archive_location.as_path().string());
-  const QString out_dir = QString::fromStdString(entry.cache_dir.string());
+  const auto archive_path = archive_location.as_path();
+  const auto cache_dir = entry.cache_dir;
 
-  // Prefer in-process libarchive extract (no PATH dependency, correct sizes already used for TOC).
-  if (libarchive_available()) {
-    auto ok = extract_archive_libarchive(archive_location.as_path(), entry.cache_dir);
-    if (ok) {
-      finish_ok(archive_location);
-      return;
-    }
-    // Fall through to external tools if libarchive extract fails.
-    entry.error = QString::fromStdString(ok.error());
-  }
-
-  auto* process = new QProcess(this);
-  entry.process = process;
-
-  // Prefer bsdtar (libarchive CLI), then tar, then unzip for .zip.
-  QString program;
-  QStringList args;
-  const QString lower = archive.toLower();
-
-  if (!QStandardPaths::findExecutable(QStringLiteral("bsdtar")).isEmpty()) {
-    program = QStringLiteral("bsdtar");
-    args << QStringLiteral("-xf") << archive << QStringLiteral("-C") << out_dir;
-  } else if (lower.endsWith(QLatin1String(".zip"))
-             && !QStandardPaths::findExecutable(QStringLiteral("unzip")).isEmpty()) {
-    program = QStringLiteral("unzip");
-    args << QStringLiteral("-q") << archive << QStringLiteral("-d") << out_dir;
-  } else if (!QStandardPaths::findExecutable(QStringLiteral("tar")).isEmpty()) {
-    program = QStringLiteral("tar");
-    args << QStringLiteral("-xf") << archive << QStringLiteral("-C") << out_dir;
-  } else if (!QStandardPaths::findExecutable(QStringLiteral("7z")).isEmpty()) {
-    program = QStringLiteral("7z");
-    args << QStringLiteral("x") << QStringLiteral("-y") << QStringLiteral("-o") + out_dir << archive;
-  } else {
-    finish_fail(archive_location,
-                QStringLiteral("No archive tool found (bsdtar, tar, unzip, or 7z)"));
-    process->deleteLater();
-    entry.process = nullptr;
-    return;
-  }
-
-  connect(process, &QProcess::finished, this,
-          [this, archive_location, process](int code, QProcess::ExitStatus status) {
-            auto it = entries_.find(key_of(archive_location));
-            if (it == entries_.end()) {
-              process->deleteLater();
-              return;
-            }
-            it->second.process = nullptr;
-            if (status != QProcess::NormalExit || code != 0) {
-              const QString err = QString::fromLocal8Bit(process->readAllStandardError());
-              finish_fail(archive_location,
-                          err.isEmpty() ? QStringLiteral("Extractor exited with code %1").arg(code)
-                                        : err);
-            } else {
-              finish_ok(archive_location);
-            }
-            process->deleteLater();
-          });
-
-  process->start(program, args);
-  if (!process->waitForStarted(3000)) {
-    finish_fail(archive_location, QStringLiteral("Failed to start %1").arg(program));
-    process->deleteLater();
-    entry.process = nullptr;
-  }
+  // libarchive extract off the GUI thread (flake guarantees libarchive).
+  std::thread([this, archive_location, archive_path, cache_dir]() {
+    const auto ok = extract_archive_libarchive(archive_path, cache_dir);
+    QMetaObject::invokeMethod(
+        this,
+        [this, archive_location, ok]() {
+          if (ok) {
+            finish_ok(archive_location);
+          } else {
+            finish_fail(archive_location, QString::fromStdString(ok.error()));
+          }
+        },
+        Qt::QueuedConnection);
+  }).detach();
 }
 
 void ArchiveManager::finish_ok(const fs::Location& archive_location)

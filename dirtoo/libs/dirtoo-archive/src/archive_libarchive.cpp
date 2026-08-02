@@ -3,14 +3,11 @@
 
 #include "dirtoo/archive/archive_index.hpp"
 
-#include <string>
-
-#if defined(DIRTOO_HAS_LIBARCHIVE)
-
 #include <archive.h>
 #include <archive_entry.h>
 
 #include <filesystem>
+#include <string>
 #include <vector>
 
 namespace dirtoo::archive {
@@ -56,6 +53,12 @@ int copy_data(archive* ar, archive* aw)
   }
 }
 
+std::string archive_err(archive* a, const char* fallback)
+{
+  const char* msg = archive_error_string(a);
+  return msg != nullptr ? std::string{msg} : std::string{fallback};
+}
+
 } // namespace
 
 bool libarchive_available()
@@ -75,14 +78,19 @@ list_archive_entries_libarchive(const std::filesystem::path& archive_file)
   archive_read_support_format_all(guard.a);
 
   if (archive_read_open_filename(guard.a, archive_file.string().c_str(), 10240) != ARCHIVE_OK) {
-    return std::unexpected(archive_error_string(guard.a)
-                               ? archive_error_string(guard.a)
-                               : "archive_read_open_filename failed");
+    return std::unexpected(archive_err(guard.a, "archive_read_open_filename failed"));
   }
 
   std::vector<ArchiveEntry> out;
   archive_entry* entry = nullptr;
-  while (archive_read_next_header(guard.a, &entry) == ARCHIVE_OK) {
+  for (;;) {
+    const int r = archive_read_next_header(guard.a, &entry);
+    if (r == ARCHIVE_EOF) {
+      break;
+    }
+    if (r < ARCHIVE_OK) {
+      return std::unexpected(archive_err(guard.a, "archive_read_next_header failed"));
+    }
     const char* pathname = archive_entry_pathname(entry);
     if (pathname == nullptr || pathname[0] == '\0') {
       archive_read_data_skip(guard.a);
@@ -92,8 +100,8 @@ list_archive_entries_libarchive(const std::filesystem::path& archive_file)
     if (name.starts_with("./")) {
       name.erase(0, 2);
     }
-    const bool is_dir = archive_entry_filetype(entry) == AE_IFDIR
-                        || (!name.empty() && name.back() == '/');
+    const bool is_dir =
+        archive_entry_filetype(entry) == AE_IFDIR || (!name.empty() && name.back() == '/');
     if (!name.empty() && name.back() == '/') {
       name.pop_back();
     }
@@ -130,9 +138,7 @@ extract_archive_libarchive(const std::filesystem::path& archive_file,
   archive_read_support_filter_all(rin.a);
   archive_read_support_format_all(rin.a);
   if (archive_read_open_filename(rin.a, archive_file.string().c_str(), 10240) != ARCHIVE_OK) {
-    return std::unexpected(archive_error_string(rin.a)
-                               ? archive_error_string(rin.a)
-                               : "archive_read_open_filename failed");
+    return std::unexpected(archive_err(rin.a, "archive_read_open_filename failed"));
   }
 
   ArchiveWriteGuard wout;
@@ -146,26 +152,28 @@ extract_archive_libarchive(const std::filesystem::path& archive_file,
   archive_write_disk_set_standard_lookup(wout.a);
 
   archive_entry* entry = nullptr;
-  while (archive_read_next_header(rin.a, &entry) == ARCHIVE_OK) {
+  for (;;) {
+    const int r = archive_read_next_header(rin.a, &entry);
+    if (r == ARCHIVE_EOF) {
+      break;
+    }
+    if (r < ARCHIVE_OK) {
+      return std::unexpected(archive_err(rin.a, "archive_read_next_header failed"));
+    }
     const char* pathname = archive_entry_pathname(entry);
     if (pathname == nullptr) {
       archive_read_data_skip(rin.a);
       continue;
     }
-    // Extract under dest_dir
     const auto full = dest_dir / pathname;
     archive_entry_set_pathname(entry, full.string().c_str());
 
     if (archive_write_header(wout.a, entry) != ARCHIVE_OK) {
-      return std::unexpected(archive_error_string(wout.a)
-                                 ? archive_error_string(wout.a)
-                                 : "archive_write_header failed");
+      return std::unexpected(archive_err(wout.a, "archive_write_header failed"));
     }
     if (archive_entry_size(entry) > 0) {
       if (copy_data(rin.a, wout.a) < ARCHIVE_OK) {
-        return std::unexpected(archive_error_string(rin.a)
-                                   ? archive_error_string(rin.a)
-                                   : "archive extract data failed");
+        return std::unexpected(archive_err(rin.a, "archive extract data failed"));
       }
     }
     archive_write_finish_entry(wout.a);
@@ -194,9 +202,7 @@ extract_member_libarchive(const std::filesystem::path& archive_file,
   archive_read_support_filter_all(rin.a);
   archive_read_support_format_all(rin.a);
   if (archive_read_open_filename(rin.a, archive_file.string().c_str(), 10240) != ARCHIVE_OK) {
-    return std::unexpected(archive_error_string(rin.a)
-                               ? archive_error_string(rin.a)
-                               : "archive_read_open_filename failed");
+    return std::unexpected(archive_err(rin.a, "archive_read_open_filename failed"));
   }
 
   ArchiveWriteGuard wout;
@@ -205,12 +211,19 @@ extract_member_libarchive(const std::filesystem::path& archive_file,
     return std::unexpected("archive_write_disk_new failed");
   }
   archive_write_disk_set_options(wout.a, ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_PERM
-                                                 | ARCHIVE_EXTRACT_SECURE_NODOTDOT);
+                                             | ARCHIVE_EXTRACT_SECURE_NODOTDOT);
   archive_write_disk_set_standard_lookup(wout.a);
 
   archive_entry* entry = nullptr;
   bool found = false;
-  while (archive_read_next_header(rin.a, &entry) == ARCHIVE_OK) {
+  for (;;) {
+    const int r = archive_read_next_header(rin.a, &entry);
+    if (r == ARCHIVE_EOF) {
+      break;
+    }
+    if (r < ARCHIVE_OK) {
+      return std::unexpected(archive_err(rin.a, "archive_read_next_header failed"));
+    }
     const char* pathname = archive_entry_pathname(entry);
     if (pathname == nullptr) {
       archive_read_data_skip(rin.a);
@@ -234,15 +247,11 @@ extract_member_libarchive(const std::filesystem::path& archive_file,
     }
     archive_entry_set_pathname(entry, full.string().c_str());
     if (archive_write_header(wout.a, entry) != ARCHIVE_OK) {
-      return std::unexpected(archive_error_string(wout.a)
-                                 ? archive_error_string(wout.a)
-                                 : "archive_write_header failed");
+      return std::unexpected(archive_err(wout.a, "archive_write_header failed"));
     }
     if (archive_entry_size(entry) > 0) {
       if (copy_data(rin.a, wout.a) < ARCHIVE_OK) {
-        return std::unexpected(archive_error_string(rin.a)
-                                   ? archive_error_string(rin.a)
-                                   : "archive extract data failed");
+        return std::unexpected(archive_err(rin.a, "archive extract data failed"));
       }
     }
     archive_write_finish_entry(wout.a);
@@ -259,35 +268,3 @@ extract_member_libarchive(const std::filesystem::path& archive_file,
 }
 
 } // namespace dirtoo::archive
-
-#else // !DIRTOO_HAS_LIBARCHIVE
-
-namespace dirtoo::archive {
-
-bool libarchive_available()
-{
-  return false;
-}
-
-std::expected<std::vector<ArchiveEntry>, std::string>
-list_archive_entries_libarchive(const std::filesystem::path&)
-{
-  return std::unexpected("libarchive support not enabled at build time");
-}
-
-std::expected<void, std::string>
-extract_archive_libarchive(const std::filesystem::path&, const std::filesystem::path&)
-{
-  return std::unexpected("libarchive support not enabled at build time");
-}
-
-std::expected<std::filesystem::path, std::string>
-extract_member_libarchive(const std::filesystem::path&, const std::filesystem::path&,
-                          const std::filesystem::path&)
-{
-  return std::unexpected("libarchive support not enabled at build time");
-}
-
-} // namespace dirtoo::archive
-
-#endif
