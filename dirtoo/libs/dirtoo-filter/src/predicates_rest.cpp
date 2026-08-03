@@ -4,6 +4,7 @@
 #include "dirtoo/filter/predicates.hpp"
 
 #include "dirtoo/filter/media_meta_cache.hpp"
+#include "predicates_detail.hpp"
 
 #include <algorithm>
 #include <fstream>
@@ -1046,7 +1047,7 @@ public:
     if (item.is_directory || item.path.empty()) {
       return false;
     }
-    if (const auto meta = lookup_media(item.path); meta && meta->pages) {
+    if (const auto meta = detail::lookup_media(item.path); meta && meta->pages) {
       return apply_len_cmp(op_, static_cast<double>(*meta->pages), value_);
     }
     const auto pages = probe_pdf_pages(item.path);
@@ -1073,7 +1074,7 @@ public:
     if (item.is_directory || item.path.empty()) {
       return false;
     }
-    if (const auto meta = lookup_media(item.path); meta && meta->file_count) {
+    if (const auto meta = detail::lookup_media(item.path); meta && meta->file_count) {
       return apply_len_cmp(op_, static_cast<double>(*meta->file_count), value_);
     }
     if (!looks_like_archive(item.path)) {
