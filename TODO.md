@@ -469,7 +469,7 @@ Goal: smaller translation units and eventually fewer responsibilities on
 - [x] **R5** `FileListModel` — extract thumbnail/new-mark state helper; thin `data()`
       (`file_list_model_thumbs.cpp`: thumbs, new marks, child counts, icon_for)
 - [ ] **R6** `setup_central_ui` — after R2, build chrome in owners
-      (partial: `main_window_setup_central.cpp` holds setup_central_ui only)
+      (partial: setup split into `_central` / `_toolbar` / `_menus` + core workers/status)
 
 ### Explicit non-goals (this track)
 
