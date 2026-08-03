@@ -944,6 +944,13 @@ void MainWindow::showEvent(QShowEvent* event)
       }
     }
   }
+  // Prefer the file view for keyboard navigation right after startup
+  // (type-ahead, Home/End, arrows) instead of the location bar or toolbar.
+  if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr) {
+    graphics_view_->setFocus(Qt::OtherFocusReason);
+  } else if (QAbstractItemView* view = current_view()) {
+    view->setFocus(Qt::OtherFocusReason);
+  }
 }
 
 void MainWindow::closeEvent(QCloseEvent* event)

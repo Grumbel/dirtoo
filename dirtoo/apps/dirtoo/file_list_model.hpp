@@ -39,6 +39,8 @@ enum FileListRole {
   TimeGapSecondsRole = Qt::UserRole + 6,
   /// Non-recursive child entry count for directories (-1 unknown / pending).
   ChildCountRole = Qt::UserRole + 7,
+  /// True when the basename is a Unix-style hidden name (leading '.').
+  IsHiddenRole = Qt::UserRole + 8,
 };
 
 enum class ThumbnailStatus {

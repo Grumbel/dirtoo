@@ -1042,6 +1042,13 @@ void MainWindow::setup_status_and_services()
 
   leap_widget_ = new LeapWidget(this);
   connect(leap_widget_, &LeapWidget::leap, this, &MainWindow::on_leap);
+  connect(leap_widget_, &LeapWidget::closed, this, [this] {
+    if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr) {
+      graphics_view_->setFocus(Qt::OtherFocusReason);
+    } else if (QAbstractItemView* view = current_view()) {
+      view->setFocus(Qt::OtherFocusReason);
+    }
+  });
 
   // Debounce watcher storms (busy dirs otherwise clear+reload+rethumb every event).
   watcher_reload_timer_ = new QTimer(this);

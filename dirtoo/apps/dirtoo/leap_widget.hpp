@@ -28,6 +28,8 @@ public slots:
 signals:
   /// text, forward direction, wrap selection
   void leap(const QString& text, bool forward, bool from_key);
+  /// Emitted when the overlay is dismissed (Escape or focus loss).
+  void closed();
 
 protected:
   void showEvent(QShowEvent* event) override;

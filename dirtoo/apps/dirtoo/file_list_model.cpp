@@ -14,6 +14,7 @@
 
 #include <filesystem>
 
+#include <QColor>
 #include <QDateTime>
 #include <QFileIconProvider>
 #include <QFileInfo>
@@ -565,6 +566,25 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
 
   if (role == IsNewRole) {
     return is_new(QString::fromStdString(fi->path().string()));
+  }
+
+  if (role == IsHiddenRole) {
+    const std::string name = fi->basename();
+    return !name.empty() && name.front() == '.';
+  }
+
+  // Dim hidden (dotfile) captions / row background when "Show Hidden" is on.
+  if (role == Qt::ForegroundRole) {
+    const std::string name = fi->basename();
+    if (!name.empty() && name.front() == '.') {
+      return QColor(120, 120, 120);
+    }
+  }
+  if (role == Qt::BackgroundRole) {
+    const std::string name = fi->basename();
+    if (!name.empty() && name.front() == '.') {
+      return QColor(200, 200, 210);
+    }
   }
 
   if (role == ChildCountRole) {

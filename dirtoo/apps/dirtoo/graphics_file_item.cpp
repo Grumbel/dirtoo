@@ -122,6 +122,9 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
     QColor fill = highlight;
     fill.setAlpha(40);
     painter->fillRect(br, fill);
+  } else if (idx.data(IsHiddenRole).toBool()) {
+    // Distinct tile background for hidden (dot) files when shown.
+    painter->fillRect(br, QColor(200, 200, 210));
   }
   if (drop_target_) {
     QColor fill = highlight;

@@ -77,7 +77,9 @@ void LeapWidget::showEvent(QShowEvent* event)
 void LeapWidget::keyPressEvent(QKeyEvent* event)
 {
   if (event->key() == Qt::Key_Escape) {
+    clear();
     hide();
+    emit closed();
     event->accept();
     return;
   }
@@ -89,7 +91,9 @@ bool LeapWidget::eventFilter(QObject* obj, QEvent* event)
   if (obj == edit_ && event->type() == QEvent::KeyPress) {
     auto* ke = static_cast<QKeyEvent*>(event);
     if (ke->key() == Qt::Key_Escape) {
+      clear();
       hide();
+      emit closed();
       return true;
     }
     if (ke->key() == Qt::Key_Up) {
@@ -103,7 +107,10 @@ bool LeapWidget::eventFilter(QObject* obj, QEvent* event)
   }
   if (obj == edit_ && event->type() == QEvent::FocusOut) {
     // Delay hide so clicks on the list still work; simple: hide on focus out.
-    hide();
+    if (isVisible()) {
+      hide();
+      emit closed();
+    }
   }
   return QWidget::eventFilter(obj, event);
 }

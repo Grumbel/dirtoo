@@ -10,6 +10,7 @@
 #include "dirtoo/fs/file_info.hpp"
 
 #include <QApplication>
+#include <QColor>
 #include <QFileIconProvider>
 #include <QFontMetrics>
 #include <QMetaObject>
@@ -225,6 +226,10 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
       return;
     }
     const QStyle* style = opt.widget != nullptr ? opt.widget->style() : QApplication::style();
+    // Hidden-file row tint before the style panel (selection still wins via state).
+    if (!(opt.state & QStyle::State_Selected) && index.data(IsHiddenRole).toBool()) {
+      painter->fillRect(opt.rect, QColor(200, 200, 210));
+    }
     style->drawPrimitive(QStyle::PE_PanelItemViewItem, &opt, painter, opt.widget);
 
     const int icon = opt.decorationSize.isValid()
@@ -297,13 +302,15 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
 
   painter->setClipRect(opt.rect);
 
-  // Selection / hover background
+  // Selection / hover background; muted tile for hidden (dot) files.
   if (opt.state & QStyle::State_Selected) {
     painter->fillRect(opt.rect, opt.palette.highlight());
   } else if (opt.state & QStyle::State_MouseOver) {
     QColor c = opt.palette.highlight().color();
     c.setAlpha(40);
     painter->fillRect(opt.rect, c);
+  } else if (index.data(IsHiddenRole).toBool()) {
+    painter->fillRect(opt.rect, QColor(200, 200, 210));
   }
 
   const QIcon icon = opt.icon;

@@ -548,8 +548,12 @@ Python reference: experimental `dirtoo-py/experiments/udisks/` (`udisksqt.py`); 
 - [x] Search across big directory can still lock the UI
       (synthetic hits; batch append 48 + 50ms deferred flush; status throttle;
        notify_rows_appended — Detail virtualization still optional)
-- [ ] implement mount and eject for udisks
-- [ ] give icons for hidden files a different background color, see dirtoo-py/
+- [x] implement mount and eject for udisks
+      (UDisksClient::mount/unmount/eject + DevicesController context menu;
+       async D-Bus; already in Phases 4–5)
+- [x] give icons for hidden files a different background color, see dirtoo-py/
+      (IsHiddenRole; muted gray tile bg + dimmed foreground in Detail/List/
+       Icons/Graphics when basename starts with '.')
 - [ ] indicate when files are opened/closed (if that information comes
       via inotify for free, otherwise ignore for now)
 - [ ] directory thumbnails don't update when the directory content
@@ -569,8 +573,10 @@ Python reference: experimental `dirtoo-py/experiments/udisks/` (`udisksqt.py`); 
       switch is active
 - [ ] add support for more times: atime, ctime, birth
 - [ ] pressing shift selects/unselects the current item
-- [ ] the type ahead quick search should be closable via the Escape key
-- [ ] the fileview should have focus after startup
+- [x] the type ahead quick search should be closable via the Escape key
+      (LeapWidget Escape clears + hides + returns focus to parent)
+- [x] the fileview should have focus after startup
+      (showEvent focuses current_view / graphics_view)
 - [x] directory tree panel hide/show should be persistent
       (restore_settings applies ui/show_sidebar + ui/sidebar_width; persist
        skips width=0 while hidden so the last real width is kept)
