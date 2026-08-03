@@ -27,6 +27,8 @@
 #include "view_mode.hpp"
 #include "view_zoom.hpp"
 #include "filter_history.hpp"
+#include "directory_session.hpp"
+#include "search_session.hpp"
 #include "directory_load_worker.hpp"
 #include "sort_worker.hpp"
 #include "filter_worker.hpp"
@@ -240,8 +242,8 @@ private:
   ListPipelineWorkers list_workers_{this};
   watcher::DirectoryWatcher watcher_;
   archive::ArchiveManager archive_manager_;
-  fs::Location pending_archive_location_;
   ArchiveListing archive_listing_;
+  DirectorySession dir_session_;
   FileListModel* model_ = nullptr;
 
   TransferController transfer_controller_;
@@ -291,14 +293,8 @@ private:
   FilterHistory filter_history_;
   QWidget* search_row_ = nullptr;
   QLineEdit* search_edit_ = nullptr;
-  bool search_active_ = false;
-  std::vector<fs::FileInfo> search_results_;
-  std::vector<fs::FileInfo> search_batch_;
-  quint64 search_status_matched_ = 0; ///< last match count shown in status (throttle)
+  SearchSession search_session_;
   SearchController search_controller_;
-  bool soft_directory_reload_ = false;
-  QSet<QString> known_paths_;
-  fs::Location known_paths_location_;
   QTimer* watcher_reload_timer_ = nullptr;
   QStackedWidget* view_stack_ = nullptr;
   QTreeView* tree_view_ = nullptr;

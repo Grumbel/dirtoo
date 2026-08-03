@@ -106,8 +106,8 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event)
     auto* ke = static_cast<QKeyEvent*>(event);
     if (ke->key() == Qt::Key_Escape) {
       stop_search();
-      search_active_ = false;
-      search_results_.clear();
+      search_session_.active = false;
+      search_session_.results.clear();
       if (search_row_ != nullptr) {
         search_row_->hide();
       } else if (search_edit_ != nullptr) {

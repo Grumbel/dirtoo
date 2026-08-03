@@ -36,7 +36,7 @@ void MainWindow::request_async_sort()
 
 void MainWindow::on_sort_finished(quint64 generation, std::vector<fs::FileInfo> items)
 {
-  if (generation != list_workers_.sort_generation() || search_active_) {
+  if (generation != list_workers_.sort_generation() || search_session_.active) {
     return;
   }
   // match_/filter and show_hidden stay; only item order changes.

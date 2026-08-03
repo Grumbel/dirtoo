@@ -12,14 +12,14 @@ namespace dirtoo::app {
 
 void MainWindow::reload_directory(bool soft)
 {
-  if (search_active_) {
+  if (search_session_.active) {
     // Keep recursive search results until the user navigates away or closes search.
     return;
   }
   qInfo().noquote() << QStringLiteral("reload_directory soft=%1 path=%2")
                            .arg(soft)
                            .arg(QString::fromStdString(location_.as_url()));
-  soft_directory_reload_ = soft;
+  dir_session_.soft_reload = soft;
   if (!soft) {
     // Navigation/explicit refresh supersedes any pending soft watcher tick.
     if (watcher_reload_timer_ != nullptr) {
@@ -40,7 +40,7 @@ void MainWindow::reload_directory(bool soft)
     (void)archive_listing_.refresh_if_stale(location_.as_path(), &list_err);
   }
   if (location_.is_archive() && archive_listing_.ok()) {
-    soft_directory_reload_ = false;
+    dir_session_.soft_reload = false;
     auto items = archive_listing_.fileinfos_for(location_);
     if (model_ != nullptr) {
       model_->clear_child_counts();
@@ -97,7 +97,7 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
                            .arg(generation)
                            .arg(items.size());
 
-  if (generation != list_workers_.dir_load_generation() || search_active_) {
+  if (generation != list_workers_.dir_load_generation() || search_session_.active) {
     return;
   }
   // "New" badge: paths that appeared since we last listed this location.
@@ -110,29 +110,29 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
     for (const auto& fi : items) {
       next_paths.insert(QString::fromStdString(fi.path().string()));
     }
-    if (known_paths_location_ != location_) {
+    if (dir_session_.known_paths_location != location_) {
       // Different folder (or first load): no "new" stickers for the initial set.
       model_->clear_new_marks();
-    } else if (!known_paths_.empty()) {
+    } else if (!dir_session_.known_paths.empty()) {
       for (const QString& p : next_paths) {
-        if (!known_paths_.contains(p)) {
+        if (!dir_session_.known_paths.contains(p)) {
           model_->mark_new(p);
         }
       }
       // Drop thumbs for paths that vanished; drop "new" marks for those too.
-      for (const QString& p : known_paths_) {
+      for (const QString& p : dir_session_.known_paths) {
         if (!next_paths.contains(p)) {
           model_->clear_thumbnail(p);
         }
       }
       model_->prune_new_marks(next_paths);
     }
-    known_paths_ = next_paths;
-    known_paths_location_ = location_;
+    dir_session_.known_paths = next_paths;
+    dir_session_.known_paths_location = location_;
   }
   collection_.sorter().set_ascending(sort_ascending_);
-  const bool soft = soft_directory_reload_;
-  soft_directory_reload_ = false;
+  const bool soft = dir_session_.soft_reload;
+  dir_session_.soft_reload = false;
   // Soft watcher refresh: merge into existing collection (preserve order of
   // survivors, append newcomers) instead of replacing the whole vector.
   const bool content_filter =
@@ -158,7 +158,7 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
     refresh_list();
   }
   set_status(QStringLiteral("%1 items").arg(
-      soft ? known_paths_.size() : collection_.visible_items().size()));
+      soft ? dir_session_.known_paths.size() : collection_.visible_items().size()));
   // After soft path, visible may still be old until sort/filter apply; status updated again later.
   // Content filters own the visible list via FilterWorker; replace_items_sorted would
   // rebuild_visible with matchers (GUI I/O) or wipe the async filter result.

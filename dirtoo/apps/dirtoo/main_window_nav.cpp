@@ -21,8 +21,8 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
                            .arg(QString::fromStdString(location.as_url()))
                            .arg(record_history);
   stop_search();
-  search_active_ = false;
-  search_results_.clear();
+  search_session_.active = false;
+  search_session_.results.clear();
   if (search_row_ != nullptr ? search_row_->isVisible()
       : (search_edit_ != nullptr && search_edit_->isVisible())) {
     if (search_row_ != nullptr) {
@@ -54,7 +54,7 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
   update_history_actions();
 
   if (location_.is_archive()) {
-    pending_archive_location_ = location_;
+    dir_session_.pending_archive_location = location_;
 
     // Reuse index when navigating within the same archive file.
     if (archive_listing_.ready_for(location_.as_path())) {
@@ -147,7 +147,7 @@ void MainWindow::on_entries_changed(const QStringList& created, const QStringLis
 {
   // Prefer incremental updates when the change set is small and we are not in a
   // mode that needs a full rescan (search, archive index, content filter).
-  if (search_active_ || location_.is_archive()) {
+  if (search_session_.active || location_.is_archive()) {
     if (watcher_reload_timer_ != nullptr) {
       watcher_reload_timer_->start();
     }

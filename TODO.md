@@ -461,6 +461,7 @@ Goal: smaller translation units and eventually fewer responsibilities on
       - [x] `ThumbnailCoordinator` — Thumbnailer + aliases + dir montages
       - [x] `SidebarPlaces` — places model + rebuild/sync
       - [x] `ViewZoom` + `ViewMode` header + `FilterHistory`
+      - [x] `DirectorySession` + `SearchSession` value types
       - `LocationChrome` — breadcrumb / line edit / path completion
         (partial: location TU + **PathCompletionService** owns worker/completer/timer)
       - `SidebarController` — tree + places (devices already partly extracted)

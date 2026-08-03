@@ -124,7 +124,7 @@ void MainWindow::request_async_filter(bool keep_previous_visible)
 void MainWindow::on_filter_finished(quint64 generation, std::vector<dirtoo::fs::FileInfo> visible,
                                     bool parse_ok)
 {
-  if (generation != list_workers_.filter_generation() || search_active_) {
+  if (generation != list_workers_.filter_generation() || search_session_.active) {
     return;
   }
   // Apply current sort to the filtered list (in-memory only; no FS I/O).
@@ -165,7 +165,7 @@ void MainWindow::on_show_search()
 void MainWindow::stop_search()
 {
   search_controller_.stop();
-  search_batch_.clear();
+  search_session_.batch.clear();
 }
 
 
@@ -184,10 +184,10 @@ void MainWindow::on_search_submitted()
   }
 
   stop_search();
-  search_results_.clear();
-  search_batch_.clear();
-  search_status_matched_ = 0;
-  search_active_ = true;
+  search_session_.results.clear();
+  search_session_.batch.clear();
+  search_session_.status_matched = 0;
+  search_session_.active = true;
   collection_.clear();
   collection_.clear_filter();
   refresh_list();
@@ -203,24 +203,24 @@ void MainWindow::on_search_submitted()
 
 void MainWindow::on_search_match(const QString& path, bool is_directory, quint64 size)
 {
-  if (!search_active_) {
+  if (!search_session_.active) {
     return;
   }
   // Synthetic only: avoid FileInfo::from_path (stat) on the GUI thread for every hit.
   const std::filesystem::path p{path.toStdString()};
   auto info = fs::FileInfo::synthetic(fs::Location::from_path(p), p.filename().string(),
                                       is_directory, size);
-  search_results_.push_back(info);
-  search_batch_.push_back(std::move(info));
+  search_session_.results.push_back(info);
+  search_session_.batch.push_back(std::move(info));
   // Incremental inserts (batched) beat periodic full layoutChanged on large sets.
   // Early results flush soon for responsiveness; larger batches later reduce model churn.
-  if (search_batch_.size() >= 48 || search_results_.size() < 24) {
+  if (search_session_.batch.size() >= 48 || search_session_.results.size() < 24) {
     flush_search_batch();
-  } else if (search_batch_.size() == 1) {
+  } else if (search_session_.batch.size() == 1) {
     // Schedule a deferred flush so a trickle of hits still paints without waiting
     // for a full batch (or search end).
     QTimer::singleShot(50, this, [this] {
-      if (search_active_) {
+      if (search_session_.active) {
         flush_search_batch();
       }
     });
@@ -229,12 +229,12 @@ void MainWindow::on_search_match(const QString& path, bool is_directory, quint64
 
 void MainWindow::flush_search_batch()
 {
-  if (search_batch_.empty()) {
+  if (search_session_.batch.empty()) {
     return;
   }
-  const int count = static_cast<int>(search_batch_.size());
-  collection_.append_visible_items(std::move(search_batch_));
-  search_batch_.clear();
+  const int count = static_cast<int>(search_session_.batch.size());
+  collection_.append_visible_items(std::move(search_session_.batch));
+  search_session_.batch.clear();
   if (model_ != nullptr) {
     model_->notify_rows_appended(count);
   } else {
@@ -247,11 +247,11 @@ void MainWindow::on_search_progress(quint64 visited, quint64 matched)
 {
   (void)visited;
   // Throttle status updates — progress can fire very frequently on huge trees.
-  if (matched == search_status_matched_) {
+  if (matched == search_session_.status_matched) {
     return;
   }
-  if (matched < 32 || matched - search_status_matched_ >= 32) {
-    search_status_matched_ = matched;
+  if (matched < 32 || matched - search_session_.status_matched >= 32) {
+    search_session_.status_matched = matched;
     set_status(QStringLiteral("Searching… %1 matches").arg(matched));
   }
 }
@@ -273,7 +273,7 @@ void MainWindow::on_search_finished(quint64 matched, quint64 visited, const QStr
         QStringLiteral("Search done — %1 matches (%2 visited)").arg(matched).arg(visited));
   }
   // Thread lifecycle owned by SearchController.
-  // Keep search_active_ true so directory watcher does not wipe results until user navigates.
+  // Keep search_session_.active true so directory watcher does not wipe results until user navigates.
 }
 
 void MainWindow::on_clear_filter()
@@ -281,8 +281,8 @@ void MainWindow::on_clear_filter()
   if (search_row_ != nullptr ? search_row_->isVisible()
       : (search_edit_ != nullptr && search_edit_->isVisible())) {
     stop_search();
-    search_active_ = false;
-    search_results_.clear();
+    search_session_.active = false;
+    search_session_.results.clear();
     if (search_row_ != nullptr) {
       search_row_->hide();
     } else if (search_edit_ != nullptr) {
