@@ -20,6 +20,48 @@
 
 namespace dirtoo::app {
 
+void MainWindow::schedule_directory_thumbnails_low_priority()
+{
+  // Defer expensive montages until after ordinary file thumbs have had a chance.
+  QTimer::singleShot(2500, this, [this] {
+    if (dir_thumb_worker_ == nullptr || model_ == nullptr) {
+      return;
+    }
+    QStringList dirs;
+    for (const auto& fi : collection_.visible_items()) {
+      if (!fi.is_directory() || fi.is_synthetic()) {
+        continue;
+      }
+      const QString path = QString::fromStdString(fi.path().string());
+      const QString cache =
+          thumbnail::Thumbnailer::cache_path_for(fi.location(), QStringLiteral("large"));
+      if (QFile::exists(cache)) {
+        // Keep showing existing montage; skip rebuild unless cleared.
+        if (model_->thumbnail_status(path) != ThumbnailStatus::Ready) {
+          model_->set_thumbnail(path, QIcon(cache));
+        }
+        continue;
+      }
+      if (model_->thumbnail_status(path) == ThumbnailStatus::Pending
+          || model_->thumbnail_status(path) == ThumbnailStatus::Ready) {
+        continue;
+      }
+      dirs << path;
+      model_->set_thumbnail_pending(path);
+    }
+    if (dirs.isEmpty()) {
+      return;
+    }
+    // Cap batch size so a huge folder listing does not monopolize the worker.
+    constexpr int kMax = 12;
+    if (dirs.size() > kMax) {
+      dirs = dirs.mid(0, kMax);
+    }
+    QMetaObject::invokeMethod(dir_thumb_worker_, "generate", Qt::QueuedConnection,
+                              Q_ARG(QStringList, dirs));
+  });
+}
+
 void MainWindow::request_thumbnails_for_visible()
 {
   // Debounce rapid refresh/scroll storms (generation-safe via singleShot capturing this).
@@ -88,17 +130,21 @@ void MainWindow::request_thumbnails_for_visible()
     QStringList mimes;
     locs.reserve(rows.size());
     mimes.reserve(static_cast<int>(rows.size()));
+    bool any_dir_without_cache = false;
     for (int r : rows) {
       if (r < 0 || static_cast<std::size_t>(r) >= visible.size()) {
         continue;
       }
       const auto& fi = visible[static_cast<std::size_t>(r)];
       if (fi.is_directory()) {
-        // Use an existing XDG/cache montage if present; do not auto-generate here.
+        // Use an existing XDG/cache montage if present; auto-generate is deferred
+        // via schedule_directory_thumbnails_low_priority().
         const QString cache = thumbnail::Thumbnailer::cache_path_for(fi.location(),
                                                                      QStringLiteral("large"));
         if (QFile::exists(cache) && model_ != nullptr) {
           model_->set_thumbnail(QString::fromStdString(fi.path().string()), QIcon(cache));
+        } else {
+          any_dir_without_cache = true;
         }
         continue;
       }
@@ -169,6 +215,9 @@ void MainWindow::request_thumbnails_for_visible()
       qDebug().noquote() << QStringLiteral("thumbnails: requesting %1 (viewport/batch)")
                                 .arg(locs.size());
       thumbnailer_.request_many(locs, mimes, QStringLiteral("large"));
+    }
+    if (any_dir_without_cache) {
+      schedule_directory_thumbnails_low_priority();
     }
   });
 }

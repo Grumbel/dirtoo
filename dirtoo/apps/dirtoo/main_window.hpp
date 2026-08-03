@@ -202,6 +202,8 @@ private:
   void set_status(const QString& text);
   void set_clipboard(ClipboardMode mode);
   void request_thumbnails_for_visible();
+  /// Queue montage builds for visible directories after a delay (low priority).
+  void schedule_directory_thumbnails_low_priority();
   void start_transfer(const TransferRequest& request);
   /// Resolve drop/paste URLs to real paths (extract archive members off-thread if needed).
   void begin_transfer_from_urls(const QList<QUrl>& urls, Qt::DropAction action,

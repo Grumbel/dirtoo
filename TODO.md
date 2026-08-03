@@ -556,23 +556,29 @@ Python reference: experimental `dirtoo-py/experiments/udisks/` (`udisksqt.py`); 
        Icons/Graphics when basename starts with '.')
 - [ ] indicate when files are opened/closed (if that information comes
       via inotify for free, otherwise ignore for now)
-- [ ] directory thumbnails don't update when the directory content
+      (IN_CLOSE_WRITE not in watcher mask yet; OPEN would be noisy — deferred)
+- [x] directory thumbnails don't update when the directory content
       changed, or maybe it's the thumbnailing in general getting
       stuck?
-- [ ] directory thumbnails should be created automatically, though
+      (clear montage status on create/remove/modify of dirs; low-priority regen)
+- [x] directory thumbnails should be created automatically, though
       with very low priority only after everything else is done, as
       they might get expensive
-- [ ] "Transfering files" dialog only shows progress for file count,
+      (schedule_directory_thumbnails_low_priority: 2.5s delay, max 12 dirs)
+- [x] "Transfering files" dialog only shows progress for file count,
       should show the byte count transfer for the currently
       transfering file
+      (dirops streams with on_progress mid-file; dialog shows bytes + %)
 - [ ] a fourth file view that shows icons at their relative size
       compared to what else is in the directory (do deffer for now)
-- [ ] thumbnail generation doesn't start for new files, "Reload Thumbnails" doesn't make them show up either
+- [x] thumbnail generation doesn't start for new files, "Reload Thumbnails" doesn't make them show up either
+      (on_entries_changed requests thumbs for created regular files by path)
 - [ ] add button that switches the whole file manager into read-only
       mode, no file system manupulation should be possible when that
       switch is active
 - [ ] add support for more times: atime, ctime, birth
-- [ ] pressing shift selects/unselects the current item
+- [x] pressing shift selects/unselects the current item
+      (Shift+Space toggles cursor selection in Icons; Ctrl+Space unchanged)
 - [x] the type ahead quick search should be closable via the Escape key
       (LeapWidget Escape clears + hides + returns focus to parent)
 - [x] the fileview should have focus after startup

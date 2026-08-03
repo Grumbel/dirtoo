@@ -7,6 +7,7 @@
 #include <fstream>
 #include <system_error>
 #include <utility>
+#include <vector>
 
 namespace dirops {
 namespace {
@@ -117,18 +118,81 @@ OpResult copy_regular_file(const std::filesystem::path& from,
     }
   }
 
-  std::error_code ec;
-  fs::copy_file(from, dest, fs::copy_options::none, ec);
-  if (ec) {
-    return std::unexpected(Error{ec, from, "copy_file failed"});
+  std::error_code sec;
+  const std::uint64_t total = static_cast<std::uint64_t>(fs::file_size(from, sec));
+  // When a progress callback is installed, stream the file in chunks so the GUI
+  // can show per-file byte progress. Otherwise use the atomic-ish copy_file path.
+  if (options.on_progress) {
+    std::ifstream in(from, std::ios::binary);
+    if (!in) {
+      return std::unexpected(Error{
+          std::make_error_code(std::errc::io_error),
+          from,
+          "failed to open source for copy",
+      });
+    }
+    std::ofstream out(dest, std::ios::binary | std::ios::trunc);
+    if (!out) {
+      return std::unexpected(Error{
+          std::make_error_code(std::errc::io_error),
+          dest,
+          "failed to open destination for copy",
+      });
+    }
+    constexpr std::size_t kBuf = 256 * 1024;
+    std::vector<char> buf(kBuf);
+    std::uint64_t done = 0;
+    report_progress(options, 0, total, dest);
+    while (in) {
+      if (cancelled(options)) {
+        out.close();
+        std::error_code rm_ec;
+        fs::remove(dest, rm_ec);
+        Result r;
+        r.cancelled = true;
+        return r;
+      }
+      in.read(buf.data(), static_cast<std::streamsize>(buf.size()));
+      const auto n = in.gcount();
+      if (n > 0) {
+        out.write(buf.data(), n);
+        if (!out) {
+          return std::unexpected(Error{
+              std::make_error_code(std::errc::io_error),
+              dest,
+              "write failed during copy",
+          });
+        }
+        done += static_cast<std::uint64_t>(n);
+        report_progress(options, done, total > 0 ? total : done, dest);
+      }
+    }
+    if (in.bad()) {
+      return std::unexpected(Error{
+          std::make_error_code(std::errc::io_error),
+          from,
+          "read failed during copy",
+      });
+    }
+    out.close();
+    // Preserve mtime/permissions best-effort (copy_file would do this).
+    std::error_code cec;
+    fs::last_write_time(dest, fs::last_write_time(from, cec), cec);
+    fs::permissions(dest, fs::status(from, cec).permissions(),
+                    fs::perm_options::replace, cec);
+  } else {
+    std::error_code ec;
+    fs::copy_file(from, dest, fs::copy_options::none, ec);
+    if (ec) {
+      return std::unexpected(Error{ec, from, "copy_file failed"});
+    }
+    std::uint64_t size = total;
+    if (size == 0) {
+      std::error_code zec;
+      size = static_cast<std::uint64_t>(fs::file_size(dest, zec));
+    }
+    report_progress(options, size, size, dest);
   }
-
-  std::uint64_t size = 0;
-  {
-    std::error_code sec;
-    size = static_cast<std::uint64_t>(fs::file_size(dest, sec));
-  }
-  report_progress(options, size, size, dest);
 
   Result r;
   r.items.push_back(ItemResult{.source = from, .destination = dest});

@@ -576,8 +576,8 @@ void GraphicsFileView::keyPressEvent(QKeyEvent* event)
     event->accept();
     return;
   case Qt::Key_Space:
-    if (ctrl && cursor_row_ >= 0) {
-      // Toggle selection on cursor item (Python Ctrl+Space).
+    // Toggle selection on cursor item: Ctrl+Space (Python) or Shift+Space.
+    if ((ctrl || shift) && cursor_row_ >= 0) {
       if (selected_row_set_.contains(cursor_row_)) {
         selected_row_set_.remove(cursor_row_);
         if (static_cast<std::size_t>(cursor_row_) < items_.size()

@@ -88,7 +88,8 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event)
       const bool cursor_key =
           k == Qt::Key_Left || k == Qt::Key_Right || k == Qt::Key_Up || k == Qt::Key_Down
           || k == Qt::Key_Return || k == Qt::Key_Enter || k == Qt::Key_Escape
-          || (k == Qt::Key_Space && (ke->modifiers() & Qt::ControlModifier));
+          || (k == Qt::Key_Space
+              && (ke->modifiers() & (Qt::ControlModifier | Qt::ShiftModifier)));
       if (cursor_key) {
         QCoreApplication::sendEvent(graphics_view_, ke);
         return true;

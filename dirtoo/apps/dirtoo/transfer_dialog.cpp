@@ -221,10 +221,12 @@ void TransferDialog::update_transferred_label()
 {
   const QString done = format_byte_size(bytes_done_);
   if (bytes_total_ == 0) {
-    transferred_label_->setText(done);
+    transferred_label_->setText(QStringLiteral("%1 (current file)").arg(done));
   } else {
     const QString total = format_byte_size(bytes_total_);
-    transferred_label_->setText(QStringLiteral("%1 / %2").arg(done, total));
+    const int pct = static_cast<int>((bytes_done_ * 100) / bytes_total_);
+    transferred_label_->setText(
+        QStringLiteral("%1 / %2 (%3%) — current file").arg(done, total).arg(pct));
   }
 }
 

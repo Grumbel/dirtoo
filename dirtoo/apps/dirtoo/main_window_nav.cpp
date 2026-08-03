@@ -10,6 +10,7 @@
 #include <QFileInfo>
 #include <QLineEdit>
 #include <QMessageBox>
+#include <QMimeDatabase>
 #include <QTimer>
 #include <QTreeView>
 #include <QSplitter>
@@ -216,7 +217,39 @@ void MainWindow::on_entries_changed(const QStringList& created, const QStringLis
     model_->refresh();
   }
   update_status_selection();
+  // New files often sit outside the current viewport batch; request them by path
+  // so "Reload Thumbnails" is not required for freshly created items.
+  if (model_ != nullptr && !created.isEmpty()) {
+    QMimeDatabase mime_db;
+    std::vector<fs::Location> locs;
+    QStringList mimes;
+    for (const QString& path : created) {
+      std::error_code ec;
+      const std::filesystem::path p{path.toStdString()};
+      if (!std::filesystem::is_regular_file(p, ec) || ec) {
+        continue;
+      }
+      model_->clear_thumbnail(path);
+      model_->set_thumbnail_pending(path);
+      locs.push_back(fs::Location::from_path(p));
+      mimes.push_back(mime_db.mimeTypeForFile(path, QMimeDatabase::MatchExtension).name());
+    }
+    if (!locs.empty()) {
+      thumbnailer_.request_many(locs, mimes, QStringLiteral("large"));
+    }
+  }
   request_thumbnails_for_visible();
+  // Directory content changed: drop stale montage status so low-priority regen can run.
+  if (model_ != nullptr) {
+    for (const QString& path : created + removed + modified) {
+      std::error_code ec;
+      const std::filesystem::path p{path.toStdString()};
+      if (std::filesystem::is_directory(p, ec) && !ec) {
+        model_->clear_thumbnail(path);
+      }
+    }
+  }
+  schedule_directory_thumbnails_low_priority();
 }
 
 
