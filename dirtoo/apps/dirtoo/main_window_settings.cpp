@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include "view_zoom.hpp"
 
 #include "app_settings.hpp"
 #include "preferences_dialog.hpp"
@@ -21,9 +22,10 @@ void MainWindow::restore_settings()
   if (crop_thumbnails_act_ != nullptr) {
     crop_thumbnails_act_->setChecked(s.crop_thumbnails);
   }
-  zoom_icons_ = std::clamp(s.zoom_icons, 0, static_cast<int>(std::size(kZoomLevels)) - 1);
-  zoom_list_ = std::clamp(s.zoom_list, 0, 6);
-  zoom_detail_ = std::clamp(s.zoom_detail, 0, 6);
+  zoom_.icons = s.zoom_icons;
+  zoom_.list = s.zoom_list;
+  zoom_.detail = s.zoom_detail;
+  zoom_.clamp_all();
   if (!s.detail_columns.isEmpty()) {
     detail_columns_ = s.detail_columns;
   }
@@ -139,10 +141,10 @@ void MainWindow::persist_settings() const
   } else {
     s.view_mode = QStringLiteral("detail");
   }
-  s.zoom_icons = zoom_icons_;
-  s.zoom_list = zoom_list_;
-  s.zoom_detail = zoom_detail_;
-  s.zoom_index = zoom_icons_;
+  s.zoom_icons = zoom_.icons;
+  s.zoom_list = zoom_.list;
+  s.zoom_detail = zoom_.detail;
+  s.zoom_index = zoom_.icons;
   s.detail_columns = detail_columns_;
   if (model_ != nullptr) {
     s.icon_detail_level = model_->icon_detail_level();
@@ -198,10 +200,10 @@ void MainWindow::on_preferences()
   } else {
     s.view_mode = QStringLiteral("detail");
   }
-  s.zoom_icons = zoom_icons_;
-  s.zoom_list = zoom_list_;
-  s.zoom_detail = zoom_detail_;
-  s.zoom_index = zoom_icons_;
+  s.zoom_icons = zoom_.icons;
+  s.zoom_list = zoom_.list;
+  s.zoom_detail = zoom_.detail;
+  s.zoom_index = zoom_.icons;
   s.detail_columns = detail_columns_;
   if (model_ != nullptr) {
     s.icon_detail_level = model_->icon_detail_level();
@@ -243,9 +245,10 @@ void MainWindow::apply_settings(const AppSettings& s)
       crop_thumbnails_act_->setChecked(s.crop_thumbnails);
     }
   }
-  zoom_icons_ = std::clamp(s.zoom_icons, 0, static_cast<int>(std::size(kZoomLevels)) - 1);
-  zoom_list_ = std::clamp(s.zoom_list, 0, 6);
-  zoom_detail_ = std::clamp(s.zoom_detail, 0, 6);
+  zoom_.icons = s.zoom_icons;
+  zoom_.list = s.zoom_list;
+  zoom_.detail = s.zoom_detail;
+  zoom_.clamp_all();
   if (!s.detail_columns.isEmpty()) {
     detail_columns_ = s.detail_columns;
   }

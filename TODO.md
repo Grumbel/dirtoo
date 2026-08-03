@@ -460,6 +460,7 @@ Goal: smaller translation units and eventually fewer responsibilities on
       - [x] `PathCompletionService` — location-bar completion worker/completer
       - [x] `ThumbnailCoordinator` — Thumbnailer + aliases + dir montages
       - [x] `SidebarPlaces` — places model + rebuild/sync
+      - [x] `ViewZoom` + `ViewMode` header + `FilterHistory`
       - `LocationChrome` — breadcrumb / line edit / path completion
         (partial: location TU + **PathCompletionService** owns worker/completer/timer)
       - `SidebarController` — tree + places (devices already partly extracted)

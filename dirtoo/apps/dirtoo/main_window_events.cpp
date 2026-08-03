@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include "filter_history.hpp"
 
 #include <QEvent>
 #include <QKeyEvent>
@@ -121,39 +122,26 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event)
   if (obj == filter_edit_ && event->type() == QEvent::KeyPress) {
     auto* ke = static_cast<QKeyEvent*>(event);
     if (ke->key() == Qt::Key_Up) {
-      if (filter_history_.isEmpty()) {
+      if (filter_history_.empty()) {
         return false; // let QLineEdit handle cursor / default
       }
-      if (filter_history_index_ < 0) {
-        filter_history_index_ = filter_history_.size() - 1;
-      } else if (filter_history_index_ > 0) {
-        --filter_history_index_;
-      }
-      filter_edit_->setText(filter_history_.at(filter_history_index_));
+      filter_edit_->setText(filter_history_.older());
       return true;
     }
     if (ke->key() == Qt::Key_Down) {
-      if (filter_history_.isEmpty() || filter_history_index_ < 0) {
+      if (filter_history_.empty() || filter_history_.index() < 0) {
         return false;
       }
-      if (filter_history_index_ + 1 < filter_history_.size()) {
-        ++filter_history_index_;
-        filter_edit_->setText(filter_history_.at(filter_history_index_));
-      } else {
-        filter_history_index_ = -1;
+      const QString newer = filter_history_.newer();
+      if (newer.isEmpty() && filter_history_.index() < 0) {
         filter_edit_->clear();
+      } else if (!newer.isEmpty()) {
+        filter_edit_->setText(newer);
       }
       return true;
     }
     if (ke->key() == Qt::Key_Return || ke->key() == Qt::Key_Enter) {
-      const QString text = filter_edit_->text();
-      if (!text.isEmpty() && (filter_history_.isEmpty() || filter_history_.last() != text)) {
-        filter_history_.append(text);
-        if (filter_history_.size() > 50) {
-          filter_history_.removeFirst();
-        }
-      }
-      filter_history_index_ = -1;
+      filter_history_.push(filter_edit_->text());
     }
   }
 

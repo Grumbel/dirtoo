@@ -24,6 +24,9 @@
 #include "path_completion_service.hpp"
 #include "list_pipeline_workers.hpp"
 #include "sidebar_places.hpp"
+#include "view_mode.hpp"
+#include "view_zoom.hpp"
+#include "filter_history.hpp"
 #include "directory_load_worker.hpp"
 #include "sort_worker.hpp"
 #include "filter_worker.hpp"
@@ -62,11 +65,6 @@ class QToolButton;
 
 namespace dirtoo::app {
 
-enum class ViewMode {
-  Detail,
-  Icons,
-  SmallIcons, // List view: icon+name rows in columns (Win95 Explorer List)
-};
 
 class MainWindow : public QMainWindow {
   Q_OBJECT
@@ -256,14 +254,11 @@ private:
   void update_sort_toolbar_label();
   ViewMode view_mode_ = ViewMode::Detail;
 
-  static constexpr int kZoomLevels[] = {48, 64, 96, 128, 192, 256, 384, 512, 768, 1024};
-  int zoom_icons_ = 2;
-  int zoom_list_ = 2;
-  int zoom_detail_ = 2;
+  ViewZoom zoom_;
   QStringList detail_columns_;
   void apply_detail_column_visibility();
-  [[nodiscard]] int& zoom_for_current_view();
-  [[nodiscard]] int zoom_for_current_view() const;
+  [[nodiscard]] int& zoom_for_current_view() { return zoom_.for_mode(view_mode_); }
+  [[nodiscard]] int zoom_for_current_view() const { return zoom_.for_mode(view_mode_); }
 
   QLineEdit* location_edit_ = nullptr;
   LocationButtonBar* location_buttons_ = nullptr;
@@ -293,8 +288,7 @@ private:
   void update_mutation_actions();
   QWidget* filter_row_ = nullptr;
   QLineEdit* filter_edit_ = nullptr;
-  QStringList filter_history_;
-  int filter_history_index_ = -1;
+  FilterHistory filter_history_;
   QWidget* search_row_ = nullptr;
   QLineEdit* search_edit_ = nullptr;
   bool search_active_ = false;

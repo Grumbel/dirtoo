@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include "view_zoom.hpp"
 
 #include "file_item_delegate.hpp"
 #include "app_settings.hpp"
@@ -16,7 +17,7 @@ void MainWindow::apply_icon_zoom()
     // Windows 95 Explorer "List" view: small icon left of filename, columns
     // filled top-to-bottom then left-to-right.
     static constexpr int kSmall[] = {16, 24, 32, 48, 64, 96, 128};
-    const int zi = std::clamp(zoom_list_, 0, static_cast<int>(std::size(kSmall)) - 1);
+    const int zi = std::clamp(zoom_.list, 0, static_cast<int>(std::size(kSmall)) - 1);
     const int size = kSmall[zi];
     icon_view_->setViewMode(QListView::ListMode);
     icon_view_->setFlow(QListView::TopToBottom);
@@ -41,7 +42,7 @@ void MainWindow::apply_icon_zoom()
 
   if (view_mode_ == ViewMode::Detail) {
     static constexpr int kDetail[] = {16, 24, 32, 48, 64, 96, 128};
-    const int zi = std::clamp(zoom_detail_, 0, static_cast<int>(std::size(kDetail)) - 1);
+    const int zi = std::clamp(zoom_.detail, 0, static_cast<int>(std::size(kDetail)) - 1);
     const int size = kDetail[zi];
     if (tree_view_ != nullptr) {
       tree_view_->setIconSize(QSize(size, size));
@@ -49,7 +50,7 @@ void MainWindow::apply_icon_zoom()
     return;
   }
 
-  const int size = kZoomLevels[std::clamp(zoom_icons_, 0, static_cast<int>(std::size(kZoomLevels)) - 1)];
+  const int size = ViewZoom::kIconLevels[std::clamp(zoom_.icons, 0, static_cast<int>(std::size(ViewZoom::kIconLevels)) - 1)];
   if (view_mode_ == ViewMode::Icons) {
     icon_view_->setViewMode(QListView::IconMode);
     icon_view_->setFlow(QListView::LeftToRight);
@@ -111,36 +112,11 @@ void MainWindow::on_less_icon_details()
   apply_icon_detail_level();
 }
 
-int& MainWindow::zoom_for_current_view()
-{
-  switch (view_mode_) {
-  case ViewMode::SmallIcons:
-    return zoom_list_;
-  case ViewMode::Detail:
-    return zoom_detail_;
-  case ViewMode::Icons:
-  default:
-    return zoom_icons_;
-  }
-}
-
-int MainWindow::zoom_for_current_view() const
-{
-  switch (view_mode_) {
-  case ViewMode::SmallIcons:
-    return zoom_list_;
-  case ViewMode::Detail:
-    return zoom_detail_;
-  case ViewMode::Icons:
-  default:
-    return zoom_icons_;
-  }
-}
 
 void MainWindow::on_zoom_in()
 {
   const int max_zi = (view_mode_ == ViewMode::Icons)
-                         ? static_cast<int>(std::size(kZoomLevels)) - 1
+                         ? static_cast<int>(std::size(ViewZoom::kIconLevels)) - 1
                          : 6;
   int& zi = zoom_for_current_view();
   if (zi < max_zi) {
