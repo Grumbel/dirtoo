@@ -85,6 +85,25 @@ void MainWindow::restore_settings()
   } else {
     set_view_mode(ViewMode::Detail);
   }
+  // Directory tree sidebar visibility + width (persisted as ui/show_sidebar,
+  // ui/sidebar_width). Apply before restoreGeometry so the splitter layout is
+  // consistent with the saved window size.
+  if (show_sidebar_act_ != nullptr) {
+    show_sidebar_act_->setChecked(s.show_sidebar);
+  }
+  if (sidebar_widget_ != nullptr) {
+    sidebar_widget_->setVisible(s.show_sidebar);
+  }
+  if (main_splitter_ != nullptr && s.sidebar_width > 40) {
+    QList<int> sizes = main_splitter_->sizes();
+    if (sizes.size() >= 2) {
+      sizes[0] = s.sidebar_width;
+      main_splitter_->setSizes(sizes);
+    }
+  }
+  if (directory_tree_model_ != nullptr) {
+    directory_tree_model_->set_show_hidden(s.show_hidden);
+  }
   if (!s.window_geometry.isEmpty()) {
     restoreGeometry(s.window_geometry);
   }
@@ -132,9 +151,11 @@ void MainWindow::persist_settings() const
   s.show_hidden = collection_.show_hidden();
   s.show_filter = show_filter_act_ != nullptr && show_filter_act_->isChecked();
   s.show_sidebar = show_sidebar_act_ != nullptr && show_sidebar_act_->isChecked();
-  if (main_splitter_ != nullptr) {
+  // Only record a usable width while the sidebar is visible; a hidden splitter
+  // child may report 0 and would otherwise clobber the saved width.
+  if (main_splitter_ != nullptr && s.show_sidebar) {
     const QList<int> sizes = main_splitter_->sizes();
-    if (!sizes.isEmpty()) {
+    if (!sizes.isEmpty() && sizes[0] > 40) {
       s.sidebar_width = sizes[0];
     }
   }

@@ -571,4 +571,6 @@ Python reference: experimental `dirtoo-py/experiments/udisks/` (`udisksqt.py`); 
 - [ ] pressing shift selects/unselects the current item
 - [ ] the type ahead quick search should be closable via the Escape key
 - [ ] the fileview should have focus after startup
-- [ ] directory tree panel hide/show should be persistent
+- [x] directory tree panel hide/show should be persistent
+      (restore_settings applies ui/show_sidebar + ui/sidebar_width; persist
+       skips width=0 while hidden so the last real width is kept)
