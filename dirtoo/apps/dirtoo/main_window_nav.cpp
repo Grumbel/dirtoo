@@ -228,7 +228,7 @@ void MainWindow::on_entries_changed(const QStringList& created, const QStringLis
       mimes.push_back(mime_db.mimeTypeForFile(path, QMimeDatabase::MatchExtension).name());
     }
     if (!locs.empty()) {
-      thumbnailer_.request_many(locs, mimes, QStringLiteral("large"));
+      request_thumbnails_for_paths(locs, mimes);
     }
   }
   request_thumbnails_for_visible();

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include "directory_thumbnail_worker.hpp"
 
 #include "archive_member_cache.hpp"
 #include "dirtoo/archive/archive_index.hpp"
@@ -26,6 +27,38 @@ void MainWindow::clear_thumb_aliases()
 {
   thumb_alias_.clear();
 }
+
+void MainWindow::request_thumbnails_for_paths(const std::vector<fs::Location>& locs,
+                                             const QStringList& mimes)
+{
+  if (locs.empty()) {
+    return;
+  }
+  thumbnailer_.request_many(locs, mimes, QStringLiteral("large"));
+}
+
+void MainWindow::wire_thumbnail_services()
+{
+  connect(&thumbnailer_, &thumbnail::Thumbnailer::thumbnail_ready, this,
+          &MainWindow::on_thumbnail_ready);
+  connect(&thumbnailer_, &thumbnail::Thumbnailer::thumbnail_failed, this,
+          &MainWindow::on_thumbnail_failed);
+  if (dir_thumb_worker_ != nullptr) {
+    connect(dir_thumb_worker_, &DirectoryThumbnailWorker::thumbnail_ready, this,
+            &MainWindow::on_thumbnail_ready);
+  }
+}
+
+void MainWindow::shutdown_thumbnail_workers()
+{
+  cancel_all_thumbnails();
+  clear_thumb_aliases();
+  if (dir_thumb_thread_ != nullptr) {
+    dir_thumb_thread_->quit();
+    dir_thumb_thread_->wait(3000);
+  }
+}
+
 
 
 void MainWindow::schedule_directory_thumbnails_low_priority()

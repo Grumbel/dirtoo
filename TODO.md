@@ -462,6 +462,7 @@ Goal: smaller translation units and eventually fewer responsibilities on
       - `SidebarController` — tree + places (devices already partly extracted)
         (partial: `main_window_sidebar.cpp` — toggle/activate/sync/rebuild places)
       - `ThumbnailCoordinator` — visible batch, dir montages, `thumb_alias_`
+        (partial: cancel/clear/request_paths/wire/shutdown APIs; members still on MainWindow)
 - [x] **R3** Split `libs/dirtoo-filter/src/predicates.cpp` (~1.8k) by domain
       (`_name` / `_media` / `_fuzzy` / `_meta` / `_content` / `_misc` + `predicates_detail.hpp`)
 - [x] **R4** `GraphicsFileView` impl split — layout/windowing, selection/cursor, DnD

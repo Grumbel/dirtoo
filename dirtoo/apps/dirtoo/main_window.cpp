@@ -127,10 +127,7 @@ MainWindow::~MainWindow()
     filter_thread_->quit();
     filter_thread_->wait(3000);
   }
-  if (dir_thumb_thread_ != nullptr) {
-    dir_thumb_thread_->quit();
-    dir_thumb_thread_->wait(3000);
-  }
+  shutdown_thumbnail_workers();
 }
 
 QAbstractItemView* MainWindow::current_view() const

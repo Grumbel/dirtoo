@@ -82,8 +82,7 @@ void MainWindow::setup_background_workers()
   dir_thumb_thread_ = new QThread(this);
   dir_thumb_worker_->moveToThread(dir_thumb_thread_);
   connect(dir_thumb_thread_, &QThread::finished, dir_thumb_worker_, &QObject::deleteLater);
-  connect(dir_thumb_worker_, &DirectoryThumbnailWorker::thumbnail_ready, this,
-          &MainWindow::on_thumbnail_ready);
+  /* dir_thumb ready wired in wire_thumbnail_services() */
   connect(dir_thumb_worker_, &DirectoryThumbnailWorker::finished, this,
           [this](int ok, int fail) {
             set_status(QStringLiteral("Directory thumbnails: %1 ok, %2 failed").arg(ok).arg(fail));
@@ -149,10 +148,7 @@ void MainWindow::setup_status_and_services()
   set_status(msg);
   });
 
-  connect(&thumbnailer_, &thumbnail::Thumbnailer::thumbnail_ready, this,
-        &MainWindow::on_thumbnail_ready);
-  connect(&thumbnailer_, &thumbnail::Thumbnailer::thumbnail_failed, this,
-        &MainWindow::on_thumbnail_failed);
+  wire_thumbnail_services();
 
   connect(qApp->clipboard(), &QClipboard::dataChanged, this, &MainWindow::update_edit_actions);
 

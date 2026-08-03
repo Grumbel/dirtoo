@@ -205,6 +205,10 @@ private:
   void request_thumbnails_for_visible();
   void cancel_all_thumbnails();
   void clear_thumb_aliases();
+  void request_thumbnails_for_paths(const std::vector<dirtoo::fs::Location>& locs,
+                                  const QStringList& mimes);
+  void wire_thumbnail_services();
+  void shutdown_thumbnail_workers();
   /// Queue montage builds for visible directories after a delay (low priority).
   void schedule_directory_thumbnails_low_priority();
   void start_transfer(const TransferRequest& request);
