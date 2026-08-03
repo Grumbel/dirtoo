@@ -457,6 +457,8 @@ Goal: smaller translation units and eventually fewer responsibilities on
       (cut/copy/paste/mkdir/mkfile/rename/delete/swap; pure move, no behavior change)
 - [ ] **R2** Shrink `MainWindow` via collaborators (header members ↓):
       - `LocationChrome` — breadcrumb / line edit / path completion
+        (partial: `main_window_location.cpp` — focus/edit/completion, breadcrumbs,
+         bookmarks/history menus, open_new_window; class extract still TODO)
       - `SidebarController` — tree + places (devices already partly extracted)
       - `ThumbnailCoordinator` — visible batch, dir montages, `thumb_alias_`
 - [x] **R3** Split `libs/dirtoo-filter/src/predicates.cpp` (~1.8k) by domain
