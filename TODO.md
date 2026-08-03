@@ -211,7 +211,7 @@ smells, and gaps worth scheduling. Not every item is a user-visible crash.
 |----|-------|--------------|-----------|
 | S1 | **Archive listing/extract shells out to `bsdtar` / `tar` / `unzip` / `7z`** | Fragile verbose-text parsers | **Done** — **libarchive required** (CMake `REQUIRED`, flake); no CLI fallback (see AGENTS.md) |
 | S2 | **`std::filesystem::remove_all` as the Overwrite primitive** | Same as A3 — policy API looks like “replace file” but implementation is “delete subtree” | **Done (refuse path)** — Overwrite is file/symlink only; dirs rejected at API + UI |
-| S3 | **MainWindow multi-TU** | Core ~1.3k + setup/nav/view/filter/thumbs/transfer/events/settings | **Improved** — 9 TUs; inotify deltas; file_context_menu |
+| S3 | **MainWindow multi-TU / god-header** | Core still large; header owns everything | **In progress** — R1 ops TU done (`main_window_ops.cpp`); see **Refactoring track** |
 | S4 | **Dual icon paint paths** | `GraphicsFileItem` and `FileItemDelegate` must stay twin for montage/badges | **Done** — `icon_tile_paint.hpp` (badge, directory montage, status stickers) shared by both |
 
 ### P2 — reliability / scale / UX
@@ -442,6 +442,39 @@ Python reference: experimental `dirtoo-py/experiments/udisks/` (`udisksqt.py`); 
 - Lazy tree + current-location sync can be racy on deep paths — expand step-by-step with generation tokens.
 - UDisks2 property variants (`ay` mount points) need careful QDBus decoding.
 - Mount/Unmount without blocking the GUI (async pending calls).
+
+---
+
+## Refactoring track (oversized units)
+
+Goal: smaller translation units and eventually fewer responsibilities on
+`MainWindow` itself — prefer extracting **collaborators** over endless
+`main_window_*.cpp` dumps of the same class.
+
+### Priority order
+
+- [x] **R1** `main_window_ops.cpp` — clipboard + FS mutations + read-only guards
+      (cut/copy/paste/mkdir/mkfile/rename/delete/swap; pure move, no behavior change)
+- [ ] **R2** Shrink `MainWindow` via collaborators (header members ↓):
+      - `LocationChrome` — breadcrumb / line edit / path completion
+      - `SidebarController` — tree + places (devices already partly extracted)
+      - `ThumbnailCoordinator` — visible batch, dir montages, `thumb_alias_`
+- [ ] **R3** Split `libs/dirtoo-filter/src/predicates.cpp` (~1.8k) by domain
+      (`predicates_name`, `predicates_size`, `predicates_media`, …)
+- [ ] **R4** `GraphicsFileView` impl split — layout/windowing, selection/cursor, DnD
+- [ ] **R5** `FileListModel` — extract thumbnail/new-mark state helper; thin `data()`
+- [ ] **R6** `setup_central_ui` — after R2, build chrome in owners
+
+### Explicit non-goals (this track)
+
+- PIMPL-only MainWindow with no real ownership change
+- Fourth relative-size view / group-by polish mid-refactor
+- Virtual hierarchies for filter matchers (anonymous classes are fine)
+
+### Notes
+
+- Mechanical TU moves first; collaborator extraction second.
+- Do not bulk-reformat unrelated code in the same commit as a move.
 
 ---
 
