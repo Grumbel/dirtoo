@@ -466,12 +466,23 @@ Goal: smaller translation units and eventually fewer responsibilities on
 - [x] **R5** `FileListModel` — extract thumbnail/new-mark state helper; thin `data()`
       (`file_list_model_thumbs.cpp`: thumbs, new marks, child counts, icon_for)
 - [ ] **R6** `setup_central_ui` — after R2, build chrome in owners
+      (partial: `main_window_setup_central.cpp` holds setup_central_ui only)
 
 ### Explicit non-goals (this track)
 
 - PIMPL-only MainWindow with no real ownership change
 - Fourth relative-size view / group-by polish mid-refactor
 - Virtual hierarchies for filter matchers (anonymous classes are fine)
+
+
+### Files removed in this track (zip clients must delete)
+
+- `libs/dirtoo-filter/src/predicates.cpp` — replaced by
+  `predicates_name.cpp`, `predicates_media.cpp`, `predicates_fuzzy.cpp`,
+  `predicates_rest.cpp`. **Delete the old monolith if your transfer only
+  overlays/adds files.**
+
+No other source files were deleted (splits overwrote or added TUs in place).
 
 ### Notes
 
