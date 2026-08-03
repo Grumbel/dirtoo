@@ -16,6 +16,7 @@ qt_add_executable(dirtoo-app
   main_window_view.cpp
   main_window_filter.cpp
   main_window_nav.cpp
+  main_window_load.cpp
   main_window_ops.cpp
   main_window_sort.cpp
   main_window_actions.cpp
