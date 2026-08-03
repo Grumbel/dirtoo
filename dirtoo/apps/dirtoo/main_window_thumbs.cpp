@@ -20,43 +20,29 @@ namespace dirtoo::app {
 
 void MainWindow::cancel_all_thumbnails()
 {
-  thumbnailer_.cancel_all();
+  thumbs_.cancel_all();
 }
 
 void MainWindow::clear_thumb_aliases()
 {
-  thumb_alias_.clear();
+  thumbs_.clear_aliases();
 }
 
 void MainWindow::request_thumbnails_for_paths(const std::vector<fs::Location>& locs,
                                              const QStringList& mimes)
 {
-  if (locs.empty()) {
-    return;
-  }
-  thumbnailer_.request_many(locs, mimes, QStringLiteral("large"));
+  thumbs_.request_many(locs, mimes);
 }
 
 void MainWindow::wire_thumbnail_services()
 {
-  connect(&thumbnailer_, &thumbnail::Thumbnailer::thumbnail_ready, this,
-          &MainWindow::on_thumbnail_ready);
-  connect(&thumbnailer_, &thumbnail::Thumbnailer::thumbnail_failed, this,
-          &MainWindow::on_thumbnail_failed);
-  if (dir_thumb_worker_ != nullptr) {
-    connect(dir_thumb_worker_, &DirectoryThumbnailWorker::thumbnail_ready, this,
-            &MainWindow::on_thumbnail_ready);
-  }
+  thumbs_.wire_ready_failed(this, &MainWindow::on_thumbnail_ready,
+                            &MainWindow::on_thumbnail_failed);
 }
 
 void MainWindow::shutdown_thumbnail_workers()
 {
-  cancel_all_thumbnails();
-  clear_thumb_aliases();
-  if (dir_thumb_thread_ != nullptr) {
-    dir_thumb_thread_->quit();
-    dir_thumb_thread_->wait(3000);
-  }
+  thumbs_.shutdown();
 }
 
 
@@ -65,7 +51,7 @@ void MainWindow::schedule_directory_thumbnails_low_priority()
 {
   // Defer expensive montages until after ordinary file thumbs have had a chance.
   QTimer::singleShot(2500, this, [this] {
-    if (dir_thumb_worker_ == nullptr || model_ == nullptr) {
+    if (thumbs_.dir_worker() == nullptr || model_ == nullptr) {
       return;
     }
     QStringList dirs;
@@ -98,7 +84,7 @@ void MainWindow::schedule_directory_thumbnails_low_priority()
     if (dirs.size() > kMax) {
       dirs = dirs.mid(0, kMax);
     }
-    QMetaObject::invokeMethod(dir_thumb_worker_, "generate", Qt::QueuedConnection,
+    QMetaObject::invokeMethod(thumbs_.dir_worker(), "generate", Qt::QueuedConnection,
                               Q_ARG(QStringList, dirs));
   });
 }
@@ -235,15 +221,15 @@ void MainWindow::request_thumbnails_for_visible()
                 return;
               }
               const QString real_path = QString::fromStdString(out_path.string());
-              thumb_alias_.insert(real_path, key);
-              thumbnailer_.request(fs::Location::from_path(out_path), mime_copy,
+              thumbs_.aliases().insert(real_path, key);
+              thumbs_.thumbnailer().request(fs::Location::from_path(out_path), mime_copy,
                                    QStringLiteral("large"));
             }, Qt::QueuedConnection);
           });
           continue;
         }
         const QString real_path = QString::fromStdString(real.string());
-        thumb_alias_.insert(real_path, model_key);
+        thumbs_.aliases().insert(real_path, model_key);
         locs.push_back(fs::Location::from_path(real));
         mimes.push_back(mime);
         continue;
@@ -255,7 +241,7 @@ void MainWindow::request_thumbnails_for_visible()
     if (!locs.empty()) {
       qDebug().noquote() << QStringLiteral("thumbnails: requesting %1 (viewport/batch)")
                                 .arg(locs.size());
-      thumbnailer_.request_many(locs, mimes, QStringLiteral("large"));
+      thumbs_.request_many(locs, mimes);
     }
     if (any_dir_without_cache) {
       schedule_directory_thumbnails_low_priority();
@@ -270,7 +256,7 @@ void MainWindow::on_thumbnail_ready(const fs::Location& location, const QString&
     return;
   }
   QString key = QString::fromStdString(location.as_path().string());
-  if (const auto it = thumb_alias_.constFind(key); it != thumb_alias_.cend()) {
+  if (const auto it = thumbs_.aliases().constFind(key); it != thumbs_.aliases().cend()) {
     key = it.value();
   }
   if (model_ != nullptr) {
@@ -282,7 +268,7 @@ void MainWindow::on_thumbnail_failed(const fs::Location& location, const QString
 {
   (void)message;
   QString key = QString::fromStdString(location.as_path().string());
-  if (const auto it = thumb_alias_.constFind(key); it != thumb_alias_.cend()) {
+  if (const auto it = thumbs_.aliases().constFind(key); it != thumbs_.aliases().cend()) {
     key = it.value();
   }
   if (model_ == nullptr) {
@@ -312,7 +298,7 @@ void MainWindow::on_reload_thumbnails()
   if (model_ == nullptr) {
     return;
   }
-  thumbnailer_.cancel_all();
+  thumbs_.cancel_all();
   auto selected = selected_fileinfos();
   if (selected.empty()) {
     // Reload all visible
@@ -341,7 +327,7 @@ void MainWindow::on_reload_thumbnails()
     mimes.push_back(mime_db.mimeTypeForFile(path).name());
   }
   if (!locs.empty()) {
-    thumbnailer_.request_many(locs, mimes, QStringLiteral("large"));
+    thumbs_.request_many(locs, mimes);
   }
   set_status(QStringLiteral("Reloading %1 thumbnail(s)…").arg(locs.size()));
 }
@@ -349,7 +335,7 @@ void MainWindow::on_reload_thumbnails()
 
 void MainWindow::on_make_directory_thumbnails()
 {
-  if (dir_thumb_worker_ == nullptr) {
+  if (thumbs_.dir_worker() == nullptr) {
     return;
   }
   QStringList dirs;
@@ -378,7 +364,7 @@ void MainWindow::on_make_directory_thumbnails()
       model_->set_thumbnail_pending(d);
     }
   }
-  QMetaObject::invokeMethod(dir_thumb_worker_, "generate", Qt::QueuedConnection,
+  QMetaObject::invokeMethod(thumbs_.dir_worker(), "generate", Qt::QueuedConnection,
                             Q_ARG(QStringList, dirs));
 }
 

@@ -15,6 +15,7 @@ qt_add_executable(dirtoo-app
   main_window_setup_menus_go.cpp
   main_window_setup_central.cpp
   main_window_thumbs.cpp
+  thumbnail_coordinator.cpp
   main_window_transfer.cpp
   main_window_events.cpp
   main_window_settings.cpp

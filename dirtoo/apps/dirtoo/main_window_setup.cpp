@@ -78,16 +78,13 @@ void MainWindow::setup_background_workers()
   qRegisterMetaType<dirtoo::collection::GroupMode>("dirtoo::collection::GroupMode");
   filter_thread_->start();
 
-  dir_thumb_worker_ = new DirectoryThumbnailWorker;
-  dir_thumb_thread_ = new QThread(this);
-  dir_thumb_worker_->moveToThread(dir_thumb_thread_);
-  connect(dir_thumb_thread_, &QThread::finished, dir_thumb_worker_, &QObject::deleteLater);
-  /* dir_thumb ready wired in wire_thumbnail_services() */
-  connect(dir_thumb_worker_, &DirectoryThumbnailWorker::finished, this,
-          [this](int ok, int fail) {
-            set_status(QStringLiteral("Directory thumbnails: %1 ok, %2 failed").arg(ok).arg(fail));
-          });
-  dir_thumb_thread_->start();
+  thumbs_.setup_dir_worker();
+  if (thumbs_.dir_worker() != nullptr) {
+    connect(thumbs_.dir_worker(), &DirectoryThumbnailWorker::finished, this,
+            [this](int ok, int fail) {
+              set_status(QStringLiteral("Directory thumbnails: %1 ok, %2 failed").arg(ok).arg(fail));
+            });
+  }
 }
 
 

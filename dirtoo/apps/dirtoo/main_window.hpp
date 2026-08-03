@@ -9,7 +9,6 @@
 #include "dirtoo/archive/archive_manager.hpp"
 #include "dirtoo/collection/file_collection.hpp"
 #include "dirtoo/fs/location.hpp"
-#include "dirtoo/thumbnail/thumbnailer.hpp"
 #include "dirtoo/watcher/directory_watcher.hpp"
 #include "dirops/ops.hpp"
 #include "app_settings.hpp"
@@ -26,7 +25,7 @@
 #include "directory_load_worker.hpp"
 #include "sort_worker.hpp"
 #include "filter_worker.hpp"
-#include "directory_thumbnail_worker.hpp"
+#include "thumbnail_coordinator.hpp"
 #include "leap_widget.hpp"
 #include "location_button_bar.hpp"
 #include "transfer_dialog.hpp"
@@ -235,8 +234,9 @@ private:
 
   fs::Location location_;
   collection::FileCollection collection_;
+
+  ThumbnailCoordinator thumbs_{this};
   watcher::DirectoryWatcher watcher_;
-  thumbnail::Thumbnailer thumbnailer_;
   archive::ArchiveManager archive_manager_;
   fs::Location pending_archive_location_;
   ArchiveListing archive_listing_;
@@ -257,8 +257,6 @@ private:
   int zoom_list_ = 2;
   int zoom_detail_ = 2;
   QStringList detail_columns_;
-  /// Extracted-file path → model key (archive URL) for thumbnail Ready mapping.
-  QHash<QString, QString> thumb_alias_;
   void apply_detail_column_visibility();
   [[nodiscard]] int& zoom_for_current_view();
   [[nodiscard]] int zoom_for_current_view() const;
@@ -314,8 +312,6 @@ private:
   QThread* filter_thread_ = nullptr;
   FilterWorker* filter_worker_ = nullptr;
   quint64 filter_generation_ = 0;
-  QThread* dir_thumb_thread_ = nullptr;
-  DirectoryThumbnailWorker* dir_thumb_worker_ = nullptr;
   QStringListModel* path_completion_model_ = nullptr;
   QCompleter* path_completer_ = nullptr;
   QTimer* path_completion_timer_ = nullptr;
