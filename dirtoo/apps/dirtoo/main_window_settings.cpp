@@ -1,18 +1,12 @@
-#include "main_window.hpp"
-#include <QWidget>
+// SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#include "main_window_common.hpp"
+
 #include "app_settings.hpp"
 #include "preferences_dialog.hpp"
-#include "theme_icons.hpp"
 #include "size_format.hpp"
-#include "directory_tree_model.hpp"
-
 #include <QHeaderView>
-#include <QLineEdit>
-#include <QSplitter>
-#include <QTreeView>
-#include <QListView>
-#include <QToolButton>
-#include <QAction>
 
 namespace dirtoo::app {
 

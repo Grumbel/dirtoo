@@ -1,24 +1,11 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "main_window.hpp"
-#include <QMenu>
+#include "main_window_common.hpp"
 
-#include "theme_icons.hpp"
 #include "location_menu_helpers.hpp"
 #include "open_history.hpp"
-#include "message_area.hpp"
-#include "location_button_bar.hpp"
-#include "path_completion_worker.hpp"
-#include "leap_widget.hpp"
 #include "history_menu.hpp"
-
-#include <QCompleter>
-#include <QLineEdit>
-#include <QMetaObject>
-#include <QStringListModel>
-#include <QTimer>
-#include <QThread>
 
 namespace dirtoo::app {
 

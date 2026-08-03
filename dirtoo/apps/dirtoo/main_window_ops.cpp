@@ -1,23 +1,15 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "main_window.hpp"
-#include <QAction>
+#include "main_window_common.hpp"
 
 #include "clipboard.hpp"
 #include "conflict_dialog.hpp"
 #include "name_input_dialog.hpp"
 #include "operations_history.hpp"
-#include "message_area.hpp"
-
 #include "dirops/ops.hpp"
 #include "dirops/util.hpp"
-
-#include <QApplication>
-#include <QClipboard>
-#include <QMessageBox>
 #include <QMimeData>
-
 #include <filesystem>
 
 namespace dirtoo::app {

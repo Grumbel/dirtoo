@@ -1,15 +1,12 @@
-#include "main_window.hpp"
-#include "file_item_delegate.hpp"
-#include "file_list_model.hpp"
-#include "graphics_file_view.hpp"
-#include "app_settings.hpp"
+// SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+// SPDX-License-Identifier: GPL-3.0-or-later
 
-#include <QAbstractItemView>
+#include "main_window_common.hpp"
+
+#include "file_item_delegate.hpp"
+#include "app_settings.hpp"
 #include <QHeaderView>
-#include <QListView>
-#include <QTreeView>
 #include <QStackedWidget>
-#include <QAction>
 
 namespace dirtoo::app {
 

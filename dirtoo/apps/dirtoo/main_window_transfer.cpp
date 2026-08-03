@@ -1,22 +1,19 @@
-#include "main_window.hpp"
+// SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#include "main_window_common.hpp"
+
 #include "archive_member_cache.hpp"
 #include "clipboard.hpp"
 #include "conflict_dialog.hpp"
 #include "operations_history.hpp"
 #include "location_url.hpp"
-
 #include "dirtoo/archive/archive_index.hpp"
 #include "dirops/ops.hpp"
-
-#include <QApplication>
 #include <QDateTime>
-#include <QClipboard>
-#include <QMessageBox>
 #include <QUrl>
 #include <QtConcurrent>
-#include <QMetaObject>
 #include <QStandardPaths>
-
 #include <filesystem>
 
 namespace dirtoo::app {

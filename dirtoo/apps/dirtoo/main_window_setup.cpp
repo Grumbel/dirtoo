@@ -1,6 +1,9 @@
-#include "main_window.hpp"
+// SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#include "main_window_common.hpp"
+
 #include "badge_icons.hpp"
-#include "theme_icons.hpp"
 #include "location_icons.hpp"
 #include "location_url.hpp"
 #include "location_menu_helpers.hpp"
@@ -8,54 +11,24 @@
 #include "file_context_menu.hpp"
 #include "file_item_delegate.hpp"
 #include "devices_controller.hpp"
-#include "directory_tree_model.hpp"
 #include "udisks_client.hpp"
 #include "about_dialog.hpp"
 #include "open_history.hpp"
 #include "operations_history.hpp"
 #include "preferences_dialog.hpp"
 #include "open_with.hpp"
-#include "message_area.hpp"
-#include "leap_widget.hpp"
-#include "location_button_bar.hpp"
-#include "path_completion_worker.hpp"
-#include "directory_load_worker.hpp"
-#include "sort_worker.hpp"
-#include "filter_worker.hpp"
-#include "directory_thumbnail_worker.hpp"
-#include "graphics_file_view.hpp"
-#include "file_list_model.hpp"
-
 #include <QActionGroup>
-#include <QApplication>
-#include <QClipboard>
-#include <QCompleter>
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QHeaderView>
-#include <QLabel>
-#include <QLineEdit>
-#include <QListWidget>
-#include <QMenu>
 #include <QMenuBar>
 #include <QScrollBar>
-#include <QSplitter>
 #include <QStackedWidget>
 #include <QStatusBar>
-#include <QStringListModel>
 #include <QToolBar>
-#include <QToolButton>
-#include <QTreeView>
 #include <QVBoxLayout>
 #include <QKeySequence>
 #include <QPushButton>
-#include <QTimer>
-#include <QAction>
-#include <QListView>
-#include <QWidget>
-#include <QAbstractItemView>
-#include <QItemSelectionModel>
-#include <QThread>
 
 namespace dirtoo::app {
 

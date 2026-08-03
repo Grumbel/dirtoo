@@ -1,20 +1,16 @@
-#include "main_window.hpp"
-#include "graphics_file_view.hpp"
-#include "archive_member_cache.hpp"
-#include "graphics_file_item.hpp"
+// SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+// SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "main_window_common.hpp"
+
+#include "archive_member_cache.hpp"
 #include "dirtoo/archive/archive_index.hpp"
 #include "dirtoo/thumbnail/thumbnailer.hpp"
-
-#include <QAbstractItemView>
 #include <QFile>
 #include <QMimeDatabase>
 #include <QStandardPaths>
-#include <QTimer>
 #include <QtConcurrent>
-#include <QMetaObject>
 #include <QGraphicsItem>
-
 #include <filesystem>
 #include <QIcon>
 #include <QPixmap>

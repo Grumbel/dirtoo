@@ -1,19 +1,11 @@
-#include "main_window.hpp"
-#include <QWidget>
-#include "leap_widget.hpp"
-#include "graphics_file_view.hpp"
-#include "theme_icons.hpp"
+// SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+// SPDX-License-Identifier: GPL-3.0-or-later
 
-#include <QApplication>
+#include "main_window_common.hpp"
+
 #include <QEvent>
 #include <QKeyEvent>
 #include <QMouseEvent>
-#include <QToolButton>
-#include <QTreeView>
-#include <QListView>
-#include <QLineEdit>
-#include <QAbstractItemView>
-#include <QItemSelectionModel>
 
 namespace dirtoo::app {
 

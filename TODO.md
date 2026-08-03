@@ -489,6 +489,8 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
 ### Notes
 
 - Mechanical TU moves first; collaborator extraction second.
+- `main_window_common.hpp` supplies complete Qt types for all MainWindow TUs.
+
 - Do not bulk-reformat unrelated code in the same commit as a move.
 
 ---

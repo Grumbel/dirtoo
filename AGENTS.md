@@ -43,7 +43,7 @@ Large-directory mitigations (cheap listing, filter worker, Graphics item reuse, 
 
 **MainWindow controllers:** navigation (`NavigationHistory`), recursive search (`SearchController`), and clipboard transfers (`TransferController`) live in dedicated helpers under `apps/dirtoo/`. Prefer new orchestration in those helpers (or a new small type) rather than growing the `MainWindow` header further.
 
-**MainWindow implementation is multi-TU** (one class, many `.cpp` files). Put methods in the matching unit when extending behavior:
+**MainWindow implementation is multi-TU** (one class, many `.cpp` files). All `main_window_*.cpp` units should `#include "main_window_common.hpp"` first so Qt types are complete (the header only forward-declares many widgets). Put methods in the matching unit when extending behavior:
 
 | TU | Responsibility |
 |----|----------------|

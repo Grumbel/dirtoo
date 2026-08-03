@@ -1,26 +1,11 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "main_window.hpp"
+#include "main_window_common.hpp"
 
-#include "file_list_model.hpp"
-#include "directory_load_worker.hpp"
 #include "archive_listing.hpp"
-#include "graphics_file_view.hpp"
-#include "message_area.hpp"
-#include "filter_worker.hpp"
-#include "directory_tree_model.hpp"
-
-#include <QLineEdit>
-#include <QTimer>
 #include <QSet>
 #include <QStringList>
-
-#include <QMessageBox>
-#include <QMetaObject>
-#include <QAbstractItemView>
-#include <QItemSelectionModel>
-
 #include <filesystem>
 
 namespace dirtoo::app {

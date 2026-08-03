@@ -1,28 +1,19 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "main_window.hpp"
-#include <QThread>
+#include "main_window_common.hpp"
+
 #include "badge_icons.hpp"
-#include "theme_icons.hpp"
 #include "location_icons.hpp"
 #include "location_url.hpp"
 #include "location_menu_helpers.hpp"
-#include "directory_tree_model.hpp"
 #include "udisks_client.hpp"
 #include "devices_controller.hpp"
-#include "filter_worker.hpp"
-#include "directory_thumbnail_worker.hpp"
 #include "file_views.hpp"
 #include "file_context_menu.hpp"
-#include "file_list_model.hpp"
-#include "graphics_file_view.hpp"
-#include "graphics_file_item.hpp"
 #include "file_item_delegate.hpp"
 #include "dirtoo/filter/media_meta_cache.hpp"
-
 #include "dirtoo/filter/parser.hpp"
-
 #include "clipboard.hpp"
 #include "about_dialog.hpp"
 #include "name_input_dialog.hpp"
@@ -39,21 +30,11 @@
 #include "dirtoo/thumbnail/thumbnailer.hpp"
 #include "dirops/ops.hpp"
 #include "dirops/util.hpp"
-
-#include <QAbstractItemView>
-#include <QAction>
 #include <QActionGroup>
 #include <QtConcurrent>
 #include "dirtoo/archive/archive_index.hpp"
-#include <QApplication>
 #include <QDateTime>
 #include <QCoreApplication>
-#include <QClipboard>
-#include <QCloseEvent>
-#include <QShowEvent>
-#include <QCompleter>
-#include <QStringListModel>
-#include <QTimer>
 #include <QEvent>
 #include <QFile>
 #include <QFileInfo>
@@ -73,16 +54,9 @@
 #include <QPainter>
 #include <QSvgRenderer>
 #include <QKeyEvent>
-#include <QItemSelectionModel>
 #include <QKeySequence>
-#include <QLabel>
 #include <QLocale>
-#include <QLineEdit>
-#include <QListView>
-#include <QListWidget>
-#include <QMenu>
 #include <QMenuBar>
-#include <QMessageBox>
 #include <QPushButton>
 #include <QTextBrowser>
 #include <QAbstractButton>
@@ -91,13 +65,10 @@
 #include <QMimeDatabase>
 #include <QPixmap>
 #include <QProcess>
-#include <QSplitter>
 #include <QStyle>
 #include <QStackedWidget>
 #include <QStatusBar>
 #include <QToolBar>
-#include <QToolButton>
-#include <QTreeView>
 #include <QScrollBar>
 #include <QUrl>
 #include <QHBoxLayout>
@@ -108,12 +79,8 @@
 #include <QGraphicsScene>
 #include <algorithm>
 #include <QWheelEvent>
-#include <QWidget>
-
-#include <algorithm>
 #include <filesystem>
 #include <optional>
-#include <QMetaObject>
 
 namespace dirtoo::app {
 
