@@ -41,18 +41,23 @@ QString format_size(std::uint64_t bytes, bool /*is_directory*/)
   return format_byte_size(bytes);
 }
 
+QString format_sys_time(std::chrono::system_clock::time_point tp)
+{
+  const auto secs =
+      std::chrono::duration_cast<std::chrono::seconds>(tp.time_since_epoch()).count();
+  if (secs <= 0) {
+    return {};
+  }
+  const QDateTime dt = QDateTime::fromSecsSinceEpoch(static_cast<qint64>(secs));
+  // Human-friendly ISO local date/time: "2011-12-21 16:14"
+  return dt.toString(QStringLiteral("yyyy-MM-dd HH:mm"));
+}
+
 QString format_mtime(std::filesystem::file_time_type mtime)
 {
   try {
     const auto sys = std::chrono::clock_cast<std::chrono::system_clock>(mtime);
-    const auto secs =
-        std::chrono::duration_cast<std::chrono::seconds>(sys.time_since_epoch()).count();
-    if (secs <= 0) {
-      return {};
-    }
-    const QDateTime dt = QDateTime::fromSecsSinceEpoch(static_cast<qint64>(secs));
-    // Human-friendly ISO local date/time: "2011-12-21 16:14"
-    return dt.toString(QStringLiteral("yyyy-MM-dd HH:mm"));
+    return format_sys_time(sys);
   } catch (...) {
     return {};
   }
@@ -537,6 +542,12 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
     }
     case FileListColumn::Modified:
       return format_mtime(fi->mtime());
+    case FileListColumn::Accessed:
+      return fi->has_atime() ? format_sys_time(fi->atime()) : QString{};
+    case FileListColumn::Changed:
+      return fi->has_ctime() ? format_sys_time(fi->ctime()) : QString{};
+    case FileListColumn::Birth:
+      return fi->has_birthtime() ? format_sys_time(fi->birthtime()) : QString{};
     case FileListColumn::Type:
       return type_label(*fi);
     case FileListColumn::Count:
@@ -687,6 +698,12 @@ QVariant FileListModel::headerData(int section, Qt::Orientation orientation, int
     return QStringLiteral("Duration");
   case FileListColumn::Modified:
     return QStringLiteral("Modified");
+  case FileListColumn::Accessed:
+    return QStringLiteral("Accessed");
+  case FileListColumn::Changed:
+    return QStringLiteral("Changed");
+  case FileListColumn::Birth:
+    return QStringLiteral("Created");
   case FileListColumn::Type:
     return QStringLiteral("Type");
   case FileListColumn::Count:

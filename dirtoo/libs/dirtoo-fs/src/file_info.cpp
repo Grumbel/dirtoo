@@ -41,6 +41,42 @@ namespace {
 
 } // namespace
 
+void FileInfo::fill_posix_times_from_path(const std::filesystem::path& path)
+{
+#if !defined(_WIN32)
+  struct stat st {};
+  if (::lstat(path.c_str(), &st) != 0) {
+    return;
+  }
+  const auto to_sys = [](const struct timespec& ts) {
+    return std::chrono::system_clock::time_point{
+        std::chrono::duration_cast<std::chrono::system_clock::duration>(
+            std::chrono::seconds(ts.tv_sec) + std::chrono::nanoseconds(ts.tv_nsec))};
+  };
+#  if defined(st_atim) || defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) \
+      || defined(__NetBSD__) || defined(__OpenBSD__)
+  atime_ = to_sys(st.st_atim);
+  has_atime_ = true;
+  ctime_ = to_sys(st.st_ctim);
+  has_ctime_ = true;
+#  else
+  atime_ = std::chrono::system_clock::from_time_t(st.st_atime);
+  has_atime_ = true;
+  ctime_ = std::chrono::system_clock::from_time_t(st.st_ctime);
+  has_ctime_ = true;
+#  endif
+#  if defined(__APPLE__)
+  birthtime_ = to_sys(st.st_birthtimespec);
+  has_birthtime_ = st.st_birthtimespec.tv_sec != 0;
+#  elif defined(__FreeBSD__)
+  birthtime_ = to_sys(st.st_birthtim);
+  has_birthtime_ = st.st_birthtim.tv_sec != 0;
+#  endif
+#else
+  (void)path;
+#endif
+}
+
 FileInfo FileInfo::from_path(const std::filesystem::path& path)
 {
   FileInfo info;
@@ -60,6 +96,7 @@ FileInfo FileInfo::from_path(const std::filesystem::path& path)
   info.permissions_ = status.permissions();
   info.size_ = read_size_bytes(path, info.is_directory_, info.is_regular_file_);
   info.mtime_ = std::filesystem::last_write_time(path, ec);
+  info.fill_posix_times_from_path(path);
   return info;
 }
 
@@ -133,6 +170,7 @@ FileInfo FileInfo::from_directory_entry(const std::filesystem::directory_entry& 
   info.permissions_ = status.permissions();
   info.size_ = read_size_bytes(entry.path(), info.is_directory_, info.is_regular_file_);
   info.mtime_ = entry.last_write_time(ec);
+  info.fill_posix_times_from_path(entry.path());
   return info;
 }
 

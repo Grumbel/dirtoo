@@ -119,6 +119,7 @@ private slots:
   void on_open_terminal();
   void on_toggle_hidden(bool checked);
   void on_toggle_sidebar(bool checked);
+  void on_toggle_read_only(bool checked);
   void on_sidebar_activated(const QModelIndex& index);
   void sync_sidebar_to_location();
   void rebuild_sidebar_places();
@@ -272,6 +273,11 @@ private:
   class QListWidget* devices_list_ = nullptr;
   class QLabel* devices_label_ = nullptr;
   QAction* show_sidebar_act_ = nullptr;
+  QAction* read_only_act_ = nullptr;
+  bool read_only_ = false;
+  /// Returns false (and sets status) when mutations are blocked.
+  [[nodiscard]] bool ensure_mutations_allowed();
+  void update_mutation_actions();
   QWidget* filter_row_ = nullptr;
   QLineEdit* filter_edit_ = nullptr;
   QStringList filter_history_;

@@ -161,6 +161,13 @@ void MainWindow::setup_toolbar()
   show_sidebar_act_->setToolTip(QStringLiteral("Show or hide the directory tree sidebar"));
   show_sidebar_act_->setShortcut(QKeySequence(Qt::Key_F9));
   connect(show_sidebar_act_, &QAction::toggled, this, &MainWindow::on_toggle_sidebar);
+
+  read_only_act_ = toolbar->addAction(theme_icon("object-locked", "changes-prevent"),
+                                      QStringLiteral("Read-only"));
+  read_only_act_->setCheckable(true);
+  read_only_act_->setToolTip(QStringLiteral("Block all filesystem modifications"));
+  read_only_act_->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+R")));
+  connect(read_only_act_, &QAction::toggled, this, &MainWindow::on_toggle_read_only);
   toolbar->addSeparator();
 
   // Sort / Group popup buttons — show current choice like a combo box.
@@ -420,15 +427,20 @@ void MainWindow::setup_menus()
         {"framerate", "FPS"},
         {"duration", "Duration"},
         {"modified", "Modified"},
+        {"accessed", "Accessed"},
+        {"changed", "Changed"},
+        {"birth", "Created"},
         {"type", "Type"},
     };
     for (const auto& c : kCols) {
       auto* act = cols->addAction(QString::fromUtf8(c.label));
       act->setCheckable(true);
       const QString key = QString::fromUtf8(c.key);
+      const bool default_off = key == QLatin1String("width") || key == QLatin1String("height")
+                               || key == QLatin1String("accessed") || key == QLatin1String("changed")
+                               || key == QLatin1String("birth");
       act->setChecked(detail_columns_.contains(key)
-                      || (detail_columns_.isEmpty()
-                          && key != QLatin1String("width") && key != QLatin1String("height")));
+                      || (detail_columns_.isEmpty() && !default_off));
       connect(act, &QAction::toggled, this, [this, key](bool on) {
         if (on) {
           if (!detail_columns_.contains(key)) {
@@ -444,6 +456,9 @@ void MainWindow::setup_menus()
   view_menu->addSeparator();
   if (show_hidden_act_ != nullptr) {
     view_menu->addAction(show_hidden_act_);
+  }
+  if (read_only_act_ != nullptr) {
+    view_menu->addAction(read_only_act_);
   }
   {
     auto* act = view_menu->addAction(QStringLiteral("Show Full Paths"));

@@ -573,10 +573,12 @@ Python reference: experimental `dirtoo-py/experiments/udisks/` (`udisksqt.py`); 
       compared to what else is in the directory (do deffer for now)
 - [x] thumbnail generation doesn't start for new files, "Reload Thumbnails" doesn't make them show up either
       (on_entries_changed requests thumbs for created regular files by path)
-- [ ] add button that switches the whole file manager into read-only
+- [x] add button that switches the whole file manager into read-only
       mode, no file system manupulation should be possible when that
       switch is active
-- [ ] add support for more times: atime, ctime, birth
+      (toolbar+View menu Ctrl+Shift+R; gates delete/rename/paste/mkdir/DnD/…)
+- [x] add support for more times: atime, ctime, birth
+      (FileInfo POSIX times; Detail columns Accessed/Changed/Created, off by default)
 - [x] pressing shift selects/unselects the current item
       (Shift+Space toggles cursor selection in Icons; Ctrl+Space unchanged)
 - [x] the type ahead quick search should be closable via the Escape key

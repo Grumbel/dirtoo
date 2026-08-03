@@ -30,6 +30,8 @@ struct AppSettings {
   bool filter_pinned = false;
   bool show_sidebar = true;
   int sidebar_width = 220;
+  /// When true, filesystem mutations (delete, rename, paste, mkdir, …) are blocked.
+  bool read_only = false;
   bool directories_first = true;
   QString group_mode = QStringLiteral("none"); // none|day|directory|duration
   /// Size display units: "si" (kB/MB, base 1000) or "iec" (KiB/MiB, base 1024).

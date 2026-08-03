@@ -23,6 +23,9 @@ namespace dirtoo::app {
 
 void MainWindow::start_transfer(const TransferRequest& request)
 {
+  if (!ensure_mutations_allowed()) {
+    return;
+  }
   if (transfer_controller_.busy()) {
     set_status(QStringLiteral("A transfer is already in progress"));
     return;
@@ -290,6 +293,9 @@ void MainWindow::on_urls_dropped_to(const QList<QUrl>& urls, Qt::DropAction acti
                            .arg(urls.size())
                            .arg(int(action))
                            .arg(dest_dir.isEmpty() ? QStringLiteral("(cwd)") : dest_dir);
+  if (!ensure_mutations_allowed()) {
+    return;
+  }
   if (transfer_controller_.busy() || urls.isEmpty()) {
     return;
   }

@@ -23,7 +23,10 @@ enum class FileListColumn {
   AspectRatio,  ///< width:height (reduced) / width÷height
   Framerate,    ///< fps
   Duration,     ///< media duration (h:mm:ss)
-  Modified,
+  Modified,     ///< mtime
+  Accessed,     ///< atime
+  Changed,      ///< ctime (inode change)
+  Birth,        ///< creation / birth time when available
   Type,
   Count
 };

@@ -104,6 +104,11 @@ void MainWindow::restore_settings()
   if (directory_tree_model_ != nullptr) {
     directory_tree_model_->set_show_hidden(s.show_hidden);
   }
+  read_only_ = s.read_only;
+  if (read_only_act_ != nullptr) {
+    read_only_act_->setChecked(s.read_only);
+  }
+  update_mutation_actions();
   if (!s.window_geometry.isEmpty()) {
     restoreGeometry(s.window_geometry);
   }
@@ -151,6 +156,7 @@ void MainWindow::persist_settings() const
   s.show_hidden = collection_.show_hidden();
   s.show_filter = show_filter_act_ != nullptr && show_filter_act_->isChecked();
   s.show_sidebar = show_sidebar_act_ != nullptr && show_sidebar_act_->isChecked();
+  s.read_only = read_only_;
   // Only record a usable width while the sidebar is visible; a hidden splitter
   // child may report 0 and would otherwise clobber the saved width.
   if (main_splitter_ != nullptr && s.show_sidebar) {

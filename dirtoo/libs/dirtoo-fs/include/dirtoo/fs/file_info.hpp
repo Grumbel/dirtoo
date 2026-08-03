@@ -33,6 +33,15 @@ public:
   [[nodiscard]] std::uint64_t size() const noexcept { return size_; }
   [[nodiscard]] std::filesystem::file_time_type mtime() const noexcept { return mtime_; }
 
+  /// POSIX atime / ctime / birth (creation) as system_clock time points.
+  /// Zero epoch means "unknown / not available" (synthetic entries, failed stat).
+  [[nodiscard]] std::chrono::system_clock::time_point atime() const noexcept { return atime_; }
+  [[nodiscard]] std::chrono::system_clock::time_point ctime() const noexcept { return ctime_; }
+  [[nodiscard]] std::chrono::system_clock::time_point birthtime() const noexcept { return birthtime_; }
+  [[nodiscard]] bool has_atime() const noexcept { return has_atime_; }
+  [[nodiscard]] bool has_ctime() const noexcept { return has_ctime_; }
+  [[nodiscard]] bool has_birthtime() const noexcept { return has_birthtime_; }
+
   [[nodiscard]] bool is_directory() const noexcept { return is_directory_; }
   [[nodiscard]] bool is_regular_file() const noexcept { return is_regular_file_; }
   [[nodiscard]] bool is_symlink() const noexcept { return is_symlink_; }
@@ -41,11 +50,19 @@ public:
   [[nodiscard]] std::filesystem::perms permissions() const noexcept { return permissions_; }
 
 private:
+  void fill_posix_times_from_path(const std::filesystem::path& path);
+
   Location location_;
   std::filesystem::path path_;
   std::string display_name_;
   std::uint64_t size_ = 0;
   std::filesystem::file_time_type mtime_{};
+  std::chrono::system_clock::time_point atime_{};
+  std::chrono::system_clock::time_point ctime_{};
+  std::chrono::system_clock::time_point birthtime_{};
+  bool has_atime_ = false;
+  bool has_ctime_ = false;
+  bool has_birthtime_ = false;
   bool is_directory_ = false;
   bool is_regular_file_ = false;
   bool is_symlink_ = false;

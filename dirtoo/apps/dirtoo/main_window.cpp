@@ -186,10 +186,7 @@ void MainWindow::set_status(const QString& text)
 
 void MainWindow::update_edit_actions()
 {
-  if (paste_act_) {
-    paste_act_->setEnabled(!transfer_controller_.busy()
-                           && clipboard_has_paths(QApplication::clipboard()->mimeData()));
-  }
+  update_mutation_actions();
 }
 
 void MainWindow::request_async_sort()
@@ -359,6 +356,10 @@ void MainWindow::on_header_clicked(int section)
     key = SortKey::Duration;
     break;
   case FileListColumn::Modified:
+  case FileListColumn::Accessed:
+  case FileListColumn::Changed:
+  case FileListColumn::Birth:
+    // Extra time columns share Modified sort until dedicated SortKeys exist.
     key = SortKey::Modified;
     break;
   case FileListColumn::Type:
@@ -544,13 +545,55 @@ void MainWindow::on_copy()
   set_clipboard(ClipboardMode::Copy);
 }
 
+bool MainWindow::ensure_mutations_allowed()
+{
+  if (!read_only_) {
+    return true;
+  }
+  set_status(QStringLiteral("Read-only mode: filesystem changes are disabled"));
+  return false;
+}
+
+void MainWindow::update_mutation_actions()
+{
+  const bool allow = !read_only_ && !transfer_controller_.busy();
+  if (paste_act_ != nullptr) {
+    paste_act_->setEnabled(allow
+                           && clipboard_has_paths(QApplication::clipboard()->mimeData()));
+  }
+  // Other mutation actions are created as toolbar/menu items without dedicated
+  // members; they remain clickable but handlers call ensure_mutations_allowed().
+  if (read_only_act_ != nullptr) {
+    read_only_act_->setChecked(read_only_);
+  }
+  const QString title = read_only_ ? QStringLiteral("dirtoo [read-only]")
+                                   : QStringLiteral("dirtoo");
+  setWindowTitle(title);
+}
+
+void MainWindow::on_toggle_read_only(bool checked)
+{
+  read_only_ = checked;
+  update_mutation_actions();
+  set_status(read_only_ ? QStringLiteral("Read-only mode on")
+                        : QStringLiteral("Read-only mode off"));
+}
+
 void MainWindow::on_cut()
 {
+  if (!ensure_mutations_allowed()) {
+    return;
+  }
+
   set_clipboard(ClipboardMode::Cut);
 }
 
 void MainWindow::on_paste()
 {
+  if (!ensure_mutations_allowed()) {
+    return;
+  }
+
   if (location_.is_archive()) {
     set_status(QStringLiteral("Read-only: browsing inside an archive"));
     return;
@@ -580,6 +623,10 @@ void MainWindow::on_paste()
 
 void MainWindow::on_paste_link()
 {
+  if (!ensure_mutations_allowed()) {
+    return;
+  }
+
   if (location_.is_archive()) {
     set_status(QStringLiteral("Read-only: browsing inside an archive"));
     return;
@@ -613,6 +660,10 @@ void MainWindow::on_paste_link()
 
 void MainWindow::on_mkdir()
 {
+  if (!ensure_mutations_allowed()) {
+    return;
+  }
+
   if (location_.is_archive()) {
     set_status(QStringLiteral("Read-only: browsing inside an archive"));
     return;
@@ -667,6 +718,10 @@ void MainWindow::on_mkdir()
 
 void MainWindow::on_create_file()
 {
+  if (!ensure_mutations_allowed()) {
+    return;
+  }
+
   if (location_.is_archive()) {
     set_status(QStringLiteral("Read-only: browsing inside an archive"));
     return;
@@ -700,6 +755,9 @@ void MainWindow::on_create_file()
 
 void MainWindow::on_swap_names()
 {
+  if (!ensure_mutations_allowed()) {
+    return;
+  }
   if (location_.is_archive()) {
     set_status(QStringLiteral("Read-only: browsing inside an archive"));
     return;
@@ -736,6 +794,9 @@ void MainWindow::on_toggle_show_abspath(bool checked)
 
 void MainWindow::on_rename_selected()
 {
+  if (!ensure_mutations_allowed()) {
+    return;
+  }
   if (location_.is_archive()) {
     set_status(QStringLiteral("Read-only: browsing inside an archive"));
     return;
@@ -781,6 +842,10 @@ void MainWindow::on_rename_selected()
 
 void MainWindow::on_delete_selected()
 {
+  if (!ensure_mutations_allowed()) {
+    return;
+  }
+
   if (location_.is_archive()) {
     set_status(QStringLiteral("Read-only: browsing inside an archive"));
     return;

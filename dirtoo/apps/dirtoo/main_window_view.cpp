@@ -243,9 +243,12 @@ void MainWindow::apply_detail_column_visibility()
   // Name (0) always visible.
   auto visible = [this](const char* key) {
     if (detail_columns_.isEmpty()) {
-      // Defaults: everything except optional Width/Height.
+      // Defaults: everything except optional Width/Height and extra time columns.
       return QLatin1String(key) != QLatin1String("width")
-          && QLatin1String(key) != QLatin1String("height");
+          && QLatin1String(key) != QLatin1String("height")
+          && QLatin1String(key) != QLatin1String("accessed")
+          && QLatin1String(key) != QLatin1String("changed")
+          && QLatin1String(key) != QLatin1String("birth");
     }
     return detail_columns_.contains(QLatin1String(key));
   };
@@ -257,6 +260,9 @@ void MainWindow::apply_detail_column_visibility()
   tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Framerate), !visible("framerate"));
   tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Duration), !visible("duration"));
   tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Modified), !visible("modified"));
+  tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Accessed), !visible("accessed"));
+  tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Changed), !visible("changed"));
+  tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Birth), !visible("birth"));
   tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Type), !visible("type"));
 }
 
