@@ -460,6 +460,7 @@ Goal: smaller translation units and eventually fewer responsibilities on
         (partial: `main_window_location.cpp` — focus/edit/completion, breadcrumbs,
          bookmarks/history menus, open_new_window; class extract still TODO)
       - `SidebarController` — tree + places (devices already partly extracted)
+        (partial: `main_window_sidebar.cpp` — toggle/activate/sync/rebuild places)
       - `ThumbnailCoordinator` — visible batch, dir montages, `thumb_alias_`
 - [x] **R3** Split `libs/dirtoo-filter/src/predicates.cpp` (~1.8k) by domain
       (`predicates_name` / `_media` / `_fuzzy` / `_rest`; public API unchanged)
