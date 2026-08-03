@@ -15,6 +15,7 @@ qt_add_executable(dirtoo-app
   main_window_nav.cpp
   main_window_ops.cpp
   file_list_model.cpp
+  file_list_model_thumbs.cpp
   file_list_model.hpp
   file_views.hpp
   drag_action_overlay.cpp

@@ -463,7 +463,8 @@ Goal: smaller translation units and eventually fewer responsibilities on
       (`predicates_name` / `_media` / `_fuzzy` / `_rest`; public API unchanged)
 - [x] **R4** `GraphicsFileView` impl split — layout/windowing, selection/cursor, DnD
       (`graphics_file_view.cpp` core+layout; `_selection.cpp`; `_dnd.cpp`)
-- [ ] **R5** `FileListModel` — extract thumbnail/new-mark state helper; thin `data()`
+- [x] **R5** `FileListModel` — extract thumbnail/new-mark state helper; thin `data()`
+      (`file_list_model_thumbs.cpp`: thumbs, new marks, child counts, icon_for)
 - [ ] **R6** `setup_central_ui` — after R2, build chrome in owners
 
 ### Explicit non-goals (this track)

@@ -28,13 +28,8 @@
 
 #include <algorithm>
 namespace dirtoo::app {
-namespace {
 
-QFileIconProvider& icon_provider()
-{
-  static QFileIconProvider provider;
-  return provider;
-}
+namespace {
 
 QString format_size(std::uint64_t bytes, bool /*is_directory*/)
 {
@@ -139,126 +134,6 @@ void FileListModel::emit_path_changed(const QString& path)
   }
 }
 
-void FileListModel::set_thumbnail(const QString& path, const QIcon& icon)
-{
-  thumbnails_.insert(path, icon);
-  thumbnail_status_.insert(path, ThumbnailStatus::Ready);
-  // Do not clear the "new" badge when a thumbnail arrives — Python keeps _new
-  // until the directory is reloaded / the item is replaced.
-  emit_path_changed(path);
-}
-
-void FileListModel::set_thumbnail_pending(const QString& path)
-{
-  if (thumbnail_status_.value(path, ThumbnailStatus::None) == ThumbnailStatus::Ready) {
-    return;
-  }
-  thumbnail_status_.insert(path, ThumbnailStatus::Pending);
-  emit_path_changed(path);
-}
-
-void FileListModel::set_thumbnail_failed(const QString& path)
-{
-  thumbnail_status_.insert(path, ThumbnailStatus::Failed);
-  emit_path_changed(path);
-}
-
-void FileListModel::mark_new(const QString& path)
-{
-  new_paths_.insert(path);
-  emit_path_changed(path);
-}
-
-void FileListModel::clear_new_marks()
-{
-  if (new_paths_.isEmpty()) {
-    return;
-  }
-  new_paths_.clear();
-  if (rowCount() > 0) {
-    emit dataChanged(index(0, 0), index(rowCount() - 1, 0), {IsNewRole});
-  }
-}
-
-void FileListModel::prune_new_marks(const QSet<QString>& keep_paths)
-{
-  if (new_paths_.isEmpty()) {
-    return;
-  }
-  QSet<QString> removed;
-  for (const QString& p : new_paths_) {
-    if (!keep_paths.contains(p)) {
-      removed.insert(p);
-    }
-  }
-  if (removed.isEmpty()) {
-    return;
-  }
-  for (const QString& p : removed) {
-    new_paths_.remove(p);
-  }
-  if (rowCount() > 0) {
-    emit dataChanged(index(0, 0), index(rowCount() - 1, 0), {IsNewRole});
-  }
-}
-
-ThumbnailStatus FileListModel::thumbnail_status(const QString& path) const
-{
-  return thumbnail_status_.value(path, ThumbnailStatus::None);
-}
-
-bool FileListModel::is_new(const QString& path) const
-{
-  return new_paths_.contains(path);
-}
-
-void FileListModel::clear_child_counts()
-{
-  child_counts_.clear();
-  child_count_pending_.clear();
-}
-
-void FileListModel::request_child_count(const QString& path)
-{
-  if (path.isEmpty() || child_counts_.contains(path) || child_count_pending_.contains(path)) {
-    return;
-  }
-  child_count_pending_.insert(path);
-  child_counts_.insert(path, -1);
-  // Offload readdir to a worker thread; never run on the GUI thread.
-  const QString path_copy = path;
-  QThreadPool::globalInstance()->start([this, path_copy] {
-    qint64 n = 0;
-    std::error_code ec;
-    const auto opts = std::filesystem::directory_options::skip_permission_denied;
-    for (const auto& entry :
-         std::filesystem::directory_iterator(path_copy.toStdString(), opts, ec)) {
-      (void)entry;
-      if (ec) {
-        ec.clear();
-        continue;
-      }
-      ++n;
-    }
-    QMetaObject::invokeMethod(this, "on_child_count_ready", Qt::QueuedConnection,
-                              Q_ARG(QString, path_copy), Q_ARG(qint64, n));
-  });
-}
-
-void FileListModel::on_child_count_ready(const QString& path, qint64 count)
-{
-  child_count_pending_.remove(path);
-  child_counts_.insert(path, count);
-  emit_path_changed(path);
-}
-
-void FileListModel::set_child_count(const QString& path, qint64 count)
-{
-  child_count_pending_.remove(path);
-  child_counts_.insert(path, count);
-  emit_path_changed(path);
-}
-
 void FileListModel::notify_row_changed(int row)
 {
   if (row < 0 || row >= rowCount()) {
@@ -283,38 +158,6 @@ void FileListModel::notify_row_changed(int row)
       collection_->refresh_groups();
       endResetModel();
     });
-  }
-}
-
-void FileListModel::clear_thumbnail(const QString& path)
-{
-  thumbnails_.remove(path);
-  thumbnail_status_.remove(path);
-  emit_path_changed(path);
-}
-
-void FileListModel::clear_thumbnails()
-{
-  if (thumbnails_.isEmpty() && thumbnail_status_.isEmpty()) {
-    return;
-  }
-  thumbnails_.clear();
-  thumbnail_status_.clear();
-  // Child counts are location-specific; cleared separately on navigation.
-  if (rowCount() > 0) {
-    emit dataChanged(index(0, 0), index(rowCount() - 1, 0),
-                     {Qt::DecorationRole, ThumbnailStatusRole});
-  }
-}
-
-void FileListModel::set_crop_thumbnails(bool crop)
-{
-  if (crop_thumbnails_ == crop) {
-    return;
-  }
-  crop_thumbnails_ = crop;
-  if (rowCount() > 0) {
-    emit dataChanged(index(0, 0), index(rowCount() - 1, 0), {Qt::DecorationRole});
   }
 }
 
@@ -374,20 +217,6 @@ int FileListModel::icon_text_rows() const noexcept
   return kRows[lvl];
 }
 
-
-QIcon FileListModel::icon_for(const fs::FileInfo& fi) const
-{
-  const QString path = QString::fromStdString(fi.path().string());
-  const auto it = thumbnails_.constFind(path);
-  if (it != thumbnails_.constEnd()) {
-    return it.value();
-  }
-  if (fi.is_synthetic()) {
-    return icon_provider().icon(fi.is_directory() ? QFileIconProvider::Folder
-                                                  : QFileIconProvider::File);
-  }
-  return icon_provider().icon(QFileInfo(path));
-}
 
 int FileListModel::rowCount(const QModelIndex& parent) const
 {
