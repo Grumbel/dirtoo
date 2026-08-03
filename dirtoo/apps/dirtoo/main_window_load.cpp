@@ -25,8 +25,8 @@ void MainWindow::reload_directory(bool soft)
     if (watcher_reload_timer_ != nullptr) {
       watcher_reload_timer_->stop();
     }
-    thumbnailer_.cancel_all();
-    thumb_alias_.clear();
+    cancel_all_thumbnails();
+    clear_thumb_aliases();
     if (model_ != nullptr) {
       model_->clear_thumbnails();
     }

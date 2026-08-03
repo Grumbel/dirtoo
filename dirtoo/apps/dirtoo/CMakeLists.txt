@@ -8,6 +8,11 @@ qt_add_executable(dirtoo-app
   main_window_setup.cpp
   main_window_setup_toolbar.cpp
   main_window_setup_menus.cpp
+  main_window_setup_menus_file.cpp
+  main_window_setup_menus_edit.cpp
+  main_window_setup_menus_view.cpp
+  main_window_setup_menus_sort.cpp
+  main_window_setup_menus_go.cpp
   main_window_setup_central.cpp
   main_window_thumbs.cpp
   main_window_transfer.cpp

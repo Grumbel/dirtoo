@@ -17,6 +17,17 @@
 
 namespace dirtoo::app {
 
+void MainWindow::cancel_all_thumbnails()
+{
+  thumbnailer_.cancel_all();
+}
+
+void MainWindow::clear_thumb_aliases()
+{
+  thumb_alias_.clear();
+}
+
+
 void MainWindow::schedule_directory_thumbnails_low_priority()
 {
   // Defer expensive montages until after ordinary file thumbs have had a chance.

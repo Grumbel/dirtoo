@@ -203,6 +203,8 @@ private:
   void set_status(const QString& text);
   void set_clipboard(ClipboardMode mode);
   void request_thumbnails_for_visible();
+  void cancel_all_thumbnails();
+  void clear_thumb_aliases();
   /// Queue montage builds for visible directories after a delay (low priority).
   void schedule_directory_thumbnails_low_priority();
   void start_transfer(const TransferRequest& request);
@@ -214,6 +216,11 @@ private:
   void setup_background_workers();
   void setup_toolbar();
   void setup_menus();
+  void setup_file_menu();
+  void setup_edit_menu();
+  void setup_view_menu();
+  void setup_sort_menu();
+  void setup_go_help_menus();
   void setup_shortcuts();
   void setup_central_ui();
   void setup_status_and_services();
