@@ -24,7 +24,10 @@ include(CMakePackageConfigHelpers)
 
 add_library(dirtoo-filter
   src/parser.cpp
-  src/predicates.cpp
+  src/predicates_name.cpp
+  src/predicates_media.cpp
+  src/predicates_fuzzy.cpp
+  src/predicates_rest.cpp
   src/search.cpp
   src/media_probe.cpp
   src/media_meta_cache.cpp

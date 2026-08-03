@@ -459,8 +459,8 @@ Goal: smaller translation units and eventually fewer responsibilities on
       - `LocationChrome` — breadcrumb / line edit / path completion
       - `SidebarController` — tree + places (devices already partly extracted)
       - `ThumbnailCoordinator` — visible batch, dir montages, `thumb_alias_`
-- [ ] **R3** Split `libs/dirtoo-filter/src/predicates.cpp` (~1.8k) by domain
-      (`predicates_name`, `predicates_size`, `predicates_media`, …)
+- [x] **R3** Split `libs/dirtoo-filter/src/predicates.cpp` (~1.8k) by domain
+      (`predicates_name` / `_media` / `_fuzzy` / `_rest`; public API unchanged)
 - [ ] **R4** `GraphicsFileView` impl split — layout/windowing, selection/cursor, DnD
 - [ ] **R5** `FileListModel` — extract thumbnail/new-mark state helper; thin `data()`
 - [ ] **R6** `setup_central_ui` — after R2, build chrome in owners
