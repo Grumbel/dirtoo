@@ -1,4 +1,6 @@
 #include "main_window.hpp"
+#include <QWidget>
+#include <QAction>
 #include "location_button_bar.hpp"
 #include "archive_listing.hpp"
 #include "directory_tree_model.hpp"
