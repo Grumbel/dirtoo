@@ -463,7 +463,7 @@ Goal: smaller translation units and eventually fewer responsibilities on
         (partial: `main_window_sidebar.cpp` — toggle/activate/sync/rebuild places)
       - `ThumbnailCoordinator` — visible batch, dir montages, `thumb_alias_`
 - [x] **R3** Split `libs/dirtoo-filter/src/predicates.cpp` (~1.8k) by domain
-      (`predicates_name` / `_media` / `_fuzzy` / `_rest`; public API unchanged)
+      (`_name` / `_media` / `_fuzzy` / `_meta` / `_content` / `_misc` + `predicates_detail.hpp`)
 - [x] **R4** `GraphicsFileView` impl split — layout/windowing, selection/cursor, DnD
       (`graphics_file_view.cpp` core+layout; `_selection.cpp`; `_dnd.cpp`)
 - [x] **R5** `FileListModel` — extract thumbnail/new-mark state helper; thin `data()`
@@ -480,12 +480,11 @@ Goal: smaller translation units and eventually fewer responsibilities on
 
 ### Files removed in this track (zip clients must delete)
 
-- `libs/dirtoo-filter/src/predicates.cpp` — replaced by
-  `predicates_name.cpp`, `predicates_media.cpp`, `predicates_fuzzy.cpp`,
-  `predicates_rest.cpp`. **Delete the old monolith if your transfer only
-  overlays/adds files.**
+- `libs/dirtoo-filter/src/predicates.cpp` — old monolith (delete if overlay transfer keeps it)
+- `libs/dirtoo-filter/src/predicates_rest.cpp` — intermediate split file; replaced by
+  `predicates_meta.cpp`, `predicates_content.cpp`, `predicates_misc.cpp`
 
-No other source files were deleted (splits overwrote or added TUs in place).
+Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail.hpp`.
 
 ### Notes
 

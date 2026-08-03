@@ -27,7 +27,9 @@ add_library(dirtoo-filter
   src/predicates_name.cpp
   src/predicates_media.cpp
   src/predicates_fuzzy.cpp
-  src/predicates_rest.cpp
+  src/predicates_meta.cpp
+  src/predicates_content.cpp
+  src/predicates_misc.cpp
   src/search.cpp
   src/media_probe.cpp
   src/media_meta_cache.cpp
