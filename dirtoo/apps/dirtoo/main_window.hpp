@@ -23,6 +23,7 @@
 #include "search_worker.hpp"
 #include "path_completion_service.hpp"
 #include "list_pipeline_workers.hpp"
+#include "sidebar_places.hpp"
 #include "directory_load_worker.hpp"
 #include "sort_worker.hpp"
 #include "filter_worker.hpp"
@@ -280,7 +281,7 @@ private:
   QSplitter* main_splitter_ = nullptr;
   QWidget* sidebar_widget_ = nullptr;
   QTreeView* sidebar_tree_ = nullptr;
-  class DirectoryTreeModel* directory_tree_model_ = nullptr;
+  SidebarPlaces sidebar_places_{this};
   DevicesController* devices_controller_ = nullptr;
   class QListWidget* devices_list_ = nullptr;
   class QLabel* devices_label_ = nullptr;

@@ -459,6 +459,7 @@ Goal: smaller translation units and eventually fewer responsibilities on
       - [x] `ListPipelineWorkers` — dir-load / sort / filter threads + generations
       - [x] `PathCompletionService` — location-bar completion worker/completer
       - [x] `ThumbnailCoordinator` — Thumbnailer + aliases + dir montages
+      - [x] `SidebarPlaces` — places model + rebuild/sync
       - `LocationChrome` — breadcrumb / line edit / path completion
         (partial: location TU + **PathCompletionService** owns worker/completer/timer)
       - `SidebarController` — tree + places (devices already partly extracted)

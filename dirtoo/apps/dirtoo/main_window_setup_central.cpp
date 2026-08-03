@@ -72,7 +72,7 @@ void MainWindow::setup_central_ui()
   places_label->setStyleSheet(QStringLiteral("font-weight: bold; padding: 6px 6px 2px 6px;"));
   places_layout->addWidget(places_label);
 
-  directory_tree_model_ = new DirectoryTreeModel(this);
+  sidebar_places_.ensure_model();
   rebuild_sidebar_places();
   devices_controller_ = new DevicesController(this);
   devices_controller_->set_list_widget(devices_list_);
@@ -90,7 +90,7 @@ void MainWindow::setup_central_ui()
   devices_controller_->refresh();
 
   sidebar_tree_ = new QTreeView(places_panel);
-  sidebar_tree_->setModel(directory_tree_model_);
+  sidebar_tree_->setModel(sidebar_places_.model());
   sidebar_tree_->setHeaderHidden(true);
   sidebar_tree_->setUniformRowHeights(true);
   sidebar_tree_->setAnimated(true);
