@@ -21,7 +21,7 @@
 #include "history_menu.hpp"
 #include "message_area.hpp"
 #include "search_worker.hpp"
-#include "path_completion_worker.hpp"
+#include "path_completion_service.hpp"
 #include "directory_load_worker.hpp"
 #include "sort_worker.hpp"
 #include "filter_worker.hpp"
@@ -236,6 +236,7 @@ private:
   collection::FileCollection collection_;
 
   ThumbnailCoordinator thumbs_{this};
+  PathCompletionService path_completion_{this};
   watcher::DirectoryWatcher watcher_;
   archive::ArchiveManager archive_manager_;
   fs::Location pending_archive_location_;
@@ -298,8 +299,6 @@ private:
   std::vector<fs::FileInfo> search_batch_;
   quint64 search_status_matched_ = 0; ///< last match count shown in status (throttle)
   SearchController search_controller_;
-  QThread* path_completion_thread_ = nullptr;
-  PathCompletionWorker* path_completion_worker_ = nullptr;
   QThread* dir_load_thread_ = nullptr;
   DirectoryLoadWorker* dir_load_worker_ = nullptr;
   quint64 dir_load_generation_ = 0;
@@ -312,12 +311,7 @@ private:
   QThread* filter_thread_ = nullptr;
   FilterWorker* filter_worker_ = nullptr;
   quint64 filter_generation_ = 0;
-  QStringListModel* path_completion_model_ = nullptr;
-  QCompleter* path_completer_ = nullptr;
-  QTimer* path_completion_timer_ = nullptr;
   QTimer* watcher_reload_timer_ = nullptr;
-  QString path_completion_pending_;
-  quint64 path_completion_request_id_ = 0;
   QStackedWidget* view_stack_ = nullptr;
   QTreeView* tree_view_ = nullptr;
   QListView* icon_view_ = nullptr; // List view (and fallback if no Graphics)

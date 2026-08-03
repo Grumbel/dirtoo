@@ -147,31 +147,8 @@ void MainWindow::setup_central_ui()
 
   location_edit_ = new QLineEdit(breadcrumb_row);
   location_edit_->setPlaceholderText(QStringLiteral("Location"));
-  {
-    path_completion_model_ = new QStringListModel(location_edit_);
-    path_completer_ = new QCompleter(path_completion_model_, location_edit_);
-    path_completer_->setCaseSensitivity(Qt::CaseInsensitive);
-    path_completer_->setCompletionMode(QCompleter::PopupCompletion);
-    path_completer_->setFilterMode(Qt::MatchStartsWith);
-    location_edit_->setCompleter(path_completer_);
-
-    path_completion_timer_ = new QTimer(this);
-    path_completion_timer_->setSingleShot(true);
-    path_completion_timer_->setInterval(60);
-    connect(path_completion_timer_, &QTimer::timeout, this,
-            &MainWindow::on_path_completion_timeout);
-
-    path_completion_thread_ = new QThread(this);
-    path_completion_worker_ = new PathCompletionWorker();
-    path_completion_worker_->moveToThread(path_completion_thread_);
-    connect(path_completion_thread_, &QThread::finished, path_completion_worker_,
-            &QObject::deleteLater);
-    connect(path_completion_worker_, &PathCompletionWorker::completions_ready, this,
-            &MainWindow::on_path_completions_ready);
-    path_completion_thread_->start();
-
-    connect(location_edit_, &QLineEdit::textEdited, this, &MainWindow::on_location_text_edited);
-  }
+  path_completion_.setup(location_edit_);
+  connect(location_edit_, &QLineEdit::textEdited, this, &MainWindow::on_location_text_edited);
 
   connect(location_edit_, &QLineEdit::returnPressed, this, &MainWindow::on_location_entered);
   connect(location_edit_, &QLineEdit::editingFinished, this, [this] {

@@ -106,13 +106,7 @@ MainWindow::MainWindow(QWidget* parent)
 MainWindow::~MainWindow()
 {
   stop_search();
-  if (path_completion_worker_ != nullptr) {
-    path_completion_worker_->cancel();
-  }
-  if (path_completion_thread_ != nullptr) {
-    path_completion_thread_->quit();
-    path_completion_thread_->wait(2000);
-  }
+  path_completion_.shutdown();
   transfer_controller_.shutdown();
   search_controller_.stop();
   if (dir_load_thread_ != nullptr) {

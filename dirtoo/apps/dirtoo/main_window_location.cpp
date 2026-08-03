@@ -71,46 +71,18 @@ void MainWindow::show_location_line_edit()
 
 void MainWindow::on_location_text_edited(const QString& text)
 {
-  path_completion_pending_ = text;
-  if (path_completion_timer_ != nullptr) {
-    path_completion_timer_->start();
-  }
+  path_completion_.on_text_edited(text);
 }
 
 void MainWindow::on_path_completion_timeout()
 {
-  if (path_completion_worker_ == nullptr || path_completion_thread_ == nullptr) {
-    return;
-  }
-  const QString text = path_completion_pending_;
-  if (text.isEmpty()) {
-    if (path_completion_model_ != nullptr) {
-      path_completion_model_->setStringList({});
-    }
-    return;
-  }
-  const quint64 id = ++path_completion_request_id_;
-  QMetaObject::invokeMethod(
-      path_completion_worker_,
-      [worker = path_completion_worker_, id, text] { worker->complete(id, text); },
-      Qt::QueuedConnection);
+  path_completion_.on_timeout();
 }
 
 void MainWindow::on_path_completions_ready(quint64 request_id, const QString& longest,
                                            const QStringList& candidates)
 {
-  (void)longest;
-  if (request_id != path_completion_request_id_) {
-    return; // stale
-  }
-  if (path_completion_model_ == nullptr) {
-    return;
-  }
-  path_completion_model_->setStringList(candidates);
-  if (path_completer_ != nullptr && location_edit_ != nullptr && location_edit_->hasFocus()
-      && !candidates.isEmpty()) {
-    path_completer_->complete();
-  }
+  path_completion_.on_completions_ready(request_id, longest, candidates);
 }
 
 void MainWindow::on_parent_new_window()
