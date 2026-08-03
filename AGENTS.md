@@ -41,7 +41,20 @@ SPDX headers:
 
 Large-directory mitigations (cheap listing, filter worker, Graphics item reuse, viewport thumbs, soft watcher reload), DnD/Link, and core parity features are in place. See **`TODO.md`** for residual polish and **`AUDIT.md`** for the full file inventory and parity matrix. Explicit out-of-scope items include archive write, remote VFS, and full Python `programs/*`.
 
-**MainWindow controllers:** navigation (`NavigationHistory`), recursive search (`SearchController`), and clipboard transfers (`TransferController`) live in dedicated helpers under `apps/dirtoo/`; keep new orchestration out of the `main_window.cpp` god-object when practical.
+**MainWindow controllers:** navigation (`NavigationHistory`), recursive search (`SearchController`), and clipboard transfers (`TransferController`) live in dedicated helpers under `apps/dirtoo/`. Prefer new orchestration in those helpers (or a new small type) rather than growing the `MainWindow` header further.
+
+**MainWindow implementation is multi-TU** (one class, many `.cpp` files). Put methods in the matching unit when extending behavior:
+
+| TU | Responsibility |
+|----|----------------|
+| `main_window.cpp` | ctor/dtor, status, show/close lifecycle |
+| `main_window_setup*.cpp` | workers, toolbar, menus, central UI, status bar wiring |
+| `main_window_nav.cpp` / `_load.cpp` | open location, history, entry deltas / async load, watcher, archive open |
+| `main_window_location.cpp` / `_sidebar.cpp` | location bar, path completion, bookmarks menus / tree places |
+| `main_window_ops.cpp` | clipboard + FS mutations + read-only gate |
+| `main_window_sort.cpp` / `_filter.cpp` / `_thumbs.cpp` / `_transfer.cpp` / `_view.cpp` / `_events.cpp` / `_settings.cpp` / `_actions.cpp` | as named |
+
+**Filter predicates** are split under `libs/dirtoo-filter/src/predicates_{name,media,fuzzy,meta,content,misc}.cpp` with shared helpers in `predicates_detail.hpp`. Do **not** reintroduce a monolithic `predicates.cpp` or `predicates_rest.cpp` (delete those if an overlay transfer still has them).
 
 **Operations history (not Undo):** every successful or failed filesystem mutation
 the GUI performs (rename, move, copy, delete, mkdir, mkfile, symlink, swap, and
