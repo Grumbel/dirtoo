@@ -53,30 +53,11 @@ void MainWindow::setup_background_workers()
   connect(&search_controller_, &SearchController::progress, this, &MainWindow::on_search_progress);
   connect(&search_controller_, &SearchController::finished, this, &MainWindow::on_search_finished);
 
-  dir_load_worker_ = new DirectoryLoadWorker;
-  dir_load_thread_ = new QThread(this);
-  dir_load_worker_->moveToThread(dir_load_thread_);
-  connect(dir_load_thread_, &QThread::finished, dir_load_worker_, &QObject::deleteLater);
-  connect(dir_load_worker_, &DirectoryLoadWorker::loaded, this, &MainWindow::on_directory_loaded);
-  connect(dir_load_worker_, &DirectoryLoadWorker::failed, this, &MainWindow::on_directory_load_failed);
-  qRegisterMetaType<std::vector<dirtoo::fs::FileInfo>>("std::vector<dirtoo::fs::FileInfo>");
-  dir_load_thread_->start();
-
-  sort_worker_ = new SortWorker;
-  sort_thread_ = new QThread(this);
-  sort_worker_->moveToThread(sort_thread_);
-  connect(sort_thread_, &QThread::finished, sort_worker_, &QObject::deleteLater);
-  connect(sort_worker_, &SortWorker::sorted, this, &MainWindow::on_sort_finished);
-  qRegisterMetaType<dirtoo::collection::SortKey>("dirtoo::collection::SortKey");
-  sort_thread_->start();
-
-  filter_worker_ = new FilterWorker;
-  filter_thread_ = new QThread(this);
-  filter_worker_->moveToThread(filter_thread_);
-  connect(filter_thread_, &QThread::finished, filter_worker_, &QObject::deleteLater);
-  connect(filter_worker_, &FilterWorker::filtered, this, &MainWindow::on_filter_finished);
-  qRegisterMetaType<dirtoo::collection::GroupMode>("dirtoo::collection::GroupMode");
-  filter_thread_->start();
+  list_workers_.setup();
+  connect(list_workers_.dir_load(), &DirectoryLoadWorker::loaded, this, &MainWindow::on_directory_loaded);
+  connect(list_workers_.dir_load(), &DirectoryLoadWorker::failed, this, &MainWindow::on_directory_load_failed);
+  connect(list_workers_.sort(), &SortWorker::sorted, this, &MainWindow::on_sort_finished);
+  connect(list_workers_.filter(), &FilterWorker::filtered, this, &MainWindow::on_filter_finished);
 
   thumbs_.setup_dir_worker();
   if (thumbs_.dir_worker() != nullptr) {

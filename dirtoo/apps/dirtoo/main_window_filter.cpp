@@ -96,13 +96,13 @@ void MainWindow::on_filter_changed(const QString& text)
 
 void MainWindow::request_async_filter(bool keep_previous_visible)
 {
-  if (filter_worker_ == nullptr) {
+  if (list_workers_.filter() == nullptr) {
     collection_.set_name_filter(
         filter_edit_ != nullptr ? filter_edit_->text().toStdString() : std::string{});
     refresh_list();
     return;
   }
-  const quint64 gen = ++filter_generation_;
+  const quint64 gen = list_workers_.next_filter_generation();
   set_status(QStringLiteral("Filtering…"));
   auto items = collection_.items();
   const QString expr = filter_edit_ != nullptr ? filter_edit_->text() : QString();
@@ -115,7 +115,7 @@ void MainWindow::request_async_filter(bool keep_previous_visible)
     refresh_list();
   }
   QMetaObject::invokeMethod(
-      filter_worker_, "filter_items", Qt::QueuedConnection,
+      list_workers_.filter(), "filter_items", Qt::QueuedConnection,
       Q_ARG(std::vector<dirtoo::fs::FileInfo>, items), Q_ARG(QString, expr),
       Q_ARG(bool, show_hidden), Q_ARG(dirtoo::collection::GroupMode, group_mode),
       Q_ARG(quint64, gen));
@@ -124,7 +124,7 @@ void MainWindow::request_async_filter(bool keep_previous_visible)
 void MainWindow::on_filter_finished(quint64 generation, std::vector<dirtoo::fs::FileInfo> visible,
                                     bool parse_ok)
 {
-  if (generation != filter_generation_ || search_active_) {
+  if (generation != list_workers_.filter_generation() || search_active_) {
     return;
   }
   // Apply current sort to the filtered list (in-memory only; no FS I/O).

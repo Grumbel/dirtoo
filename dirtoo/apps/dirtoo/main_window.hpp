@@ -22,6 +22,7 @@
 #include "message_area.hpp"
 #include "search_worker.hpp"
 #include "path_completion_service.hpp"
+#include "list_pipeline_workers.hpp"
 #include "directory_load_worker.hpp"
 #include "sort_worker.hpp"
 #include "filter_worker.hpp"
@@ -237,6 +238,7 @@ private:
 
   ThumbnailCoordinator thumbs_{this};
   PathCompletionService path_completion_{this};
+  ListPipelineWorkers list_workers_{this};
   watcher::DirectoryWatcher watcher_;
   archive::ArchiveManager archive_manager_;
   fs::Location pending_archive_location_;
@@ -299,18 +301,9 @@ private:
   std::vector<fs::FileInfo> search_batch_;
   quint64 search_status_matched_ = 0; ///< last match count shown in status (throttle)
   SearchController search_controller_;
-  QThread* dir_load_thread_ = nullptr;
-  DirectoryLoadWorker* dir_load_worker_ = nullptr;
-  quint64 dir_load_generation_ = 0;
   bool soft_directory_reload_ = false;
   QSet<QString> known_paths_;
   fs::Location known_paths_location_;
-  QThread* sort_thread_ = nullptr;
-  SortWorker* sort_worker_ = nullptr;
-  quint64 sort_generation_ = 0;
-  QThread* filter_thread_ = nullptr;
-  FilterWorker* filter_worker_ = nullptr;
-  quint64 filter_generation_ = 0;
   QTimer* watcher_reload_timer_ = nullptr;
   QStackedWidget* view_stack_ = nullptr;
   QTreeView* tree_view_ = nullptr;

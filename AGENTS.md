@@ -41,7 +41,7 @@ SPDX headers:
 
 Large-directory mitigations (cheap listing, filter worker, Graphics item reuse, viewport thumbs, soft watcher reload), DnD/Link, and core parity features are in place. See **`TODO.md`** for residual polish and **`AUDIT.md`** for the full file inventory and parity matrix. Explicit out-of-scope items include archive write, remote VFS, and full Python `programs/*`.
 
-**MainWindow controllers:** navigation (`NavigationHistory`), recursive search (`SearchController`), clipboard transfers (`TransferController`), thumbnails (`ThumbnailCoordinator`), and path completion (`PathCompletionService`) live in dedicated helpers under `apps/dirtoo/`. Prefer new orchestration in those helpers (or a new small type) rather than growing the `MainWindow` header further.
+**MainWindow controllers:** navigation (`NavigationHistory`), recursive search (`SearchController`), clipboard transfers (`TransferController`), thumbnails (`ThumbnailCoordinator`), and path completion (`PathCompletionService`), and list pipeline workers (`ListPipelineWorkers`) live in dedicated helpers under `apps/dirtoo/`. Prefer new orchestration in those helpers (or a new small type) rather than growing the `MainWindow` header further.
 
 **MainWindow implementation is multi-TU** (one class, many `.cpp` files). All `main_window_*.cpp` units should `#include "main_window_common.hpp"` first so Qt types are complete (the header only forward-declares many widgets). Put methods in the matching unit when extending behavior:
 

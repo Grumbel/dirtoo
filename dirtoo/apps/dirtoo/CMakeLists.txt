@@ -97,6 +97,7 @@ qt_add_executable(dirtoo-app
   search_worker.hpp
   path_completion_worker.cpp
   path_completion_service.cpp
+  list_pipeline_workers.cpp
   path_completion_worker.hpp
   directory_load_worker.cpp
   directory_load_worker.hpp

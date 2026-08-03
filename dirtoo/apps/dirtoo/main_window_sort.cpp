@@ -18,17 +18,17 @@ void MainWindow::request_async_sort()
     request_async_filter(/*keep_previous_visible=*/true);
     return;
   }
-  if (sort_worker_ == nullptr) {
+  if (list_workers_.sort() == nullptr) {
     collection_.apply_sort();
     refresh_list();
     return;
   }
-  const quint64 gen = ++sort_generation_;
+  const quint64 gen = list_workers_.next_sort_generation();
   auto items = collection_.items(); // copy
   const auto key = collection_.sorter().key();
   const bool asc = collection_.sorter().ascending();
   const bool dirs_first = collection_.sorter().directories_first();
-  QMetaObject::invokeMethod(sort_worker_, "sort_items", Qt::QueuedConnection,
+  QMetaObject::invokeMethod(list_workers_.sort(), "sort_items", Qt::QueuedConnection,
                             Q_ARG(std::vector<dirtoo::fs::FileInfo>, items),
                             Q_ARG(dirtoo::collection::SortKey, key), Q_ARG(bool, asc),
                             Q_ARG(bool, dirs_first), Q_ARG(quint64, gen));
@@ -36,7 +36,7 @@ void MainWindow::request_async_sort()
 
 void MainWindow::on_sort_finished(quint64 generation, std::vector<fs::FileInfo> items)
 {
-  if (generation != sort_generation_ || search_active_) {
+  if (generation != list_workers_.sort_generation() || search_active_) {
     return;
   }
   // match_/filter and show_hidden stay; only item order changes.

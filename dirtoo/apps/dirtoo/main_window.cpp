@@ -109,18 +109,7 @@ MainWindow::~MainWindow()
   path_completion_.shutdown();
   transfer_controller_.shutdown();
   search_controller_.stop();
-  if (dir_load_thread_ != nullptr) {
-    dir_load_thread_->quit();
-    dir_load_thread_->wait(3000);
-  }
-  if (sort_thread_ != nullptr) {
-    sort_thread_->quit();
-    sort_thread_->wait(3000);
-  }
-  if (filter_thread_ != nullptr) {
-    filter_thread_->quit();
-    filter_thread_->wait(3000);
-  }
+  list_workers_.shutdown();
   shutdown_thumbnail_workers();
 }
 

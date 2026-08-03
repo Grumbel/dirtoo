@@ -72,7 +72,7 @@ void MainWindow::reload_directory(bool soft)
     load_loc = fs::Location::from_path(*resolved);
   }
 
-  const quint64 gen = ++dir_load_generation_;
+  const quint64 gen = list_workers_.next_dir_load_generation();
   set_status(soft ? QStringLiteral("Refreshing…") : QStringLiteral("Loading…"));
   // Hard navigation: clear immediately so the old directory does not linger.
   // Soft (watcher): keep showing the previous listing until the worker finishes.
@@ -81,13 +81,13 @@ void MainWindow::reload_directory(bool soft)
     refresh_list();
   }
 
-  if (dir_load_worker_ == nullptr) {
+  if (list_workers_.dir_load() == nullptr) {
     return;
   }
   // Supersede any in-flight listing (especially important when soft refreshes stack up).
-  QMetaObject::invokeMethod(dir_load_worker_, "cancel", Qt::QueuedConnection);
+  QMetaObject::invokeMethod(list_workers_.dir_load(), "cancel", Qt::QueuedConnection);
   const QString path = QString::fromStdString(load_loc.as_path().string());
-  QMetaObject::invokeMethod(dir_load_worker_, "load", Qt::QueuedConnection,
+  QMetaObject::invokeMethod(list_workers_.dir_load(), "load", Qt::QueuedConnection,
                             Q_ARG(QString, path), Q_ARG(quint64, gen));
 }
 
@@ -97,7 +97,7 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
                            .arg(generation)
                            .arg(items.size());
 
-  if (generation != dir_load_generation_ || search_active_) {
+  if (generation != list_workers_.dir_load_generation() || search_active_) {
     return;
   }
   // "New" badge: paths that appeared since we last listed this location.
@@ -174,7 +174,7 @@ void MainWindow::on_directory_load_failed(quint64 generation, QString error)
                               .arg(generation)
                               .arg(error);
 
-  if (generation != dir_load_generation_) {
+  if (generation != list_workers_.dir_load_generation()) {
     return;
   }
   set_status(error);
