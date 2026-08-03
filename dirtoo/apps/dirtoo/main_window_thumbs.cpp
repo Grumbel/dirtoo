@@ -1,4 +1,5 @@
 #include "main_window.hpp"
+#include "graphics_file_view.hpp"
 #include "archive_member_cache.hpp"
 #include "graphics_file_item.hpp"
 

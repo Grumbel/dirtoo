@@ -1,4 +1,7 @@
 #include "main_window.hpp"
+#include <QAction>
+#include "message_area.hpp"
+#include "graphics_file_view.hpp"
 #include "theme_icons.hpp"
 
 #include "dirtoo/filter/parser.hpp"

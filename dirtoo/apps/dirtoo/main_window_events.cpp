@@ -1,4 +1,6 @@
 #include "main_window.hpp"
+#include "leap_widget.hpp"
+#include "graphics_file_view.hpp"
 #include "theme_icons.hpp"
 
 #include <QApplication>

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window.hpp"
+#include <QAction>
 
 #include "clipboard.hpp"
 #include "conflict_dialog.hpp"

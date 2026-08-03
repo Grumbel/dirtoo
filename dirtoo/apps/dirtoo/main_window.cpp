@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window.hpp"
+#include <QThread>
 #include "badge_icons.hpp"
 #include "theme_icons.hpp"
 #include "location_icons.hpp"

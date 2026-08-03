@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window.hpp"
+#include <QLineEdit>
+#include <QLabel>
 
 #include "file_list_model.hpp"
 #include "file_context_menu.hpp"

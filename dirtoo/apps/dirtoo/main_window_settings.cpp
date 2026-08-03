@@ -1,4 +1,5 @@
 #include "main_window.hpp"
+#include <QWidget>
 #include "app_settings.hpp"
 #include "preferences_dialog.hpp"
 #include "theme_icons.hpp"
