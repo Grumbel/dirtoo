@@ -22,6 +22,8 @@ qt_add_executable(dirtoo-app
   file_item_delegate.cpp
   file_item_delegate.hpp
   graphics_file_view.cpp
+  graphics_file_view_selection.cpp
+  graphics_file_view_dnd.cpp
   graphics_file_view.hpp
   graphics_file_item.cpp
   graphics_file_item.hpp

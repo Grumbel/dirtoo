@@ -461,7 +461,8 @@ Goal: smaller translation units and eventually fewer responsibilities on
       - `ThumbnailCoordinator` — visible batch, dir montages, `thumb_alias_`
 - [x] **R3** Split `libs/dirtoo-filter/src/predicates.cpp` (~1.8k) by domain
       (`predicates_name` / `_media` / `_fuzzy` / `_rest`; public API unchanged)
-- [ ] **R4** `GraphicsFileView` impl split — layout/windowing, selection/cursor, DnD
+- [x] **R4** `GraphicsFileView` impl split — layout/windowing, selection/cursor, DnD
+      (`graphics_file_view.cpp` core+layout; `_selection.cpp`; `_dnd.cpp`)
 - [ ] **R5** `FileListModel` — extract thumbnail/new-mark state helper; thin `data()`
 - [ ] **R6** `setup_central_ui` — after R2, build chrome in owners
 
