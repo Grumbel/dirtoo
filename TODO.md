@@ -644,3 +644,32 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
 - [x] directory tree panel hide/show should be persistent
       (restore_settings applies ui/show_sidebar + ui/sidebar_width; persist
        skips width=0 while hidden so the last real width is kept)
+- [ ] move "block all filesystem modifications" button to the very
+      right edge of the toolbar
+- [ ] give better indication when IO is busy and doing something in the background
+- [ ] errors should print something to stdout/stderr, --verbose/--debug should be reserved for noisy messages
+- [ ] leap search triggers when trying to do keyword search sometimes
+- [ ] Ctrl-k shouldn't toggle the filter bar, but always activate it
+- [ ] type ahead search should disappear when it no longer has focus
+- [ ] slow IO (USB HDD that has to spin up) still locks up the GUI
+- [ ] clicking on folders in filter view might open the wrong folder
+- [ ] status for how many files have been thumbnailed and metadata
+      identified and how many are still to go
+- [ ] filter should give results for the data currently available and
+      update when new comes in, it currently just stalls when the
+      directory hasn't been fully processed
+- [ ] add a spinning busy icon when the browser is doing something,
+      tooltip should show what it is doing
+- [ ] filter should have a history showing past filters
+- [ ] aspect ration is missing from filter
+- [ ] selection on drag&drop can end up with unrelated additional files
+
+09:50:13.652 [warning] QGraphicsView::dragLeaveEvent: drag leave received before drag enter
+09:50:26.844 [warning] QGraphicsView::dragLeaveEvent: drag leave received before drag enter
+09:50:40.847 [warning] QGraphicsView::dragLeaveEvent: drag leave received before drag enter
+09:50:40.851 [warning] QGraphicsView::dragLeaveEvent: drag leave received before drag enter
+09:50:44.395 [warning] QGraphicsView::dragLeaveEvent: drag leave received before drag enter
+09:50:48.239 [warning] QGraphicsView::dragLeaveEvent: drag leave received before drag enter
+09:50:48.251 [warning] QGraphicsView::dragLeaveEvent: drag leave received before drag enter
+09:50:52.195 [warning] QGraphicsView::dragLeaveEvent: drag leave received before drag enter
+
