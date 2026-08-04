@@ -13,7 +13,7 @@ namespace dirtoo::app {
 
 void MainWindow::apply_icon_zoom()
 {
-  if (view_mode_ == ViewMode::SmallIcons) {
+  if (view_mode_ == ViewMode::List) {
     // Windows 95 Explorer "List" view: small icon left of filename, columns
     // filled top-to-bottom then left-to-right.
     static constexpr int kSmall[] = {16, 24, 32, 48, 64, 96, 128};
@@ -149,7 +149,7 @@ void MainWindow::set_view_mode(ViewMode mode)
     apply_icon_zoom();
     apply_detail_column_visibility();
     request_thumbnails_for_visible();
-  } else if (mode == ViewMode::SmallIcons) {
+  } else if (mode == ViewMode::List) {
     if (model_ != nullptr) {
       model_->set_icon_style(false);
       model_->set_icon_detail_level(1);
@@ -194,7 +194,7 @@ void MainWindow::on_view_icons()
 
 void MainWindow::on_view_small_icons()
 {
-  set_view_mode(ViewMode::SmallIcons);
+  set_view_mode(ViewMode::List);
 }
 
 void MainWindow::update_detail_row_heights()

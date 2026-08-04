@@ -8,7 +8,7 @@ namespace dirtoo::app {
 enum class ViewMode {
   Detail,
   Icons,
-  SmallIcons, // List view: icon+name rows in columns (Win95 Explorer List)
+  List, // List view: icon+name rows in columns (Win95 Explorer List)
 };
 
 } // namespace dirtoo::app

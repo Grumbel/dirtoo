@@ -42,7 +42,7 @@ void MainWindow::setup_toolbar()
 
   // Order mirrors dirtoo-py FileViewWindow.make_toolbar:
   // Parent | Home | Back Forward | Reload Prepare | Show Hidden | Sort Group |
-  // Icons SmallIcons Detail | Zoom± | LOD± | Crop
+  // Icons List Detail | Zoom± | LOD± | Crop
   parent_act_ = toolbar->addAction(theme_icon("go-up", "arrow-up"), QStringLiteral("Parent"), this,
                                  &MainWindow::on_go_parent);
   // Middle-click Parent → open parent in a new window.

@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <iterator>
 
 #include "view_mode.hpp"
 
