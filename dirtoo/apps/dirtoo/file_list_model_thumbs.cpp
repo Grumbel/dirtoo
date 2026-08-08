@@ -92,6 +92,27 @@ ThumbnailStatus FileListModel::thumbnail_status(const QString& path) const
   return thumbnail_status_.value(path, ThumbnailStatus::None);
 }
 
+FileListModel::ThumbnailCounts FileListModel::thumbnail_counts() const
+{
+  ThumbnailCounts c;
+  for (auto it = thumbnail_status_.constBegin(); it != thumbnail_status_.constEnd(); ++it) {
+    switch (it.value()) {
+    case ThumbnailStatus::Pending:
+      ++c.pending;
+      break;
+    case ThumbnailStatus::Ready:
+      ++c.ready;
+      break;
+    case ThumbnailStatus::Failed:
+      ++c.failed;
+      break;
+    default:
+      break;
+    }
+  }
+  return c;
+}
+
 bool FileListModel::is_new(const QString& path) const
 {
   return new_paths_.contains(path);

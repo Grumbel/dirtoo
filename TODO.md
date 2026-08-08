@@ -672,8 +672,10 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
 - [x] clicking on folders in filter view might open the wrong folder
       (on_item_activated copies FileInfo by value before navigate; avoids race
        when async filter/sort replaces visible between click and slot)
-- [ ] status for how many files have been thumbnailed and metadata
+- [x] status for how many files have been thumbnailed and metadata
       identified and how many are still to go
+      (status_info shows "thumbs ready/tracked" while pending > 0; updated on
+       thumbnail_ready/failed; FileListModel::thumbnail_counts())
 - [x] filter should give results for the data currently available and
       update when new comes in, it currently just stalls when the
       directory hasn't been fully processed
@@ -687,7 +689,9 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
       (FilterHistory + Up/Down in filter_edit_; Enter pushes)
 - [x] aspect ration is missing from filter
       (aspect:/ar:/ratio: — 16:9, >1.5, =4:3; uses media width/height)
-- [ ] selection on drag&drop can end up with unrelated additional files
+- [x] selection on drag&drop can end up with unrelated additional files
+      (Graphics start_drag uses selected_row_set_ only; mouseMove clears to
+       pressed row unless it was already in the multi-selection / Ctrl|Shift)
 - [ ] when the keyboard controlled file select cursor in File View is
       out of screen, instead of scrolling the screen back to the
       cursor, leave the scroll untouched and warp the cursor to a

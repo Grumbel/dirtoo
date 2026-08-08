@@ -75,6 +75,13 @@ public:
   void prune_new_marks(const QSet<QString>& keep_paths);
 
   [[nodiscard]] ThumbnailStatus thumbnail_status(const QString& path) const;
+  /// Counts of thumbnail states among paths currently tracked (visible requests).
+  struct ThumbnailCounts {
+    int pending = 0;
+    int ready = 0;
+    int failed = 0;
+  };
+  [[nodiscard]] ThumbnailCounts thumbnail_counts() const;
   [[nodiscard]] bool is_new(const QString& path) const;
 
   /// Thread-safe request to refresh a row (queues to this object's thread).

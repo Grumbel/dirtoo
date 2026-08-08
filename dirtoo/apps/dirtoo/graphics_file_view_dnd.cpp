@@ -27,6 +27,7 @@
 #include <QEvent>
 
 #include <algorithm>
+#include <vector>
 
 namespace dirtoo::app {
 
@@ -100,8 +101,18 @@ void GraphicsFileView::mouseMoveEvent(QMouseEvent* event)
       && (event->pos() - drag_start_pos_).manhattanLength()
              >= QApplication::startDragDistance()) {
     if (auto* item = qgraphicsitem_cast<GraphicsFileItem*>(itemAt(drag_start_pos_))) {
-      if (!item->isSelected()) {
-        select_row(item->row(), true);
+      const int row = item->row();
+      const auto mods = QApplication::keyboardModifiers();
+      const bool extend = (mods & Qt::ControlModifier) || (mods & Qt::ShiftModifier);
+      // Without Ctrl/Shift: drag either the existing multi-selection (if this
+      // row is already in it) or only the pressed row. Prevents unrelated
+      // QGraphicsItem selection residue from entering the drag payload.
+      if (!extend) {
+        if (!selected_row_set_.contains(row)) {
+          select_row(row, true);
+        }
+      } else if (!selected_row_set_.contains(row)) {
+        select_row(row, /*clear_others=*/false);
       }
       start_drag();
       drag_started_ = true;
@@ -117,8 +128,17 @@ void GraphicsFileView::start_drag()
   if (model_ == nullptr) {
     return;
   }
+  // Use the authoritative selected_row_set_ only (not the merge with transient
+  // QGraphicsItem::isSelected state), so drag payload matches what the user
+  // intentionally selected.
   QModelIndexList indexes;
-  for (int row : selected_rows()) {
+  std::vector<int> rows;
+  rows.reserve(static_cast<std::size_t>(selected_row_set_.size()));
+  for (int row : selected_row_set_) {
+    rows.push_back(row);
+  }
+  std::sort(rows.begin(), rows.end());
+  for (int row : rows) {
     indexes.append(model_->index(row, 0));
   }
   if (indexes.isEmpty()) {

@@ -262,6 +262,10 @@ void MainWindow::on_thumbnail_ready(const fs::Location& location, const QString&
   if (model_ != nullptr) {
     model_->set_thumbnail(key, QIcon(pix));
   }
+  // Refresh "thumbs N/M" in the status bar (cheap; only when pending remain).
+  if (model_ != nullptr && model_->thumbnail_counts().pending > 0) {
+    update_status_selection();
+  }
 }
 
 void MainWindow::on_thumbnail_failed(const fs::Location& location, const QString& message)
@@ -290,6 +294,9 @@ void MainWindow::on_thumbnail_failed(const fs::Location& location, const QString
     model_->set_thumbnail_failed(key);
   } else {
     model_->clear_thumbnail(key);
+  }
+  if (model_->thumbnail_counts().pending > 0) {
+    update_status_selection();
   }
 }
 

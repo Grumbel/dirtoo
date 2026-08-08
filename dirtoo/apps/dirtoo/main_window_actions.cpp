@@ -155,6 +155,19 @@ void MainWindow::update_status_selection()
                 .arg(format_byte_size(selected_bytes));
   }
 
+  // Thumbnail / meta progress for currently tracked paths.
+  if (model_ != nullptr) {
+    const auto tc = model_->thumbnail_counts();
+    const int tracked = tc.pending + tc.ready + tc.failed;
+    if (tc.pending > 0) {
+      info += QStringLiteral(", thumbs %1/%2")
+                  .arg(tc.ready)
+                  .arg(tracked);
+    } else if (tracked > 0 && tc.ready > 0) {
+      // Brief steady-state: omit once everything is done to keep the bar quiet.
+    }
+  }
+
   if (status_info_label_ != nullptr) {
     status_info_label_->setText(QStringLiteral("  ") + info);
   }
