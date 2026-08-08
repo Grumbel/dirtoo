@@ -21,7 +21,7 @@
 #include "history_menu.hpp"
 #include "message_area.hpp"
 #include "search_worker.hpp"
-#include "path_completion_service.hpp"
+#include "location_chrome.hpp"
 #include "list_pipeline_workers.hpp"
 #include "sidebar_places.hpp"
 #include "view_mode.hpp"
@@ -249,7 +249,7 @@ private:
   collection::FileCollection collection_;
 
   ThumbnailCoordinator thumbs_{this};
-  PathCompletionService path_completion_{this};
+  LocationChrome location_chrome_{this};
   ListPipelineWorkers list_workers_{this};
   watcher::DirectoryWatcher watcher_;
   archive::ArchiveManager archive_manager_;

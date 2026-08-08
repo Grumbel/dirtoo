@@ -106,7 +106,7 @@ MainWindow::MainWindow(QWidget* parent)
 MainWindow::~MainWindow()
 {
   stop_search();
-  path_completion_.shutdown();
+  location_chrome_.shutdown();
   transfer_controller_.shutdown();
   search_controller_.stop();
   list_workers_.shutdown();

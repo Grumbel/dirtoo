@@ -147,7 +147,8 @@ void MainWindow::setup_central_ui()
 
   location_edit_ = new QLineEdit(breadcrumb_row);
   location_edit_->setPlaceholderText(QStringLiteral("Location"));
-  path_completion_.setup(location_edit_);
+  location_chrome_.bind(location_edit_, location_buttons_);
+  location_chrome_.setup_completion();
   connect(location_edit_, &QLineEdit::textEdited, this, &MainWindow::on_location_text_edited);
 
   connect(location_edit_, &QLineEdit::returnPressed, this, &MainWindow::on_location_entered);

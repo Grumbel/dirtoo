@@ -462,8 +462,8 @@ Goal: smaller translation units and eventually fewer responsibilities on
       - [x] `SidebarPlaces` — places model + rebuild/sync
       - [x] `ViewZoom` + `ViewMode` header + `FilterHistory`
       - [x] `DirectorySession` + `SearchSession` value types
-      - `LocationChrome` — breadcrumb / line edit / path completion
-        (partial: location TU + **PathCompletionService** owns worker/completer/timer)
+      - [x] `LocationChrome` — breadcrumb / line edit / path completion
+        (`location_chrome.{hpp,cpp}` owns PathCompletionService + show/focus chrome)
       - `SidebarController` — tree + places (devices already partly extracted)
         (partial: `main_window_sidebar.cpp` — toggle/activate/sync/rebuild places)
       - [x] `ThumbnailCoordinator` — owns Thumbnailer, aliases, dir-montage worker

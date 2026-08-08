@@ -11,9 +11,7 @@ namespace dirtoo::app {
 
 void MainWindow::on_focus_location()
 {
-  show_location_line_edit();
-  location_edit_->setFocus(Qt::ShortcutFocusReason);
-  location_edit_->selectAll();
+  location_chrome_.focus_line_edit(Qt::ShortcutFocusReason);
 }
 
 MainWindow* MainWindow::open_new_window(const fs::Location& location)
@@ -44,45 +42,33 @@ void MainWindow::on_breadcrumb_location(const fs::Location& location)
 
 void MainWindow::on_location_edit_requested()
 {
-  show_location_line_edit();
-  location_edit_->setFocus(Qt::MouseFocusReason);
-  location_edit_->selectAll();
+  location_chrome_.focus_line_edit(Qt::MouseFocusReason);
 }
 
 void MainWindow::show_location_buttons()
 {
-  if (location_buttons_ != nullptr) {
-    location_buttons_->show();
-  }
-  if (location_edit_ != nullptr) {
-    location_edit_->hide();
-  }
+  location_chrome_.show_buttons();
 }
 
 void MainWindow::show_location_line_edit()
 {
-  if (location_buttons_ != nullptr) {
-    location_buttons_->hide();
-  }
-  if (location_edit_ != nullptr) {
-    location_edit_->show();
-  }
+  location_chrome_.show_line_edit();
 }
 
 void MainWindow::on_location_text_edited(const QString& text)
 {
-  path_completion_.on_text_edited(text);
+  location_chrome_.on_text_edited(text);
 }
 
 void MainWindow::on_path_completion_timeout()
 {
-  path_completion_.on_timeout();
+  location_chrome_.on_timeout();
 }
 
 void MainWindow::on_path_completions_ready(quint64 request_id, const QString& longest,
                                            const QStringList& candidates)
 {
-  path_completion_.on_completions_ready(request_id, longest, candidates);
+  location_chrome_.on_completions_ready(request_id, longest, candidates);
 }
 
 void MainWindow::on_parent_new_window()

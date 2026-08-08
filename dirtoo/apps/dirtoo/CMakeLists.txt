@@ -97,6 +97,7 @@ qt_add_executable(dirtoo-app
   search_worker.hpp
   path_completion_worker.cpp
   path_completion_service.cpp
+  location_chrome.cpp
   list_pipeline_workers.cpp
   sidebar_places.cpp
   filter_history.cpp
