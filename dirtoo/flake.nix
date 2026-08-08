@@ -141,6 +141,7 @@
             ./tools
             ./tests
             ./resources
+            ./man
           ];
           dontStrip = true;
           nativeBuildInputs = with pkgs; [ cmake ninja pkg-config qt6.wrapQtAppsHook ];

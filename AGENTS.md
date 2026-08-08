@@ -192,7 +192,7 @@ Each library is a **separate flake output** with a **scoped source fileset**
 | `.#dirtoo-watcher` | `libs/dirtoo-watcher` |
 | `.#dirtoo-thumbnail` | `libs/dirtoo-thumbnail` |
 | `.#dirtoo-archive` | `libs/dirtoo-archive` |
-| `.#dirtoo` | GUI (`apps/`, `tools/`, `tests/`, `resources/`) |
+| `.#dirtoo` | GUI (`apps/`, `tools/`, `tests/`, `resources/`, `man/`) |
 | `.#all-libs` | symlinkJoin of libraries |
 | `.#dirtoo-tools` | CLI aggregate |
 
