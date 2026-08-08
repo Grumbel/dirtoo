@@ -152,6 +152,14 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event)
     }
     if (ke->key() == Qt::Key_Return || ke->key() == Qt::Key_Enter) {
       filter_history_.push(filter_edit_->text());
+      // Accept the current filter expression and return keyboard focus to the
+      // file view so Enter is not "stuck" in the filter line.
+      if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr) {
+        graphics_view_->setFocus(Qt::OtherFocusReason);
+      } else if (QAbstractItemView* view = current_view()) {
+        view->setFocus(Qt::OtherFocusReason);
+      }
+      return true;
     }
   }
 
