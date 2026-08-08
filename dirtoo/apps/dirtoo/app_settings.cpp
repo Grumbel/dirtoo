@@ -34,6 +34,8 @@ AppSettings load_settings()
   out.window_state = s.value(QStringLiteral("window/state")).toByteArray();
   out.last_location = s.value(QStringLiteral("session/last_location")).toString();
   out.location_history = s.value(QStringLiteral("session/location_history")).toStringList();
+  out.dismiss_dev_warning =
+      s.value(QStringLiteral("ui/dismiss_dev_warning"), out.dismiss_dev_warning).toBool();
   return out;
 }
 
@@ -61,6 +63,7 @@ void save_settings(const AppSettings& settings)
   s.setValue(QStringLiteral("window/state"), settings.window_state);
   s.setValue(QStringLiteral("session/last_location"), settings.last_location);
   s.setValue(QStringLiteral("session/location_history"), settings.location_history);
+  s.setValue(QStringLiteral("ui/dismiss_dev_warning"), settings.dismiss_dev_warning);
 }
 
 } // namespace dirtoo::app

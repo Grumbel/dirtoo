@@ -9,10 +9,17 @@
 #include "dirtoo/fs/location.hpp"
 
 #include <QApplication>
+#include <QObject>
+#include <QDialog>
 #include <QDialogButtonBox>
 #include <QProxyStyle>
 #include <QStyle>
 #include <QStyleFactory>
+#include <QCheckBox>
+#include <QLabel>
+#include <QVBoxLayout>
+#include <QMessageBox>
+#include <QHBoxLayout>
 #include <QCommandLineParser>
 #include <QDateTime>
 #include <QDir>
@@ -232,6 +239,48 @@ int main(int argc, char* argv[])
   }
 
   window.open_location(dirtoo::fs::Location::from_path(start));
+
+  // Under-development warning (dismissible permanently via settings).
+  {
+    dirtoo::app::AppSettings warn_settings = dirtoo::app::load_settings();
+    if (!warn_settings.dismiss_dev_warning) {
+      QDialog warn(&window);
+      warn.setWindowTitle(QStringLiteral("dirtoo — Under Development"));
+      warn.setModal(true);
+      auto* layout = new QVBoxLayout(&warn);
+      auto* icon_row = new QHBoxLayout();
+      auto* icon = new QLabel(&warn);
+      const QIcon themed = QIcon::fromTheme(QStringLiteral("dialog-warning"));
+      if (!themed.isNull()) {
+        icon->setPixmap(themed.pixmap(48, 48));
+      }
+      icon_row->addWidget(icon, 0, Qt::AlignTop);
+      auto* msg = new QLabel(
+          QStringLiteral(
+              "<b>This application is under active development.</b><br><br>"
+              "dirtoo is a work-in-progress file manager. Features may be incomplete, "
+              "unstable, or destructive. <b>Do not use it to access or modify important "
+              "data</b> you cannot afford to lose.<br><br>"
+              "Prefer a mature file manager for production work."),
+          &warn);
+      msg->setWordWrap(true);
+      msg->setTextFormat(Qt::RichText);
+      icon_row->addWidget(msg, 1);
+      layout->addLayout(icon_row);
+      auto* dismiss = new QCheckBox(QStringLiteral("Do not show this warning again"), &warn);
+      layout->addWidget(dismiss);
+      auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok, &warn);
+      QObject::connect(buttons, &QDialogButtonBox::accepted, &warn, &QDialog::accept);
+      layout->addWidget(buttons);
+      warn.resize(480, 220);
+      warn.exec();
+      if (dismiss->isChecked()) {
+        warn_settings.dismiss_dev_warning = true;
+        dirtoo::app::save_settings(warn_settings);
+      }
+    }
+  }
+
   window.show();
 
   return app.exec();

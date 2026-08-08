@@ -41,6 +41,8 @@ struct AppSettings {
   QString last_location;
   /// Persistent location history (URLs / paths), most recent last.
   QStringList location_history;
+  /// When true, skip the under-development startup warning dialog.
+  bool dismiss_dev_warning = false;
 };
 
 [[nodiscard]] AppSettings load_settings();
