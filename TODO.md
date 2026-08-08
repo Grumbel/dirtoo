@@ -679,6 +679,18 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
 - [x] aspect ration is missing from filter
       (aspect:/ar:/ratio: — 16:9, >1.5, =4:3; uses media width/height)
 - [ ] selection on drag&drop can end up with unrelated additional files
+- [ ] when the keyboard controlled file select cursor in File View is
+      out of screen, instead of scrolling the screen back to the
+      cursor, leave the scroll untouched and warp the cursor to a
+      position that is on screen. The screen should only scroll if the
+      cursor is visible and would leave the screen with the next move
+      (e.g. going up or down through the file list while the view
+      follows)
+- [ ] Update AGENTS.md, we are working with git, git repository can be
+      found at https://github.com/Grumbel/dirtoo.git every change
+      should be commited and at the end a `git am > changes.mbox` patch file shall be
+      produced. If multiple changes are made in one go, each shall be
+      a separate commit, all merged into one file with `git am` at the end.
 
 09:50:13.652 [warning] QGraphicsView::dragLeaveEvent: drag leave received before drag enter
 09:50:26.844 [warning] QGraphicsView::dragLeaveEvent: drag leave received before drag enter
