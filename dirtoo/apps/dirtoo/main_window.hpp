@@ -93,6 +93,9 @@ private slots:
   void on_directory_changed();
   void on_entries_changed(const QStringList& created, const QStringList& removed,
                            const QStringList& modified);
+  /// Apply FileInfo results produced off-thread for watcher create/modify deltas.
+  void apply_watcher_upserts(std::vector<dirtoo::fs::FileInfo> infos,
+                             const QStringList& created_paths);
   /// @param soft If true (watcher), keep current listing until load completes.
   void reload_directory(bool soft);
   void on_directory_loaded(quint64 generation, std::vector<dirtoo::fs::FileInfo> items);

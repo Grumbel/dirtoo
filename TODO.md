@@ -668,7 +668,11 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
 - [x] Escape after hiding the filter bar should return focus to the file view
       so leap/type-ahead can be activated again
       (on_clear_filter restores focus on graphics_view_ / current_view())
-- [ ] slow IO (USB HDD that has to spin up) still locks up the GUI
+- [x] slow IO (USB HDD that has to spin up) still locks up the GUI
+      (mitigated: watcher create/modify deltas stat via QThreadPool +
+       apply_watcher_upserts; removals stay on GUI with no FS I/O. Residual:
+       rare single-path exists checks in thumbs/ops/conflict dialog; full
+       directory load already off-thread)
 - [x] clicking on folders in filter view might open the wrong folder
       (on_item_activated copies FileInfo by value before navigate; avoids race
        when async filter/sort replaces visible between click and slot)

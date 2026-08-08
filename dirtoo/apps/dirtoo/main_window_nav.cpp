@@ -8,6 +8,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QMimeDatabase>
+#include <QThreadPool>
 #include <QStandardPaths>
 #include <filesystem>
 #include <set>
@@ -172,59 +173,102 @@ void MainWindow::on_entries_changed(const QStringList& created, const QStringLis
     return;
   }
 
-  bool changed = false;
+  // Removals need no FS I/O — path identity only.
+  bool removed_any = false;
   for (const QString& path : removed) {
     const auto loc = fs::Location::from_path(std::filesystem::path{path.toStdString()});
     if (collection_.remove(loc)) {
-      changed = true;
+      removed_any = true;
+    }
+    if (model_ != nullptr) {
+      model_->clear_thumbnail(path);
     }
   }
-  auto upsert = [this, &changed](const QString& path) {
-    std::error_code ec;
-    const std::filesystem::path p{path.toStdString()};
-    if (!std::filesystem::exists(p, ec) || ec) {
-      return;
+  if (removed_any && model_ != nullptr) {
+    model_->refresh();
+    update_status_selection();
+  }
+
+  // Create/modify: exists() + FileInfo::from_path (stat) can block for seconds on a
+  // spinning USB volume. Never do that on the GUI thread.
+  QStringList upsert_paths = created;
+  for (const QString& path : modified) {
+    if (!upsert_paths.contains(path)) {
+      upsert_paths.append(path);
     }
-    auto info = fs::FileInfo::from_path(p);
+  }
+  if (upsert_paths.isEmpty()) {
+    if (removed_any) {
+      schedule_directory_thumbnails_low_priority();
+    }
+    return;
+  }
+
+  const QStringList created_copy = created;
+  QThreadPool::globalInstance()->start([this, upsert_paths, created_copy] {
+    std::vector<fs::FileInfo> infos;
+    infos.reserve(static_cast<std::size_t>(upsert_paths.size()));
+    for (const QString& path : upsert_paths) {
+      std::error_code ec;
+      const std::filesystem::path p{path.toStdString()};
+      if (!std::filesystem::exists(p, ec) || ec) {
+        continue;
+      }
+      infos.push_back(fs::FileInfo::from_path(p));
+    }
+    QMetaObject::invokeMethod(
+        this, "apply_watcher_upserts", Qt::QueuedConnection,
+        Q_ARG(std::vector<dirtoo::fs::FileInfo>, infos),
+        Q_ARG(QStringList, created_copy));
+  });
+}
+
+void MainWindow::apply_watcher_upserts(std::vector<fs::FileInfo> infos,
+                                       const QStringList& created_paths)
+{
+  if (search_session_.active) {
+    return;
+  }
+  bool changed = false;
+  for (auto& info : infos) {
     if (const auto idx = collection_.index_of(info.location())) {
-      // Replace via merge of a single-item list would drop others; use remove+add.
+      (void)idx;
       collection_.remove(info.location());
       collection_.add(std::move(info));
     } else {
       collection_.add(std::move(info));
     }
     changed = true;
-  };
-  for (const QString& path : created) {
-    upsert(path);
-  }
-  for (const QString& path : modified) {
-    upsert(path);
   }
   if (!changed) {
     return;
   }
-  // Keep sort stable for small patches; optional async sort if user prefers name order
-  // of brand-new files at the end until next explicit sort.
   if (model_ != nullptr) {
     model_->refresh();
   }
   update_status_selection();
-  // New files often sit outside the current viewport batch; request them by path
-  // so "Reload Thumbnails" is not required for freshly created items.
-  if (model_ != nullptr && !created.isEmpty()) {
+
+  // Thumbnails for newly created regular files (extension MIME only — no stat).
+  if (model_ != nullptr && !created_paths.isEmpty()) {
     QMimeDatabase mime_db;
     std::vector<fs::Location> locs;
     QStringList mimes;
-    for (const QString& path : created) {
-      std::error_code ec;
-      const std::filesystem::path p{path.toStdString()};
-      if (!std::filesystem::is_regular_file(p, ec) || ec) {
+    for (const QString& path : created_paths) {
+      const auto loc = fs::Location::from_path(std::filesystem::path{path.toStdString()});
+      const auto idx = collection_.index_of(loc);
+      if (!idx) {
+        continue;
+      }
+      const auto& existing = collection_.items()[*idx];
+      if (!existing.is_regular_file()) {
+        if (existing.is_directory()) {
+          model_->clear_thumbnail(path); // stale montage
+        }
         continue;
       }
       model_->clear_thumbnail(path);
       model_->set_thumbnail_pending(path);
-      locs.push_back(fs::Location::from_path(p));
+      locs.push_back(loc);
       mimes.push_back(mime_db.mimeTypeForFile(path, QMimeDatabase::MatchExtension).name());
     }
     if (!locs.empty()) {
@@ -232,16 +276,6 @@ void MainWindow::on_entries_changed(const QStringList& created, const QStringLis
     }
   }
   request_thumbnails_for_visible();
-  // Directory content changed: drop stale montage status so low-priority regen can run.
-  if (model_ != nullptr) {
-    for (const QString& path : created + removed + modified) {
-      std::error_code ec;
-      const std::filesystem::path p{path.toStdString()};
-      if (std::filesystem::is_directory(p, ec) && !ec) {
-        model_->clear_thumbnail(path);
-      }
-    }
-  }
   schedule_directory_thumbnails_low_priority();
 }
 
