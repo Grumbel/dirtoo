@@ -40,36 +40,15 @@ void MainWindow::on_breadcrumb_location(const fs::Location& location)
   open_location(location);
 }
 
-void MainWindow::on_location_edit_requested()
-{
-  location_chrome_.focus_line_edit(Qt::MouseFocusReason);
-}
 
 void MainWindow::show_location_buttons()
 {
   location_chrome_.show_buttons();
 }
 
-void MainWindow::show_location_line_edit()
-{
-  location_chrome_.show_line_edit();
-}
 
-void MainWindow::on_location_text_edited(const QString& text)
-{
-  location_chrome_.on_text_edited(text);
-}
 
-void MainWindow::on_path_completion_timeout()
-{
-  location_chrome_.on_timeout();
-}
 
-void MainWindow::on_path_completions_ready(quint64 request_id, const QString& longest,
-                                           const QStringList& candidates)
-{
-  location_chrome_.on_completions_ready(request_id, longest, candidates);
-}
 
 void MainWindow::on_parent_new_window()
 {

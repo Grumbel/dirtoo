@@ -357,7 +357,7 @@ void MainWindow::on_clear_filter()
     }
     return;
   }
-  if (location_edit_ != nullptr && location_edit_->isVisible()) {
+  if (location_chrome_.line_edit_visible()) {
     show_location_buttons();
   }
 }

@@ -466,15 +466,15 @@ Goal: smaller translation units and eventually fewer responsibilities on
 
 - [x] **R1** `main_window_ops.cpp` — clipboard + FS mutations + read-only guards
       (cut/copy/paste/mkdir/mkfile/rename/delete/swap; pure move, no behavior change)
-- [ ] **R2** Shrink `MainWindow` via collaborators (header members ↓):
+- [x] **R2** Shrink `MainWindow` via collaborators (header members ↓):
       - [x] `ListPipelineWorkers` — dir-load / sort / filter threads + generations
       - [x] `PathCompletionService` — location-bar completion worker/completer
       - [x] `ThumbnailCoordinator` — Thumbnailer + aliases + dir montages
       - [x] `SidebarPlaces` — places model + rebuild/sync
       - [x] `ViewZoom` + `ViewMode` header + `FilterHistory`
       - [x] `DirectorySession` + `SearchSession` value types
-      - `LocationChrome` — breadcrumb / line edit / path completion
-        (partial: location TU + **PathCompletionService** owns worker/completer/timer)
+      - [x] `LocationChrome` — breadcrumb / line edit / path completion
+        (`location_chrome` owns bar widgets + signals; PathCompletionService nested)
       - [x] `SidebarController` — tree + places (devices already partly extracted)
         (`sidebar_controller.{hpp,cpp}`; devices remain DevicesController)
       - [x] `ThumbnailCoordinator` — owns Thumbnailer, aliases, dir-montage worker

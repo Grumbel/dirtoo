@@ -45,15 +45,7 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
     update_filter_chrome(false);
   }
   location_ = location;
-  if (location_.is_archive()) {
-    location_edit_->setText(QString::fromStdString(location_.as_url()));
-  } else {
-    location_edit_->setText(QString::fromStdString(location_.as_path().string()));
-  }
-  if (location_buttons_ != nullptr) {
-    location_buttons_->set_location(location_);
-  }
-  show_location_buttons();
+  location_chrome_.set_location(location_);
 
   nav_history_.push(location, record_history);
   update_history_actions();
@@ -98,10 +90,10 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
 
 }
 
-void MainWindow::on_location_entered()
+void MainWindow::on_location_entered(const QString& text)
 {
   try {
-    open_location(fs::Location::from_human(location_edit_->text().toStdString()));
+    open_location(fs::Location::from_human(text.toStdString()));
   } catch (const std::exception& ex) {
     set_status(QString::fromUtf8(ex.what()));
   }

@@ -34,7 +34,6 @@
 #include "filter_worker.hpp"
 #include "thumbnail_coordinator.hpp"
 #include "leap_widget.hpp"
-#include "location_button_bar.hpp"
 #include "transfer_dialog.hpp"
 #include "transfer_worker.hpp"
 #include "graphics_file_view.hpp"
@@ -85,7 +84,7 @@ protected:
   void showEvent(QShowEvent* event) override;
 
 private slots:
-  void on_location_entered();
+  void on_location_entered(const QString& text);
   void on_go_parent();
   void on_go_home();
   void on_go_back();
@@ -161,19 +160,14 @@ private slots:
   void on_search_finished(quint64 matched, quint64 visited, const QString& error);
   void on_search_progress(quint64 visited, quint64 matched);
   void stop_search();
-  void on_location_text_edited(const QString& text);
   void on_path_completion_timeout();
-  void on_path_completions_ready(quint64 request_id, const QString& longest,
-                                const QStringList& candidates);
   void on_rebuild_history_menu();
   void on_rebuild_recent_opens_menu();
   void on_rebuild_bookmarks_menu();
   void on_toggle_bookmark();
   void on_parent_new_window();
   bool eventFilter(QObject* obj, QEvent* event) override;
-  void on_location_edit_requested();
   void show_location_buttons();
-  void show_location_line_edit();
   void on_copy();
   void on_cut();
   void on_paste();
@@ -273,8 +267,6 @@ private:
   [[nodiscard]] int& zoom_for_current_view() { return zoom_.for_mode(view_mode_); }
   [[nodiscard]] int zoom_for_current_view() const { return zoom_.for_mode(view_mode_); }
 
-  QLineEdit* location_edit_ = nullptr;
-  LocationButtonBar* location_buttons_ = nullptr;
   LeapWidget* leap_widget_ = nullptr;
   QAction* parent_act_ = nullptr;
   QAction* show_filter_act_ = nullptr;

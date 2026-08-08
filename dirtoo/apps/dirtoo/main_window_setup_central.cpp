@@ -126,49 +126,15 @@ void MainWindow::setup_central_ui()
   layout->setSpacing(0);
 
   {
-  auto* loc_host = new QWidget(central);
-  auto* loc_layout = new QVBoxLayout(loc_host);
-  loc_layout->setContentsMargins(0, 0, 0, 0);
-  loc_layout->setSpacing(0);
-
-  auto* breadcrumb_row = new QWidget(loc_host);
-  auto* breadcrumb_layout = new QHBoxLayout(breadcrumb_row);
-  breadcrumb_layout->setContentsMargins(4, 2, 4, 2);
-  breadcrumb_layout->setSpacing(6);
-  auto* loc_label = new QLabel(QStringLiteral("Location:"), breadcrumb_row);
-  loc_label->setStyleSheet(QStringLiteral("font-weight: bold;"));
-  breadcrumb_layout->addWidget(loc_label);
-
-  location_buttons_ = new LocationButtonBar(breadcrumb_row);
-  breadcrumb_layout->addWidget(location_buttons_, 1);
-  connect(location_buttons_, &LocationButtonBar::location_activated, this,
-          &MainWindow::on_breadcrumb_location);
-  connect(location_buttons_, &LocationButtonBar::location_activated_new_window, this,
-          &MainWindow::on_breadcrumb_location_new_window);
-  connect(location_buttons_, &LocationButtonBar::edit_requested, this,
-          &MainWindow::on_location_edit_requested);
-  connect(location_buttons_, &LocationButtonBar::urls_dropped, this,
-          &MainWindow::on_breadcrumb_drop);
-
-  location_edit_ = new QLineEdit(breadcrumb_row);
-  location_edit_->setPlaceholderText(QStringLiteral("Location"));
-  location_chrome_.bind(location_edit_, location_buttons_);
+  location_stack_host_ = location_chrome_.create_bar(central);
   location_chrome_.setup_completion();
-  connect(location_edit_, &QLineEdit::textEdited, this, &MainWindow::on_location_text_edited);
-
-  connect(location_edit_, &QLineEdit::returnPressed, this, &MainWindow::on_location_entered);
-  connect(location_edit_, &QLineEdit::editingFinished, this, [this] {
-    // Leave edit mode when focus leaves, unless empty.
-    if (!location_edit_->hasFocus()) {
-      show_location_buttons();
-    }
-  });
-  location_edit_->hide();
-  breadcrumb_layout->addWidget(location_edit_, 1);
-
-  loc_layout->addWidget(breadcrumb_row);
-  layout->addWidget(loc_host);
-  location_stack_host_ = loc_host;
+  connect(&location_chrome_, &LocationChrome::location_activated, this,
+          &MainWindow::on_breadcrumb_location);
+  connect(&location_chrome_, &LocationChrome::location_activated_new_window, this,
+          &MainWindow::on_breadcrumb_location_new_window);
+  connect(&location_chrome_, &LocationChrome::path_entered, this, &MainWindow::on_location_entered);
+  connect(&location_chrome_, &LocationChrome::urls_dropped, this, &MainWindow::on_breadcrumb_drop);
+  layout->addWidget(location_stack_host_);
   }
 
   // Search row: same expression language + Help.
