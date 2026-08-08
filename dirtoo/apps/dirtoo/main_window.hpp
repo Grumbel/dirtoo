@@ -290,6 +290,8 @@ private:
   /// Returns false (and sets status) when mutations are blocked.
   [[nodiscard]] bool ensure_mutations_allowed();
   void update_mutation_actions();
+  /// Window title: shortened path first, then "dirtoo" [read-only].
+  void update_window_title();
   QWidget* filter_row_ = nullptr;
   QLineEdit* filter_edit_ = nullptr;
   FilterHistory filter_history_;

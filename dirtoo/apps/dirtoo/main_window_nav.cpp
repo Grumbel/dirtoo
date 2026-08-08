@@ -46,6 +46,7 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
   }
   location_ = location;
   location_chrome_.set_location(location_);
+  update_window_title();
 
   nav_history_.push(location, record_history);
   update_history_actions();
