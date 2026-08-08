@@ -331,15 +331,15 @@ void MainWindow::on_toggle_hidden(bool checked)
   const QString expr = filter_edit_ != nullptr ? filter_edit_->text() : QString();
   if (filter_expression_needs_content_io(expr)) {
     collection_.set_show_hidden(checked, false);
-  if (sidebar_places_.model() != nullptr) {
-    sidebar_places_.set_show_hidden(checked);
+  if (sidebar_.places().model() != nullptr) {
+    sidebar_.set_show_hidden(checked);
   }
     request_async_filter();
     return;
   }
   collection_.set_show_hidden(checked);
-  if (sidebar_places_.model() != nullptr) {
-    sidebar_places_.set_show_hidden(checked);
+  if (sidebar_.places().model() != nullptr) {
+    sidebar_.set_show_hidden(checked);
   }
   refresh_list();
   request_thumbnails_for_visible();

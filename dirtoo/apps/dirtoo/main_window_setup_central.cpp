@@ -72,7 +72,7 @@ void MainWindow::setup_central_ui()
   places_label->setStyleSheet(QStringLiteral("font-weight: bold; padding: 6px 6px 2px 6px;"));
   places_layout->addWidget(places_label);
 
-  sidebar_places_.ensure_model();
+  sidebar_.places().ensure_model();
   rebuild_sidebar_places();
   devices_controller_ = new DevicesController(this);
   devices_controller_->set_list_widget(devices_list_);
@@ -90,7 +90,7 @@ void MainWindow::setup_central_ui()
   devices_controller_->refresh();
 
   sidebar_tree_ = new QTreeView(places_panel);
-  sidebar_tree_->setModel(sidebar_places_.model());
+  sidebar_tree_->setModel(sidebar_.places().model());
   sidebar_tree_->setHeaderHidden(true);
   sidebar_tree_->setUniformRowHeights(true);
   sidebar_tree_->setAnimated(true);
@@ -100,6 +100,11 @@ void MainWindow::setup_central_ui()
   connect(sidebar_tree_, &QTreeView::activated, this, &MainWindow::on_sidebar_activated);
   connect(sidebar_tree_, &QTreeView::clicked, this, &MainWindow::on_sidebar_activated);
   places_layout->addWidget(sidebar_tree_, 1);
+
+  sidebar_.bind(sidebar_widget_, sidebar_tree_, main_splitter_);
+  sidebar_.set_open_path_handler([this](const QString& path) {
+    open_location(fs::Location::from_path(std::filesystem::path(path.toStdString())), true);
+  });
 
   auto* sidebar_splitter = new QSplitter(Qt::Vertical, sidebar_widget_);
   sidebar_splitter->setChildrenCollapsible(false);

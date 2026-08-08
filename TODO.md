@@ -462,10 +462,10 @@ Goal: smaller translation units and eventually fewer responsibilities on
       - [x] `SidebarPlaces` — places model + rebuild/sync
       - [x] `ViewZoom` + `ViewMode` header + `FilterHistory`
       - [x] `DirectorySession` + `SearchSession` value types
-      - [x] `LocationChrome` — breadcrumb / line edit / path completion
-        (`location_chrome.{hpp,cpp}` owns PathCompletionService + show/focus chrome)
-      - `SidebarController` — tree + places (devices already partly extracted)
-        (partial: `main_window_sidebar.cpp` — toggle/activate/sync/rebuild places)
+      - `LocationChrome` — breadcrumb / line edit / path completion
+        (partial: location TU + **PathCompletionService** owns worker/completer/timer)
+      - [x] `SidebarController` — tree + places (devices already partly extracted)
+        (`sidebar_controller.{hpp,cpp}`; devices remain DevicesController)
       - [x] `ThumbnailCoordinator` — owns Thumbnailer, aliases, dir-montage worker
         (`thumbnail_coordinator.{hpp,cpp}`); viewport batch still on MainWindow
 - [x] **R3** Split `libs/dirtoo-filter/src/predicates.cpp` (~1.8k) by domain

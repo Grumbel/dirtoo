@@ -98,8 +98,8 @@ void MainWindow::restore_settings()
       main_splitter_->setSizes(sizes);
     }
   }
-  if (sidebar_places_.model() != nullptr) {
-    sidebar_places_.set_show_hidden(s.show_hidden);
+  if (sidebar_.places().model() != nullptr) {
+    sidebar_.set_show_hidden(s.show_hidden);
   }
   read_only_ = s.read_only;
   if (read_only_act_ != nullptr) {
@@ -302,8 +302,8 @@ void MainWindow::apply_settings(const AppSettings& s)
       main_splitter_->setSizes(sizes);
     }
   }
-  if (sidebar_places_.model() != nullptr) {
-    sidebar_places_.set_show_hidden(s.show_hidden);
+  if (sidebar_.places().model() != nullptr) {
+    sidebar_.set_show_hidden(s.show_hidden);
   }
   if (filter_edit_ != nullptr) {
     filter_edit_->setVisible(true);

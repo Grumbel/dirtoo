@@ -23,7 +23,7 @@
 #include "search_worker.hpp"
 #include "location_chrome.hpp"
 #include "list_pipeline_workers.hpp"
-#include "sidebar_places.hpp"
+#include "sidebar_controller.hpp"
 #include "view_mode.hpp"
 #include "view_zoom.hpp"
 #include "filter_history.hpp"
@@ -289,7 +289,7 @@ private:
   QSplitter* main_splitter_ = nullptr;
   QWidget* sidebar_widget_ = nullptr;
   QTreeView* sidebar_tree_ = nullptr;
-  SidebarPlaces sidebar_places_{this};
+  SidebarController sidebar_{this};
   DevicesController* devices_controller_ = nullptr;
   class QListWidget* devices_list_ = nullptr;
   class QLabel* devices_label_ = nullptr;
