@@ -686,11 +686,12 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
       cursor is visible and would leave the screen with the next move
       (e.g. going up or down through the file list while the view
       follows)
-- [ ] Update AGENTS.md, we are working with git, git repository can be
+- [x] Update AGENTS.md, we are working with git, git repository can be
       found at https://github.com/Grumbel/dirtoo.git every change
-      should be commited and at the end a `git am > changes.mbox` patch file shall be
-      produced. If multiple changes are made in one go, each shall be
+      should be committed and at the end a `git format-patch --stdout > changes.mbox`
+      patch file shall be produced. If multiple changes are made in one go, each shall be
       a separate commit, all merged into one file with `git am` at the end.
+      (AGENTS.md: new "Git workflow" section; `git format-patch --stdout <base>..HEAD > changes.mbox`)
 
 09:50:13.652 [warning] QGraphicsView::dragLeaveEvent: drag leave received before drag enter
 09:50:26.844 [warning] QGraphicsView::dragLeaveEvent: drag leave received before drag enter

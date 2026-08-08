@@ -228,3 +228,26 @@ implementations of the same library capability.
 
 Priority residual queue and parity matrix: **`TODO.md`**.  
 User-facing overview: **`dirtoo/README.md`**.
+
+---
+
+## Git workflow (for agents / contributors)
+
+Repository: https://github.com/Grumbel/dirtoo.git
+
+- Make every coherent change a **separate commit**. Prefer small, reviewable
+  commits; do not bulk-reformat unrelated code in the same commit as a
+  functional change.
+- After each coherent series, leave a **detailed suggested commit message**
+  (subject ≤ ~72 chars, body explaining why and what).
+- Always update **`TODO.md`** and **`AGENTS.md`** when closing/opening items
+  or changing user-visible behavior (see Documentation above).
+- At the end of a work session that produced multiple commits, produce a
+  single mbox of patches suitable for `git am`:
+
+  ```sh
+  git format-patch --stdout <base>..HEAD > changes.mbox
+  ```
+
+  (or `git format-patch -N --stdout` for the last N commits). The resulting
+  `changes.mbox` can be applied with `git am changes.mbox`.
