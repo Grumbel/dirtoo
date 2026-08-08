@@ -8,6 +8,8 @@
 
 #include "dirtoo/fs/location.hpp"
 
+#include <filesystem>
+
 #include <QApplication>
 #include <QClipboard>
 #include <QMenu>
@@ -79,6 +81,33 @@ void exec_item_context_menu(QWidget* parent, const QPoint& global_pos,
                      [cb, open_loc] { cb.open_location_new_window(open_loc); });
     }
     menu.addSeparator();
+  } else if (primary != nullptr && primary->is_symlink()) {
+    std::error_code ec;
+    const auto target = std::filesystem::read_symlink(primary->path(), ec);
+    if (!ec) {
+      std::filesystem::path resolved = primary->path().parent_path() / target;
+      if (target.is_absolute()) {
+        resolved = target;
+      }
+      std::error_code ec2;
+      const auto st = std::filesystem::status(resolved, ec2);
+      if (!ec2 && std::filesystem::is_directory(st) && cb.open_location) {
+        const fs::Location tloc = fs::Location::from_path(resolved);
+        menu.addAction(theme_icon("go-jump"), QStringLiteral("Open Link Target"), parent,
+                       [cb, tloc] { cb.open_location(tloc); });
+        if (cb.open_location_new_window) {
+          menu.addAction(theme_icon("window-new"), QStringLiteral("Open Link Target in New Window"),
+                         parent, [cb, tloc] { cb.open_location_new_window(tloc); });
+        }
+        menu.addSeparator();
+      } else if (!ec2 && cb.open_location) {
+        // File target: open containing directory.
+        const fs::Location parent_loc = fs::Location::from_path(resolved.parent_path());
+        menu.addAction(theme_icon("folder"), QStringLiteral("Open Target's Folder"), parent,
+                       [cb, parent_loc] { cb.open_location(parent_loc); });
+        menu.addSeparator();
+      }
+    }
   } else if (primary != nullptr && fs::looks_like_archive(primary->path())
              && !cb.current_location.is_archive()) {
     const std::filesystem::path archive_path = primary->path();
