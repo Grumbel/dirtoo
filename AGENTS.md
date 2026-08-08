@@ -308,13 +308,7 @@ git bundle verify changes.bundle
 
 ```sh
 git pull changes.bundle HEAD
-# or:
-git fetch changes.bundle HEAD:refs/heads/from-agent
-git merge --ff-only from-agent
 ```
 
 If `git pull` reports diverging branches, fetch into a side branch and inspect
 with `git log --graph` before merge/rebase. Do not force-push unless intentional.
-
-Never accumulate a growing patch series or re-send commits the consumer already
-has.
