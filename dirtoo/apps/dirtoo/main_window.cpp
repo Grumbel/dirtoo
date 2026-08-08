@@ -130,6 +130,39 @@ void MainWindow::set_status(const QString& text)
   if (!text.isEmpty()) {
     qInfo().noquote() << QStringLiteral("status: %1").arg(text);
   }
+  update_busy_indicator(text);
+}
+
+void MainWindow::update_busy_indicator(const QString& activity)
+{
+  if (busy_label_ == nullptr) {
+    return;
+  }
+  // Heuristic: activity strings that end with an ellipsis or known verbs indicate
+  // background work. Also respect an active transfer.
+  const bool transfer_busy = transfer_controller_.busy();
+  const QString t = activity.trimmed();
+  const bool text_busy = t.endsWith(QChar(0x2026)) || t.endsWith(QStringLiteral("..."))
+                         || t.startsWith(QStringLiteral("Loading"))
+                         || t.startsWith(QStringLiteral("Refreshing"))
+                         || t.startsWith(QStringLiteral("Filtering"))
+                         || t.startsWith(QStringLiteral("Searching"))
+                         || t.startsWith(QStringLiteral("Transfer"));
+  const bool busy = transfer_busy || text_busy;
+  busy_label_->setVisible(busy);
+  if (busy) {
+    QString tip = t;
+    if (transfer_busy && !tip.contains(QStringLiteral("Transfer"), Qt::CaseInsensitive)) {
+      tip = tip.isEmpty() ? QStringLiteral("Transferring files…")
+                          : (tip + QStringLiteral(" (transfer in progress)"));
+    }
+    if (tip.isEmpty()) {
+      tip = QStringLiteral("Working…");
+    }
+    busy_label_->setToolTip(tip);
+  } else {
+    busy_label_->setToolTip(QStringLiteral("Idle"));
+  }
 }
 
 void MainWindow::update_edit_actions()

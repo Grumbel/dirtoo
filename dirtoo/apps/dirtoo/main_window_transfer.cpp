@@ -37,6 +37,7 @@ void MainWindow::start_transfer(const TransferRequest& request)
   }
   update_edit_actions();
   transfer_controller_.start(this, request);
+  update_busy_indicator(QStringLiteral("Transferring files…"));
 }
 
 void MainWindow::on_transfer_item_started(int index, int total, const QString& path)
@@ -86,11 +87,13 @@ void MainWindow::on_transfer_finished(TransferSummary summary)
                            .arg(summary.error.isEmpty() ? QStringLiteral("-") : summary.error);
 
   /* busy cleared by TransferController */
+  update_busy_indicator(status_label_ != nullptr ? status_label_->text() : QString());
 
   if (transfer_controller_.dialog() != nullptr) {
     transfer_controller_.dialog()->mark_finished(summary.cancelled, summary.error);
   } else if (!summary.error.isEmpty()) {
     QMessageBox::warning(this, QStringLiteral("Transfer"), summary.error);
+    qWarning().noquote() << QStringLiteral("transfer error: %1").arg(summary.error);
   }
 
   if (transfer_controller_.last_mode() == ClipboardMode::Cut && summary.completed > 0 && !summary.cancelled) {

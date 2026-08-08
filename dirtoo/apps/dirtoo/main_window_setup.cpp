@@ -93,9 +93,23 @@ void MainWindow::setup_shortcuts()
 
 void MainWindow::setup_status_and_services()
 {
-  // Real QStatusBar: left = filename / messages, right = size info (dirtoo-py).
+  // Real QStatusBar: left = filename / messages, busy badge, right = size info.
   status_label_ = new QLabel(this);
   statusBar()->addWidget(status_label_, 1);
+  busy_label_ = new QLabel(this);
+  busy_label_->setFixedSize(18, 18);
+  busy_label_->setScaledContents(true);
+  busy_label_->setToolTip(QStringLiteral("Idle"));
+  busy_label_->hide();
+  {
+    const QPixmap pm = load_badge_pixmap(QStringLiteral("badge-loading.png"));
+    if (!pm.isNull()) {
+      busy_label_->setPixmap(pm);
+    } else {
+      busy_label_->setText(QStringLiteral("…"));
+    }
+  }
+  statusBar()->addPermanentWidget(busy_label_);
   status_info_label_ = new QLabel(this);
   status_info_label_->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
   statusBar()->addPermanentWidget(status_info_label_);

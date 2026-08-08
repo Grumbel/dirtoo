@@ -5,6 +5,7 @@
 
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QDebug>
 #include <QTimer>
 
 namespace dirtoo::app {
@@ -34,6 +35,9 @@ void MessageArea::show_info(const QString& text, int timeout_ms)
 
 void MessageArea::show_error(const QString& text, int timeout_ms)
 {
+  // Errors always go to stderr (default filter is QtWarningMsg); --verbose/--debug
+  // remain for noisier info/debug traffic.
+  qWarning().noquote() << QStringLiteral("error: %1").arg(text);
   setStyleSheet(QStringLiteral(
       "MessageArea { background: #5a2020; color: white; } QLabel { color: white; }"));
   label_->setText(text);

@@ -204,6 +204,8 @@ private:
   void set_view_mode(ViewMode mode);
   /// Update status bar and mirror the text to qInfo (visible with --verbose).
   void set_status(const QString& text);
+  /// Show/hide the status-bar busy indicator and set its tooltip.
+  void update_busy_indicator(const QString& activity = {});
   void set_clipboard(ClipboardMode mode);
   void request_thumbnails_for_visible();
   void cancel_all_thumbnails();
@@ -304,6 +306,8 @@ private:
   GraphicsFileView* graphics_view_ = nullptr; // Icons Graphics View
   /// Left side of the status bar: current filename / transient messages.
   QLabel* status_label_ = nullptr;
+  /// Busy indicator (loading badge) shown while background IO / workers run.
+  QLabel* busy_label_ = nullptr;
   /// Right (permanent) side: directory visible/total size and selection size.
   QLabel* status_info_label_ = nullptr;
   MessageArea* message_area_ = nullptr;

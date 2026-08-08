@@ -654,8 +654,11 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
 - [x] move "block all filesystem modifications" button to the very
       right edge of the toolbar
       (expanding spacer + read_only_act_ at end of main toolbar)
-- [ ] give better indication when IO is busy and doing something in the background
-- [ ] errors should print something to stdout/stderr, --verbose/--debug should be reserved for noisy messages
+- [x] give better indication when IO is busy and doing something in the background
+      (status-bar busy_label_ with badge-loading.png + tooltip of current activity;
+       driven by set_status ellipsis/known verbs and transfer_controller_.busy())
+- [x] errors should print something to stdout/stderr, --verbose/--debug should be reserved for noisy messages
+      (MessageArea::show_error always qWarning; default g_min_level remains QtWarningMsg)
 - [x] leap search triggers when trying to do keyword search sometimes
       (when filter bar is visible, type-ahead inserts into filter_edit_ instead of leap)
 - [x] Ctrl-k shouldn't toggle the filter bar, but always activate it
@@ -672,8 +675,10 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
 - [ ] filter should give results for the data currently available and
       update when new comes in, it currently just stalls when the
       directory hasn't been fully processed
-- [ ] add a spinning busy icon when the browser is doing something,
+- [x] add a spinning busy icon when the browser is doing something,
       tooltip should show what it is doing
+      (status-bar busy_label_ shows badge-loading.png while activity detected;
+       tooltip carries the current status / transfer text)
 - [x] filter should have a history showing past filters
       (FilterHistory + Up/Down in filter_edit_; Enter pushes)
 - [x] aspect ration is missing from filter
