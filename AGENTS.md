@@ -265,12 +265,19 @@ Repository: https://github.com/Grumbel/dirtoo.git
   (subject ≤ ~72 chars, body explaining why and what).
 - Always update **`TODO.md`** and **`AGENTS.md`** when closing/opening items
   or changing user-visible behavior (see Documentation above).
-- At the end of a work session that produced multiple commits, produce a
-  single mbox of patches suitable for `git am`:
+- When handing off patches, produce a **delta-only** mbox of commits **not
+  yet applied upstream** — typically just the last changeset (or the small
+  series from this turn). **Do not** accumulate the full session history into
+  one growing mbox: re-applying duplicate patches with `git am` causes
+  conflicts.
 
   ```sh
-  git format-patch --stdout <base>..HEAD > changes.mbox
+  # Prefer a single new commit:
+  git format-patch --stdout -1 HEAD > changes.mbox
+
+  # Or only commits since the last already-applied tip:
+  git format-patch --stdout <already-applied-tip>..HEAD > changes.mbox
   ```
 
-  (or `git format-patch -N --stdout` for the last N commits). The resulting
-  `changes.mbox` can be applied with `git am changes.mbox`.
+  Apply with `git am changes.mbox`. Never ship a mbox that repeats commits
+  the consumer already has.
