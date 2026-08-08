@@ -33,6 +33,7 @@ Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 - [x] Startup under-development warning with permanent dismiss checkbox
 - [x] Properties dialog shows file thumbnail / system icon preview
 - [x] Read/write-protected file badges (`badge-readonly` / `badge-nowrite`)
+- [x] Directory montages use XDG cached thumbs for videos/non-images
 
 ## Critical / high-priority defect queue
 

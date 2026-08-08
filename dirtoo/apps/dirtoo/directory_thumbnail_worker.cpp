@@ -3,6 +3,7 @@
 
 #include "directory_thumbnail_worker.hpp"
 
+#include "dirtoo/fs/location.hpp"
 #include "dirtoo/thumbnail/thumbnailer.hpp"
 
 #include <QDebug>
@@ -50,6 +51,43 @@ QImage crop_center(const QImage& src, int w, int h)
   return src.copy(x, y, std::min(w, src.width() - x), std::min(h, src.height() - y));
 }
 
+/// Path to an existing freedesktop thumbnail for @p file_path, or empty.
+QString existing_thumb_cache(const QString& file_path)
+{
+  if (file_path.isEmpty()) {
+    return {};
+  }
+  const auto loc = fs::Location::from_path(std::filesystem::path{file_path.toStdString()});
+  for (const char* flavor : {"large", "normal", "x-large", "xx-large"}) {
+    const QString cached =
+        thumbnail::Thumbnailer::cache_path_for(loc, QString::fromLatin1(flavor));
+    if (QFileInfo::exists(cached)) {
+      return cached;
+    }
+  }
+  return {};
+}
+
+/// Resolve a paintable image for one directory entry.
+/// Images: decode the real file (better quality, no thumb dependency).
+/// Other media (video, PDF, …): reuse an existing XDG thumbnail when present.
+QImage load_tile_image(const QString& file_path, const QString& base_name, int max_side)
+{
+  if (is_image_ext(base_name)) {
+    QImage img = load_scaled(file_path, max_side);
+    if (!img.isNull()) {
+      return img;
+    }
+    // Fall through: maybe a partial/corrupt image still has a cache entry.
+  }
+
+  const QString cached = existing_thumb_cache(file_path);
+  if (cached.isEmpty()) {
+    return {};
+  }
+  return load_scaled(cached, max_side);
+}
+
 /// Returns empty QString on success, or a human-readable failure reason.
 QString build_montage(const QString& dir_path, const QString& out_path)
 {
@@ -58,19 +96,48 @@ QString build_montage(const QString& dir_path, const QString& out_path)
     return QStringLiteral("directory does not exist");
   }
 
-  QStringList images;
+  // Collect up to 9 tile sources: direct image decode and/or cached thumbs
+  // (videos, PDFs, office docs, … that the D-Bus thumbnailer already produced).
+  struct Tile {
+    QString path;
+    QString name;
+  };
+  QList<Tile> tiles;
   const auto entries = dir.entryList(QDir::Files | QDir::Readable | QDir::NoDotAndDotDot,
                                      QDir::Name);
+
+  // Pass 1: prefer real images (stable visual for photo folders).
   for (const QString& name : entries) {
-    if (is_image_ext(name)) {
-      images.push_back(dir.absoluteFilePath(name));
-      if (images.size() >= 9) {
+    if (!is_image_ext(name)) {
+      continue;
+    }
+    tiles.push_back({dir.absoluteFilePath(name), name});
+    if (tiles.size() >= 9) {
+      break;
+    }
+  }
+
+  // Pass 2: fill remaining slots from non-images that already have a thumbnail
+  // in the XDG cache (typical for videos). Skip files we already took as images.
+  if (tiles.size() < 9) {
+    for (const QString& name : entries) {
+      if (is_image_ext(name)) {
+        continue;
+      }
+      const QString abs = dir.absoluteFilePath(name);
+      if (existing_thumb_cache(abs).isEmpty()) {
+        continue;
+      }
+      tiles.push_back({abs, name});
+      if (tiles.size() >= 9) {
         break;
       }
     }
   }
-  if (images.isEmpty()) {
-    return QStringLiteral("no readable image files to montage");
+
+  if (tiles.isEmpty()) {
+    return QStringLiteral(
+        "no images to decode and no files with existing thumbnails to montage");
   }
 
   constexpr int kSize = 256;
@@ -83,7 +150,7 @@ QString build_montage(const QString& dir_path, const QString& out_path)
   }
   painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
 
-  const int n = images.size();
+  const int n = tiles.size();
   // Normalized cell rects for 1..9 tiles (Python DirectoryThumbnailer-inspired).
   struct Cell {
     double x1, y1, x2, y2;
@@ -122,7 +189,7 @@ QString build_montage(const QString& dir_path, const QString& out_path)
 
   int tiles_drawn = 0;
   for (int i = 0; i < cell_count; ++i) {
-    QImage img = load_scaled(images[i], kSize);
+    QImage img = load_tile_image(tiles[i].path, tiles[i].name, kSize);
     if (img.isNull()) {
       continue;
     }
@@ -139,7 +206,7 @@ QString build_montage(const QString& dir_path, const QString& out_path)
   painter.end();
 
   if (tiles_drawn == 0) {
-    return QStringLiteral("could not decode any of the %1 candidate image(s)").arg(images.size());
+    return QStringLiteral("could not load any of the %1 candidate tile source(s)").arg(tiles.size());
   }
 
   // Ensure cache directory exists.
