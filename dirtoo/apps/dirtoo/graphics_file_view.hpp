@@ -82,6 +82,7 @@ protected:
   void scrollContentsBy(int dx, int dy) override;
   void changeEvent(QEvent* event) override;
   void keyPressEvent(QKeyEvent* event) override;
+  void keyReleaseEvent(QKeyEvent* event) override;
   void focusInEvent(QFocusEvent* event) override;
   void drawForeground(QPainter* painter, const QRectF& rect) override;
 
@@ -124,8 +125,13 @@ private:
   mutable QSet<int> selected_row_set_;
   /// Keyboard focus tile (−1 = none). Drawn as a light outline over selection.
   int cursor_row_ = -1;
+  /// Shift+arrow "paint" selection: apply this value while Shift is held.
+  bool shift_paint_active_ = false;
+  bool shift_paint_select_ = false;
 
   void start_drag();
+  void set_row_selected(int row, bool selected);
+  void shift_paint_step(int dx, int dy);
   void ensure_cursor_visible();
   [[nodiscard]] bool is_row_on_screen(int row) const;
   /// If cursor is off-screen, move it to a visible row without scrolling.

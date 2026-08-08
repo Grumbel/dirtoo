@@ -334,6 +334,55 @@ void GraphicsFileView::cursor_move(int dx, int dy)
   }
 }
 
+
+
+void GraphicsFileView::set_row_selected(int row, bool selected)
+{
+  if (row < 0 || model_ == nullptr || row >= model_->rowCount()) {
+    return;
+  }
+  const bool was = selected_row_set_.contains(row);
+  if (selected == was) {
+    if (static_cast<std::size_t>(row) < items_.size() && items_[static_cast<std::size_t>(row)] != nullptr) {
+      items_[static_cast<std::size_t>(row)]->setSelected(selected);
+    }
+    return;
+  }
+  if (selected) {
+    selected_row_set_.insert(row);
+  } else {
+    selected_row_set_.remove(row);
+  }
+  if (static_cast<std::size_t>(row) < items_.size() && items_[static_cast<std::size_t>(row)] != nullptr) {
+    items_[static_cast<std::size_t>(row)]->setSelected(selected);
+  }
+  emit selection_changed();
+}
+
+void GraphicsFileView::shift_paint_step(int dx, int dy)
+{
+  if (cursor_row_ < 0 && model_ != nullptr && model_->rowCount() > 0) {
+    set_cursor_row(0, true);
+  }
+  if (cursor_row_ < 0) {
+    return;
+  }
+  if (!shift_paint_active_) {
+    // Toggle current file; that new state is painted onto further cells.
+    const bool now_selected = !selected_row_set_.contains(cursor_row_);
+    set_row_selected(cursor_row_, now_selected);
+    shift_paint_select_ = now_selected;
+    shift_paint_active_ = true;
+  } else {
+    set_row_selected(cursor_row_, shift_paint_select_);
+  }
+  const int before = cursor_row_;
+  cursor_move(dx, dy);
+  if (cursor_row_ >= 0 && cursor_row_ != before) {
+    set_row_selected(cursor_row_, shift_paint_select_);
+  }
+}
+
 void GraphicsFileView::keyPressEvent(QKeyEvent* event)
 {
   if (event == nullptr) {
@@ -341,70 +390,58 @@ void GraphicsFileView::keyPressEvent(QKeyEvent* event)
   }
   const auto mods = event->modifiers();
   const bool shift = mods & Qt::ShiftModifier;
-  const bool ctrl = mods & Qt::ControlModifier;
-
-  auto extend_select_current = [this] {
-    if (cursor_row_ >= 0) {
-      selected_row_set_.insert(cursor_row_);
-      if (static_cast<std::size_t>(cursor_row_) < items_.size()
-          && items_[static_cast<std::size_t>(cursor_row_)] != nullptr) {
-        items_[static_cast<std::size_t>(cursor_row_)]->setSelected(true);
-      }
-      emit selection_changed();
-    }
-  };
 
   switch (event->key()) {
   case Qt::Key_Escape:
+    // Clear multi-selection; keep the keyboard cursor so navigation continues.
     clear_selection();
-    clear_cursor();
+    shift_paint_active_ = false;
     event->accept();
     return;
   case Qt::Key_Left:
     if (shift) {
-      extend_select_current();
+      shift_paint_step(-1, 0);
+    } else {
+      shift_paint_active_ = false;
+      cursor_move(-1, 0);
     }
-    cursor_move(-1, 0);
     event->accept();
     return;
   case Qt::Key_Right:
     if (shift) {
-      extend_select_current();
+      shift_paint_step(1, 0);
+    } else {
+      shift_paint_active_ = false;
+      cursor_move(1, 0);
     }
-    cursor_move(1, 0);
     event->accept();
     return;
   case Qt::Key_Up:
     if (shift) {
-      extend_select_current();
+      shift_paint_step(0, -1);
+    } else {
+      shift_paint_active_ = false;
+      cursor_move(0, -1);
     }
-    cursor_move(0, -1);
     event->accept();
     return;
   case Qt::Key_Down:
     if (shift) {
-      extend_select_current();
+      shift_paint_step(0, 1);
+    } else {
+      shift_paint_active_ = false;
+      cursor_move(0, 1);
     }
-    cursor_move(0, 1);
     event->accept();
     return;
   case Qt::Key_Space:
-    // Toggle selection on cursor item: Ctrl+Space (Python) or Shift+Space.
-    if ((ctrl || shift) && cursor_row_ >= 0) {
-      if (selected_row_set_.contains(cursor_row_)) {
-        selected_row_set_.remove(cursor_row_);
-        if (static_cast<std::size_t>(cursor_row_) < items_.size()
-            && items_[static_cast<std::size_t>(cursor_row_)] != nullptr) {
-          items_[static_cast<std::size_t>(cursor_row_)]->setSelected(false);
-        }
-      } else {
-        selected_row_set_.insert(cursor_row_);
-        if (static_cast<std::size_t>(cursor_row_) < items_.size()
-            && items_[static_cast<std::size_t>(cursor_row_)] != nullptr) {
-          items_[static_cast<std::size_t>(cursor_row_)]->setSelected(true);
-        }
-      }
-      emit selection_changed();
+    // Space toggles the cursor tile (with or without modifiers).
+    if (cursor_row_ >= 0) {
+      const bool now_selected = !selected_row_set_.contains(cursor_row_);
+      set_row_selected(cursor_row_, now_selected);
+      // Seed paint mode so the next Shift+arrow keeps this value.
+      shift_paint_select_ = now_selected;
+      shift_paint_active_ = true;
       event->accept();
       return;
     }
@@ -424,6 +461,14 @@ void GraphicsFileView::keyPressEvent(QKeyEvent* event)
     break;
   }
   QGraphicsView::keyPressEvent(event);
+}
+
+void GraphicsFileView::keyReleaseEvent(QKeyEvent* event)
+{
+  if (event != nullptr && event->key() == Qt::Key_Shift) {
+    shift_paint_active_ = false;
+  }
+  QGraphicsView::keyReleaseEvent(event);
 }
 
 void GraphicsFileView::focusInEvent(QFocusEvent* event)
