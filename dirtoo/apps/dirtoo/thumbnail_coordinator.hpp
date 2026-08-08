@@ -51,6 +51,7 @@ public:
     connect(&thumbnailer_, &thumbnail::Thumbnailer::thumbnail_failed, receiver, failed);
     if (dir_thumb_worker_ != nullptr) {
       connect(dir_thumb_worker_, &DirectoryThumbnailWorker::thumbnail_ready, receiver, ready);
+      connect(dir_thumb_worker_, &DirectoryThumbnailWorker::thumbnail_failed, receiver, failed);
     }
   }
 

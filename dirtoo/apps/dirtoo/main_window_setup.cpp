@@ -3,6 +3,8 @@
 
 #include "main_window_common.hpp"
 
+#include <QDebug>
+
 #include "badge_icons.hpp"
 #include "location_icons.hpp"
 #include "location_url.hpp"
@@ -63,7 +65,20 @@ void MainWindow::setup_background_workers()
   if (thumbs_.dir_worker() != nullptr) {
     connect(thumbs_.dir_worker(), &DirectoryThumbnailWorker::finished, this,
             [this](int ok, int fail) {
-              set_status(QStringLiteral("Directory thumbnails: %1 ok, %2 failed").arg(ok).arg(fail));
+              if (fail > 0) {
+                // Per-path reasons already went to stderr from the worker;
+                // keep the status bar summary and a single roll-up warning.
+                qWarning().noquote()
+                    << QStringLiteral("dirtoo: directory thumbnails finished: %1 ok, %2 failed "
+                                      "(see earlier stderr lines for reasons)")
+                           .arg(ok)
+                           .arg(fail);
+                set_status(QStringLiteral("Directory thumbnails: %1 ok, %2 failed (see stderr)")
+                               .arg(ok)
+                               .arg(fail));
+              } else {
+                set_status(QStringLiteral("Directory thumbnails: %1 ok, %2 failed").arg(ok).arg(fail));
+              }
             });
   }
 }

@@ -7,6 +7,7 @@
 #include "archive_member_cache.hpp"
 #include "dirtoo/archive/archive_index.hpp"
 #include "dirtoo/thumbnail/thumbnailer.hpp"
+#include <QDebug>
 #include <QFile>
 #include <QMimeDatabase>
 #include <QStandardPaths>
@@ -253,6 +254,9 @@ void MainWindow::on_thumbnail_ready(const fs::Location& location, const QString&
 {
   QPixmap pix(path);
   if (pix.isNull()) {
+    qWarning().noquote() << QStringLiteral(
+        "dirtoo: thumbnail cache file unreadable or empty: %1 (for %2)")
+                                .arg(path, QString::fromStdString(location.as_path().string()));
     return;
   }
   QString key = QString::fromStdString(location.as_path().string());
@@ -270,10 +274,17 @@ void MainWindow::on_thumbnail_ready(const fs::Location& location, const QString&
 
 void MainWindow::on_thumbnail_failed(const fs::Location& location, const QString& message)
 {
-  (void)message;
   QString key = QString::fromStdString(location.as_path().string());
   if (const auto it = thumbs_.aliases().constFind(key); it != thumbs_.aliases().cend()) {
     key = it.value();
+  }
+  // Always surface the reason on stderr (not gated on --verbose/--debug).
+  if (!message.isEmpty()) {
+    qWarning().noquote() << QStringLiteral("dirtoo: thumbnail failed for %1: %2")
+                                .arg(key, message);
+  } else {
+    qWarning().noquote() << QStringLiteral("dirtoo: thumbnail failed for %1 (no reason given)")
+                                .arg(key);
   }
   if (model_ == nullptr) {
     return;
@@ -281,6 +292,7 @@ void MainWindow::on_thumbnail_failed(const fs::Location& location, const QString
   // Only keep a visible error/caution badge for types that normally produce
   // thumbnails. Text, binaries, etc. often fail the D-Bus thumbnailer — fall
   // back to the system icon without a warning sticker (dirtoo-py Unavailable).
+  // Directory montages report their own failures via DirectoryThumbnailWorker.
   const QString name = QString::fromStdString(location.basename());
   static QMimeDatabase mime_db;
   const QMimeType mt = mime_db.mimeTypeForFile(name, QMimeDatabase::MatchExtension);
@@ -289,7 +301,8 @@ void MainWindow::on_thumbnail_failed(const fs::Location& location, const QString
       mime.startsWith(QLatin1String("image/")) || mime.startsWith(QLatin1String("video/"))
       || mime == QLatin1String("application/pdf")
       || mime.contains(QLatin1String("opendocument"))
-      || mime.contains(QLatin1String("officedocument"));
+      || mime.contains(QLatin1String("officedocument"))
+      || message.contains(QLatin1String("directory thumbnail"));
   if (expect_thumb) {
     model_->set_thumbnail_failed(key);
   } else {

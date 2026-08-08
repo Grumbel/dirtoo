@@ -24,6 +24,8 @@ public slots:
 
 signals:
   void thumbnail_ready(const dirtoo::fs::Location& location, const QString& path);
+  /// Emitted when a single directory montage fails; message explains why.
+  void thumbnail_failed(const dirtoo::fs::Location& location, const QString& message);
   void finished(int ok_count, int fail_count);
 };
 

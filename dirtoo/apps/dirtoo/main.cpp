@@ -179,6 +179,30 @@ int main(int argc, char* argv[])
     QLoggingCategory::setFilterRules(QStringLiteral("*.debug=false\n*.info=false"));
   }
 
+  // Always preflight badge assets so missing icons are visible on stderr without
+  // requiring --verbose/--debug (load_badge_pixmap itself logs failures).
+  {
+    const QString idir = dirtoo::app::icon_directory();
+    if (idir.isEmpty()) {
+      qWarning().noquote() << QStringLiteral(
+          "dirtoo: icon directory not resolved; using embedded :/icons/ only");
+    }
+    for (const char* name :
+         {"badge-image.png", "badge-video.png", "badge-new.png", "badge-loading.png",
+          "badge-error.png", "badge-locked.png", "dirtoo.png"}) {
+      const QPixmap pm = dirtoo::app::load_badge_pixmap(QLatin1String(name));
+      if (pm.isNull()) {
+        qWarning().noquote() << QStringLiteral("dirtoo: required icon failed to load: %1")
+                                    .arg(QLatin1String(name));
+      } else if (parser.isSet(debug_opt) || parser.isSet(verbose_opt)) {
+        qInfo().noquote() << QStringLiteral("icon %1 ok %2x%3")
+                                 .arg(QLatin1String(name))
+                                 .arg(pm.width())
+                                 .arg(pm.height());
+      }
+    }
+  }
+
   if (parser.isSet(debug_opt) || parser.isSet(verbose_opt)) {
     qInfo().noquote() << QStringLiteral("dirtoo %1 starting (verbose=%2 debug=%3)")
                              .arg(QStringLiteral(DIRTOO_VERSION))
@@ -188,16 +212,6 @@ int main(int argc, char* argv[])
                              .arg(dirtoo::app::icon_directory().isEmpty()
                                       ? QStringLiteral("(not found)")
                                       : dirtoo::app::icon_directory());
-    for (const char* name :
-         {"badge-image.png", "badge-video.png", "badge-new.png", "badge-loading.png",
-          "badge-error.png", "badge-locked.png", "dirtoo.png"}) {
-      const QPixmap pm = dirtoo::app::load_badge_pixmap(QLatin1String(name));
-      qInfo().noquote() << QStringLiteral("icon %1 null=%2 %3x%4")
-                               .arg(QLatin1String(name))
-                               .arg(pm.isNull())
-                               .arg(pm.width())
-                               .arg(pm.height());
-    }
   }
 
   dirtoo::app::MainWindow window;

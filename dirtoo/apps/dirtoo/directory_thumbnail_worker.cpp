@@ -5,6 +5,7 @@
 
 #include "dirtoo/thumbnail/thumbnailer.hpp"
 
+#include <QDebug>
 #include <QDir>
 #include <QFileInfo>
 #include <QImage>
@@ -49,11 +50,12 @@ QImage crop_center(const QImage& src, int w, int h)
   return src.copy(x, y, std::min(w, src.width() - x), std::min(h, src.height() - y));
 }
 
-bool build_montage(const QString& dir_path, const QString& out_path)
+/// Returns empty QString on success, or a human-readable failure reason.
+QString build_montage(const QString& dir_path, const QString& out_path)
 {
   QDir dir(dir_path);
   if (!dir.exists()) {
-    return false;
+    return QStringLiteral("directory does not exist");
   }
 
   QStringList images;
@@ -68,7 +70,7 @@ bool build_montage(const QString& dir_path, const QString& out_path)
     }
   }
   if (images.isEmpty()) {
-    return false;
+    return QStringLiteral("no readable image files to montage");
   }
 
   constexpr int kSize = 256;
@@ -76,6 +78,9 @@ bool build_montage(const QString& dir_path, const QString& out_path)
   output.fill(QColor(40, 40, 40));
 
   QPainter painter(&output);
+  if (!painter.isActive()) {
+    return QStringLiteral("failed to create paint device for montage");
+  }
   painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
 
   const int n = images.size();
@@ -115,6 +120,7 @@ bool build_montage(const QString& dir_path, const QString& out_path)
   default: cells = k9; cell_count = 9; break;
   }
 
+  int tiles_drawn = 0;
   for (int i = 0; i < cell_count; ++i) {
     QImage img = load_scaled(images[i], kSize);
     if (img.isNull()) {
@@ -127,14 +133,24 @@ bool build_montage(const QString& dir_path, const QString& out_path)
     if (!cropped.isNull()) {
       painter.drawImage(dst, cropped.scaled(dst.size(), Qt::IgnoreAspectRatio,
                                             Qt::SmoothTransformation));
+      ++tiles_drawn;
     }
   }
   painter.end();
 
+  if (tiles_drawn == 0) {
+    return QStringLiteral("could not decode any of the %1 candidate image(s)").arg(images.size());
+  }
+
   // Ensure cache directory exists.
   QFileInfo fi(out_path);
-  QDir().mkpath(fi.absolutePath());
-  return output.save(out_path, "PNG");
+  if (!QDir().mkpath(fi.absolutePath())) {
+    return QStringLiteral("could not create thumbnail cache directory: %1").arg(fi.absolutePath());
+  }
+  if (!output.save(out_path, "PNG")) {
+    return QStringLiteral("failed to write montage PNG: %1").arg(out_path);
+  }
+  return {};
 }
 
 } // namespace
@@ -151,15 +167,22 @@ void DirectoryThumbnailWorker::generate(const QStringList& directory_paths)
   for (const QString& path : directory_paths) {
     if (path.isEmpty()) {
       ++fail;
+      qWarning().noquote() << QStringLiteral(
+          "dirtoo: directory thumbnail skipped (empty path)");
       continue;
     }
     const auto loc = fs::Location::from_path(std::filesystem::path{path.toStdString()});
     const QString out = thumbnail::Thumbnailer::cache_path_for(loc, QStringLiteral("large"));
-    if (build_montage(path, out)) {
+    const QString error = build_montage(path, out);
+    if (error.isEmpty()) {
       ++ok;
       emit thumbnail_ready(loc, out);
     } else {
       ++fail;
+      const QString message =
+          QStringLiteral("directory thumbnail failed for %1: %2").arg(path, error);
+      qWarning().noquote() << message;
+      emit thumbnail_failed(loc, message);
     }
   }
   emit finished(ok, fail);

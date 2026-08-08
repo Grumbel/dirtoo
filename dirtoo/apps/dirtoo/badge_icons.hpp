@@ -47,29 +47,56 @@ inline QString icon_directory()
     qWarning().noquote() << QStringLiteral(
         "dirtoo: icon directory not found (tried build DIRTOO_ICON_DIR, "
         "/usr[/local]/share/dirtoo/icons, and paths relative to the executable); "
-        "bundled toolbar/badge assets will be missing");
+        "falling back to embedded :/icons/ resources where available");
     return QString{};
   }();
   return cached;
 }
 
+/// Load a badge / toolbar icon by file name (e.g. "badge-loading.png").
+/// Tries the on-disk icon directory first, then the embedded Qt resource
+/// ":/icons/<file_name>". Failures are always reported with qWarning (stderr).
 inline QPixmap load_badge_pixmap(const QString& file_name)
 {
+  if (file_name.isEmpty()) {
+    qWarning().noquote() << QStringLiteral("dirtoo: load_badge_pixmap called with empty name");
+    return {};
+  }
+
   const QString dir = icon_directory();
-  if (dir.isEmpty()) {
-    // icon_directory() already logged once.
+  if (!dir.isEmpty()) {
+    const QString path = dir + QLatin1Char('/') + file_name;
+    if (QFile::exists(path)) {
+      QPixmap pm(path);
+      if (!pm.isNull()) {
+        return pm;
+      }
+      qWarning().noquote() << QStringLiteral(
+          "dirtoo: failed to decode icon asset (corrupt or unsupported):")
+                           << path;
+    } else {
+      qWarning().noquote() << QStringLiteral("dirtoo: icon asset not found on disk:") << path
+                           << QStringLiteral("(will try embedded resource)");
+    }
+  }
+
+  // Embedded qrc fallback (resources.qrc aliases under :/icons/).
+  const QString resource = QStringLiteral(":/icons/") + file_name;
+  if (QFile::exists(resource)) {
+    QPixmap pm(resource);
+    if (!pm.isNull()) {
+      return pm;
+    }
+    qWarning().noquote() << QStringLiteral(
+        "dirtoo: failed to decode embedded icon resource:")
+                         << resource;
     return {};
   }
-  const QString path = dir + QLatin1Char('/') + file_name;
-  if (!QFile::exists(path)) {
-    qWarning().noquote() << QStringLiteral("dirtoo: icon asset not found:") << path;
-    return {};
-  }
-  QPixmap pm(path);
-  if (pm.isNull()) {
-    qWarning().noquote() << QStringLiteral("dirtoo: failed to load icon asset:") << path;
-  }
-  return pm;
+
+  qWarning().noquote() << QStringLiteral(
+      "dirtoo: icon asset missing from disk and embedded resources:")
+                       << file_name;
+  return {};
 }
 
 } // namespace dirtoo::app
