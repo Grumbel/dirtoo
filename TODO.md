@@ -25,6 +25,15 @@ Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 
 ---
 
+
+### Recent polish (agent, 2026-08)
+
+- [x] Icon/badge load failures always on stderr; qrc fallback for badges
+- [x] Directory montage failures report concrete reasons on stderr
+- [x] Startup under-development warning with permanent dismiss checkbox
+- [x] Properties dialog shows file thumbnail / system icon preview
+- [x] Read/write-protected file badges (`badge-readonly` / `badge-nowrite`)
+
 ## Critical / high-priority defect queue
 
 ### 1. UI freezes / jank on large directories
