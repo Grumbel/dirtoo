@@ -180,6 +180,7 @@ private slots:
   void on_header_clicked(int section);
   void on_view_detail();
   void on_view_icons();
+  void on_view_relative_icons();
   void on_view_small_icons();
   void on_zoom_in();
   void on_zoom_out();
@@ -323,6 +324,7 @@ private:
   QAction* paste_act_ = nullptr;
   QAction* detail_act_ = nullptr;
   QAction* icons_act_ = nullptr;
+  QAction* relative_icons_act_ = nullptr;
   QAction* small_icons_act_ = nullptr;
   QToolButton* sort_toolbar_btn_ = nullptr;
   QToolButton* group_toolbar_btn_ = nullptr;

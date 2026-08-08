@@ -206,18 +206,24 @@ void MainWindow::setup_toolbar()
   toolbar->addSeparator();
   // View modes: Icons, List (Win95-style), Detail
   icons_act_ = toolbar->addAction(theme_icon("view-grid", "view-list-icons"), QStringLiteral("Icons"));
+  relative_icons_act_ = toolbar->addAction(theme_icon("zoom-fit-best", "view-grid"),
+                                           QStringLiteral("Relative Size"));
+  relative_icons_act_->setToolTip(QStringLiteral("Icons scaled by file size (log)"));
   small_icons_act_ = toolbar->addAction(theme_icon("view-list", "view-list-details"),
                                       QStringLiteral("List"));
   detail_act_ = toolbar->addAction(theme_icon("view-list-details", "view-list"), QStringLiteral("Detail"));
   detail_act_->setCheckable(true);
   icons_act_->setCheckable(true);
+  relative_icons_act_->setCheckable(true);
   small_icons_act_->setCheckable(true);
   auto* view_group = new QActionGroup(this);
   view_group->addAction(icons_act_);
+  view_group->addAction(relative_icons_act_);
   view_group->addAction(small_icons_act_);
   view_group->addAction(detail_act_);
   connect(detail_act_, &QAction::triggered, this, &MainWindow::on_view_detail);
   connect(icons_act_, &QAction::triggered, this, &MainWindow::on_view_icons);
+  connect(relative_icons_act_, &QAction::triggered, this, &MainWindow::on_view_relative_icons);
   connect(small_icons_act_, &QAction::triggered, this, &MainWindow::on_view_small_icons);
   detail_act_->setChecked(true);
 

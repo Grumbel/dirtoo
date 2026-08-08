@@ -33,6 +33,9 @@ public:
   [[nodiscard]] QSize tile_size() const noexcept { return tile_size_; }
 
   void set_compact(bool compact);
+  /// When true, tile size scales with FileInfo::size() (log2), clamped.
+  void set_relative_size(bool on);
+  [[nodiscard]] bool relative_size() const { return relative_size_; }
   [[nodiscard]] bool compact() const noexcept { return compact_; }
 
   void relayout();
@@ -104,8 +107,10 @@ private:
   std::vector<GraphicsFileItem*> items_;
   /// Precomputed top-left of each row's tile (group-aware).
   std::vector<QPointF> slot_pos_;
+  std::vector<QSize> slot_tile_size_;
   QSize tile_size_{128, 160};
   bool compact_ = false;
+  bool relative_size_ = false;
   int spacing_ = 12;
   int padding_ = 8;
   bool suppress_selection_signal_ = false;

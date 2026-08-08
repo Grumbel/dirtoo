@@ -51,7 +51,7 @@ void MainWindow::apply_icon_zoom()
   }
 
   const int size = ViewZoom::kIconLevels[std::clamp(zoom_.icons, 0, static_cast<int>(std::size(ViewZoom::kIconLevels)) - 1)];
-  if (view_mode_ == ViewMode::Icons) {
+  if (view_mode_ == ViewMode::Icons || view_mode_ == ViewMode::RelativeIcons) {
     icon_view_->setViewMode(QListView::IconMode);
     icon_view_->setFlow(QListView::LeftToRight);
     icon_view_->setWrapping(true);
@@ -68,6 +68,7 @@ void MainWindow::apply_icon_zoom()
   if (graphics_view_ != nullptr) {
     graphics_view_->set_tile_size(QSize(cell_w, cell_h));
     graphics_view_->set_compact(false);
+    graphics_view_->set_relative_size(view_mode_ == ViewMode::RelativeIcons);
     graphics_view_->relayout();
   }
   const int detail = std::max(16, size / 4);
@@ -79,7 +80,8 @@ void MainWindow::apply_icon_detail_level()
   if (model_ == nullptr) {
     return;
   }
-  if (status_label_ != nullptr && view_mode_ == ViewMode::Icons) {
+  if (status_label_ != nullptr
+      && (view_mode_ == ViewMode::Icons || view_mode_ == ViewMode::RelativeIcons)) {
     static const char* labels[] = {
         "Icon captions: none",
         "Icon captions: name",
@@ -115,7 +117,7 @@ void MainWindow::on_less_icon_details()
 
 void MainWindow::on_zoom_in()
 {
-  const int max_zi = (view_mode_ == ViewMode::Icons)
+  const int max_zi = (view_mode_ == ViewMode::Icons || view_mode_ == ViewMode::RelativeIcons)
                          ? static_cast<int>(std::size(ViewZoom::kIconLevels)) - 1
                          : 6;
   int& zi = zoom_for_current_view();
@@ -161,6 +163,7 @@ void MainWindow::set_view_mode(ViewMode mode)
     apply_icon_zoom();
     request_thumbnails_for_visible();
   } else {
+    // Icons or RelativeIcons
     if (model_ != nullptr) {
       model_->set_icon_style(true);
       // List view forces detail level 1; restore a useful multi-line caption LOD for Icons.
@@ -170,11 +173,16 @@ void MainWindow::set_view_mode(ViewMode mode)
     }
     if (graphics_view_ != nullptr) {
       view_stack_->setCurrentWidget(graphics_view_);
+      graphics_view_->set_relative_size(mode == ViewMode::RelativeIcons);
       graphics_view_->sync_from_model();
     } else {
       view_stack_->setCurrentWidget(icon_view_);
     }
-    if (icons_act_ != nullptr) {
+    if (mode == ViewMode::RelativeIcons) {
+      if (relative_icons_act_ != nullptr) {
+        relative_icons_act_->setChecked(true);
+      }
+    } else if (icons_act_ != nullptr) {
       icons_act_->setChecked(true);
     }
     apply_icon_zoom();
@@ -190,6 +198,11 @@ void MainWindow::on_view_detail()
 void MainWindow::on_view_icons()
 {
   set_view_mode(ViewMode::Icons);
+}
+
+void MainWindow::on_view_relative_icons()
+{
+  set_view_mode(ViewMode::RelativeIcons);
 }
 
 void MainWindow::on_view_small_icons()

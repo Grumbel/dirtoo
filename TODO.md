@@ -628,7 +628,9 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
       should show the byte count transfer for the currently
       transfering file
       (dirops streams with on_progress mid-file; dialog shows bytes + %)
-- [ ] a fourth file view that shows icons at their relative size
+- [x] a fourth file view that shows icons at their relative size
+      (ViewMode::RelativeIcons — Graphics flow layout; tile scale log2(size),
+       clamp ~0.55–1.85; toolbar/menu "Relative Size")
       compared to what else is in the directory (do deffer for now)
 - [x] thumbnail generation doesn't start for new files, "Reload Thumbnails" doesn't make them show up either
       (on_entries_changed requests thumbs for created regular files by path)

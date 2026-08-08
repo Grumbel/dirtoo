@@ -28,8 +28,22 @@
 #include <QEvent>
 
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
 
 namespace dirtoo::app {
+namespace {
+
+/// Map file size to a tile scale factor (log2). ~1 MiB → 1.0; clamped.
+[[nodiscard]] double tile_scale_for_bytes(std::uint64_t bytes)
+{
+  const double lg = std::log2(static_cast<double>(std::max<std::uint64_t>(bytes, 1)));
+  const double s = 0.40 + lg * 0.035;
+  return std::clamp(s, 0.55, 1.85);
+}
+
+} // namespace
+
 
 GraphicsFileView::GraphicsFileView(QWidget* parent)
     : QGraphicsView(parent)
@@ -99,6 +113,16 @@ void GraphicsFileView::set_compact(bool compact)
   update_visible_window();
 }
 
+void GraphicsFileView::set_relative_size(bool on)
+{
+  if (relative_size_ == on) {
+    return;
+  }
+  relative_size_ = on;
+  compute_layout_slots();
+  update_visible_window();
+}
+
 void GraphicsFileView::relayout()
 {
   compute_layout_slots();
@@ -152,10 +176,62 @@ void GraphicsFileView::compute_layout_slots()
 {
   const int rows = model_ != nullptr ? model_->rowCount() : 0;
   slot_pos_.assign(static_cast<std::size_t>(rows), QPointF());
+  slot_tile_size_.assign(static_cast<std::size_t>(rows), tile_size_);
   if (rows == 0) {
     layout_cols_ = 1;
     layout_max_row_ = 0;
     scene_->setSceneRect(QRectF());
+    return;
+  }
+
+  const int band_h = group_header_height(QFontMetrics(font()));
+  const int vp_w = std::max(1, viewport()->width());
+
+  if (relative_size_) {
+    // Flow left-to-right with per-item tile sizes (log-scaled by file size).
+    qreal x = padding_;
+    qreal y = padding_;
+    qreal row_h = 0;
+    int grid_row = 0;
+    layout_cols_ = 1;
+    for (int i = 0; i < rows; ++i) {
+      bool group_start = false;
+      QSize tile = tile_size_;
+      if (model_ != nullptr) {
+        const QModelIndex idx = model_->index(i, 0);
+        group_start = idx.data(IsGroupStartRole).toBool()
+                      && !idx.data(GroupLabelRole).toString().isEmpty();
+        if (const auto* fi = model_->file_at(i)) {
+          const double s = tile_scale_for_bytes(fi->size());
+          tile = QSize(std::max(48, static_cast<int>(tile_size_.width() * s)),
+                       std::max(48, static_cast<int>(tile_size_.height() * s)));
+        }
+      }
+      slot_tile_size_[static_cast<std::size_t>(i)] = tile;
+
+      if (group_start && i > 0) {
+        x = padding_;
+        y += row_h + spacing_ + band_h + 2;
+        row_h = 0;
+        ++grid_row;
+      } else if (i > 0 && x + tile.width() > vp_w - padding_) {
+        x = padding_;
+        y += row_h + spacing_;
+        row_h = 0;
+        ++grid_row;
+      }
+      if (group_start && i == 0) {
+        y += band_h + 2;
+      } else if (group_start && i > 0) {
+        // band already folded into y advance above
+      }
+
+      slot_pos_[static_cast<std::size_t>(i)] = QPointF(x, y);
+      x += tile.width() + spacing_;
+      row_h = std::max(row_h, static_cast<qreal>(tile.height()));
+    }
+    layout_max_row_ = grid_row;
+    scene_->setSceneRect(0, 0, vp_w, y + row_h + padding_);
     return;
   }
 
@@ -167,14 +243,13 @@ void GraphicsFileView::compute_layout_slots()
   // Grid content width (tiles left-aligned inside the grid); center the grid
   // in the viewport so left/right padding match (dirtoo-py center_x_off).
   const int grid_w = cols * cell_w - spacing_ + 2 * padding_;
-  const int vp_w = std::max(grid_w, viewport()->width());
-  const int center_x_off = std::max(0, (vp_w - grid_w) / 2);
+  const int content_w = std::max(grid_w, vp_w);
+  const int center_x_off = std::max(0, (content_w - grid_w) / 2);
 
   int col = 0;
   int grid_row = 0;
   int max_row = 0;
   int band_accum = 0;
-  const int band_h = group_header_height(QFontMetrics(font()));
   for (int i = 0; i < rows; ++i) {
     bool group_start = false;
     if (model_ != nullptr) {
@@ -192,6 +267,7 @@ void GraphicsFileView::compute_layout_slots()
     slot_pos_[static_cast<std::size_t>(i)] =
         QPointF(center_x_off + padding_ + col * cell_w,
                 padding_ + grid_row * cell_h + band_accum);
+    slot_tile_size_[static_cast<std::size_t>(i)] = tile_size_;
     max_row = std::max(max_row, grid_row);
     ++col;
     if (col >= cols) {
@@ -200,7 +276,7 @@ void GraphicsFileView::compute_layout_slots()
     }
   }
   layout_max_row_ = max_row;
-  scene_->setSceneRect(0, 0, vp_w,
+  scene_->setSceneRect(0, 0, content_w,
                        padding_ * 2 + (max_row + 1) * cell_h + band_accum);
 }
 
@@ -300,16 +376,20 @@ void GraphicsFileView::update_visible_window()
       }
       continue;
     }
+    const QSize tile =
+        (static_cast<std::size_t>(r) < slot_tile_size_.size())
+            ? slot_tile_size_[static_cast<std::size_t>(r)]
+            : tile_size_;
     if (item == nullptr) {
       item = new GraphicsFileItem(model_, r, this);
-      item->set_tile_size(tile_size_);
+      item->set_tile_size(tile);
       scene_->addItem(item);
       if (selected_row_set_.contains(r)) {
         item->setSelected(true);
       }
     } else {
       item->set_row(r);
-      item->set_tile_size(tile_size_);
+      item->set_tile_size(tile);
       item->setSelected(selected_row_set_.contains(r));
     }
     item->setPos(slot_pos_[static_cast<std::size_t>(r)]);
