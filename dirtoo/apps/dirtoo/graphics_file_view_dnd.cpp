@@ -210,6 +210,7 @@ void GraphicsFileView::dragEnterEvent(QDragEnterEvent* event)
 void GraphicsFileView::dragMoveEvent(QDragMoveEvent* event)
 {
   if (event->mimeData() != nullptr && event->mimeData()->hasUrls()) {
+    drag_entered_ = true;
     const auto mods = event->modifiers();
     if ((mods & Qt::ControlModifier) && (mods & Qt::ShiftModifier)) {
       event->setDropAction(Qt::LinkAction);
@@ -251,17 +252,18 @@ void GraphicsFileView::dragMoveEvent(QDragMoveEvent* event)
 
 void GraphicsFileView::dragLeaveEvent(QDragLeaveEvent* event)
 {
+  // Clear folder drop-target highlights. Do NOT call QGraphicsView::dragLeaveEvent:
+  // the base implementation requires lastDragDropEvent from its own
+  // dragEnterEvent/dragMoveEvent path; we handle DnD on the view without that
+  // and calling the base logs:
+  //   "QGraphicsView::dragLeaveEvent: drag leave received before drag enter"
+  drag_entered_ = false;
   for (GraphicsFileItem* it : items_) {
     if (it != nullptr) {
       it->set_drop_target(false);
     }
   }
-  // Qt warns if dragLeave arrives without a prior accepted dragEnter on this
-  // widget (e.g. child/scene re-entry). Only forward when we had entered.
-  if (drag_entered_) {
-    drag_entered_ = false;
-    QGraphicsView::dragLeaveEvent(event);
-  } else {
+  if (event != nullptr) {
     event->accept();
   }
 }

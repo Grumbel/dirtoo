@@ -712,12 +712,8 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
       a separate commit, all merged into one file with `git am` at the end.
       (AGENTS.md: new "Git workflow" section; `git format-patch --stdout <base>..HEAD > changes.mbox`)
 
-09:50:13.652 [warning] QGraphicsView::dragLeaveEvent: drag leave received before drag enter
-09:50:26.844 [warning] QGraphicsView::dragLeaveEvent: drag leave received before drag enter
-09:50:40.847 [warning] QGraphicsView::dragLeaveEvent: drag leave received before drag enter
-09:50:40.851 [warning] QGraphicsView::dragLeaveEvent: drag leave received before drag enter
-09:50:44.395 [warning] QGraphicsView::dragLeaveEvent: drag leave received before drag enter
-09:50:48.239 [warning] QGraphicsView::dragLeaveEvent: drag leave received before drag enter
-09:50:48.251 [warning] QGraphicsView::dragLeaveEvent: drag leave received before drag enter
-09:50:52.195 [warning] QGraphicsView::dragLeaveEvent: drag leave received before drag enter
+- [x] QGraphicsView::dragLeaveEvent: drag leave received before drag enter
+      (spam during DnD). Caused by calling QGraphicsView::dragLeaveEvent without
+      going through base dragEnter (lastDragDropEvent unset). Leave handler now
+      only clears drop-target highlights and accepts — does not call base.
 
