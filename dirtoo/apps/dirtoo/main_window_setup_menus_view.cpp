@@ -176,6 +176,7 @@ void MainWindow::setup_view_menu()
     auto* act = view_menu->addAction(theme_icon("system-search"), QStringLiteral("Recursive Search…"), this,
                                      &MainWindow::on_show_search);
     act->setShortcut(QKeySequence(QStringLiteral("Ctrl+F")));
+    act->setShortcuts({QKeySequence(QStringLiteral("Ctrl+F")), QKeySequence(Qt::Key_F3)});
   }
   {
     auto* act = view_menu->addAction(theme_icon("zoom-in"), QStringLiteral("Zoom In"), this, &MainWindow::on_zoom_in);

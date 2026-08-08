@@ -110,7 +110,8 @@ mediainfo, archiveinfo, …). See `man/` after install, or run each tool with
 | Shortcut | Action |
 |----------|--------|
 | **F2** | Rename |
-| **F3** | Properties |
+| **F3** / **Ctrl+F** | Recursive search |
+| **Alt+Return** | Properties |
 | **F5** | Refresh |
 | **Backspace** / **Alt+Up** | Parent directory |
 | **Alt+Home** | Home |

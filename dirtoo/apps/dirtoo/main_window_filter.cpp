@@ -270,6 +270,9 @@ void MainWindow::flush_search_batch()
     refresh_list();
   }
   update_status_selection();
+  // Search hits arrive as synthetic FileInfos; queue thumbs as rows appear so
+  // Icons/Detail are not blank until the whole search finishes.
+  request_thumbnails_for_visible();
 }
 
 void MainWindow::on_search_progress(quint64 visited, quint64 matched)

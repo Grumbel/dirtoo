@@ -77,7 +77,8 @@ void MainWindow::setup_edit_menu()
   }
   {
     auto* act = edit_menu->addAction(theme_icon("document-properties"), QStringLiteral("Properties…"), this, &MainWindow::on_properties);
-    act->setShortcut(QKeySequence(Qt::Key_F3));
+    // Alt+Return is a common "properties" binding; F3 is Recursive Search.
+    act->setShortcut(QKeySequence(Qt::ALT | Qt::Key_Return));
   }
   edit_menu->addSeparator();
   {

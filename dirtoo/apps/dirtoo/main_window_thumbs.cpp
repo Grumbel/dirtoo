@@ -176,10 +176,8 @@ void MainWindow::request_thumbnails_for_visible()
         }
         continue;
       }
-      // Archive members are synthetic; still thumbnailable after extract-to-cache.
-      if (fi.is_synthetic() && !fi.location().is_archive()) {
-        continue;
-      }
+      // Search hits use synthetic FileInfo (no GUI-thread stat) but still refer to
+      // real local paths — thumb them. Archive members are handled below.
       const QString model_key = QString::fromStdString(fi.path().string());
       if (model_ != nullptr) {
         if (model_->thumbnail_status(model_key) == ThumbnailStatus::Ready
@@ -328,7 +326,11 @@ void MainWindow::on_reload_thumbnails()
     return;
   }
   for (const auto& fi : selected) {
-    if (fi.is_directory() || fi.is_synthetic()) {
+    if (fi.is_directory()) {
+      continue;
+    }
+    // Synthetic search hits still have real paths; only skip empty.
+    if (fi.path().empty()) {
       continue;
     }
     model_->clear_thumbnail(QString::fromStdString(fi.path().string()));
@@ -338,7 +340,7 @@ void MainWindow::on_reload_thumbnails()
   std::vector<fs::Location> locs;
   QStringList mimes;
   for (const auto& fi : selected) {
-    if (fi.is_directory() || fi.is_synthetic() || location_.is_archive()) {
+    if (fi.is_directory() || fi.path().empty() || location_.is_archive()) {
       continue;
     }
     const QString path = QString::fromStdString(fi.path().string());
