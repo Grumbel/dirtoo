@@ -25,6 +25,7 @@ void usage()
                "  -j, --json          Machine-readable JSON array\n"
                "  -p, --println FMT   Print FMT then newline\n"
                "  -P, --print FMT     Print FMT without newline\n"
+               "  -V, --version       Print version and exit\n"
                "  -h, --help\n\n"
                "Placeholders: {filename} {width} {height} {resolution}\n"
                "  {duration} {hours} {minutes} {seconds} {framerate} {pages} {file_count}\n";

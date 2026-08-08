@@ -20,6 +20,7 @@ void usage()
                "  --file-count     Print path and file count only\n"
                "  -l, --list       List member paths\n"
                "  -j, --json       JSON array of archive summaries\n"
+               "  -V, --version    Print version and exit\n"
                "  -h, --help\n";
 }
 
