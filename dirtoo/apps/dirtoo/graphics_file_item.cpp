@@ -51,6 +51,9 @@ GraphicsFileItem::GraphicsFileItem(FileListModel* model, int row, GraphicsFileVi
   setFlag(QGraphicsItem::ItemIsSelectable, true);
   setFlag(QGraphicsItem::ItemIsFocusable, true);
   setAcceptHoverEvents(true);
+  if (model_ != nullptr && row_ >= 0) {
+    setToolTip(model_->index(row_, 0).data(Qt::ToolTipRole).toString());
+  }
 }
 
 void GraphicsFileItem::set_row(int row)
@@ -59,6 +62,11 @@ void GraphicsFileItem::set_row(int row)
     return;
   }
   row_ = row;
+  if (model_ != nullptr && row_ >= 0) {
+    setToolTip(model_->index(row_, 0).data(Qt::ToolTipRole).toString());
+  } else {
+    setToolTip({});
+  }
   update();
 }
 

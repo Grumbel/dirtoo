@@ -245,6 +245,26 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
     return icon_for(*fi);
   }
 
+  if (role == Qt::ToolTipRole) {
+    QString tip = QString::fromStdString(fi->path().string());
+    if (fi->is_symlink()) {
+      std::error_code ec;
+      const auto target = std::filesystem::read_symlink(fi->path(), ec);
+      if (!ec) {
+        tip += QStringLiteral("\n→ ");
+        tip += QString::fromStdString(target.string());
+        std::error_code ec2;
+        // exists() follows the symlink; false ⇒ dangling.
+        if (!std::filesystem::exists(fi->path(), ec2)) {
+          tip += QStringLiteral("\n(broken symlink)");
+        }
+      } else {
+        tip += QStringLiteral("\n(broken symlink)");
+      }
+    }
+    return tip;
+  }
+
   if (role == Qt::DisplayRole) {
     switch (static_cast<FileListColumn>(index.column())) {
     case FileListColumn::Name: {

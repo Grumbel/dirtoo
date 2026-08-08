@@ -223,7 +223,23 @@ void MainWindow::update_status_selection()
       status_label_->setText(QString());
     }
   } else if (selected.size() == 1) {
-    set_status(QString::fromStdString(selected.front().path().string()));
+    const auto& fi = selected.front();
+    QString left = QString::fromStdString(fi.path().string());
+    if (fi.is_symlink()) {
+      std::error_code ec;
+      const auto target = std::filesystem::read_symlink(fi.path(), ec);
+      if (!ec) {
+        left += QStringLiteral(" → ");
+        left += QString::fromStdString(target.string());
+        std::error_code ec2;
+        if (!std::filesystem::exists(fi.path(), ec2)) {
+          left += QStringLiteral(" (broken)");
+        }
+      } else {
+        left += QStringLiteral(" (broken symlink)");
+      }
+    }
+    set_status(left);
   } else {
     set_status(QStringLiteral("%1 selected").arg(selected.size()));
   }
