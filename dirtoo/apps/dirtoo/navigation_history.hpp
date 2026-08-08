@@ -24,6 +24,9 @@ public:
   [[nodiscard]] std::optional<fs::Location> go_back();
   [[nodiscard]] std::optional<fs::Location> go_forward();
 
+  /// Jump the stack cursor to \p index (0-based) without trimming the stack.
+  [[nodiscard]] std::optional<fs::Location> go_to_index(int index);
+
   [[nodiscard]] int index() const noexcept { return index_; }
   [[nodiscard]] const std::vector<fs::Location>& stack() const noexcept { return stack_; }
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include <QToolButton>
 
 #include "badge_icons.hpp"
 #include "location_icons.hpp"
@@ -57,6 +58,16 @@ void MainWindow::setup_toolbar()
                                &MainWindow::on_go_back);
   forward_act_ = toolbar->addAction(theme_icon("go-next", "arrow-right"), QStringLiteral("Forward"), this,
                                   &MainWindow::on_go_forward);
+  back_act_->setToolTip(QStringLiteral("Back (Alt+Left)\nRight-click for history"));
+  forward_act_->setToolTip(QStringLiteral("Forward (Alt+Right)\nRight-click for history"));
+  if (auto* btn = qobject_cast<QToolButton*>(toolbar->widgetForAction(back_act_))) {
+    btn->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(btn, &QWidget::customContextMenuRequested, this, &MainWindow::on_back_history_menu);
+  }
+  if (auto* btn = qobject_cast<QToolButton*>(toolbar->widgetForAction(forward_act_))) {
+    btn->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(btn, &QWidget::customContextMenuRequested, this, &MainWindow::on_forward_history_menu);
+  }
   toolbar->addSeparator();
   toolbar->addAction(theme_icon("view-refresh", "reload"), QStringLiteral("Reload"), this, &MainWindow::on_refresh);
   toolbar->addAction(theme_icon("image-x-generic"), QStringLiteral("Prepare Thumbnails"), this,

@@ -52,6 +52,15 @@ std::optional<fs::Location> NavigationHistory::go_forward()
   return stack_[static_cast<std::size_t>(index_)];
 }
 
+std::optional<fs::Location> NavigationHistory::go_to_index(int index)
+{
+  if (index < 0 || index >= static_cast<int>(stack_.size())) {
+    return std::nullopt;
+  }
+  index_ = index;
+  return stack_[static_cast<std::size_t>(index_)];
+}
+
 void NavigationHistory::set_unique_locations(std::vector<fs::Location> locations)
 {
   unique_ = std::move(locations);

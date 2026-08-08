@@ -90,6 +90,9 @@ private slots:
   void on_go_home();
   void on_go_back();
   void on_go_forward();
+  /// Right-click on toolbar Back/Forward: list stack entries in that direction.
+  void on_back_history_menu(const QPoint& pos);
+  void on_forward_history_menu(const QPoint& pos);
   void on_directory_changed();
   void on_entries_changed(const QStringList& created, const QStringList& removed,
                            const QStringList& modified);

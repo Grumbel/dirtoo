@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include "location_menu_helpers.hpp"
+#include "location_icons.hpp"
+#include <QMenu>
+#include <QCursor>
 
 #include "archive_listing.hpp"
 #include "dirtoo/filter/media_meta_cache.hpp"
@@ -125,6 +129,56 @@ void MainWindow::on_go_forward()
   if (const auto loc = nav_history_.go_forward()) {
     open_location(*loc, false);
   }
+}
+
+void MainWindow::on_back_history_menu(const QPoint& pos)
+{
+  const auto& stack = nav_history_.stack();
+  const int cur = nav_history_.index();
+  if (cur <= 0 || stack.empty()) {
+    return;
+  }
+  QMenu menu(this);
+  for (int i = cur - 1; i >= 0; --i) {
+    const fs::Location& loc = stack[static_cast<std::size_t>(i)];
+    auto* act = menu.addAction(icon_for_location(loc), location_menu_label(loc));
+    const int idx = i;
+    connect(act, &QAction::triggered, this, [this, idx] {
+      if (const auto jumped = nav_history_.go_to_index(idx)) {
+        open_location(*jumped, false);
+      }
+    });
+  }
+  if (menu.isEmpty()) {
+    return;
+  }
+  auto* w = qobject_cast<QWidget*>(sender());
+  menu.exec(w != nullptr ? w->mapToGlobal(pos) : QCursor::pos());
+}
+
+void MainWindow::on_forward_history_menu(const QPoint& pos)
+{
+  const auto& stack = nav_history_.stack();
+  const int cur = nav_history_.index();
+  if (cur < 0 || cur + 1 >= static_cast<int>(stack.size())) {
+    return;
+  }
+  QMenu menu(this);
+  for (int i = cur + 1; i < static_cast<int>(stack.size()); ++i) {
+    const fs::Location& loc = stack[static_cast<std::size_t>(i)];
+    auto* act = menu.addAction(icon_for_location(loc), location_menu_label(loc));
+    const int idx = i;
+    connect(act, &QAction::triggered, this, [this, idx] {
+      if (const auto jumped = nav_history_.go_to_index(idx)) {
+        open_location(*jumped, false);
+      }
+    });
+  }
+  if (menu.isEmpty()) {
+    return;
+  }
+  auto* w = qobject_cast<QWidget*>(sender());
+  menu.exec(w != nullptr ? w->mapToGlobal(pos) : QCursor::pos());
 }
 
 void MainWindow::update_history_actions()
