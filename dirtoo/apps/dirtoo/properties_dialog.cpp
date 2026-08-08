@@ -7,6 +7,10 @@
 
 #include "dirtoo/filter/media_meta_cache.hpp"
 #include "dirops/ops.hpp"
+#include <QFileInfo>
+#include <QPixmap>
+#include <QFileIconProvider>
+#include "dirtoo/thumbnail/thumbnailer.hpp"
 
 #include <QCheckBox>
 #include <QDialogButtonBox>
@@ -37,6 +41,36 @@ QString format_epoch(std::time_t t)
   }
   const QDateTime dt = QDateTime::fromSecsSinceEpoch(static_cast<qint64>(t));
   return QLocale::system().toString(dt, QLocale::LongFormat);
+}
+
+
+QPixmap properties_thumbnail(const fs::FileInfo& fi)
+{
+  if (fi.is_synthetic() || fi.path().empty()) {
+    return {};
+  }
+  const auto loc = fi.location();
+  // Prefer freedesktop large cache if already generated.
+  const QString cached =
+      thumbnail::Thumbnailer::cache_path_for(loc, QStringLiteral("large"));
+  if (QFileInfo::exists(cached)) {
+    QPixmap pm(cached);
+    if (!pm.isNull()) {
+      return pm.scaled(128, 128, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
+  }
+  const QString normal =
+      thumbnail::Thumbnailer::cache_path_for(loc, QStringLiteral("normal"));
+  if (QFileInfo::exists(normal)) {
+    QPixmap pm(normal);
+    if (!pm.isNull()) {
+      return pm.scaled(128, 128, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
+  }
+  // Fallback: system file icon.
+  static QFileIconProvider provider;
+  const QIcon icon = provider.icon(QFileInfo(QString::fromStdString(fi.path().string())));
+  return icon.pixmap(128, 128);
 }
 
 QString type_of(const fs::FileInfo& fi)
@@ -185,6 +219,21 @@ void show_properties_dialog(QWidget* parent, const std::vector<fs::FileInfo>& it
 
     auto* general = new QGroupBox(QStringLiteral("General"), &dialog);
     auto* form = new QFormLayout(general);
+
+    {
+      const QPixmap thumb = properties_thumbnail(fi);
+      auto* thumb_lbl = new QLabel(&dialog);
+      thumb_lbl->setAlignment(Qt::AlignCenter);
+      thumb_lbl->setMinimumSize(128, 128);
+      thumb_lbl->setMaximumSize(160, 160);
+      if (!thumb.isNull()) {
+        thumb_lbl->setPixmap(thumb);
+      } else {
+        thumb_lbl->setText(QStringLiteral("(no preview)"));
+      }
+      form->addRow(QStringLiteral("Preview:"), thumb_lbl);
+    }
+
     auto* name_lbl = new QLabel(QString::fromStdString(fi.basename()), &dialog);
     name_lbl->setTextInteractionFlags(Qt::TextSelectableByMouse);
     form->addRow(QStringLiteral("Name:"), name_lbl);
