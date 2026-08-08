@@ -11,8 +11,12 @@
 
 namespace dirtoo::app {
 
-/// Builds simple multi-tile directory montage thumbnails off the GUI thread.
-/// Writes into the XDG large thumbnail cache path used by Thumbnailer.
+/// Builds multi-tile directory montage thumbnails off the GUI thread.
+///
+/// Tile sources are always freedesktop/XDG thumbnail cache images (not raw
+/// file pixels). Missing child thumbs are requested via Thumbnailer1 before
+/// the montage is composed, so video-heavy folders and not-yet-visited
+/// subdirectories still get representative tiles when the service cooperates.
 class DirectoryThumbnailWorker : public QObject {
   Q_OBJECT
 

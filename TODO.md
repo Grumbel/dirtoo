@@ -34,6 +34,7 @@ Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 - [x] Properties dialog shows file thumbnail / system icon preview
 - [x] Read/write-protected file badges (`badge-readonly` / `badge-nowrite`)
 - [x] Directory montages use XDG cached thumbs for videos/non-images
+- [x] Directory montages are XDG-thumb-only; generate missing child thumbs first
 
 ## Critical / high-priority defect queue
 
