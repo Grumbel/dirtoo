@@ -13,6 +13,7 @@
 #include <QTimer>
 
 #include <filesystem>
+#include <unistd.h>
 
 #include <QColor>
 #include <QDateTime>
@@ -128,7 +129,7 @@ void FileListModel::emit_path_changed(const QString& path)
           index(row, static_cast<int>(FileListColumn::Count) - 1);
       emit dataChanged(left, right,
                        {Qt::DecorationRole, Qt::DisplayRole, ThumbnailStatusRole, IsNewRole,
-                        AccessDeniedRole, ChildCountRole});
+                        AccessDeniedRole, IsUnreadableRole, IsUnwritableRole, ChildCountRole});
       break;
     }
   }
@@ -483,16 +484,19 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
     }
   }
 
-  if (role == AccessDeniedRole) {
+  if (role == AccessDeniedRole || role == IsUnreadableRole) {
     if (fi->is_synthetic() || fi->path().empty()) {
       return false;
     }
-    // No owner read bit → treat as locked (same idea as Python have_access()).
-    using perms = std::filesystem::perms;
-    const auto p = fi->permissions();
-    const bool readable = (p & (perms::owner_read | perms::group_read | perms::others_read))
-                          != perms::none;
-    return !readable;
+    // Effective access for the current process (more accurate than mode bits alone).
+    return ::access(fi->path().c_str(), R_OK) != 0;
+  }
+
+  if (role == IsUnwritableRole) {
+    if (fi->is_synthetic() || fi->path().empty()) {
+      return false;
+    }
+    return ::access(fi->path().c_str(), W_OK) != 0;
   }
 
   if (role == GroupLabelRole) {

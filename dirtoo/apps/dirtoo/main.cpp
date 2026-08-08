@@ -196,7 +196,8 @@ int main(int argc, char* argv[])
     }
     for (const char* name :
          {"badge-image.png", "badge-video.png", "badge-new.png", "badge-loading.png",
-          "badge-error.png", "badge-locked.png", "dirtoo.png"}) {
+          "badge-error.png", "badge-locked.png", "badge-readonly.png", "badge-nowrite.png",
+          "dirtoo.png"}) {
       const QPixmap pm = dirtoo::app::load_badge_pixmap(QLatin1String(name));
       if (pm.isNull()) {
         qWarning().noquote() << QStringLiteral("dirtoo: required icon failed to load: %1")

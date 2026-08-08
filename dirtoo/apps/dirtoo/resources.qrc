@@ -8,6 +8,10 @@
     <file alias="icons/badge-loading.png">../../resources/icons/badge-loading.png</file>
     <file alias="icons/badge-error.png">../../resources/icons/badge-error.png</file>
     <file alias="icons/badge-locked.png">../../resources/icons/badge-locked.png</file>
+    <file alias="icons/badge-readonly.png">../../resources/icons/badge-readonly.png</file>
+    <file alias="icons/badge-nowrite.png">../../resources/icons/badge-nowrite.png</file>
+    <file alias="icons/badge-readonly.svg">../../resources/icons/badge-readonly.svg</file>
+    <file alias="icons/badge-nowrite.svg">../../resources/icons/badge-nowrite.svg</file>
     <file alias="icons/badge-new.png">../../resources/icons/badge-new.png</file>
     <file alias="icons/dnd-copy.png">../../resources/icons/dnd-copy.png</file>
     <file alias="icons/dnd-move.png">../../resources/icons/dnd-move.png</file>

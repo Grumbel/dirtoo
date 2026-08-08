@@ -136,6 +136,20 @@ inline void paint_tile_status_overlays(QPainter* painter, const QRect& thumb,
     static const QPixmap k_new(load_badge_pixmap(QStringLiteral("badge-new.png")));
     paint_status_pixmap(painter, thumb, k_new, Qt::AlignLeft | Qt::AlignTop, 0.9);
   }
+  // Permission stickers (bottom-right): unreadable takes precedence over unwritable.
+  if (index.data(IsUnreadableRole).toBool()) {
+    static const QPixmap k_ro(load_badge_pixmap(QStringLiteral("badge-readonly.png")));
+    if (!k_ro.isNull()) {
+      paint_status_pixmap(painter, thumb, k_ro, Qt::AlignRight | Qt::AlignBottom, 0.7);
+    } else {
+      // Legacy locked badge if new asset missing.
+      static const QPixmap k_locked(load_badge_pixmap(QStringLiteral("badge-locked.png")));
+      paint_status_pixmap(painter, thumb, k_locked, Qt::AlignRight | Qt::AlignBottom, 0.7);
+    }
+  } else if (index.data(IsUnwritableRole).toBool()) {
+    static const QPixmap k_nw(load_badge_pixmap(QStringLiteral("badge-nowrite.png")));
+    paint_status_pixmap(painter, thumb, k_nw, Qt::AlignRight | Qt::AlignBottom, 0.7);
+  }
   if (index.data(IsSymlinkRole).toBool()) {
     paint_symlink_emblem(painter, thumb);
   }

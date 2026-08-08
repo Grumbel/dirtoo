@@ -45,6 +45,10 @@ enum FileListRole {
   /// True when the basename is a Unix-style hidden name (leading '.').
   IsHiddenRole = Qt::UserRole + 8,
   IsSymlinkRole = Qt::UserRole + 9,
+  /// True when the current user cannot read the entry.
+  IsUnreadableRole = Qt::UserRole + 10,
+  /// True when the current user cannot write the entry.
+  IsUnwritableRole = Qt::UserRole + 11,
 };
 
 enum class ThumbnailStatus {

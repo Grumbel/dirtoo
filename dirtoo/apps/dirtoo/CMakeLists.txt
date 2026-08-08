@@ -176,6 +176,10 @@ install(FILES
   ${CMAKE_SOURCE_DIR}/resources/icons/badge-loading.png
   ${CMAKE_SOURCE_DIR}/resources/icons/badge-error.png
   ${CMAKE_SOURCE_DIR}/resources/icons/badge-locked.png
+  ${CMAKE_SOURCE_DIR}/resources/icons/badge-readonly.png
+  ${CMAKE_SOURCE_DIR}/resources/icons/badge-nowrite.png
+  ${CMAKE_SOURCE_DIR}/resources/icons/badge-readonly.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/badge-nowrite.svg
   ${CMAKE_SOURCE_DIR}/resources/icons/badge-new.png
   ${CMAKE_SOURCE_DIR}/resources/icons/dnd-copy.png
   ${CMAKE_SOURCE_DIR}/resources/icons/dnd-move.png
