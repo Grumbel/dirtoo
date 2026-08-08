@@ -265,19 +265,56 @@ Repository: https://github.com/Grumbel/dirtoo.git
   (subject ≤ ~72 chars, body explaining why and what).
 - Always update **`TODO.md`** and **`AGENTS.md`** when closing/opening items
   or changing user-visible behavior (see Documentation above).
-- When handing off patches, produce a **delta-only** mbox of commits **not
-  yet applied upstream** — typically just the last changeset (or the small
-  series from this turn). **Do not** accumulate the full session history into
-  one growing mbox: re-applying duplicate patches with `git am` causes
-  conflicts.
 
-  ```sh
-  # Prefer a single new commit:
-  git format-patch --stdout -1 HEAD > changes.mbox
+### Commit author and AI attribution
 
-  # Or only commits since the last already-applied tip:
-  git format-patch --stdout <already-applied-tip>..HEAD > changes.mbox
+- **Author** (who owns the commit for `git blame`, GitHub, and bug reports):
+  the human maintainer — currently **Ingo Ruhnke <grumbel@gmail.com>**.
+  Agents must **not** use a placeholder or agent-only identity as `user.email`.
+- **AI assistance** is recorded with a standard Git trailer at the end of the
+  commit message body (not as the author):
+
+  ```
+  Co-authored-by: Grok <grok@x.ai>
   ```
 
-  Apply with `git am changes.mbox`. Never ship a mbox that repeats commits
-  the consumer already has.
+  Example:
+
+  ```
+  ui: symlink tooltips show link target
+
+  ToolTipRole includes path and read_symlink destination.
+
+  Co-authored-by: Grok <grok@x.ai>
+  ```
+
+- Do not put `grok@x.ai` (or similar) in the author/committer email field so
+  automated mail and bug tooling stay aimed at a real person.
+
+### Handoff: prefer git bundle
+
+Prefer **`git bundle`** over mbox. Bundles carry real commits (`fetch` /
+`pull`) instead of re-applying text patches, which avoids repeated `git am`
+conflicts when bases drift.
+
+**Producer** (only commits not yet on the consumer’s tip; each handoff should
+chain off the previous tip so pulls apply in succession):
+
+```sh
+git bundle create changes.bundle <already-applied-tip>..HEAD
+git bundle verify changes.bundle
+```
+
+**Consumer:**
+
+```sh
+git pull changes.bundle HEAD
+# or: git fetch changes.bundle HEAD:refs/heads/from-agent && git merge --ff-only from-agent
+```
+
+If `git pull` reports diverging branches, `git fetch` into a side branch and
+inspect with `git log --graph` before merge/rebase — do not force-push unless
+intentional.
+
+**Avoid accumulating a growing `.mbox` of the whole session.** Use
+`git format-patch` only when a text patch review is explicitly wanted.
