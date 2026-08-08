@@ -117,7 +117,7 @@ Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 
 | Behaviour | Status |
 |-----------|--------|
-| Filter show/hide + pin, Escape | **done** |
+| Filter show/hide + pin, Escape | **done** (Ctrl+K = show+focus; Escape restores view focus) |
 | Filter history | **done** |
 | Filter DSL + contains/date/length/time/weekday/fuzzy/media | **done** |
 | Content filters off GUI thread | **done** (`FilterWorker`) |
@@ -553,6 +553,10 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
 - [x] sort and group-by used to have buttons in the toolbar
 - [ ] the rendering of group-by looks like a hack, if there isn't an
       obviously better way, leave it like that
+      (headers painted into first cell via IsGroupStartRole/GroupLabelRole in
+       FileItemDelegate + GraphicsFileItem; bold + separator line polish;
+       true section model / variable-height graphics rows is a larger change —
+       accepted for now, see Explicit non-goals)
 - [x] history isn't persistent between restarts
 - [x] filenames still disappear and don't render properly
       (basename fallback when DisplayRole empty; caption height floor)
@@ -561,7 +565,9 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
 - [x] size show up as MiB, but should be base 1000 MB
       (SI KB/MB/GB in list + conflict dialog)
 - [x] use Ctrl-k for Filter
-      (Ctrl+K; Search uses Ctrl+F)
+      (Ctrl+K always shows + focuses filter edit via on_focus_filter; does not
+       toggle. View menu "Show Filter" remains checkable; WidgetShortcut on the
+       action so the global binding owns the key. Search uses Ctrl+F)
 - [x] move filter bar to the bottom
 - [x] change background color when filter bar is active, see dirtoo-py
       (view + filter row tint rgb(220,220,255))
@@ -638,7 +644,8 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
 - [x] pressing shift selects/unselects the current item
       (Shift+Space toggles cursor selection in Icons; Ctrl+Space unchanged)
 - [x] the type ahead quick search should be closable via the Escape key
-      (LeapWidget Escape clears + hides + returns focus to parent)
+      (LeapWidget Escape clears + hides + returns focus to parent; global Escape
+       in on_clear_filter also dismisses leap first and restores file-view focus)
 - [x] the fileview should have focus after startup
       (showEvent focuses current_view / graphics_view)
 - [x] directory tree panel hide/show should be persistent
@@ -649,8 +656,13 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
 - [ ] give better indication when IO is busy and doing something in the background
 - [ ] errors should print something to stdout/stderr, --verbose/--debug should be reserved for noisy messages
 - [ ] leap search triggers when trying to do keyword search sometimes
-- [ ] Ctrl-k shouldn't toggle the filter bar, but always activate it
-- [ ] type ahead search should disappear when it no longer has focus
+- [x] Ctrl-k shouldn't toggle the filter bar, but always activate it
+      (on_focus_filter; menu action stays checkable for View → Show Filter)
+- [x] type ahead search should disappear when it no longer has focus
+      (LeapWidget FocusOut hides + closed; closed restores file-view focus)
+- [x] Escape after hiding the filter bar should return focus to the file view
+      so leap/type-ahead can be activated again
+      (on_clear_filter restores focus on graphics_view_ / current_view())
 - [ ] slow IO (USB HDD that has to spin up) still locks up the GUI
 - [ ] clicking on folders in filter view might open the wrong folder
 - [ ] status for how many files have been thumbnailed and metadata

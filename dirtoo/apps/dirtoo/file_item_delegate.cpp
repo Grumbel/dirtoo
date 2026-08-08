@@ -188,6 +188,8 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
       header_rect.setHeight(header_h);
       painter->save();
       painter->fillRect(header_rect, option.palette.alternateBase());
+      painter->setPen(QPen(option.palette.color(QPalette::Mid), 1));
+      painter->drawLine(header_rect.bottomLeft(), header_rect.bottomRight());
       QFont bold = option.font;
       bold.setBold(true);
       painter->setFont(bold);
