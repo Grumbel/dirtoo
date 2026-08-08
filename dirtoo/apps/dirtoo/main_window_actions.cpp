@@ -23,21 +23,28 @@ namespace dirtoo::app {
 
 void MainWindow::on_item_activated(const QModelIndex& index)
 {
-  const fs::FileInfo* fi = model_->file_at(index.row());
-  if (fi == nullptr) {
+  // Copy FileInfo by value immediately. Async filter/sort can replace the
+  // visible list between the click and this slot; holding a pointer/row would
+  // open the wrong folder or file (especially under an active filter).
+  if (model_ == nullptr) {
     return;
   }
-  if (fi->is_directory()) {
+  const fs::FileInfo* fi_ptr = model_->file_at(index.row());
+  if (fi_ptr == nullptr) {
+    return;
+  }
+  const fs::FileInfo fi = *fi_ptr;
+  if (fi.is_directory()) {
     if (location_.is_archive()) {
-      open_location(location_.join(fi->basename()));
+      open_location(location_.join(fi.basename()));
     } else {
-      open_location(fi->location());
+      open_location(fi.location());
     }
   } else if (location_.is_archive()) {
     // Extract single member then open with the default application.
     const auto member = location_.entry_path().empty()
-                            ? std::filesystem::path{fi->basename()}
-                            : location_.entry_path() / fi->basename();
+                            ? std::filesystem::path{fi.basename()}
+                            : location_.entry_path() / fi.basename();
     const auto cache = std::filesystem::temp_directory_path() / "dirtoo-open" /
                        std::to_string(std::hash<std::string>{}(location_.as_path().string()));
     auto extracted = archive::extract_member(location_.as_path(), member, cache);
@@ -51,10 +58,10 @@ void MainWindow::on_item_activated(const QModelIndex& index)
     } else {
       open_default(*extracted);
     }
-  } else if (fs::looks_like_archive(fi->path())) {
-    open_location(fs::Location::from_archive(fi->path(), {}));
+  } else if (fs::looks_like_archive(fi.path())) {
+    open_location(fs::Location::from_archive(fi.path(), {}));
   } else {
-    open_default(fi->path());
+    open_default(fi.path());
   }
 }
 

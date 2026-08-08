@@ -92,6 +92,12 @@ void MainWindow::on_filter_changed(const QString& text)
       message_area_->show_info(QStringLiteral("Filter parse issue — using substring fallback"));
     }
   }
+  // Directory still loading: filter is stored and will re-apply in on_directory_loaded.
+  if (!text.isEmpty() && collection_.items().empty()) {
+    set_status(QStringLiteral("Filter ready — waiting for directory listing…"));
+  } else if (!text.isEmpty()) {
+    set_status(QStringLiteral("%1 items").arg(collection_.visible_items().size()));
+  }
 }
 
 void MainWindow::request_async_filter(bool keep_previous_visible)
@@ -103,16 +109,23 @@ void MainWindow::request_async_filter(bool keep_previous_visible)
     return;
   }
   const quint64 gen = list_workers_.next_filter_generation();
-  set_status(QStringLiteral("Filtering…"));
   auto items = collection_.items();
   const QString expr = filter_edit_ != nullptr ? filter_edit_->text() : QString();
   const bool show_hidden = collection_.show_hidden();
   const auto group_mode = collection_.group_mode();
-  // Avoid GUI-thread content I/O. For interactive filter changes, clear visible
-  // until the worker finishes; for soft watcher reloads keep the previous list.
+  // Always keep the previous visible list while the worker runs so the UI does
+  // not stall empty (progressive: show current data, refine when ready).
+  // keep_previous_visible is retained for callers that still want an explicit
+  // clear (none currently do for interactive typing).
   if (!keep_previous_visible) {
     collection_.replace_visible({}, true);
     refresh_list();
+  }
+  const int still_showing = static_cast<int>(collection_.visible_items().size());
+  if (still_showing > 0) {
+    set_status(QStringLiteral("Filtering… (%1 still shown)").arg(still_showing));
+  } else {
+    set_status(QStringLiteral("Filtering…"));
   }
   QMetaObject::invokeMethod(
       list_workers_.filter(), "filter_items", Qt::QueuedConnection,

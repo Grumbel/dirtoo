@@ -669,12 +669,16 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
       so leap/type-ahead can be activated again
       (on_clear_filter restores focus on graphics_view_ / current_view())
 - [ ] slow IO (USB HDD that has to spin up) still locks up the GUI
-- [ ] clicking on folders in filter view might open the wrong folder
+- [x] clicking on folders in filter view might open the wrong folder
+      (on_item_activated copies FileInfo by value before navigate; avoids race
+       when async filter/sort replaces visible between click and slot)
 - [ ] status for how many files have been thumbnailed and metadata
       identified and how many are still to go
-- [ ] filter should give results for the data currently available and
+- [x] filter should give results for the data currently available and
       update when new comes in, it currently just stalls when the
       directory hasn't been fully processed
+      (async filter keeps previous visible by default; status shows count still
+       shown; name filter applied immediately; re-applied on directory_loaded)
 - [x] add a spinning busy icon when the browser is doing something,
       tooltip should show what it is doing
       (status-bar busy_label_ shows badge-loading.png while activity detected;
