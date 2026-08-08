@@ -266,6 +266,20 @@ Repository: https://github.com/Grumbel/dirtoo.git
 - Always update **`TODO.md`** and **`AGENTS.md`** when closing/opening items
   or changing user-visible behavior (see Documentation above).
 
+### History is append-only (agents)
+
+- **Never rewrite, reset, rebase, or re-root history** against `origin/master`
+  or an earlier tip unless the human **explicitly** asks for a rollback of a
+  failed change (e.g. “drop the last commit”, “revert this series”).
+- **Never** `git reset --hard` to `origin`, re-clone over a lost tip and
+  “rebuild” prior commits with new SHAs, or ship a bundle whose parent is an
+  older commit when the consumer already applied a newer tip.
+- If the agent workspace lost local objects, **recover the consumer tip first**
+  (`git fetch` / `git pull` the remote or the last applied bundle) and continue
+  from that tip. Do not invent a parallel history from an older base.
+- Fix mistakes with **new commits** (or `git revert`) on top of the current tip,
+  not by replacing earlier commits.
+
 ### Commit author and AI attribution
 
 - **Author** (who owns the commit for `git blame`, GitHub, and bug reports):
@@ -297,12 +311,22 @@ Agent handoffs use **`git bundle` only** — not `git format-patch`, `.mbox`, or
 `git am`. Bundles carry real commits (`fetch` / `pull`) and chain cleanly when
 each bundle is based on the consumer’s current tip.
 
+**Bundles must stack.** Each handoff bundle’s required parent is the tip the
+consumer already has (last applied bundle or `origin/master` after they push).
+Successive bundles form one linear history: `… → tip₀ → bundle₁ → tip₁ →
+bundle₂ → tip₂ → …`. Do not produce a bundle that re-applies older work from
+under an already-applied tip unless the human explicitly requested a rollback.
+
 **Producer** (commits not yet on the consumer’s tip; base = last applied tip):
 
 ```sh
+# already-applied-tip = consumer HEAD (e.g. last bundle tip or origin/master)
 git bundle create changes.bundle <already-applied-tip>..HEAD
 git bundle verify changes.bundle
 ```
+
+State the required parent SHA in the handoff note so the consumer can confirm
+before pulling.
 
 **Consumer:**
 
