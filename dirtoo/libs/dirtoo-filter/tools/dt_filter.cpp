@@ -11,6 +11,10 @@
 #include <string_view>
 #include <vector>
 
+#ifndef DIRTOO_VERSION
+#  define DIRTOO_VERSION "0.0.0-unknown"
+#endif
+
 namespace fs = std::filesystem;
 
 namespace {
@@ -65,6 +69,10 @@ int main(int argc, char** argv)
 
   for (int i = 1; i < argc; ++i) {
     const std::string_view a{argv[i]};
+    if (a == "-V" || a == "--version") {
+      std::cout << "dirtoo " DIRTOO_VERSION "\n";
+      return 0;
+    }
     if (a == "-h" || a == "--help") {
       usage(argv[0]);
       return 0;
