@@ -413,6 +413,10 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
     return !name.empty() && name.front() == '.';
   }
 
+  if (role == IsSymlinkRole) {
+    return fi->is_symlink();
+  }
+
   // Dim hidden (dotfile) captions / row background when "Show Hidden" is on.
   if (role == Qt::ForegroundRole) {
     const std::string name = fi->basename();

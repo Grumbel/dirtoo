@@ -3,6 +3,10 @@
 
 #include "file_list_model.hpp"
 
+#include <QIcon>
+#include <QPainter>
+#include <QPen>
+#include <algorithm>
 #include <QFileIconProvider>
 #include <QFileInfo>
 #include <QMetaObject>
@@ -204,13 +208,45 @@ QIcon FileListModel::icon_for(const fs::FileInfo& fi) const
   const QString path = QString::fromStdString(fi.path().string());
   const auto it = thumbnails_.constFind(path);
   if (it != thumbnails_.constEnd()) {
+    // Thumbnail path: symlink emblem is painted by paint_tile_status_overlays.
     return it.value();
   }
+  QIcon base;
   if (fi.is_synthetic()) {
-    return icon_provider().icon(fi.is_directory() ? QFileIconProvider::Folder
+    base = icon_provider().icon(fi.is_directory() ? QFileIconProvider::Folder
                                                   : QFileIconProvider::File);
+  } else {
+    base = icon_provider().icon(QFileInfo(path));
   }
-  return icon_provider().icon(QFileInfo(path));
+  if (!fi.is_symlink() || base.isNull()) {
+    return base;
+  }
+  // Detail/List modes only see DecorationRole — bake a small symlink badge
+  // into the icon so links are recognizable without Graphics overlays.
+  QIcon badged;
+  for (const QSize& sz : {QSize(16, 16), QSize(32, 32), QSize(48, 48), QSize(64, 64)}) {
+    QPixmap pm = base.pixmap(sz);
+    if (pm.isNull()) {
+      continue;
+    }
+    QPainter painter(&pm);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    const int e = std::max(8, sz.width() / 3);
+    QRect r(1, sz.height() - e - 1, e, e);
+    static const QIcon theme = QIcon::fromTheme(QStringLiteral("emblem-symbolic-link"));
+    if (!theme.isNull()) {
+      theme.paint(&painter, r, Qt::AlignCenter);
+    } else {
+      painter.setPen(Qt::NoPen);
+      painter.setBrush(QColor(255, 255, 255, 220));
+      painter.drawEllipse(r);
+      painter.setPen(QPen(QColor(30, 90, 200), 1.5));
+      painter.drawArc(r.adjusted(2, 2, -2, -2), 40 * 16, 200 * 16);
+    }
+    painter.end();
+    badged.addPixmap(pm);
+  }
+  return badged.isNull() ? base : badged;
 }
 
 

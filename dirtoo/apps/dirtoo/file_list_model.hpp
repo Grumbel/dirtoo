@@ -44,6 +44,7 @@ enum FileListRole {
   ChildCountRole = Qt::UserRole + 7,
   /// True when the basename is a Unix-style hidden name (leading '.').
   IsHiddenRole = Qt::UserRole + 8,
+  IsSymlinkRole = Qt::UserRole + 9,
 };
 
 enum class ThumbnailStatus {

@@ -34,6 +34,43 @@ void MainWindow::on_item_activated(const QModelIndex& index)
     return;
   }
   const fs::FileInfo fi = *fi_ptr;
+
+  // Symlinks: FileInfo uses symlink_status, so a link to a directory is not
+  // is_directory(). Resolve the target (follow) and navigate or open it.
+  if (fi.is_symlink() && !location_.is_archive()) {
+    std::error_code ec;
+    const auto target_status = std::filesystem::status(fi.path(), ec);
+    if (ec) {
+      const QString msg =
+          QStringLiteral("Broken symlink: %1 (%2)")
+              .arg(QString::fromStdString(fi.basename()),
+                   QString::fromStdString(ec.message()));
+      set_status(msg);
+      if (message_area_ != nullptr) {
+        message_area_->show_error(msg);
+      }
+      return;
+    }
+    if (std::filesystem::is_directory(target_status)) {
+      // Prefer the path through the symlink so the location bar shows the link path.
+      open_location(fs::Location::from_path(fi.path()));
+      return;
+    }
+    if (fs::looks_like_archive(fi.path())) {
+      open_location(fs::Location::from_archive(fi.path(), {}));
+      return;
+    }
+    if (!open_default(fi.path())) {
+      const QString msg = QStringLiteral("Could not open %1")
+                              .arg(QString::fromStdString(fi.basename()));
+      set_status(msg);
+      if (message_area_ != nullptr) {
+        message_area_->show_error(msg);
+      }
+    }
+    return;
+  }
+
   if (fi.is_directory()) {
     if (location_.is_archive()) {
       open_location(location_.join(fi.basename()));
@@ -61,7 +98,14 @@ void MainWindow::on_item_activated(const QModelIndex& index)
   } else if (fs::looks_like_archive(fi.path())) {
     open_location(fs::Location::from_archive(fi.path(), {}));
   } else {
-    open_default(fi.path());
+    if (!open_default(fi.path())) {
+      const QString msg = QStringLiteral("Could not open %1")
+                              .arg(QString::fromStdString(fi.basename()));
+      set_status(msg);
+      if (message_area_ != nullptr) {
+        message_area_->show_error(msg);
+      }
+    }
   }
 }
 

@@ -8,8 +8,11 @@
 
 #include <QFileIconProvider>
 #include <QFont>
+#include <QIcon>
 #include <QFontMetrics>
 #include <QPainter>
+#include <QPen>
+#include <QPolygonF>
 #include <QPixmap>
 
 namespace dirtoo::app {
@@ -87,7 +90,42 @@ inline void paint_status_pixmap(QPainter* painter, const QRect& thumb, const QPi
   painter->restore();
 }
 
-/// New / loading / error stickers from model roles.
+/// Symlink emblem (bottom-left): theme emblem-symbolic-link or drawn arrow.
+inline void paint_symlink_emblem(QPainter* painter, const QRect& thumb)
+{
+  if (painter == nullptr || thumb.isEmpty()) {
+    return;
+  }
+  const int size = std::max(12, std::min(22, thumb.width() / 3));
+  QRect r(0, 0, size, size);
+  r.moveLeft(thumb.left() + 2);
+  r.moveBottom(thumb.bottom() - 2);
+
+  static const QIcon theme_icon = QIcon::fromTheme(QStringLiteral("emblem-symbolic-link"));
+  if (!theme_icon.isNull()) {
+    theme_icon.paint(painter, r, Qt::AlignCenter);
+    return;
+  }
+  // Fallback: white disc + blue curved arrow hint.
+  painter->save();
+  painter->setRenderHint(QPainter::Antialiasing, true);
+  painter->setPen(Qt::NoPen);
+  painter->setBrush(QColor(255, 255, 255, 210));
+  painter->drawEllipse(r);
+  painter->setPen(QPen(QColor(30, 90, 200), std::max(1.5, size / 10.0)));
+  painter->setBrush(Qt::NoBrush);
+  const QRectF arc = r.adjusted(size * 0.2, size * 0.15, -size * 0.15, -size * 0.2);
+  painter->drawArc(arc, 40 * 16, 200 * 16);
+  const QPointF tip(r.right() - size * 0.22, r.center().y() - size * 0.05);
+  painter->setBrush(QColor(30, 90, 200));
+  QPolygonF head;
+  head << tip << QPointF(tip.x() - size * 0.28, tip.y() - size * 0.18)
+       << QPointF(tip.x() - size * 0.28, tip.y() + size * 0.18);
+  painter->drawPolygon(head);
+  painter->restore();
+}
+
+/// New / loading / error / symlink stickers from model roles.
 inline void paint_tile_status_overlays(QPainter* painter, const QRect& thumb,
                                        const QModelIndex& index)
 {
@@ -97,6 +135,9 @@ inline void paint_tile_status_overlays(QPainter* painter, const QRect& thumb,
   if (index.data(IsNewRole).toBool()) {
     static const QPixmap k_new(load_badge_pixmap(QStringLiteral("badge-new.png")));
     paint_status_pixmap(painter, thumb, k_new, Qt::AlignLeft | Qt::AlignTop, 0.9);
+  }
+  if (index.data(IsSymlinkRole).toBool()) {
+    paint_symlink_emblem(painter, thumb);
   }
   const auto status = static_cast<ThumbnailStatus>(index.data(ThumbnailStatusRole).toInt());
   if (status == ThumbnailStatus::Pending) {
