@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "graphics_file_view.hpp"
+#include "group_header_paint.hpp"
 #include "badge_icons.hpp"
 
 #include "file_list_model.hpp"
@@ -172,17 +173,25 @@ void GraphicsFileView::compute_layout_slots()
   int col = 0;
   int grid_row = 0;
   int max_row = 0;
+  int band_accum = 0;
+  const int band_h = group_header_height(QFontMetrics(font()));
   for (int i = 0; i < rows; ++i) {
+    bool group_start = false;
     if (model_ != nullptr) {
       const QModelIndex idx = model_->index(i, 0);
-      if (idx.data(IsGroupStartRole).toBool() && i > 0 && col != 0) {
+      group_start = idx.data(IsGroupStartRole).toBool()
+                    && !idx.data(GroupLabelRole).toString().isEmpty();
+      if (group_start && i > 0 && col != 0) {
         col = 0;
         ++grid_row;
       }
     }
+    if (group_start) {
+      band_accum += band_h + 2;
+    }
     slot_pos_[static_cast<std::size_t>(i)] =
         QPointF(center_x_off + padding_ + col * cell_w,
-                padding_ + grid_row * cell_h);
+                padding_ + grid_row * cell_h + band_accum);
     max_row = std::max(max_row, grid_row);
     ++col;
     if (col >= cols) {
@@ -191,7 +200,36 @@ void GraphicsFileView::compute_layout_slots()
     }
   }
   layout_max_row_ = max_row;
-  scene_->setSceneRect(0, 0, vp_w, padding_ * 2 + (max_row + 1) * cell_h);
+  scene_->setSceneRect(0, 0, vp_w,
+                       padding_ * 2 + (max_row + 1) * cell_h + band_accum);
+}
+
+void GraphicsFileView::drawForeground(QPainter* painter, const QRectF& rect)
+{
+  QGraphicsView::drawForeground(painter, rect);
+  if (model_ == nullptr || painter == nullptr || slot_pos_.empty()) {
+    return;
+  }
+  const int band_h = group_header_height(QFontMetrics(font()));
+  const int vp_w = viewport()->width();
+  const QPointF top_left = mapToScene(0, 0);
+  const qreal left = top_left.x();
+  for (int i = 0; i < static_cast<int>(slot_pos_.size()); ++i) {
+    const QModelIndex idx = model_->index(i, 0);
+    if (!idx.data(IsGroupStartRole).toBool()) {
+      continue;
+    }
+    const QString label = idx.data(GroupLabelRole).toString();
+    if (label.isEmpty()) {
+      continue;
+    }
+    const qreal item_y = slot_pos_[static_cast<std::size_t>(i)].y();
+    const QRectF header_scene(left, item_y - band_h, vp_w, band_h);
+    if (!header_scene.intersects(rect)) {
+      continue;
+    }
+    paint_group_header(painter, header_scene.toRect(), label, palette(), font());
+  }
 }
 
 void GraphicsFileView::update_visible_window()

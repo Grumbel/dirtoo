@@ -80,6 +80,7 @@ protected:
   void changeEvent(QEvent* event) override;
   void keyPressEvent(QKeyEvent* event) override;
   void focusInEvent(QFocusEvent* event) override;
+  void drawForeground(QPainter* painter, const QRectF& rect) override;
 
 private slots:
   void on_model_reset();

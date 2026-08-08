@@ -144,26 +144,8 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
     painter->drawRect(br.adjusted(0.5, 0.5, -0.5, -0.5));
   }
 
-  // Group section header above the first item of a group (matches FileItemDelegate).
-  int top_pad = 4;
-  if (idx.data(IsGroupStartRole).toBool()) {
-    const QString label = idx.data(GroupLabelRole).toString();
-    if (!label.isEmpty()) {
-      QFont header_font = painter->font();
-      header_font.setBold(true);
-      const QFontMetrics fm(header_font);
-      const int header_h = fm.height() + 8;
-      QRect header_rect = br.toRect();
-      header_rect.setHeight(header_h);
-      painter->fillRect(header_rect, pal.color(QPalette::AlternateBase));
-      painter->setPen(QPen(pal.color(QPalette::Mid), 1));
-      painter->drawLine(header_rect.bottomLeft(), header_rect.bottomRight());
-      painter->setFont(header_font);
-      painter->setPen(pal.color(QPalette::WindowText));
-      painter->drawText(header_rect.adjusted(6, 0, -4, 0), Qt::AlignVCenter | Qt::AlignLeft, label);
-      top_pad = header_h + 4;
-    }
-  }
+  // Group headers: full-width band in GraphicsFileView::drawForeground.
+  const int top_pad = 4;
 
   const QIcon icon = idx.data(Qt::DecorationRole).value<QIcon>();
   QString text = idx.data(Qt::DisplayRole).toString();

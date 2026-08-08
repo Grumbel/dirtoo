@@ -551,12 +551,9 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
 - [x] Rename dialog doesn't open up
       (same selection fix as Properties)
 - [x] sort and group-by used to have buttons in the toolbar
-- [ ] the rendering of group-by looks like a hack, if there isn't an
+- [x] the rendering of group-by looks like a hack, if there isn't an
       obviously better way, leave it like that
-      (headers painted into first cell via IsGroupStartRole/GroupLabelRole in
-       FileItemDelegate + GraphicsFileItem; bold + separator line polish;
-       true section model / variable-height graphics rows is a larger change —
-       accepted for now, see Explicit non-goals)
+      (shared paint_group_header + Graphics full-width drawForeground bands)
 - [x] history isn't persistent between restarts
 - [x] filenames still disappear and don't render properly
       (basename fallback when DisplayRole empty; caption height floor)

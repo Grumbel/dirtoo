@@ -3,6 +3,7 @@
 
 #include "file_item_delegate.hpp"
 #include "icon_tile_paint.hpp"
+#include "group_header_paint.hpp"
 #include "badge_icons.hpp"
 
 #include "file_list_model.hpp"
@@ -145,7 +146,7 @@ QSize FileItemDelegate::sizeHint(const QStyleOptionViewItem& option, const QMode
     int h = std::max(icon, text_h) + 6;
     if (index.isValid() && index.data(IsGroupStartRole).toBool()
         && !index.data(GroupLabelRole).toString().isEmpty()) {
-      h += option.fontMetrics.height() + 8;
+      h += group_header_height(option.fontMetrics);
     }
     if (index.isValid()) {
       const qint64 gap = index.data(TimeGapSecondsRole).toLongLong();
@@ -161,7 +162,7 @@ QSize FileItemDelegate::sizeHint(const QStyleOptionViewItem& option, const QMode
   if (index.isValid() && index.data(IsGroupStartRole).toBool()) {
     const QString label = index.data(GroupLabelRole).toString();
     if (!label.isEmpty()) {
-      sz.setHeight(sz.height() + option.fontMetrics.height() + 8);
+      sz.setHeight(sz.height() + group_header_height(option.fontMetrics));
     }
   }
   if (index.isValid()) {
@@ -183,19 +184,10 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
   if (index.isValid() && index.data(IsGroupStartRole).toBool()) {
     const QString label = index.data(GroupLabelRole).toString();
     if (!label.isEmpty()) {
-      const int header_h = option.fontMetrics.height() + 8;
+      const int header_h = group_header_height(option.fontMetrics);
       QRect header_rect = opt.rect;
       header_rect.setHeight(header_h);
-      painter->save();
-      painter->fillRect(header_rect, option.palette.alternateBase());
-      painter->setPen(QPen(option.palette.color(QPalette::Mid), 1));
-      painter->drawLine(header_rect.bottomLeft(), header_rect.bottomRight());
-      QFont bold = option.font;
-      bold.setBold(true);
-      painter->setFont(bold);
-      painter->setPen(option.palette.color(QPalette::Text));
-      painter->drawText(header_rect.adjusted(8, 0, -4, 0), Qt::AlignVCenter | Qt::AlignLeft, label);
-      painter->restore();
+      paint_group_header(painter, header_rect, label, option.palette, option.font);
       opt.rect.setTop(opt.rect.top() + header_h);
     }
   }
