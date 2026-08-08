@@ -308,6 +308,9 @@ private:
     if (c == "height" || c == "h") {
       return make_height(arg);
     }
+    if (c == "aspect" || c == "ar" || c == "ratio") {
+      return make_aspect(arg);
+    }
     if (c == "duration" || c == "dur") {
       return make_duration(arg);
     }
@@ -387,6 +390,7 @@ Terms (juxtaposition = AND, OR joins alternatives):
   type:dir        type:file|dir|video|image|archive|audio (t:)
   width:>=1920    image/video width (needs ffprobe)
   height:=1080    image/video height
+  aspect:16:9     width/height ratio (also ar:, ratio:; >1.5, =4:3)
   duration:>1m    media duration (seconds; 1h2m / 1:30)
   framerate:>30   video frame rate (fps)
   fuzzy:speling   n-gram fuzzy basename (threshold 0.5); fuzzy:x@0.6
@@ -473,6 +477,9 @@ std::string filter_help_html()
     <td>Image/video width (needs ffprobe)</td></tr>
 <tr><td><code>height:=1080</code> / <code>h:</code></td>
     <td>Image/video height</td></tr>
+<tr><td><code>aspect:16:9</code> / <code>ar:</code> / <code>ratio:</code></td>
+<td>width÷height (e.g. <code>&gt;1.5</code>, <code>=4:3</code>)</td>
+</tr>
 <tr><td><code>duration:&gt;1m</code> / <code>dur:</code></td>
     <td>Media duration (seconds, or <code>1h2m</code> / <code>1:30</code>)</td></tr>
 <tr><td><code>framerate:&gt;30</code> / <code>fps:</code></td>

@@ -26,6 +26,7 @@
 #include <QStackedWidget>
 #include <QStatusBar>
 #include <QToolBar>
+#include <QSizePolicy>
 #include <QVBoxLayout>
 #include <QKeySequence>
 #include <QPushButton>
@@ -76,12 +77,6 @@ void MainWindow::setup_toolbar()
   show_sidebar_act_->setShortcut(QKeySequence(Qt::Key_F9));
   connect(show_sidebar_act_, &QAction::toggled, this, &MainWindow::on_toggle_sidebar);
 
-  read_only_act_ = toolbar->addAction(theme_icon("object-locked", "changes-prevent"),
-                                      QStringLiteral("Read-only"));
-  read_only_act_->setCheckable(true);
-  read_only_act_->setToolTip(QStringLiteral("Block all filesystem modifications"));
-  read_only_act_->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+R")));
-  connect(read_only_act_, &QAction::toggled, this, &MainWindow::on_toggle_read_only);
   toolbar->addSeparator();
 
   // Sort / Group popup buttons — show current choice like a combo box.
@@ -244,6 +239,19 @@ void MainWindow::setup_toolbar()
   });
   crop_thumbnails_act_ = act;
   }
+
+  // Push read-only to the far right of the toolbar (user-testing request).
+  {
+    auto* spacer = new QWidget(toolbar);
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    toolbar->addWidget(spacer);
+  }
+  read_only_act_ = toolbar->addAction(theme_icon("object-locked", "changes-prevent"),
+                                      QStringLiteral("Read-only"));
+  read_only_act_->setCheckable(true);
+  read_only_act_->setToolTip(QStringLiteral("Block all filesystem modifications"));
+  read_only_act_->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+R")));
+  connect(read_only_act_, &QAction::toggled, this, &MainWindow::on_toggle_read_only);
 
 }
 

@@ -91,10 +91,20 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event)
         return true;
       }
     }
-    // Type-ahead: printable text without Ctrl/Alt/Meta opens the leap overlay.
+    // Type-ahead: printable text without Ctrl/Alt/Meta.
+    // If the filter bar is visible, route keys there (keyword search) instead of
+    // opening leap — avoids leap stealing keystrokes intended for the filter.
     if (!(ke->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))
         && !ke->text().isEmpty() && ke->text().at(0).isPrint()
         && !ke->text().at(0).isSpace()) {
+      const bool filter_visible =
+          (filter_row_ != nullptr && filter_row_->isVisible())
+          || (filter_edit_ != nullptr && filter_edit_->isVisible());
+      if (filter_visible && filter_edit_ != nullptr) {
+        filter_edit_->setFocus(Qt::ShortcutFocusReason);
+        filter_edit_->insert(ke->text());
+        return true;
+      }
       if (leap_widget_ != nullptr) {
         leap_widget_->show_with_text(ke->text());
       }

@@ -19,6 +19,7 @@ namespace dirtoo::filter {
 [[nodiscard]] MatchFuncPtr make_size(std::string argument); // e.g. >1M, <=100k, 10K-2M
 [[nodiscard]] MatchFuncPtr make_width(std::string argument);  // e.g. >=1920, =640
 [[nodiscard]] MatchFuncPtr make_height(std::string argument);
+[[nodiscard]] MatchFuncPtr make_aspect(std::string argument); // e.g. 16:9, >1.5, =4:3
 [[nodiscard]] MatchFuncPtr make_duration(std::string argument); // seconds; >1m, 1:30
 [[nodiscard]] MatchFuncPtr make_framerate(std::string argument);
 /// N-gram fuzzy basename match (threshold default 0.5, n=3). Arg: needle or needle@0.6

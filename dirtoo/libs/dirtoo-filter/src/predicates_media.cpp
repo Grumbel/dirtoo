@@ -7,6 +7,7 @@
 #include "predicates_detail.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <chrono>
 #include <ctime>
@@ -126,6 +127,38 @@ private:
   double value_;
 };
 
+class AspectMatch : public MatchFunc {
+public:
+  AspectMatch(Cmp op, double ratio)
+      : op_(op)
+      , ratio_(ratio)
+  {
+  }
+  bool matches(const FilterItem& item) const override
+  {
+    if (item.is_directory || item.path.empty()) {
+      return false;
+    }
+    const auto meta = detail::lookup_media(item.path);
+    if (!meta || !meta->width || !meta->height || *meta->height == 0) {
+      return false;
+    }
+    const double ar = static_cast<double>(*meta->width) / static_cast<double>(*meta->height);
+    if (op_ == Cmp::Eq) {
+      // Tolerate small probe rounding (e.g. 16:9 ≈ 1.777…).
+      return std::abs(ar - ratio_) < 0.02;
+    }
+    if (op_ == Cmp::Ne) {
+      return std::abs(ar - ratio_) >= 0.02;
+    }
+    return apply_cmp(op_, ar, ratio_);
+  }
+
+private:
+  Cmp op_;
+  double ratio_;
+};
+
 class DurationMatch : public MatchFunc {
 public:
   DurationMatch(Cmp op, double seconds)
@@ -212,6 +245,43 @@ MatchFuncPtr make_height(std::string argument)
     return std::make_shared<AlwaysFalse>();
   }
   return std::make_shared<HeightMatch>(op, *val);
+}
+
+namespace {
+
+std::optional<double> parse_aspect_value(std::string_view rest)
+{
+  while (!rest.empty() && std::isspace(static_cast<unsigned char>(rest.front()))) {
+    rest.remove_prefix(1);
+  }
+  while (!rest.empty() && std::isspace(static_cast<unsigned char>(rest.back()))) {
+    rest.remove_suffix(1);
+  }
+  if (rest.empty()) {
+    return std::nullopt;
+  }
+  const auto colon = rest.find(':');
+  if (colon != std::string_view::npos) {
+    const auto left = parse_number_arg(rest.substr(0, colon));
+    const auto right = parse_number_arg(rest.substr(colon + 1));
+    if (!left || !right || *right == 0.0) {
+      return std::nullopt;
+    }
+    return *left / *right;
+  }
+  return parse_number_arg(rest);
+}
+
+} // namespace
+
+MatchFuncPtr make_aspect(std::string argument)
+{
+  const auto [op, rest] = split_cmp(argument);
+  const auto val = parse_aspect_value(rest);
+  if (!val) {
+    return std::make_shared<AlwaysFalse>();
+  }
+  return std::make_shared<AspectMatch>(op, *val);
 }
 
 MatchFuncPtr make_duration(std::string argument)

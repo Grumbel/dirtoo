@@ -651,11 +651,13 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
 - [x] directory tree panel hide/show should be persistent
       (restore_settings applies ui/show_sidebar + ui/sidebar_width; persist
        skips width=0 while hidden so the last real width is kept)
-- [ ] move "block all filesystem modifications" button to the very
+- [x] move "block all filesystem modifications" button to the very
       right edge of the toolbar
+      (expanding spacer + read_only_act_ at end of main toolbar)
 - [ ] give better indication when IO is busy and doing something in the background
 - [ ] errors should print something to stdout/stderr, --verbose/--debug should be reserved for noisy messages
-- [ ] leap search triggers when trying to do keyword search sometimes
+- [x] leap search triggers when trying to do keyword search sometimes
+      (when filter bar is visible, type-ahead inserts into filter_edit_ instead of leap)
 - [x] Ctrl-k shouldn't toggle the filter bar, but always activate it
       (on_focus_filter; menu action stays checkable for View → Show Filter)
 - [x] type ahead search should disappear when it no longer has focus
@@ -672,8 +674,10 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
       directory hasn't been fully processed
 - [ ] add a spinning busy icon when the browser is doing something,
       tooltip should show what it is doing
-- [ ] filter should have a history showing past filters
-- [ ] aspect ration is missing from filter
+- [x] filter should have a history showing past filters
+      (FilterHistory + Up/Down in filter_edit_; Enter pushes)
+- [x] aspect ration is missing from filter
+      (aspect:/ar:/ratio: — 16:9, >1.5, =4:3; uses media width/height)
 - [ ] selection on drag&drop can end up with unrelated additional files
 
 09:50:13.652 [warning] QGraphicsView::dragLeaveEvent: drag leave received before drag enter
