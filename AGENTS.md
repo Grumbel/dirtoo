@@ -291,14 +291,13 @@ Repository: https://github.com/Grumbel/dirtoo.git
 - Do not put `grok@x.ai` (or similar) in the author/committer email field so
   automated mail and bug tooling stay aimed at a real person.
 
-### Handoff: prefer git bundle
+### Handoff: git bundle only
 
-Prefer **`git bundle`** over mbox. Bundles carry real commits (`fetch` /
-`pull`) instead of re-applying text patches, which avoids repeated `git am`
-conflicts when bases drift.
+Agent handoffs use **`git bundle` only** — not `git format-patch`, `.mbox`, or
+`git am`. Bundles carry real commits (`fetch` / `pull`) and chain cleanly when
+each bundle is based on the consumer’s current tip.
 
-**Producer** (only commits not yet on the consumer’s tip; each handoff should
-chain off the previous tip so pulls apply in succession):
+**Producer** (commits not yet on the consumer’s tip; base = last applied tip):
 
 ```sh
 git bundle create changes.bundle <already-applied-tip>..HEAD
@@ -309,12 +308,13 @@ git bundle verify changes.bundle
 
 ```sh
 git pull changes.bundle HEAD
-# or: git fetch changes.bundle HEAD:refs/heads/from-agent && git merge --ff-only from-agent
+# or:
+git fetch changes.bundle HEAD:refs/heads/from-agent
+git merge --ff-only from-agent
 ```
 
-If `git pull` reports diverging branches, `git fetch` into a side branch and
-inspect with `git log --graph` before merge/rebase — do not force-push unless
-intentional.
+If `git pull` reports diverging branches, fetch into a side branch and inspect
+with `git log --graph` before merge/rebase. Do not force-push unless intentional.
 
-**Avoid accumulating a growing `.mbox` of the whole session.** Use
-`git format-patch` only when a text patch review is explicitly wanted.
+Never accumulate a growing patch series or re-send commits the consumer already
+has.
