@@ -176,6 +176,29 @@ fix defects, or close/open work items:
 
 ---
 
+
+### Flake packages (incremental)
+
+Each library is a **separate flake output** with a **scoped source fileset**
+(`lib.fileset`): changing `apps/dirtoo` does not rebuild `dirops` / `dirtoo-fs` /
+…, and changing one lib only rebuilds that derivation plus dependents.
+
+| Output | Path |
+|--------|------|
+| `.#dirops` | `libs/dirops` (+ `tools/` CLIs) |
+| `.#dirtoo-fs` | `libs/dirtoo-fs` |
+| `.#dirtoo-filter` | `libs/dirtoo-filter` |
+| `.#dirtoo-collection` | `libs/dirtoo-collection` |
+| `.#dirtoo-watcher` | `libs/dirtoo-watcher` |
+| `.#dirtoo-thumbnail` | `libs/dirtoo-thumbnail` |
+| `.#dirtoo-archive` | `libs/dirtoo-archive` |
+| `.#dirtoo` | GUI (`apps/`, `tools/`, `tests/`, `resources/`) |
+| `.#all-libs` | symlinkJoin of libraries |
+| `.#dirtoo-tools` | CLI aggregate |
+
+Local non-Nix builds still use the monorepo top-level `CMakeLists.txt` with
+`find_package` on preinstalled or prefix-built libs.
+
 ## Dependencies & Nix flake (no optional fallbacks)
 
 Build and run via the **Nix flake** (`dirtoo/flake.nix`). Flake inputs pin
