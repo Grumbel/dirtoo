@@ -19,7 +19,7 @@ namespace {
 /// Collapse intermediate path segments when the path is long.
 /// Example: /usr/local/bin/tool -> /u…/l…/b…/tool (basename always full).
 /// Leaves the path unchanged when it already fits max_chars.
-QString elide_path_for_title(QString path, int max_chars = 64)
+QString elide_path_for_title(QString path, int max_chars = 96)
 {
   path.replace(QLatin1Char('\\'), QLatin1Char('/'));
   if (path.size() <= max_chars || max_chars < 8) {
@@ -168,11 +168,15 @@ void MainWindow::update_mutation_actions()
 void MainWindow::update_window_title()
 {
   const QString path = location_display_path(location_);
-  const QString shown = path.isEmpty() ? QString() : elide_path_for_title(path);
+  // Title bar has room for a longer path; taskbar/icon labels often ~20 chars.
+  const QString title_path =
+      path.isEmpty() ? QString() : elide_path_for_title(path, /*max_chars=*/96);
+  const QString icon_path =
+      path.isEmpty() ? QString() : elide_path_for_title(path, /*max_chars=*/20);
+
   QString title;
-  if (!shown.isEmpty()) {
-    title = shown;
-    title += QStringLiteral(" — dirtoo");
+  if (!title_path.isEmpty()) {
+    title = title_path + QStringLiteral(" — dirtoo");
   } else {
     title = QStringLiteral("dirtoo");
   }
@@ -180,6 +184,19 @@ void MainWindow::update_window_title()
     title += QStringLiteral(" [read-only]");
   }
   setWindowTitle(title);
+
+  // Separate minimized/taskbar name where the WM supports WM_ICON_NAME.
+  // Keep path-first; drop the " — dirtoo" suffix so the ~20 char budget is path.
+  QString icon;
+  if (!icon_path.isEmpty()) {
+    icon = icon_path;
+    if (read_only_) {
+      icon += QStringLiteral(" [ro]");
+    }
+  } else {
+    icon = read_only_ ? QStringLiteral("dirtoo [ro]") : QStringLiteral("dirtoo");
+  }
+  setWindowIconText(icon);
 }
 
 void MainWindow::on_toggle_read_only(bool checked)
