@@ -160,7 +160,6 @@ private slots:
   void on_search_finished(quint64 matched, quint64 visited, const QString& error);
   void on_search_progress(quint64 visited, quint64 matched);
   void stop_search();
-  void on_path_completion_timeout();
   void on_rebuild_history_menu();
   void on_rebuild_recent_opens_menu();
   void on_rebuild_bookmarks_menu();
