@@ -121,6 +121,9 @@ private:
 
   void start_drag();
   void ensure_cursor_visible();
+  [[nodiscard]] bool is_row_on_screen(int row) const;
+  /// If cursor is off-screen, move it to a visible row without scrolling.
+  int warp_cursor_to_visible();
   void update_cursor_item_visuals(int old_row, int new_row);
 };
 

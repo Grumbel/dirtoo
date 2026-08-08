@@ -692,13 +692,15 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
 - [x] selection on drag&drop can end up with unrelated additional files
       (Graphics start_drag uses selected_row_set_ only; mouseMove clears to
        pressed row unless it was already in the multi-selection / Ctrl|Shift)
-- [ ] when the keyboard controlled file select cursor in File View is
+- [x] when the keyboard controlled file select cursor in File View is
       out of screen, instead of scrolling the screen back to the
       cursor, leave the scroll untouched and warp the cursor to a
       position that is on screen. The screen should only scroll if the
       cursor is visible and would leave the screen with the next move
       (e.g. going up or down through the file list while the view
       follows)
+      (GraphicsFileView: is_row_on_screen + warp_cursor_to_visible;
+       scroll only when previous cursor was on-screen — follow mode)
 - [x] Update AGENTS.md, we are working with git, git repository can be
       found at https://github.com/Grumbel/dirtoo.git every change
       should be committed and at the end a `git format-patch --stdout > changes.mbox`

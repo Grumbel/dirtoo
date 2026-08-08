@@ -107,6 +107,67 @@ void GraphicsFileView::update_cursor_item_visuals(int old_row, int new_row)
   touch(new_row);
 }
 
+bool GraphicsFileView::is_row_on_screen(int row) const
+{
+  if (row < 0 || static_cast<std::size_t>(row) >= slot_pos_.size()) {
+    return false;
+  }
+  const QRectF vis = mapToScene(viewport()->rect()).boundingRect();
+  const QPointF p = slot_pos_[static_cast<std::size_t>(row)];
+  const QRectF tile(p.x(), p.y(), tile_size_.width(), tile_size_.height());
+  // Require a meaningful intersection so barely-clipped tiles count as off-screen.
+  return vis.intersects(tile.adjusted(4, 4, -4, -4));
+}
+
+int GraphicsFileView::warp_cursor_to_visible()
+{
+  const int rows = model_ != nullptr ? model_->rowCount() : 0;
+  if (rows <= 0 || slot_pos_.empty()) {
+    return -1;
+  }
+  const QRectF vis = mapToScene(viewport()->rect()).boundingRect();
+  int best = -1;
+  qreal best_dist = 1e18;
+  // Prefer a fully contained tile; else nearest intersecting; else nearest by y.
+  for (int i = 0; i < rows; ++i) {
+    const QPointF p = slot_pos_[static_cast<std::size_t>(i)];
+    const QRectF tile(p.x(), p.y(), tile_size_.width(), tile_size_.height());
+    if (vis.contains(tile)) {
+      const qreal d = qAbs(p.y() - vis.center().y());
+      if (d < best_dist) {
+        best_dist = d;
+        best = i;
+      }
+    }
+  }
+  if (best < 0) {
+    for (int i = 0; i < rows; ++i) {
+      const QPointF p = slot_pos_[static_cast<std::size_t>(i)];
+      const QRectF tile(p.x(), p.y(), tile_size_.width(), tile_size_.height());
+      if (vis.intersects(tile)) {
+        const qreal d = qAbs(p.y() - vis.center().y());
+        if (d < best_dist) {
+          best_dist = d;
+          best = i;
+        }
+      }
+    }
+  }
+  if (best < 0) {
+    // Extreme: pick closest slot to viewport center without scrolling.
+    const QPointF c = vis.center();
+    for (int i = 0; i < rows; ++i) {
+      const QPointF p = slot_pos_[static_cast<std::size_t>(i)];
+      const qreal d = (p.x() - c.x()) * (p.x() - c.x()) + (p.y() - c.y()) * (p.y() - c.y());
+      if (d < best_dist) {
+        best_dist = d;
+        best = i;
+      }
+    }
+  }
+  return best;
+}
+
 void GraphicsFileView::set_cursor_row(int row, bool ensure_visible)
 {
   const int rows = model_ != nullptr ? model_->rowCount() : 0;
@@ -116,13 +177,24 @@ void GraphicsFileView::set_cursor_row(int row, bool ensure_visible)
     update_cursor_item_visuals(old, -1);
     return;
   }
+
+  const int old = cursor_row_;
+  const bool old_on_screen = (old >= 0) && is_row_on_screen(old);
+
   if (cursor_row_ == row) {
-    if (ensure_visible) {
-      ensure_cursor_visible();
+    if (ensure_visible && !is_row_on_screen(row)) {
+      if (old_on_screen) {
+        ensure_cursor_visible(); // follow: scroll
+      } else {
+        const int warped = warp_cursor_to_visible();
+        if (warped >= 0 && warped != row) {
+          set_cursor_row(warped, false);
+        }
+      }
     }
     return;
   }
-  const int old = cursor_row_;
+
   cursor_row_ = row;
   // Materialize if needed so the outline paints.
   if (static_cast<std::size_t>(row) < items_.size() && items_[static_cast<std::size_t>(row)] == nullptr
@@ -137,8 +209,39 @@ void GraphicsFileView::set_cursor_row(int row, bool ensure_visible)
     items_[static_cast<std::size_t>(row)] = item;
   }
   update_cursor_item_visuals(old, row);
-  if (ensure_visible) {
+
+  if (!ensure_visible) {
+    return;
+  }
+
+  // Policy (TODO): do not yank the viewport to an off-screen cursor. Warp the
+  // cursor onto the visible area instead. Only scroll when the previous cursor
+  // was on-screen and this move would leave the viewport (follow mode).
+  if (is_row_on_screen(row)) {
+    return;
+  }
+  if (old_on_screen) {
     ensure_cursor_visible();
+    return;
+  }
+  const int warped = warp_cursor_to_visible();
+  if (warped >= 0 && warped != cursor_row_) {
+    // Re-enter without ensure_visible to avoid recursion loops.
+    const int prev = cursor_row_;
+    cursor_row_ = warped;
+    if (static_cast<std::size_t>(warped) < items_.size()
+        && items_[static_cast<std::size_t>(warped)] == nullptr
+        && static_cast<std::size_t>(warped) < slot_pos_.size()) {
+      auto* item = new GraphicsFileItem(model_, warped, this);
+      item->set_tile_size(tile_size_);
+      item->setPos(slot_pos_[static_cast<std::size_t>(warped)]);
+      if (selected_row_set_.contains(warped)) {
+        item->setSelected(true);
+      }
+      scene_->addItem(item);
+      items_[static_cast<std::size_t>(warped)] = item;
+    }
+    update_cursor_item_visuals(prev, warped);
   }
 }
 
