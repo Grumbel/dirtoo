@@ -146,6 +146,8 @@ private slots:
   /// Select and scroll to a model row (Home/End / leap).
   void jump_to_row(int row);
   void on_toggle_filter_visible();
+  /// Always show the filter bar and focus the filter line edit (Ctrl+K).
+  void on_focus_filter();
   void on_show_search();
   void on_search_submitted();
   void on_search_match(const QString& path, bool is_directory, quint64 size);

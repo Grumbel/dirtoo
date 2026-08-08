@@ -86,6 +86,7 @@ void MainWindow::setup_shortcuts()
   add_shortcut(QKeySequence(Qt::ALT | Qt::Key_Left), &MainWindow::on_go_back);
   add_shortcut(QKeySequence(Qt::ALT | Qt::Key_Right), &MainWindow::on_go_forward);
   add_shortcut(QKeySequence(QStringLiteral("Ctrl+L")), &MainWindow::on_focus_location);
+  add_shortcut(QKeySequence(QStringLiteral("Ctrl+K")), &MainWindow::on_focus_filter);
   add_shortcut(QKeySequence(Qt::Key_Escape), &MainWindow::on_clear_filter);
   add_shortcut(QKeySequence(QStringLiteral("Ctrl+D")), &MainWindow::on_toggle_bookmark);
 }

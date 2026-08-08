@@ -123,7 +123,10 @@ void MainWindow::setup_view_menu()
   show_filter_act_ = view_menu->addAction(theme_icon("edit-find"), QStringLiteral("Show Filter"));
   show_filter_act_->setCheckable(true);
   show_filter_act_->setChecked(true);
+  // Display Ctrl+K in the menu; actual key is handled by on_focus_filter (always
+  // show + focus). WidgetShortcut keeps this action from toggling on the shortcut.
   show_filter_act_->setShortcut(QKeySequence(QStringLiteral("Ctrl+K")));
+  show_filter_act_->setShortcutContext(Qt::WidgetShortcut);
   connect(show_filter_act_, &QAction::toggled, this, [this](bool on) {
     if (filter_row_ != nullptr) {
       filter_row_->setVisible(on);
@@ -133,9 +136,8 @@ void MainWindow::setup_view_menu()
       filter_edit_->setVisible(true);
       filter_edit_->setEnabled(true);
     }
-    if (on && filter_edit_ != nullptr) {
-      filter_edit_->setFocus(Qt::ShortcutFocusReason);
-    }
+    // Focus only when showing via explicit Ctrl+K (on_focus_filter); menu toggle
+    // just changes visibility so Escape-hide can restore file-view focus cleanly.
   });
   pin_filter_act_ = view_menu->addAction(theme_icon("pin", "object-locked"), QStringLiteral("Pin Filter"));
   pin_filter_act_->setCheckable(true);

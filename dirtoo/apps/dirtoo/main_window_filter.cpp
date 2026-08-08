@@ -146,6 +146,22 @@ void MainWindow::on_toggle_filter_visible()
   show_filter_act_->toggle();
 }
 
+void MainWindow::on_focus_filter()
+{
+  // Ctrl+K always shows the filter bar and focuses the edit (does not toggle).
+  if (show_filter_act_ != nullptr && !show_filter_act_->isChecked()) {
+    show_filter_act_->setChecked(true);
+  } else if (filter_row_ != nullptr) {
+    filter_row_->setVisible(true);
+  }
+  if (filter_edit_ != nullptr) {
+    filter_edit_->setVisible(true);
+    filter_edit_->setEnabled(true);
+    filter_edit_->setFocus(Qt::ShortcutFocusReason);
+    filter_edit_->selectAll();
+  }
+}
+
 
 void MainWindow::on_show_search()
 {
@@ -278,6 +294,18 @@ void MainWindow::on_search_finished(quint64 matched, quint64 visited, const QStr
 
 void MainWindow::on_clear_filter()
 {
+  // Escape dismisses LeapWidget first so type-ahead search always leaves cleanly
+  // (global Escape shortcut can intercept before the overlay's own Key_Escape handler).
+  if (leap_widget_ != nullptr && leap_widget_->isVisible()) {
+    leap_widget_->clear();
+    leap_widget_->hide();
+    if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr) {
+      graphics_view_->setFocus(Qt::OtherFocusReason);
+    } else if (QAbstractItemView* view = current_view()) {
+      view->setFocus(Qt::OtherFocusReason);
+    }
+    return;
+  }
   if (search_row_ != nullptr ? search_row_->isVisible()
       : (search_edit_ != nullptr && search_edit_->isVisible())) {
     stop_search();
@@ -290,6 +318,12 @@ void MainWindow::on_clear_filter()
     }
     search_edit_->clear();
     on_directory_changed();
+    // Restore focus so leap / type-ahead work again.
+    if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr) {
+      graphics_view_->setFocus(Qt::OtherFocusReason);
+    } else if (QAbstractItemView* view = current_view()) {
+      view->setFocus(Qt::OtherFocusReason);
+    }
     return;
   }
   if (filter_edit_ != nullptr && !filter_edit_->text().isEmpty()) {
@@ -301,6 +335,13 @@ void MainWindow::on_clear_filter()
       && !filter_pinned_
       && show_filter_act_ != nullptr && show_filter_act_->isChecked()) {
     show_filter_act_->setChecked(false);
+    // Hide leaves focus on a now-hidden widget; put it back on the file view
+    // so leap search (type-ahead) can be activated again.
+    if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr) {
+      graphics_view_->setFocus(Qt::OtherFocusReason);
+    } else if (QAbstractItemView* view = current_view()) {
+      view->setFocus(Qt::OtherFocusReason);
+    }
     return;
   }
   if (location_edit_ != nullptr && location_edit_->isVisible()) {
