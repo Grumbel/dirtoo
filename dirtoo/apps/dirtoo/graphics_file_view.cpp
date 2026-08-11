@@ -146,6 +146,10 @@ void GraphicsFileView::clear_all_items()
   items_.clear();
   slot_pos_.clear();
   cursor_row_ = -1;
+  selection_anchor_row_ = -1;
+  pending_single_select_row_ = -1;
+  press_row_ = -1;
+  shift_paint_active_ = false;
   suppress_selection_signal_ = false;
 }
 
@@ -401,6 +405,7 @@ void GraphicsFileView::rebuild_items()
 {
   clear_all_items();
   selected_row_set_.clear();
+  selection_anchor_row_ = -1;
   if (model_ == nullptr) {
     scene_->setSceneRect(QRectF());
     return;

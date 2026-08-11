@@ -44,6 +44,16 @@ void GraphicsFileView::mouseDoubleClickEvent(QMouseEvent* event)
 
 void GraphicsFileView::mouseReleaseEvent(QMouseEvent* event)
 {
+  // Deferred single-select: press was on an already-selected tile without
+  // modifiers, and the user did not start a drag → collapse to that row only.
+  if (event->button() == Qt::LeftButton && !drag_started_
+      && pending_single_select_row_ >= 0) {
+    select_row(pending_single_select_row_, /*clear_others=*/true);
+  }
+  pending_single_select_row_ = -1;
+  press_row_ = -1;
+  drag_started_ = false;
+
   QGraphicsView::mouseReleaseEvent(event);
   // Restore rubber-band as the default empty-area interaction.
   setDragMode(QGraphicsView::RubberBandDrag);
@@ -67,6 +77,10 @@ void GraphicsFileView::wheelEvent(QWheelEvent* event)
 
 void GraphicsFileView::mousePressEvent(QMouseEvent* event)
 {
+  pending_single_select_row_ = -1;
+  press_row_ = -1;
+  drag_started_ = false;
+
   if (event->button() == Qt::MiddleButton) {
     const auto idx = index_at(event->pos());
     if (idx.isValid()) {
@@ -83,14 +97,49 @@ void GraphicsFileView::mousePressEvent(QMouseEvent* event)
   }
   if (event->button() == Qt::LeftButton) {
     drag_start_pos_ = event->pos();
-    drag_started_ = false;
     // Item press → item drag (no rubber-band). Empty background → rubber-band select.
     if (auto* gfi = qgraphicsitem_cast<GraphicsFileItem*>(itemAt(event->pos()))) {
       setDragMode(QGraphicsView::NoDrag);
-      set_cursor_row(gfi->row(), false);
-    } else {
-      setDragMode(QGraphicsView::RubberBandDrag);
+      const int row = gfi->row();
+      press_row_ = row;
+      set_cursor_row(row, false);
+
+      const auto mods = event->modifiers();
+      const bool ctrl = mods & Qt::ControlModifier;
+      const bool shift = mods & Qt::ShiftModifier;
+      const bool already = selected_row_set_.contains(row);
+
+      if (shift || ctrl) {
+        // Modifier clicks: apply immediately; no deferred collapse.
+        apply_click_selection(row, mods);
+        // Do not forward to QGraphicsItem::mousePressEvent — that would fight
+        // our selection logic (Qt clears/toggles based on its own rules).
+        event->accept();
+        return;
+      }
+
+      if (already) {
+        // Keep multi-selection for a potential drag. Collapse on release if
+        // the user never dragged.
+        pending_single_select_row_ = row;
+        // Do not call QGraphicsItem selection path — it would clear others.
+        event->accept();
+        return;
+      }
+
+      // Unselected tile, plain click: select only this row now.
+      apply_click_selection(row, mods);
+      event->accept();
+      return;
     }
+    // Empty background: allow rubber-band. Clear selection on press unless
+    // Ctrl is held (additive rubber-band is uncommon; Qt still manages the
+    // band itself).
+    setDragMode(QGraphicsView::RubberBandDrag);
+    if (!(event->modifiers() & Qt::ControlModifier)) {
+      clear_selection();
+    }
+    pending_single_select_row_ = -1;
   }
   QGraphicsView::mousePressEvent(event);
 }
@@ -100,19 +149,29 @@ void GraphicsFileView::mouseMoveEvent(QMouseEvent* event)
   if ((event->buttons() & Qt::LeftButton) && !drag_started_
       && (event->pos() - drag_start_pos_).manhattanLength()
              >= QApplication::startDragDistance()) {
-    if (auto* item = qgraphicsitem_cast<GraphicsFileItem*>(itemAt(drag_start_pos_))) {
-      const int row = item->row();
+    // Prefer the row recorded at press (item may have scrolled under the
+    // pointer, or the press was accepted without going through itemAt again).
+    int row = press_row_;
+    if (row < 0) {
+      if (auto* item = qgraphicsitem_cast<GraphicsFileItem*>(itemAt(drag_start_pos_))) {
+        row = item->row();
+      }
+    }
+    if (row >= 0 && model_ != nullptr && row < model_->rowCount()) {
       const auto mods = QApplication::keyboardModifiers();
       const bool extend = (mods & Qt::ControlModifier) || (mods & Qt::ShiftModifier);
       // Without Ctrl/Shift: drag either the existing multi-selection (if this
       // row is already in it) or only the pressed row. Prevents unrelated
-      // QGraphicsItem selection residue from entering the drag payload.
+      // residual selection from entering the drag payload.
       if (!extend) {
         if (!selected_row_set_.contains(row)) {
           select_row(row, true);
         }
+        // Cancel deferred collapse — we are dragging the multi-selection.
+        pending_single_select_row_ = -1;
       } else if (!selected_row_set_.contains(row)) {
         select_row(row, /*clear_others=*/false);
+        pending_single_select_row_ = -1;
       }
       start_drag();
       drag_started_ = true;

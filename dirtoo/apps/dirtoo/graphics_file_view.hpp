@@ -20,6 +20,57 @@ class FileListModel;
 class GraphicsFileItem;
 
 /// Icon view backed by QGraphicsScene with viewport-windowed tiles for large dirs.
+///
+/// ## Selection & keyboard cursor (intended behaviour)
+///
+/// Two independent concepts:
+///
+/// 1. **Multi-selection** (`selected_row_set_` + live `QGraphicsItem::isSelected`):
+///    the set of files that operations (delete, copy, drag, …) act on.
+/// 2. **Keyboard cursor** (`cursor_row_`): a single focus tile drawn as a light
+///    outline. Independent of multi-selection (Python `FileView._cursor_item`).
+///
+/// ### Mouse
+/// - Empty background + drag → rubber-band select (Qt default).
+/// - Left-click unselected tile (no mod) → select only that row, set cursor.
+/// - Left-click already-selected tile (no mod) → **keep** the multi-selection
+///   until mouse release without a drag; on release without drag, collapse to
+///   that single row. If the user starts a drag, the whole multi-selection is
+///   the payload. This prevents "clicking one selected item deselects the rest
+///   before the drag can start".
+/// - Ctrl+click → toggle that row in the multi-selection; set cursor.
+/// - Shift+click → select the contiguous row range from the selection anchor
+///   (last plain click / Space toggle / keyboard paint seed) to the clicked
+///   row; set cursor.
+/// - Right-click on selected → keep multi-selection; on unselected → select
+///   only that row. Context menu uses the resulting selection.
+///
+/// ### Keyboard
+/// - Arrow keys move the cursor (geometric neighbour, grid fallback). They do
+///   **not** change selection unless Shift is held.
+/// - Shift+arrow: "paint" mode — first step toggles the current cursor row and
+///   remembers that value; further steps apply the same select/deselect while
+///   moving. Released Shift ends paint mode.
+/// - Space toggles selection of the cursor row and seeds paint mode.
+/// - Escape clears multi-selection; cursor is kept so navigation continues.
+/// - Enter/Return activates the cursor row.
+///
+/// ### Cursor vs scroll (warp policy)
+/// - If the cursor is already on-screen and a move would leave the viewport,
+///   scroll to follow (follow mode).
+/// - If the cursor is off-screen, **do not** yank the viewport: warp the cursor
+///   onto a visible row instead.
+/// - `cursor_move(0, 0)` only seeds when there is no cursor; it never jumps to a
+///   neighbour.
+///
+/// ### Drag & drop
+/// - Payload is built **only** from `selected_row_set_` (not transient scene
+///   selection residue).
+/// - Press on an unselected tile without Ctrl/Shift collapses selection to that
+///   row before the drag starts so unrelated files are never dragged.
+///
+/// Off-window selected rows stay in `selected_row_set_` when tiles are
+/// destroyed by the viewport window; they are restored when the tile returns.
 class GraphicsFileView : public QGraphicsView {
   Q_OBJECT
 
@@ -128,6 +179,15 @@ private:
   /// Shift+arrow "paint" selection: apply this value while Shift is held.
   bool shift_paint_active_ = false;
   bool shift_paint_select_ = false;
+  /// Anchor row for Shift+click range selection (−1 = none).
+  int selection_anchor_row_ = -1;
+
+  /// Deferred single-select: press landed on an already-selected tile without
+  /// Ctrl/Shift. Multi-selection is preserved until release-without-drag, then
+  /// collapsed to this row. −1 = no pending collapse.
+  int pending_single_select_row_ = -1;
+  /// Row under the press that started a potential item drag (−1 = none).
+  int press_row_ = -1;
 
   void start_drag();
   void set_row_selected(int row, bool selected);
@@ -137,6 +197,9 @@ private:
   /// If cursor is off-screen, move it to a visible row without scrolling.
   int warp_cursor_to_visible();
   void update_cursor_item_visuals(int old_row, int new_row);
+  void select_range(int from_row, int to_row, bool clear_others);
+  void apply_click_selection(int row, Qt::KeyboardModifiers mods);
+  void materialize_row(int row);
 };
 
 } // namespace dirtoo::app

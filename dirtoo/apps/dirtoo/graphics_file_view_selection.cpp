@@ -30,10 +30,38 @@
 
 namespace dirtoo::app {
 
+void GraphicsFileView::materialize_row(int row)
+{
+  if (row < 0 || static_cast<std::size_t>(row) >= items_.size()
+      || static_cast<std::size_t>(row) >= slot_pos_.size()) {
+    return;
+  }
+  if (items_[static_cast<std::size_t>(row)] != nullptr) {
+    return;
+  }
+  auto* item = new GraphicsFileItem(model_, row, this);
+  const QSize tile =
+      (static_cast<std::size_t>(row) < slot_tile_size_.size())
+          ? slot_tile_size_[static_cast<std::size_t>(row)]
+          : tile_size_;
+  item->set_tile_size(tile);
+  item->setPos(slot_pos_[static_cast<std::size_t>(row)]);
+  if (selected_row_set_.contains(row)) {
+    item->setSelected(true);
+  }
+  scene_->addItem(item);
+  items_[static_cast<std::size_t>(row)] = item;
+}
+
 void GraphicsFileView::clear_selection()
 {
+  suppress_selection_signal_ = true;
   selected_row_set_.clear();
   scene_->clearSelection();
+  suppress_selection_signal_ = false;
+  selection_anchor_row_ = -1;
+  pending_single_select_row_ = -1;
+  emit selection_changed();
 }
 
 void GraphicsFileView::notify_activated(const QModelIndex& index)
@@ -71,26 +99,86 @@ void GraphicsFileView::select_all()
 void GraphicsFileView::select_row(int row, bool clear_others)
 {
   if (clear_others) {
+    suppress_selection_signal_ = true;
     selected_row_set_.clear();
     scene_->clearSelection();
+    suppress_selection_signal_ = false;
   }
-  if (row < 0 || static_cast<std::size_t>(row) >= items_.size()) {
+  if (row < 0 || model_ == nullptr || row >= model_->rowCount()) {
+    if (clear_others) {
+      emit selection_changed();
+    }
     return;
   }
   // Ensure the target is materialized (may be outside the current window).
-  if (items_[static_cast<std::size_t>(row)] == nullptr && model_ != nullptr
-      && static_cast<std::size_t>(row) < slot_pos_.size()) {
-    auto* item = new GraphicsFileItem(model_, row, this);
-    item->set_tile_size(tile_size_);
-    item->setPos(slot_pos_[static_cast<std::size_t>(row)]);
-    scene_->addItem(item);
-    items_[static_cast<std::size_t>(row)] = item;
-  }
+  materialize_row(row);
   selected_row_set_.insert(row);
-  if (items_[static_cast<std::size_t>(row)] != nullptr) {
+  if (static_cast<std::size_t>(row) < items_.size() && items_[static_cast<std::size_t>(row)] != nullptr) {
+    suppress_selection_signal_ = true;
     items_[static_cast<std::size_t>(row)]->setSelected(true);
+    suppress_selection_signal_ = false;
   }
+  selection_anchor_row_ = row;
   set_cursor_row(row, false);
+  emit selection_changed();
+}
+
+void GraphicsFileView::select_range(int from_row, int to_row, bool clear_others)
+{
+  if (model_ == nullptr) {
+    return;
+  }
+  const int rows = model_->rowCount();
+  if (rows <= 0) {
+    return;
+  }
+  from_row = std::clamp(from_row, 0, rows - 1);
+  to_row = std::clamp(to_row, 0, rows - 1);
+  if (from_row > to_row) {
+    std::swap(from_row, to_row);
+  }
+  if (clear_others) {
+    suppress_selection_signal_ = true;
+    selected_row_set_.clear();
+    scene_->clearSelection();
+    suppress_selection_signal_ = false;
+  }
+  suppress_selection_signal_ = true;
+  for (int r = from_row; r <= to_row; ++r) {
+    selected_row_set_.insert(r);
+    materialize_row(r);
+    if (static_cast<std::size_t>(r) < items_.size() && items_[static_cast<std::size_t>(r)] != nullptr) {
+      items_[static_cast<std::size_t>(r)]->setSelected(true);
+    }
+  }
+  suppress_selection_signal_ = false;
+  emit selection_changed();
+}
+
+void GraphicsFileView::apply_click_selection(int row, Qt::KeyboardModifiers mods)
+{
+  if (row < 0 || model_ == nullptr || row >= model_->rowCount()) {
+    return;
+  }
+  const bool ctrl = mods & Qt::ControlModifier;
+  const bool shift = mods & Qt::ShiftModifier;
+
+  if (shift) {
+    const int anchor = (selection_anchor_row_ >= 0) ? selection_anchor_row_ : row;
+    select_range(anchor, row, /*clear_others=*/!ctrl);
+    set_cursor_row(row, false);
+    return;
+  }
+  if (ctrl) {
+    const bool now = !selected_row_set_.contains(row);
+    set_row_selected(row, now);
+    selection_anchor_row_ = row;
+    set_cursor_row(row, false);
+    return;
+  }
+  // Plain click: select only this row (caller handles deferred case for
+  // already-selected tiles).
+  select_row(row, /*clear_others=*/true);
 }
 
 void GraphicsFileView::update_cursor_item_visuals(int old_row, int new_row)
@@ -114,7 +202,11 @@ bool GraphicsFileView::is_row_on_screen(int row) const
   }
   const QRectF vis = mapToScene(viewport()->rect()).boundingRect();
   const QPointF p = slot_pos_[static_cast<std::size_t>(row)];
-  const QRectF tile(p.x(), p.y(), tile_size_.width(), tile_size_.height());
+  const QSize tile_sz =
+      (static_cast<std::size_t>(row) < slot_tile_size_.size())
+          ? slot_tile_size_[static_cast<std::size_t>(row)]
+          : tile_size_;
+  const QRectF tile(p.x(), p.y(), tile_sz.width(), tile_sz.height());
   // Require a meaningful intersection so barely-clipped tiles count as off-screen.
   return vis.intersects(tile.adjusted(4, 4, -4, -4));
 }
@@ -131,7 +223,11 @@ int GraphicsFileView::warp_cursor_to_visible()
   // Prefer a fully contained tile; else nearest intersecting; else nearest by y.
   for (int i = 0; i < rows; ++i) {
     const QPointF p = slot_pos_[static_cast<std::size_t>(i)];
-    const QRectF tile(p.x(), p.y(), tile_size_.width(), tile_size_.height());
+    const QSize tile_sz =
+        (static_cast<std::size_t>(i) < slot_tile_size_.size())
+            ? slot_tile_size_[static_cast<std::size_t>(i)]
+            : tile_size_;
+    const QRectF tile(p.x(), p.y(), tile_sz.width(), tile_sz.height());
     if (vis.contains(tile)) {
       const qreal d = qAbs(p.y() - vis.center().y());
       if (d < best_dist) {
@@ -143,7 +239,11 @@ int GraphicsFileView::warp_cursor_to_visible()
   if (best < 0) {
     for (int i = 0; i < rows; ++i) {
       const QPointF p = slot_pos_[static_cast<std::size_t>(i)];
-      const QRectF tile(p.x(), p.y(), tile_size_.width(), tile_size_.height());
+      const QSize tile_sz =
+          (static_cast<std::size_t>(i) < slot_tile_size_.size())
+              ? slot_tile_size_[static_cast<std::size_t>(i)]
+              : tile_size_;
+      const QRectF tile(p.x(), p.y(), tile_sz.width(), tile_sz.height());
       if (vis.intersects(tile)) {
         const qreal d = qAbs(p.y() - vis.center().y());
         if (d < best_dist) {
@@ -197,24 +297,14 @@ void GraphicsFileView::set_cursor_row(int row, bool ensure_visible)
 
   cursor_row_ = row;
   // Materialize if needed so the outline paints.
-  if (static_cast<std::size_t>(row) < items_.size() && items_[static_cast<std::size_t>(row)] == nullptr
-      && static_cast<std::size_t>(row) < slot_pos_.size()) {
-    auto* item = new GraphicsFileItem(model_, row, this);
-    item->set_tile_size(tile_size_);
-    item->setPos(slot_pos_[static_cast<std::size_t>(row)]);
-    if (selected_row_set_.contains(row)) {
-      item->setSelected(true);
-    }
-    scene_->addItem(item);
-    items_[static_cast<std::size_t>(row)] = item;
-  }
+  materialize_row(row);
   update_cursor_item_visuals(old, row);
 
   if (!ensure_visible) {
     return;
   }
 
-  // Policy (TODO): do not yank the viewport to an off-screen cursor. Warp the
+  // Policy: do not yank the viewport to an off-screen cursor. Warp the
   // cursor onto the visible area instead. Only scroll when the previous cursor
   // was on-screen and this move would leave the viewport (follow mode).
   if (is_row_on_screen(row)) {
@@ -229,18 +319,7 @@ void GraphicsFileView::set_cursor_row(int row, bool ensure_visible)
     // Re-enter without ensure_visible to avoid recursion loops.
     const int prev = cursor_row_;
     cursor_row_ = warped;
-    if (static_cast<std::size_t>(warped) < items_.size()
-        && items_[static_cast<std::size_t>(warped)] == nullptr
-        && static_cast<std::size_t>(warped) < slot_pos_.size()) {
-      auto* item = new GraphicsFileItem(model_, warped, this);
-      item->set_tile_size(tile_size_);
-      item->setPos(slot_pos_[static_cast<std::size_t>(warped)]);
-      if (selected_row_set_.contains(warped)) {
-        item->setSelected(true);
-      }
-      scene_->addItem(item);
-      items_[static_cast<std::size_t>(warped)] = item;
-    }
+    materialize_row(warped);
     update_cursor_item_visuals(prev, warped);
   }
 }
@@ -256,7 +335,11 @@ void GraphicsFileView::ensure_cursor_visible()
     return;
   }
   const QPointF p = slot_pos_[static_cast<std::size_t>(cursor_row_)];
-  const QRectF r(p.x(), p.y(), tile_size_.width(), tile_size_.height());
+  const QSize tile_sz =
+      (static_cast<std::size_t>(cursor_row_) < slot_tile_size_.size())
+          ? slot_tile_size_[static_cast<std::size_t>(cursor_row_)]
+          : tile_size_;
+  const QRectF r(p.x(), p.y(), tile_sz.width(), tile_sz.height());
   ensureVisible(r, 8, 8);
   update_visible_window();
 }
@@ -268,13 +351,24 @@ void GraphicsFileView::cursor_move(int dx, int dy)
     return;
   }
 
+  // Zero movement only seeds a missing cursor; never jumps to a neighbour.
+  if (dx == 0 && dy == 0) {
+    if (cursor_row_ >= 0 && cursor_row_ < rows) {
+      return;
+    }
+  }
+
   if (cursor_row_ < 0 || cursor_row_ >= rows) {
-    // Seed cursor: first fully visible tile, else row 0 (Python best_item).
+    // Seed cursor: first fully visible tile, else first intersecting, else 0.
     const QRectF vis = mapToScene(viewport()->rect()).boundingRect();
     int best = 0;
     for (int i = 0; i < rows; ++i) {
       const QPointF p = slot_pos_[static_cast<std::size_t>(i)];
-      const QRectF tile(p.x(), p.y(), tile_size_.width(), tile_size_.height());
+      const QSize tile_sz =
+          (static_cast<std::size_t>(i) < slot_tile_size_.size())
+              ? slot_tile_size_[static_cast<std::size_t>(i)]
+              : tile_size_;
+      const QRectF tile(p.x(), p.y(), tile_sz.width(), tile_sz.height());
       if (vis.contains(tile)) {
         best = i;
         break;
@@ -288,11 +382,19 @@ void GraphicsFileView::cursor_move(int dx, int dy)
     return;
   }
 
+  if (dx == 0 && dy == 0) {
+    return;
+  }
+
   const QPointF cur = slot_pos_[static_cast<std::size_t>(cursor_row_)];
   const qreal step_x = cell_width();
   const qreal step_y = cell_height();
+  const QSize cur_tile =
+      (static_cast<std::size_t>(cursor_row_) < slot_tile_size_.size())
+          ? slot_tile_size_[static_cast<std::size_t>(cursor_row_)]
+          : tile_size_;
   const QRectF probe(cur.x() + step_x * dx - 2, cur.y() + step_y * dy - 2,
-                     tile_size_.width() + 4, tile_size_.height() + 4);
+                     cur_tile.width() + 4, cur_tile.height() + 4);
 
   int best = -1;
   qreal best_dist = 1e18;
@@ -301,12 +403,31 @@ void GraphicsFileView::cursor_move(int dx, int dy)
       continue;
     }
     const QPointF p = slot_pos_[static_cast<std::size_t>(i)];
-    const QRectF tile(p.x(), p.y(), tile_size_.width(), tile_size_.height());
+    const QSize tile_sz =
+        (static_cast<std::size_t>(i) < slot_tile_size_.size())
+            ? slot_tile_size_[static_cast<std::size_t>(i)]
+            : tile_size_;
+    const QRectF tile(p.x(), p.y(), tile_sz.width(), tile_sz.height());
     if (!probe.intersects(tile) && !probe.contains(p)) {
       // Also accept nearest in the intended direction if probe misses (group breaks).
       continue;
     }
-    const qreal d = (p.x() - cur.x()) * (p.x() - cur.x()) + (p.y() - cur.y()) * (p.y() - cur.y());
+    // Prefer items that lie in the intended direction.
+    const qreal ddx = p.x() - cur.x();
+    const qreal ddy = p.y() - cur.y();
+    if (dx < 0 && ddx > 0) {
+      continue;
+    }
+    if (dx > 0 && ddx < 0) {
+      continue;
+    }
+    if (dy < 0 && ddy > 0) {
+      continue;
+    }
+    if (dy > 0 && ddy < 0) {
+      continue;
+    }
+    const qreal d = ddx * ddx + ddy * ddy;
     if (d < best_dist) {
       best_dist = d;
       best = i;
@@ -344,7 +465,9 @@ void GraphicsFileView::set_row_selected(int row, bool selected)
   const bool was = selected_row_set_.contains(row);
   if (selected == was) {
     if (static_cast<std::size_t>(row) < items_.size() && items_[static_cast<std::size_t>(row)] != nullptr) {
+      suppress_selection_signal_ = true;
       items_[static_cast<std::size_t>(row)]->setSelected(selected);
+      suppress_selection_signal_ = false;
     }
     return;
   }
@@ -354,7 +477,9 @@ void GraphicsFileView::set_row_selected(int row, bool selected)
     selected_row_set_.remove(row);
   }
   if (static_cast<std::size_t>(row) < items_.size() && items_[static_cast<std::size_t>(row)] != nullptr) {
+    suppress_selection_signal_ = true;
     items_[static_cast<std::size_t>(row)]->setSelected(selected);
+    suppress_selection_signal_ = false;
   }
   emit selection_changed();
 }
@@ -373,6 +498,7 @@ void GraphicsFileView::shift_paint_step(int dx, int dy)
     set_row_selected(cursor_row_, now_selected);
     shift_paint_select_ = now_selected;
     shift_paint_active_ = true;
+    selection_anchor_row_ = cursor_row_;
   } else {
     set_row_selected(cursor_row_, shift_paint_select_);
   }
@@ -442,6 +568,7 @@ void GraphicsFileView::keyPressEvent(QKeyEvent* event)
       // Seed paint mode so the next Shift+arrow keeps this value.
       shift_paint_select_ = now_selected;
       shift_paint_active_ = true;
+      selection_anchor_row_ = cursor_row_;
       event->accept();
       return;
     }

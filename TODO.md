@@ -706,6 +706,15 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
 - [x] selection on drag&drop can end up with unrelated additional files
       (Graphics start_drag uses selected_row_set_ only; mouseMove clears to
        pressed row unless it was already in the multi-selection / Ctrl|Shift)
+- [x] Icons view selection/cursor thorough review: click could deselect multi
+      selection before drag, cursor could jump on (0,0) moves, Shift-click had
+      no range, clear/select_row did not always emit, QGraphicsItem default
+      press fought our logic.
+      Intended behaviour documented on GraphicsFileView (header). Fixes:
+      deferred single-select on press-of-selected (collapse on release without
+      drag); view-owned Ctrl/Shift/plain click selection + anchor range;
+      payload still only from selected_row_set_; cursor_move(0,0) seed-only;
+      materialize_row helper; selection_changed emitted from clear/select_row.
 - [x] when the keyboard controlled file select cursor in File View is
       out of screen, instead of scrolling the screen back to the
       cursor, leave the scroll untouched and warp the cursor to a

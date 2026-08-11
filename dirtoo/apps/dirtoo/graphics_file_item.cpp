@@ -350,6 +350,14 @@ void GraphicsFileItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
     event->accept();
     return;
   }
+  // Left-button selection is owned by GraphicsFileView (deferred multi-select
+  // drag, Ctrl/Shift range). Do not call QGraphicsItem::mousePressEvent — its
+  // default selection logic would clear a multi-selection on press and break
+  // drag-of-selection.
+  if (event->button() == Qt::LeftButton) {
+    event->accept();
+    return;
+  }
   QGraphicsItem::mousePressEvent(event);
 }
 
