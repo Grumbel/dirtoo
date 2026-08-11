@@ -13,6 +13,8 @@
 
 namespace dirtoo::hash {
 
+class HashError;
+
 /// SQLite-backed checksum cache. Does not hash; only stores/looks up digests.
 /// Default path: $XDG_CACHE_HOME/dirtoo/checksums.sqlite (or ~/.cache/…).
 class ChecksumStore {
