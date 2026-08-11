@@ -255,19 +255,16 @@ User-facing overview: **`dirtoo/README.md`**.
 ---
 
 ## Git workflow (for agents / contributors)
-
 Repository: https://github.com/Grumbel/dirtoo.git
-
 - Make every coherent change a **separate commit**. Prefer small, reviewable
   commits; do not bulk-reformat unrelated code in the same commit as a
   functional change.
 - After each coherent series, leave a **detailed suggested commit message**
   (subject ≤ ~72 chars, body explaining why and what).
-- Always update **`TODO.md`** and **`AGENTS.md`** when closing/opening items
-  or changing user-visible behavior (see Documentation above).
+- Update documentation (`README.md`, man pages, `NEWS`, `TODO.md`, `AGENTS.md`, …) in the same series
+  when user-visible behaviour or build requirements change.
 
 ### History is append-only (agents)
-
 - **Never rewrite, reset, rebase, or re-root history** against `origin/master`
   or an earlier tip unless the human **explicitly** asks for a rollback of a
   failed change (e.g. “drop the last commit”, “revert this series”).
@@ -280,42 +277,67 @@ Repository: https://github.com/Grumbel/dirtoo.git
 - Fix mistakes with **new commits** (or `git revert`) on top of the current tip,
   not by replacing earlier commits.
 
-### Commit author and AI attribution
+### Commit author and AI attribution (required)
+**Every** agent-created commit must set author **and** committer to the human
+maintainer. AI identity goes **only** in a message trailer.
 
-- **Author** (who owns the commit for `git blame`, GitHub, and bug reports):
-  the human maintainer — currently **Ingo Ruhnke <grumbel@gmail.com>**.
-  Agents must **not** use a placeholder or agent-only identity as `user.email`.
-- **AI assistance** is recorded with a standard Git trailer at the end of the
-  commit message body (not as the author):
+| Field | Value |
+|-------|--------|
+| Author name | `Ingo Ruhnke` |
+| Author email | `grumbel@gmail.com` |
+| Trailer | `Co-authored-by: Grok <grok@x.ai>` |
 
-  ```
-  Co-authored-by: Grok <grok@x.ai>
-  ```
+**Forbidden:** `agent@…`, `SuperTux Agent`, `grok@x.ai` (or any AI address) as
+`user.name` / `user.email` / author / committer.
 
-  Example:
+Use one-shot `-c` overrides so a machine global config cannot override this:
 
-  ```
-  ui: symlink tooltips show link target
+```sh
+git -c user.name='Ingo Ruhnke' -c user.email='grumbel@gmail.com' commit -m "$(cat <<'EOF'
+engine: fix OpenGL context loss on window resize
 
-  ToolTipRole includes path and read_symlink destination.
+Recreate the GL state after SDL window events that invalidate the
+context on some drivers.
 
-  Co-authored-by: Grok <grok@x.ai>
-  ```
+Co-authored-by: Grok <grok@x.ai>
+EOF
+)"
+```
 
-- Do not put `grok@x.ai` (or similar) in the author/committer email field so
-  automated mail and bug tooling stay aimed at a real person.
+`git log -1 --format='%an <%ae>%n%cn <%ce>%n%B'` must show Ingo as author and
+committer, and the Co-authored-by trailer in the body.
 
 ### Handoff: git bundle only
+Agent handoffs use **`git bundle` + `git pull` only**.
 
-Agent handoffs use **`git bundle` only** — not `git format-patch`, `.mbox`, or
-`git am`. Bundles carry real commits (`fetch` / `pull`) and chain cleanly when
-each bundle is based on the consumer’s current tip.
+**Forbidden for handoffs (never suggest, never use):**
+- `git fetch` (of a handoff bundle or as a substitute for stacking)
+- `git cherry-pick`
+- `git format-patch` / `.mbox` / `git am`
+- `git rebase` onto an older parent to “fix” a non-stacking bundle
+- Any workflow that applies commits out of order or rewrites the consumer tip
+
+If a bundle does not fast-forward onto the consumer’s current tip, the
+**producer** was wrong — do not invent consumer-side workarounds. Produce a
+new bundle whose required parent is exactly the tip the consumer already has.
+
+Bundles carry real commits and chain cleanly **only** when each bundle is based
+on the consumer’s current tip.
 
 **Bundles must stack.** Each handoff bundle’s required parent is the tip the
 consumer already has (last applied bundle or `origin/master` after they push).
 Successive bundles form one linear history: `… → tip₀ → bundle₁ → tip₁ →
 bundle₂ → tip₂ → …`. Do not produce a bundle that re-applies older work from
 under an already-applied tip unless the human explicitly requested a rollback.
+
+**Bundle filenames must be numbered.** Use a zero-padded three-digit prefix
+(`%03d`) so apply order is obvious, e.g.:
+
+    dirtoo-001-short-description.bundle
+    dirtoo-002-next-change.bundle
+
+Numbering is monotonic within the current handoff series. **Restart at
+`001`** when the human declares a new upstream/base commit.
 
 **Producer** (commits not yet on the consumer’s tip; base = last applied tip):
 
@@ -326,13 +348,23 @@ git bundle verify changes.bundle
 ```
 
 State the required parent SHA in the handoff note so the consumer can confirm
-before pulling.
+before pulling. The parent **must** be the SHA the consumer reported (or the
+tip of the previous handoff bundle), never an older `origin/master` when a
+newer tip already exists.
 
-**Consumer:**
+**Consumer (only this):**
 
 ```sh
 git pull changes.bundle HEAD
 ```
 
-If `git pull` reports diverging branches, fetch into a side branch and inspect
-with `git log --graph` before merge/rebase. Do not force-push unless intentional.
+That is the entire apply path. No `git fetch`, no `git cherry-pick`, no side
+branch. If `git pull` does not fast-forward, stop and ask for a correctly
+stacked bundle.
+
+**Handoff checklist (producer):**
+1. Tip is based on the **consumer’s current HEAD** (last applied bundle tip).
+2. Filename: `dirtoo-NNN-short-kebab-description.bundle` (`NNN` = next number).
+3. `git bundle create … <parent>..HEAD` then `git bundle verify …`.
+4. Handoff note states **required parent SHA** and **tip SHA**.
+5. Do not reuse numbers; restart at `001` only when the human sets a new base.
