@@ -179,7 +179,7 @@ void run_dialog(QWidget* parent, QStringList paths)
   layout->addWidget(tree, 1);
 
   auto* progress = new QProgressBar(dialog);
-  progress->setRange(0, std::max(1, paths.size()));
+  progress->setRange(0, std::max(qsizetype{1}, paths.size()));
   progress->setValue(0);
   layout->addWidget(progress);
 
@@ -236,7 +236,7 @@ void run_dialog(QWidget* parent, QStringList paths)
       item->setText(1, QStringLiteral("…"));
     }
     progress->setValue(0);
-    progress->setMaximum(std::max(1, paths.size()));
+    progress->setMaximum(std::max(qsizetype{1}, paths.size()));
     compute_btn->setEnabled(false);
     cached_btn->setEnabled(false);
     cancel_btn->setEnabled(true);
