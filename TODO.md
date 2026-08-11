@@ -751,9 +751,9 @@ consumes digests from the checksum cache.
       valid while size+mtime match; path keyed by absolute path / Location URL
 - [x] **`dt-checksum`** — coreutils-like CLI (`-a` algo, `--refresh`, `--cached-only`,
       `-a all`, optional `--check`); uses cache by default
-- [ ] **GUI** — Tools → “Checksums…” dialog (selection/dir, compute/refresh,
-      table of digests, progress/cancel); Preferences button for policy + clear cache
-- [ ] Context menu: “Copy SHA-256” / “Checksum…” when cached or after compute
+- [x] **GUI** — Tools → “Checksums…” dialog (selection, compute/refresh,
+      table of digests, progress/cancel); Preferences button opens same dialog
+- [x] Context menu: “Checksums…” (+ Copy SHA-256 inside dialog)
 
 Primary algo for identity: **SHA-256**. Always compute the set in one pass.
 

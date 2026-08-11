@@ -44,7 +44,7 @@ find_package(dirtoo-collection REQUIRED CONFIG)
 find_package(dirtoo-watcher REQUIRED CONFIG)
 find_package(dirtoo-thumbnail REQUIRED CONFIG)
 find_package(dirtoo-archive REQUIRED CONFIG)
-find_package(dirtoo-hash CONFIG)  # optional until packaging lands everywhere
+find_package(dirtoo-hash REQUIRED CONFIG)
 
 add_compile_definitions(DIRTOO_VERSION="${PROJECT_VERSION_FULL}")
 

@@ -3,10 +3,13 @@
 
 #include "preferences_dialog.hpp"
 
+#include "checksum_dialog.hpp"
+
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QFormLayout>
+#include <QPushButton>
 #include <QSpinBox>
 #include <QVBoxLayout>
 
@@ -104,12 +107,19 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   form->addRow(show_filter);
   form->addRow(pin_filter);
 
+  auto* checksums_btn = new QPushButton(QStringLiteral("Checksums…"), &dialog);
+  checksums_btn->setToolTip(QStringLiteral("Compute or inspect cached file digests (CRC32/MD5/SHA-1/SHA-256)"));
+  QObject::connect(checksums_btn, &QPushButton::clicked, &dialog, [&dialog] {
+    show_checksum_dialog(&dialog, QStringList{});
+  });
+
   auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
   QObject::connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
   QObject::connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
 
   auto* layout = new QVBoxLayout(&dialog);
   layout->addLayout(form);
+  layout->addWidget(checksums_btn);
   layout->addWidget(buttons);
 
   if (dialog.exec() != QDialog::Accepted) {

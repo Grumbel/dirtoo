@@ -6,6 +6,7 @@
 
 #include "app_settings.hpp"
 #include "preferences_dialog.hpp"
+#include "checksum_dialog.hpp"
 #include "size_format.hpp"
 #include <QHeaderView>
 
@@ -231,6 +232,18 @@ void MainWindow::on_preferences()
   }
   save_settings(s);
   apply_settings(s);
+}
+
+
+void MainWindow::on_checksums()
+{
+  QStringList paths;
+  for (const auto& fi : selected_fileinfos()) {
+    if (fi.is_regular_file() && !fi.is_synthetic()) {
+      paths << QString::fromStdString(fi.path().string());
+    }
+  }
+  show_checksum_dialog(this, paths);
 }
 
 void MainWindow::apply_settings(const AppSettings& s)

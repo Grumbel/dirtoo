@@ -29,6 +29,7 @@ struct FileContextMenuCallbacks {
   std::function<void()> delete_selected;
   std::function<void()> rename_selected;
   std::function<void()> properties_selected;
+  std::function<void()> checksums_selected;
   std::function<void()> reload_thumbnails;
   std::function<void()> prepare_thumbnails;
   std::function<void()> make_directory_thumbnails;

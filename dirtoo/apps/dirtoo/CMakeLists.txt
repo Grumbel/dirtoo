@@ -87,6 +87,8 @@ qt_add_executable(dirtoo-app
   leap_widget.hpp
   preferences_dialog.cpp
   preferences_dialog.hpp
+  checksum_dialog.cpp
+  checksum_dialog.hpp
   history_menu.cpp
   history_menu.hpp
   message_area.cpp
@@ -140,6 +142,7 @@ target_link_libraries(dirtoo-app
     dirtoo::thumbnail
     dirtoo::archive
     dirtoo::dirops
+    dirtoo::hash
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets

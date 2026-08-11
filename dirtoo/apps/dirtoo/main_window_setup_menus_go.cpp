@@ -53,6 +53,10 @@ void MainWindow::setup_go_help_menus()
   recent_opens_menu_ = menuBar()->addMenu(QStringLiteral("Recently &Opened"));
   connect(recent_opens_menu_, &QMenu::aboutToShow, this, &MainWindow::on_rebuild_recent_opens_menu);
 
+  auto* tools_menu = menuBar()->addMenu(QStringLiteral("&Tools"));
+  tools_menu->addAction(theme_icon("document-properties"), QStringLiteral("Checksums…"),
+                        this, &MainWindow::on_checksums);
+
   auto* help_menu = menuBar()->addMenu(QStringLiteral("&Help"));
   help_menu->addAction(theme_icon("help-contents"), QStringLiteral("Filter expression help"), this,
                        &MainWindow::on_show_filter_help);
