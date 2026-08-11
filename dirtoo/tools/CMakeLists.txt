@@ -105,3 +105,12 @@ if(TARGET dirtoo::hash OR TARGET dirtoo-hash::dirtoo-hash)
   target_compile_definitions(dt-checksum PRIVATE DIRTOO_VERSION="${PROJECT_VERSION_FULL}")
   install(TARGETS dt-checksum RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
+
+
+# --- Tags (dirtoo-tags) -------------------------------------------------------
+if(TARGET dirtoo::tags OR TARGET dirtoo-tags::dirtoo-tags)
+  add_executable(dt-tag dt_tag.cpp)
+  target_link_libraries(dt-tag PRIVATE dirtoo::tags dirtoo::hash dirtoo_warnings)
+  target_compile_definitions(dt-tag PRIVATE DIRTOO_VERSION="${PROJECT_VERSION_FULL}")
+  install(TARGETS dt-tag RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif()

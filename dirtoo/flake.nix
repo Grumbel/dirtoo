@@ -81,6 +81,18 @@
           meta.description = "dirtoo multi-algo file digests + checksum SQLite cache";
         };
 
+        dirtoo-tags = pkgs.stdenv.mkDerivation {
+          pname = "dirtoo-tags";
+          inherit version cmakeBuildType;
+          src = srcFor [ ./libs/dirtoo-tags ];
+          dontStrip = true;
+          nativeBuildInputs = with pkgs; [ cmake ninja pkg-config ];
+          buildInputs = [ dirtoo-hash pkgs.sqlite pkgs.openssl ];
+          postUnpack = ''sourceRoot+=/libs/dirtoo-tags'';
+          cmakeFlags = [ versionFlag ];
+          meta.description = "dirtoo file tags (SHA-256 identity via checksum cache)";
+        };
+
         dirtoo-filter = pkgs.stdenv.mkDerivation {
           pname = "dirtoo-filter";
           inherit version cmakeBuildType;
@@ -163,6 +175,7 @@
             dirops
             dirtoo-fs
             dirtoo-hash
+            dirtoo-tags
             dirtoo-filter
             pkgs.sqlite
             dirtoo-collection
@@ -204,6 +217,7 @@
           paths = [
             dirops
             dirtoo-hash
+            dirtoo-tags
             dirtoo-filter
             dirtoo
           ];
@@ -216,6 +230,7 @@
             dirops
             dirtoo-fs
             dirtoo-hash
+            dirtoo-tags
             dirtoo-filter
             dirtoo-collection
             dirtoo-watcher
@@ -230,6 +245,7 @@
               dirops
               dirtoo-fs
               dirtoo-hash
+              dirtoo-tags
               dirtoo-filter
               dirtoo-collection
               dirtoo-watcher
@@ -275,6 +291,7 @@
             echo "  nix build .#dirops"
             echo "  nix build .#dirtoo-fs"
             echo "  nix build .#dirtoo-hash"
+            echo "  nix build .#dirtoo-tags"
             echo "  nix build .#dirtoo-filter"
             echo "  nix build .#dirtoo-collection"
             echo "  nix build .#dirtoo-watcher"
