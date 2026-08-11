@@ -736,3 +736,48 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
       going through base dragEnter (lastDragDropEvent unset). Leave handler now
       only clears drop-target highlights and accepts — does not call base.
 
+
+---
+
+## File checksums + tags (planned)
+
+Checksums and tags are **separate**. Tagging never hashes files; it only
+consumes digests from the checksum cache.
+
+### Checksums (`dirtoo-hash` + `dt-checksum`)
+
+- [ ] **`dirtoo-hash` library** — one sequential read → CRC32, MD5, SHA-1, SHA-256
+- [ ] **`ChecksumStore`** — SQLite cache (`$XDG_CACHE_HOME/dirtoo/checksums.sqlite`);
+      valid while size+mtime match; path keyed by absolute path / Location URL
+- [ ] **`dt-checksum`** — coreutils-like CLI (`-a` algo, `--refresh`, `--cached-only`,
+      `-a all`, optional `--check`); uses cache by default
+- [ ] **GUI** — Tools → “Checksums…” dialog (selection/dir, compute/refresh,
+      table of digests, progress/cancel); Preferences button for policy + clear cache
+- [ ] Context menu: “Copy SHA-256” / “Checksum…” when cached or after compute
+
+Primary algo for identity: **SHA-256**. Always compute the set in one pass.
+
+### Tags (`dirtoo-tags`, later — depends on checksum cache)
+
+- [ ] SQLite under `$XDG_DATA_HOME/dirtoo/tags.sqlite` (tag defs + file_tags;
+      file identity by sha256 from checksum store, path aliases)
+- [ ] **`dt-tag`** add/remove/list/files/def — refuse if checksum unknown
+      (optional `--hash-if-needed` calls checksum API, does not reimplement hash)
+- [ ] Filter / `dt-search`: `tag:name` predicate
+- [ ] GUI: tag context menu, badges from tag_defs (icon/color)
+
+### Explicit non-goals (v1)
+
+- No xattrs / no in-tree sidecars that modify the file tree
+- No hashing on the GUI thread
+- No tag match that re-hashes the whole directory on each filter keystroke
+- Skip pure Unix-replacements already noted: `dt-shuffle`→`shuf`, chomp/glob
+
+### Phasing
+
+1. `dirtoo-hash` compute API + tests  
+2. `ChecksumStore` + `dt-checksum`  
+3. Checksum GUI (Tools + Preferences entry)  
+4. `dirtoo-tags` + `dt-tag`  
+5. `tag:` filter + badges  
+
