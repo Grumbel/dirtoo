@@ -69,6 +69,18 @@
           meta.description = "dirtoo Location / FileInfo library";
         };
 
+        dirtoo-hash = pkgs.stdenv.mkDerivation {
+          pname = "dirtoo-hash";
+          inherit version cmakeBuildType;
+          src = srcFor [ ./libs/dirtoo-hash ];
+          dontStrip = true;
+          nativeBuildInputs = with pkgs; [ cmake ninja pkg-config ];
+          buildInputs = with pkgs; [ openssl sqlite ];
+          postUnpack = ''sourceRoot+=/libs/dirtoo-hash'';
+          cmakeFlags = [ versionFlag ];
+          meta.description = "dirtoo multi-algo file digests + checksum SQLite cache";
+        };
+
         dirtoo-filter = pkgs.stdenv.mkDerivation {
           pname = "dirtoo-filter";
           inherit version cmakeBuildType;
@@ -150,6 +162,7 @@
           buildInputs = [
             dirops
             dirtoo-fs
+            dirtoo-hash
             dirtoo-filter
             pkgs.sqlite
             dirtoo-collection
@@ -190,6 +203,7 @@
           name = "dirtoo-tools-${version}";
           paths = [
             dirops
+            dirtoo-hash
             dirtoo-filter
             dirtoo
           ];
@@ -201,6 +215,7 @@
           inherit
             dirops
             dirtoo-fs
+            dirtoo-hash
             dirtoo-filter
             dirtoo-collection
             dirtoo-watcher
@@ -214,6 +229,7 @@
             paths = [
               dirops
               dirtoo-fs
+              dirtoo-hash
               dirtoo-filter
               dirtoo-collection
               dirtoo-watcher
@@ -258,6 +274,7 @@
             echo "Independent flake packages (scoped sources — edit one lib, rebuild only it + dependents):"
             echo "  nix build .#dirops"
             echo "  nix build .#dirtoo-fs"
+            echo "  nix build .#dirtoo-hash"
             echo "  nix build .#dirtoo-filter"
             echo "  nix build .#dirtoo-collection"
             echo "  nix build .#dirtoo-watcher"

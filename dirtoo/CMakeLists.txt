@@ -44,6 +44,7 @@ find_package(dirtoo-collection REQUIRED CONFIG)
 find_package(dirtoo-watcher REQUIRED CONFIG)
 find_package(dirtoo-thumbnail REQUIRED CONFIG)
 find_package(dirtoo-archive REQUIRED CONFIG)
+find_package(dirtoo-hash CONFIG)  # optional until packaging lands everywhere
 
 add_compile_definitions(DIRTOO_VERSION="${PROJECT_VERSION_FULL}")
 
@@ -68,6 +69,9 @@ if(NOT TARGET dirtoo::thumbnail)
 endif()
 if(NOT TARGET dirtoo::archive)
   add_library(dirtoo::archive ALIAS dirtoo-archive::dirtoo-archive)
+endif()
+if(TARGET dirtoo-hash::dirtoo-hash AND NOT TARGET dirtoo::hash)
+  add_library(dirtoo::hash ALIAS dirtoo-hash::dirtoo-hash)
 endif()
 
 add_library(dirtoo_warnings INTERFACE)

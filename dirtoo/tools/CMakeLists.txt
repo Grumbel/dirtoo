@@ -97,3 +97,11 @@ if(Qt6Core_FOUND)
     install(TARGETS dt-metadata RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
   endif()
 endif()
+
+# --- Checksums (dirtoo-hash) --------------------------------------------------
+if(TARGET dirtoo::hash OR TARGET dirtoo-hash::dirtoo-hash)
+  add_executable(dt-checksum dt_checksum.cpp)
+  target_link_libraries(dt-checksum PRIVATE dirtoo::hash dirtoo_warnings)
+  target_compile_definitions(dt-checksum PRIVATE DIRTOO_VERSION="${PROJECT_VERSION_FULL}")
+  install(TARGETS dt-checksum RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif()

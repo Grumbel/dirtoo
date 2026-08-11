@@ -746,10 +746,10 @@ consumes digests from the checksum cache.
 
 ### Checksums (`dirtoo-hash` + `dt-checksum`)
 
-- [ ] **`dirtoo-hash` library** — one sequential read → CRC32, MD5, SHA-1, SHA-256
-- [ ] **`ChecksumStore`** — SQLite cache (`$XDG_CACHE_HOME/dirtoo/checksums.sqlite`);
+- [x] **`dirtoo-hash` library** — one sequential read → CRC32, MD5, SHA-1, SHA-256
+- [x] **`ChecksumStore`** — SQLite cache (`$XDG_CACHE_HOME/dirtoo/checksums.sqlite`);
       valid while size+mtime match; path keyed by absolute path / Location URL
-- [ ] **`dt-checksum`** — coreutils-like CLI (`-a` algo, `--refresh`, `--cached-only`,
+- [x] **`dt-checksum`** — coreutils-like CLI (`-a` algo, `--refresh`, `--cached-only`,
       `-a all`, optional `--check`); uses cache by default
 - [ ] **GUI** — Tools → “Checksums…” dialog (selection/dir, compute/refresh,
       table of digests, progress/cancel); Preferences button for policy + clear cache
