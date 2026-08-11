@@ -104,3 +104,28 @@ TEST_CASE("Location percent-encoding roundtrip", "[location]")
     REQUIRE(again.entry_path() == loc.entry_path());
   }
 }
+
+TEST_CASE("from_human preserves archive payload", "[location]")
+{
+  // Bare path form users type / see in some UI paths.
+  const auto a = dirtoo::fs::Location::from_human("/tmp/demo.zip//archive");
+  REQUIRE(a.is_archive());
+  REQUIRE(a.as_path().filename() == "demo.zip");
+  REQUIRE(a.entry_path().empty());
+
+  const auto b = dirtoo::fs::Location::from_human("/tmp/demo.zip//archive:docs/a");
+  REQUIRE(b.is_archive());
+  REQUIRE(b.entry_path() == "docs/a");
+
+  // Session/history must not collapse archive to the container path only.
+  const auto url = b.as_url();
+  const auto again = dirtoo::fs::Location::from_human(url);
+  REQUIRE(again.is_archive());
+  REQUIRE(again.as_path() == b.as_path());
+  REQUIRE(again.entry_path() == b.entry_path());
+
+  // Plain file path still works.
+  const auto f = dirtoo::fs::Location::from_human("/tmp/plain");
+  REQUIRE(f.is_file());
+  REQUIRE_FALSE(f.is_archive());
+}

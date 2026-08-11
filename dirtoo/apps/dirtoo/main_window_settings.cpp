@@ -113,18 +113,15 @@ void MainWindow::restore_settings()
     restoreState(s.window_state);
   }
   // Restore persistent location history for the History menu.
+  // Use from_human so file://…//archive URLs and bare …zip//archive: forms both
+  // round-trip; from_path alone would drop the archive payload.
   std::vector<fs::Location> unique;
   for (const QString& entry : s.location_history) {
     if (entry.isEmpty()) {
       continue;
     }
     try {
-      if (entry.startsWith(QLatin1String("archive://"))
-          || entry.startsWith(QLatin1String("file://"))) {
-        unique.push_back(fs::Location::from_url(entry.toStdString()));
-      } else {
-        unique.push_back(fs::Location::from_path(entry.toStdString()));
-      }
+      unique.push_back(fs::Location::from_human(entry.toStdString()));
     } catch (...) {
     }
   }
@@ -181,7 +178,8 @@ void MainWindow::persist_settings() const
   }
   s.window_geometry = saveGeometry();
   s.window_state = saveState();
-  s.last_location = QString::fromStdString(location_.as_path().string());
+  // Always persist the full URL so archive locations keep //archive[:entry].
+  s.last_location = QString::fromStdString(location_.as_url());
   s.location_history.clear();
   for (const auto& loc : nav_history_.unique_locations()) {
     s.location_history.append(QString::fromStdString(loc.as_url()));

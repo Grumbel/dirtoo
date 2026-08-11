@@ -224,22 +224,24 @@ int main(int argc, char* argv[])
 
   dirtoo::app::MainWindow window;
 
-  std::filesystem::path start = QDir::homePath().toStdString();
+  // Prefer a full Location URL (file://…//archive) so session restore reopens
+  // archive roots, not only the container zip path.
+  QString start_text = QDir::homePath();
   const QStringList pos = parser.positionalArguments();
   if (!pos.isEmpty()) {
-    start = pos.first().toStdString();
+    start_text = pos.first();
   } else {
     const auto settings = dirtoo::app::load_settings();
     if (!settings.last_location.isEmpty()) {
-      start = settings.last_location.toStdString();
+      start_text = settings.last_location;
     }
   }
 
   if (parser.isSet(debug_opt) || parser.isSet(verbose_opt)) {
-    qInfo().noquote() << QStringLiteral("opening %1").arg(QString::fromStdString(start.string()));
+    qInfo().noquote() << QStringLiteral("opening %1").arg(start_text);
   }
 
-  window.open_location(dirtoo::fs::Location::from_path(start));
+  window.open_location(dirtoo::fs::Location::from_human(start_text.toStdString()));
 
   // Under-development warning (dismissible permanently via settings).
   {

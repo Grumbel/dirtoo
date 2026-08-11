@@ -37,7 +37,8 @@ std::vector<fs::Location> Bookmarks::entries() const
       continue;
     }
     try {
-      result.push_back(fs::Location::from_url(line));
+      // from_human accepts file:// / archive:// and bare path//archive: forms.
+      result.push_back(fs::Location::from_human(line));
     } catch (...) {
       // ignore bad lines
     }
