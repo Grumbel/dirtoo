@@ -37,7 +37,11 @@ GPL-3.0-or-later (SPDX headers on sources).
 - **Source of truth:** top-level `VERSION` file only (currently `0.2.0-dev`).
 - Inside git the string keeps a `-dev` suffix until release.
 - CMake reads `VERSION` → `PROJECT_VERSION_FULL` and defines `DIRTOO_VERSION`.
-- Packaging may pass `-DPROJECT_VERSION_FULL=...` (flake appends `+g<shortRev>`).
+- Packaging may pass `-DPROJECT_VERSION_FULL=...`. The flake builds:
+
+      `{VERSION}.{revCount}+g{shortRev}`
+
+  e.g. `0.2.0-dev.1509+g2fdf60f` (`self.revCount` + `self.shortRev`).
 - GUI: Help → About and `dirtoo --version`.
 - CLI tools: `--version` / `-V`.
 - Release: drop `-dev`, commit `VERSION`, tag `vX.Y.Z` matching the file with a `v` prefix.

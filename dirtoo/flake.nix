@@ -15,7 +15,9 @@
         lib = pkgs.lib;
         versionBase = lib.strings.removeSuffix "\n" (builtins.readFile ./VERSION);
         gitRev = self.shortRev or self.dirtyShortRev or "dirty";
-        version = "${versionBase}+g${gitRev}";
+        # SemVer-ish: 0.2.0-dev.1509+g2fdf60f  (VERSION + .revCount + +g shortRev)
+        revCount = toString (self.revCount or 0);
+        version = "${versionBase}.${revCount}+g${gitRev}";
         versionFlag = "-DPROJECT_VERSION_FULL=${version}";
 
         # RelWithDebInfo: optimised but keeps symbols for gdb/backtraces.
@@ -250,6 +252,7 @@
             echo "  version:    ${version}"
             echo "  system:     ${system}"
             echo "  rev:        ${gitRev}"
+            echo "  revCount:   ${revCount}"
             echo "  build type: ${cmakeBuildType} (dontStrip on packages)"
             echo ""
             echo "Independent flake packages (scoped sources — edit one lib, rebuild only it + dependents):"
