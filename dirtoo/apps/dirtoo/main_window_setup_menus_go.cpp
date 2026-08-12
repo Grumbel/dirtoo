@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include "activity_dialog.hpp"
 #include "history_menu.hpp"
 
 #include "badge_icons.hpp"
@@ -64,6 +65,10 @@ void MainWindow::setup_go_help_menus()
   }
   tools_menu->addAction(theme_icon("preferences-other", "tag"), QStringLiteral("Tag Manager…"),
                         this, &MainWindow::on_tag_manager);
+  tools_menu->addAction(theme_icon("view-refresh", "process-working"),
+                        QStringLiteral("Background activity…"), this, [this] {
+                          show_activity_dialog(this);
+                        });
 
   auto* help_menu = menuBar()->addMenu(QStringLiteral("&Help"));
   help_menu->addAction(theme_icon("help-contents"), QStringLiteral("Filter expression help"), this,

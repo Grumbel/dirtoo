@@ -110,6 +110,9 @@ qt_add_executable(dirtoo-app
   tag_controller.cpp
   tag_manager_dialog.cpp
   quick_filter_bar.cpp
+  activity_monitor.cpp
+  activity_dialog.cpp
+  activity_indicator.cpp
   view_zoom.cpp
   path_completion_worker.hpp
   directory_load_worker.cpp

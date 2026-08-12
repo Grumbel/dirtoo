@@ -4,6 +4,7 @@
 #include "tag_controller.hpp"
 
 #include "tag_job.hpp"
+#include "activity_monitor.hpp"
 
 #include <QInputDialog>
 #include <QLineEdit>
@@ -71,11 +72,14 @@ void TagController::tag_files(std::vector<dirtoo::fs::FileInfo> selection)
     if (!name.isEmpty()) {
       progress->setLabelText(QStringLiteral("Tagging %1…").arg(name));
     }
+    ActivityMonitor::instance().set_task(QStringLiteral("tag"), QStringLiteral("Tagging"), done,
+                                         total_n);
   });
   connect(job, &TagJob::failed, this, [this, progress, job](const QString& message) {
     if (progress != nullptr) {
       progress->close();
     }
+    ActivityMonitor::instance().clear_task(QStringLiteral("tag"));
     QMessageBox::warning(dialog_parent_, QStringLiteral("Tag"), message);
     job->deleteLater();
   });
@@ -92,6 +96,7 @@ void TagController::tag_files(std::vector<dirtoo::fs::FileInfo> selection)
             if (!problems.isEmpty() && problems.size() <= 5) {
               msg += QLatin1Char('\n') + problems.join(QLatin1Char('\n'));
             }
+            ActivityMonitor::instance().clear_task(QStringLiteral("tag"));
             emit status_message(msg, 5000);
             if (tagged > 0) {
               emit tags_applied(tagged);

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include "activity_indicator.hpp"
 #include <QToolButton>
 
 #include "badge_icons.hpp"
@@ -261,12 +262,13 @@ void MainWindow::setup_toolbar()
   crop_thumbnails_act_ = act;
   }
 
-  // Push read-only to the far right of the toolbar (user-testing request).
+  // Push activity + read-only to the far right of the toolbar.
   {
     auto* spacer = new QWidget(toolbar);
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     toolbar->addWidget(spacer);
   }
+  toolbar->addWidget(new ActivityIndicator(toolbar));
   read_only_act_ = toolbar->addAction(theme_icon("object-locked", "changes-prevent"),
                                       QStringLiteral("Read-only"));
   read_only_act_->setCheckable(true);

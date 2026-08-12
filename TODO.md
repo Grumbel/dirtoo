@@ -206,6 +206,11 @@ Handoff bundles **dirtoo-003** … **dirtoo-015** (tip after 015: filter ranges)
 
 #### Done this session
 
+**Background activity toolbar**
+- [x] Toolbar **Activity** indicator (Idle / task headline); click → task list + log ring
+- [x] `ActivityMonitor` fed from status heuristics, thumbnail counts, transfers, TagJob,
+      Qt message handler (warnings+)
+
 **MainWindow gravity (R6 remainder + collaborators)**
 - [x] `FilterSearchChrome` — filter + recursive-search row chrome
 - [x] `DevicesController::attach` — devices list wiring as value member

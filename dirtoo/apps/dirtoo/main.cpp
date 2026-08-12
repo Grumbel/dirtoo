@@ -27,6 +27,8 @@
 #include <QPixmap>
 #include <QLoggingCategory>
 
+#include "activity_monitor.hpp"
+
 #include <filesystem>
 #include <iostream>
 #include <string_view>
@@ -55,6 +57,10 @@ const char* path_basename(const char* path)
 
 void dirtoo_message_handler(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
+  // Always keep warnings+ in the in-app activity log; respect --verbose/--debug for stderr.
+  if (type >= QtWarningMsg || type >= g_min_level) {
+    dirtoo::app::ActivityMonitor::instance().append_log(type, msg);
+  }
   if (type < g_min_level) {
     return;
   }

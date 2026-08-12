@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include "activity_monitor.hpp"
 
 #include "badge_icons.hpp"
 #include "location_icons.hpp"
@@ -135,9 +136,6 @@ void MainWindow::set_status(const QString& text)
 
 void MainWindow::update_busy_indicator(const QString& activity)
 {
-  if (busy_label_ == nullptr) {
-    return;
-  }
   // Heuristic: activity strings that end with an ellipsis or known verbs indicate
   // background work. Also respect an active transfer.
   const bool transfer_busy = transfer_controller_.busy();
@@ -147,17 +145,35 @@ void MainWindow::update_busy_indicator(const QString& activity)
                          || t.startsWith(QStringLiteral("Refreshing"))
                          || t.startsWith(QStringLiteral("Filtering"))
                          || t.startsWith(QStringLiteral("Searching"))
-                         || t.startsWith(QStringLiteral("Transfer"));
-  const bool busy = transfer_busy || text_busy;
+                         || t.startsWith(QStringLiteral("Sorting"))
+                         || t.startsWith(QStringLiteral("Transfer"))
+                         || t.startsWith(QStringLiteral("Tagging"))
+                         || t.startsWith(QStringLiteral("Regenerating"))
+                         || t.startsWith(QStringLiteral("Preparing"))
+                         || t.startsWith(QStringLiteral("Building"));
+
+  auto& mon = ActivityMonitor::instance();
+  if (transfer_busy) {
+    mon.set_task(QStringLiteral("transfer"), QStringLiteral("Transfer"));
+  } else {
+    mon.clear_task(QStringLiteral("transfer"));
+  }
+  if (text_busy && !t.isEmpty()) {
+    // Collapse generic status into one task so the toolbar stays readable.
+    mon.set_task(QStringLiteral("status"), t);
+  } else {
+    mon.clear_task(QStringLiteral("status"));
+  }
+
+  if (busy_label_ == nullptr) {
+    return;
+  }
+  const bool busy = transfer_busy || text_busy || mon.any_active();
   busy_label_->setVisible(busy);
   if (busy) {
-    QString tip = t;
-    if (transfer_busy && !tip.contains(QStringLiteral("Transfer"), Qt::CaseInsensitive)) {
-      tip = tip.isEmpty() ? QStringLiteral("Transferring files…")
-                          : (tip + QStringLiteral(" (transfer in progress)"));
-    }
-    if (tip.isEmpty()) {
-      tip = QStringLiteral("Working…");
+    QString tip = mon.headline();
+    if (tip.isEmpty() || tip == QLatin1String("Idle")) {
+      tip = t.isEmpty() ? QStringLiteral("Working…") : t;
     }
     busy_label_->setToolTip(tip);
   } else {

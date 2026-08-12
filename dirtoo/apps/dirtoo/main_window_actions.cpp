@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include "activity_monitor.hpp"
 
 #include "file_context_menu.hpp"
 #include "properties_dialog.hpp"
@@ -209,8 +210,10 @@ void MainWindow::update_status_selection()
       info += QStringLiteral(", thumbs %1/%2")
                   .arg(tc.ready)
                   .arg(tracked);
-    } else if (tracked > 0 && tc.ready > 0) {
-      // Brief steady-state: omit once everything is done to keep the bar quiet.
+      ActivityMonitor::instance().set_task(QStringLiteral("thumbs"),
+                                           QStringLiteral("Thumbnails"), tc.ready, tracked);
+    } else {
+      ActivityMonitor::instance().clear_task(QStringLiteral("thumbs"));
     }
   }
 
