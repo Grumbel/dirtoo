@@ -4,6 +4,7 @@
 #pragma once
 
 #include "dirtoo/thumbnail/thumbnailer.hpp"
+#include "dirtoo/fs/file_info.hpp"
 #include "dirtoo/fs/location.hpp"
 #include "directory_thumbnail_worker.hpp"
 
@@ -13,13 +14,18 @@
 #include <QStringList>
 #include <QThread>
 
+#include <filesystem>
+#include <functional>
+#include <optional>
 #include <vector>
 
 namespace dirtoo::app {
 
-/// Owns D-Bus thumbnailer, archive path aliases, and directory-montage worker.
-/// Viewport batching / archive extract orchestration stays on MainWindow (needs
-/// collection + views); this type is the ownership boundary for R2.
+class FileListModel;
+
+/// Owns D-Bus thumbnailer, archive path aliases, directory-montage worker, and
+/// per-row request building (incl. archive member extract). Viewport row
+/// discovery stays on MainWindow (needs views / view mode).
 class ThumbnailCoordinator : public QObject {
   Q_OBJECT
 public:
@@ -37,6 +43,18 @@ public:
   void cancel_all();
   void clear_aliases();
   void request_many(const std::vector<dirtoo::fs::Location>& locs, const QStringList& mimes);
+
+  /// Resolve archive-root extract path for a member (MainWindow/ArchiveManager).
+  using ExtractedRootFn =
+      std::function<std::optional<std::filesystem::path>(const dirtoo::fs::Location& archive_root)>;
+
+  /// Queue thumbs for the given model rows of @p visible. Skips Ready/Pending,
+  /// applies directory cache hits, and extracts archive members off the GUI
+  /// thread when needed. Returns true if any directory lacked a cache montage
+  /// (caller may schedule low-priority dir thumbs).
+  bool request_rows(const std::vector<dirtoo::fs::FileInfo>& visible,
+                    const std::vector<int>& rows, FileListModel* model,
+                    const ExtractedRootFn& extracted_root);
 
   /// Create directory-montage worker thread (idempotent).
   void setup_dir_worker();

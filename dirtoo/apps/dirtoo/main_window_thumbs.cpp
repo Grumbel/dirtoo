@@ -4,16 +4,15 @@
 #include "main_window_common.hpp"
 #include "directory_thumbnail_worker.hpp"
 
-#include "archive_member_cache.hpp"
 #include "dirtoo/archive/archive_index.hpp"
 #include "dirtoo/thumbnail/thumbnailer.hpp"
 #include <QDebug>
 #include <QFile>
 #include <QMimeDatabase>
 #include <QStandardPaths>
-#include <QtConcurrent>
 #include <QGraphicsItem>
 #include <filesystem>
+#include <optional>
 #include <QIcon>
 #include <QPixmap>
 
@@ -168,106 +167,12 @@ void MainWindow::request_thumbnails_for_visible()
       rows = std::vector<int>(rows.begin() + begin, rows.begin() + end);
     }
 
-    std::vector<fs::Location> locs;
-    QStringList mimes;
-    locs.reserve(rows.size());
-    mimes.reserve(static_cast<int>(rows.size()));
-    bool any_dir_without_cache = false;
-    for (int r : rows) {
-      if (r < 0 || static_cast<std::size_t>(r) >= visible.size()) {
-        continue;
-      }
-      const auto& fi = visible[static_cast<std::size_t>(r)];
-      if (fi.is_directory()) {
-        // Use an existing XDG/cache montage if present; auto-generate is deferred
-        // via schedule_directory_thumbnails_low_priority().
-        const QString cache = thumbnail::Thumbnailer::cache_path_for(fi.location(),
-                                                                     QStringLiteral("large"));
-        if (QFile::exists(cache) && model_ != nullptr) {
-          model_->set_thumbnail(QString::fromStdString(fi.path().string()), QIcon(cache));
-        } else {
-          any_dir_without_cache = true;
-        }
-        continue;
-      }
-      // Search hits use synthetic FileInfo (no GUI-thread stat) but still refer to
-      // real local paths — thumb them. Archive members are handled below.
-      const QString model_key = QString::fromStdString(fi.path().string());
-      if (model_ != nullptr) {
-        if (model_->thumbnail_status(model_key) == ThumbnailStatus::Ready
-            || model_->thumbnail_status(model_key) == ThumbnailStatus::Pending) {
-          continue;
-        }
-        model_->set_thumbnail_pending(model_key);
-      }
-      static QMimeDatabase mime_db;
-      const QString name_for_mime = QString::fromStdString(fi.basename());
-      const QMimeType mt = mime_db.mimeTypeForFile(name_for_mime, QMimeDatabase::MatchExtension);
-      const QString mime =
-          mt.isValid() ? mt.name() : QStringLiteral("application/octet-stream");
-
-      if (fi.location().is_archive()) {
-        const auto archive_file = fi.location().as_path();
-        const auto member = fi.location().entry_path();
-        const auto cache_root = archive_member_cache_root("dirtoo-archive-thumbs");
-        const auto dest_dir = archive_member_dest_dir(cache_root, archive_file);
-
-        std::filesystem::path real;
-        // Prefer shared extract cache (TagJob / prior thumbs) before full archive open.
-        {
-          std::error_code ec;
-          const auto cached = dest_dir / member;
-          if (!member.empty() && std::filesystem::is_regular_file(cached, ec) && !ec) {
-            real = cached;
-          }
-        }
-        if (real.empty()) {
-          const fs::Location archive_root =
-              fs::Location::from_archive(fi.location().as_path(), {});
-          if (const auto root = archive_manager_.extracted_root(archive_root)) {
-            real = *root / member;
-          }
-        }
-        if (real.empty() || !std::filesystem::exists(real)) {
-          // Extract single member off the GUI thread, then ask Thumbnailer1.
-          const QString key = model_key;
-          const QString mime_copy = mime;
-          (void)QtConcurrent::run([this, archive_file, member, key, mime_copy, dest_dir]() {
-            auto extracted =
-                ensure_archive_member_extracted(archive_file, member, dest_dir);
-            const bool ok = extracted.has_value();
-            const std::filesystem::path out_path = ok ? *extracted : std::filesystem::path{};
-            QMetaObject::invokeMethod(this, [this, ok, out_path, key, mime_copy]() {
-              if (!ok) {
-                if (model_ != nullptr) {
-                  model_->set_thumbnail_failed(key);
-                }
-                return;
-              }
-              const QString real_path = QString::fromStdString(out_path.string());
-              thumbs_.aliases().insert(real_path, key);
-              thumbs_.thumbnailer().request(fs::Location::from_path(out_path), mime_copy,
-                                   QStringLiteral("large"));
-            }, Qt::QueuedConnection);
-          });
-          continue;
-        }
-        const QString real_path = QString::fromStdString(real.string());
-        thumbs_.aliases().insert(real_path, model_key);
-        locs.push_back(fs::Location::from_path(real));
-        mimes.push_back(mime);
-        continue;
-      }
-
-      locs.push_back(fi.location());
-      mimes.push_back(mime);
-    }
-    if (!locs.empty()) {
-      qDebug().noquote() << QStringLiteral("thumbnails: requesting %1 (viewport/batch)")
-                                .arg(locs.size());
-      thumbs_.request_many(locs, mimes);
-    }
-    if (any_dir_without_cache) {
+    const bool need_dir = thumbs_.request_rows(
+        visible, rows, model_,
+        [this](const fs::Location& archive_root) -> std::optional<std::filesystem::path> {
+          return archive_manager_.extracted_root(archive_root);
+        });
+    if (need_dir) {
       schedule_directory_thumbnails_low_priority();
     }
   });

@@ -219,9 +219,9 @@ Prioritized issues from a multi-day change review.
 - [ ] **MainWindow gravity (ongoing)**  
   Hash/tag/thumb policy still grows MainWindow TUs despite R2 collaborators.
   Prefer new orchestration helpers over more `main_window_*.cpp` surface.
-  Progress: `TagJob` extracted; R6 chrome owners; `DevicesController::attach`
-  + value member (list signal wiring off MainWindow). Viewport thumb batch
-  and archive extract orchestration still on MainWindow.
+  Progress: `TagJob` extracted; R6 chrome owners; `DevicesController::attach`;
+  `ThumbnailCoordinator::request_rows` (archive extract + MIME queue; viewport
+  row discovery still on MainWindow).
 
 
 | Item | Notes |
@@ -518,8 +518,9 @@ Goal: smaller translation units and eventually fewer responsibilities on
         (`location_chrome` owns bar widgets + signals; PathCompletionService nested)
       - [x] `SidebarController` — tree + places (devices already partly extracted)
         (`sidebar_controller.{hpp,cpp}`; devices remain DevicesController)
-      - [x] `ThumbnailCoordinator` — owns Thumbnailer, aliases, dir-montage worker
-        (`thumbnail_coordinator.{hpp,cpp}`); viewport batch still on MainWindow
+      - [x] `ThumbnailCoordinator` — owns Thumbnailer, aliases, dir-montage worker,
+        `request_rows` (`thumbnail_coordinator.{hpp,cpp}`); viewport row discovery
+        still on MainWindow
 - [x] **R3** Split `libs/dirtoo-filter/src/predicates.cpp` (~1.8k) by domain
       (`_name` / `_media` / `_fuzzy` / `_meta` / `_content` / `_misc` + `predicates_detail.hpp`)
 - [x] **R4** `GraphicsFileView` impl split — layout/windowing, selection/cursor, DnD
