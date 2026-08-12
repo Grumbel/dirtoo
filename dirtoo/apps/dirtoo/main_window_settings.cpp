@@ -316,9 +316,7 @@ void MainWindow::on_tag_selected()
     msg += QStringLiteral(" Skipped %1.").arg(skipped);
   }
   if (!problems.isEmpty() && problems.size() <= 5) {
-    msg += QStringLiteral("
-") + problems.join(QLatin1Char('
-'));
+    msg += QLatin1Char('\n') + problems.join(QLatin1Char('\n'));
   }
   if (statusBar() != nullptr) {
     statusBar()->showMessage(msg, 5000);
