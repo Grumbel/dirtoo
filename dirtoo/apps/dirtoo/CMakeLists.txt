@@ -89,6 +89,8 @@ qt_add_executable(dirtoo-app
   preferences_dialog.hpp
   checksum_dialog.cpp
   checksum_dialog.hpp
+  tag_job.cpp
+  tag_job.hpp
   history_menu.cpp
   history_menu.hpp
   message_area.cpp

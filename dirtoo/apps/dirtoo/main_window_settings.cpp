@@ -7,24 +7,20 @@
 #include "app_settings.hpp"
 #include "preferences_dialog.hpp"
 #include "checksum_dialog.hpp"
+#include "tag_job.hpp"
+#include "tag_paint.hpp"
 #include "tag_paint.hpp"
 
-#include "dirtoo/hash/checksum_store.hpp"
-#include "dirtoo/hash/hash_file.hpp"
-#include "dirtoo/tags/tag_store.hpp"
-#include "dirtoo/archive/archive_index.hpp"
 #include "dirtoo/fs/location.hpp"
 
 #include <QInputDialog>
 #include <QProgressDialog>
 #include <QFileInfo>
-#include <QCoreApplication>
 #include <QMessageBox>
 #include <QStatusBar>
 #include <QLineEdit>
 #include "size_format.hpp"
 #include <QHeaderView>
-#include <QTemporaryDir>
 
 namespace dirtoo::app {
 
@@ -276,7 +272,6 @@ void MainWindow::on_tag_selected()
   std::vector<fs::FileInfo> files;
   files.reserve(infos.size());
   for (const auto& fi : infos) {
-    // Regular disk files, or archive members (synthetic regular files).
     if (!fi.is_regular_file()) {
       continue;
     }
@@ -301,128 +296,69 @@ void MainWindow::on_tag_selected()
     return;
   }
 
-  dirtoo::hash::ChecksumStore checksums;
-  dirtoo::tags::TagStore tags;
-  std::string err;
-  if (!checksums.open(dirtoo::hash::ChecksumStore::default_path(), &err)
-      || !tags.open(dirtoo::tags::TagStore::default_path(), &err)) {
-    QMessageBox::warning(this, QStringLiteral("Tag"), QString::fromStdString(err));
-    return;
-  }
+  const int total = static_cast<int>(files.size());
+  auto* progress = new QProgressDialog(QStringLiteral("Tagging files…"), QStringLiteral("Cancel"), 0,
+                                       total, this);
+  progress->setWindowModality(Qt::WindowModal);
+  progress->setMinimumDuration(total > 1 ? 0 : 2000);
+  progress->setAttribute(Qt::WA_DeleteOnClose);
+  progress->setValue(0);
 
-  int tagged = 0;
-  int skipped = 0;
-  QStringList problems;
-  // Hashing missing checksums is synchronous and can be slow for many/large
-  // files (and archive members need extract+hash). Keep the UI responsive.
-  QProgressDialog progress(QStringLiteral("Tagging files…"), QStringLiteral("Cancel"), 0,
-                           static_cast<int>(files.size()), this);
-  progress.setWindowModality(Qt::WindowModal);
-  progress.setMinimumDuration(files.size() > 1 ? 0 : 2000);
-  progress.setValue(0);
-
-  auto ensure_digests = [&](const fs::FileInfo& fi, std::string* key_out,
-                            dirtoo::hash::HashError* herr) -> bool {
-    if (fi.location().is_archive()) {
-      // Stable identity: Location URL (file://…//archive:entry).
-      const std::string key = fi.location().as_url();
-      *key_out = key;
-      if (auto hit = checksums.get(key)) {
-        return true;
-      }
-      QTemporaryDir tmp;
-      if (!tmp.isValid()) {
-        if (herr) {
-          herr->message = "failed to create temp dir for archive member";
-        }
-        return false;
-      }
-      const auto archive_file = fi.location().as_path();
-      const auto member = fi.location().entry_path();
-      if (member.empty()) {
-        if (herr) {
-          herr->message = "cannot tag archive root; select a member file";
-        }
-        return false;
-      }
-      auto extracted =
-          dirtoo::archive::extract_member(archive_file, member, tmp.path().toStdString());
-      if (!extracted) {
-        if (herr) {
-          herr->message = extracted.error();
-        }
-        return false;
-      }
-      auto digests = dirtoo::hash::hash_file(*extracted, {}, herr);
-      if (!digests) {
-        return false;
-      }
-      digests->size = fi.size() != 0 ? fi.size() : digests->size;
-      checksums.put(key, *digests);
-      return true;
+  // Hash + archive extract on a worker thread (AGENTS: no hash on GUI).
+  auto* job = new TagJob(std::move(files), tag.trimmed(), this);
+  connect(progress, &QProgressDialog::canceled, job, &TagJob::cancel);
+  connect(job, &TagJob::progress, this, [progress](int done, int total_n, const QString& name) {
+    if (progress == nullptr) {
+      return;
     }
-
-    std::error_code ec;
-    const auto abs = std::filesystem::absolute(fi.path(), ec);
-    const std::string key = ec ? fi.path().string() : abs.lexically_normal().string();
-    *key_out = key;
-    return static_cast<bool>(checksums.ensure(abs, key, false, herr));
-  };
-
-  for (int i = 0; i < static_cast<int>(files.size()); ++i) {
-    if (progress.wasCanceled()) {
-      break;
+    progress->setMaximum(total_n);
+    progress->setValue(done);
+    if (!name.isEmpty()) {
+      progress->setLabelText(QStringLiteral("Tagging %1…").arg(name));
     }
-    const auto& fi = files[static_cast<std::size_t>(i)];
-    const QString display = QString::fromStdString(fi.basename());
-    progress.setLabelText(QStringLiteral("Tagging %1…").arg(display));
-    progress.setValue(i);
-    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-
-    std::string key;
-    dirtoo::hash::HashError herr;
-    if (!ensure_digests(fi, &key, &herr)) {
-      ++skipped;
-      problems << QStringLiteral("%1: %2").arg(display, QString::fromStdString(herr.message));
-      continue;
+  });
+  connect(job, &TagJob::failed, this, [this, progress, job](const QString& message) {
+    if (progress != nullptr) {
+      progress->close();
     }
-    std::string e;
-    auto id = tags.resolve_path(checksums, key, &e);
-    if (!id || !tags.add_tag_to_file(*id, tag.toStdString(), &e)) {
-      ++skipped;
-      problems << QStringLiteral("%1: %2").arg(display, QString::fromStdString(e));
-      continue;
-    }
-    ++tagged;
-  }
-  progress.setValue(static_cast<int>(files.size()));
-
-  QString msg = QStringLiteral("Tagged %1 file(s).").arg(tagged);
-  if (skipped > 0) {
-    msg += QStringLiteral(" Skipped %1.").arg(skipped);
-  }
-  if (!problems.isEmpty() && problems.size() <= 5) {
-    msg += QLatin1Char('\n') + problems.join(QLatin1Char('\n'));
-  }
-  if (statusBar() != nullptr) {
-    statusBar()->showMessage(msg, 5000);
-  }
-  if (tagged > 0) {
-    // Chip paint path caches SQLite lookups; drop so new tags show immediately.
-    tag_paint_detail::clear_tag_chip_cache();
-    if (graphics_view_ != nullptr) {
-      graphics_view_->viewport()->update();
-    }
-    if (icon_view_ != nullptr) {
-      icon_view_->viewport()->update();
-    }
-    if (tree_view_ != nullptr) {
-      tree_view_->viewport()->update();
-    }
-  }
-  if (skipped > 0) {
-    QMessageBox::warning(this, QStringLiteral("Tag"), msg);
-  }
+    QMessageBox::warning(this, QStringLiteral("Tag"), message);
+    job->deleteLater();
+  });
+  connect(job, &TagJob::finished, this,
+          [this, progress, job](int tagged, int skipped, const QStringList& problems) {
+            if (progress != nullptr) {
+              progress->setValue(progress->maximum());
+              progress->close();
+            }
+            QString msg = QStringLiteral("Tagged %1 file(s).").arg(tagged);
+            if (skipped > 0) {
+              msg += QStringLiteral(" Skipped %1.").arg(skipped);
+            }
+            if (!problems.isEmpty() && problems.size() <= 5) {
+              msg += QLatin1Char('\n') + problems.join(QLatin1Char('\n'));
+            }
+            if (statusBar() != nullptr) {
+              statusBar()->showMessage(msg, 5000);
+            }
+            if (tagged > 0) {
+              tag_paint_detail::clear_tag_chip_cache();
+              if (graphics_view_ != nullptr) {
+                graphics_view_->viewport()->update();
+              }
+              if (icon_view_ != nullptr) {
+                icon_view_->viewport()->update();
+              }
+              if (tree_view_ != nullptr) {
+                tree_view_->viewport()->update();
+              }
+            }
+            if (skipped > 0) {
+              QMessageBox::warning(this, QStringLiteral("Tag"), msg);
+            }
+            job->deleteLater();
+          });
+  job->start();
+  progress->show();
 }
 
 void MainWindow::apply_settings(const AppSettings& s)
