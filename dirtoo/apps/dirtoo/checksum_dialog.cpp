@@ -162,7 +162,7 @@ ChecksumDialog::ChecksumDialog(QStringList paths, QWidget* parent)
   layout->addWidget(tree_, 1);
 
   progress_ = new QProgressBar(this);
-  progress_->setRange(0, std::max(1, paths_.size()));
+  progress_->setRange(0, std::max(qsizetype{1}, paths_.size()));
   progress_->setValue(0);
   layout->addWidget(progress_);
 
@@ -238,7 +238,7 @@ void ChecksumDialog::start_job(bool refresh, bool cached_only)
     item->setText(1, QStringLiteral("…"));
   }
   progress_->setValue(0);
-  progress_->setMaximum(std::max(1, paths_.size()));
+  progress_->setMaximum(std::max(qsizetype{1}, paths_.size()));
   compute_btn_->setEnabled(false);
   cached_btn_->setEnabled(false);
   cancel_btn_->setEnabled(true);
