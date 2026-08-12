@@ -272,6 +272,59 @@ bool TagStore::set_tag_meta(std::string_view name, std::optional<std::string> la
   return ok;
 }
 
+
+bool TagStore::rename_tag(std::string_view old_name, std::string_view new_name, std::string* error)
+{
+  const std::string from = normalize_tag_name(old_name);
+  const std::string to = normalize_tag_name(new_name);
+  if (from.empty() || to.empty()) {
+    if (error) {
+      *error = "invalid tag name";
+    }
+    return false;
+  }
+  if (from == to) {
+    return true;
+  }
+  auto existing = get_tag(from);
+  if (!existing) {
+    if (error) {
+      *error = "unknown tag";
+    }
+    return false;
+  }
+  if (get_tag(to)) {
+    if (error) {
+      *error = "target tag name already exists";
+    }
+    return false;
+  }
+
+  // If label was the old name (default), keep it in sync with the new name.
+  std::string label = existing->label;
+  if (label.empty() || label == existing->name) {
+    label = to;
+  }
+
+  sqlite3_stmt* stmt = nullptr;
+  constexpr const char* sql = "UPDATE tag_defs SET name = ?1, label = ?2 WHERE id = ?3";
+  if (sqlite3_prepare_v2(static_cast<sqlite3*>(db_), sql, -1, &stmt, nullptr) != SQLITE_OK) {
+    if (error) {
+      *error = sqlite3_errmsg(static_cast<sqlite3*>(db_));
+    }
+    return false;
+  }
+  sqlite3_bind_text(stmt, 1, to.c_str(), -1, SQLITE_TRANSIENT);
+  sqlite3_bind_text(stmt, 2, label.c_str(), -1, SQLITE_TRANSIENT);
+  sqlite3_bind_int64(stmt, 3, existing->id);
+  const bool ok = sqlite3_step(stmt) == SQLITE_DONE;
+  if (!ok && error) {
+    *error = sqlite3_errmsg(static_cast<sqlite3*>(db_));
+  }
+  sqlite3_finalize(stmt);
+  return ok;
+}
+
 std::optional<std::int64_t>
 TagStore::ensure_file_sha256(std::string_view sha256, std::string_view path_key, std::string* error)
 {

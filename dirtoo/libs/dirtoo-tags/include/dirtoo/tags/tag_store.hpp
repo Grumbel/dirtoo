@@ -27,6 +27,9 @@ struct TaggedFile {
 
 /// Tag association DB. Never hashes files; identity is SHA-256 from ChecksumStore.
 /// Default path: $XDG_DATA_HOME/dirtoo/tags.sqlite
+///
+/// Indirection: file_tags stores integer tag_id → tag_defs.id. Renaming a tag only
+/// updates tag_defs.name (and optionally label); file associations stay put.
 class TagStore {
 public:
   TagStore() = default;
@@ -51,6 +54,9 @@ public:
   bool set_tag_meta(std::string_view name, std::optional<std::string> label,
                     std::optional<std::string> color, std::optional<std::string> badge,
                     std::string* error = nullptr);
+  /// Rename tag definition by stable id. Does not touch file_tags rows.
+  bool rename_tag(std::string_view old_name, std::string_view new_name,
+                  std::string* error = nullptr);
 
   // --- identity (sha256) ---
   /// Upsert file row for sha256; optionally remember path alias.

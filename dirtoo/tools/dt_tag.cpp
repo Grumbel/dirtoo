@@ -26,13 +26,15 @@ void usage(const char* argv0)
   std::cerr
       << "Usage: " << argv0 << " <command> [options] [args…]\n\n"
       << "Tag files using SHA-256 from the checksum cache (never hashes itself).\n"
-      << "Run dt-checksum on files first, or pass --hash-if-needed.\n\n"
+      << "Run dt-checksum on files first, or pass --hash-if-needed.\n"
+      << "Tags are indirected by integer id; rename only updates the definition.\n\n"
       << "Commands:\n"
       << "  add    <tag> <path>…     Attach tag (checksum must exist unless --hash-if-needed)\n"
       << "  remove <tag> <path>…     Remove tag from files\n"
       << "  list   [path]            List tags on path, or all tag definitions\n"
       << "  files  <tag>             List known paths / sha256 for tag\n"
-      << "  def    <tag> [--label L] [--color #rgb] [--badge ID]\n\n"
+      << "  def    <tag> [--label L] [--color #rgb] [--badge ID]\n"
+      << "  rename <old> <new>       Rename tag definition (file links keep tag id)\n\n"
       << "Options:\n"
       << "  --hash-if-needed   Call checksum ensure() once if cache miss (add only)\n"
       << "  --tags-db PATH     Tags database (default: $XDG_DATA_HOME/dirtoo/tags.sqlite)\n"
@@ -187,7 +189,7 @@ int main(int argc, char** argv)
   if (cmd == "list") {
     if (args.empty()) {
       for (const auto& def : tags.list_tags()) {
-        std::cout << def.name;
+        std::cout << def.name << "  id=" << def.id;
         if (!def.label.empty() && def.label != def.name) {
           std::cout << "  (" << def.label << ")";
         }
@@ -269,6 +271,22 @@ int main(int argc, char** argv)
     if (auto def = tags.get_tag(tag)) {
       std::cout << def->name << " label=" << def->label << " color=" << def->color
                 << " badge=" << def->badge << '\n';
+    }
+    return 0;
+  }
+
+  if (cmd == "rename") {
+    if (args.size() != 2) {
+      usage(argv[0]);
+      return 2;
+    }
+    std::string e;
+    if (!tags.rename_tag(args[0], args[1], &e)) {
+      std::cerr << e << '\n';
+      return 1;
+    }
+    if (auto def = tags.get_tag(args[1])) {
+      std::cout << "renamed -> " << def->name << " (id=" << def->id << ")\n";
     }
     return 0;
   }

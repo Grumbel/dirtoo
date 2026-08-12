@@ -761,8 +761,9 @@ Primary algo for identity: **SHA-256**. Always compute the set in one pass.
 
 - [x] SQLite under `$XDG_DATA_HOME/dirtoo/tags.sqlite` (tag defs + file_tags;
       file identity by sha256 from checksum store, path aliases)
-- [x] **`dt-tag`** add/remove/list/files/def — refuse if checksum unknown
+- [x] **`dt-tag`** add/remove/list/files/def/rename — refuse if checksum unknown
       (optional `--hash-if-needed` calls checksum API, does not reimplement hash)
+- [x] Tag indirection: `file_tags.tag_id` → `tag_defs.id`; rename does not retouch files
 - [x] Filter / `dt-search`: `tag:name` / `tagged:yes|no` predicate
 - [x] GUI: tag context menu (“Tag…”)
 - [ ] Badges from tag_defs (icon/color) in icon view
