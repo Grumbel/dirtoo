@@ -41,10 +41,16 @@ struct TagLookup {
 
   [[nodiscard]] std::string path_key(const FilterItem& item) const
   {
+    const std::string path_str = item.path.string();
+    // Archive members use Location URL as path; keep key stable.
+    if (path_str.find("://") != std::string::npos
+        || path_str.find("//archive") != std::string::npos) {
+      return path_str;
+    }
     std::error_code ec;
     const auto abs = std::filesystem::absolute(item.path, ec);
     if (ec) {
-      return item.path.string();
+      return path_str;
     }
     return abs.lexically_normal().string();
   }

@@ -9,7 +9,10 @@
 #include "checksum_dialog.hpp"
 
 #include "dirtoo/hash/checksum_store.hpp"
+#include "dirtoo/hash/hash_file.hpp"
 #include "dirtoo/tags/tag_store.hpp"
+#include "dirtoo/archive/archive_index.hpp"
+#include "dirtoo/fs/location.hpp"
 
 #include <QInputDialog>
 #include <QProgressDialog>
@@ -20,6 +23,7 @@
 #include <QLineEdit>
 #include "size_format.hpp"
 #include <QHeaderView>
+#include <QTemporaryDir>
 
 namespace dirtoo::app {
 
@@ -268,23 +272,30 @@ void MainWindow::on_checksums()
 void MainWindow::on_tag_selected()
 {
   const auto infos = selected_fileinfos();
-  QStringList paths;
+  std::vector<fs::FileInfo> files;
+  files.reserve(infos.size());
   for (const auto& fi : infos) {
-    if (fi.is_regular_file() && !fi.is_synthetic()) {
-      paths << QString::fromStdString(fi.path().string());
+    // Regular disk files, or archive members (synthetic regular files).
+    if (!fi.is_regular_file()) {
+      continue;
     }
+    if (fi.is_synthetic() && !fi.location().is_archive()) {
+      continue;
+    }
+    files.push_back(fi);
   }
-  if (paths.isEmpty()) {
+  if (files.empty()) {
     QMessageBox::information(this, QStringLiteral("Tag"),
-                             QStringLiteral("Select one or more regular files first."));
+                             QStringLiteral("Select one or more regular files first "
+                                            "(disk files or archive members)."));
     return;
   }
 
   bool ok = false;
   const QString tag = QInputDialog::getText(
       this, QStringLiteral("Tag"),
-      QStringLiteral("Tag name for %1 file(s):").arg(paths.size()), QLineEdit::Normal,
-      QString(), &ok);
+      QStringLiteral("Tag name for %1 file(s):").arg(static_cast<int>(files.size())),
+      QLineEdit::Normal, QString(), &ok);
   if (!ok || tag.trimmed().isEmpty()) {
     return;
   }
@@ -302,39 +313,88 @@ void MainWindow::on_tag_selected()
   int skipped = 0;
   QStringList problems;
   // Hashing missing checksums is synchronous and can be slow for many/large
-  // files. Keep the UI responsive with a cancellable progress dialog.
+  // files (and archive members need extract+hash). Keep the UI responsive.
   QProgressDialog progress(QStringLiteral("Tagging files…"), QStringLiteral("Cancel"), 0,
-                           paths.size(), this);
+                           static_cast<int>(files.size()), this);
   progress.setWindowModality(Qt::WindowModal);
-  progress.setMinimumDuration(paths.size() > 1 ? 0 : 2000);
+  progress.setMinimumDuration(files.size() > 1 ? 0 : 2000);
   progress.setValue(0);
-  for (int i = 0; i < paths.size(); ++i) {
+
+  auto ensure_digests = [&](const fs::FileInfo& fi, std::string* key_out,
+                            dirtoo::hash::HashError* herr) -> bool {
+    if (fi.location().is_archive()) {
+      // Stable identity: Location URL (file://…//archive:entry).
+      const std::string key = fi.location().as_url();
+      *key_out = key;
+      if (auto hit = checksums.get(key)) {
+        return true;
+      }
+      QTemporaryDir tmp;
+      if (!tmp.isValid()) {
+        if (herr) {
+          herr->message = "failed to create temp dir for archive member";
+        }
+        return false;
+      }
+      const auto archive_file = fi.location().as_path();
+      const auto member = fi.location().entry_path();
+      if (member.empty()) {
+        if (herr) {
+          herr->message = "cannot tag archive root; select a member file";
+        }
+        return false;
+      }
+      auto extracted =
+          dirtoo::archive::extract_member(archive_file, member, tmp.path().toStdString());
+      if (!extracted) {
+        if (herr) {
+          herr->message = extracted.error();
+        }
+        return false;
+      }
+      auto digests = dirtoo::hash::hash_file(*extracted, {}, herr);
+      if (!digests) {
+        return false;
+      }
+      digests->size = fi.size() != 0 ? fi.size() : digests->size;
+      checksums.put(key, *digests);
+      return true;
+    }
+
+    std::error_code ec;
+    const auto abs = std::filesystem::absolute(fi.path(), ec);
+    const std::string key = ec ? fi.path().string() : abs.lexically_normal().string();
+    *key_out = key;
+    return static_cast<bool>(checksums.ensure(abs, key, false, herr));
+  };
+
+  for (int i = 0; i < static_cast<int>(files.size()); ++i) {
     if (progress.wasCanceled()) {
       break;
     }
-    const QString& p = paths.at(i);
-    progress.setLabelText(QStringLiteral("Tagging %1…").arg(QFileInfo(p).fileName()));
+    const auto& fi = files[static_cast<std::size_t>(i)];
+    const QString display = QString::fromStdString(fi.basename());
+    progress.setLabelText(QStringLiteral("Tagging %1…").arg(display));
     progress.setValue(i);
     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-    std::error_code ec;
-    const auto abs = std::filesystem::absolute(p.toStdString(), ec);
-    const std::string key = ec ? p.toStdString() : abs.lexically_normal().string();
+
+    std::string key;
     dirtoo::hash::HashError herr;
-    if (!checksums.ensure(abs, key, false, &herr)) {
+    if (!ensure_digests(fi, &key, &herr)) {
       ++skipped;
-      problems << QStringLiteral("%1: %2").arg(p, QString::fromStdString(herr.message));
+      problems << QStringLiteral("%1: %2").arg(display, QString::fromStdString(herr.message));
       continue;
     }
     std::string e;
     auto id = tags.resolve_path(checksums, key, &e);
     if (!id || !tags.add_tag_to_file(*id, tag.toStdString(), &e)) {
       ++skipped;
-      problems << QStringLiteral("%1: %2").arg(p, QString::fromStdString(e));
+      problems << QStringLiteral("%1: %2").arg(display, QString::fromStdString(e));
       continue;
     }
     ++tagged;
   }
-  progress.setValue(paths.size());
+  progress.setValue(static_cast<int>(files.size()));
 
   QString msg = QStringLiteral("Tagged %1 file(s).").arg(tagged);
   if (skipped > 0) {

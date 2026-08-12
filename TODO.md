@@ -37,6 +37,7 @@ Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 - [x] Group by Day/Directory CPU spin: cache section labels at rebuild
       (`apply_grouping` + index-based `IsGroupStartRole` / `GroupLabelRole`)
 - [x] Group by Session (10h mtime gap clusters; View → Group By → Session)
+- [x] Tag archive members (extract+hash; Location URL as checksum key; badges/filter)
 
 - [x] Icon/badge load failures always on stderr; qrc fallback for badges
 - [x] Directory montage failures report concrete reasons on stderr

@@ -63,9 +63,17 @@ inline std::vector<TagChip> chips_for_path(const std::filesystem::path& path)
   if (!open) {
     return {};
   }
-  std::error_code ec;
-  const auto abs = std::filesystem::absolute(path, ec);
-  const std::string key = ec ? path.string() : abs.lexically_normal().string();
+  // Archive members store path() as the Location URL (file://…//archive:…);
+  // do not absolute()-normalize those keys or lookup will miss.
+  const std::string path_str = path.string();
+  std::string key;
+  if (path_str.find("://") != std::string::npos || path_str.find("//archive") != std::string::npos) {
+    key = path_str;
+  } else {
+    std::error_code ec;
+    const auto abs = std::filesystem::absolute(path, ec);
+    key = ec ? path_str : abs.lexically_normal().string();
+  }
   auto digests = checksums.get(key);
   if (!digests) {
     return {};
