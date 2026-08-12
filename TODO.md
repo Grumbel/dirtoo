@@ -466,7 +466,9 @@ Python reference: experimental `dirtoo-py/experiments/udisks/` (`udisksqt.py`); 
 4. **UDisks2 client** + Devices list (mounted volumes only) — **done** (read-only; live refresh on interface changes best-effort).
 5. **UDisks2** unmounted volumes + Mount/Unmount/Eject actions + live updates — **done**
    (async Mount/Unmount/Eject; ObjectManager + PropertiesChanged debounce; devices context menu).
-6. **Polish**: icons, context menus, hidden-dir preference, watcher refresh of expanded nodes.
+6. **Polish**: icons, context menus, hidden-dir preference, watcher refresh of expanded nodes —
+   **partial** ( + soft refresh on watcher
+   create/remove parents and full dir change).
 
 ### Explicit non-goals (for this feature track)
 

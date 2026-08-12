@@ -11,6 +11,7 @@
 #include "dirtoo/filter/media_meta_cache.hpp"
 #include <QDir>
 #include <QFileInfo>
+#include <QSet>
 #include <QMimeDatabase>
 #include <QThreadPool>
 #include <QStandardPaths>
@@ -188,6 +189,12 @@ void MainWindow::update_history_actions()
 void MainWindow::on_directory_changed()
 {
   reload_directory(false);
+  // Soft-refresh expanded sidebar tree node for the current folder (if any).
+  if (auto* tree_model = sidebar_.places().model()) {
+    if (!location_.is_archive()) {
+      tree_model->refresh_if_loaded(QString::fromStdString(location_.as_path().string()));
+    }
+  }
 }
 
 void MainWindow::on_entries_changed(const QStringList& created, const QStringList& removed,
@@ -218,6 +225,26 @@ void MainWindow::on_entries_changed(const QStringList& created, const QStringLis
       watcher_reload_timer_->start();
     }
     return;
+  }
+
+  // Sidebar tree: soft-refresh parent dirs of created/removed subdirs when loaded.
+  if (auto* tree_model = sidebar_.places().model()) {
+    QSet<QString> parents;
+    auto add_parent = [&](const QString& path) {
+      const QString parent = QFileInfo(path).absolutePath();
+      if (!parent.isEmpty()) {
+        parents.insert(parent);
+      }
+    };
+    for (const QString& path : created) {
+      add_parent(path);
+    }
+    for (const QString& path : removed) {
+      add_parent(path);
+    }
+    for (const QString& parent : parents) {
+      tree_model->refresh_if_loaded(parent);
+    }
   }
 
   // Removals need no FS I/O — path identity only.

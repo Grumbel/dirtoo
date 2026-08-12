@@ -4,6 +4,7 @@
 #include "directory_tree_model.hpp"
 
 #include <QFileIconProvider>
+#include <QSet>
 #include <QFileInfo>
 #include <QtConcurrent>
 
@@ -386,6 +387,104 @@ QModelIndex DirectoryTreeModel::ensure_path_visible(const QString& path)
     }
   }
   return index_from_node(cur);
+}
+
+void DirectoryTreeModel::refresh_if_loaded(const QString& path)
+{
+  if (path.isEmpty()) {
+    return;
+  }
+  const QModelIndex idx = index_for_path(path);
+  if (!idx.isValid()) {
+    return;
+  }
+  Node* n = node_from_index(idx);
+  if (n == nullptr || n == &root_ || !n->loaded || n->loading) {
+    return;
+  }
+  n->loading = true;
+  const std::uint64_t gen = next_fetch_generation_++;
+  n->fetch_generation = gen;
+  const QString p = n->path;
+  const bool hidden = show_hidden_;
+
+  (void)QtConcurrent::run([this, n, p, hidden, gen]() {
+    const QStringList children = list_subdirectories(p, hidden);
+    QMetaObject::invokeMethod(
+        this,
+        [this, n, children, gen]() { apply_refreshed_children(n, children, gen); },
+        Qt::QueuedConnection);
+  });
+}
+
+void DirectoryTreeModel::apply_refreshed_children(Node* parent, const QStringList& child_paths,
+                                                  std::uint64_t generation)
+{
+  if (parent == nullptr || parent->fetch_generation != generation) {
+    return;
+  }
+  parent->loading = false;
+  if (!parent->loaded) {
+    apply_children(parent, child_paths, generation);
+    return;
+  }
+
+  const QModelIndex parent_index = index_from_node(parent);
+
+  QSet<QString> desired;
+  desired.reserve(child_paths.size());
+  for (const QString& cp : child_paths) {
+    desired.insert(cp);
+  }
+
+  for (int i = parent->children.size() - 1; i >= 0; --i) {
+    Node* c = parent->children[i];
+    if (!desired.contains(c->path)) {
+      beginRemoveRows(parent_index, i, i);
+      parent->children.removeAt(i);
+      std::function<void(Node*)> wipe = [&](Node* node) {
+        for (Node* ch : node->children) {
+          wipe(ch);
+          delete ch;
+        }
+        node->children.clear();
+        delete node;
+      };
+      wipe(c);
+      endRemoveRows();
+    }
+  }
+
+  QSet<QString> existing;
+  for (Node* c : parent->children) {
+    existing.insert(c->path);
+  }
+
+  int insert_at = 0;
+  for (const QString& cp : child_paths) {
+    if (existing.contains(cp)) {
+      while (insert_at < parent->children.size() && parent->children[insert_at]->path != cp) {
+        ++insert_at;
+      }
+      if (insert_at < parent->children.size()) {
+        ++insert_at;
+      }
+      continue;
+    }
+    beginInsertRows(parent_index, insert_at, insert_at);
+    auto* child = new Node;
+    child->path = cp;
+    child->display = QFileInfo(cp).fileName();
+    if (child->display.isEmpty()) {
+      child->display = cp;
+    }
+    child->parent = parent;
+    child->loaded = false;
+    child->is_dir = true;
+    parent->children.insert(insert_at, child);
+    endInsertRows();
+    ++insert_at;
+  }
 }
 
 } // namespace dirtoo::app

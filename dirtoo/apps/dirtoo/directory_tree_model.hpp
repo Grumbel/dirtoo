@@ -34,6 +34,10 @@ public:
   /// walk for already-loaded nodes; schedules fetchMore for missing segments).
   QModelIndex ensure_path_visible(const QString& path);
 
+  /// If a node for @p path is already loaded, re-list its subdirectories off-thread
+  /// and update children (insert/remove). No-op if the path is unknown or not loaded.
+  void refresh_if_loaded(const QString& path);
+
   // QAbstractItemModel
   [[nodiscard]] QModelIndex index(int row, int column,
                                   const QModelIndex& parent = {}) const override;
@@ -62,6 +66,8 @@ private:
   QModelIndex index_from_node(Node* node, int column = 0) const;
   void clear_tree();
   void apply_children(Node* parent, const QStringList& child_paths, std::uint64_t generation);
+  void apply_refreshed_children(Node* parent, const QStringList& child_paths,
+                                std::uint64_t generation);
 
   Node root_; // invisible root
   bool show_hidden_ = false;
