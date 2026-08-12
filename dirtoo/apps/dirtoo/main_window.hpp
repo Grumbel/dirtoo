@@ -135,6 +135,7 @@ private slots:
   void on_preferences();
   void on_checksums();
   void on_tag_selected();
+  void on_tag_manager();
   void on_reload_thumbnails();
   void on_prepare_thumbnails();
   void on_make_directory_thumbnails();

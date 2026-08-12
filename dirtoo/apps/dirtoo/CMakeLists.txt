@@ -108,6 +108,7 @@ qt_add_executable(dirtoo-app
   sidebar_controller.cpp
   filter_history.cpp
   tag_controller.cpp
+  tag_manager_dialog.cpp
   view_zoom.cpp
   path_completion_worker.hpp
   directory_load_worker.cpp

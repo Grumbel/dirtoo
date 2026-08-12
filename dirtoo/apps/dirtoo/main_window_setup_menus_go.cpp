@@ -62,6 +62,8 @@ void MainWindow::setup_go_help_menus()
     act->setShortcut(QKeySequence(QStringLiteral("Ctrl+T")));
     act->setStatusTip(QStringLiteral("Tag the selected regular file(s)"));
   }
+  tools_menu->addAction(theme_icon("preferences-other", "tag"), QStringLiteral("Tag Manager…"),
+                        this, &MainWindow::on_tag_manager);
 
   auto* help_menu = menuBar()->addMenu(QStringLiteral("&Help"));
   help_menu->addAction(theme_icon("help-contents"), QStringLiteral("Filter expression help"), this,

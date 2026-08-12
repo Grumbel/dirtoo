@@ -196,6 +196,9 @@ Go to Folder, Clear. Storage: SQLite at `$XDG_STATE_HOME/dirtoo/operations-histo
 
 ## Residual / optional polish
 
+### Tag Manager
+- [x] **Tag Manager** dialog (Tools → Tag Manager…): list definitions, rename via TagStore
+
 ### Fixes (2026-08-12)
 - [x] **dt-search** positional QUERY was treated as a directory (empty matches +
   “path(s) could not be read”); parity with Python simple mode (`QUERY` + `-d`).

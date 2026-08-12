@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include "tag_manager_dialog.hpp"
+#include "tag_paint.hpp"
 #include "view_zoom.hpp"
 
 #include "app_settings.hpp"
@@ -264,6 +266,26 @@ void MainWindow::on_checksums()
 void MainWindow::on_tag_selected()
 {
   tag_.tag_files(selected_fileinfos());
+}
+
+void MainWindow::on_tag_manager()
+{
+  auto* dlg = new TagManagerDialog(this);
+  connect(dlg, &TagManagerDialog::tags_changed, this, [this] {
+    tag_paint_detail::clear_tag_chip_cache();
+    if (graphics_view_ != nullptr) {
+      graphics_view_->viewport()->update();
+    }
+    if (icon_view_ != nullptr) {
+      icon_view_->viewport()->update();
+    }
+    if (tree_view_ != nullptr) {
+      tree_view_->viewport()->update();
+    }
+  });
+  dlg->show();
+  dlg->raise();
+  dlg->activateWindow();
 }
 
 void MainWindow::apply_settings(const AppSettings& s)
