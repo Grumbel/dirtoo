@@ -77,6 +77,8 @@ public:
   void clear_thumbnail(const QString& path);
   /// Drop Pending marks so a later request can re-queue after cancel/timeout.
   void clear_pending_thumbnails();
+  /// Drop Pending older than @p max_age_ms (lost D-Bus jobs); returns how many.
+  int clear_stale_pending_thumbnails(qint64 max_age_ms = 60000);
   void mark_new(const QString& path);
   void clear_new_marks();
   void prune_new_marks(const QSet<QString>& keep_paths);
@@ -149,6 +151,8 @@ private:
   collection::FileCollection* collection_ = nullptr;
   QHash<QString, QIcon> thumbnails_;
   QHash<QString, ThumbnailStatus> thumbnail_status_;
+  /// msecs since epoch when path entered Pending (for stale re-queue).
+  QHash<QString, qint64> thumbnail_pending_since_;
   QSet<QString> new_paths_;
   QHash<QString, qint64> child_counts_; // -1 = pending, >=0 = known
   QSet<QString> child_count_pending_;

@@ -213,8 +213,8 @@ Prioritized issues from a multi-day change review.
 - [x] **Archive tag: extract-per-member cost (medium)**  
   TagJob reuses `dirtoo-archive-thumbs` member extract cache (shared with thumbs).
 - [x] **Thumbnail `Pending` can stick (low)**  
-  `clear_pending_thumbnails()` on cancel_all so viewport re-request can re-queue.
-  Reload already clears; residual: no idle timeout without cancel.
+  `clear_pending_thumbnails()` on cancel_all; `clear_stale_pending_thumbnails(60s)`
+  on each viewport thumb request so lost D-Bus jobs can re-queue.
 - [ ] **MainWindow gravity (ongoing)**  
   Hash/tag/thumb policy still grows MainWindow TUs despite R2 collaborators.
   Prefer new orchestration helpers over more `main_window_*.cpp` surface.

@@ -101,6 +101,10 @@ void MainWindow::request_thumbnails_for_visible()
     if (visible.empty()) {
       return;
     }
+    // Lost D-Bus Ready/Error leaves Pending forever; re-queue after 60s idle.
+    if (model_ != nullptr) {
+      model_->clear_stale_pending_thumbnails(60'000);
+    }
 
     // Prefer true viewport row ranges from layout / view geometry. Do not use
     // scene()->items(): that only reports *materialized* sparse tiles and

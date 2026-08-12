@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "file_list_model.hpp"
+#include <QDateTime>
 
 #include <QIcon>
 #include <QPainter>
@@ -32,6 +33,7 @@ void FileListModel::set_thumbnail(const QString& path, const QIcon& icon)
 {
   thumbnails_.insert(path, icon);
   thumbnail_status_.insert(path, ThumbnailStatus::Ready);
+  thumbnail_pending_since_.remove(path);
   // Do not clear the "new" badge when a thumbnail arrives — Python keeps _new
   // until the directory is reloaded / the item is replaced.
   emit_path_changed(path);
@@ -43,12 +45,16 @@ void FileListModel::set_thumbnail_pending(const QString& path)
     return;
   }
   thumbnail_status_.insert(path, ThumbnailStatus::Pending);
+  if (!thumbnail_pending_since_.contains(path)) {
+    thumbnail_pending_since_.insert(path, QDateTime::currentMSecsSinceEpoch());
+  }
   emit_path_changed(path);
 }
 
 void FileListModel::set_thumbnail_failed(const QString& path)
 {
   thumbnail_status_.insert(path, ThumbnailStatus::Failed);
+  thumbnail_pending_since_.remove(path);
   emit_path_changed(path);
 }
 
@@ -174,6 +180,7 @@ void FileListModel::clear_thumbnail(const QString& path)
 {
   thumbnails_.remove(path);
   thumbnail_status_.remove(path);
+  thumbnail_pending_since_.remove(path);
   emit_path_changed(path);
 }
 
@@ -190,10 +197,37 @@ void FileListModel::clear_pending_thumbnails()
   }
   for (const QString& path : pending) {
     thumbnail_status_.remove(path);
+    thumbnail_pending_since_.remove(path);
   }
   if (rowCount() > 0) {
     emit dataChanged(index(0, 0), index(rowCount() - 1, 0), {ThumbnailStatusRole});
   }
+}
+
+int FileListModel::clear_stale_pending_thumbnails(qint64 max_age_ms)
+{
+  if (max_age_ms <= 0) {
+    return 0;
+  }
+  const qint64 now = QDateTime::currentMSecsSinceEpoch();
+  QStringList stale;
+  for (auto it = thumbnail_pending_since_.constBegin(); it != thumbnail_pending_since_.constEnd();
+       ++it) {
+    if (thumbnail_status_.value(it.key(), ThumbnailStatus::None) != ThumbnailStatus::Pending) {
+      continue;
+    }
+    if (now - it.value() >= max_age_ms) {
+      stale << it.key();
+    }
+  }
+  for (const QString& path : stale) {
+    thumbnail_status_.remove(path);
+    thumbnail_pending_since_.remove(path);
+  }
+  if (!stale.isEmpty() && rowCount() > 0) {
+    emit dataChanged(index(0, 0), index(rowCount() - 1, 0), {ThumbnailStatusRole});
+  }
+  return stale.size();
 }
 
 void FileListModel::clear_thumbnails()
@@ -203,6 +237,7 @@ void FileListModel::clear_thumbnails()
   }
   thumbnails_.clear();
   thumbnail_status_.clear();
+  thumbnail_pending_since_.clear();
   // Child counts are location-specific; cleared separately on navigation.
   if (rowCount() > 0) {
     emit dataChanged(index(0, 0), index(rowCount() - 1, 0),
