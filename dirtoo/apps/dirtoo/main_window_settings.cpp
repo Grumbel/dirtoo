@@ -12,6 +12,9 @@
 #include "dirtoo/tags/tag_store.hpp"
 
 #include <QInputDialog>
+#include <QProgressDialog>
+#include <QFileInfo>
+#include <QCoreApplication>
 #include <QMessageBox>
 #include <QStatusBar>
 #include <QLineEdit>
@@ -291,7 +294,21 @@ void MainWindow::on_tag_selected()
   int tagged = 0;
   int skipped = 0;
   QStringList problems;
-  for (const QString& p : paths) {
+  // Hashing missing checksums is synchronous and can be slow for many/large
+  // files. Keep the UI responsive with a cancellable progress dialog.
+  QProgressDialog progress(QStringLiteral("Tagging files…"), QStringLiteral("Cancel"), 0,
+                           paths.size(), this);
+  progress.setWindowModality(Qt::WindowModal);
+  progress.setMinimumDuration(paths.size() > 1 ? 0 : 2000);
+  progress.setValue(0);
+  for (int i = 0; i < paths.size(); ++i) {
+    if (progress.wasCanceled()) {
+      break;
+    }
+    const QString& p = paths.at(i);
+    progress.setLabelText(QStringLiteral("Tagging %1…").arg(QFileInfo(p).fileName()));
+    progress.setValue(i);
+    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
     std::error_code ec;
     const auto abs = std::filesystem::absolute(p.toStdString(), ec);
     const std::string key = ec ? p.toStdString() : abs.lexically_normal().string();
@@ -310,6 +327,7 @@ void MainWindow::on_tag_selected()
     }
     ++tagged;
   }
+  progress.setValue(paths.size());
 
   QString msg = QStringLiteral("Tagged %1 file(s).").arg(tagged);
   if (skipped > 0) {
