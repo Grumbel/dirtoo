@@ -170,9 +170,11 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event)
   if (obj == filter_edit_ && event->type() == QEvent::FocusOut) {
     auto* fe = static_cast<QFocusEvent*>(event);
     // Keep the bar if focus moves to another widget in the filter row (e.g. help).
-    if (QWidget* next = qobject_cast<QWidget*>(fe->relatedWidget())) {
-      if (filter_row_ != nullptr && filter_row_->isAncestorOf(next)) {
-        return QMainWindow::eventFilter(obj, event);
+    if (fe->type() == QEvent::FocusOut) {
+      if (QWidget* next = QApplication::focusWidget()) {
+        if (filter_row_ != nullptr && filter_row_->isAncestorOf(next)) {
+          return QMainWindow::eventFilter(obj, event);
+        }
       }
     }
     if (!filter_pinned_ && filter_edit_ != nullptr && filter_edit_->text().isEmpty()
