@@ -76,6 +76,8 @@
           dontStrip = true;
           nativeBuildInputs = with pkgs; [ cmake ninja pkg-config ];
           buildInputs = with pkgs; [ openssl sqlite ];
+          # So dependents' find_dependency(OpenSSL/SQLite3) and link work.
+          propagatedBuildInputs = with pkgs; [ openssl sqlite ];
           postUnpack = ''sourceRoot+=/libs/dirtoo-hash'';
           cmakeFlags = [ versionFlag ];
           meta.description = "dirtoo multi-algo file digests + checksum SQLite cache";
@@ -88,6 +90,7 @@
           dontStrip = true;
           nativeBuildInputs = with pkgs; [ cmake ninja pkg-config ];
           buildInputs = [ dirtoo-hash pkgs.sqlite pkgs.openssl ];
+          propagatedBuildInputs = [ dirtoo-hash ];
           postUnpack = ''sourceRoot+=/libs/dirtoo-tags'';
           cmakeFlags = [ versionFlag ];
           meta.description = "dirtoo file tags (SHA-256 identity via checksum cache)";
@@ -100,6 +103,9 @@
           dontStrip = true;
           nativeBuildInputs = with pkgs; [ cmake ninja pkg-config ];
           buildInputs = [ pkgs.sqlite pkgs.openssl dirtoo-hash dirtoo-tags ];
+          # Config.cmake find_dependency(dirtoo-hash/tags) needs these on the
+          # dependent's cmake prefix path (e.g. dirtoo-collection).
+          propagatedBuildInputs = [ dirtoo-hash dirtoo-tags ];
           postUnpack = ''sourceRoot+=/libs/dirtoo-filter'';
           cmakeFlags = [ versionFlag "-DDIRTOO_FILTER_BUILD_TOOLS=ON" ];
           meta.description = "dirtoo filter DSL, predicates, media meta cache + dt-filter";
@@ -111,7 +117,7 @@
           src = srcFor [ ./libs/dirtoo-collection ];
           dontStrip = true;
           nativeBuildInputs = with pkgs; [ cmake ninja ];
-          buildInputs = [ dirtoo-fs dirtoo-filter pkgs.sqlite ];
+          buildInputs = [ dirtoo-fs dirtoo-filter dirtoo-hash dirtoo-tags pkgs.sqlite pkgs.openssl ];
           postUnpack = ''sourceRoot+=/libs/dirtoo-collection'';
           cmakeFlags = [ versionFlag ];
           meta.description = "dirtoo FileCollection / sorter / grouper";
