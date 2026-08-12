@@ -65,6 +65,7 @@ private:
   QToolButton* make_auto_chip(const QString& label, const QString& expression);
   QToolButton* make_pinned_chip(int pin_index);
   void show_pin_menu(int pin_index, const QPoint& global_pos);
+  void edit_pin_expression(int pin_index);
   void edit_pin_label(int pin_index);
   void edit_pin_directories(int pin_index);
   void set_pin_scope(int pin_index, QuickFilterScope scope);

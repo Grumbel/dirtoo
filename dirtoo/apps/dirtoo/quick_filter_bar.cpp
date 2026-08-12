@@ -416,6 +416,9 @@ void QuickFilterBar::show_pin_menu(int pin_index, const QPoint& global_pos)
   }
   const auto& pin = pins_[static_cast<std::size_t>(pin_index)];
   QMenu menu(this);
+  menu.addAction(QStringLiteral("Edit filter…"), this, [this, pin_index] {
+    edit_pin_expression(pin_index);
+  });
   menu.addAction(QStringLiteral("Set label…"), this, [this, pin_index] { edit_pin_label(pin_index); });
   menu.addAction(QStringLiteral("Directories…"), this, [this, pin_index] {
     edit_pin_directories(pin_index);
@@ -447,6 +450,42 @@ void QuickFilterBar::show_pin_menu(int pin_index, const QPoint& global_pos)
   menu.addSeparator();
   menu.addAction(QStringLiteral("Remove"), this, [this, pin_index] { remove_pin(pin_index); });
   menu.exec(global_pos);
+}
+
+
+void QuickFilterBar::edit_pin_expression(int pin_index)
+{
+  if (pin_index < 0 || pin_index >= static_cast<int>(pins_.size())) {
+    return;
+  }
+  auto& pin = pins_[static_cast<std::size_t>(pin_index)];
+  const QString old_expr = pin.expression;
+  bool ok = false;
+  const QString text = QInputDialog::getText(
+      this, QStringLiteral("Edit QuickFilter"),
+      QStringLiteral("Filter expression:"), QLineEdit::Normal, pin.expression, &ok);
+  if (!ok) {
+    return;
+  }
+  const QString expr = text.trimmed();
+  if (expr.isEmpty()) {
+    QMessageBox::warning(this, QStringLiteral("QuickFilter"),
+                         QStringLiteral("Filter expression cannot be empty."));
+    return;
+  }
+  for (int i = 0; i < static_cast<int>(pins_.size()); ++i) {
+    if (i != pin_index && pins_[static_cast<std::size_t>(i)].expression == expr) {
+      QMessageBox::warning(this, QStringLiteral("QuickFilter"),
+                           QStringLiteral("Another pinned filter already uses that expression."));
+      return;
+    }
+  }
+  pin.expression = expr;
+  save_pins();
+  rebuild_buttons();
+  if (active_ == old_expr) {
+    emit filter_requested(expr);
+  }
 }
 
 void QuickFilterBar::edit_pin_label(int pin_index)
