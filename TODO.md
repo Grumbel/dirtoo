@@ -196,6 +196,34 @@ Go to Folder, Clear. Storage: SQLite at `$XDG_STATE_HOME/dirtoo/operations-histo
 
 ## Residual / optional polish
 
+### Review residuals (2026-08-12)
+
+Prioritized issues from a multi-day change review.
+
+- [x] **Thumbs: request set ≠ on-screen layout (high)**  
+  `viewport_model_rows()` from `slot_pos_`; no lowest-index truncate on viewport
+  ranges (soft middle-biased cap 256). Landed in `676022a`.
+- [ ] **Tagging hashes on GUI thread (high)**  
+  `on_tag_selected` still `hash_file` + archive extract under `QProgressDialog` +
+  `processEvents`. Violates AGENTS / tags non-goal “no hashing on the GUI
+  thread”. Share a worker queue with Checksum dialog; progress + cancel without
+  re-entrant `processEvents`.
+- [x] **Tag chips hit SQLite during paint (medium)**  
+  Path/URL → chips cache in `tag_paint.hpp`; `clear_tag_chip_cache()` after Tag….
+  Still residual: no invalidate on external dt-tag / directory change alone.
+- [x] **Filter FocusOut hide is fragile (low–medium)**  
+  Use `QFocusEvent::relatedWidget()` with `QApplication::focusWidget()` fallback.
+- [ ] **Archive tag: extract-per-member cost (medium)**  
+  Uncached multi-select inside a zip extracts each member to a temp dir. Reuse
+  archive-member extract cache (thumbnail path) when present; batch where safe.
+- [x] **Thumbnail `Pending` can stick (low)**  
+  `clear_pending_thumbnails()` on cancel_all so viewport re-request can re-queue.
+  Reload already clears; residual: no idle timeout without cancel.
+- [ ] **MainWindow gravity (ongoing)**  
+  Hash/tag/thumb policy still grows MainWindow TUs despite R2 collaborators.
+  Prefer new orchestration helpers over more `main_window_*.cpp` surface.
+
+
 | Item | Notes |
 |------|--------|
 | Operations history log | **done** — SQLite under `$XDG_STATE_HOME/dirtoo/`; full sources+items; no rollback |
@@ -785,7 +813,7 @@ Primary algo for identity: **SHA-256**. Always compute the set in one pass.
 - [x] Tag indirection: `file_tags.tag_id` → `tag_defs.id`; rename does not retouch files
 - [x] Filter / `dt-search`: `tag:name` / `tagged:yes|no` predicate
 - [x] GUI: tag context menu (“Tag…”) + Tools menu + Ctrl+T
-- [x] Multi-file Tag… uses progress dialog (hashing still synchronous on GUI)
+- [x] Multi-file Tag… uses progress dialog (hashing still synchronous on GUI — residual)
 - [x] Badges from tag_defs (icon/color) in icon view (color chips)
 
 ### Explicit non-goals (v1)
