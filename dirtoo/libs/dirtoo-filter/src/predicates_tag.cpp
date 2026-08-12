@@ -8,6 +8,7 @@
 #include "dirtoo/hash/checksum_store.hpp"
 #include "dirtoo/tags/tag_store.hpp"
 
+#include <cctype>
 #include <filesystem>
 #include <memory>
 #include <mutex>
@@ -18,10 +19,13 @@
 namespace dirtoo::filter {
 namespace {
 
+/// Shared read-only lookup for filter matches. Serialized: SQLite handles are
+/// not safe for concurrent use on one connection (FilterWorker + GUI).
 struct TagLookup {
   dirtoo::hash::ChecksumStore checksums;
   dirtoo::tags::TagStore tags;
   bool open = false;
+  mutable std::mutex mu;
 
   static TagLookup& instance()
   {
@@ -47,6 +51,7 @@ struct TagLookup {
 
   [[nodiscard]] std::vector<std::string> tags_for(const FilterItem& item) const
   {
+    std::lock_guard<std::mutex> lock(mu);
     if (!open) {
       return {};
     }
@@ -117,7 +122,6 @@ MatchFuncPtr make_tagged(std::string_view arg)
   if (a == "no" || a == "false" || a == "0" || a == "none") {
     return std::make_shared<TaggedMatch>(false);
   }
-  // bare tagged: → any tag
   if (a.empty()) {
     return std::make_shared<TaggedMatch>(true);
   }

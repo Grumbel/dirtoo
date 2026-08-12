@@ -9,7 +9,6 @@
 #include "checksum_dialog.hpp"
 
 #include "dirtoo/hash/checksum_store.hpp"
-#include "dirtoo/hash/hash_file.hpp"
 #include "dirtoo/tags/tag_store.hpp"
 
 #include <QInputDialog>
@@ -317,7 +316,9 @@ void MainWindow::on_tag_selected()
     msg += QStringLiteral(" Skipped %1.").arg(skipped);
   }
   if (!problems.isEmpty() && problems.size() <= 5) {
-    msg += QStringLiteral("\n") + problems.join(QLatin1Char('\n'));
+    msg += QStringLiteral("
+") + problems.join(QLatin1Char('
+'));
   }
   if (statusBar() != nullptr) {
     statusBar()->showMessage(msg, 5000);

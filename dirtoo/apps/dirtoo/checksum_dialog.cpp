@@ -9,9 +9,7 @@
 #include <QAbstractItemView>
 #include <QApplication>
 #include <QClipboard>
-#include <QDialog>
 #include <QDialogButtonBox>
-#include <QDir>
 #include <QFileInfo>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -30,20 +28,10 @@
 namespace dirtoo::app {
 namespace {
 
-struct RowResult {
-  QString path;
-  QString status; // Cached / Hashed / Error / Missing
-  QString crc32;
-  QString md5;
-  QString sha1;
-  QString sha256;
-  QString error;
-};
-
 class ChecksumWorker : public QObject {
   Q_OBJECT
 public:
-  explicit ChecksumWorker(QStringList paths, bool refresh, bool cached_only)
+  ChecksumWorker(QStringList paths, bool refresh, bool cached_only)
       : paths_(std::move(paths))
       , refresh_(refresh)
       , cached_only_(cached_only)
@@ -56,59 +44,65 @@ public slots:
     dirtoo::hash::ChecksumStore store;
     std::string err;
     if (!store.open(dirtoo::hash::ChecksumStore::default_path(), &err)) {
-      emit finished_all();
       emit failed(QString::fromStdString(err));
+      emit finished_all();
       return;
     }
 
-    const int total = paths_.size();
+    const int total = static_cast<int>(paths_.size());
     for (int i = 0; i < total; ++i) {
       if (cancel_.load()) {
         break;
       }
       emit progress(i, total);
 
-      RowResult row;
-      row.path = paths_[i];
-      const QFileInfo fi(row.path);
+      const QString path = paths_[i];
+      QString status;
+      QString crc32;
+      QString md5;
+      QString sha1;
+      QString sha256;
+      QString error;
+
+      const QFileInfo fi(path);
       if (!fi.exists() || !fi.isFile()) {
-        row.status = QStringLiteral("Skip");
-        row.error = QStringLiteral("not a regular file");
-        emit row_ready(row.path, row.status, row.crc32, row.md5, row.sha1, row.sha256, row.error);
+        status = QStringLiteral("Skip");
+        error = QStringLiteral("not a regular file");
+        emit row_ready(path, status, crc32, md5, sha1, sha256, error);
         continue;
       }
 
       std::error_code ec;
-      const auto abs = std::filesystem::absolute(row.path.toStdString(), ec);
-      const std::string key = ec ? row.path.toStdString() : abs.lexically_normal().string();
+      const auto abs = std::filesystem::absolute(path.toStdString(), ec);
+      const std::string key = ec ? path.toStdString() : abs.lexically_normal().string();
 
       if (cached_only_) {
         if (auto d = store.get(key)) {
-          row.status = QStringLiteral("Cached");
-          row.crc32 = QString::fromStdString(d->crc32_hex);
-          row.md5 = QString::fromStdString(d->md5_hex);
-          row.sha1 = QString::fromStdString(d->sha1_hex);
-          row.sha256 = QString::fromStdString(d->sha256_hex);
+          status = QStringLiteral("Cached");
+          crc32 = QString::fromStdString(d->crc32_hex);
+          md5 = QString::fromStdString(d->md5_hex);
+          sha1 = QString::fromStdString(d->sha1_hex);
+          sha256 = QString::fromStdString(d->sha256_hex);
         } else {
-          row.status = QStringLiteral("Missing");
-          row.error = QStringLiteral("not in cache");
+          status = QStringLiteral("Missing");
+          error = QStringLiteral("not in cache");
         }
-        emit row_ready(row.path, row.status, row.crc32, row.md5, row.sha1, row.sha256, row.error);
+        emit row_ready(path, status, crc32, md5, sha1, sha256, error);
         continue;
       }
 
       dirtoo::hash::HashError herr;
       if (auto d = store.ensure(abs, key, refresh_, &herr)) {
-        row.status = refresh_ ? QStringLiteral("Hashed") : QStringLiteral("OK");
-        row.crc32 = QString::fromStdString(d->crc32_hex);
-        row.md5 = QString::fromStdString(d->md5_hex);
-        row.sha1 = QString::fromStdString(d->sha1_hex);
-        row.sha256 = QString::fromStdString(d->sha256_hex);
+        status = refresh_ ? QStringLiteral("Hashed") : QStringLiteral("OK");
+        crc32 = QString::fromStdString(d->crc32_hex);
+        md5 = QString::fromStdString(d->md5_hex);
+        sha1 = QString::fromStdString(d->sha1_hex);
+        sha256 = QString::fromStdString(d->sha256_hex);
       } else {
-        row.status = QStringLiteral("Error");
-        row.error = QString::fromStdString(herr.message);
+        status = QStringLiteral("Error");
+        error = QString::fromStdString(herr.message);
       }
-      emit row_ready(row.path, row.status, row.crc32, row.md5, row.sha1, row.sha256, row.error);
+      emit row_ready(path, status, crc32, md5, sha1, sha256, error);
     }
     emit progress(total, total);
     emit finished_all();
@@ -131,233 +125,252 @@ private:
   std::atomic<bool> cancel_{false};
 };
 
-void fill_item(QTreeWidgetItem* item, const RowResult& row)
+} // namespace
+
+ChecksumDialog::ChecksumDialog(QStringList paths, QWidget* parent)
+    : QDialog(parent)
+    , paths_(std::move(paths))
 {
-  item->setText(0, row.path);
-  item->setText(1, row.status);
-  item->setText(2, row.crc32);
-  item->setText(3, row.md5);
-  item->setText(4, row.sha1);
-  item->setText(5, row.sha256);
-  if (!row.error.isEmpty()) {
-    item->setToolTip(1, row.error);
-  }
-  item->setData(5, Qt::UserRole, row.sha256);
-}
+  setAttribute(Qt::WA_DeleteOnClose);
+  setWindowTitle(QStringLiteral("Checksums"));
+  resize(920, 420);
 
-void run_dialog(QWidget* parent, QStringList paths)
-{
-  paths.removeDuplicates();
-  paths.erase(std::remove_if(paths.begin(), paths.end(),
-                             [](const QString& p) { return p.trimmed().isEmpty(); }),
-              paths.end());
+  paths_.removeDuplicates();
+  paths_.erase(std::remove_if(paths_.begin(), paths_.end(),
+                              [](const QString& p) { return p.trimmed().isEmpty(); }),
+               paths_.end());
 
-  auto* dialog = new QDialog(parent);
-  dialog->setAttribute(Qt::WA_DeleteOnClose);
-  dialog->setWindowTitle(QStringLiteral("Checksums"));
-  dialog->resize(920, 420);
-
-  auto* layout = new QVBoxLayout(dialog);
+  auto* layout = new QVBoxLayout(this);
   auto* info = new QLabel(
       QStringLiteral("Cache: %1")
           .arg(QString::fromStdString(dirtoo::hash::ChecksumStore::default_path().string())),
-      dialog);
+      this);
   info->setTextInteractionFlags(Qt::TextSelectableByMouse);
   layout->addWidget(info);
 
-  auto* tree = new QTreeWidget(dialog);
-  tree->setColumnCount(6);
-  tree->setHeaderLabels({QStringLiteral("Path"), QStringLiteral("Status"), QStringLiteral("CRC32"),
-                         QStringLiteral("MD5"), QStringLiteral("SHA-1"), QStringLiteral("SHA-256")});
-  tree->setRootIsDecorated(false);
-  tree->setAlternatingRowColors(true);
-  tree->setSelectionMode(QAbstractItemView::ExtendedSelection);
-  tree->setUniformRowHeights(true);
-  tree->header()->setStretchLastSection(true);
-  tree->header()->resizeSection(0, 280);
-  tree->header()->resizeSection(1, 70);
-  layout->addWidget(tree, 1);
+  tree_ = new QTreeWidget(this);
+  tree_->setColumnCount(6);
+  tree_->setHeaderLabels({QStringLiteral("Path"), QStringLiteral("Status"), QStringLiteral("CRC32"),
+                          QStringLiteral("MD5"), QStringLiteral("SHA-1"), QStringLiteral("SHA-256")});
+  tree_->setRootIsDecorated(false);
+  tree_->setAlternatingRowColors(true);
+  tree_->setSelectionMode(QAbstractItemView::ExtendedSelection);
+  tree_->setUniformRowHeights(true);
+  tree_->header()->setStretchLastSection(true);
+  tree_->header()->resizeSection(0, 280);
+  tree_->header()->resizeSection(1, 70);
+  layout->addWidget(tree_, 1);
 
-  auto* progress = new QProgressBar(dialog);
-  progress->setRange(0, std::max(qsizetype{1}, paths.size()));
-  progress->setValue(0);
-  layout->addWidget(progress);
+  progress_ = new QProgressBar(this);
+  progress_->setRange(0, std::max(1, paths_.size()));
+  progress_->setValue(0);
+  layout->addWidget(progress_);
 
   auto* btn_row = new QHBoxLayout();
-  auto* compute_btn = new QPushButton(QStringLiteral("Compute / Refresh"), dialog);
-  auto* cached_btn = new QPushButton(QStringLiteral("Show cached only"), dialog);
-  auto* copy_btn = new QPushButton(QStringLiteral("Copy SHA-256"), dialog);
-  auto* clear_btn = new QPushButton(QStringLiteral("Clear cache entries"), dialog);
-  auto* cancel_btn = new QPushButton(QStringLiteral("Cancel"), dialog);
-  cancel_btn->setEnabled(false);
-  btn_row->addWidget(compute_btn);
-  btn_row->addWidget(cached_btn);
+  compute_btn_ = new QPushButton(QStringLiteral("Compute / Refresh"), this);
+  cached_btn_ = new QPushButton(QStringLiteral("Show cached only"), this);
+  auto* copy_btn = new QPushButton(QStringLiteral("Copy SHA-256"), this);
+  auto* clear_btn = new QPushButton(QStringLiteral("Clear cache entries"), this);
+  cancel_btn_ = new QPushButton(QStringLiteral("Cancel"), this);
+  cancel_btn_->setEnabled(false);
+  btn_row->addWidget(compute_btn_);
+  btn_row->addWidget(cached_btn_);
   btn_row->addWidget(copy_btn);
   btn_row->addWidget(clear_btn);
   btn_row->addStretch(1);
-  btn_row->addWidget(cancel_btn);
+  btn_row->addWidget(cancel_btn_);
   layout->addLayout(btn_row);
 
-  auto* close_box = new QDialogButtonBox(QDialogButtonBox::Close, dialog);
+  auto* close_box = new QDialogButtonBox(QDialogButtonBox::Close, this);
   layout->addWidget(close_box);
-  QObject::connect(close_box, &QDialogButtonBox::rejected, dialog, &QDialog::reject);
+  connect(close_box, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
-  // Seed rows
-  for (const QString& p : paths) {
-    auto* item = new QTreeWidgetItem(tree);
+  for (const QString& p : paths_) {
+    auto* item = new QTreeWidgetItem(tree_);
     item->setText(0, p);
     item->setText(1, QStringLiteral("…"));
   }
 
-  QThread* thread = nullptr;
-  ChecksumWorker* worker = nullptr;
+  connect(compute_btn_, &QPushButton::clicked, this, &ChecksumDialog::start_compute);
+  connect(cached_btn_, &QPushButton::clicked, this, &ChecksumDialog::start_cached_only);
+  connect(cancel_btn_, &QPushButton::clicked, this, &ChecksumDialog::cancel_job);
+  connect(copy_btn, &QPushButton::clicked, this, &ChecksumDialog::copy_sha256);
+  connect(clear_btn, &QPushButton::clicked, this, &ChecksumDialog::clear_cache_entries);
 
-  const auto stop_worker = [&] {
-    if (worker != nullptr) {
-      worker->request_cancel();
-    }
-    if (thread != nullptr) {
-      thread->quit();
-      thread->wait(3000);
-      thread = nullptr;
-      worker = nullptr;
-    }
-    cancel_btn->setEnabled(false);
-    compute_btn->setEnabled(true);
-    cached_btn->setEnabled(true);
-  };
-
-  const auto start_job = [&](bool refresh, bool cached_only) {
-    stop_worker();
-    tree->clear();
-    for (const QString& p : paths) {
-      auto* item = new QTreeWidgetItem(tree);
-      item->setText(0, p);
-      item->setText(1, QStringLiteral("…"));
-    }
-    progress->setValue(0);
-    progress->setMaximum(std::max(qsizetype{1}, paths.size()));
-    compute_btn->setEnabled(false);
-    cached_btn->setEnabled(false);
-    cancel_btn->setEnabled(true);
-
-    thread = new QThread(dialog);
-    worker = new ChecksumWorker(paths, refresh, cached_only);
-    worker->moveToThread(thread);
-    QObject::connect(thread, &QThread::started, worker, &ChecksumWorker::run);
-    QObject::connect(worker, &ChecksumWorker::progress, dialog,
-                     [progress](int done, int total) {
-                       progress->setMaximum(std::max(1, total));
-                       progress->setValue(done);
-                     });
-    QObject::connect(
-        worker, &ChecksumWorker::row_ready, dialog,
-        [tree](const QString& path, const QString& status, const QString& crc32, const QString& md5,
-               const QString& sha1, const QString& sha256, const QString& error) {
-          RowResult row;
-          row.path = path;
-          row.status = status;
-          row.crc32 = crc32;
-          row.md5 = md5;
-          row.sha1 = sha1;
-          row.sha256 = sha256;
-          row.error = error;
-          for (int i = 0; i < tree->topLevelItemCount(); ++i) {
-            auto* item = tree->topLevelItem(i);
-            if (item->text(0) == row.path) {
-              fill_item(item, row);
-              return;
-            }
-          }
-          auto* item = new QTreeWidgetItem(tree);
-          fill_item(item, row);
-        });
-    QObject::connect(worker, &ChecksumWorker::failed, dialog, [dialog](const QString& msg) {
-      QMessageBox::warning(dialog, QStringLiteral("Checksums"), msg);
-    });
-    QObject::connect(worker, &ChecksumWorker::finished_all, dialog, [=, &thread, &worker]() {
-      cancel_btn->setEnabled(false);
-      compute_btn->setEnabled(true);
-      cached_btn->setEnabled(true);
-      if (thread != nullptr) {
-        thread->quit();
-      }
-    });
-    QObject::connect(thread, &QThread::finished, worker, &QObject::deleteLater);
-    QObject::connect(thread, &QThread::finished, thread, &QObject::deleteLater);
-    QObject::connect(thread, &QThread::finished, dialog, [&thread, &worker] {
-      thread = nullptr;
-      worker = nullptr;
-    });
-    thread->start();
-  };
-
-  QObject::connect(compute_btn, &QPushButton::clicked, dialog, [=] { start_job(true, false); });
-  QObject::connect(cached_btn, &QPushButton::clicked, dialog, [=] { start_job(false, true); });
-  QObject::connect(cancel_btn, &QPushButton::clicked, dialog, [=] {
-    if (worker != nullptr) {
-      worker->request_cancel();
-    }
-  });
-  QObject::connect(copy_btn, &QPushButton::clicked, dialog, [tree] {
-    QStringList lines;
-    const auto items = tree->selectedItems();
-    const auto use = items.isEmpty() ? [&] {
-      QList<QTreeWidgetItem*> all;
-      for (int i = 0; i < tree->topLevelItemCount(); ++i) {
-        all.push_back(tree->topLevelItem(i));
-      }
-      return all;
-    }()
-                                     : items;
-    for (QTreeWidgetItem* item : use) {
-      const QString sha = item->data(5, Qt::UserRole).toString();
-      if (!sha.isEmpty()) {
-        lines << QStringLiteral("%1  %2").arg(sha, item->text(0));
-      }
-    }
-    if (!lines.isEmpty()) {
-      QApplication::clipboard()->setText(lines.join(QLatin1Char('\n')));
-    }
-  });
-  QObject::connect(clear_btn, &QPushButton::clicked, dialog, [tree, dialog] {
-    dirtoo::hash::ChecksumStore store;
-    std::string err;
-    if (!store.open(dirtoo::hash::ChecksumStore::default_path(), &err)) {
-      QMessageBox::warning(dialog, QStringLiteral("Checksums"), QString::fromStdString(err));
-      return;
-    }
-    for (int i = 0; i < tree->topLevelItemCount(); ++i) {
-      auto* item = tree->topLevelItem(i);
-      std::error_code ec;
-      const auto abs = std::filesystem::absolute(item->text(0).toStdString(), ec);
-      const std::string key = ec ? item->text(0).toStdString() : abs.lexically_normal().string();
-      store.remove(key);
-      item->setText(1, QStringLiteral("Cleared"));
-      item->setText(2, {});
-      item->setText(3, {});
-      item->setText(4, {});
-      item->setText(5, {});
-      item->setData(5, Qt::UserRole, {});
-    }
-  });
-
-  QObject::connect(dialog, &QDialog::finished, dialog, [=](int) {
-    if (worker != nullptr) {
-      worker->request_cancel();
-    }
-    if (thread != nullptr) {
-      thread->quit();
-      thread->wait(2000);
-    }
-  });
-
-  // Default: try cache first (fast), user can Refresh to force hash.
+  // Default: use cache, hash only on miss.
   start_job(false, false);
-  dialog->show();
 }
 
-} // namespace
+ChecksumDialog::~ChecksumDialog()
+{
+  stop_worker();
+}
+
+void ChecksumDialog::stop_worker()
+{
+  if (auto* w = qobject_cast<ChecksumWorker*>(worker_)) {
+    w->request_cancel();
+  }
+  if (thread_ != nullptr) {
+    thread_->quit();
+    thread_->wait(3000);
+    thread_ = nullptr;
+    worker_ = nullptr;
+  }
+  if (cancel_btn_ != nullptr) {
+    cancel_btn_->setEnabled(false);
+  }
+  if (compute_btn_ != nullptr) {
+    compute_btn_->setEnabled(true);
+  }
+  if (cached_btn_ != nullptr) {
+    cached_btn_->setEnabled(true);
+  }
+}
+
+void ChecksumDialog::start_job(bool refresh, bool cached_only)
+{
+  stop_worker();
+  tree_->clear();
+  for (const QString& p : paths_) {
+    auto* item = new QTreeWidgetItem(tree_);
+    item->setText(0, p);
+    item->setText(1, QStringLiteral("…"));
+  }
+  progress_->setValue(0);
+  progress_->setMaximum(std::max(1, paths_.size()));
+  compute_btn_->setEnabled(false);
+  cached_btn_->setEnabled(false);
+  cancel_btn_->setEnabled(true);
+
+  thread_ = new QThread(this);
+  auto* worker = new ChecksumWorker(paths_, refresh, cached_only);
+  worker_ = worker;
+  worker->moveToThread(thread_);
+
+  connect(thread_, &QThread::started, worker, &ChecksumWorker::run);
+  connect(worker, &ChecksumWorker::progress, this, &ChecksumDialog::on_progress);
+  connect(worker, &ChecksumWorker::row_ready, this, &ChecksumDialog::on_row);
+  connect(worker, &ChecksumWorker::failed, this, &ChecksumDialog::on_failed);
+  connect(worker, &ChecksumWorker::finished_all, this, &ChecksumDialog::on_finished);
+  connect(thread_, &QThread::finished, worker, &QObject::deleteLater);
+  connect(thread_, &QThread::finished, thread_, &QObject::deleteLater);
+  connect(thread_, &QThread::finished, this, [this] {
+    thread_ = nullptr;
+    worker_ = nullptr;
+  });
+  thread_->start();
+}
+
+void ChecksumDialog::start_compute()
+{
+  start_job(true, false);
+}
+
+void ChecksumDialog::start_cached_only()
+{
+  start_job(false, true);
+}
+
+void ChecksumDialog::cancel_job()
+{
+  if (auto* w = qobject_cast<ChecksumWorker*>(worker_)) {
+    w->request_cancel();
+  }
+}
+
+void ChecksumDialog::on_progress(int done, int total)
+{
+  progress_->setMaximum(std::max(1, total));
+  progress_->setValue(done);
+}
+
+void ChecksumDialog::on_row(const QString& path, const QString& status, const QString& crc32,
+                            const QString& md5, const QString& sha1, const QString& sha256,
+                            const QString& error)
+{
+  for (int i = 0; i < tree_->topLevelItemCount(); ++i) {
+    auto* item = tree_->topLevelItem(i);
+    if (item->text(0) == path) {
+      item->setText(1, status);
+      item->setText(2, crc32);
+      item->setText(3, md5);
+      item->setText(4, sha1);
+      item->setText(5, sha256);
+      item->setData(5, Qt::UserRole, sha256);
+      if (!error.isEmpty()) {
+        item->setToolTip(1, error);
+      }
+      return;
+    }
+  }
+  auto* item = new QTreeWidgetItem(tree_);
+  item->setText(0, path);
+  item->setText(1, status);
+  item->setText(2, crc32);
+  item->setText(3, md5);
+  item->setText(4, sha1);
+  item->setText(5, sha256);
+  item->setData(5, Qt::UserRole, sha256);
+}
+
+void ChecksumDialog::on_finished()
+{
+  cancel_btn_->setEnabled(false);
+  compute_btn_->setEnabled(true);
+  cached_btn_->setEnabled(true);
+  if (thread_ != nullptr) {
+    thread_->quit();
+  }
+}
+
+void ChecksumDialog::on_failed(const QString& message)
+{
+  QMessageBox::warning(this, QStringLiteral("Checksums"), message);
+}
+
+void ChecksumDialog::copy_sha256()
+{
+  QStringList lines;
+  auto items = tree_->selectedItems();
+  if (items.isEmpty()) {
+    for (int i = 0; i < tree_->topLevelItemCount(); ++i) {
+      items.push_back(tree_->topLevelItem(i));
+    }
+  }
+  for (QTreeWidgetItem* item : items) {
+    const QString sha = item->data(5, Qt::UserRole).toString();
+    if (!sha.isEmpty()) {
+      lines << QStringLiteral("%1  %2").arg(sha, item->text(0));
+    }
+  }
+  if (!lines.isEmpty()) {
+    QApplication::clipboard()->setText(lines.join(QLatin1Char('\n')));
+  }
+}
+
+void ChecksumDialog::clear_cache_entries()
+{
+  dirtoo::hash::ChecksumStore store;
+  std::string err;
+  if (!store.open(dirtoo::hash::ChecksumStore::default_path(), &err)) {
+    QMessageBox::warning(this, QStringLiteral("Checksums"), QString::fromStdString(err));
+    return;
+  }
+  for (int i = 0; i < tree_->topLevelItemCount(); ++i) {
+    auto* item = tree_->topLevelItem(i);
+    std::error_code ec;
+    const auto abs = std::filesystem::absolute(item->text(0).toStdString(), ec);
+    const std::string key = ec ? item->text(0).toStdString() : abs.lexically_normal().string();
+    store.remove(key);
+    item->setText(1, QStringLiteral("Cleared"));
+    item->setText(2, {});
+    item->setText(3, {});
+    item->setText(4, {});
+    item->setText(5, {});
+    item->setData(5, Qt::UserRole, {});
+  }
+}
 
 void show_checksum_dialog(QWidget* parent, const std::vector<std::filesystem::path>& paths)
 {
@@ -371,7 +384,8 @@ void show_checksum_dialog(QWidget* parent, const std::vector<std::filesystem::pa
 
 void show_checksum_dialog(QWidget* parent, const QStringList& paths)
 {
-  run_dialog(parent, paths);
+  auto* dialog = new ChecksumDialog(paths, parent);
+  dialog->show();
 }
 
 } // namespace dirtoo::app

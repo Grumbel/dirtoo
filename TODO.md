@@ -753,6 +753,8 @@ consumes digests from the checksum cache.
       `-a all`, optional `--check`); uses cache by default
 - [x] **GUI** — Tools → “Checksums…” dialog (selection, compute/refresh,
       table of digests, progress/cancel); Preferences button opens same dialog
+- [x] Segfault fixes: checksum dialog no longer captures stack locals after
+      modeless `show()`; tag filter TagLookup mutex; sqlite NULL text guards
 - [x] Context menu: “Checksums…” (+ Copy SHA-256 inside dialog)
 
 Primary algo for identity: **SHA-256**. Always compute the set in one pass.

@@ -29,6 +29,12 @@ CREATE INDEX IF NOT EXISTS idx_checksums_sha1 ON checksums(sha1);
 CREATE INDEX IF NOT EXISTS idx_checksums_crc32 ON checksums(crc32);
 )SQL";
 
+std::string column_text(sqlite3_stmt* stmt, int col)
+{
+  const auto* p = reinterpret_cast<const char*>(sqlite3_column_text(stmt, col));
+  return p != nullptr ? std::string{p} : std::string{};
+}
+
 FileDigests row_to_digests(sqlite3_stmt* stmt)
 {
   FileDigests d;
@@ -36,10 +42,10 @@ FileDigests row_to_digests(sqlite3_stmt* stmt)
   if (sqlite3_column_type(stmt, 2) != SQLITE_NULL) {
     d.mtime_ns = sqlite3_column_int64(stmt, 2);
   }
-  d.crc32_hex = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
-  d.md5_hex = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4));
-  d.sha1_hex = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 5));
-  d.sha256_hex = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 6));
+  d.crc32_hex = column_text(stmt, 3);
+  d.md5_hex = column_text(stmt, 4);
+  d.sha1_hex = column_text(stmt, 5);
+  d.sha256_hex = column_text(stmt, 6);
   return d;
 }
 

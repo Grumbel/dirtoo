@@ -4,7 +4,6 @@
 /// Tag files by content identity (SHA-256 from checksum cache). Does not hash.
 
 #include "dirtoo/hash/checksum_store.hpp"
-#include "dirtoo/hash/hash_file.hpp"
 #include "dirtoo/tags/tag_store.hpp"
 
 #include <filesystem>
