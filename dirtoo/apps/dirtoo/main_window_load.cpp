@@ -241,6 +241,13 @@ void MainWindow::rebuild_quick_filters()
   if (quick_filter_bar_ == nullptr) {
     return;
   }
+  QString cur;
+  if (!location_.is_archive()) {
+    cur = QString::fromStdString(location_.as_path().string());
+  } else {
+    cur = QString::fromStdString(location_.as_path().string()); // archive file path
+  }
+  quick_filter_bar_->set_current_directory(cur);
   quick_filter_bar_->rebuild_from_items(collection_.items());
   quick_filter_bar_->set_active_expression(filter_search_.filter_text());
 }
