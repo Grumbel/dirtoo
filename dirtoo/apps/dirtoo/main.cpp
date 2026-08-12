@@ -224,17 +224,13 @@ int main(int argc, char* argv[])
 
   dirtoo::app::MainWindow window;
 
-  // Prefer a full Location URL (file://…//archive) so session restore reopens
-  // archive roots, not only the container zip path.
-  QString start_text = QDir::homePath();
+  // Start in the directory given on the command line, otherwise the process
+  // current working directory (not the last session location). Session still
+  // persists last_location for other UI uses (e.g. history).
+  QString start_text = QDir::currentPath();
   const QStringList pos = parser.positionalArguments();
   if (!pos.isEmpty()) {
     start_text = pos.first();
-  } else {
-    const auto settings = dirtoo::app::load_settings();
-    if (!settings.last_location.isEmpty()) {
-      start_text = settings.last_location;
-    }
   }
 
   if (parser.isSet(debug_opt) || parser.isSet(verbose_opt)) {
