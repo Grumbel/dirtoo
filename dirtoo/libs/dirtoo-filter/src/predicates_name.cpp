@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "dirtoo/filter/predicates.hpp"
+#include "predicates_detail.hpp"
 
 #include "dirtoo/filter/media_meta_cache.hpp"
 
@@ -292,14 +293,16 @@ MatchFuncPtr make_size(std::string argument)
     return std::make_shared<AlwaysFalse>();
   }
 
-  // Range: 10K-2M
-  if (const auto dash = arg.find('-'); dash != std::string::npos && dash > 0
-      && arg.find_first_of("<>=") == std::string::npos) {
-    const auto lo = parse_size_token(arg.substr(0, dash));
-    const auto hi = parse_size_token(arg.substr(dash + 1));
+  // Range: 10K-2M or 10K..2M (inclusive)
+  if (const auto rng = detail::split_range_arg(arg)) {
+    const auto lo = parse_size_token(rng->first);
+    const auto hi = parse_size_token(rng->second);
     if (lo && hi) {
-      return std::make_shared<SizeMatch>(SizeMatch::Op::Range, *lo, *hi);
+      const auto a = std::min(*lo, *hi);
+      const auto b = std::max(*lo, *hi);
+      return std::make_shared<SizeMatch>(SizeMatch::Op::Range, a, b);
     }
+    return std::make_shared<AlwaysFalse>();
   }
 
   SizeMatch::Op op = SizeMatch::Op::Eq;

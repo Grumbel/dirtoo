@@ -311,8 +311,17 @@ std::optional<std::uint64_t> probe_archive_filecount(const std::filesystem::path
 class PagesMatch : public MatchFunc {
 public:
   PagesMatch(LenCmp op, double value)
-      : op_(op)
-      , value_(value)
+      : range_(false)
+      , op_(op)
+      , lo_(value)
+      , hi_(value)
+  {
+  }
+  PagesMatch(double lo, double hi)
+      : range_(true)
+      , op_(LenCmp::Eq)
+      , lo_(std::min(lo, hi))
+      , hi_(std::max(lo, hi))
   {
   }
   bool matches(const FilterItem& item) const override
@@ -320,26 +329,42 @@ public:
     if (item.is_directory || item.path.empty()) {
       return false;
     }
+    std::optional<double> n;
     if (const auto meta = detail::lookup_media(item.path); meta && meta->pages) {
-      return apply_len_cmp(op_, static_cast<double>(*meta->pages), value_);
+      n = static_cast<double>(*meta->pages);
+    } else if (const auto pages = probe_pdf_pages(item.path)) {
+      n = static_cast<double>(*pages);
     }
-    const auto pages = probe_pdf_pages(item.path);
-    if (!pages) {
+    if (!n) {
       return false;
     }
-    return apply_len_cmp(op_, static_cast<double>(*pages), value_);
+    if (range_) {
+      return *n >= lo_ && *n <= hi_;
+    }
+    return apply_len_cmp(op_, *n, lo_);
   }
 
 private:
+  bool range_;
   LenCmp op_;
-  double value_;
+  double lo_;
+  double hi_;
 };
 
 class FileCountMatch : public MatchFunc {
 public:
   FileCountMatch(LenCmp op, double value)
-      : op_(op)
-      , value_(value)
+      : range_(false)
+      , op_(op)
+      , lo_(value)
+      , hi_(value)
+  {
+  }
+  FileCountMatch(double lo, double hi)
+      : range_(true)
+      , op_(LenCmp::Eq)
+      , lo_(std::min(lo, hi))
+      , hi_(std::max(lo, hi))
   {
   }
   bool matches(const FilterItem& item) const override
@@ -347,28 +372,43 @@ public:
     if (item.is_directory || item.path.empty()) {
       return false;
     }
+    std::optional<double> n;
     if (const auto meta = detail::lookup_media(item.path); meta && meta->file_count) {
-      return apply_len_cmp(op_, static_cast<double>(*meta->file_count), value_);
+      n = static_cast<double>(*meta->file_count);
+    } else if (looks_like_archive(item.path)) {
+      if (const auto c = probe_archive_filecount(item.path)) {
+        n = static_cast<double>(*c);
+      }
     }
-    if (!looks_like_archive(item.path)) {
-      return false;
-    }
-    const auto n = probe_archive_filecount(item.path);
     if (!n) {
       return false;
     }
-    return apply_len_cmp(op_, static_cast<double>(*n), value_);
+    if (range_) {
+      return *n >= lo_ && *n <= hi_;
+    }
+    return apply_len_cmp(op_, *n, lo_);
   }
 
 private:
+  bool range_;
   LenCmp op_;
-  double value_;
+  double lo_;
+  double hi_;
 };
 
 } // namespace
 
 MatchFuncPtr make_pages(std::string argument)
 {
+  if (const auto rng = detail::split_range_arg(argument)) {
+    try {
+      const double lo = std::stod(std::string{rng->first});
+      const double hi = std::stod(std::string{rng->second});
+      return std::make_shared<PagesMatch>(lo, hi);
+    } catch (...) {
+      return std::make_shared<AlwaysFalse>();
+    }
+  }
   const auto [op, rest] = split_len_cmp(argument);
   auto trimmed = rest;
   while (!trimmed.empty() && std::isspace(static_cast<unsigned char>(trimmed.front()))) {
@@ -387,6 +427,15 @@ MatchFuncPtr make_pages(std::string argument)
 
 MatchFuncPtr make_filecount(std::string argument)
 {
+  if (const auto rng = detail::split_range_arg(argument)) {
+    try {
+      const double lo = std::stod(std::string{rng->first});
+      const double hi = std::stod(std::string{rng->second});
+      return std::make_shared<FileCountMatch>(lo, hi);
+    } catch (...) {
+      return std::make_shared<AlwaysFalse>();
+    }
+  }
   const auto [op, rest] = split_len_cmp(argument);
   auto trimmed = rest;
   while (!trimmed.empty() && std::isspace(static_cast<unsigned char>(trimmed.front()))) {

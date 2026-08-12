@@ -105,4 +105,62 @@ enum class LenCmp { Eq, Ne, Lt, Le, Gt, Ge };
   return false;
 }
 
+
+/// Split inclusive range syntax: "lo-hi" or "lo..hi".
+/// Returns nullopt if the argument uses a comparison operator or is not a range.
+[[nodiscard]] inline std::optional<std::pair<std::string_view, std::string_view>>
+split_range_arg(std::string_view arg)
+{
+  while (!arg.empty() && std::isspace(static_cast<unsigned char>(arg.front()))) {
+    arg.remove_prefix(1);
+  }
+  while (!arg.empty() && std::isspace(static_cast<unsigned char>(arg.back()))) {
+    arg.remove_suffix(1);
+  }
+  if (arg.empty()) {
+    return std::nullopt;
+  }
+  // Comparison forms are not ranges.
+  if (arg.starts_with(">=") || arg.starts_with("<=") || arg.starts_with("!=")
+      || arg.starts_with("<>") || arg.starts_with(">") || arg.starts_with("<")
+      || arg.starts_with("=")) {
+    return std::nullopt;
+  }
+  // Prefer ".." (unambiguous) over "-".
+  if (const auto dots = arg.find(".."); dots != std::string_view::npos && dots > 0) {
+    auto lo = arg.substr(0, dots);
+    auto hi = arg.substr(dots + 2);
+    while (!lo.empty() && std::isspace(static_cast<unsigned char>(lo.back()))) {
+      lo.remove_suffix(1);
+    }
+    while (!hi.empty() && std::isspace(static_cast<unsigned char>(hi.front()))) {
+      hi.remove_prefix(1);
+    }
+    if (!lo.empty() && !hi.empty()) {
+      return std::pair{lo, hi};
+    }
+    return std::nullopt;
+  }
+  // Single '-': left side must start with a digit (or '.') so we do not treat
+  // leading-minus forms as ranges.
+  if (const auto dash = arg.find('-'); dash != std::string_view::npos && dash > 0) {
+    const char first = arg.front();
+    if (!(std::isdigit(static_cast<unsigned char>(first)) || first == '.')) {
+      return std::nullopt;
+    }
+    auto lo = arg.substr(0, dash);
+    auto hi = arg.substr(dash + 1);
+    while (!lo.empty() && std::isspace(static_cast<unsigned char>(lo.back()))) {
+      lo.remove_suffix(1);
+    }
+    while (!hi.empty() && std::isspace(static_cast<unsigned char>(hi.front()))) {
+      hi.remove_prefix(1);
+    }
+    if (!lo.empty() && !hi.empty()) {
+      return std::pair{lo, hi};
+    }
+  }
+  return std::nullopt;
+}
+
 } // namespace dirtoo::filter::detail

@@ -387,19 +387,21 @@ std::string filter_help_text()
   return R"(Filter expression language
 
 Terms (juxtaposition = AND, OR joins alternatives):
+  Inclusive ranges use lo-hi or lo..hi (e.g. duration:3-10m, width:800..1920).
+  For duration, a unit only on the high side applies to both (3-10m = 3m–10m).
   word            basename contains word (case-insensitive)
   "quoted"        same, allows spaces
   glob:*.png      glob match (also: g:)
   Glob:*.PNG      case-sensitive glob
   regex:^a.*      regex on basename (re:, r:)
-  size:>1M        size compare (K/M/G); also size:10K-2M
+  size:>1M        size compare (K/M/G); also size:10K-2M or size:10K..2M
   tag:work        files tagged "work" (needs checksum + dt-tag)
   tagged:yes|no   any tags / no tags (checksum cache lookup only)
   type:dir        type:file|dir|video|image|archive|audio (t:)
   width:>=1920    image/video width (needs ffprobe)
   height:=1080    image/video height
   aspect:16:9     width/height ratio (also ar:, ratio:; >1.5, =4:3)
-  duration:>1m    media duration (seconds; 1h2m / 1:30)
+  duration:>1m    media duration (seconds; 1h2m / 1:30); also duration:3-10m
   framerate:>30   video frame rate (fps)
   fuzzy:speling   n-gram fuzzy basename (threshold 0.5); fuzzy:x@0.6
   Fuzzy:Speling   case-sensitive fuzzy
@@ -466,7 +468,7 @@ std::string filter_help_html()
     <td>Any tags / no tags on the file</td></tr>
 <tr><td><code>size:&gt;1M</code></td>
     <td>Size compare (<code>K</code>/<code>M</code>/<code>G</code>);
-        also ranges like <code>size:10K-2M</code></td></tr>
+        also ranges like <code>size:10K-2M</code> / <code>size:10K..2M</code></td></tr>
 <tr><td><code>type:dir</code> / <code>t:video</code> / <code>type:image</code></td>
     <td><code>file</code>, <code>dir</code>, <code>video</code>, <code>image</code>,
         <code>archive</code>, or <code>audio</code> (extension-based for media)</td></tr>
@@ -494,7 +496,9 @@ std::string filter_help_html()
 <td>width÷height (e.g. <code>&gt;1.5</code>, <code>=4:3</code>)</td>
 </tr>
 <tr><td><code>duration:&gt;1m</code> / <code>dur:</code></td>
-    <td>Media duration (seconds, or <code>1h2m</code> / <code>1:30</code>)</td></tr>
+    <td>Media duration (seconds, or <code>1h2m</code> / <code>1:30</code>);
+        ranges <code>duration:3-10m</code> / <code>3m..10m</code>
+        (unit on the high side only applies to both ends)</td></tr>
 <tr><td><code>framerate:&gt;30</code> / <code>fps:</code></td>
     <td>Video frame rate</td></tr>
 <tr><td><code>pages:&gt;=10</code></td>

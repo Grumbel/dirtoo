@@ -34,18 +34,33 @@ namespace {
 class LengthMatch : public MatchFunc {
 public:
   LengthMatch(LenCmp op, std::size_t value)
-      : op_(op)
-      , value_(value)
+      : range_(false)
+      , op_(op)
+      , lo_(value)
+      , hi_(value)
+  {
+  }
+  LengthMatch(std::size_t lo, std::size_t hi)
+      : range_(true)
+      , op_(LenCmp::Eq)
+      , lo_(std::min(lo, hi))
+      , hi_(std::max(lo, hi))
   {
   }
   bool matches(const FilterItem& item) const override
   {
-    return apply_len_cmp(op_, static_cast<double>(item.name.size()), static_cast<double>(value_));
+    const auto n = item.name.size();
+    if (range_) {
+      return n >= lo_ && n <= hi_;
+    }
+    return apply_len_cmp(op_, static_cast<double>(n), static_cast<double>(lo_));
   }
 
 private:
+  bool range_;
   LenCmp op_;
-  std::size_t value_;
+  std::size_t lo_;
+  std::size_t hi_;
 };
 
 struct DateKey {
@@ -219,6 +234,15 @@ private:
 
 MatchFuncPtr make_length(std::string argument)
 {
+  if (const auto rng = detail::split_range_arg(argument)) {
+    try {
+      const auto lo = static_cast<std::size_t>(std::stoull(std::string{rng->first}));
+      const auto hi = static_cast<std::size_t>(std::stoull(std::string{rng->second}));
+      return std::make_shared<LengthMatch>(lo, hi);
+    } catch (...) {
+      return std::make_shared<AlwaysFalse>();
+    }
+  }
   const auto [op, rest] = split_len_cmp(argument);
   auto trimmed = rest;
   while (!trimmed.empty() && std::isspace(static_cast<unsigned char>(trimmed.front()))) {

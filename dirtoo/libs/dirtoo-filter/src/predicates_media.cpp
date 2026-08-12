@@ -79,6 +79,53 @@ bool apply_cmp(Cmp op, double a, double b)
 
 
 
+
+class NumericRangeMatch : public MatchFunc {
+public:
+  enum class Kind { Width, Height, Framerate };
+  NumericRangeMatch(Kind kind, double lo, double hi)
+      : kind_(kind)
+      , lo_(std::min(lo, hi))
+      , hi_(std::max(lo, hi))
+  {
+  }
+  bool matches(const FilterItem& item) const override
+  {
+    if (item.is_directory || item.path.empty()) {
+      return false;
+    }
+    const auto meta = detail::lookup_media(item.path);
+    if (!meta) {
+      return false;
+    }
+    std::optional<double> v;
+    switch (kind_) {
+    case Kind::Width:
+      if (meta->width) {
+        v = static_cast<double>(*meta->width);
+      }
+      break;
+    case Kind::Height:
+      if (meta->height) {
+        v = static_cast<double>(*meta->height);
+      }
+      break;
+    case Kind::Framerate:
+      v = meta->framerate;
+      break;
+    }
+    if (!v) {
+      return false;
+    }
+    return *v >= lo_ && *v <= hi_;
+  }
+
+private:
+  Kind kind_;
+  double lo_;
+  double hi_;
+};
+
 class WidthMatch : public MatchFunc {
 public:
   WidthMatch(Cmp op, double value)
@@ -162,9 +209,22 @@ private:
 class DurationMatch : public MatchFunc {
 public:
   DurationMatch(Cmp op, double seconds)
-      : op_(op)
-      , ms_(seconds * 1000.0)
+      : range_(false)
+      , op_(op)
+      , lo_ms_(seconds * 1000.0)
+      , hi_ms_(0)
   {
+  }
+  /// Inclusive range in seconds.
+  DurationMatch(double lo_seconds, double hi_seconds)
+      : range_(true)
+      , op_(Cmp::Eq)
+      , lo_ms_(lo_seconds * 1000.0)
+      , hi_ms_(hi_seconds * 1000.0)
+  {
+    if (lo_ms_ > hi_ms_) {
+      std::swap(lo_ms_, hi_ms_);
+    }
   }
   bool matches(const FilterItem& item) const override
   {
@@ -175,12 +235,18 @@ public:
     if (!meta || !meta->duration_ms) {
       return false;
     }
-    return apply_cmp(op_, static_cast<double>(*meta->duration_ms), ms_);
+    const double ms = static_cast<double>(*meta->duration_ms);
+    if (range_) {
+      return ms >= lo_ms_ && ms <= hi_ms_;
+    }
+    return apply_cmp(op_, ms, lo_ms_);
   }
 
 private:
+  bool range_;
   Cmp op_;
-  double ms_;
+  double lo_ms_;
+  double hi_ms_;
 };
 
 class FramerateMatch : public MatchFunc {
@@ -229,6 +295,14 @@ std::optional<double> parse_number_arg(std::string_view rest)
 
 MatchFuncPtr make_width(std::string argument)
 {
+  if (const auto rng = detail::split_range_arg(argument)) {
+    const auto lo = parse_number_arg(rng->first);
+    const auto hi = parse_number_arg(rng->second);
+    if (lo && hi) {
+      return std::make_shared<NumericRangeMatch>(NumericRangeMatch::Kind::Width, *lo, *hi);
+    }
+    return std::make_shared<AlwaysFalse>();
+  }
   const auto [op, rest] = split_cmp(argument);
   const auto val = parse_number_arg(rest);
   if (!val) {
@@ -239,6 +313,14 @@ MatchFuncPtr make_width(std::string argument)
 
 MatchFuncPtr make_height(std::string argument)
 {
+  if (const auto rng = detail::split_range_arg(argument)) {
+    const auto lo = parse_number_arg(rng->first);
+    const auto hi = parse_number_arg(rng->second);
+    if (lo && hi) {
+      return std::make_shared<NumericRangeMatch>(NumericRangeMatch::Kind::Height, *lo, *hi);
+    }
+    return std::make_shared<AlwaysFalse>();
+  }
   const auto [op, rest] = split_cmp(argument);
   const auto val = parse_number_arg(rest);
   if (!val) {
@@ -284,8 +366,70 @@ MatchFuncPtr make_aspect(std::string argument)
   return std::make_shared<AspectMatch>(op, *val);
 }
 
+namespace {
+
+/// If @p lo is a bare number and @p hi ends with a single duration unit (h/m/s),
+/// treat lo as having the same unit so duration:3-10m means 3–10 minutes.
+std::optional<double> parse_duration_lo_with_inherited_unit(std::string_view lo, std::string_view hi)
+{
+  auto lo_secs = parse_duration_seconds(lo);
+  if (!lo_secs) {
+    return std::nullopt;
+  }
+  // Pure number on the left?
+  bool pure = !lo.empty();
+  for (char c : lo) {
+    if (!(std::isdigit(static_cast<unsigned char>(c)) || c == '.')) {
+      pure = false;
+      break;
+    }
+  }
+  if (!pure) {
+    return lo_secs;
+  }
+  // Single trailing unit on hi (not colon times, not compound 1h2m).
+  if (hi.find(':') != std::string_view::npos) {
+    return lo_secs;
+  }
+  std::size_t unit_chars = 0;
+  for (char c : hi) {
+    const char l = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    if (l == 'h' || l == 'm' || l == 's') {
+      ++unit_chars;
+    }
+  }
+  if (unit_chars != 1) {
+    return lo_secs;
+  }
+  char unit = 0;
+  for (std::size_t i = hi.size(); i > 0; --i) {
+    const char l = static_cast<char>(std::tolower(static_cast<unsigned char>(hi[i - 1])));
+    if (l == 'h' || l == 'm' || l == 's') {
+      unit = l;
+      break;
+    }
+  }
+  if (unit == 0) {
+    return lo_secs;
+  }
+  std::string combined{lo};
+  combined.push_back(unit);
+  return parse_duration_seconds(combined);
+}
+
+} // namespace
+
 MatchFuncPtr make_duration(std::string argument)
 {
+  // Inclusive range: duration:3-10m / duration:3m..10m / duration:90-180
+  if (const auto rng = detail::split_range_arg(argument)) {
+    const auto lo = parse_duration_lo_with_inherited_unit(rng->first, rng->second);
+    const auto hi = parse_duration_seconds(rng->second);
+    if (lo && hi) {
+      return std::make_shared<DurationMatch>(*lo, *hi);
+    }
+    return std::make_shared<AlwaysFalse>();
+  }
   const auto [op, rest] = split_cmp(argument);
   const auto secs = parse_duration_seconds(rest);
   if (!secs) {
@@ -296,6 +440,14 @@ MatchFuncPtr make_duration(std::string argument)
 
 MatchFuncPtr make_framerate(std::string argument)
 {
+  if (const auto rng = detail::split_range_arg(argument)) {
+    const auto lo = parse_number_arg(rng->first);
+    const auto hi = parse_number_arg(rng->second);
+    if (lo && hi) {
+      return std::make_shared<NumericRangeMatch>(NumericRangeMatch::Kind::Framerate, *lo, *hi);
+    }
+    return std::make_shared<AlwaysFalse>();
+  }
   const auto [op, rest] = split_cmp(argument);
   const auto val = parse_number_arg(rest);
   if (!val) {
