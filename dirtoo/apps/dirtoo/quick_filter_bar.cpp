@@ -20,6 +20,7 @@
 #include <QScrollArea>
 #include <QSet>
 #include <QSettings>
+#include <QSignalBlocker>
 #include <QStandardPaths>
 #include <QToolButton>
 #include <QFrame>
@@ -211,7 +212,11 @@ QuickFilterBar::QuickFilterBar(QWidget* parent)
 
 void QuickFilterBar::set_current_directory(const QString& path)
 {
-  current_directory_ = normalize_dir_path(path);
+  const QString n = normalize_dir_path(path);
+  if (n == current_directory_) {
+    return;
+  }
+  current_directory_ = n;
   rebuild_buttons();
 }
 
@@ -288,8 +293,25 @@ void QuickFilterBar::rebuild_from_items(const std::vector<dirtoo::fs::FileInfo>&
 
 void QuickFilterBar::set_active_expression(const QString& expr)
 {
-  active_ = expr.trimmed();
-  rebuild_buttons();
+  const QString e = expr.trimmed();
+  if (e == active_) {
+    return;
+  }
+  active_ = e;
+  // Only update checked state — do not tear down chips on every keystroke.
+  if (strip_ == nullptr) {
+    return;
+  }
+  for (auto* btn : strip_->findChildren<QToolButton*>()) {
+    const QString bexpr = btn->property("dirtoo_qf_expr").toString();
+    if (!bexpr.isEmpty()) {
+      const bool on = (bexpr == active_);
+      if (btn->isChecked() != on) {
+        const QSignalBlocker block(btn);
+        btn->setChecked(on);
+      }
+    }
+  }
 }
 
 void QuickFilterBar::pin_expression(const QString& expr, const QString& label)
@@ -306,7 +328,8 @@ void QuickFilterBar::pin_expression(const QString& expr, const QString& label)
   PinnedQuickFilter pin;
   pin.expression = e;
   pin.label = label.trimmed();
-  pin.scope = QuickFilterScope::Everywhere;
+  // Default: visible in this directory and its subfolders (not global).
+  pin.scope = QuickFilterScope::Subtree;
   if (!current_directory_.isEmpty()) {
     pin.directories = {current_directory_};
   }
@@ -361,6 +384,7 @@ QToolButton* QuickFilterBar::make_auto_chip(const QString& label, const QString&
   btn->setCheckable(true);
   btn->setAutoRaise(true);
   btn->setToolTip(expression);
+  btn->setProperty("dirtoo_qf_expr", expression);
   btn->setChecked(active_ == expression);
   connect(btn, &QToolButton::clicked, this, [this, expression](bool checked) {
     if (checked) {
@@ -394,6 +418,7 @@ QToolButton* QuickFilterBar::make_pinned_chip(int pin_index)
   }
   tip += QStringLiteral("\nRight-click for options");
   btn->setToolTip(tip);
+  btn->setProperty("dirtoo_qf_expr", pin.expression);
   btn->setChecked(active_ == pin.expression);
   connect(btn, &QToolButton::clicked, this, [this, expr = pin.expression](bool checked) {
     if (checked) {

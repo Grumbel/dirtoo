@@ -209,7 +209,7 @@ Handoff bundles **dirtoo-003** … **dirtoo-015** (tip after 015: filter ranges)
 **Background activity toolbar**
 - [x] Toolbar **Activity** indicator (Idle / task headline); click → task list + log ring
 - [x] `ActivityMonitor` fed from status heuristics, thumbnail counts, transfers, TagJob,
-      Qt message handler (warnings+)
+      ChecksumDialog, Qt message handler (warnings+)
 
 **MainWindow gravity (R6 remainder + collaborators)**
 - [x] `FilterSearchChrome` — filter + recursive-search row chrome
@@ -246,10 +246,9 @@ Handoff bundles **dirtoo-003** … **dirtoo-015** (tip after 015: filter ranges)
 
 #### Open issues / residuals from 2026-08-12 review
 
-- [ ] **QuickFilter rebuild cost (medium)** — `set_active_expression` rebuilds all
-      chip widgets on every filter `textChanged`; prefer checked-state updates only
-- [ ] **New pin default scope (UX)** — pins default to *everywhere* with dirs seeded;
-      consider default *subtree* of current location
+- [x] **QuickFilter rebuild cost (medium)** — `set_active_expression` only updates
+      checked state (no widget teardown on keystroke)
+- [x] **New pin default scope (UX)** — new pins default to *subtree* of current location
 - [ ] **Reload Thumbnails + archive members (medium)** — without prior extract, may
       queue archive URLs Thumbnailer1 cannot handle; prefer extract path like `request_rows`
 - [ ] **Tag Manager file counts (low)** — `files_for_tag` per tag on reload; optional COUNT

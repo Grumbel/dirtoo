@@ -27,7 +27,7 @@ enum class QuickFilterScope {
 struct PinnedQuickFilter {
   QString expression;
   QString label; ///< Empty → show expression (elided)
-  QuickFilterScope scope = QuickFilterScope::Everywhere;
+  QuickFilterScope scope = QuickFilterScope::Subtree;
   /// Absolute directory paths. Empty + Directory/Subtree uses path at pin time
   /// via set_current_directory. Multiple paths: any match shows the chip.
   QStringList directories;
