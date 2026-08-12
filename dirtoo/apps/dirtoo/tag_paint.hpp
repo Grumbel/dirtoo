@@ -131,7 +131,8 @@ inline std::vector<TagChip> chips_for_path(const std::filesystem::path& path)
 
 } // namespace tag_paint_detail
 
-/// Draw up to three tag chips along the bottom edge of the thumbnail.
+/// Draw up to three tag chips near the bottom of the thumbnail, above the
+/// bottom-left meta row (Width×Height) to avoid overlap.
 inline void paint_tag_chips(QPainter* painter, const QRect& thumb, const std::filesystem::path& path)
 {
   if (painter == nullptr || thumb.isEmpty()) {
@@ -149,7 +150,10 @@ inline void paint_tag_chips(QPainter* painter, const QRect& thumb, const std::fi
   const int pad_x = 3;
   const int h = fm.height() + 2;
   int x = thumb.left() + 2;
-  const int y = thumb.bottom() - h - 2;
+  // Sit above bottom-left meta badges (e.g. Width×Height) so chips do not overlap.
+  // Reserve roughly one meta-badge row (+ a few px of gap).
+  const int bottom_meta_reserve = h + 6;
+  const int y = thumb.bottom() - h - 2 - bottom_meta_reserve;
   for (const auto& chip : chips) {
     QString text = chip.name;
     if (fm.horizontalAdvance(text) > thumb.width() / 3) {

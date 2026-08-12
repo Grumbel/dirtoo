@@ -24,12 +24,14 @@ signals:
 private slots:
   void reload();
   void rename_selected();
+  void delete_selected();
   void on_selection_changed();
 
 private:
   QTreeWidget* tree_ = nullptr;
   QLabel* status_ = nullptr;
   QPushButton* rename_btn_ = nullptr;
+  QPushButton* delete_btn_ = nullptr;
 };
 
 /// Show the Tag Manager dialog (modeless, deletes on close).

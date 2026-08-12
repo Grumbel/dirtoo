@@ -57,8 +57,11 @@ TagManagerDialog::TagManagerDialog(QWidget* parent)
   auto* row = new QHBoxLayout();
   rename_btn_ = new QPushButton(QStringLiteral("Rename…"), this);
   rename_btn_->setEnabled(false);
+  delete_btn_ = new QPushButton(QStringLiteral("Delete…"), this);
+  delete_btn_->setEnabled(false);
   auto* refresh_btn = new QPushButton(QStringLiteral("Refresh"), this);
   row->addWidget(rename_btn_);
+  row->addWidget(delete_btn_);
   row->addWidget(refresh_btn);
   row->addStretch(1);
   auto* buttons = new QDialogButtonBox(QDialogButtonBox::Close, this);
@@ -66,6 +69,7 @@ TagManagerDialog::TagManagerDialog(QWidget* parent)
   layout->addLayout(row);
 
   connect(rename_btn_, &QPushButton::clicked, this, &TagManagerDialog::rename_selected);
+  connect(delete_btn_, &QPushButton::clicked, this, &TagManagerDialog::delete_selected);
   connect(refresh_btn, &QPushButton::clicked, this, &TagManagerDialog::reload);
   connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
   connect(tree_, &QTreeWidget::itemSelectionChanged, this, &TagManagerDialog::on_selection_changed);
@@ -78,7 +82,9 @@ TagManagerDialog::TagManagerDialog(QWidget* parent)
 
 void TagManagerDialog::on_selection_changed()
 {
-  rename_btn_->setEnabled(!tree_->selectedItems().isEmpty());
+  const bool has = !tree_->selectedItems().isEmpty();
+  rename_btn_->setEnabled(has);
+  delete_btn_->setEnabled(has);
 }
 
 void TagManagerDialog::reload()
@@ -90,6 +96,7 @@ void TagManagerDialog::reload()
     status_->setText(QStringLiteral("Could not open tags database: %1")
                          .arg(QString::fromStdString(err)));
     rename_btn_->setEnabled(false);
+    delete_btn_->setEnabled(false);
     return;
   }
 
@@ -150,6 +157,51 @@ void TagManagerDialog::rename_selected()
   if (!store.rename_tag(old_name.toStdString(), new_name.toStdString(), &err)) {
     QMessageBox::warning(this, QStringLiteral("Tag Manager"),
                          QStringLiteral("Rename failed:\n%1").arg(QString::fromStdString(err)));
+    return;
+  }
+
+  emit tags_changed();
+  reload();
+}
+
+
+void TagManagerDialog::delete_selected()
+{
+  const auto selected = tree_->selectedItems();
+  if (selected.isEmpty()) {
+    return;
+  }
+  const QString name = selected.front()->data(0, Qt::UserRole).toString();
+  if (name.isEmpty()) {
+    return;
+  }
+  const QString files = selected.front()->text(2);
+  const auto reply = QMessageBox::question(
+      this, QStringLiteral("Delete Tag"),
+      QStringLiteral("Delete tag “%1” (%2 file association(s))?
+
+"
+                     "Files themselves are not deleted; only the tag definition "
+                     "and its associations are removed.")
+          .arg(name, files),
+      QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+  if (reply != QMessageBox::Yes) {
+    return;
+  }
+
+  dirtoo::tags::TagStore store;
+  std::string err;
+  if (!store.open(dirtoo::tags::TagStore::default_path(), &err)) {
+    QMessageBox::warning(this, QStringLiteral("Tag Manager"),
+                         QStringLiteral("Could not open tags database:
+%1")
+                             .arg(QString::fromStdString(err)));
+    return;
+  }
+  if (!store.delete_tag(name.toStdString(), &err)) {
+    QMessageBox::warning(this, QStringLiteral("Tag Manager"),
+                         QStringLiteral("Delete failed:
+%1").arg(QString::fromStdString(err)));
     return;
   }
 

@@ -57,6 +57,8 @@ public:
   /// Rename tag definition by stable id. Does not touch file_tags rows.
   bool rename_tag(std::string_view old_name, std::string_view new_name,
                   std::string* error = nullptr);
+  /// Remove tag definition; file_tags rows cascade (ON DELETE CASCADE).
+  bool delete_tag(std::string_view name, std::string* error = nullptr);
 
   // --- identity (sha256) ---
   /// Upsert file row for sha256; optionally remember path alias.

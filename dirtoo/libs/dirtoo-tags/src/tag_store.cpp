@@ -325,6 +325,39 @@ bool TagStore::rename_tag(std::string_view old_name, std::string_view new_name, 
   return ok;
 }
 
+
+bool TagStore::delete_tag(std::string_view name, std::string* error)
+{
+  const std::string norm = normalize_tag_name(name);
+  if (norm.empty()) {
+    if (error) {
+      *error = "invalid tag name";
+    }
+    return false;
+  }
+  if (!get_tag(norm)) {
+    if (error) {
+      *error = "unknown tag";
+    }
+    return false;
+  }
+  sqlite3_stmt* stmt = nullptr;
+  constexpr const char* sql = "DELETE FROM tag_defs WHERE name = ?1";
+  if (sqlite3_prepare_v2(static_cast<sqlite3*>(db_), sql, -1, &stmt, nullptr) != SQLITE_OK) {
+    if (error) {
+      *error = sqlite3_errmsg(static_cast<sqlite3*>(db_));
+    }
+    return false;
+  }
+  sqlite3_bind_text(stmt, 1, norm.c_str(), -1, SQLITE_TRANSIENT);
+  const bool ok = sqlite3_step(stmt) == SQLITE_DONE;
+  if (!ok && error) {
+    *error = sqlite3_errmsg(static_cast<sqlite3*>(db_));
+  }
+  sqlite3_finalize(stmt);
+  return ok;
+}
+
 std::optional<std::int64_t>
 TagStore::ensure_file_sha256(std::string_view sha256, std::string_view path_key, std::string* error)
 {
