@@ -56,6 +56,12 @@ void MainWindow::setup_go_help_menus()
   auto* tools_menu = menuBar()->addMenu(QStringLiteral("&Tools"));
   tools_menu->addAction(theme_icon("document-properties"), QStringLiteral("Checksums…"),
                         this, &MainWindow::on_checksums);
+  {
+    auto* act = tools_menu->addAction(theme_icon("bookmark-new", "tag"), QStringLiteral("Tag…"),
+                                      this, &MainWindow::on_tag_selected);
+    act->setShortcut(QKeySequence(QStringLiteral("Ctrl+T")));
+    act->setStatusTip(QStringLiteral("Tag the selected regular file(s)"));
+  }
 
   auto* help_menu = menuBar()->addMenu(QStringLiteral("&Help"));
   help_menu->addAction(theme_icon("help-contents"), QStringLiteral("Filter expression help"), this,
