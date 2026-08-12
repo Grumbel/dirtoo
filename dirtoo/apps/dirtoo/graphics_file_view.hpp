@@ -92,6 +92,11 @@ public:
   void relayout();
   void sync_from_model();
 
+  /// Model rows whose layout slots intersect the current viewport (plus margin).
+  /// Uses precomputed slot_pos_ — independent of which GraphicsFileItems are
+  /// materialized. Used for thumbnail requests so resize/scroll match layout.
+  [[nodiscard]] std::vector<int> viewport_model_rows(qreal margin_px = -1.0) const;
+
   [[nodiscard]] QModelIndex index_at(const QPoint& view_pos) const;
   [[nodiscard]] std::vector<int> selected_rows() const;
   void clear_selection();

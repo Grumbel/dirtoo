@@ -690,8 +690,8 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
       so leap/type-ahead can be activated again
       (on_clear_filter restores focus on graphics_view_ / current_view())
 - [x] when resizing the window, thumbnails only showed for the old window size
-      (GraphicsFileView::visible_window_changed after update_visible_window;
-       viewport Resize in eventFilter for Detail/List; request_thumbnails_for_visible)
+      (viewport_model_rows from slot layout — not scene()->items; no kMaxBatch
+       truncate on viewport rows; visible_window_changed; Detail/List Resize)
 - [x] filter bar should disappear when focus returns to the file view and the
       bar is empty (FocusOut on filter_edit_; skip if pinned or focus stays in
       filter_row_; unchecks show_filter_act_)

@@ -99,19 +99,15 @@ void MainWindow::request_thumbnails_for_visible()
       return;
     }
 
-    // Prefer viewport rows when the active view can report them; fall back to a
-    // capped prefix so huge directories do not queue thousands of D-Bus jobs.
+    // Prefer true viewport row ranges from layout / view geometry. Do not use
+    // scene()->items(): that only reports *materialized* sparse tiles and
+    // diverges from on-screen slots after resize. Truncating to the lowest
+    // indices then dropped the newly exposed high-index rows.
     std::vector<int> rows;
+    bool from_viewport = false;
     if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr) {
-      const QRect vp = graphics_view_->viewport()->rect().adjusted(-64, -64, 64, 64);
-      const QRectF scene_rect = graphics_view_->mapToScene(vp).boundingRect();
-      for (QGraphicsItem* gi : graphics_view_->scene()->items(scene_rect)) {
-        if (auto* item = qgraphicsitem_cast<GraphicsFileItem*>(gi)) {
-          rows.push_back(item->row());
-        }
-      }
-      std::sort(rows.begin(), rows.end());
-      rows.erase(std::unique(rows.begin(), rows.end()), rows.end());
+      rows = graphics_view_->viewport_model_rows();
+      from_viewport = !rows.empty();
     } else if (QAbstractItemView* view = current_view()) {
       const QRect vp = view->viewport()->rect();
       // Walk the viewport by approximate row step so Detail/List only queue
@@ -141,17 +137,28 @@ void MainWindow::request_thumbnails_for_visible()
       for (int r = first; r <= last; ++r) {
         rows.push_back(r);
       }
+      from_viewport = !rows.empty();
     }
 
-    constexpr int kMaxBatch = 64;
+    // Cap only the blind fallback. Viewport-derived ranges must not be
+    // truncated by lowest index (that left resize-exposed tiles unrequested).
+    constexpr int kMaxFallback = 64;
+    constexpr int kMaxViewport = 256;
     if (rows.empty()) {
-      const int n = std::min(static_cast<int>(visible.size()), kMaxBatch);
+      const int n = std::min(static_cast<int>(visible.size()), kMaxFallback);
       rows.reserve(static_cast<std::size_t>(n));
       for (int r = 0; r < n; ++r) {
         rows.push_back(r);
       }
-    } else if (static_cast<int>(rows.size()) > kMaxBatch) {
-      rows.resize(static_cast<std::size_t>(kMaxBatch));
+    } else if (!from_viewport && static_cast<int>(rows.size()) > kMaxFallback) {
+      rows.resize(static_cast<std::size_t>(kMaxFallback));
+    } else if (from_viewport && static_cast<int>(rows.size()) > kMaxViewport) {
+      const int mid = static_cast<int>(rows.size()) / 2;
+      const int half = kMaxViewport / 2;
+      int begin = std::max(0, mid - half);
+      int end = std::min(static_cast<int>(rows.size()), begin + kMaxViewport);
+      begin = std::max(0, end - kMaxViewport);
+      rows = std::vector<int>(rows.begin() + begin, rows.begin() + end);
     }
 
     std::vector<fs::Location> locs;

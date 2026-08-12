@@ -312,6 +312,47 @@ void GraphicsFileView::drawForeground(QPainter* painter, const QRectF& rect)
   }
 }
 
+std::vector<int> GraphicsFileView::viewport_model_rows(qreal margin_px) const
+{
+  std::vector<int> out;
+  if (slot_pos_.empty()) {
+    return out;
+  }
+  const int rows = static_cast<int>(slot_pos_.size());
+  const QRectF vis = mapToScene(viewport()->rect()).boundingRect();
+  const qreal margin = margin_px >= 0.0 ? margin_px : cell_height() * 3.0;
+  const qreal top = vis.top() - margin;
+  const qreal bottom = vis.bottom() + margin;
+
+  int lo = 0;
+  int hi = rows;
+  while (lo < hi) {
+    const int mid = lo + (hi - lo) / 2;
+    if (slot_pos_[static_cast<std::size_t>(mid)].y() + cell_height() < top) {
+      lo = mid + 1;
+    } else {
+      hi = mid;
+    }
+  }
+  const int first = lo;
+  lo = first;
+  hi = rows;
+  while (lo < hi) {
+    const int mid = lo + (hi - lo) / 2;
+    if (slot_pos_[static_cast<std::size_t>(mid)].y() <= bottom) {
+      lo = mid + 1;
+    } else {
+      hi = mid;
+    }
+  }
+  const int last = lo; // exclusive
+  out.reserve(static_cast<std::size_t>(std::max(0, last - first)));
+  for (int r = first; r < last; ++r) {
+    out.push_back(r);
+  }
+  return out;
+}
+
 void GraphicsFileView::update_visible_window()
 {
   if (model_ == nullptr || slot_pos_.empty()) {
