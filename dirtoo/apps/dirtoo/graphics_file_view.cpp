@@ -399,6 +399,7 @@ void GraphicsFileView::update_visible_window()
     item->setPos(slot_pos_[static_cast<std::size_t>(r)]);
   }
   suppress_selection_signal_ = false;
+  emit visible_window_changed();
 }
 
 void GraphicsFileView::rebuild_items()

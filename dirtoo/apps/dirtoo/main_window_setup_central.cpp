@@ -250,6 +250,8 @@ void MainWindow::setup_central_ui()
   connect(graphics_view_, &GraphicsFileView::selection_changed, this,
         &MainWindow::on_selection_changed);
   connect(graphics_view_, &GraphicsFileView::files_dropped, this, &MainWindow::on_urls_dropped_to);
+  connect(graphics_view_, &GraphicsFileView::visible_window_changed, this,
+        [this] { request_thumbnails_for_visible(); });
   connect(graphics_view_->verticalScrollBar(), &QScrollBar::valueChanged, this,
         [this](int) { request_thumbnails_for_visible(); });
   view_stack_->addWidget(graphics_view_);

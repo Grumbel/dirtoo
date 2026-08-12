@@ -117,6 +117,9 @@ signals:
   void selection_changed();
   /// dest_dir empty → current location (MainWindow decides)
   void files_dropped(const QList<QUrl>& urls, Qt::DropAction action, const QString& dest_dir);
+  /// Emitted after the sparse tile window is recomputed (scroll, resize, relayout).
+  /// MainWindow uses this to request thumbnails for newly visible rows.
+  void visible_window_changed();
 
 protected:
   void resizeEvent(QResizeEvent* event) override;

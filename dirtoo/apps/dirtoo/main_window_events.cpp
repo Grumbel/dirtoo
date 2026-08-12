@@ -5,6 +5,7 @@
 #include "filter_history.hpp"
 
 #include <QEvent>
+#include <QFocusEvent>
 #include <QKeyEvent>
 #include <QMouseEvent>
 
@@ -160,6 +161,18 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event)
         view->setFocus(Qt::OtherFocusReason);
       }
       return true;
+    }
+  }
+
+  // Window / splitter resize changes the viewport without a scrollbar value
+  // change; re-request thumbnails for the newly exposed rows.
+  if (event->type() == QEvent::Resize) {
+    const bool is_view_viewport =
+        (tree_view_ != nullptr && obj == tree_view_->viewport())
+        || (icon_view_ != nullptr && obj == icon_view_->viewport())
+        || (graphics_view_ != nullptr && obj == graphics_view_->viewport());
+    if (is_view_viewport) {
+      request_thumbnails_for_visible();
     }
   }
 
