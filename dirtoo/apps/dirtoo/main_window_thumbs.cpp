@@ -207,21 +207,32 @@ void MainWindow::request_thumbnails_for_visible()
           mt.isValid() ? mt.name() : QStringLiteral("application/octet-stream");
 
       if (fi.location().is_archive()) {
+        const auto archive_file = fi.location().as_path();
+        const auto member = fi.location().entry_path();
+        const auto cache_root = archive_member_cache_root("dirtoo-archive-thumbs");
+        const auto dest_dir = archive_member_dest_dir(cache_root, archive_file);
+
         std::filesystem::path real;
-        const fs::Location archive_root =
-            fs::Location::from_archive(fi.location().as_path(), {});
-        if (const auto root = archive_manager_.extracted_root(archive_root)) {
-          real = *root / fi.location().entry_path();
+        // Prefer shared extract cache (TagJob / prior thumbs) before full archive open.
+        {
+          std::error_code ec;
+          const auto cached = dest_dir / member;
+          if (!member.empty() && std::filesystem::is_regular_file(cached, ec) && !ec) {
+            real = cached;
+          }
+        }
+        if (real.empty()) {
+          const fs::Location archive_root =
+              fs::Location::from_archive(fi.location().as_path(), {});
+          if (const auto root = archive_manager_.extracted_root(archive_root)) {
+            real = *root / member;
+          }
         }
         if (real.empty() || !std::filesystem::exists(real)) {
           // Extract single member off the GUI thread, then ask Thumbnailer1.
-          const auto archive_file = fi.location().as_path();
-          const auto member = fi.location().entry_path();
           const QString key = model_key;
           const QString mime_copy = mime;
-          const auto cache_root = archive_member_cache_root("dirtoo-archive-thumbs");
-          (void)QtConcurrent::run([this, archive_file, member, key, mime_copy, cache_root]() {
-            const auto dest_dir = archive_member_dest_dir(cache_root, archive_file);
+          (void)QtConcurrent::run([this, archive_file, member, key, mime_copy, dest_dir]() {
             auto extracted =
                 ensure_archive_member_extracted(archive_file, member, dest_dir);
             const bool ok = extracted.has_value();

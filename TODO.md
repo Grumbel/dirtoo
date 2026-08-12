@@ -225,7 +225,7 @@ Prioritized issues from a multi-day change review.
 |------|--------|
 | Operations history log | **done** — SQLite under `$XDG_STATE_HOME/dirtoo/`; full sources+items; no rollback |
 | Location URL encoding | **Promoted** — see *Audit findings* (systemic) |
-| Archive member thumbnails | Weak; needs extract path or special URI |
+| Archive member thumbnails | **Improved** — shared `dirtoo-archive-thumbs` cache; prefer cache hit before extract |
 | Watcher richness | **Improved** — multi-path + Linux inotify names; TOC `refresh_if_stale` |
 | MainWindow factoring | **Improved** — 9 TUs incl. nav; setup/view/filter/thumbs/transfer/events/settings |
 | True incremental FS watcher deltas | **Improved** — Linux inotify name deltas + small-set incremental collection patch; large bursts soft-merge |
