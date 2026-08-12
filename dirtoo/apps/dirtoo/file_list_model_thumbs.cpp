@@ -177,6 +177,25 @@ void FileListModel::clear_thumbnail(const QString& path)
   emit_path_changed(path);
 }
 
+void FileListModel::clear_pending_thumbnails()
+{
+  QStringList pending;
+  for (auto it = thumbnail_status_.constBegin(); it != thumbnail_status_.constEnd(); ++it) {
+    if (it.value() == ThumbnailStatus::Pending) {
+      pending << it.key();
+    }
+  }
+  if (pending.isEmpty()) {
+    return;
+  }
+  for (const QString& path : pending) {
+    thumbnail_status_.remove(path);
+  }
+  if (rowCount() > 0) {
+    emit dataChanged(index(0, 0), index(rowCount() - 1, 0), {ThumbnailStatusRole});
+  }
+}
+
 void FileListModel::clear_thumbnails()
 {
   if (thumbnails_.isEmpty() && thumbnail_status_.isEmpty()) {

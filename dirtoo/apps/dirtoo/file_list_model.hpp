@@ -75,6 +75,8 @@ public:
   void set_thumbnail_failed(const QString& path);
   void clear_thumbnails();
   void clear_thumbnail(const QString& path);
+  /// Drop Pending marks so a later request can re-queue after cancel/timeout.
+  void clear_pending_thumbnails();
   void mark_new(const QString& path);
   void clear_new_marks();
   void prune_new_marks(const QSet<QString>& keep_paths);

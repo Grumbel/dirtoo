@@ -22,6 +22,9 @@ namespace dirtoo::app {
 void MainWindow::cancel_all_thumbnails()
 {
   thumbs_.cancel_all();
+  if (model_ != nullptr) {
+    model_->clear_pending_thumbnails();
+  }
 }
 
 void MainWindow::clear_thumb_aliases()
