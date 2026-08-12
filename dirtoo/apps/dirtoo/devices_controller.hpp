@@ -23,6 +23,10 @@ class DevicesController : public QObject {
 public:
   explicit DevicesController(QObject* parent = nullptr);
 
+  /// Bind the devices list widget, connect activation/context-menu signals, and
+  /// set the parent used for context menus. Idempotent for a single list.
+  void attach(QListWidget* list, QWidget* parent_for_menus);
+
   void set_list_widget(QListWidget* list);
   void set_parent_widget(QWidget* parent_for_menus);
 

@@ -24,6 +24,21 @@ DevicesController::DevicesController(QObject* parent)
           &DevicesController::on_operation_finished);
 }
 
+void DevicesController::attach(QListWidget* list, QWidget* parent_for_menus)
+{
+  set_parent_widget(parent_for_menus);
+  set_list_widget(list);
+  if (list == nullptr) {
+    return;
+  }
+  connect(list, &QListWidget::itemActivated, this, &DevicesController::on_item_activated,
+          Qt::UniqueConnection);
+  connect(list, &QListWidget::itemClicked, this, &DevicesController::on_item_activated,
+          Qt::UniqueConnection);
+  connect(list, &QWidget::customContextMenuRequested, this, &DevicesController::on_context_menu,
+          Qt::UniqueConnection);
+}
+
 void DevicesController::set_list_widget(QListWidget* list)
 {
   list_ = list;

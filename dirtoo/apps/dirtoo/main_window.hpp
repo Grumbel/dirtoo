@@ -282,7 +282,7 @@ private:
   QWidget* location_stack_host_ = nullptr;
   QSplitter* main_splitter_ = nullptr;
   SidebarController sidebar_{this};
-  DevicesController* devices_controller_ = nullptr;
+  DevicesController devices_{this};
   QAction* show_sidebar_act_ = nullptr;
   QAction* read_only_act_ = nullptr;
   bool read_only_ = false;

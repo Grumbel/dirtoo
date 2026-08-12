@@ -21,8 +21,8 @@ class QListWidget;
 namespace dirtoo::app {
 
 /// Directory-tree / places / devices sidebar shell: build chrome, visibility,
-/// activation, rebuild, sync. DevicesController still owns UDisks logic and is
-/// wired to devices_list() by MainWindow.
+/// activation, rebuild, sync. DevicesController owns UDisks logic and attaches
+/// to devices_list() via DevicesController::attach().
 class SidebarController : public QObject {
   Q_OBJECT
 public:

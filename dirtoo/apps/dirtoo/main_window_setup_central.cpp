@@ -11,7 +11,6 @@
 #include "file_context_menu.hpp"
 #include "file_item_delegate.hpp"
 #include "devices_controller.hpp"
-#include "udisks_client.hpp"
 #include "about_dialog.hpp"
 #include "open_history.hpp"
 #include "operations_history.hpp"
@@ -48,22 +47,12 @@ void MainWindow::setup_central_ui()
   sidebar_.set_open_path_handler([this](const QString& path) {
     open_location(fs::Location::from_path(std::filesystem::path(path.toStdString())), true);
   });
-  devices_controller_ = new DevicesController(this);
-  devices_controller_->set_list_widget(sidebar_.devices_list());
-  devices_controller_->set_parent_widget(this);
-  if (auto* devices_list = sidebar_.devices_list()) {
-    connect(devices_list, &QListWidget::itemActivated, devices_controller_,
-            &DevicesController::on_item_activated);
-    connect(devices_list, &QListWidget::itemClicked, devices_controller_,
-            &DevicesController::on_item_activated);
-    connect(devices_list, &QWidget::customContextMenuRequested, devices_controller_,
-            &DevicesController::on_context_menu);
-  }
-  connect(devices_controller_, &DevicesController::open_path, this, [this](const QString& path) {
+  devices_.attach(sidebar_.devices_list(), this);
+  connect(&devices_, &DevicesController::open_path, this, [this](const QString& path) {
     open_location(fs::Location::from_path(std::filesystem::path(path.toStdString())), true);
   });
-  connect(devices_controller_, &DevicesController::status_message, this, &MainWindow::set_status);
-  devices_controller_->refresh();
+  connect(&devices_, &DevicesController::status_message, this, &MainWindow::set_status);
+  devices_.refresh();
 
   main_splitter_->addWidget(sidebar_host);
 
