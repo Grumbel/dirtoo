@@ -7,6 +7,7 @@
 #include "app_settings.hpp"
 #include "preferences_dialog.hpp"
 #include "checksum_dialog.hpp"
+#include "tag_paint.hpp"
 
 #include "dirtoo/hash/checksum_store.hpp"
 #include "dirtoo/hash/hash_file.hpp"
@@ -405,6 +406,19 @@ void MainWindow::on_tag_selected()
   }
   if (statusBar() != nullptr) {
     statusBar()->showMessage(msg, 5000);
+  }
+  if (tagged > 0) {
+    // Chip paint path caches SQLite lookups; drop so new tags show immediately.
+    tag_paint_detail::clear_tag_chip_cache();
+    if (graphics_view_ != nullptr) {
+      graphics_view_->viewport()->update();
+    }
+    if (icon_view_ != nullptr) {
+      icon_view_->viewport()->update();
+    }
+    if (tree_view_ != nullptr) {
+      tree_view_->viewport()->update();
+    }
   }
   if (skipped > 0) {
     QMessageBox::warning(this, QStringLiteral("Tag"), msg);

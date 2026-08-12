@@ -17,6 +17,7 @@
 #include <mutex>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace dirtoo::app {
@@ -45,44 +46,74 @@ inline QColor color_for_tag(const dirtoo::tags::TagDef& def)
   return QColor::fromHsv(static_cast<int>(h % 360), 140, 220);
 }
 
-inline std::vector<TagChip> chips_for_path(const std::filesystem::path& path)
+inline std::string cache_key_for_path(const std::filesystem::path& path)
 {
-  static dirtoo::hash::ChecksumStore checksums;
-  static dirtoo::tags::TagStore tags;
-  static bool open = false;
-  static std::once_flag once;
-  static std::mutex mu;
-
-  std::call_once(once, [] {
-    std::string err;
-    open = checksums.open(dirtoo::hash::ChecksumStore::default_path(), &err)
-           && tags.open(dirtoo::tags::TagStore::default_path(), &err);
-  });
-
-  std::lock_guard<std::mutex> lock(mu);
-  if (!open) {
-    return {};
-  }
   // Archive members store path() as the Location URL (file://…//archive:…);
   // do not absolute()-normalize those keys or lookup will miss.
   const std::string path_str = path.string();
-  std::string key;
   if (path_str.find("://") != std::string::npos || path_str.find("//archive") != std::string::npos) {
-    key = path_str;
-  } else {
-    std::error_code ec;
-    const auto abs = std::filesystem::absolute(path, ec);
-    key = ec ? path_str : abs.lexically_normal().string();
+    return path_str;
   }
-  auto digests = checksums.get(key);
+  std::error_code ec;
+  const auto abs = std::filesystem::absolute(path, ec);
+  return ec ? path_str : abs.lexically_normal().string();
+}
+
+struct ChipCacheState {
+  dirtoo::hash::ChecksumStore checksums;
+  dirtoo::tags::TagStore tags;
+  bool open = false;
+  std::once_flag once;
+  std::mutex mu;
+  std::unordered_map<std::string, std::vector<TagChip>> chips;
+};
+
+inline ChipCacheState& chip_cache_state()
+{
+  static ChipCacheState state;
+  return state;
+}
+
+/// Drop cached chips after tag mutations. Empty key clears the whole cache.
+inline void clear_tag_chip_cache(const std::string& path_key = {})
+{
+  auto& st = chip_cache_state();
+  std::lock_guard<std::mutex> lock(st.mu);
+  if (path_key.empty()) {
+    st.chips.clear();
+  } else {
+    st.chips.erase(path_key);
+  }
+}
+
+inline std::vector<TagChip> chips_for_path(const std::filesystem::path& path)
+{
+  auto& st = chip_cache_state();
+  std::call_once(st.once, [&] {
+    std::string err;
+    st.open = st.checksums.open(dirtoo::hash::ChecksumStore::default_path(), &err)
+              && st.tags.open(dirtoo::tags::TagStore::default_path(), &err);
+  });
+
+  const std::string key = cache_key_for_path(path);
+
+  std::lock_guard<std::mutex> lock(st.mu);
+  if (!st.open) {
+    return {};
+  }
+  if (const auto it = st.chips.find(key); it != st.chips.end()) {
+    return it->second;
+  }
+  auto digests = st.checksums.get(key);
   if (!digests) {
+    st.chips.emplace(key, std::vector<TagChip>{});
     return {};
   }
   std::vector<TagChip> out;
-  for (const auto& name : tags.tags_for_sha256(digests->sha256_hex)) {
+  for (const auto& name : st.tags.tags_for_sha256(digests->sha256_hex)) {
     TagChip chip;
     chip.name = QString::fromStdString(name);
-    if (auto def = tags.get_tag(name)) {
+    if (auto def = st.tags.get_tag(name)) {
       chip.color = color_for_tag(*def);
     } else {
       dirtoo::tags::TagDef tmp;
@@ -94,6 +125,7 @@ inline std::vector<TagChip> chips_for_path(const std::filesystem::path& path)
       break;
     }
   }
+  st.chips[key] = out;
   return out;
 }
 
