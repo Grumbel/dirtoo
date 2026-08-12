@@ -206,8 +206,8 @@ Prioritized issues from a multi-day change review.
 - [x] **Tagging hashes on GUI thread (high)**  
   `TagJob` worker thread; progress dialog on GUI; cancel via queued request.
 - [x] **Tag chips hit SQLite during paint (medium)**  
-  Path/URL → chips cache in `tag_paint.hpp`; `clear_tag_chip_cache()` after Tag….
-  Still residual: no invalidate on external dt-tag / directory change alone.
+  Path/URL → chips cache; clear after Tag… and on hard directory reload
+  (navigation/refresh). Residual: no live watch on tags.sqlite from other processes.
 - [x] **Filter FocusOut hide is fragile (low–medium)**  
   Use `QFocusEvent::relatedWidget()` with `QApplication::focusWidget()` fallback.
 - [x] **Archive tag: extract-per-member cost (medium)**  
@@ -218,6 +218,7 @@ Prioritized issues from a multi-day change review.
 - [ ] **MainWindow gravity (ongoing)**  
   Hash/tag/thumb policy still grows MainWindow TUs despite R2 collaborators.
   Prefer new orchestration helpers over more `main_window_*.cpp` surface.
+  Progress: `TagJob` extracted from `on_tag_selected` (settings TU).
 
 
 | Item | Notes |
