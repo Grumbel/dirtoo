@@ -4,10 +4,12 @@
 #include "main_window_common.hpp"
 #include "filter_history.hpp"
 
+#include <QApplication>
 #include <QEvent>
 #include <QFocusEvent>
 #include <QKeyEvent>
 #include <QMouseEvent>
+#include <QTimer>
 
 namespace dirtoo::app {
 
@@ -165,26 +167,29 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event)
   }
 
   // Hide the filter bar when focus leaves it and the expression is empty
-  // (unless pinned). Matches the UX request: empty filter should not stay
-  // around once the user returns to the file view.
+  // (unless pinned). QFocusEvent has no relatedWidget() in Qt6 — use
+  // QApplication::focusWidget(), deferred one event-loop turn so the new
+  // focus target is settled (help button in the filter row must not hide).
   if (obj == filter_edit_ && event->type() == QEvent::FocusOut) {
-    auto* fe = static_cast<QFocusEvent*>(event);
-    // Keep the bar if focus moves to another widget in the filter row (e.g. help).
-    // QFocusEvent::relatedWidget() is the focus receiver on FocusOut (Qt6).
-    if (QWidget* next = fe->relatedWidget()) {
-      if (filter_row_ != nullptr && filter_row_->isAncestorOf(next)) {
-        return QMainWindow::eventFilter(obj, event);
+    QTimer::singleShot(0, this, [this] {
+      if (filter_edit_ == nullptr || filter_pinned_) {
+        return;
       }
-    } else if (QWidget* next = QApplication::focusWidget()) {
-      // Fallback when relatedWidget is null (some platforms / synthetic events).
-      if (filter_row_ != nullptr && filter_row_->isAncestorOf(next)) {
-        return QMainWindow::eventFilter(obj, event);
+      if (QWidget* focus = QApplication::focusWidget()) {
+        if (filter_row_ != nullptr && filter_row_->isAncestorOf(focus)) {
+          return;
+        }
+        if (focus == filter_edit_) {
+          return;
+        }
       }
-    }
-    if (!filter_pinned_ && filter_edit_ != nullptr && filter_edit_->text().isEmpty()
-        && show_filter_act_ != nullptr && show_filter_act_->isChecked()) {
-      show_filter_act_->setChecked(false);
-    }
+      if (!filter_edit_->text().isEmpty()) {
+        return;
+      }
+      if (show_filter_act_ != nullptr && show_filter_act_->isChecked()) {
+        show_filter_act_->setChecked(false);
+      }
+    });
     return QMainWindow::eventFilter(obj, event);
   }
 

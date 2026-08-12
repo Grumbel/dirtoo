@@ -209,7 +209,8 @@ Prioritized issues from a multi-day change review.
   Path/URL → chips cache; clear after Tag… and on hard directory reload
   (navigation/refresh). Residual: no live watch on tags.sqlite from other processes.
 - [x] **Filter FocusOut hide is fragile (low–medium)**  
-  Use `QFocusEvent::relatedWidget()` with `QApplication::focusWidget()` fallback.
+  Qt6 has no `QFocusEvent::relatedWidget()`; deferred `focusWidget()` check
+  (singleShot 0) so filter-row controls keep the bar open.
 - [x] **Archive tag: extract-per-member cost (medium)**  
   TagJob reuses `dirtoo-archive-thumbs` member extract cache (shared with thumbs).
 - [x] **Thumbnail `Pending` can stick (low)**  
