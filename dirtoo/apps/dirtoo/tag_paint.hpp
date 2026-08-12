@@ -7,9 +7,12 @@
 #include "dirtoo/tags/tag_store.hpp"
 
 #include <QColor>
+#include <QFileInfo>
 #include <QFont>
 #include <QFontMetrics>
+#include <QIcon>
 #include <QPainter>
+#include <QPixmap>
 #include <QRect>
 #include <QString>
 
@@ -24,8 +27,10 @@ namespace dirtoo::app {
 namespace tag_paint_detail {
 
 struct TagChip {
-  QString name;
+  QString name;   // stable key
+  QString label;  // display text (falls back to name)
   QColor color;
+  QString badge;  // theme icon, file path, or empty
 };
 
 inline QColor color_for_tag(const dirtoo::tags::TagDef& def)
@@ -113,8 +118,13 @@ inline std::vector<TagChip> chips_for_path(const std::filesystem::path& path)
   for (const auto& name : st.tags.tags_for_sha256(digests->sha256_hex)) {
     TagChip chip;
     chip.name = QString::fromStdString(name);
+    chip.label = chip.name;
     if (auto def = st.tags.get_tag(name)) {
       chip.color = color_for_tag(*def);
+      if (!def->label.empty()) {
+        chip.label = QString::fromStdString(def->label);
+      }
+      chip.badge = QString::fromStdString(def->badge);
     } else {
       dirtoo::tags::TagDef tmp;
       tmp.name = name;
@@ -131,8 +141,29 @@ inline std::vector<TagChip> chips_for_path(const std::filesystem::path& path)
 
 } // namespace tag_paint_detail
 
+inline QPixmap load_tag_badge_pixmap(const QString& badge, int size)
+{
+  if (badge.isEmpty() || size <= 0) {
+    return {};
+  }
+  // Absolute / relative image file.
+  if (QFileInfo::exists(badge)) {
+    QPixmap pm(badge);
+    if (!pm.isNull()) {
+      return pm.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
+  }
+  // Theme icon name (e.g. "folder", "emblem-favorite").
+  const QIcon ic = QIcon::fromTheme(badge);
+  if (!ic.isNull()) {
+    return ic.pixmap(size, size);
+  }
+  return {};
+}
+
 /// Draw up to three tag chips near the bottom of the thumbnail, above the
-/// bottom-left meta row (Width×Height) to avoid overlap.
+/// bottom-left meta row (Width×Height) to avoid overlap. Uses label + color
+/// (+ optional badge image) from TagDef when set.
 inline void paint_tag_chips(QPainter* painter, const QRect& thumb, const std::filesystem::path& path)
 {
   if (painter == nullptr || thumb.isEmpty()) {
@@ -149,17 +180,20 @@ inline void paint_tag_chips(QPainter* painter, const QRect& thumb, const std::fi
   const QFontMetrics fm(font);
   const int pad_x = 3;
   const int h = fm.height() + 2;
+  const int icon_sz = std::max(10, h - 2);
   int x = thumb.left() + 2;
   // Sit above bottom-left meta badges (e.g. Width×Height) so chips do not overlap.
-  // Reserve roughly one meta-badge row (+ a few px of gap).
   const int bottom_meta_reserve = h + 6;
   const int y = thumb.bottom() - h - 2 - bottom_meta_reserve;
   for (const auto& chip : chips) {
-    QString text = chip.name;
-    if (fm.horizontalAdvance(text) > thumb.width() / 3) {
-      text = fm.elidedText(text, Qt::ElideRight, thumb.width() / 3);
+    QString text = chip.label.isEmpty() ? chip.name : chip.label;
+    const QPixmap icon = load_tag_badge_pixmap(chip.badge, icon_sz);
+    const int icon_w = icon.isNull() ? 0 : (icon_sz + 2);
+    const int max_text = std::max(12, thumb.width() / 3 - icon_w);
+    if (fm.horizontalAdvance(text) > max_text) {
+      text = fm.elidedText(text, Qt::ElideRight, max_text);
     }
-    const int w = fm.horizontalAdvance(text) + pad_x * 2;
+    const int w = fm.horizontalAdvance(text) + pad_x * 2 + icon_w;
     if (x + w > thumb.right() - 2) {
       break;
     }
@@ -167,10 +201,16 @@ inline void paint_tag_chips(QPainter* painter, const QRect& thumb, const std::fi
     painter->setPen(Qt::NoPen);
     painter->setBrush(chip.color);
     painter->drawRoundedRect(badge, 2, 2);
-    // Contrast text
+    int text_left = x + pad_x;
+    if (!icon.isNull()) {
+      const int iy = y + (h - icon_sz) / 2;
+      painter->drawPixmap(text_left, iy, icon);
+      text_left += icon_sz + 2;
+    }
     const int lum = (chip.color.red() * 299 + chip.color.green() * 587 + chip.color.blue() * 114) / 1000;
     painter->setPen(lum > 140 ? QColor(20, 20, 20) : QColor(250, 250, 250));
-    painter->drawText(badge.adjusted(pad_x, 0, -pad_x, 0), Qt::AlignVCenter | Qt::AlignLeft, text);
+    painter->drawText(QRect(text_left, y, badge.right() - text_left - pad_x + 1, h),
+                      Qt::AlignVCenter | Qt::AlignLeft, text);
     x += w + 2;
   }
   painter->restore();

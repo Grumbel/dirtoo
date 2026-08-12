@@ -197,7 +197,7 @@ Go to Folder, Clear. Storage: SQLite at `$XDG_STATE_HOME/dirtoo/operations-histo
 ## Residual / optional polish
 
 ### Tag Manager
-- [x] **Tag Manager** dialog (Tools → Tag Manager…): list, rename, delete via TagStore
+- [x] **Tag Manager** dialog: list, rename, delete, edit label/color/badge; chips use label+color+badge
 - [x] Tag chips drawn above bottom-left meta (Width×Height) to avoid overlap
 
 ### Fixes (2026-08-12)
