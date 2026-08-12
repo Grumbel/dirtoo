@@ -3,6 +3,7 @@
 
 #include "main_window_common.hpp"
 #include "directory_thumbnail_worker.hpp"
+#include "archive_member_cache.hpp"
 
 #include "dirtoo/archive/archive_index.hpp"
 #include "dirtoo/thumbnail/thumbnailer.hpp"
@@ -247,41 +248,99 @@ void MainWindow::on_reload_thumbnails()
     return;
   }
   thumbs_.cancel_all();
+
   auto selected = selected_fileinfos();
+  std::vector<fs::FileInfo> targets;
   if (selected.empty()) {
-    // Reload all visible
+    // No selection: rebuild all currently visible items.
+    for (const auto& fi : collection_.visible_items()) {
+      targets.push_back(fi);
+    }
     model_->clear_thumbnails();
-    request_thumbnails_for_visible();
-    set_status(QStringLiteral("Reloading thumbnails for visible items…"));
-    return;
-  }
-  for (const auto& fi : selected) {
-    if (fi.is_directory()) {
-      continue;
+  } else {
+    targets = std::move(selected);
+    for (const auto& fi : targets) {
+      if (!fi.path().empty()) {
+        model_->clear_thumbnail(QString::fromStdString(fi.path().string()));
+      }
     }
-    // Synthetic search hits still have real paths; only skip empty.
-    if (fi.path().empty()) {
-      continue;
-    }
-    model_->clear_thumbnail(QString::fromStdString(fi.path().string()));
   }
-  // Re-request only selection by temporarily using visible-style request on those paths
+
   QMimeDatabase mime_db;
   std::vector<fs::Location> locs;
   QStringList mimes;
-  for (const auto& fi : selected) {
-    if (fi.is_directory() || fi.path().empty() || location_.is_archive()) {
+  QStringList dir_paths;
+  locs.reserve(targets.size());
+  mimes.reserve(static_cast<int>(targets.size()));
+
+  for (const auto& fi : targets) {
+    if (fi.path().empty()) {
       continue;
     }
     const QString path = QString::fromStdString(fi.path().string());
+
+    if (fi.is_directory()) {
+      // Drop XDG montage / dir cache so Make Directory Thumbnails can rebuild.
+      (void)thumbnail::Thumbnailer::remove_cache_for(fi.location());
+      if (!fi.is_synthetic()) {
+        dir_paths << path;
+        model_->set_thumbnail_pending(path);
+      }
+      continue;
+    }
+
+    // Delete on-disk XDG cache so Thumbnailer1 cannot short-circuit on the old PNG.
+    // Archive members may be thumbnailed via an extracted real path (alias).
+    (void)thumbnail::Thumbnailer::remove_cache_for(fi.location());
+    for (auto it = thumbs_.aliases().begin(); it != thumbs_.aliases().end();) {
+      if (it.value() == path) {
+        (void)thumbnail::Thumbnailer::remove_cache_for(fs::Location::from_path(
+            std::filesystem::path(it.key().toStdString())));
+        it = thumbs_.aliases().erase(it);
+      } else {
+        ++it;
+      }
+    }
+
     model_->set_thumbnail_pending(path);
-    locs.push_back(fi.location());
-    mimes.push_back(mime_db.mimeTypeForFile(path).name());
+
+    if (fi.location().is_archive()) {
+      // Prefer extracted real path when already cached on disk; otherwise queue
+      // request_rows-style extract on the next visible pass via force on real path
+      // after extract — for reload, queue the location itself and let the service
+      // or a later request_rows fill after extract.
+      const auto archive_file = fi.location().as_path();
+      const auto member = fi.location().entry_path();
+      const auto cache_root = archive_member_cache_root("dirtoo-archive-thumbs");
+      const auto dest_dir = archive_member_dest_dir(cache_root, archive_file);
+      std::error_code ec;
+      const auto cached = dest_dir / member;
+      if (!member.empty() && std::filesystem::is_regular_file(cached, ec) && !ec) {
+        const auto real_loc = fs::Location::from_path(cached);
+        (void)thumbnail::Thumbnailer::remove_cache_for(real_loc);
+        thumbs_.aliases().insert(QString::fromStdString(cached.string()), path);
+        locs.push_back(real_loc);
+      } else {
+        locs.push_back(fi.location());
+      }
+    } else {
+      locs.push_back(fi.location());
+    }
+    const QString name_for_mime = QString::fromStdString(fi.basename());
+    const QMimeType mt = mime_db.mimeTypeForFile(name_for_mime, QMimeDatabase::MatchExtension);
+    mimes.push_back(mt.isValid() ? mt.name() : QStringLiteral("application/octet-stream"));
   }
+
   if (!locs.empty()) {
-    thumbs_.request_many(locs, mimes);
+    thumbs_.request_many(locs, mimes, /*force=*/true);
   }
-  set_status(QStringLiteral("Reloading %1 thumbnail(s)…").arg(locs.size()));
+  if (!dir_paths.isEmpty() && thumbs_.dir_worker() != nullptr) {
+    QMetaObject::invokeMethod(thumbs_.dir_worker(), "generate", Qt::QueuedConnection,
+                              Q_ARG(QStringList, dir_paths));
+  }
+
+  const int n = static_cast<int>(locs.size()) + dir_paths.size();
+  set_status(QStringLiteral("Regenerating %1 thumbnail(s) from scratch…").arg(n));
 }
 
 

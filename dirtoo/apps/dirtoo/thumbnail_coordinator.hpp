@@ -42,7 +42,8 @@ public:
 
   void cancel_all();
   void clear_aliases();
-  void request_many(const std::vector<dirtoo::fs::Location>& locs, const QStringList& mimes);
+  void request_many(const std::vector<dirtoo::fs::Location>& locs, const QStringList& mimes,
+                    bool force = false);
 
   /// Resolve archive-root extract path for a member (MainWindow/ArchiveManager).
   using ExtractedRootFn =

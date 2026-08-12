@@ -28,16 +28,21 @@ public:
   [[nodiscard]] static QString cache_path_for(const fs::Location& location,
                                               const QString& flavor = QStringLiteral("large"));
 
+  /// Delete cached thumbnail PNGs for this location (normal/large/x-large/xx-large
+  /// and fail/). Returns true if any file was removed.
+  static bool remove_cache_for(const fs::Location& location);
+
   /// Queue thumbnail generation. Emits thumbnail_ready or thumbnail_failed.
+  /// If @p force is true, remove existing cache files first so the generator
+  /// rebuilds from the source (e.g. after changing the thumbnailer backend).
   void request(const fs::Location& location,
                const QString& mime_type = QStringLiteral("application/octet-stream"),
-               const QString& flavor = QStringLiteral("large"));
+               const QString& flavor = QStringLiteral("large"), bool force = false);
 
   void cancel_all();
 
-  void request_many(const std::vector<fs::Location>& locations,
-                    const QStringList& mime_types,
-                    const QString& flavor = QStringLiteral("large"));
+  void request_many(const std::vector<fs::Location>& locations, const QStringList& mime_types,
+                    const QString& flavor = QStringLiteral("large"), bool force = false);
 
 signals:
   void thumbnail_ready(const dirtoo::fs::Location& location, const QString& path);

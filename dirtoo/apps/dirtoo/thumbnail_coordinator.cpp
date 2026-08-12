@@ -39,12 +39,12 @@ void ThumbnailCoordinator::clear_aliases()
 }
 
 void ThumbnailCoordinator::request_many(const std::vector<fs::Location>& locs,
-                                       const QStringList& mimes)
+                                       const QStringList& mimes, bool force)
 {
   if (locs.empty()) {
     return;
   }
-  thumbnailer_.request_many(locs, mimes, QStringLiteral("large"));
+  thumbnailer_.request_many(locs, mimes, QStringLiteral("large"), force);
 }
 
 bool ThumbnailCoordinator::request_rows(const std::vector<fs::FileInfo>& visible,

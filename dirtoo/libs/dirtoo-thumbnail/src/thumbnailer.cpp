@@ -7,6 +7,7 @@
 #include <QDBusConnection>
 #include <QDBusInterface>
 #include <QDBusReply>
+#include <QFile>
 #include <QFileInfo>
 #include <QStandardPaths>
 #include <QUrl>
@@ -59,6 +60,21 @@ QString Thumbnailer::cache_path_for(const fs::Location& location, const QString&
   return base + QLatin1Char('/') + QString::fromLatin1(digest) + QStringLiteral(".png");
 }
 
+bool Thumbnailer::remove_cache_for(const fs::Location& location)
+{
+  bool removed = false;
+  const QStringList flavors = {QStringLiteral("normal"), QStringLiteral("large"),
+                               QStringLiteral("x-large"), QStringLiteral("xx-large"),
+                               QStringLiteral("fail")};
+  for (const QString& flavor : flavors) {
+    const QString path = cache_path_for(location, flavor);
+    if (QFileInfo::exists(path) && QFile::remove(path)) {
+      removed = true;
+    }
+  }
+  return removed;
+}
+
 void Thumbnailer::emit_from_cache_or_fail(const fs::Location& location, const QString& flavor,
                                           const QString& reason)
 {
@@ -83,11 +99,14 @@ void Thumbnailer::cancel_all()
 }
 
 void Thumbnailer::request(const fs::Location& location, const QString& mime_type,
-                          const QString& flavor)
+                          const QString& flavor, bool force)
 {
-  // Fast path: already cached.
+  if (force) {
+    remove_cache_for(location);
+  }
+  // Fast path: already cached (skip when forcing a rebuild).
   const QString cached = cache_path_for(location, flavor);
-  if (QFileInfo::exists(cached)) {
+  if (!force && QFileInfo::exists(cached)) {
     emit thumbnail_ready(location, cached);
     return;
   }
@@ -111,7 +130,7 @@ void Thumbnailer::request(const fs::Location& location, const QString& mime_type
 }
 
 void Thumbnailer::request_many(const std::vector<fs::Location>& locations,
-                               const QStringList& mime_types, const QString& flavor)
+                               const QStringList& mime_types, const QString& flavor, bool force)
 {
   if (locations.empty()) {
     return;
@@ -125,8 +144,11 @@ void Thumbnailer::request_many(const std::vector<fs::Location>& locations,
 
   for (std::size_t i = 0; i < locations.size(); ++i) {
     const auto& loc = locations[i];
+    if (force) {
+      remove_cache_for(loc);
+    }
     const QString cached = cache_path_for(loc, flavor);
-    if (QFileInfo::exists(cached)) {
+    if (!force && QFileInfo::exists(cached)) {
       emit thumbnail_ready(loc, cached);
       continue;
     }
