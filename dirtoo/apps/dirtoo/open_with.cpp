@@ -480,12 +480,13 @@ void populate_open_with_menu(QMenu* menu, const std::vector<std::filesystem::pat
   }
   // Defer MIME/desktop scanning until the submenu is opened so a right-click on
   // a huge selection stays responsive (defaults still built on first show).
+  // Note: do not use Qt::UniqueConnection with a lambda — Qt does not support
+  // UniqueConnection for functors, so the connect can fail and leave only "…".
   menu->clear();
   auto* placeholder = menu->addAction(QStringLiteral("…"));
   placeholder->setEnabled(false);
 
   QObject::connect(menu, &QMenu::aboutToShow, menu, [menu, paths] {
-    // Rebuild once per show; disconnect further self-triggers by blocking.
     if (menu->property("dirtoo_open_with_filled").toBool()) {
       return;
     }
@@ -528,7 +529,7 @@ void populate_open_with_menu(QMenu* menu, const std::vector<std::filesystem::pat
     QObject::connect(other, &QAction::triggered, menu, [menu, paths] {
       open_with_command_dialog(menu->parentWidget(), paths);
     });
-  }, Qt::UniqueConnection);
+  });
 }
 
 } // namespace dirtoo::app

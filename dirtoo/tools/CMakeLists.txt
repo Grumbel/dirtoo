@@ -55,7 +55,7 @@ if(TARGET dirtoo::filter OR TARGET dirtoo-filter::dirtoo-filter)
   target_link_libraries(dt-find PRIVATE dirtoo::filter dirtoo_warnings)
   target_compile_definitions(dt-find PRIVATE DIRTOO_VERSION="${PROJECT_VERSION_FULL}")
   install(TARGETS dt-find RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-  # Python entry points: dt-find and dt-search (same behaviour).
+  # dt-find: dirs positional, -f filter. dt-search: QUERY positional, -d dirs.
   add_executable(dt-search dt_find.cpp)
   target_link_libraries(dt-search PRIVATE dirtoo::filter dirtoo_warnings)
   target_compile_definitions(dt-search PRIVATE DIRTOO_VERSION="${PROJECT_VERSION_FULL}")

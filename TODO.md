@@ -196,6 +196,13 @@ Go to Folder, Clear. Storage: SQLite at `$XDG_STATE_HOME/dirtoo/operations-histo
 
 ## Residual / optional polish
 
+### Fixes (2026-08-12)
+- [x] **dt-search** positional QUERY was treated as a directory (empty matches +
+  “path(s) could not be read”); parity with Python simple mode (`QUERY` + `-d`).
+- [x] **Open with…** submenu stuck on “…” — `Qt::UniqueConnection` with a lambda
+  does not connect; fill on `aboutToShow` without UniqueConnection.
+
+
 ### Review residuals (2026-08-12)
 
 Prioritized issues from a multi-day change review.
