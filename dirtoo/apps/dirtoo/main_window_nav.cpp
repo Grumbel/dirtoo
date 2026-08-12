@@ -29,19 +29,14 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
   stop_search();
   search_session_.active = false;
   search_session_.results.clear();
-  if (search_row_ != nullptr ? search_row_->isVisible()
-      : (search_edit_ != nullptr && search_edit_->isVisible())) {
-    if (search_row_ != nullptr) {
-      search_row_->hide();
-    } else if (search_edit_ != nullptr) {
-      search_edit_->hide();
-    }
-  }
+  filter_search_.set_search_visible(false);
   // Reset filter on directory change unless Pin Filter is active.
-  if (!filter_pinned_ && filter_edit_ != nullptr && !filter_edit_->text().isEmpty()) {
-    filter_edit_->blockSignals(true);
-    filter_edit_->clear();
-    filter_edit_->blockSignals(false);
+  if (!filter_pinned_ && !filter_search_.filter_text().isEmpty()) {
+    if (auto* edit = filter_search_.filter_edit()) {
+      edit->blockSignals(true);
+      edit->clear();
+      edit->blockSignals(false);
+    }
     collection_.set_name_filter(std::string{});
     update_filter_chrome(false);
   }
@@ -219,7 +214,7 @@ void MainWindow::on_entries_changed(const QStringList& created, const QStringLis
     }
     return;
   }
-  if (filter_edit_ != nullptr && !filter_edit_->text().isEmpty()) {
+  if (!filter_search_.filter_text().isEmpty()) {
     // Content/name filter: cheaper to soft-reload and re-filter than patch visible.
     if (watcher_reload_timer_ != nullptr) {
       watcher_reload_timer_->start();

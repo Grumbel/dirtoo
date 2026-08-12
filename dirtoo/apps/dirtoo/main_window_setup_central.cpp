@@ -87,28 +87,16 @@ void MainWindow::setup_central_ui()
   layout->addWidget(location_stack_host_);
   }
 
-  // Search row: same expression language + Help.
+  // Search row: chrome owned by FilterSearchChrome (same expression language + Help).
   {
-  auto* search_row = new QWidget(central);
-  auto* search_layout = new QHBoxLayout(search_row);
-  search_layout->setContentsMargins(6, 2, 6, 2);
-  search_layout->setSpacing(6);
-  auto* search_label = new QLabel(QStringLiteral("Search:"), search_row);
-  search_edit_ = new QLineEdit(search_row);
-  search_edit_->setPlaceholderText(
-      QStringLiteral("Recursive search (filter expression, Enter to run, Esc to close)…"));
-  search_edit_->setVisible(true);
-  search_edit_->installEventFilter(this);
-  connect(search_edit_, &QLineEdit::returnPressed, this, &MainWindow::on_search_submitted);
-  search_label->setBuddy(search_edit_);
-  auto* search_help_btn = new QPushButton(QStringLiteral("Help"), search_row);
-  search_help_btn->setToolTip(QStringLiteral("Filter expression language help"));
-  connect(search_help_btn, &QPushButton::clicked, this, &MainWindow::on_show_filter_help);
-  search_layout->addWidget(search_label);
-  search_layout->addWidget(search_edit_, 1);
-  search_layout->addWidget(search_help_btn);
-  search_row->setVisible(false);
-  search_row_ = search_row;
+  auto* search_row = filter_search_.create_search_row(central);
+  if (auto* edit = filter_search_.search_edit()) {
+    edit->installEventFilter(this);
+  }
+  connect(&filter_search_, &FilterSearchChrome::search_submitted, this,
+          &MainWindow::on_search_submitted);
+  connect(&filter_search_, &FilterSearchChrome::help_requested, this,
+          &MainWindow::on_show_filter_help);
   layout->addWidget(search_row);
   }
 
@@ -217,30 +205,13 @@ void MainWindow::setup_central_ui()
 
   // Filter row at bottom (parity with dirtoo-py BottomToolBarArea filter toolbar).
   {
-  auto* filter_row = new QWidget(central);
-  filter_row->setAutoFillBackground(true);
-  filter_row->setBackgroundRole(QPalette::Window);
-  auto* filter_layout = new QHBoxLayout(filter_row);
-  filter_layout->setContentsMargins(6, 2, 6, 2);
-  filter_layout->setSpacing(6);
-  auto* filter_label = new QLabel(QStringLiteral("Filter:"), filter_row);
-  filter_edit_ = new QLineEdit(filter_row);
-  filter_edit_->setPlaceholderText(
-      QStringLiteral("Filter by name, glob, or expression (e.g. *.png, size:>1M)…"));
-  filter_edit_->setClearButtonEnabled(true);
-  filter_edit_->setEnabled(true);
-  filter_edit_->setVisible(true);
-  filter_edit_->installEventFilter(this);
-  connect(filter_edit_, &QLineEdit::textChanged, this, &MainWindow::on_filter_changed);
-  filter_label->setBuddy(filter_edit_);
-  auto* filter_help_btn = new QPushButton(QStringLiteral("Help"), filter_row);
-  filter_help_btn->setToolTip(QStringLiteral("Filter expression language help"));
-  filter_help_btn->setFlat(false);
-  connect(filter_help_btn, &QPushButton::clicked, this, &MainWindow::on_show_filter_help);
-  filter_layout->addWidget(filter_label);
-  filter_layout->addWidget(filter_edit_, 1);
-  filter_layout->addWidget(filter_help_btn);
-  filter_row_ = filter_row;
+  auto* filter_row = filter_search_.create_filter_row(central);
+  if (auto* edit = filter_search_.filter_edit()) {
+    edit->installEventFilter(this);
+  }
+  connect(&filter_search_, &FilterSearchChrome::filter_text_changed, this,
+          &MainWindow::on_filter_changed);
+  // help_requested already connected from search row setup (same signal).
   layout->addWidget(filter_row);
   }
 

@@ -53,11 +53,11 @@ void MainWindow::reload_directory(bool soft)
     }
     collection_.sorter().set_ascending(sort_ascending_);
     collection_.set_items(std::move(items));
-    if (filter_edit_ != nullptr && !filter_edit_->text().isEmpty()) {
-      if (filter_expression_needs_content_io(filter_edit_->text())) {
+    if (!filter_search_.filter_text().isEmpty()) {
+      if (filter_expression_needs_content_io(filter_search_.filter_text())) {
         request_async_filter();
       } else {
-        collection_.set_name_filter(filter_edit_->text().toStdString());
+        collection_.set_name_filter(filter_search_.filter_text().toStdString());
       }
     }
     refresh_list();
@@ -139,20 +139,20 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
   // Soft watcher refresh: merge into existing collection (preserve order of
   // survivors, append newcomers) instead of replacing the whole vector.
   const bool content_filter =
-      filter_edit_ != nullptr && !filter_edit_->text().isEmpty()
-      && filter_expression_needs_content_io(filter_edit_->text());
+      !filter_search_.filter_text().isEmpty()
+      && filter_expression_needs_content_io(filter_search_.filter_text());
   if (soft && !collection_.empty()) {
     // Avoid rebuild_visible when content matchers would hit the GUI thread.
     collection_.merge_items(std::move(items), !content_filter);
   } else {
     collection_.set_items_unsorted(std::move(items));
   }
-  if (filter_edit_ != nullptr && !filter_edit_->text().isEmpty()) {
+  if (!filter_search_.filter_text().isEmpty()) {
     if (content_filter) {
       // Keep previous visible list until FilterWorker finishes (no empty flash).
       request_async_filter(/*keep_previous_visible=*/true);
     } else {
-      collection_.set_name_filter(filter_edit_->text().toStdString());
+      collection_.set_name_filter(filter_search_.filter_text().toStdString());
     }
   }
   // Soft (watcher) reloads: keep the previous paint until sort finishes to avoid

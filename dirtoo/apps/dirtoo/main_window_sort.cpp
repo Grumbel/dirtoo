@@ -12,8 +12,8 @@ void MainWindow::request_async_sort()
 {
   // Content filters own visible_ via FilterWorker. Sorting must not call
   // replace_items_sorted → rebuild_visible (GUI content I/O / wipe filter).
-  if (filter_edit_ != nullptr && !filter_edit_->text().isEmpty()
-      && filter_expression_needs_content_io(filter_edit_->text())) {
+  if (!filter_search_.filter_text().isEmpty()
+      && filter_expression_needs_content_io(filter_search_.filter_text())) {
     collection_.sort_items_only();
     request_async_filter(/*keep_previous_visible=*/true);
     return;

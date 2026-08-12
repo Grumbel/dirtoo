@@ -55,12 +55,10 @@ void MainWindow::restore_settings()
     show_filter_act_->setChecked(s.show_filter || s.filter_pinned);
   }
   // Toggle the whole filter row; keep the line edit itself always visible/enabled.
-  if (filter_row_ != nullptr) {
-    filter_row_->setVisible(s.show_filter || s.filter_pinned);
-  }
-  if (filter_edit_ != nullptr) {
-    filter_edit_->setVisible(true);
-    filter_edit_->setEnabled(true);
+  filter_search_.set_filter_visible(s.show_filter || s.filter_pinned);
+  if (auto* edit = filter_search_.filter_edit()) {
+    edit->setVisible(true);
+    edit->setEnabled(true);
   }
   collection_.sorter().set_directories_first(s.directories_first);
   {
@@ -413,8 +411,8 @@ void MainWindow::apply_settings(const AppSettings& s)
   if (show_filter_act_ != nullptr) {
     show_filter_act_->setChecked(s.show_filter || s.filter_pinned);
   }
-  if (filter_row_ != nullptr) {
-    filter_row_->setVisible(s.show_filter || s.filter_pinned);
+  if (filter_search_.filter_row() != nullptr) {
+    filter_search_.filter_row()->setVisible(s.show_filter || s.filter_pinned);
   }
   if (show_sidebar_act_ != nullptr) {
     show_sidebar_act_->setChecked(s.show_sidebar);
@@ -432,9 +430,9 @@ void MainWindow::apply_settings(const AppSettings& s)
   if (sidebar_.places().model() != nullptr) {
     sidebar_.set_show_hidden(s.show_hidden);
   }
-  if (filter_edit_ != nullptr) {
-    filter_edit_->setVisible(true);
-    filter_edit_->setEnabled(true);
+  if (filter_search_.filter_edit() != nullptr) {
+    filter_search_.filter_edit()->setVisible(true);
+    filter_search_.filter_edit()->setEnabled(true);
   }
   request_async_sort();
   refresh_list();

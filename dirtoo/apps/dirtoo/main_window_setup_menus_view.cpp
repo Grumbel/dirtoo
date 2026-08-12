@@ -129,13 +129,11 @@ void MainWindow::setup_view_menu()
   show_filter_act_->setShortcut(QKeySequence(QStringLiteral("Ctrl+K")));
   show_filter_act_->setShortcutContext(Qt::WidgetShortcut);
   connect(show_filter_act_, &QAction::toggled, this, [this](bool on) {
-    if (filter_row_ != nullptr) {
-      filter_row_->setVisible(on);
-    }
+    filter_search_.set_filter_visible(on);
     // The line edit must stay visible whenever the row is shown (never hide it alone).
-    if (filter_edit_ != nullptr) {
-      filter_edit_->setVisible(true);
-      filter_edit_->setEnabled(true);
+    if (auto* edit = filter_search_.filter_edit()) {
+      edit->setVisible(true);
+      edit->setEnabled(true);
     }
     // Focus only when showing via explicit Ctrl+K (on_focus_filter); menu toggle
     // just changes visibility so Escape-hide can restore file-view focus cleanly.

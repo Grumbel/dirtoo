@@ -524,9 +524,10 @@ Goal: smaller translation units and eventually fewer responsibilities on
       (`graphics_file_view.cpp` core+layout; `_selection.cpp`; `_dnd.cpp`)
 - [x] **R5** `FileListModel` — extract thumbnail/new-mark state helper; thin `data()`
       (`file_list_model_thumbs.cpp`: thumbs, new marks, child counts, icon_for)
-- [ ] **R6** `setup_central_ui` — after R2, build chrome in owners
-      (partial: setup split into `_central` / `_toolbar` / `_menus` + `_menus_{file,edit,view,sort,go}`;
-       sidebar shell now `SidebarController::create()` — devices list + places tree)
+- [x] **R6** `setup_central_ui` — after R2, build chrome in owners
+      (setup split into `_central` / `_toolbar` / `_menus` + `_menus_{file,edit,view,sort,go}`;
+       sidebar shell `SidebarController::create()`; filter + search rows
+       `FilterSearchChrome::create_*()` — MainWindow keeps event filters / actions)
 
 ### Explicit non-goals (this track)
 

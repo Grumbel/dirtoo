@@ -101,11 +101,11 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event)
         && !ke->text().isEmpty() && ke->text().at(0).isPrint()
         && !ke->text().at(0).isSpace()) {
       const bool filter_visible =
-          (filter_row_ != nullptr && filter_row_->isVisible())
-          || (filter_edit_ != nullptr && filter_edit_->isVisible());
-      if (filter_visible && filter_edit_ != nullptr) {
-        filter_edit_->setFocus(Qt::ShortcutFocusReason);
-        filter_edit_->insert(ke->text());
+          (filter_search_.filter_row() != nullptr && filter_search_.filter_row()->isVisible())
+          || (filter_search_.filter_edit() != nullptr && filter_search_.filter_edit()->isVisible());
+      if (filter_visible && filter_search_.filter_edit() != nullptr) {
+        filter_search_.filter_edit()->setFocus(Qt::ShortcutFocusReason);
+        filter_search_.filter_edit()->insert(ke->text());
         return true;
       }
       if (leap_widget_ != nullptr) {
@@ -115,30 +115,26 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event)
     }
   }
 
-  if (obj == search_edit_ && event->type() == QEvent::KeyPress) {
+  if (obj == filter_search_.search_edit() && event->type() == QEvent::KeyPress) {
     auto* ke = static_cast<QKeyEvent*>(event);
     if (ke->key() == Qt::Key_Escape) {
       stop_search();
       search_session_.active = false;
       search_session_.results.clear();
-      if (search_row_ != nullptr) {
-        search_row_->hide();
-      } else if (search_edit_ != nullptr) {
-        search_edit_->hide();
-      }
-      search_edit_->clear();
+      filter_search_.set_search_visible(false);
+      filter_search_.clear_search();
       on_directory_changed();
       return true;
     }
   }
 
-  if (obj == filter_edit_ && event->type() == QEvent::KeyPress) {
+  if (obj == filter_search_.filter_edit() && event->type() == QEvent::KeyPress) {
     auto* ke = static_cast<QKeyEvent*>(event);
     if (ke->key() == Qt::Key_Up) {
       if (filter_history_.empty()) {
         return false; // let QLineEdit handle cursor / default
       }
-      filter_edit_->setText(filter_history_.older());
+      filter_search_.filter_edit()->setText(filter_history_.older());
       return true;
     }
     if (ke->key() == Qt::Key_Down) {
@@ -147,14 +143,14 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event)
       }
       const QString newer = filter_history_.newer();
       if (newer.isEmpty() && filter_history_.index() < 0) {
-        filter_edit_->clear();
+        filter_search_.filter_edit()->clear();
       } else if (!newer.isEmpty()) {
-        filter_edit_->setText(newer);
+        filter_search_.filter_edit()->setText(newer);
       }
       return true;
     }
     if (ke->key() == Qt::Key_Return || ke->key() == Qt::Key_Enter) {
-      filter_history_.push(filter_edit_->text());
+      filter_history_.push(filter_search_.filter_text());
       // Accept the current filter expression and return keyboard focus to the
       // file view so Enter is not "stuck" in the filter line.
       if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr) {
@@ -170,20 +166,20 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event)
   // (unless pinned). QFocusEvent has no relatedWidget() in Qt6 — use
   // QApplication::focusWidget(), deferred one event-loop turn so the new
   // focus target is settled (help button in the filter row must not hide).
-  if (obj == filter_edit_ && event->type() == QEvent::FocusOut) {
+  if (obj == filter_search_.filter_edit() && event->type() == QEvent::FocusOut) {
     QTimer::singleShot(0, this, [this] {
-      if (filter_edit_ == nullptr || filter_pinned_) {
+      if (filter_search_.filter_edit() == nullptr || filter_pinned_) {
         return;
       }
       if (QWidget* focus = QApplication::focusWidget()) {
-        if (filter_row_ != nullptr && filter_row_->isAncestorOf(focus)) {
+        if (filter_search_.filter_row() != nullptr && filter_search_.filter_row()->isAncestorOf(focus)) {
           return;
         }
-        if (focus == filter_edit_) {
+        if (focus == filter_search_.filter_edit()) {
           return;
         }
       }
-      if (!filter_edit_->text().isEmpty()) {
+      if (!filter_search_.filter_text().isEmpty()) {
         return;
       }
       if (show_filter_act_ != nullptr && show_filter_act_->isChecked()) {

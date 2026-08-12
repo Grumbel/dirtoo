@@ -22,6 +22,7 @@
 #include "message_area.hpp"
 #include "search_worker.hpp"
 #include "location_chrome.hpp"
+#include "filter_search_chrome.hpp"
 #include "list_pipeline_workers.hpp"
 #include "sidebar_controller.hpp"
 #include "view_mode.hpp"
@@ -290,11 +291,8 @@ private:
   void update_mutation_actions();
   /// Window title: shortened path first, then "dirtoo" [read-only].
   void update_window_title();
-  QWidget* filter_row_ = nullptr;
-  QLineEdit* filter_edit_ = nullptr;
+  FilterSearchChrome filter_search_{this};
   FilterHistory filter_history_;
-  QWidget* search_row_ = nullptr;
-  QLineEdit* search_edit_ = nullptr;
   SearchSession search_session_;
   SearchController search_controller_;
   QTimer* watcher_reload_timer_ = nullptr;

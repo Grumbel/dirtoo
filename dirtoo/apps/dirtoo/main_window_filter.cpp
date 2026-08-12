@@ -39,7 +39,6 @@ void MainWindow::update_filter_chrome(bool filtered)
   // view Base color (which made the bar look “merged” into the list).
   const QColor tint(220, 220, 255);
   const QColor app_base = qApp->palette().color(QPalette::Base);
-  const QColor app_window = qApp->palette().color(QPalette::Window);
 
   auto apply_view_bg = [&](QWidget* w) {
     if (w == nullptr) {
@@ -59,21 +58,8 @@ void MainWindow::update_filter_chrome(bool filtered)
     }
   }
 
-  if (filter_row_ != nullptr) {
-    // Explicit chrome background; never inherit the tinted view Base.
-    filter_row_->setAutoFillBackground(true);
-    QPalette bar_pal = filter_row_->palette();
-    bar_pal.setColor(QPalette::Window, app_window);
-    bar_pal.setColor(QPalette::Base, app_base);
-    filter_row_->setPalette(bar_pal);
-    filter_row_->setStyleSheet(QString());
-  }
-  if (filter_edit_ != nullptr) {
-    QPalette edit_pal = filter_edit_->palette();
-    edit_pal.setColor(QPalette::Base, app_base);
-    edit_pal.setColor(QPalette::Window, app_base);
-    filter_edit_->setPalette(edit_pal);
-  }
+  // Explicit chrome background; never inherit the tinted view Base.
+  filter_search_.reset_filter_bar_palette();
 }
 
 void MainWindow::on_filter_changed(const QString& text)
@@ -103,14 +89,13 @@ void MainWindow::on_filter_changed(const QString& text)
 void MainWindow::request_async_filter(bool keep_previous_visible)
 {
   if (list_workers_.filter() == nullptr) {
-    collection_.set_name_filter(
-        filter_edit_ != nullptr ? filter_edit_->text().toStdString() : std::string{});
+    collection_.set_name_filter(filter_search_.filter_text().toStdString());
     refresh_list();
     return;
   }
   const quint64 gen = list_workers_.next_filter_generation();
   auto items = collection_.items();
-  const QString expr = filter_edit_ != nullptr ? filter_edit_->text() : QString();
+  const QString expr = filter_search_.filter_text();
   const bool show_hidden = collection_.show_hidden();
   const auto group_mode = collection_.group_mode();
   // Always keep the previous visible list while the worker runs so the UI does
@@ -164,31 +149,21 @@ void MainWindow::on_focus_filter()
   // Ctrl+K always shows the filter bar and focuses the edit (does not toggle).
   if (show_filter_act_ != nullptr && !show_filter_act_->isChecked()) {
     show_filter_act_->setChecked(true);
-  } else if (filter_row_ != nullptr) {
-    filter_row_->setVisible(true);
+  } else {
+    filter_search_.set_filter_visible(true);
   }
-  if (filter_edit_ != nullptr) {
-    filter_edit_->setVisible(true);
-    filter_edit_->setEnabled(true);
-    filter_edit_->setFocus(Qt::ShortcutFocusReason);
-    filter_edit_->selectAll();
-  }
+  filter_search_.focus_filter(Qt::ShortcutFocusReason);
 }
 
 
 void MainWindow::on_show_search()
 {
   stop_search();
-  if (search_edit_ == nullptr) {
+  if (filter_search_.search_edit() == nullptr) {
     return;
   }
-  if (search_row_ != nullptr) {
-    search_row_->setVisible(true);
-  } else if (search_edit_ != nullptr) {
-    search_edit_->setVisible(true);
-  }
-  search_edit_->setFocus(Qt::ShortcutFocusReason);
-  search_edit_->selectAll();
+  filter_search_.set_search_visible(true);
+  filter_search_.focus_search(Qt::ShortcutFocusReason);
 }
 
 void MainWindow::stop_search()
@@ -200,10 +175,7 @@ void MainWindow::stop_search()
 
 void MainWindow::on_search_submitted()
 {
-  if (search_edit_ == nullptr) {
-    return;
-  }
-  const QString expr = search_edit_->text().trimmed();
+  const QString expr = filter_search_.search_text().trimmed();
   if (expr.isEmpty()) {
     return;
   }
@@ -322,17 +294,16 @@ void MainWindow::on_clear_filter()
     }
     return;
   }
-  if (search_row_ != nullptr ? search_row_->isVisible()
-      : (search_edit_ != nullptr && search_edit_->isVisible())) {
+  const bool search_visible =
+      filter_search_.search_row() != nullptr
+          ? filter_search_.search_row()->isVisible()
+          : (filter_search_.search_edit() != nullptr && filter_search_.search_edit()->isVisible());
+  if (search_visible) {
     stop_search();
     search_session_.active = false;
     search_session_.results.clear();
-    if (search_row_ != nullptr) {
-      search_row_->hide();
-    } else if (search_edit_ != nullptr) {
-      search_edit_->hide();
-    }
-    search_edit_->clear();
+    filter_search_.set_search_visible(false);
+    filter_search_.clear_search();
     on_directory_changed();
     // Restore focus so leap / type-ahead work again.
     if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr) {
@@ -342,14 +313,16 @@ void MainWindow::on_clear_filter()
     }
     return;
   }
-  if (filter_edit_ != nullptr && !filter_edit_->text().isEmpty()) {
-    filter_edit_->clear();
+  if (!filter_search_.filter_text().isEmpty()) {
+    filter_search_.clear_filter();
     return;
   }
-  if ((filter_row_ != nullptr ? filter_row_->isVisible()
-         : (filter_edit_ != nullptr && filter_edit_->isVisible()))
-      && !filter_pinned_
-      && show_filter_act_ != nullptr && show_filter_act_->isChecked()) {
+  const bool filter_visible =
+      filter_search_.filter_row() != nullptr
+          ? filter_search_.filter_row()->isVisible()
+          : (filter_search_.filter_edit() != nullptr && filter_search_.filter_edit()->isVisible());
+  if (filter_visible && !filter_pinned_ && show_filter_act_ != nullptr
+      && show_filter_act_->isChecked()) {
     show_filter_act_->setChecked(false);
     // Hide leaves focus on a now-hidden widget; put it back on the file view
     // so leap search (type-ahead) can be activated again.
