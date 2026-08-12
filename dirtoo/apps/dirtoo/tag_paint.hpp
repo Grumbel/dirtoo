@@ -33,7 +33,7 @@ inline QColor color_for_tag(const dirtoo::tags::TagDef& def)
     bool ok = false;
     const auto rgb = QString::fromStdString(def.color).mid(1).toUInt(&ok, 16);
     if (ok) {
-      return QColor.fromRgb(static_cast<QRgb>(rgb | 0xff000000u));
+      return QColor::fromRgb(static_cast<QRgb>(rgb | 0xff000000u));
     }
   }
   // Stable pastel from name hash.
