@@ -525,7 +525,8 @@ Goal: smaller translation units and eventually fewer responsibilities on
 - [x] **R5** `FileListModel` — extract thumbnail/new-mark state helper; thin `data()`
       (`file_list_model_thumbs.cpp`: thumbs, new marks, child counts, icon_for)
 - [ ] **R6** `setup_central_ui` — after R2, build chrome in owners
-      (partial: setup split into `_central` / `_toolbar` / `_menus` + `_menus_{file,edit,view,sort,go}`)
+      (partial: setup split into `_central` / `_toolbar` / `_menus` + `_menus_{file,edit,view,sort,go}`;
+       sidebar shell now `SidebarController::create()` — devices list + places tree)
 
 ### Explicit non-goals (this track)
 

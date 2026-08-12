@@ -42,80 +42,30 @@ void MainWindow::setup_central_ui()
   main_splitter_ = new QSplitter(Qt::Horizontal, central);
   main_splitter_->setChildrenCollapsible(false);
 
-  // Left: directory tree sidebar
-  sidebar_widget_ = new QWidget(main_splitter_);
-  auto* sidebar_layout = new QVBoxLayout(sidebar_widget_);
-  sidebar_layout->setContentsMargins(0, 0, 0, 0);
-  sidebar_layout->setSpacing(0);
-
-  // Devices panel (top of vertical sidebar splitter).
-  auto* devices_panel = new QWidget(sidebar_widget_);
-  auto* devices_layout = new QVBoxLayout(devices_panel);
-  devices_layout->setContentsMargins(0, 0, 0, 0);
-  devices_layout->setSpacing(0);
-  devices_label_ = new QLabel(QStringLiteral("Devices"), devices_panel);
-  devices_label_->setStyleSheet(QStringLiteral("font-weight: bold; padding: 4px 6px 2px 6px;"));
-  devices_layout->addWidget(devices_label_);
-  devices_list_ = new QListWidget(devices_panel);
-  devices_list_->setFrameShape(QFrame::NoFrame);
-  devices_list_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-  devices_list_->setContextMenuPolicy(Qt::CustomContextMenu);
-  // Devices list wired in DevicesController setup (after udisks client creation).
-  devices_layout->addWidget(devices_list_, 1);
-
-  // Places + directory tree (bottom of vertical sidebar splitter).
-  auto* places_panel = new QWidget(sidebar_widget_);
-  auto* places_layout = new QVBoxLayout(places_panel);
-  places_layout->setContentsMargins(0, 0, 0, 0);
-  places_layout->setSpacing(0);
-  auto* places_label = new QLabel(QStringLiteral("Places"), places_panel);
-  places_label->setStyleSheet(QStringLiteral("font-weight: bold; padding: 6px 6px 2px 6px;"));
-  places_layout->addWidget(places_label);
-
-  sidebar_.places().ensure_model();
+  // Left: directory tree sidebar (chrome owned by SidebarController).
+  auto* sidebar_host = sidebar_.create(main_splitter_);
   rebuild_sidebar_places();
+  sidebar_.set_open_path_handler([this](const QString& path) {
+    open_location(fs::Location::from_path(std::filesystem::path(path.toStdString())), true);
+  });
   devices_controller_ = new DevicesController(this);
-  devices_controller_->set_list_widget(devices_list_);
+  devices_controller_->set_list_widget(sidebar_.devices_list());
   devices_controller_->set_parent_widget(this);
-  connect(devices_list_, &QListWidget::itemActivated, devices_controller_,
-        &DevicesController::on_item_activated);
-  connect(devices_list_, &QListWidget::itemClicked, devices_controller_,
-        &DevicesController::on_item_activated);
-  connect(devices_list_, &QWidget::customContextMenuRequested, devices_controller_,
-        &DevicesController::on_context_menu);
+  if (auto* devices_list = sidebar_.devices_list()) {
+    connect(devices_list, &QListWidget::itemActivated, devices_controller_,
+            &DevicesController::on_item_activated);
+    connect(devices_list, &QListWidget::itemClicked, devices_controller_,
+            &DevicesController::on_item_activated);
+    connect(devices_list, &QWidget::customContextMenuRequested, devices_controller_,
+            &DevicesController::on_context_menu);
+  }
   connect(devices_controller_, &DevicesController::open_path, this, [this](const QString& path) {
-  open_location(fs::Location::from_path(std::filesystem::path(path.toStdString())), true);
+    open_location(fs::Location::from_path(std::filesystem::path(path.toStdString())), true);
   });
   connect(devices_controller_, &DevicesController::status_message, this, &MainWindow::set_status);
   devices_controller_->refresh();
 
-  sidebar_tree_ = new QTreeView(places_panel);
-  sidebar_tree_->setModel(sidebar_.places().model());
-  sidebar_tree_->setHeaderHidden(true);
-  sidebar_tree_->setUniformRowHeights(true);
-  sidebar_tree_->setAnimated(true);
-  sidebar_tree_->setExpandsOnDoubleClick(true);
-  sidebar_tree_->setFrameShape(QFrame::NoFrame);
-  sidebar_tree_->setSelectionMode(QAbstractItemView::SingleSelection);
-  connect(sidebar_tree_, &QTreeView::activated, this, &MainWindow::on_sidebar_activated);
-  connect(sidebar_tree_, &QTreeView::clicked, this, &MainWindow::on_sidebar_activated);
-  places_layout->addWidget(sidebar_tree_, 1);
-
-  sidebar_.bind(sidebar_widget_, sidebar_tree_, main_splitter_);
-  sidebar_.set_open_path_handler([this](const QString& path) {
-    open_location(fs::Location::from_path(std::filesystem::path(path.toStdString())), true);
-  });
-
-  auto* sidebar_splitter = new QSplitter(Qt::Vertical, sidebar_widget_);
-  sidebar_splitter->setChildrenCollapsible(false);
-  sidebar_splitter->addWidget(devices_panel);
-  sidebar_splitter->addWidget(places_panel);
-  sidebar_splitter->setStretchFactor(0, 0);
-  sidebar_splitter->setStretchFactor(1, 1);
-  sidebar_splitter->setSizes({140, 400});
-  sidebar_layout->addWidget(sidebar_splitter);
-
-  main_splitter_->addWidget(sidebar_widget_);
+  main_splitter_->addWidget(sidebar_host);
 
   // Right: existing chrome + file views
   auto* right = new QWidget(main_splitter_);

@@ -104,8 +104,8 @@ void MainWindow::restore_settings()
   if (show_sidebar_act_ != nullptr) {
     show_sidebar_act_->setChecked(s.show_sidebar);
   }
-  if (sidebar_widget_ != nullptr) {
-    sidebar_widget_->setVisible(s.show_sidebar);
+  if (sidebar_.widget() != nullptr) {
+    sidebar_.set_visible(s.show_sidebar);
   }
   if (main_splitter_ != nullptr && s.sidebar_width > 40) {
     QList<int> sizes = main_splitter_->sizes();
@@ -419,8 +419,8 @@ void MainWindow::apply_settings(const AppSettings& s)
   if (show_sidebar_act_ != nullptr) {
     show_sidebar_act_->setChecked(s.show_sidebar);
   }
-  if (sidebar_widget_ != nullptr) {
-    sidebar_widget_->setVisible(s.show_sidebar);
+  if (sidebar_.widget() != nullptr) {
+    sidebar_.set_visible(s.show_sidebar);
   }
   if (main_splitter_ != nullptr && s.sidebar_width > 40) {
     QList<int> sizes = main_splitter_->sizes();

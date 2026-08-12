@@ -280,12 +280,8 @@ private:
   Bookmarks bookmarks_{Bookmarks::default_path()};
   QWidget* location_stack_host_ = nullptr;
   QSplitter* main_splitter_ = nullptr;
-  QWidget* sidebar_widget_ = nullptr;
-  QTreeView* sidebar_tree_ = nullptr;
   SidebarController sidebar_{this};
   DevicesController* devices_controller_ = nullptr;
-  class QListWidget* devices_list_ = nullptr;
-  class QLabel* devices_label_ = nullptr;
   QAction* show_sidebar_act_ = nullptr;
   QAction* read_only_act_ = nullptr;
   bool read_only_ = false;
