@@ -34,6 +34,7 @@
 #include "sort_worker.hpp"
 #include "filter_worker.hpp"
 #include "thumbnail_coordinator.hpp"
+#include "tag_controller.hpp"
 #include "leap_widget.hpp"
 #include "transfer_dialog.hpp"
 #include "transfer_worker.hpp"
@@ -295,6 +296,7 @@ private:
   FilterHistory filter_history_;
   SearchSession search_session_;
   SearchController search_controller_;
+  TagController tag_{this};
   QTimer* watcher_reload_timer_ = nullptr;
   QStackedWidget* view_stack_ = nullptr;
   QTreeView* tree_view_ = nullptr;

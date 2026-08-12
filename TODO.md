@@ -219,8 +219,8 @@ Prioritized issues from a multi-day change review.
 - [ ] **MainWindow gravity (ongoing)**  
   Hash/tag/thumb policy still grows MainWindow TUs despite R2 collaborators.
   Prefer new orchestration helpers over more `main_window_*.cpp` surface.
-  Progress: `TagJob` extracted; R6 chrome owners; `DevicesController::attach`;
-  `ThumbnailCoordinator::request_rows` (archive extract + MIME queue; viewport
+  Progress: `TagJob` + `TagController` (Tag… dialog/progress); R6 chrome;
+  `DevicesController::attach`; `ThumbnailCoordinator::request_rows` (viewport
   row discovery still on MainWindow).
 
 

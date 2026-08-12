@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include "tag_paint.hpp"
 
 #include <QDebug>
 
@@ -54,6 +55,26 @@ void MainWindow::setup_background_workers()
   connect(&search_controller_, &SearchController::match_found, this, &MainWindow::on_search_match);
   connect(&search_controller_, &SearchController::progress, this, &MainWindow::on_search_progress);
   connect(&search_controller_, &SearchController::finished, this, &MainWindow::on_search_finished);
+
+  tag_.set_dialog_parent(this);
+  connect(&tag_, &TagController::status_message, this,
+          [this](const QString& text, int timeout_ms) {
+            if (statusBar() != nullptr) {
+              statusBar()->showMessage(text, timeout_ms);
+            }
+          });
+  connect(&tag_, &TagController::tags_applied, this, [this](int) {
+    tag_paint_detail::clear_tag_chip_cache();
+    if (graphics_view_ != nullptr) {
+      graphics_view_->viewport()->update();
+    }
+    if (icon_view_ != nullptr) {
+      icon_view_->viewport()->update();
+    }
+    if (tree_view_ != nullptr) {
+      tree_view_->viewport()->update();
+    }
+  });
 
   list_workers_.setup();
   connect(list_workers_.dir_load(), &DirectoryLoadWorker::loaded, this, &MainWindow::on_directory_loaded);
