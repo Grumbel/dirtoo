@@ -197,6 +197,10 @@ void exec_item_context_menu(QWidget* parent, const QPoint& global_pos,
     menu.addAction(theme_icon("document-properties"), QStringLiteral("Properties…"), parent,
                    cb.properties_selected);
   }
+  if (cb.tag_selected) {
+    menu.addAction(theme_icon("bookmark-new", "tag"), QStringLiteral("Tag…"), parent,
+                   cb.tag_selected);
+  }
   if (cb.checksums_selected) {
     menu.addAction(theme_icon("document-properties"), QStringLiteral("Checksums…"), parent,
                    cb.checksums_selected);

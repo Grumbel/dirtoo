@@ -98,8 +98,8 @@
           inherit version cmakeBuildType;
           src = srcFor [ ./libs/dirtoo-filter ];
           dontStrip = true;
-          nativeBuildInputs = with pkgs; [ cmake ninja ];
-          buildInputs = with pkgs; [ sqlite ];
+          nativeBuildInputs = with pkgs; [ cmake ninja pkg-config ];
+          buildInputs = [ pkgs.sqlite pkgs.openssl dirtoo-hash dirtoo-tags ];
           postUnpack = ''sourceRoot+=/libs/dirtoo-filter'';
           cmakeFlags = [ versionFlag "-DDIRTOO_FILTER_BUILD_TOOLS=ON" ];
           meta.description = "dirtoo filter DSL, predicates, media meta cache + dt-filter";

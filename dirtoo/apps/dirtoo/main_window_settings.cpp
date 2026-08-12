@@ -7,6 +7,14 @@
 #include "app_settings.hpp"
 #include "preferences_dialog.hpp"
 #include "checksum_dialog.hpp"
+
+#include "dirtoo/hash/checksum_store.hpp"
+#include "dirtoo/tags/tag_store.hpp"
+
+#include <QInputDialog>
+#include <QMessageBox>
+#include <QStatusBar>
+#include <QLineEdit>
 #include "size_format.hpp"
 #include <QHeaderView>
 
@@ -244,6 +252,80 @@ void MainWindow::on_checksums()
     }
   }
   show_checksum_dialog(this, paths);
+}
+
+
+void MainWindow::on_tag_selected()
+{
+  const auto infos = selected_fileinfos();
+  QStringList paths;
+  for (const auto& fi : infos) {
+    if (fi.is_regular_file() && !fi.is_synthetic()) {
+      paths << QString::fromStdString(fi.path().string());
+    }
+  }
+  if (paths.isEmpty()) {
+    QMessageBox::information(this, QStringLiteral("Tag"),
+                             QStringLiteral("Select one or more regular files first."));
+    return;
+  }
+
+  bool ok = false;
+  const QString tag = QInputDialog::getText(
+      this, QStringLiteral("Tag"),
+      QStringLiteral("Tag name for %1 file(s):").arg(paths.size()), QLineEdit::Normal,
+      QString(), &ok);
+  if (!ok || tag.trimmed().isEmpty()) {
+    return;
+  }
+
+  dirtoo::hash::ChecksumStore checksums;
+  dirtoo::tags::TagStore tags;
+  std::string err;
+  if (!checksums.open(dirtoo::hash::ChecksumStore::default_path(), &err)
+      || !tags.open(dirtoo::tags::TagStore::default_path(), &err)) {
+    QMessageBox::warning(this, QStringLiteral("Tag"), QString::fromStdString(err));
+    return;
+  }
+
+  int tagged = 0;
+  int skipped = 0;
+  QStringList problems;
+  for (const QString& p : paths) {
+    std::error_code ec;
+    const auto abs = std::filesystem::absolute(p.toStdString(), ec);
+    const std::string key = ec ? p.toStdString() : abs.lexically_normal().string();
+    dirtoo::hash::HashError herr;
+    if (!checksums.ensure(abs, key, false, &herr)) {
+      ++skipped;
+      problems << QStringLiteral("%1: %2").arg(p, QString::fromStdString(herr.message));
+      continue;
+    }
+    std::string e;
+    auto id = tags.resolve_path(checksums, key, &e);
+    if (!id || !tags.add_tag_to_file(*id, tag.toStdString(), &e)) {
+      ++skipped;
+      problems << QStringLiteral("%1: %2").arg(p, QString::fromStdString(e));
+      continue;
+    }
+    ++tagged;
+  }
+
+  QString msg = QStringLiteral("Tagged %1 file(s).").arg(tagged);
+  if (skipped > 0) {
+    msg += QStringLiteral(" Skipped %1.").arg(skipped);
+  }
+  if (!problems.isEmpty() && problems.size() <= 5) {
+    msg += QStringLiteral("
+") + problems.join(QLatin1Char('
+'));
+  }
+  if (statusBar() != nullptr) {
+    statusBar()->showMessage(msg, 5000);
+  }
+  if (skipped > 0) {
+    QMessageBox::warning(this, QStringLiteral("Tag"), msg);
+  }
 }
 
 void MainWindow::apply_settings(const AppSettings& s)

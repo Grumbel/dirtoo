@@ -56,4 +56,9 @@ namespace dirtoo::filter {
 /// weekday: monday | mon | 0–6 with optional compare (weekday:>=fri)
 [[nodiscard]] MatchFuncPtr make_weekday(std::string argument);
 
+/// Files carrying tag (checksum cache + tags DB; no hashing).
+[[nodiscard]] MatchFuncPtr make_tag(std::string_view tag_name);
+/// tagged:yes|no — any / no tags on the file.
+[[nodiscard]] MatchFuncPtr make_tagged(std::string_view arg);
+
 } // namespace dirtoo::filter

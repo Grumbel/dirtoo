@@ -143,6 +143,7 @@ target_link_libraries(dirtoo-app
     dirtoo::archive
     dirtoo::dirops
     dirtoo::hash
+    dirtoo::tags
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets

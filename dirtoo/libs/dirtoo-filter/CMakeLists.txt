@@ -25,6 +25,7 @@ include(CMakePackageConfigHelpers)
 add_library(dirtoo-filter
   src/parser.cpp
   src/predicates_name.cpp
+  src/predicates_tag.cpp
   src/predicates_media.cpp
   src/predicates_fuzzy.cpp
   src/predicates_meta.cpp
@@ -42,7 +43,9 @@ target_include_directories(dirtoo-filter PUBLIC
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 find_package(SQLite3 REQUIRED)
-target_link_libraries(dirtoo-filter PRIVATE SQLite3::SQLite3)
+find_package(dirtoo-hash REQUIRED CONFIG)
+find_package(dirtoo-tags REQUIRED CONFIG)
+target_link_libraries(dirtoo-filter PRIVATE SQLite3::SQLite3 dirtoo-hash::dirtoo-hash dirtoo-tags::dirtoo-tags)
 target_compile_features(dirtoo-filter PUBLIC cxx_std_23)
 target_compile_options(dirtoo-filter PRIVATE
   $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic>

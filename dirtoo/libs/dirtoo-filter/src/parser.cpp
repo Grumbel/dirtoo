@@ -296,6 +296,12 @@ private:
     if (c == "regex" || c == "re" || c == "r" || c == "rx") {
       return make_regex(arg, false);
     }
+    if (c == "tag") {
+      return make_tag(arg);
+    }
+    if (c == "tagged") {
+      return make_tagged(arg);
+    }
     if (c == "size") {
       return make_size(arg);
     }
@@ -387,6 +393,8 @@ Terms (juxtaposition = AND, OR joins alternatives):
   Glob:*.PNG      case-sensitive glob
   regex:^a.*      regex on basename (re:, r:)
   size:>1M        size compare (K/M/G); also size:10K-2M
+  tag:work        files tagged "work" (needs checksum + dt-tag)
+  tagged:yes|no   any tags / no tags (checksum cache lookup only)
   type:dir        type:file|dir|video|image|archive|audio (t:)
   width:>=1920    image/video width (needs ffprobe)
   height:=1080    image/video height
@@ -413,6 +421,7 @@ Terms (juxtaposition = AND, OR joins alternatives):
 Examples:
   *.png OR *.jpg
   type:file size:>1M
+  tag:work OR tagged:no
   (readme OR license) -*.bak
   glob:*.cpp regex:main
   length:>20 contains:TODO
@@ -451,6 +460,10 @@ std::string filter_help_html()
 
 <h3>File attributes</h3>
 <table cellspacing="4" cellpadding="2">
+<tr><td><code>tag:work</code></td>
+    <td>Files with tag <i>work</i> (checksum cache + tags DB; no hashing)</td></tr>
+<tr><td><code>tagged:yes</code> / <code>tagged:no</code></td>
+    <td>Any tags / no tags on the file</td></tr>
 <tr><td><code>size:&gt;1M</code></td>
     <td>Size compare (<code>K</code>/<code>M</code>/<code>G</code>);
         also ranges like <code>size:10K-2M</code></td></tr>
@@ -509,6 +522,7 @@ std::string filter_help_html()
 <ul>
 <li><code>*.png OR *.jpg</code></li>
 <li><code>type:file size:&gt;1M</code></li>
+<li><code>tag:work OR tagged:no</code></li>
 <li><code>(readme OR license) -*.bak</code></li>
 <li><code>glob:*.cpp regex:main</code></li>
 <li><code>length:&gt;20 contains:TODO</code></li>

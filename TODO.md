@@ -763,8 +763,9 @@ Primary algo for identity: **SHA-256**. Always compute the set in one pass.
       file identity by sha256 from checksum store, path aliases)
 - [x] **`dt-tag`** add/remove/list/files/def — refuse if checksum unknown
       (optional `--hash-if-needed` calls checksum API, does not reimplement hash)
-- [ ] Filter / `dt-search`: `tag:name` predicate
-- [ ] GUI: tag context menu, badges from tag_defs (icon/color)
+- [x] Filter / `dt-search`: `tag:name` / `tagged:yes|no` predicate
+- [x] GUI: tag context menu (“Tag…”)
+- [ ] Badges from tag_defs (icon/color) in icon view
 
 ### Explicit non-goals (v1)
 
