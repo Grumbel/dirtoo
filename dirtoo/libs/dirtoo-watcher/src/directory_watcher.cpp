@@ -147,8 +147,12 @@ void DirectoryWatcher::start()
   // Prefer inotify for directories so we get per-name events.
   impl_->inotify_fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
   if (impl_->inotify_fd >= 0) {
+    // IN_CLOSE_WRITE: editors often write via temp+rename or truncate+write;
+    // close-after-write catches content changes that IN_MODIFY alone may miss or
+    // coalesce poorly. IN_OPEN is intentionally omitted (too noisy).
     constexpr uint32_t kMask = IN_CREATE | IN_DELETE | IN_MOVED_FROM | IN_MOVED_TO
-                               | IN_MODIFY | IN_ATTRIB | IN_DELETE_SELF | IN_MOVE_SELF;
+                               | IN_MODIFY | IN_ATTRIB | IN_CLOSE_WRITE
+                               | IN_DELETE_SELF | IN_MOVE_SELF;
     for (const auto& p : paths) {
       if (p.empty()) {
         continue;
@@ -215,7 +219,7 @@ void DirectoryWatcher::start()
             if ((ev->mask & (IN_DELETE | IN_MOVED_FROM)) != 0) {
               impl_->pending_removed.push_back(q);
             }
-            if ((ev->mask & (IN_MODIFY | IN_ATTRIB)) != 0) {
+            if ((ev->mask & (IN_MODIFY | IN_ATTRIB | IN_CLOSE_WRITE)) != 0) {
               impl_->pending_modified.push_back(q);
             }
           }

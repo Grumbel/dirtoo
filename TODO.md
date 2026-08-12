@@ -661,9 +661,10 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
 - [x] give icons for hidden files a different background color, see dirtoo-py/
       (IsHiddenRole; muted gray tile bg + dimmed foreground in Detail/List/
        Icons/Graphics when basename starts with '.')
-- [ ] indicate when files are opened/closed (if that information comes
+- [x] indicate when files are opened/closed (if that information comes
       via inotify for free, otherwise ignore for now)
-      (IN_CLOSE_WRITE not in watcher mask yet; OPEN would be noisy — deferred)
+      (IN_CLOSE_WRITE treated as modify for content-change detection; IN_OPEN
+       omitted as too noisy — no separate open/close UI indicator)
 - [x] directory thumbnails don't update when the directory content
       changed, or maybe it's the thumbnailing in general getting
       stuck?
