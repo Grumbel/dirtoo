@@ -120,6 +120,18 @@ void FilterSearchChrome::clear_filter()
   }
 }
 
+void FilterSearchChrome::set_filter_text(const QString& text)
+{
+  if (filter_edit_ == nullptr) {
+    return;
+  }
+  // Avoid re-entrancy if already equal.
+  if (filter_edit_->text() == text) {
+    return;
+  }
+  filter_edit_->setText(text);
+}
+
 void FilterSearchChrome::clear_search()
 {
   if (search_edit_ != nullptr) {

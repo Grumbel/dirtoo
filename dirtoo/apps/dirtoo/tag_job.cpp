@@ -9,11 +9,11 @@
 #include "dirtoo/hash/hash_file.hpp"
 #include "dirtoo/tags/tag_store.hpp"
 
-#include <QMetaObject>
 #include <QThread>
 
 #include <atomic>
 #include <filesystem>
+#include <memory>
 #include <utility>
 
 namespace dirtoo::app {
@@ -22,9 +22,11 @@ namespace {
 class TagWorker : public QObject {
   Q_OBJECT
 public:
-  TagWorker(std::vector<dirtoo::fs::FileInfo> files, QString tag)
+  TagWorker(std::vector<dirtoo::fs::FileInfo> files, QString tag,
+            std::shared_ptr<std::atomic_bool> cancel)
       : files_(std::move(files))
       , tag_(std::move(tag))
+      , cancel_(std::move(cancel))
   {
   }
 
@@ -49,7 +51,7 @@ public slots:
     const auto cache_root = archive_member_cache_root("dirtoo-archive-thumbs");
 
     for (int i = 0; i < total; ++i) {
-      if (cancel_.load()) {
+      if (cancel_ && cancel_->load()) {
         break;
       }
       const auto& fi = files_[static_cast<std::size_t>(i)];
@@ -111,8 +113,6 @@ public slots:
     emit finished(tagged, skipped, problems);
   }
 
-  void request_cancel() { cancel_.store(true); }
-
 signals:
   void progress(int done, int total, const QString& name);
   void finished(int tagged, int skipped, const QStringList& problems);
@@ -121,7 +121,7 @@ signals:
 private:
   std::vector<dirtoo::fs::FileInfo> files_;
   QString tag_;
-  std::atomic_bool cancel_{false};
+  std::shared_ptr<std::atomic_bool> cancel_;
 };
 
 } // namespace
@@ -129,6 +129,8 @@ private:
 struct TagJob::Impl {
   QThread* thread = nullptr;
   TagWorker* worker = nullptr;
+  /// Shared with the worker so cancel never needs QMetaObject on a dying QObject.
+  std::shared_ptr<std::atomic_bool> cancel = std::make_shared<std::atomic_bool>(false);
 };
 
 TagJob::TagJob(std::vector<dirtoo::fs::FileInfo> files, QString tag, QObject* parent)
@@ -155,7 +157,10 @@ void TagJob::start()
   if (impl_ == nullptr || impl_->thread != nullptr) {
     return;
   }
-  impl_->worker = new TagWorker(std::move(files_), tag_);
+  if (impl_->cancel) {
+    impl_->cancel->store(false);
+  }
+  impl_->worker = new TagWorker(std::move(files_), tag_, impl_->cancel);
   impl_->thread = new QThread(this);
   impl_->worker->moveToThread(impl_->thread);
   connect(impl_->thread, &QThread::started, impl_->worker, &TagWorker::run);
@@ -176,8 +181,10 @@ void TagJob::start()
 
 void TagJob::cancel()
 {
-  if (impl_ != nullptr && impl_->worker != nullptr) {
-    QMetaObject::invokeMethod(impl_->worker, "request_cancel", Qt::QueuedConnection);
+  // Only touch the shared atomic — never invokeMethod on the worker (it may
+  // already be deleteLater'd when TagJob is destroyed after finished).
+  if (impl_ != nullptr && impl_->cancel) {
+    impl_->cancel->store(true);
   }
 }
 

@@ -200,7 +200,11 @@ Go to Folder, Clear. Storage: SQLite at `$XDG_STATE_HOME/dirtoo/operations-histo
 - [x] **Tag Manager** dialog: list, rename, delete, edit label/color/badge; chips use label+color+badge
 - [x] Tag chips drawn above bottom-left meta (Width×Height) to avoid overlap
 
+### QuickFilter bar
+- [x] Bottom QuickFilter chips from listing (type:/tag:) + pin current filter
+
 ### Fixes (2026-08-12)
+- [x] TagJob crash on cancel/dtor (shared atomic, no invokeMethod on dead worker)
 - [x] **dt-search** positional QUERY was treated as a directory (empty matches +
   “path(s) could not be read”); parity with Python simple mode (`QUERY` + `-d`).
 - [x] **Open with…** submenu stuck on “…” — `Qt::UniqueConnection` with a lambda

@@ -192,6 +192,20 @@ void MainWindow::setup_central_ui()
 
   layout->addWidget(view_stack_, 1);
 
+  quick_filter_bar_ = new QuickFilterBar(central);
+  connect(quick_filter_bar_, &QuickFilterBar::filter_requested, this, [this](const QString& expr) {
+    filter_search_.set_filter_visible(true);
+    filter_search_.set_filter_text(expr);
+  });
+  connect(quick_filter_bar_, &QuickFilterBar::pin_current_requested, this, [this] {
+    const QString expr = filter_search_.filter_text().trimmed();
+    if (expr.isEmpty() || quick_filter_bar_ == nullptr) {
+      return;
+    }
+    quick_filter_bar_->pin_expression(expr);
+  });
+  layout->addWidget(quick_filter_bar_);
+
   // Filter row at bottom (parity with dirtoo-py BottomToolBarArea filter toolbar).
   {
   auto* filter_row = filter_search_.create_filter_row(central);

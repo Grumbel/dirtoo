@@ -64,6 +64,9 @@ void MainWindow::update_filter_chrome(bool filtered)
 
 void MainWindow::on_filter_changed(const QString& text)
 {
+  if (quick_filter_bar_ != nullptr) {
+    quick_filter_bar_->set_active_expression(text);
+  }
   update_filter_chrome(!text.isEmpty());
   if (filter_expression_needs_content_io(text)) {
     // Content predicates must not run on the GUI thread.

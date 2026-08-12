@@ -40,6 +40,7 @@ public:
   void focus_filter(Qt::FocusReason reason = Qt::OtherFocusReason);
   void focus_search(Qt::FocusReason reason = Qt::OtherFocusReason);
   void clear_filter();
+  void set_filter_text(const QString& text);
   void clear_search();
 
   /// Reset filter-row palette to app Window/Base so it does not inherit a

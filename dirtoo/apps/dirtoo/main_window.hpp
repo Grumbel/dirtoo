@@ -23,6 +23,7 @@
 #include "search_worker.hpp"
 #include "location_chrome.hpp"
 #include "filter_search_chrome.hpp"
+#include "quick_filter_bar.hpp"
 #include "list_pipeline_workers.hpp"
 #include "sidebar_controller.hpp"
 #include "view_mode.hpp"
@@ -109,6 +110,7 @@ private slots:
   void update_detail_row_heights();
   void on_show_filter_help();
   void on_filter_changed(const QString& text);
+  void rebuild_quick_filters();
   void on_filter_finished(quint64 generation, std::vector<dirtoo::fs::FileInfo> visible, bool parse_ok);
   /// @param keep_previous_visible Soft reload: do not clear the list until filter finishes.
   void request_async_filter(bool keep_previous_visible = true);
@@ -294,6 +296,7 @@ private:
   /// Window title: shortened path first, then "dirtoo" [read-only].
   void update_window_title();
   FilterSearchChrome filter_search_{this};
+  QuickFilterBar* quick_filter_bar_ = nullptr;
   FilterHistory filter_history_;
   SearchSession search_session_;
   SearchController search_controller_;

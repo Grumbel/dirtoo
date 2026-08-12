@@ -62,6 +62,7 @@ void MainWindow::reload_directory(bool soft)
     }
     refresh_list();
     request_thumbnails_for_visible();
+  rebuild_quick_filters();
     return;
   }
 
@@ -169,6 +170,7 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
     request_async_sort();
   }
   request_thumbnails_for_visible();
+  rebuild_quick_filters();
 }
 
 void MainWindow::on_directory_load_failed(quint64 generation, QString error)
@@ -232,6 +234,15 @@ void MainWindow::on_archive_failed(const fs::Location& archive_location, const Q
   set_status(message);
   // Fall back to parent directory so the user is not stuck on a failed archive view.
   open_location(fs::Location::from_path(archive_location.as_path().parent_path()), false);
+}
+
+void MainWindow::rebuild_quick_filters()
+{
+  if (quick_filter_bar_ == nullptr) {
+    return;
+  }
+  quick_filter_bar_->rebuild_from_items(collection_.items());
+  quick_filter_bar_->set_active_expression(filter_search_.filter_text());
 }
 
 } // namespace dirtoo::app
