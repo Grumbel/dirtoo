@@ -689,6 +689,12 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
 - [x] Escape after hiding the filter bar should return focus to the file view
       so leap/type-ahead can be activated again
       (on_clear_filter restores focus on graphics_view_ / current_view())
+- [x] when resizing the window, thumbnails only showed for the old window size
+      (GraphicsFileView::visible_window_changed after update_visible_window;
+       viewport Resize in eventFilter for Detail/List; request_thumbnails_for_visible)
+- [x] filter bar should disappear when focus returns to the file view and the
+      bar is empty (FocusOut on filter_edit_; skip if pinned or focus stays in
+      filter_row_; unchecks show_filter_act_)
 - [x] slow IO (USB HDD that has to spin up) still locks up the GUI
       (mitigated: watcher create/modify deltas stat via QThreadPool +
        apply_watcher_upserts; removals stay on GUI with no FS I/O. Residual:

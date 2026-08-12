@@ -164,6 +164,24 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event)
     }
   }
 
+  // Hide the filter bar when focus leaves it and the expression is empty
+  // (unless pinned). Matches the UX request: empty filter should not stay
+  // around once the user returns to the file view.
+  if (obj == filter_edit_ && event->type() == QEvent::FocusOut) {
+    auto* fe = static_cast<QFocusEvent*>(event);
+    // Keep the bar if focus moves to another widget in the filter row (e.g. help).
+    if (QWidget* next = qobject_cast<QWidget*>(fe->relatedWidget())) {
+      if (filter_row_ != nullptr && filter_row_->isAncestorOf(next)) {
+        return QMainWindow::eventFilter(obj, event);
+      }
+    }
+    if (!filter_pinned_ && filter_edit_ != nullptr && filter_edit_->text().isEmpty()
+        && show_filter_act_ != nullptr && show_filter_act_->isChecked()) {
+      show_filter_act_->setChecked(false);
+    }
+    return QMainWindow::eventFilter(obj, event);
+  }
+
   // Window / splitter resize changes the viewport without a scrollbar value
   // change; re-request thumbnails for the newly exposed rows.
   if (event->type() == QEvent::Resize) {
