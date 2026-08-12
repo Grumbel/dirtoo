@@ -184,6 +184,9 @@ void MainWindow::setup_toolbar()
         case collection::GroupMode::Duration:
           s.group_mode = QStringLiteral("duration");
           break;
+        case collection::GroupMode::Session:
+          s.group_mode = QStringLiteral("session");
+          break;
         default:
           s.group_mode = QStringLiteral("none");
           break;
@@ -199,6 +202,7 @@ void MainWindow::setup_toolbar()
   add_group(QStringLiteral("Day"), dirtoo::collection::GroupMode::Day, false);
   add_group(QStringLiteral("Directory"), dirtoo::collection::GroupMode::Directory, false);
   add_group(QStringLiteral("Duration"), dirtoo::collection::GroupMode::Duration, false);
+    add_group(QStringLiteral("Session"), dirtoo::collection::GroupMode::Session, false);
   group_btn->setMenu(group_menu);
   toolbar->addWidget(group_btn);
   }

@@ -72,6 +72,8 @@ void MainWindow::restore_settings()
       gm = collection::GroupMode::Directory;
     } else if (g == QLatin1String("duration")) {
       gm = collection::GroupMode::Duration;
+    } else if (g == QLatin1String("session")) {
+      gm = collection::GroupMode::Session;
     }
     collection_.set_group_mode(gm);
     update_detail_row_heights();
@@ -82,6 +84,8 @@ void MainWindow::restore_settings()
         group_toolbar_btn_->setText(QStringLiteral("Directory"));
       } else if (gm == collection::GroupMode::Duration) {
         group_toolbar_btn_->setText(QStringLiteral("Duration"));
+      } else if (gm == collection::GroupMode::Session) {
+        group_toolbar_btn_->setText(QStringLiteral("Session"));
       } else {
         group_toolbar_btn_->setText(QStringLiteral("None"));
       }
@@ -232,6 +236,9 @@ void MainWindow::on_preferences()
     break;
   case collection::GroupMode::Duration:
     s.group_mode = QStringLiteral("duration");
+    break;
+  case collection::GroupMode::Session:
+    s.group_mode = QStringLiteral("session");
     break;
   case collection::GroupMode::None:
   default:
@@ -384,6 +391,8 @@ void MainWindow::apply_settings(const AppSettings& s)
       gm = collection::GroupMode::Directory;
     } else if (g == QLatin1String("duration")) {
       gm = collection::GroupMode::Duration;
+    } else if (g == QLatin1String("session")) {
+      gm = collection::GroupMode::Session;
     }
     collection_.set_group_mode(gm);
     update_detail_row_heights();

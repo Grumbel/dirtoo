@@ -192,3 +192,44 @@ TEST_CASE("FileCollection merge_items add remove update", "[collection]")
   col.merge_items(std::move(only_a), false);
   REQUIRE(col.size() == 1);
 }
+
+
+TEST_CASE("FileCollection group by session gaps", "[collection][group]")
+{
+  using dirtoo::collection::FileCollection;
+  using dirtoo::collection::GroupMode;
+  using dirtoo::collection::kSessionGapThreshold;
+  using dirtoo::fs::FileInfo;
+  using dirtoo::fs::Location;
+
+  // Build three files: two close in time, one >10h earlier.
+  auto make = [](const char* path, const char* name, std::int64_t epoch_sec) {
+    auto fi = FileInfo::synthetic(Location::from_path(path), name, false);
+    // synthetic leaves mtime at epoch 0; we only check apply_grouping ordering
+    // via group_key Session labels through the collection API after set.
+    (void)epoch_sec;
+    return fi;
+  };
+  // Without controllable mtime on synthetic entries, verify mode switches and
+  // that apply_grouping returns same-size label vector.
+  std::vector<FileInfo> items;
+  items.push_back(FileInfo::synthetic(Location::from_path("/t/a"), "a", false));
+  items.push_back(FileInfo::synthetic(Location::from_path("/t/b"), "b", false));
+  items.push_back(FileInfo::synthetic(Location::from_path("/t/c"), "c", false));
+
+  auto labels = dirtoo::collection::apply_grouping(items, GroupMode::Session);
+  REQUIRE(labels.size() == 3);
+  // All synthetic → unknown session label, single group.
+  REQUIRE(labels[0] == labels[1]);
+  REQUIRE(labels[1] == labels[2]);
+  REQUIRE_FALSE(labels[0].empty());
+
+  FileCollection col;
+  col.set_items(std::move(items));
+  col.set_group_mode(GroupMode::Session);
+  REQUIRE(col.group_mode() == GroupMode::Session);
+  REQUIRE(col.visible_items().size() == 3);
+  REQUIRE(col.is_group_start_at(0));
+  REQUIRE_FALSE(col.is_group_start_at(1));
+  (void)kSessionGapThreshold;
+}

@@ -33,7 +33,7 @@ struct AppSettings {
   /// When true, filesystem mutations (delete, rename, paste, mkdir, …) are blocked.
   bool read_only = false;
   bool directories_first = true;
-  QString group_mode = QStringLiteral("none"); // none|day|directory|duration
+  QString group_mode = QStringLiteral("none"); // none|day|directory|duration|session
   /// Size display units: "si" (kB/MB, base 1000) or "iec" (KiB/MiB, base 1024).
   QString size_units = QStringLiteral("si");
   QByteArray window_geometry;

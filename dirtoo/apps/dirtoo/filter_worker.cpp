@@ -108,11 +108,10 @@ void FilterWorker::filter_items(std::vector<fs::FileInfo> items, const QString& 
     visible.push_back(std::move(fi));
   }
 
-  if (group_mode != collection::GroupMode::None && visible.size() > 1) {
-    std::stable_sort(visible.begin(), visible.end(),
-                     [group_mode](const fs::FileInfo& a, const fs::FileInfo& b) {
-                       return collection::group_key(a, group_mode) < collection::group_key(b, group_mode);
-                     });
+  // Reorder for grouping (Session needs a global mtime-gap pass). Labels are
+  // recomputed in FileCollection::replace_visible.
+  if (group_mode != collection::GroupMode::None) {
+    (void)collection::apply_grouping(visible, group_mode);
   }
 
   emit filtered(generation, std::move(visible), parse_ok);

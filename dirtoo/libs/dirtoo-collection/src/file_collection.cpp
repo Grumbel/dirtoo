@@ -47,6 +47,7 @@ void FileCollection::clear()
 {
   items_.clear();
   visible_.clear();
+  visible_group_labels_.clear();
   filter_expression_.clear();
   match_.reset();
   filter_parse_ok_ = true;
@@ -103,6 +104,9 @@ void FileCollection::replace_items_sorted(std::vector<fs::FileInfo> items)
 void FileCollection::replace_visible(std::vector<fs::FileInfo> visible, std::optional<bool> parse_ok)
 {
   visible_ = std::move(visible);
+  // Worker may have pre-sorted by group_key; still materialize labels once here.
+  // Session needs a full apply_grouping pass (reorders by mtime gaps).
+  visible_group_labels_ = apply_grouping(visible_, group_mode_);
   if (parse_ok.has_value()) {
     filter_parse_ok_ = *parse_ok;
   }
@@ -124,6 +128,12 @@ void FileCollection::append_visible_items(std::vector<fs::FileInfo> items)
   for (auto& info : items) {
     items_.push_back(info);
     visible_.push_back(std::move(info));
+  }
+  // Keep label cache aligned; regroup when grouping is active (search batches).
+  if (group_mode_ != GroupMode::None) {
+    visible_group_labels_ = apply_grouping(visible_, group_mode_);
+  } else {
+    visible_group_labels_.resize(visible_.size());
   }
 }
 
@@ -276,12 +286,45 @@ void FileCollection::refresh_groups()
 
 std::string FileCollection::group_label_for(const fs::FileInfo& fi) const
 {
+  // Prefer cached parallel labels when this FileInfo is still in visible_.
+  for (std::size_t i = 0; i < visible_.size(); ++i) {
+    if (visible_[i].path() == fi.path()) {
+      return group_label_at(i);
+    }
+  }
+  if (group_mode_ == GroupMode::Session) {
+    return {};
+  }
   return group_label(fi, group_mode_);
+}
+
+std::string FileCollection::group_label_at(std::size_t visible_index) const
+{
+  if (visible_index >= visible_group_labels_.size()) {
+    return {};
+  }
+  return visible_group_labels_[visible_index];
+}
+
+bool FileCollection::is_group_start_at(std::size_t visible_index) const
+{
+  if (group_mode_ == GroupMode::None || visible_index >= visible_group_labels_.size()) {
+    return false;
+  }
+  const auto& label = visible_group_labels_[visible_index];
+  if (label.empty()) {
+    return false;
+  }
+  if (visible_index == 0) {
+    return true;
+  }
+  return visible_group_labels_[visible_index - 1] != label;
 }
 
 void FileCollection::rebuild_visible()
 {
   visible_.clear();
+  visible_group_labels_.clear();
   for (const auto& fi : items_) {
     if (!show_hidden_ && is_hidden_name(fi.basename())) {
       continue;
@@ -291,14 +334,8 @@ void FileCollection::rebuild_visible()
     }
     visible_.push_back(fi);
   }
-  if (group_mode_ != GroupMode::None && visible_.size() > 1) {
-    // Stable reorder by group key so section headers are contiguous while
-    // preserving relative order from the active sorter within each group.
-    std::stable_sort(visible_.begin(), visible_.end(),
-                     [mode = group_mode_](const fs::FileInfo& a, const fs::FileInfo& b) {
-                       return group_key(a, mode) < group_key(b, mode);
-                     });
-  }
+  // One pass: reorder + materialize labels so paint/sizeHint stay O(1).
+  visible_group_labels_ = apply_grouping(visible_, group_mode_);
 }
 
 } // namespace dirtoo::collection

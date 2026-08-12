@@ -82,7 +82,12 @@ public:
   [[nodiscard]] GroupMode group_mode() const noexcept { return group_mode_; }
 
   /// Section label for a visible item under the current group mode (empty if none).
+  /// Prefer index-based APIs in hot paths; this scans visible_ for a path match.
   [[nodiscard]] std::string group_label_for(const fs::FileInfo& fi) const;
+
+  /// O(1) label / group-start for a visible row (filled once in rebuild_visible).
+  [[nodiscard]] std::string group_label_at(std::size_t visible_index) const;
+  [[nodiscard]] bool is_group_start_at(std::size_t visible_index) const;
 
   [[nodiscard]] const std::vector<fs::FileInfo>& visible_items() const noexcept;
   [[nodiscard]] const std::string& filter_expression() const noexcept { return filter_expression_; }
@@ -93,6 +98,8 @@ private:
 
   std::vector<fs::FileInfo> items_;
   std::vector<fs::FileInfo> visible_;
+  /// Parallel to visible_: section label per row (empty = ungrouped / no header).
+  std::vector<std::string> visible_group_labels_;
   std::string filter_expression_;
   filter::MatchFuncPtr match_;
   bool filter_parse_ok_ = true;

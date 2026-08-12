@@ -34,6 +34,9 @@ Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 - [x] Multi-file tagging: progress dialog + processEvents (avoids hard hang;
       hashing still on GUI thread — residual vs “no hash on GUI” goal)
 - [x] Startup opens cwd or CLI path, not `session/last_location`
+- [x] Group by Day/Directory CPU spin: cache section labels at rebuild
+      (`apply_grouping` + index-based `IsGroupStartRole` / `GroupLabelRole`)
+- [x] Group by Session (10h mtime gap clusters; View → Group By → Session)
 
 - [x] Icon/badge load failures always on stderr; qrc fallback for badges
 - [x] Directory montage failures report concrete reasons on stderr

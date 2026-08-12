@@ -238,6 +238,9 @@ void MainWindow::setup_view_menu()
           case collection::GroupMode::Duration:
             s.group_mode = QStringLiteral("duration");
             break;
+          case collection::GroupMode::Session:
+            s.group_mode = QStringLiteral("session");
+            break;
           default:
             s.group_mode = QStringLiteral("none");
             break;
@@ -253,6 +256,7 @@ void MainWindow::setup_view_menu()
     add_group(QStringLiteral("Day"), dirtoo::collection::GroupMode::Day, false);
     add_group(QStringLiteral("Directory"), dirtoo::collection::GroupMode::Directory, false);
     add_group(QStringLiteral("Duration"), dirtoo::collection::GroupMode::Duration, false);
+    add_group(QStringLiteral("Session"), dirtoo::collection::GroupMode::Session, false);
   }
 
 }

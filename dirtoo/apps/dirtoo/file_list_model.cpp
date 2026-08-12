@@ -503,7 +503,8 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
     if (collection_ == nullptr) {
       return {};
     }
-    const auto label = collection_->group_label_for(*fi);
+    // Index-based cache — avoids localtime/path work on every paint/sizeHint.
+    const auto label = collection_->group_label_at(static_cast<std::size_t>(index.row()));
     if (label.empty()) {
       return {};
     }
@@ -514,18 +515,7 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
     if (collection_ == nullptr || collection_->group_mode() == collection::GroupMode::None) {
       return false;
     }
-    const auto label = collection_->group_label_for(*fi);
-    if (label.empty()) {
-      return false;
-    }
-    if (index.row() == 0) {
-      return true;
-    }
-    const auto* prev = file_at(index.row() - 1);
-    if (prev == nullptr) {
-      return true;
-    }
-    return collection_->group_label_for(*prev) != label;
+    return collection_->is_group_start_at(static_cast<std::size_t>(index.row()));
   }
 
   return {};
