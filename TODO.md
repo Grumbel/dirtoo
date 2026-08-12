@@ -28,6 +28,8 @@ Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 
 ### Recent polish (agent, 2026-08)
 
+- [x] Context menu with large selection: no MatchContent / full-path Open With scan;
+      unique MIME sample + lazy Open with…; selectedRows(0) not selectedIndexes
 - [x] Ctrl+T / Tools → Tag… opens tag name dialog for selection
 - [x] Multi-file tagging: progress dialog + processEvents (avoids hard hang;
       hashing still on GUI thread — residual vs “no hash on GUI” goal)

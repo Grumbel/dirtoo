@@ -249,15 +249,33 @@ QStringList expand_exec(const QString& exec, const std::vector<std::filesystem::
 
 QString mime_for_path(const std::filesystem::path& p)
 {
+  // Extension-only: MatchContent reads file bytes and freezes the UI when the
+  // context menu walks a large multi-selection.
   QMimeDatabase db;
   const QMimeType mt =
-      db.mimeTypeForFile(QString::fromStdString(p.string()), QMimeDatabase::MatchContent);
-  if (mt.isValid() && !mt.name().isEmpty()) {
-    return mt.name();
-  }
-  const QMimeType mt2 =
       db.mimeTypeForFile(QString::fromStdString(p.string()), QMimeDatabase::MatchExtension);
-  return mt2.isValid() ? mt2.name() : QStringLiteral("application/octet-stream");
+  return mt.isValid() ? mt.name() : QStringLiteral("application/octet-stream");
+}
+
+/// Cap how many paths we inspect for MIME/app intersection. Beyond this we only
+/// sample; common case is select-all of one type (unique MIME stays small).
+constexpr std::size_t kOpenWithPathSample = 64;
+
+[[nodiscard]] std::vector<QString> unique_mimes_for_paths(const std::vector<std::filesystem::path>& paths)
+{
+  QSet<QString> seen;
+  std::vector<QString> out;
+  const std::size_t n = std::min(paths.size(), kOpenWithPathSample);
+  out.reserve(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    const QString mime = mime_for_path(paths[i]);
+    if (seen.contains(mime)) {
+      continue;
+    }
+    seen.insert(mime);
+    out.push_back(mime);
+  }
+  return out;
 }
 
 std::vector<DesktopApp> intersect_apps(const std::vector<std::vector<DesktopApp>>& sets)
@@ -408,10 +426,11 @@ std::vector<DesktopApp> default_apps_for_paths(const std::vector<std::filesystem
   if (paths.empty()) {
     return {};
   }
+  const auto mimes = unique_mimes_for_paths(paths);
   std::vector<std::vector<DesktopApp>> sets;
-  sets.reserve(paths.size());
-  for (const auto& p : paths) {
-    sets.push_back(default_apps_for_mime(mime_for_path(p)));
+  sets.reserve(mimes.size());
+  for (const QString& mime : mimes) {
+    sets.push_back(default_apps_for_mime(mime));
   }
   return intersect_apps(sets);
 }
@@ -421,10 +440,11 @@ std::vector<DesktopApp> associated_apps_for_paths(const std::vector<std::filesys
   if (paths.empty()) {
     return {};
   }
+  const auto mimes = unique_mimes_for_paths(paths);
   std::vector<std::vector<DesktopApp>> sets;
-  sets.reserve(paths.size());
-  for (const auto& p : paths) {
-    sets.push_back(apps_for_mime(mime_for_path(p)));
+  sets.reserve(mimes.size());
+  for (const QString& mime : mimes) {
+    sets.push_back(apps_for_mime(mime));
   }
   return intersect_apps(sets);
 }
@@ -458,37 +478,57 @@ void populate_open_with_menu(QMenu* menu, const std::vector<std::filesystem::pat
   if (menu == nullptr || paths.empty()) {
     return;
   }
-  const auto defaults = default_apps_for_paths(paths);
-  QSet<QString> default_ids;
-  for (const DesktopApp& a : defaults) {
-    default_ids.insert(a.id);
-  }
-  const auto all = associated_apps_for_paths(paths);
-  std::vector<DesktopApp> others;
-  for (const DesktopApp& a : all) {
-    if (!default_ids.contains(a.id)) {
-      others.push_back(a);
-    }
-  }
+  // Defer MIME/desktop scanning until the submenu is opened so a right-click on
+  // a huge selection stays responsive (defaults still built on first show).
+  menu->clear();
+  auto* placeholder = menu->addAction(QStringLiteral("…"));
+  placeholder->setEnabled(false);
 
-  for (const DesktopApp& app : others) {
-    QAction* act = menu->addAction(app.name);
-    if (!app.icon.isEmpty()) {
-      act->setIcon(QIcon::fromTheme(app.icon));
+  QObject::connect(menu, &QMenu::aboutToShow, menu, [menu, paths] {
+    // Rebuild once per show; disconnect further self-triggers by blocking.
+    if (menu->property("dirtoo_open_with_filled").toBool()) {
+      return;
     }
-    const DesktopApp captured = app;
-    QObject::connect(act, &QAction::triggered, menu, [captured, paths] {
-      launch_desktop_app(captured, paths);
+    menu->setProperty("dirtoo_open_with_filled", true);
+    menu->clear();
+
+    const auto defaults = default_apps_for_paths(paths);
+    QSet<QString> default_ids;
+    for (const DesktopApp& a : defaults) {
+      default_ids.insert(a.id);
+    }
+    const auto all = associated_apps_for_paths(paths);
+    std::vector<DesktopApp> others;
+    for (const DesktopApp& a : all) {
+      if (!default_ids.contains(a.id)) {
+        others.push_back(a);
+      }
+    }
+
+    if (others.empty() && defaults.empty()) {
+      auto* none = menu->addAction(QStringLiteral("No applications available"));
+      none->setEnabled(false);
+    }
+
+    for (const DesktopApp& app : others) {
+      QAction* act = menu->addAction(app.name);
+      if (!app.icon.isEmpty()) {
+        act->setIcon(QIcon::fromTheme(app.icon));
+      }
+      const DesktopApp captured = app;
+      QObject::connect(act, &QAction::triggered, menu, [captured, paths] {
+        launch_desktop_app(captured, paths);
+      });
+    }
+
+    if (!others.empty()) {
+      menu->addSeparator();
+    }
+    QAction* other = menu->addAction(QStringLiteral("Other Application…"));
+    QObject::connect(other, &QAction::triggered, menu, [menu, paths] {
+      open_with_command_dialog(menu->parentWidget(), paths);
     });
-  }
-
-  if (!others.empty()) {
-    menu->addSeparator();
-  }
-  QAction* other = menu->addAction(QStringLiteral("Other Application…"));
-  QObject::connect(other, &QAction::triggered, menu, [menu, paths] {
-    open_with_command_dialog(menu->parentWidget(), paths);
-  });
+  }, Qt::UniqueConnection);
 }
 
 } // namespace dirtoo::app

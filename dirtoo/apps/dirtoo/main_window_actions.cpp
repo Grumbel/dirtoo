@@ -127,7 +127,9 @@ std::vector<fs::FileInfo> MainWindow::selected_fileinfos() const
   if (view == nullptr || view->selectionModel() == nullptr) {
     return {};
   }
-  return model_->files_at(view->selectionModel()->selectedIndexes());
+  // selectedRows avoids the column×row explosion of selectedIndexes() on Detail
+  // view (e.g. 10 columns × N selected → 10N indexes and a long sort/unique).
+  return model_->files_at(view->selectionModel()->selectedRows(0));
 }
 
 
