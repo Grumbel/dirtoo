@@ -5,6 +5,7 @@
 #include "icon_tile_paint.hpp"
 #include "group_header_paint.hpp"
 #include "badge_icons.hpp"
+#include "tag_paint.hpp"
 
 #include "file_list_model.hpp"
 #include "dirtoo/filter/media_meta_cache.hpp"
@@ -440,6 +441,10 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
       paint_tile_badge(painter, thumb, top_right, Qt::AlignRight | Qt::AlignTop);
       paint_tile_badge(painter, thumb, bottom_left, Qt::AlignLeft | Qt::AlignBottom);
     }
+  }
+
+  if (fi != nullptr) {
+    paint_tag_chips(painter, thumb, fi->path());
   }
 
   // Type sticker after text badges; before status overlays so loading/new stay on top.

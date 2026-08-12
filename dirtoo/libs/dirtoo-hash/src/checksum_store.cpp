@@ -53,7 +53,7 @@ FileDigests row_to_digests(sqlite3_stmt* stmt)
 
 ChecksumStore::ChecksumStore(std::filesystem::path db_path)
 {
-  open(std::move(db_path));
+  (void)open(std::move(db_path));
 }
 
 ChecksumStore::~ChecksumStore()

@@ -4,6 +4,7 @@
 #pragma once
 
 #include "dirtoo/hash/digests.hpp"
+#include "dirtoo/hash/hash_file.hpp" // HashError
 
 #include <filesystem>
 #include <optional>
@@ -51,8 +52,8 @@ public:
   /// Ensure digests for path: cache hit if valid, else hash_file + put.
   /// @p path_key should be a stable absolute path string.
   [[nodiscard]] std::optional<FileDigests>
-  ensure(const std::filesystem::path& path, std::string_view path_key,
-         bool refresh, HashError* error = nullptr);
+  ensure(const std::filesystem::path& path, std::string_view path_key, bool refresh,
+         HashError* error = nullptr);
 
 private:
   bool ensure_schema(std::string* error);

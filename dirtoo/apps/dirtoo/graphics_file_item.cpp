@@ -4,6 +4,7 @@
 #include "graphics_file_item.hpp"
 #include "icon_tile_paint.hpp"
 #include "badge_icons.hpp"
+#include "tag_paint.hpp"
 
 #include "file_list_model.hpp"
 #include "graphics_file_view.hpp"
@@ -275,6 +276,10 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
       paint_tile_badge(painter, thumb, top_left, Qt::AlignLeft | Qt::AlignTop);
       paint_tile_badge(painter, thumb, top_right, Qt::AlignRight | Qt::AlignTop);
       paint_tile_badge(painter, thumb, bottom_left, Qt::AlignLeft | Qt::AlignBottom);
+    }
+
+    if (fi != nullptr) {
+      paint_tag_chips(painter, thumb, fi->path());
     }
 
     // Type sticker: bottom-right (Python paint_metadata / SharedPixmaps).

@@ -768,7 +768,7 @@ Primary algo for identity: **SHA-256**. Always compute the set in one pass.
 - [x] Tag indirection: `file_tags.tag_id` → `tag_defs.id`; rename does not retouch files
 - [x] Filter / `dt-search`: `tag:name` / `tagged:yes|no` predicate
 - [x] GUI: tag context menu (“Tag…”)
-- [ ] Badges from tag_defs (icon/color) in icon view
+- [x] Badges from tag_defs (icon/color) in icon view (color chips)
 
 ### Explicit non-goals (v1)
 
