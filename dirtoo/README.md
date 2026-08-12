@@ -49,16 +49,25 @@ Examples:
 ```text
 *.png
 size:>1M type:file
+size:1M..50M
 type:video
+duration:3-10m
+tag:work
 contains:hello
 date:2024
 aspect:16:9
 (a or b) and not c
 ```
 
-Use **Help → Filter expression help** in the app for the full language, or
-`dt-filter --help` on the command line. Filter history is available with
-**Up / Down** in the filter field.
+Inclusive ranges use **`lo-hi`** or **`lo..hi`** (e.g. `duration:3-10m` means
+3–10 minutes when the unit is only on the high side). Use **Help → Filter
+expression help** in the app for the full language, or `dt-filter --help` on
+the command line. Filter history is available with **Up / Down** in the filter
+field.
+
+**QuickFilter** chips above the filter line offer one-click `type:…` / `tag:…`
+filters from the current listing; **Pin filter** saves the current expression
+(right-click a pin to edit expression/label, set directory scope, or remove).
 
 ### Search (recursive)
 
@@ -70,6 +79,15 @@ Use it when the file may be nested under the current location.
 Thumbnails come from the desktop **freedesktop thumbnailer** (D-Bus) when
 available, with sensible fallbacks. Directory tiles can request child thumbs and
 compose a small grid so video-heavy folders still look representative.
+**View → Reload Thumbnails** deletes the on-disk cache for the selection (or
+visible items) and regenerates from scratch.
+
+### Tags
+
+Files are tagged by **content identity** (SHA-256 from the checksum cache —
+never hashed on the GUI thread). Use **Tools → Tag…** (Ctrl+T) on a selection,
+**Tools → Tag Manager…** to list/rename/delete tags and edit label, color, and
+optional badge image, and filter with `tag:name` / `tagged:yes|no`.
 
 ### Select, open, and edit
 
@@ -163,6 +181,8 @@ Run the GUI:
 | `libs/dirtoo-fs` | Locations, file info, listing |
 | `libs/dirtoo-collection` | Sort, filter, group |
 | `libs/dirtoo-filter` | Filter language + media metadata cache |
+| `libs/dirtoo-hash` | Checksum compute + SQLite cache |
+| `libs/dirtoo-tags` | Tag definitions and associations (by SHA-256) |
 | `libs/dirtoo-watcher` | Directory change notifications |
 | `libs/dirtoo-thumbnail` | Freedesktop thumbnailer client |
 | `libs/dirtoo-archive` | Read-only archive listing and extract-on-demand |

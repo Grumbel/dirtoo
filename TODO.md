@@ -10,8 +10,9 @@ Critical freezes, DnD/Link, content-filter offload, Graphics reuse, and core
 parity features are in place. Catch suite: 57 cases (Overwrite-directory test
 aligned with into-dir resolution + `remove_for_overwrite` safety).
 
-**Residual focus:** optional polish (list virtualization). Inotify name deltas
-on Linux with incremental collection patches; multi-path archive watch; MainWindow multi-TU.
+**Residual focus:** MainWindow gravity (ongoing), QuickFilter UX polish, archive
+force-reload edge cases, optional list virtualization. Tags + QuickFilter + filter
+ranges landed 2026-08-12 (see *Session notes*).
 
 Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 
@@ -91,6 +92,7 @@ Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 | Case-sensitive `Contains`/`Containsre`/… | **Fixed** |
 | Charset predicate limited | **Documented** (ascii / utf-8 / latin1) |
 | Content filters on GUI thread | **Mitigated** via `FilterWorker` |
+| Inclusive numeric ranges | **Done** — `lo-hi` / `lo..hi` (duration unit inheritance) |
 
 ---
 
@@ -142,8 +144,10 @@ Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 | Filter show/hide + pin, Escape | **done** (Ctrl+K = show+focus; Escape restores view focus) |
 | Filter history | **done** |
 | Filter DSL + contains/date/length/time/weekday/fuzzy/media | **done** |
+| Inclusive ranges (`size:1M..50M`, `duration:3-10m`, …) | **done** |
 | Content filters off GUI thread | **done** (`FilterWorker`) |
 | Filter help + `dt-filter` + recursive search | **done** |
+| QuickFilter bar (type/tag chips + pinned filters) | **done** (rebuild-on-keystroke polish open) |
 
 ### View & chrome
 
@@ -196,22 +200,59 @@ Go to Folder, Clear. Storage: SQLite at `$XDG_STATE_HOME/dirtoo/operations-histo
 
 ## Residual / optional polish
 
-### Tag Manager
-- [x] **Tag Manager** dialog: list, rename, delete, edit label/color/badge; chips use label+color+badge
-- [x] Tag chips drawn above bottom-left meta (Width×Height) to avoid overlap
+### Session notes (2026-08-12)
 
-### QuickFilter bar
-- [x] Bottom QuickFilter chips from listing (type:/tag:) + pin current filter
+Handoff bundles **dirtoo-003** … **dirtoo-015** (tip after 015: filter ranges).
 
-### Fixes (2026-08-12)
-- [x] TagJob crash on cancel/dtor (shared atomic, no invokeMethod on dead worker)
-- [x] **dt-search** positional QUERY was treated as a directory (empty matches +
-  “path(s) could not be read”); parity with Python simple mode (`QUERY` + `-d`).
-- [x] **Open with…** submenu stuck on “…” — `Qt::UniqueConnection` with a lambda
-  does not connect; fill on `aboutToShow` without UniqueConnection.
+#### Done this session
 
+**MainWindow gravity (R6 remainder + collaborators)**
+- [x] `FilterSearchChrome` — filter + recursive-search row chrome
+- [x] `DevicesController::attach` — devices list wiring as value member
+- [x] `ThumbnailCoordinator::request_rows` — viewport queue / archive extract path
+- [x] `TagController` — Tag… dialog, progress, `TagJob` lifecycle
 
-### Review residuals (2026-08-12)
+**Tags**
+- [x] **Tag Manager** (Tools → Tag Manager…): list definitions, rename, delete,
+      edit **label / color / badge**; chip paint uses those fields
+- [x] Tag chips drawn **above** bottom-left meta (Width×Height)
+- [x] `TagStore::delete_tag` (CASCADE on `file_tags`)
+- [x] TagJob cancel via shared `atomic_bool` (no `invokeMethod` on dead worker)
+
+**Thumbnails**
+- [x] **Reload Thumbnails** deletes XDG cache (normal/large/x-large/xx-large/fail)
+      and force-queues Thumbnailer1 (`Thumbnailer::remove_cache_for` + `force`)
+
+**QuickFilter bar**
+- [x] Auto chips from listing: `type:image|video|…`, `tag:…` (checksum-cache hits only)
+- [x] Pin current filter; persist pins in `~/.config/dirtoo/quick_filters.ini`
+- [x] Pin context menu: Edit filter…, Set label…, Directories… (`;`-separated paths),
+      scope (everywhere / this directory / subtree), Remove
+- [x] Visibility filtered by current location vs pin directory list
+
+**Filter language**
+- [x] Inclusive ranges: `lo-hi` or `lo..hi` on size, duration, width, height, fps,
+      length, pages, filecount (e.g. `duration:3-10m`, `size:1M..50M`)
+- [x] Duration: unit on high side only applies to both ends (`3-10m` = 3–10 minutes)
+
+**Bugfixes**
+- [x] **dt-search** positionals are QUERY (not directories); parity with Python simple mode
+- [x] **Open with…** submenu fill: no `Qt::UniqueConnection` on lambda
+
+#### Open issues / residuals from 2026-08-12 review
+
+- [ ] **QuickFilter rebuild cost (medium)** — `set_active_expression` rebuilds all
+      chip widgets on every filter `textChanged`; prefer checked-state updates only
+- [ ] **New pin default scope (UX)** — pins default to *everywhere* with dirs seeded;
+      consider default *subtree* of current location
+- [ ] **Reload Thumbnails + archive members (medium)** — without prior extract, may
+      queue archive URLs Thumbnailer1 cannot handle; prefer extract path like `request_rows`
+- [ ] **Tag Manager file counts (low)** — `files_for_tag` per tag on reload; optional COUNT
+- [ ] **Filter range unit tests (P3)** — `split_range_arg` + duration unit inheritance
+- [ ] **MainWindow gravity (ongoing)** — see Refactoring track; chrome/controllers
+      improved but ops/nav/load still large
+
+### Review residuals (earlier 2026-08)
 
 Prioritized issues from a multi-day change review.
 
@@ -219,7 +260,8 @@ Prioritized issues from a multi-day change review.
   `viewport_model_rows()` from `slot_pos_`; no lowest-index truncate on viewport
   ranges (soft middle-biased cap 256). Landed in `676022a`.
 - [x] **Tagging hashes on GUI thread (high)**  
-  `TagJob` worker thread; progress dialog on GUI; cancel via queued request.
+  `TagJob` worker thread; progress dialog on GUI; cancel via shared atomic
+  (not invokeMethod on worker).
 - [x] **Tag chips hit SQLite during paint (medium)**  
   Path/URL → chips cache; clear after Tag… and on hard directory reload
   (navigation/refresh). Residual: no live watch on tags.sqlite from other processes.
@@ -234,9 +276,10 @@ Prioritized issues from a multi-day change review.
 - [ ] **MainWindow gravity (ongoing)**  
   Hash/tag/thumb policy still grows MainWindow TUs despite R2 collaborators.
   Prefer new orchestration helpers over more `main_window_*.cpp` surface.
-  Progress: `TagJob` + `TagController` (Tag… dialog/progress); R6 chrome;
-  `DevicesController::attach`; `ThumbnailCoordinator::request_rows` (viewport
-  row discovery still on MainWindow).
+  Progress: `TagJob` + `TagController`; R6 `FilterSearchChrome` +
+  `SidebarController::create`; `DevicesController::attach`;
+  `ThumbnailCoordinator::request_rows` (viewport row discovery still on MainWindow);
+  QuickFilterBar is separate chrome (not MainWindow methods).
 
 
 | Item | Notes |
@@ -345,9 +388,11 @@ thumbnail work. `dirops` remains Qt-free.
 
 ## Suggested work order (next)
 
-1. Optional: richer watcher / archive member thumbs
-2. MainWindow factoring (S3); shared icon paint helper (S4)
-3. Transfer dedicated error dialog; remaining UX polish from user testing
+1. QuickFilter: avoid full chip rebuild on every filter keystroke; pin default scope
+2. Reload Thumbnails for unextracted archive members via extract path
+3. MainWindow gravity residuals (ops/nav/load surface)
+4. Filter range unit tests; Tag Manager COUNT optimization (optional)
+5. Transfer dedicated error dialog; remaining UX polish from user testing
 
 
 ### Completed work order
@@ -545,7 +590,8 @@ Goal: smaller translation units and eventually fewer responsibilities on
 - [x] **R6** `setup_central_ui` — after R2, build chrome in owners
       (setup split into `_central` / `_toolbar` / `_menus` + `_menus_{file,edit,view,sort,go}`;
        sidebar shell `SidebarController::create()`; filter + search rows
-       `FilterSearchChrome::create_*()` — MainWindow keeps event filters / actions)
+       `FilterSearchChrome::create_*()`; QuickFilterBar above filter row —
+       MainWindow keeps event filters / actions / load wiring)
 
 ### Explicit non-goals (this track)
 
@@ -835,7 +881,9 @@ Primary algo for identity: **SHA-256**. Always compute the set in one pass.
 - [x] Filter / `dt-search`: `tag:name` / `tagged:yes|no` predicate
 - [x] GUI: tag context menu (“Tag…”) + Tools menu + Ctrl+T
 - [x] Multi-file Tag… uses progress dialog + TagJob worker (hash off GUI thread)
-- [x] Badges from tag_defs (icon/color) in icon view (color chips)
+- [x] Badges from tag_defs (icon/color/label/optional image badge) in icon view
+- [x] **Tag Manager** GUI — list / rename / delete / edit label·color·badge
+- [x] Tag chips above Width×Height meta row
 
 ### Explicit non-goals (v1)
 

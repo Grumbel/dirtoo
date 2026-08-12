@@ -41,7 +41,7 @@ SPDX headers:
 
 Large-directory mitigations (cheap listing, filter worker, Graphics item reuse, viewport thumbs, soft watcher reload), DnD/Link, and core parity features are in place. See **`TODO.md`** for residual polish and **`AUDIT.md`** for the full file inventory and parity matrix. Explicit out-of-scope items include archive write, remote VFS, and full Python `programs/*`.
 
-**MainWindow controllers:** navigation (`NavigationHistory`), recursive search (`SearchController`), clipboard transfers (`TransferController`), thumbnails (`ThumbnailCoordinator`), and path completion (`PathCompletionService`), and list pipeline workers (`ListPipelineWorkers`), sidebar places (`SidebarPlaces`) live in dedicated helpers under `apps/dirtoo/`. Prefer new orchestration in those helpers (or a new small type) rather than growing the `MainWindow` header further.
+**MainWindow controllers / chrome:** navigation (`NavigationHistory`), recursive search (`SearchController`), clipboard transfers (`TransferController`), thumbnails (`ThumbnailCoordinator`), path completion (`PathCompletionService`), list pipeline workers (`ListPipelineWorkers`), sidebar (`SidebarController` + `SidebarPlaces`), devices (`DevicesController`), location bar (`LocationChrome`), filter/search rows (`FilterSearchChrome`), tagging (`TagController` + `TagJob`), and QuickFilter (`QuickFilterBar`) live under `apps/dirtoo/`. Prefer new orchestration in those helpers (or a new small type) rather than growing the `MainWindow` header further.
 
 **MainWindow implementation is multi-TU** (one class, many `.cpp` files). All `main_window_*.cpp` units should `#include "main_window_common.hpp"` first so Qt types are complete (the header only forward-declares many widgets). Put methods in the matching unit when extending behavior:
 
@@ -94,6 +94,8 @@ dirtoo/
     dirtoo-watcher/
     dirtoo-thumbnail/
     dirtoo-archive/
+    dirtoo-hash/        # checksum compute + ChecksumStore
+    dirtoo-tags/        # TagStore (sha256 identity; never hashes)
   apps/
     dirtoo/             # GUI
   tools/                # dt-copy, dt-move, dt-filter, …
@@ -138,7 +140,7 @@ workers, signals/slots, and the media meta cache. Bounded content reads
 belong on a worker thread, not in `FileCollection::rebuild_visible` on the
 UI thread.
 
-Prior GUI-thread I/O violations have mitigations (see `TODO.md`). Residual risks: full directory rescan on watch (soft), no list virtualization, non-content filters still apply on the UI thread.
+Prior GUI-thread I/O violations have mitigations (see `TODO.md`). Residual risks: full directory rescan on watch (soft), no list virtualization, non-content filters still apply on the UI thread, Tag Manager / QuickFilter auto-tag scan may open SQLite on the GUI (bounded; no hashing).
 
 ### Git commit messages
 
@@ -192,6 +194,8 @@ Each library is a **separate flake output** with a **scoped source fileset**
 | `.#dirtoo-watcher` | `libs/dirtoo-watcher` |
 | `.#dirtoo-thumbnail` | `libs/dirtoo-thumbnail` |
 | `.#dirtoo-archive` | `libs/dirtoo-archive` |
+| `.#dirtoo-hash` | `libs/dirtoo-hash` |
+| `.#dirtoo-tags` | `libs/dirtoo-tags` |
 | `.#dirtoo` | GUI (`apps/`, `tools/`, `tests/`, `resources/`, `man/`) |
 | `.#all-libs` | symlinkJoin of libraries |
 | `.#dirtoo-tools` | CLI aggregate |
@@ -246,10 +250,15 @@ implementations of the same library capability.
 | DnD | **done** — modifiers, folder drop, nested-drop guard |
 | Select All / Swap Names / Full Paths / Time Gaps | **done** (Graphics Select All = all rows) |
 | Soft watcher merge | **done** (`merge_items`); full readdir still used |
+| Checksums + tags (CLI + GUI Tag… / Tag Manager) | **done**; chip cache; no hash on GUI |
+| QuickFilter bar + pinned filters (scoped) | **done** (rebuild-on-keystroke polish open) |
+| Filter inclusive ranges (`lo-hi` / `lo..hi`) | **done** |
+| Reload Thumbnails force-regenerate | **done** (archive unextracted edge open) |
 | Detail virtualization / inotify per-entry | **open** (optional) |
+| MainWindow gravity | **in progress** (R1–R6 chrome/controllers; ops/nav still large) |
 | Archive write / remote VFS / programs/* | **out of scope** |
 
-Priority residual queue and parity matrix: **`TODO.md`**.  
+Priority residual queue and parity matrix: **`TODO.md`** (see *Session notes 2026-08-12*).  
 User-facing overview: **`dirtoo/README.md`**.
 
 ---

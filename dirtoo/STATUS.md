@@ -13,11 +13,20 @@
 | dirtoo-watcher | directory change notifications |
 | dirtoo-thumbnail | Thumbnailer1 D-Bus client |
 | dirtoo-archive | TOC listing + optional full/member extract |
+| dirtoo-hash | Checksums (CRC32/MD5/SHA-1/SHA-256) + SQLite cache |
+| dirtoo-tags | Tags by SHA-256 (TagStore; GUI Tag Manager) |
 
 ## GUI highlights
-Async location-bar path completion, dual view, zoom, DND, clipboard (dirtoo + uri-list + GNOME), background
-transfers, conflict dialogs, properties, open-with, menus, QSettings,
-read-only archive browse (list-first).
+Async location-bar path completion, Detail / Icons / Small icons / Relative size,
+zoom, DND, clipboard (dirtoo + uri-list + GNOME), background transfers, conflict
+dialogs, properties, open-with, Tag… / Tag Manager, QuickFilter chip bar, filter
+DSL (ranges), force Reload Thumbnails, menus, QSettings, sidebar (places +
+UDisks2 devices + directory tree), read-only archive browse (list-first).
+
+## Recent (2026-08-12)
+Tag Manager; QuickFilter pins (scoped); filter `lo-hi`/`lo..hi` ranges; TagJob
+cancel crash fix; Reload Thumbnails force-regenerate; R6 FilterSearchChrome.
+See repo root **`TODO.md`** session notes for open polish items.
 
 ## Build
 ```bash

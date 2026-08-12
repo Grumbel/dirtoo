@@ -13,10 +13,11 @@ filtering, thumbnails, archives (read-only), and keyboard-friendly browsing.
 
 ### Status (short)
 
-The local GUI covers navigation, filter DSL, recursive search, several view
-modes, thumbnails, clipboard and drag-and-drop transfers, read-only archives,
-bookmarks, history, and devices. It is still under development — see the
-startup warning in the app.
+The local GUI covers navigation, filter DSL (including inclusive ranges and a
+**QuickFilter** chip bar), recursive search, content **tags** (Tag… / Tag Manager),
+several view modes, force-reloadable thumbnails, clipboard and drag-and-drop
+transfers, read-only archives, bookmarks, history, and devices (UDisks2). It is
+still under development — see the startup warning in the app and **`TODO.md`**.
 
 **Out of scope for now:** archive write, remote VFS, full undo.
 

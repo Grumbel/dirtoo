@@ -41,6 +41,8 @@ dirtoo/                    # Active C++ codebase
     dirtoo-watcher/        # Directory change notifications (inotify)
     dirtoo-thumbnail/      # Freedesktop D-Bus Thumbnailer1 client
     dirtoo-archive/        # Read-only archive TOC + extract-on-demand
+    dirtoo-hash/           # Checksum compute + ChecksumStore
+    dirtoo-tags/           # TagStore (sha256 identity; never hashes)
     dirops/                # Copy / move / rename / delete / mkdir (Qt-free)
   apps/
     dirtoo/                # GUI application (MainWindow + views + dialogs)
@@ -61,7 +63,9 @@ Nix flake for a reproducible shell.
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  apps/dirtoo  — MainWindow, views, dialogs, workers, settings   │
-│  (Qt Widgets; owns navigation, selection, chrome, transfers)    │
+│  Controllers/chrome: LocationChrome, FilterSearchChrome,        │
+│  QuickFilterBar, SidebarController, DevicesController,          │
+│  ThumbnailCoordinator, TagController, TransferController, …     │
 └────────────┬────────────────────────────┬───────────────────────┘
              │                            │
              ▼                            ▼
@@ -76,7 +80,7 @@ Nix flake for a reproducible shell.
              ▼                                ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │  libs — domain libraries                                        │
-│  collection  filter  fs  watcher  thumbnail  archive  dirops    │
+│  collection filter fs watcher thumbnail archive hash tags dirops│
 └─────────────────────────────────────────────────────────────────┘
              │
              ▼

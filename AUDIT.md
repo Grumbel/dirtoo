@@ -17,6 +17,13 @@ Living document for a **top-to-bottom source audit**.
 call-flow, GUI-thread risk, and concrete defects for apps, workers, and
 libraries. Python inventory is a reference map, not a port checklist.
 
+**Doc refresh (2026-08-12):** Tag Manager, QuickFilter, filter ranges, TagJob
+cancel fix, and force Reload Thumbnails landed after the deep audit passes.
+File-level inventory rows for new sources (`tag_manager_dialog.*`,
+`quick_filter_bar.*`, `filter_search_chrome.*`, …) may still be ⬜ until the next
+inventory pass — treat **`TODO.md` session notes** as authoritative for
+current residuals, not only this AUDIT matrix.
+
 Status legend for file rows:
 
 | Mark | Meaning |
