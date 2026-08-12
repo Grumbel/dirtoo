@@ -28,6 +28,11 @@ Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 
 ### Recent polish (agent, 2026-08)
 
+- [x] Ctrl+T / Tools → Tag… opens tag name dialog for selection
+- [x] Multi-file tagging: progress dialog + processEvents (avoids hard hang;
+      hashing still on GUI thread — residual vs “no hash on GUI” goal)
+- [x] Startup opens cwd or CLI path, not `session/last_location`
+
 - [x] Icon/badge load failures always on stderr; qrc fallback for badges
 - [x] Directory montage failures report concrete reasons on stderr
 - [x] Startup under-development warning with permanent dismiss checkbox
@@ -767,7 +772,8 @@ Primary algo for identity: **SHA-256**. Always compute the set in one pass.
       (optional `--hash-if-needed` calls checksum API, does not reimplement hash)
 - [x] Tag indirection: `file_tags.tag_id` → `tag_defs.id`; rename does not retouch files
 - [x] Filter / `dt-search`: `tag:name` / `tagged:yes|no` predicate
-- [x] GUI: tag context menu (“Tag…”)
+- [x] GUI: tag context menu (“Tag…”) + Tools menu + Ctrl+T
+- [x] Multi-file Tag… uses progress dialog (hashing still synchronous on GUI)
 - [x] Badges from tag_defs (icon/color) in icon view (color chips)
 
 ### Explicit non-goals (v1)
