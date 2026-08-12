@@ -9,7 +9,6 @@
 #include "checksum_dialog.hpp"
 #include "tag_job.hpp"
 #include "tag_paint.hpp"
-#include "tag_paint.hpp"
 
 #include "dirtoo/fs/location.hpp"
 

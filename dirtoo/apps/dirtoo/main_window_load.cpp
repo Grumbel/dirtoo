@@ -4,6 +4,7 @@
 #include "main_window_common.hpp"
 
 #include "archive_listing.hpp"
+#include "tag_paint.hpp"
 #include <QSet>
 #include <QStringList>
 #include <filesystem>
@@ -30,6 +31,8 @@ void MainWindow::reload_directory(bool soft)
     if (model_ != nullptr) {
       model_->clear_thumbnails();
     }
+    // External dt-tag / other processes may have changed tags; drop paint cache.
+    tag_paint_detail::clear_tag_chip_cache();
     filter::MediaMetaCache::instance().bump_generation();
   }
 
