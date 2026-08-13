@@ -15,6 +15,7 @@
 #include <filesystem>
 #include <optional>
 #include <QIcon>
+#include <QtConcurrent>
 #include <QPixmap>
 
 namespace dirtoo::app {
@@ -302,11 +303,14 @@ void MainWindow::on_reload_thumbnails()
 
     model_->set_thumbnail_pending(path);
 
+    const QString name_for_mime = QString::fromStdString(fi.basename());
+    const QMimeType mt = mime_db.mimeTypeForFile(name_for_mime, QMimeDatabase::MatchExtension);
+    const QString mime =
+        mt.isValid() ? mt.name() : QStringLiteral("application/octet-stream");
+
     if (fi.location().is_archive()) {
-      // Prefer extracted real path when already cached on disk; otherwise queue
-      // request_rows-style extract on the next visible pass via force on real path
-      // after extract — for reload, queue the location itself and let the service
-      // or a later request_rows fill after extract.
+      // Same extract path as ThumbnailCoordinator::request_rows — Thumbnailer1 cannot
+      // open archive URLs; extract the member then force-request the real path.
       const auto archive_file = fi.location().as_path();
       const auto member = fi.location().entry_path();
       const auto cache_root = archive_member_cache_root("dirtoo-archive-thumbs");
@@ -318,15 +322,39 @@ void MainWindow::on_reload_thumbnails()
         (void)thumbnail::Thumbnailer::remove_cache_for(real_loc);
         thumbs_.aliases().insert(QString::fromStdString(cached.string()), path);
         locs.push_back(real_loc);
+        mimes.push_back(mime);
+      } else if (!member.empty()) {
+        const QString key = path;
+        const QString mime_copy = mime;
+        (void)QtConcurrent::run([this, archive_file, member, key, mime_copy, dest_dir]() {
+          auto extracted = ensure_archive_member_extracted(archive_file, member, dest_dir);
+          const bool ok = extracted.has_value();
+          const std::filesystem::path out_path = ok ? *extracted : std::filesystem::path{};
+          QMetaObject::invokeMethod(
+              this,
+              [this, ok, out_path, key, mime_copy]() {
+                if (!ok) {
+                  if (model_ != nullptr) {
+                    model_->set_thumbnail_failed(key);
+                  }
+                  update_status_selection();
+                  return;
+                }
+                const QString real_path = QString::fromStdString(out_path.string());
+                thumbs_.aliases().insert(real_path, key);
+                (void)thumbnail::Thumbnailer::remove_cache_for(fs::Location::from_path(out_path));
+                thumbs_.request_many({fs::Location::from_path(out_path)}, {mime_copy},
+                                    /*force=*/true);
+              },
+              Qt::QueuedConnection);
+        });
       } else {
-        locs.push_back(fi.location());
+        model_->set_thumbnail_failed(path);
       }
     } else {
       locs.push_back(fi.location());
+      mimes.push_back(mime);
     }
-    const QString name_for_mime = QString::fromStdString(fi.basename());
-    const QMimeType mt = mime_db.mimeTypeForFile(name_for_mime, QMimeDatabase::MatchExtension);
-    mimes.push_back(mt.isValid() ? mt.name() : QStringLiteral("application/octet-stream"));
   }
 
   if (!locs.empty()) {

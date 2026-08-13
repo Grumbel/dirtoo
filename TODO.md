@@ -249,8 +249,9 @@ Handoff bundles **dirtoo-003** … **dirtoo-015** (tip after 015: filter ranges)
 - [x] **QuickFilter rebuild cost (medium)** — `set_active_expression` only updates
       checked state (no widget teardown on keystroke)
 - [x] **New pin default scope (UX)** — new pins default to *subtree* of current location
-- [ ] **Reload Thumbnails + archive members (medium)** — without prior extract, may
-      queue archive URLs Thumbnailer1 cannot handle; prefer extract path like `request_rows`
+- [x] **Reload Thumbnails + archive members (medium)** — unextracted members now go
+      through `ensure_archive_member_extracted` (same as request_rows) then force
+      Thumbnailer1 on the real path; no more bare archive URL queue.
 - [ ] **Tag Manager file counts (low)** — `files_for_tag` per tag on reload; optional COUNT
 - [ ] **Filter range unit tests (P3)** — `split_range_arg` + duration unit inheritance
 - [ ] **MainWindow gravity (ongoing)** — see Refactoring track; chrome/controllers
