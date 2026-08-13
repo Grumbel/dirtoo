@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "tag_job.hpp"
+#include "hash_service.hpp"
 
 #include "archive_member_cache.hpp"
 
