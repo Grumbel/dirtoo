@@ -68,6 +68,32 @@ GraphicsFileView::GraphicsFileView(QWidget* parent)
   }
 }
 
+GraphicsFileView::~GraphicsFileView()
+{
+  // Scene is a QObject child and will clear remaining items in its destructor.
+  // That emits selectionChanged while QGraphicsItems are mid-destruction; our
+  // handler must not call isSelected() on those items (close-window SIGSEGV).
+  if (scene_ != nullptr) {
+    disconnect(scene_, &QGraphicsScene::selectionChanged, this,
+               &GraphicsFileView::on_scene_selection_changed);
+  }
+  if (model_ != nullptr) {
+    disconnect(model_, nullptr, this, nullptr);
+    model_ = nullptr;
+  }
+  suppress_selection_signal_ = true;
+  for (auto* item : items_) {
+    if (item == nullptr) {
+      continue;
+    }
+    if (scene_ != nullptr) {
+      scene_->removeItem(item);
+    }
+    delete item;
+  }
+  items_.clear();
+}
+
 void GraphicsFileView::set_model(FileListModel* model)
 {
   if (model_ == model) {
@@ -533,7 +559,7 @@ void GraphicsFileView::on_scene_selection_changed()
   QSet<int> live_selected;
   QSet<int> live_rows;
   for (auto* item : items_) {
-    if (item == nullptr) {
+    if (item == nullptr || item->scene() == nullptr) {
       continue;
     }
     live_rows.insert(item->row());

@@ -77,6 +77,7 @@ class GraphicsFileView : public QGraphicsView {
 
 public:
   explicit GraphicsFileView(QWidget* parent = nullptr);
+  ~GraphicsFileView() override;
 
   void set_model(FileListModel* model);
   [[nodiscard]] FileListModel* file_model() const noexcept { return model_; }
