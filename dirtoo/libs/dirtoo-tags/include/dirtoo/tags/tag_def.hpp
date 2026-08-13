@@ -17,8 +17,9 @@ struct TagDef {
   std::string badge;  // optional icon id / resource name
 };
 
-/// Normalize tag name: trim, lowercase, allow [a-z0-9_/: -], collapse repeats.
-/// ':' is kept as a namespace separator. Returns empty string if invalid.
+/// Normalize tag name: trim, lowercase, allow [a-z0-9_/:-], collapse repeat seps.
+/// ':' is a namespace separator; '-' is kept (not collapsed to '_').
+/// Returns empty string if invalid.
 [[nodiscard]] std::string normalize_tag_name(std::string_view raw);
 
 /// Local part after the last ':' (or the whole name if unnamespaced).

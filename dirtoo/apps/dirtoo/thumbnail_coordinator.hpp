@@ -60,6 +60,11 @@ public:
   /// Create directory-montage worker thread (idempotent).
   void setup_dir_worker();
 
+  /// Reload Thumbnails: drop XDG cache, mark pending, force-queue Thumbnailer1
+  /// (extracting archive members off-GUI when needed) and directory montages.
+  /// @return number of file + directory work items scheduled.
+  int force_regenerate(const std::vector<dirtoo::fs::FileInfo>& targets, FileListModel* model);
+
   /// Connect Thumbnailer + dir worker ready/failed to receiver slots.
   template <typename Receiver>
   void wire_ready_failed(Receiver* receiver,

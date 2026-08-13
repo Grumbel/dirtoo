@@ -3,7 +3,6 @@
 
 #include "main_window_common.hpp"
 #include "directory_thumbnail_worker.hpp"
-#include "archive_member_cache.hpp"
 
 #include "dirtoo/archive/archive_index.hpp"
 #include "dirtoo/thumbnail/thumbnailer.hpp"
@@ -15,7 +14,6 @@
 #include <filesystem>
 #include <optional>
 #include <QIcon>
-#include <QtConcurrent>
 #include <QPixmap>
 
 namespace dirtoo::app {
@@ -251,7 +249,6 @@ void MainWindow::on_reload_thumbnails()
   auto selected = selected_fileinfos();
   std::vector<fs::FileInfo> targets;
   if (selected.empty()) {
-    // No selection: rebuild all currently visible items.
     for (const auto& fi : collection_.visible_items()) {
       targets.push_back(fi);
     }
@@ -265,109 +262,11 @@ void MainWindow::on_reload_thumbnails()
     }
   }
 
-  QMimeDatabase mime_db;
-  std::vector<fs::Location> locs;
-  QStringList mimes;
-  QStringList dir_paths;
-  locs.reserve(targets.size());
-  mimes.reserve(static_cast<int>(targets.size()));
-
-  for (const auto& fi : targets) {
-    if (fi.path().empty()) {
-      continue;
-    }
-    const QString path = QString::fromStdString(fi.path().string());
-
-    if (fi.is_directory()) {
-      // Drop XDG montage / dir cache so Make Directory Thumbnails can rebuild.
-      (void)thumbnail::Thumbnailer::remove_cache_for(fi.location());
-      if (!fi.is_synthetic()) {
-        dir_paths << path;
-        model_->set_thumbnail_pending(path);
-      }
-      continue;
-    }
-
-    // Delete on-disk XDG cache so Thumbnailer1 cannot short-circuit on the old PNG.
-    // Archive members may be thumbnailed via an extracted real path (alias).
-    (void)thumbnail::Thumbnailer::remove_cache_for(fi.location());
-    for (auto it = thumbs_.aliases().begin(); it != thumbs_.aliases().end();) {
-      if (it.value() == path) {
-        (void)thumbnail::Thumbnailer::remove_cache_for(fs::Location::from_path(
-            std::filesystem::path(it.key().toStdString())));
-        it = thumbs_.aliases().erase(it);
-      } else {
-        ++it;
-      }
-    }
-
-    model_->set_thumbnail_pending(path);
-
-    const QString name_for_mime = QString::fromStdString(fi.basename());
-    const QMimeType mt = mime_db.mimeTypeForFile(name_for_mime, QMimeDatabase::MatchExtension);
-    const QString mime =
-        mt.isValid() ? mt.name() : QStringLiteral("application/octet-stream");
-
-    if (fi.location().is_archive()) {
-      // Same extract path as ThumbnailCoordinator::request_rows — Thumbnailer1 cannot
-      // open archive URLs; extract the member then force-request the real path.
-      const auto archive_file = fi.location().as_path();
-      const auto member = fi.location().entry_path();
-      const auto cache_root = archive_member_cache_root("dirtoo-archive-thumbs");
-      const auto dest_dir = archive_member_dest_dir(cache_root, archive_file);
-      std::error_code ec;
-      const auto cached = dest_dir / member;
-      if (!member.empty() && std::filesystem::is_regular_file(cached, ec) && !ec) {
-        const auto real_loc = fs::Location::from_path(cached);
-        (void)thumbnail::Thumbnailer::remove_cache_for(real_loc);
-        thumbs_.aliases().insert(QString::fromStdString(cached.string()), path);
-        locs.push_back(real_loc);
-        mimes.push_back(mime);
-      } else if (!member.empty()) {
-        const QString key = path;
-        const QString mime_copy = mime;
-        (void)QtConcurrent::run([this, archive_file, member, key, mime_copy, dest_dir]() {
-          auto extracted = ensure_archive_member_extracted(archive_file, member, dest_dir);
-          const bool ok = extracted.has_value();
-          const std::filesystem::path out_path = ok ? *extracted : std::filesystem::path{};
-          QMetaObject::invokeMethod(
-              this,
-              [this, ok, out_path, key, mime_copy]() {
-                if (!ok) {
-                  if (model_ != nullptr) {
-                    model_->set_thumbnail_failed(key);
-                  }
-                  update_status_selection();
-                  return;
-                }
-                const QString real_path = QString::fromStdString(out_path.string());
-                thumbs_.aliases().insert(real_path, key);
-                (void)thumbnail::Thumbnailer::remove_cache_for(fs::Location::from_path(out_path));
-                thumbs_.request_many({fs::Location::from_path(out_path)}, {mime_copy},
-                                    /*force=*/true);
-              },
-              Qt::QueuedConnection);
-        });
-      } else {
-        model_->set_thumbnail_failed(path);
-      }
-    } else {
-      locs.push_back(fi.location());
-      mimes.push_back(mime);
-    }
-  }
-
-  if (!locs.empty()) {
-    thumbs_.request_many(locs, mimes, /*force=*/true);
-  }
-  if (!dir_paths.isEmpty() && thumbs_.dir_worker() != nullptr) {
-    QMetaObject::invokeMethod(thumbs_.dir_worker(), "generate", Qt::QueuedConnection,
-                              Q_ARG(QStringList, dir_paths));
-  }
-
-  const int n = static_cast<int>(locs.size()) + dir_paths.size();
+  const int n = thumbs_.force_regenerate(targets, model_);
   set_status(QStringLiteral("Regenerating %1 thumbnail(s) from scratch…").arg(n));
+  update_status_selection();
 }
+
 
 
 void MainWindow::on_make_directory_thumbnails()

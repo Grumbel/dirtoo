@@ -24,6 +24,7 @@ target_link_libraries(dirtoo-tests
     dirtoo-collection::dirtoo-collection
     dirtoo-archive::dirtoo-archive
     dirtoo-filter::dirtoo-filter
+    dirtoo-tags::dirtoo-tags
     Qt6::Core
     Catch2::Catch2WithMain
     dirtoo_warnings

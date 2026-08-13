@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "thumbnail_coordinator.hpp"
+#include <QMetaObject>
 
 #include "archive_member_cache.hpp"
 #include "file_list_model.hpp"
@@ -178,6 +179,111 @@ void ThumbnailCoordinator::shutdown()
     dir_thumb_thread_ = nullptr;
     dir_thumb_worker_ = nullptr;
   }
+}
+
+
+int ThumbnailCoordinator::force_regenerate(const std::vector<fs::FileInfo>& targets,
+                                           FileListModel* model)
+{
+  if (model == nullptr) {
+    return 0;
+  }
+  QMimeDatabase mime_db;
+  std::vector<fs::Location> locs;
+  QStringList mimes;
+  QStringList dir_paths;
+  locs.reserve(targets.size());
+  mimes.reserve(static_cast<int>(targets.size()));
+
+  for (const auto& fi : targets) {
+    if (fi.path().empty()) {
+      continue;
+    }
+    const QString path = QString::fromStdString(fi.path().string());
+
+    if (fi.is_directory()) {
+      (void)thumbnail::Thumbnailer::remove_cache_for(fi.location());
+      if (!fi.is_synthetic()) {
+        dir_paths << path;
+        model->set_thumbnail_pending(path);
+      }
+      continue;
+    }
+
+    (void)thumbnail::Thumbnailer::remove_cache_for(fi.location());
+    for (auto it = thumb_alias_.begin(); it != thumb_alias_.end();) {
+      if (it.value() == path) {
+        (void)thumbnail::Thumbnailer::remove_cache_for(
+            fs::Location::from_path(std::filesystem::path(it.key().toStdString())));
+        it = thumb_alias_.erase(it);
+      } else {
+        ++it;
+      }
+    }
+
+    model->set_thumbnail_pending(path);
+
+    const QString name_for_mime = QString::fromStdString(fi.basename());
+    const QMimeType mt = mime_db.mimeTypeForFile(name_for_mime, QMimeDatabase::MatchExtension);
+    const QString mime =
+        mt.isValid() ? mt.name() : QStringLiteral("application/octet-stream");
+
+    if (fi.location().is_archive()) {
+      const auto archive_file = fi.location().as_path();
+      const auto member = fi.location().entry_path();
+      const auto cache_root = archive_member_cache_root("dirtoo-archive-thumbs");
+      const auto dest_dir = archive_member_dest_dir(cache_root, archive_file);
+      std::error_code ec;
+      const auto cached = dest_dir / member;
+      if (!member.empty() && std::filesystem::is_regular_file(cached, ec) && !ec) {
+        const auto real_loc = fs::Location::from_path(cached);
+        (void)thumbnail::Thumbnailer::remove_cache_for(real_loc);
+        thumb_alias_.insert(QString::fromStdString(cached.string()), path);
+        locs.push_back(real_loc);
+        mimes.push_back(mime);
+      } else if (!member.empty()) {
+        const QString key = path;
+        const QString mime_copy = mime;
+        (void)QtConcurrent::run([this, archive_file, member, key, mime_copy, dest_dir, model]() {
+          auto extracted = ensure_archive_member_extracted(archive_file, member, dest_dir);
+          const bool ok = extracted.has_value();
+          const std::filesystem::path out_path = ok ? *extracted : std::filesystem::path{};
+          QMetaObject::invokeMethod(
+              this,
+              [this, ok, out_path, key, mime_copy, model]() {
+                if (!ok) {
+                  if (model != nullptr) {
+                    model->set_thumbnail_failed(key);
+                  }
+                  return;
+                }
+                const QString real_path = QString::fromStdString(out_path.string());
+                thumb_alias_.insert(real_path, key);
+                (void)thumbnail::Thumbnailer::remove_cache_for(fs::Location::from_path(out_path));
+                request_many({fs::Location::from_path(out_path)}, {mime_copy}, /*force=*/true);
+              },
+              Qt::QueuedConnection);
+        });
+      } else {
+        model->set_thumbnail_failed(path);
+      }
+    } else {
+      locs.push_back(fi.location());
+      mimes.push_back(mime);
+    }
+  }
+
+  if (!locs.empty()) {
+    request_many(locs, mimes, /*force=*/true);
+  }
+  if (!dir_paths.isEmpty()) {
+    setup_dir_worker();
+    if (dir_thumb_worker_ != nullptr) {
+      QMetaObject::invokeMethod(dir_thumb_worker_, "generate", Qt::QueuedConnection,
+                                Q_ARG(QStringList, dir_paths));
+    }
+  }
+  return static_cast<int>(locs.size()) + dir_paths.size();
 }
 
 } // namespace dirtoo::app

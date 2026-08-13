@@ -6,6 +6,7 @@
 #include "dirtoo/filter/search.hpp"
 #include "dirtoo/filter/media_probe.hpp"
 #include "dirtoo/filter/predicates.hpp"
+#include "dirtoo/tags/tag_def.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -435,4 +436,29 @@ TEST_CASE("filter tag namespace and glob parse", "[filter][tag]")
   // Invalid characters still rejected → AlwaysFalse but parse still returns a matcher
   auto bad = parse_filter("tag:!!!");
   REQUIRE(bad);
+}
+
+TEST_CASE("normalize_tag_name keeps hyphen and colon namespace", "[tags]")
+{
+  using dirtoo::tags::normalize_tag_name;
+  using dirtoo::tags::tag_name_matches;
+  using dirtoo::tags::local_tag_name;
+
+  REQUIRE(normalize_tag_name("Location-Paris") == "location-paris");
+  REQUIRE(normalize_tag_name("game:Doom") == "game:doom");
+  REQUIRE(normalize_tag_name("  Work  ") == "work");
+  REQUIRE(normalize_tag_name("bad!!") == "");
+  REQUIRE(normalize_tag_name(":leading") == "");
+  REQUIRE(normalize_tag_name("game::doom") == "");
+
+  REQUIRE(local_tag_name("game:doom") == "doom");
+  REQUIRE(local_tag_name("doom") == "doom");
+
+  REQUIRE(tag_name_matches("game:doom", "doom"));
+  REQUIRE(tag_name_matches("movie:doom", "doom"));
+  REQUIRE(tag_name_matches("game:doom", "game:doom"));
+  REQUIRE_FALSE(tag_name_matches("movie:doom", "game:doom"));
+  REQUIRE(tag_name_matches("location-paris", "location-*"));
+  REQUIRE(tag_name_matches("location-london", "location-*"));
+  REQUIRE_FALSE(tag_name_matches("other-paris", "location-*"));
 }

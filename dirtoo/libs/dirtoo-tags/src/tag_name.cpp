@@ -17,24 +17,27 @@ std::string normalize_tag_name(std::string_view raw)
       continue;
     }
     char c = static_cast<char>(std::tolower(ch));
-    // ':' is a namespace separator (kept as ':'); '-' collapses to '_'.
+    // ':' is a namespace separator. Keep '-', '_', '/' as distinct separators
+    // so tags like location-paris stay readable (do not collapse '-' to '_').
     const bool sep = (c == '/' || c == '_' || c == '-' || c == ':');
     if (std::isalnum(static_cast<unsigned char>(c))) {
       out.push_back(c);
       prev_sep = false;
     } else if (sep) {
       if (!prev_sep && !out.empty()) {
-        out.push_back(c == '-' ? '_' : c);
+        out.push_back(c);
         prev_sep = true;
       }
     } else {
       return {};
     }
   }
-  while (!out.empty() && (out.back() == '/' || out.back() == '_' || out.back() == ':')) {
+  while (!out.empty()
+         && (out.back() == '/' || out.back() == '_' || out.back() == '-' || out.back() == ':')) {
     out.pop_back();
   }
-  if (out.empty() || out.front() == '/' || out.front() == '_' || out.front() == ':') {
+  if (out.empty() || out.front() == '/' || out.front() == '_' || out.front() == '-'
+      || out.front() == ':') {
     return {};
   }
   // Reject empty namespace segments ("game::doom" / "game:").

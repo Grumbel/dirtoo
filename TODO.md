@@ -257,7 +257,8 @@ Handoff bundles **dirtoo-003** … **dirtoo-015** (tip after 015: filter ranges)
 - [x] **Filter range unit tests (P3)** — size lo-hi / lo..hi match tests; duration
       range parse + unit inheritance smoke tests; width/height/length/fps/pages
 - [ ] **MainWindow gravity (ongoing)** — see Refactoring track; chrome/controllers
-      improved but ops/nav/load still large
+      improved; `ThumbnailCoordinator::force_regenerate` took Reload Thumbnails
+      off MainWindow. ops/nav/load still large
 
 #### Open issues from 2026-08-13 (user report / feature requests)
 
@@ -290,6 +291,14 @@ Handoff bundles **dirtoo-003** … **dirtoo-015** (tip after 015: filter ranges)
 - [x] **Allow `:` in tag names as namespace separator (medium)** — `:` allowed in
       normalize; chips show local part; `tag:doom` matches any `*:doom`;
       `tag:game:doom` exact.
+
+
+#### Agent session 2026-08-13 (continued)
+
+- [x] **Tag hyphens preserved** — `normalize_tag_name` no longer collapses `-` to
+      `_` (`location-paris` stays hyphenated; globs still work).
+- [x] **Reload Thumbnails → ThumbnailCoordinator::force_regenerate** — archive
+      extract + force queue moved off MainWindow (gravity: thumbs surface).
 
 ### Review residuals (earlier 2026-08)
 
