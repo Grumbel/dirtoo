@@ -5,6 +5,7 @@
 
 #include "clipboard.hpp"
 #include "path_display.hpp"
+#include "mutation_support.hpp"
 #include "conflict_dialog.hpp"
 #include "name_input_dialog.hpp"
 #include "operations_history.hpp"
@@ -22,19 +23,9 @@ void MainWindow::set_clipboard(ClipboardMode mode)
     set_status(QStringLiteral("Nothing selected"));
     return;
   }
-  std::vector<std::filesystem::path> paths;
-  paths.reserve(selected.size());
-  for (const auto& fi : selected) {
-    paths.push_back(fi.path());
-  }
-  QApplication::clipboard()->setMimeData(make_clipboard_mime(mode, paths));
-  QString verb = QStringLiteral("copied");
-  if (mode == ClipboardMode::Cut) {
-    verb = QStringLiteral("cut");
-  } else if (mode == ClipboardMode::Link) {
-    verb = QStringLiteral("marked for link");
-  }
-  set_status(QStringLiteral("%1 item(s) %2").arg(paths.size()).arg(verb));
+  const auto paths = paths_from_fileinfos(selected);
+  apply_paths_to_system_clipboard(mode, paths);
+  set_status(QStringLiteral("%1 item(s) %2").arg(paths.size()).arg(clipboard_mode_verb(mode)));
   update_edit_actions();
 }
 
@@ -97,8 +88,8 @@ void MainWindow::on_paste()
     return;
   }
 
-  if (location_.is_archive()) {
-    set_status(QStringLiteral("Read-only: browsing inside an archive"));
+  if (!location_allows_filesystem_mutations(location_)) {
+    set_status(QStringLiteral("Read-only: cannot modify this location"));
     return;
   }
 
@@ -130,8 +121,8 @@ void MainWindow::on_paste_link()
     return;
   }
 
-  if (location_.is_archive()) {
-    set_status(QStringLiteral("Read-only: browsing inside an archive"));
+  if (!location_allows_filesystem_mutations(location_)) {
+    set_status(QStringLiteral("Read-only: cannot modify this location"));
     return;
   }
   const ClipboardPayload payload = parse_clipboard_mime(QApplication::clipboard()->mimeData());
@@ -167,8 +158,8 @@ void MainWindow::on_mkdir()
     return;
   }
 
-  if (location_.is_archive()) {
-    set_status(QStringLiteral("Read-only: browsing inside an archive"));
+  if (!location_allows_filesystem_mutations(location_)) {
+    set_status(QStringLiteral("Read-only: cannot modify this location"));
     return;
   }
 
@@ -225,8 +216,8 @@ void MainWindow::on_create_file()
     return;
   }
 
-  if (location_.is_archive()) {
-    set_status(QStringLiteral("Read-only: browsing inside an archive"));
+  if (!location_allows_filesystem_mutations(location_)) {
+    set_status(QStringLiteral("Read-only: cannot modify this location"));
     return;
   }
 
@@ -260,8 +251,8 @@ void MainWindow::on_swap_names()
   if (!ensure_mutations_allowed()) {
     return;
   }
-  if (location_.is_archive()) {
-    set_status(QStringLiteral("Read-only: browsing inside an archive"));
+  if (!location_allows_filesystem_mutations(location_)) {
+    set_status(QStringLiteral("Read-only: cannot modify this location"));
     return;
   }
   const auto selected = selected_fileinfos();
@@ -288,8 +279,8 @@ void MainWindow::on_rename_selected()
   if (!ensure_mutations_allowed()) {
     return;
   }
-  if (location_.is_archive()) {
-    set_status(QStringLiteral("Read-only: browsing inside an archive"));
+  if (!location_allows_filesystem_mutations(location_)) {
+    set_status(QStringLiteral("Read-only: cannot modify this location"));
     return;
   }
 
@@ -337,8 +328,8 @@ void MainWindow::on_delete_selected()
     return;
   }
 
-  if (location_.is_archive()) {
-    set_status(QStringLiteral("Read-only: browsing inside an archive"));
+  if (!location_allows_filesystem_mutations(location_)) {
+    set_status(QStringLiteral("Read-only: cannot modify this location"));
     return;
   }
 
