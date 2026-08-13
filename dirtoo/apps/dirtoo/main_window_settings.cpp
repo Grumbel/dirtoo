@@ -311,9 +311,21 @@ void MainWindow::open_tag_collection(const QString& tag_name)
   if (key.isEmpty()) {
     return;
   }
+  open_location(fs::Location::from_tag(key.toStdString()), true);
+}
 
-  // Leave any live recursive search; tag view is its own result session.
-  stop_search();
+void MainWindow::load_tag_location_listing()
+{
+  if (!location_.is_tag()) {
+    return;
+  }
+  const QString key = QString::fromStdString(location_.tag_query());
+  if (key.isEmpty()) {
+    set_status(QStringLiteral("Empty tag:// location"));
+    collection_.clear();
+    refresh_list();
+    return;
+  }
 
   ActivityMonitor::instance().set_task(QStringLiteral("tag-view"),
                                        QStringLiteral("Loading tag:%1…").arg(key), -1, -1);
@@ -328,58 +340,55 @@ void MainWindow::open_tag_collection(const QString& tag_name)
     return;
   }
 
-  const auto tagged = store.files_for_tag(key.toStdString());
+  // tag://a,b → union of files matching any listed tag name.
+  QStringList parts = key.split(QLatin1Char(','), Qt::SkipEmptyParts);
   std::vector<dirtoo::fs::FileInfo> items;
-  items.reserve(tagged.size());
   std::set<std::string> seen;
   int missing = 0;
-  for (const auto& tf : tagged) {
-    for (const auto& path_str : tf.paths) {
-      if (!seen.insert(path_str).second) {
-        continue;
-      }
-      // Archive member URLs stay as path keys; FileInfo::from_path only works for
-      // real files. Skip non-existent paths (moved/deleted) with a count.
-      if (path_str.find("://") != std::string::npos) {
-        // Virtual / archive URL — try Location-based synthetic entry.
-        try {
-          auto loc = dirtoo::fs::Location::from_url(path_str);
-          items.push_back(dirtoo::fs::FileInfo::from_location(loc));
-        } catch (...) {
-          ++missing;
+  for (QString part : parts) {
+    part = part.trimmed();
+    if (part.isEmpty()) {
+      continue;
+    }
+    const auto tagged = store.files_for_tag(part.toStdString());
+    for (const auto& tf : tagged) {
+      for (const auto& path_str : tf.paths) {
+        if (!seen.insert(path_str).second) {
+          continue;
         }
-        continue;
+        if (path_str.find("://") != std::string::npos) {
+          try {
+            auto loc = dirtoo::fs::Location::from_url(path_str);
+            items.push_back(dirtoo::fs::FileInfo::from_location(loc));
+          } catch (...) {
+            ++missing;
+          }
+          continue;
+        }
+        std::error_code ec;
+        const std::filesystem::path p{path_str};
+        if (!std::filesystem::exists(p, ec) || ec) {
+          ++missing;
+          continue;
+        }
+        items.push_back(dirtoo::fs::FileInfo::from_path(p));
       }
-      std::error_code ec;
-      const std::filesystem::path p{path_str};
-      if (!std::filesystem::exists(p, ec) || ec) {
-        ++missing;
-        continue;
-      }
-      items.push_back(dirtoo::fs::FileInfo::from_path(p));
     }
   }
 
-  // Search-session style: watcher must not wipe this synthetic listing until
-  // the user navigates to a real directory.
-  search_session_.active = true;
+  // Not a recursive search session — tag Location itself blocks disk reload/watcher.
+  search_session_.active = false;
   search_session_.results.clear();
   search_session_.batch.clear();
-  search_session_.status_matched = 0;
 
   collection_.set_items(std::move(items));
   filter_search_.set_filter_text({});
   refresh_list();
   request_thumbnails_for_visible();
 
-  const QString url = QStringLiteral("tag://%1").arg(key);
-  location_chrome_.show_line_edit();
-  if (location_chrome_.edit() != nullptr) {
-    location_chrome_.edit()->setText(url);
-  }
-
   ActivityMonitor::instance().clear_task(QStringLiteral("tag-view"));
-  QString msg = QStringLiteral("%1 file(s) with tag:%2").arg(collection_.visible_items().size()).arg(key);
+  QString msg =
+      QStringLiteral("%1 file(s) with tag:%2").arg(collection_.visible_items().size()).arg(key);
   if (missing > 0) {
     msg += QStringLiteral(" (%1 missing path(s) skipped)").arg(missing);
   }

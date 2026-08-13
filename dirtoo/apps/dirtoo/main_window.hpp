@@ -170,6 +170,7 @@ private slots:
   void stop_search();
   /// List all known paths for a tag (virtual tag:// session, like search results).
   void open_tag_collection(const QString& tag_name);
+  void load_tag_location_listing();
   void on_rebuild_history_menu();
   void on_rebuild_recent_opens_menu();
   void on_rebuild_bookmarks_menu();

@@ -104,7 +104,7 @@ QString location_display_path(const dirtoo::fs::Location& loc)
   if (loc.empty()) {
     return QString();
   }
-  if (loc.is_archive()) {
+  if (loc.is_archive() || loc.is_tag()) {
     return QString::fromStdString(loc.as_url());
   }
   return QString::fromStdString(loc.as_path().string());

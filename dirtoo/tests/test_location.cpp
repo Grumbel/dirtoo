@@ -129,3 +129,25 @@ TEST_CASE("from_human preserves archive payload", "[location]")
   REQUIRE(f.is_file());
   REQUIRE_FALSE(f.is_archive());
 }
+
+TEST_CASE("Location tag:// protocol", "[location]")
+{
+  const auto loc = dirtoo::fs::Location::from_tag("work");
+  REQUIRE(loc.is_tag());
+  REQUIRE_FALSE(loc.is_file());
+  REQUIRE(loc.tag_query() == "work");
+  REQUIRE(loc.as_url() == "tag://work");
+  REQUIRE(loc.as_path().empty());
+
+  const auto again = dirtoo::fs::Location::from_url("tag://game:doom");
+  REQUIRE(again.is_tag());
+  REQUIRE(again.tag_query() == "game:doom");
+
+  const auto multi = dirtoo::fs::Location::from_human("tag://foo,bar");
+  REQUIRE(multi.is_tag());
+  REQUIRE(multi.tag_query() == "foo,bar");
+
+  const auto round = dirtoo::fs::Location::from_url(multi.as_url());
+  REQUIRE(round.is_tag());
+  REQUIRE(round.tag_query() == "foo,bar");
+}

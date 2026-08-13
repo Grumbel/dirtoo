@@ -139,8 +139,23 @@ Location Location::from_archive(const std::filesystem::path& archive_file,
   return Location{"archive", normalize_file_path(archive_file), entry.lexically_normal()};
 }
 
+Location Location::from_tag(std::string_view tag_name)
+{
+  std::string name{tag_name};
+  while (!name.empty() && (name.front() == ' ' || name.front() == '	')) {
+    name.erase(name.begin());
+  }
+  while (!name.empty() && (name.back() == ' ' || name.back() == '	')) {
+    name.pop_back();
+  }
+  return Location{"tag", std::filesystem::path{name}, {}};
+}
+
 Location Location::from_url(std::string_view url)
 {
+  if (url.starts_with("tag://")) {
+    return from_tag(percent_decode(std::string{url.substr(6)}));
+  }
   // Python-style archive: file:///path/to.zip//archive or file:///path/to.zip//archive:entry
   // Legacy JAR-style:     archive:///path/to.zip!/entry
   if (url.starts_with("file://")) {
@@ -189,7 +204,8 @@ Location Location::from_human(std::string_view text)
   if (text.empty() || text == ".") {
     return from_path(std::filesystem::current_path());
   }
-  if (text.starts_with("file://") || text.starts_with("archive://")) {
+  if (text.starts_with("file://") || text.starts_with("archive://")
+      || text.starts_with("tag://")) {
     return from_url(text);
   }
   // Bare path that embeds Python-style //archive payload (typed without scheme).
@@ -201,6 +217,9 @@ Location Location::from_human(std::string_view text)
 
 std::string Location::as_url() const
 {
+  if (protocol_ == "tag") {
+    return "tag://" + percent_encode_path(path_.generic_string());
+  }
   // Prefer Python-style URLs so the location bar matches dirtoo-py:
   //   file:///path/to.zip//archive
   //   file:///path/to.zip//archive:docs/readme.txt
@@ -219,11 +238,25 @@ std::string Location::as_url() const
 
 std::filesystem::path Location::as_path() const
 {
+  if (protocol_ == "tag") {
+    return {};
+  }
   return path_;
+}
+
+std::string Location::tag_query() const
+{
+  if (protocol_ != "tag") {
+    return {};
+  }
+  return path_.generic_string();
 }
 
 Location Location::parent() const
 {
+  if (protocol_ == "tag") {
+    return {};
+  }
   if (protocol_ == "archive") {
     if (entry_.empty() || entry_ == "." || entry_ == "/") {
       // Leave archive → parent directory of the archive file.
@@ -244,6 +277,10 @@ Location Location::parent() const
 
 Location Location::join(std::string_view child) const
 {
+  if (protocol_ == "tag") {
+    (void)child;
+    return *this;
+  }
   if (protocol_ == "archive") {
     return from_archive(path_, entry_ / std::filesystem::path{std::string{child}});
   }
@@ -252,6 +289,9 @@ Location Location::join(std::string_view child) const
 
 std::string Location::basename() const
 {
+  if (protocol_ == "tag") {
+    return path_.generic_string();
+  }
   if (protocol_ == "archive") {
     if (!entry_.empty()) {
       return entry_.filename().string();

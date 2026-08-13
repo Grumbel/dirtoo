@@ -1019,7 +1019,7 @@ Full file inventory + notes: **`AUDIT.md`** (section *Full source inventory + au
 
 ### Missing features / product
 
-- [ ] **B2 — Real `tag://` Location** — Today: synthetic list + `search_session_.active`. Need protocol support in Location, history, breadcrumb, filter/search interaction, exit path.
+- [x] **B2 — Real `tag://` Location** — `Location::from_tag` / `is_tag` / `tag_query`; `open_location` loads union for `tag://a,b`; history + location bar; no search_session hack; F5 reloads tag listing.
 - [ ] **B3 — Quick hash productization** — API + Checksum “Quick sample” exist; optional separate store/column; filter token; never feed sample digests into tag identity.
 - [ ] **B5 — Icon spacing control** — User-adjustable tile width / gap (Preferences or View menu); filenames still crop on extreme lengths.
 - [ ] **B10 — Preferences gaps** — Thumbnail crop/zoom ok; no spacing; no “default open app”; no hash policy (full vs prompt on large files).
