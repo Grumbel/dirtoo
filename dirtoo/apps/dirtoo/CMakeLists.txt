@@ -75,6 +75,8 @@ qt_add_executable(dirtoo-app
   path_display.hpp
   mutation_support.cpp
   mutation_support.hpp
+  hash_service.cpp
+  hash_service.hpp
   size_format.cpp
   size_format.hpp
   open_with.cpp

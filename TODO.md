@@ -1043,8 +1043,8 @@ Full file inventory + notes: **`AUDIT.md`** (section *Full source inventory + au
 
 - [ ] **D1 — MainWindow gravity** — Ongoing; `sort_settings`, `path_display`, `mutation_support` extracted. Handlers still on MainWindow; viewport row discovery still there.
 - [x] **D2 — ActivityMonitor job tokens** — `begin_job`/`update_job`/`end_job` + `ScopedActivityJob`; `kind` on tasks; `clear_jobs_of_kind`. Tag + checksum use unique tokens; dir-load/thumbs/transfer remain single-flight named slots that compose with jobs in the headline.
-- [ ] **D4 — Shared HashService** — One queue for full/quick hash used by TagJob, ChecksumDialog, future idle scanner.
-- [ ] **D5 — Store writer queue** — Serialize SQLite writes for tags + checksums.
+- [ ] **D4 — Shared HashService** — Foundation: process-wide `HashService` (mutex + ChecksumStore); TagJob uses ensure/get/put. Still open: queue for concurrent hash CPU, ChecksumDialog wire-up, idle scanner.
+- [ ] **D5 — Store writer queue** — Checksum SQLite writes serialized via HashService mutex; TagStore still per-job open. Full tag+checksum writer queue TBD.
 - [x] **D6 — Dual icon paint stacks** — Launch flash unified in `paint_launch_flash` (icon_tile_paint); badges/status/tags already shared. Residual: caption layout still view-specific.
 - [x] **D7 — Fewer modal error boxes** — Tag skip/fail and Checksum job failure → status / message banner + ActivityMonitor log (no modal for batch outcomes).
 - [x] **C4 — Tests** — `hash_file` / `hash_file_quick` + TagStore smoke + DirectoryLoadWorker list/cancel/next-gen; filter `checksummed`/`tagged` partly covered.

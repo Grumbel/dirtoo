@@ -34,11 +34,10 @@ public:
 public slots:
   void run()
   {
-    dirtoo::hash::ChecksumStore checksums;
+    auto& hashes = HashService::instance();
     dirtoo::tags::TagStore tags;
     std::string err;
-    if (!checksums.open(dirtoo::hash::ChecksumStore::default_path(), &err)
-        || !tags.open(dirtoo::tags::TagStore::default_path(), &err)) {
+    if (!hashes.ensure_open(&err) || !tags.open(dirtoo::tags::TagStore::default_path(), &err)) {
       emit failed(QString::fromStdString(err));
       emit finished(0, 0, {});
       return;
@@ -64,7 +63,7 @@ public slots:
 
       if (fi.location().is_archive()) {
         key = fi.location().as_url();
-        if (!checksums.get(key)) {
+        if (!hashes.get_full(key)) {
           const auto member = fi.location().entry_path();
           if (member.empty()) {
             ++skipped;
@@ -87,13 +86,13 @@ public slots:
             continue;
           }
           digests->size = fi.size() != 0 ? fi.size() : digests->size;
-          checksums.put(key, *digests);
+          hashes.put_full(key, *digests);
         }
       } else {
         std::error_code ec;
         const auto abs = std::filesystem::absolute(fi.path(), ec);
         key = ec ? fi.path().string() : abs.lexically_normal().string();
-        if (!checksums.ensure(abs, key, false, &herr)) {
+        if (!hashes.ensure_full(abs, key, false, &herr)) {
           ++skipped;
           problems << QStringLiteral("%1: %2").arg(display, QString::fromStdString(herr.message));
           continue;
@@ -101,7 +100,8 @@ public slots:
       }
 
       std::string e;
-      auto id = tags.resolve_path(checksums, key, &e);
+      auto id = hashes.with_store(
+          [&](dirtoo::hash::ChecksumStore& store) { return tags.resolve_path(store, key, &e); });
       if (!id) {
         ++skipped;
         problems << QStringLiteral("%1: %2").arg(display, QString::fromStdString(e));
