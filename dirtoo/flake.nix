@@ -209,14 +209,23 @@
             echo "dirtoo: version=$version"
             echo "dirtoo: cmakeBuildType=$cmakeBuildType"
           '';
-          doCheck = true;
-          checkPhase = ''
-            runHook preCheck
-            ctest --output-on-failure
-            runHook postCheck
-          '';
+          # Tests are built and installed to $out/libexec/dirtoo/dirtoo-tests but
+          # not run here — see checks.dirtoo-tests so `nix build` stays build-only
+          # and `nix flake check` reuses the package store path without recompiling.
+          doCheck = false;
           meta.description = "dirtoo GUI file manager";
         };
+
+        # Run unit tests against the already-built dirtoo package (no rebuild).
+        dirtoo-tests-check = pkgs.runCommand "dirtoo-tests-check" {
+          nativeBuildInputs = [ dirtoo ];
+          meta.description = "Run dirtoo-tests from the built package";
+        } ''
+          set -eu
+          echo "dirtoo-tests-check: running ${dirtoo}/libexec/dirtoo/dirtoo-tests"
+          ${dirtoo}/libexec/dirtoo/dirtoo-tests --reporter console
+          touch "$out"
+        '';
 
         dirtoo-tools = pkgs.symlinkJoin {
           name = "dirtoo-tools-${version}";
@@ -259,6 +268,12 @@
               dirtoo-archive
             ];
           };
+        };
+
+        checks = {
+          # `nix flake check` → run unit tests using the built package output.
+          # Does not recompile if `packages.dirtoo` is already in the store.
+          dirtoo-tests = dirtoo-tests-check;
         };
 
         apps = {

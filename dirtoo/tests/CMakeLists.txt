@@ -33,3 +33,8 @@ target_link_libraries(dirtoo-tests
 include(CTest)
 include(Catch)
 catch_discover_tests(dirtoo-tests)
+
+# Installed so `nix flake check` can run tests against the built package
+# without rebuilding (dirtoo package installs the binary; checks run it).
+install(TARGETS dirtoo-tests RUNTIME DESTINATION libexec/dirtoo)
+

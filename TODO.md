@@ -305,6 +305,11 @@ Handoff bundles **dirtoo-003** … **dirtoo-015** (tip after 015: filter ranges)
 - [x] **QuickFilter: Untagged / Untagged images chips** — when the listing has
       images and/or a tags DB, auto-chips offer `type:image tagged:no` and
       `tagged:no` (checksum-cache semantics; no hashing on filter).
+- [x] **normalize_tag_name leading `:` / `::`** — reject leading separators and
+      empty namespaces (fixes Catch test).
+- [x] **Tests via `nix flake check`** — `doCheck = false` on packages.dirtoo;
+      tests installed to `$out/libexec/dirtoo/dirtoo-tests`; `checks.dirtoo-tests`
+      runs that binary so check does not recompile when the package is cached.
 
 ### Review residuals (earlier 2026-08)
 

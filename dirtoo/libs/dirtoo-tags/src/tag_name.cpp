@@ -11,7 +11,7 @@ std::string normalize_tag_name(std::string_view raw)
 {
   std::string out;
   out.reserve(raw.size());
-  bool prev_sep = true; // treat start as separator so we reject leading seps
+  bool prev_sep = false;
   for (unsigned char ch : raw) {
     if (std::isspace(ch)) {
       continue;
@@ -24,10 +24,19 @@ std::string normalize_tag_name(std::string_view raw)
       out.push_back(c);
       prev_sep = false;
     } else if (sep) {
-      if (!prev_sep && !out.empty()) {
-        out.push_back(c);
-        prev_sep = true;
+      // Leading separator is invalid ("-foo", ":ns").
+      if (out.empty()) {
+        return {};
       }
+      if (prev_sep) {
+        // Collapse consecutive non-colon seps; reject empty namespace ("game::doom").
+        if (c == ':' || out.back() == ':') {
+          return {};
+        }
+        continue;
+      }
+      out.push_back(c);
+      prev_sep = true;
     } else {
       return {};
     }
@@ -40,7 +49,7 @@ std::string normalize_tag_name(std::string_view raw)
       || out.front() == ':') {
     return {};
   }
-  // Reject empty namespace segments ("game::doom" / "game:").
+  // Reject empty namespace segments that survived normalization.
   for (std::size_t i = 0; i + 1 < out.size(); ++i) {
     if (out[i] == ':' && out[i + 1] == ':') {
       return {};
