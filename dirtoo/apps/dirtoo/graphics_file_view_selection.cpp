@@ -79,6 +79,13 @@ void GraphicsFileView::notify_context_menu(const QPoint& global_pos, const QMode
   emit context_menu_requested(global_pos, index);
 }
 
+void GraphicsFileView::notify_tag_chip_clicked(const QString& tag_name)
+{
+  if (!tag_name.isEmpty()) {
+    emit tag_chip_clicked(tag_name);
+  }
+}
+
 void GraphicsFileView::select_all()
 {
   selected_row_set_.clear();

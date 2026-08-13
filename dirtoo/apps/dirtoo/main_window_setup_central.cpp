@@ -170,6 +170,16 @@ void MainWindow::setup_central_ui()
   graphics_view_->installEventFilter(this);
   connect(graphics_view_, &GraphicsFileView::activated, this, &MainWindow::on_item_activated);
   connect(graphics_view_, &GraphicsFileView::middle_clicked, this, &MainWindow::on_view_middle_click);
+  connect(graphics_view_, &GraphicsFileView::tag_chip_clicked, this, [this](const QString& tag) {
+    // Prefer namespaced form for an exact match; unnamespaced local names still work
+    // via tag: predicate (namespace ignored unless explicit).
+    const QString expr = QStringLiteral("tag:%1").arg(tag);
+    if (filter_search_.filter_text() == expr) {
+      return;
+    }
+    filter_search_.set_filter_text(expr);
+    filter_search_.set_filter_visible(true);
+  });
   connect(graphics_view_, &GraphicsFileView::context_menu_requested, this,
         [this](const QPoint& global_pos, const QModelIndex&) {
           on_context_menu(graphics_view_->mapFromGlobal(global_pos));

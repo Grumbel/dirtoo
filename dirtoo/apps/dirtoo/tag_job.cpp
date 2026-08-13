@@ -22,10 +22,10 @@ namespace {
 class TagWorker : public QObject {
   Q_OBJECT
 public:
-  TagWorker(std::vector<dirtoo::fs::FileInfo> files, QString tag,
+  TagWorker(std::vector<dirtoo::fs::FileInfo> files, QStringList tags,
             std::shared_ptr<std::atomic_bool> cancel)
       : files_(std::move(files))
-      , tag_(std::move(tag))
+      , tags_(std::move(tags))
       , cancel_(std::move(cancel))
   {
   }
@@ -101,12 +101,26 @@ public slots:
 
       std::string e;
       auto id = tags.resolve_path(checksums, key, &e);
-      if (!id || !tags.add_tag_to_file(*id, tag_.toStdString(), &e)) {
+      if (!id) {
         ++skipped;
         problems << QStringLiteral("%1: %2").arg(display, QString::fromStdString(e));
         continue;
       }
-      ++tagged;
+      bool any = false;
+      for (const QString& tg : tags_) {
+        std::string e2;
+        if (!tags.add_tag_to_file(*id, tg.toStdString(), &e2)) {
+          problems << QStringLiteral("%1 [%2]: %3")
+                          .arg(display, tg, QString::fromStdString(e2));
+          continue;
+        }
+        any = true;
+      }
+      if (any) {
+        ++tagged;
+      } else {
+        ++skipped;
+      }
     }
 
     emit progress(total, total, {});
@@ -120,7 +134,7 @@ signals:
 
 private:
   std::vector<dirtoo::fs::FileInfo> files_;
-  QString tag_;
+  QStringList tags_;
   std::shared_ptr<std::atomic_bool> cancel_;
 };
 
@@ -133,10 +147,10 @@ struct TagJob::Impl {
   std::shared_ptr<std::atomic_bool> cancel = std::make_shared<std::atomic_bool>(false);
 };
 
-TagJob::TagJob(std::vector<dirtoo::fs::FileInfo> files, QString tag, QObject* parent)
+TagJob::TagJob(std::vector<dirtoo::fs::FileInfo> files, QStringList tags, QObject* parent)
     : QObject(parent)
     , files_(std::move(files))
-    , tag_(std::move(tag))
+    , tags_(std::move(tags))
     , impl_(new Impl)
 {
 }
@@ -160,7 +174,7 @@ void TagJob::start()
   if (impl_->cancel) {
     impl_->cancel->store(false);
   }
-  impl_->worker = new TagWorker(std::move(files_), tag_, impl_->cancel);
+  impl_->worker = new TagWorker(std::move(files_), tags_, impl_->cancel);
   impl_->thread = new QThread(this);
   impl_->worker->moveToThread(impl_->thread);
   connect(impl_->thread, &QThread::started, impl_->worker, &TagWorker::run);

@@ -355,11 +355,32 @@ void GraphicsFileItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
     event->accept();
     return;
   }
-  // Left-button selection is owned by GraphicsFileView (deferred multi-select
-  // drag, Ctrl/Shift range). Do not call QGraphicsItem::mousePressEvent — its
-  // default selection logic would clear a multi-selection on press and break
-  // drag-of-selection.
+  // Left-button: tag chip click filters by that tag; otherwise selection is owned
+  // by GraphicsFileView (deferred multi-select drag, Ctrl/Shift range).
   if (event->button() == Qt::LeftButton) {
+    if (view_ != nullptr && model_ != nullptr && row_ >= 0) {
+      const fs::FileInfo* fi = model_->file_at(row_);
+      if (fi != nullptr && !fi->is_directory()) {
+        const QRectF br = boundingRect();
+        const int top_pad = 4;
+        const int text_rows = model_->icon_text_rows();
+        const int caption_h =
+            text_rows > 0 ? (6 + text_rows * 16)
+                          : (model_->icon_detail_level() > 0 ? 22 : 0);
+        int icon_side =
+            std::min(tile_size_.width() - 8, tile_size_.height() - caption_h - top_pad - 4);
+        icon_side = std::max(16, icon_side);
+        QRect thumb(0, 0, icon_side, icon_side);
+        thumb.moveCenter(QPoint(static_cast<int>(br.center().x()), top_pad + icon_side / 2));
+        const QPoint local = event->pos().toPoint();
+        const QString tag = tag_chip_at(thumb, fi->path(), local);
+        if (!tag.isEmpty()) {
+          view_->notify_tag_chip_clicked(tag);
+          event->accept();
+          return;
+        }
+      }
+    }
     event->accept();
     return;
   }

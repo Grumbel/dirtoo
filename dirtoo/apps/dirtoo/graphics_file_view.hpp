@@ -9,6 +9,7 @@
 #include <QPointF>
 #include <QSize>
 #include <QSet>
+#include <QString>
 #include <vector>
 
 class QGraphicsScene;
@@ -114,11 +115,13 @@ public:
   void notify_activated(const QModelIndex& index);
   void notify_middle_clicked(const QModelIndex& index);
   void notify_context_menu(const QPoint& global_pos, const QModelIndex& index);
+  void notify_tag_chip_clicked(const QString& tag_name);
 
 signals:
   void activated(const QModelIndex& index);
   void middle_clicked(const QModelIndex& index);
   void context_menu_requested(const QPoint& global_pos, const QModelIndex& index);
+  void tag_chip_clicked(const QString& tag_name);
   void selection_changed();
   /// dest_dir empty → current location (MainWindow decides)
   void files_dropped(const QList<QUrl>& urls, Qt::DropAction action, const QString& dest_dir);

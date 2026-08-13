@@ -6,12 +6,131 @@
 #include "tag_job.hpp"
 #include "activity_monitor.hpp"
 
-#include <QInputDialog>
+#include "dirtoo/tags/tag_store.hpp"
+
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QCompleter>
+#include <QHBoxLayout>
+#include <QLabel>
 #include <QLineEdit>
+#include <QListWidget>
 #include <QMessageBox>
 #include <QProgressDialog>
+#include <QStringListModel>
+#include <QVBoxLayout>
 
 namespace dirtoo::app {
+namespace {
+
+/// Split a free-form tag field on commas and/or whitespace into unique names.
+QStringList split_tag_names(const QString& raw)
+{
+  QStringList out;
+  QString cur;
+  auto flush = [&] {
+    const QString t = cur.trimmed();
+    cur.clear();
+    if (t.isEmpty() || out.contains(t)) {
+      return;
+    }
+    out << t;
+  };
+  for (QChar ch : raw) {
+    if (ch == QLatin1Char(',') || ch.isSpace()) {
+      flush();
+    } else {
+      cur.append(ch);
+    }
+  }
+  flush();
+  return out;
+}
+
+QStringList known_tag_names()
+{
+  QStringList names;
+  dirtoo::tags::TagStore store;
+  std::string err;
+  if (!store.open(dirtoo::tags::TagStore::default_path(), &err)) {
+    return names;
+  }
+  for (const auto& def : store.list_tags()) {
+    names << QString::fromStdString(def.name);
+  }
+  names.sort(Qt::CaseInsensitive);
+  return names;
+}
+
+/// Dialog: line edit (multi tag, completer) + clickable list of existing tags.
+class TagNameDialog : public QDialog {
+public:
+  explicit TagNameDialog(int file_count, QWidget* parent = nullptr)
+      : QDialog(parent)
+  {
+    setWindowTitle(QStringLiteral("Tag"));
+    auto* layout = new QVBoxLayout(this);
+    layout->addWidget(new QLabel(
+        QStringLiteral("Tag name(s) for %1 file(s).\n"
+                       "Separate multiple tags with spaces or commas.\n"
+                       "Click a known tag below to append it.")
+            .arg(file_count),
+        this));
+
+    edit_ = new QLineEdit(this);
+    edit_->setPlaceholderText(QStringLiteral("e.g. work, game:doom location-paris"));
+    layout->addWidget(edit_);
+
+    known_ = known_tag_names();
+    auto* model = new QStringListModel(known_, this);
+    auto* completer = new QCompleter(model, this);
+    completer->setCaseSensitivity(Qt::CaseInsensitive);
+    completer->setFilterMode(Qt::MatchContains);
+    edit_->setCompleter(completer);
+
+    list_ = new QListWidget(this);
+    list_->addItems(known_);
+    list_->setSelectionMode(QAbstractItemView::SingleSelection);
+    list_->setMinimumHeight(160);
+    layout->addWidget(list_);
+    connect(list_, &QListWidget::itemClicked, this, [this](QListWidgetItem* item) {
+      if (item == nullptr) {
+        return;
+      }
+      QString text = edit_->text().trimmed();
+      const QString name = item->text();
+      if (text.isEmpty()) {
+        edit_->setText(name);
+      } else {
+        // Avoid duplicates in the field.
+        const QStringList parts = split_tag_names(text);
+        if (!parts.contains(name)) {
+          edit_->setText(text + QLatin1Char(' ') + name);
+        }
+      }
+      edit_->setFocus();
+      edit_->setCursorPosition(edit_->text().size());
+    });
+
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
+    // GNOME order via app style hint.
+    connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
+    connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
+    layout->addWidget(buttons);
+
+    edit_->setFocus();
+    resize(420, 360);
+  }
+
+  [[nodiscard]] QStringList tags() const { return split_tag_names(edit_->text()); }
+
+private:
+  QLineEdit* edit_ = nullptr;
+  QListWidget* list_ = nullptr;
+  QStringList known_;
+};
+
+} // namespace
 
 TagController::TagController(QObject* parent)
     : QObject(parent)
@@ -43,12 +162,12 @@ void TagController::tag_files(std::vector<dirtoo::fs::FileInfo> selection)
     return;
   }
 
-  bool ok = false;
-  const QString tag = QInputDialog::getText(
-      dialog_parent_, QStringLiteral("Tag"),
-      QStringLiteral("Tag name for %1 file(s):").arg(static_cast<int>(files.size())),
-      QLineEdit::Normal, QString(), &ok);
-  if (!ok || tag.trimmed().isEmpty()) {
+  TagNameDialog dlg(static_cast<int>(files.size()), dialog_parent_);
+  if (dlg.exec() != QDialog::Accepted) {
+    return;
+  }
+  const QStringList tag_list = dlg.tags();
+  if (tag_list.isEmpty()) {
     return;
   }
 
@@ -60,11 +179,13 @@ void TagController::tag_files(std::vector<dirtoo::fs::FileInfo> selection)
   progress->setAttribute(Qt::WA_DeleteOnClose);
   progress->setValue(0);
 
+  const QString tag_label = tag_list.join(QLatin1Char(','));
+
   // Hash + archive extract on a worker thread (AGENTS: no hash on GUI).
-  auto* job = new TagJob(std::move(files), tag.trimmed(), this);
+  auto* job = new TagJob(std::move(files), tag_list, this);
   connect(progress, &QProgressDialog::canceled, job, &TagJob::cancel);
   connect(job, &TagJob::progress, this,
-          [progress, tag_label = tag.trimmed()](int done, int total_n, const QString& name) {
+          [progress, tag_label](int done, int total_n, const QString& name) {
             if (progress == nullptr) {
               return;
             }
@@ -110,9 +231,8 @@ void TagController::tag_files(std::vector<dirtoo::fs::FileInfo> selection)
             job->deleteLater();
           });
   {
-    const QString activity = tag.trimmed().isEmpty()
-                                 ? QStringLiteral("Tagging")
-                                 : QStringLiteral("Tagging %1").arg(tag.trimmed());
+    const QString activity = tag_label.isEmpty() ? QStringLiteral("Tagging")
+                                                 : QStringLiteral("Tagging %1").arg(tag_label);
     ActivityMonitor::instance().set_task(QStringLiteral("tag"), activity, 0, total);
   }
   job->start();

@@ -18,7 +18,7 @@ namespace dirtoo::app {
 class TagJob : public QObject {
   Q_OBJECT
 public:
-  TagJob(std::vector<dirtoo::fs::FileInfo> files, QString tag, QObject* parent = nullptr);
+  TagJob(std::vector<dirtoo::fs::FileInfo> files, QStringList tags, QObject* parent = nullptr);
   ~TagJob() override;
 
   void start();
@@ -31,7 +31,7 @@ signals:
 
 private:
   std::vector<dirtoo::fs::FileInfo> files_;
-  QString tag_;
+  QStringList tags_;
   struct Impl;
   Impl* impl_ = nullptr;
 };
