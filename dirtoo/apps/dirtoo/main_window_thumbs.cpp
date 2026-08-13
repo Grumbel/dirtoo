@@ -194,9 +194,8 @@ void MainWindow::on_thumbnail_ready(const fs::Location& location, const QString&
   }
   if (model_ != nullptr) {
     model_->set_thumbnail(key, QIcon(pix));
-  }
-  // Refresh "thumbs N/M" in the status bar (cheap; only when pending remain).
-  if (model_ != nullptr && model_->thumbnail_counts().pending > 0) {
+    // Always refresh so the last pending → ready transition clears the
+    // ActivityMonitor "Thumbnails" task (previously skipped when pending hit 0).
     update_status_selection();
   }
 }
@@ -237,9 +236,8 @@ void MainWindow::on_thumbnail_failed(const fs::Location& location, const QString
   } else {
     model_->clear_thumbnail(key);
   }
-  if (model_->thumbnail_counts().pending > 0) {
-    update_status_selection();
-  }
+  // Always refresh so finishing the last pending item clears ActivityMonitor.
+  update_status_selection();
 }
 
 void MainWindow::on_reload_thumbnails()

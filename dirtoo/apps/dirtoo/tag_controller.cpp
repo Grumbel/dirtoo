@@ -63,18 +63,21 @@ void TagController::tag_files(std::vector<dirtoo::fs::FileInfo> selection)
   // Hash + archive extract on a worker thread (AGENTS: no hash on GUI).
   auto* job = new TagJob(std::move(files), tag.trimmed(), this);
   connect(progress, &QProgressDialog::canceled, job, &TagJob::cancel);
-  connect(job, &TagJob::progress, this, [progress](int done, int total_n, const QString& name) {
-    if (progress == nullptr) {
-      return;
-    }
-    progress->setMaximum(total_n);
-    progress->setValue(done);
-    if (!name.isEmpty()) {
-      progress->setLabelText(QStringLiteral("Tagging %1…").arg(name));
-    }
-    ActivityMonitor::instance().set_task(QStringLiteral("tag"), QStringLiteral("Tagging"), done,
-                                         total_n);
-  });
+  connect(job, &TagJob::progress, this,
+          [progress, tag_label = tag.trimmed()](int done, int total_n, const QString& name) {
+            if (progress == nullptr) {
+              return;
+            }
+            progress->setMaximum(total_n);
+            progress->setValue(done);
+            if (!name.isEmpty()) {
+              progress->setLabelText(QStringLiteral("Tagging %1…").arg(name));
+            }
+            const QString activity =
+                tag_label.isEmpty() ? QStringLiteral("Tagging")
+                                    : QStringLiteral("Tagging %1").arg(tag_label);
+            ActivityMonitor::instance().set_task(QStringLiteral("tag"), activity, done, total_n);
+          });
   connect(job, &TagJob::failed, this, [this, progress, job](const QString& message) {
     if (progress != nullptr) {
       progress->close();
@@ -106,6 +109,12 @@ void TagController::tag_files(std::vector<dirtoo::fs::FileInfo> selection)
             }
             job->deleteLater();
           });
+  {
+    const QString activity = tag.trimmed().isEmpty()
+                                 ? QStringLiteral("Tagging")
+                                 : QStringLiteral("Tagging %1").arg(tag.trimmed());
+    ActivityMonitor::instance().set_task(QStringLiteral("tag"), activity, 0, total);
+  }
   job->start();
   progress->show();
 }
