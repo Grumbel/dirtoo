@@ -12,7 +12,9 @@ add_executable(dirtoo-tests
   test_filter.cpp
   test_hash.cpp
   test_tag_store.cpp
+  test_directory_load_worker.cpp
   ${CMAKE_SOURCE_DIR}/apps/dirtoo/clipboard.cpp
+  ${CMAKE_SOURCE_DIR}/apps/dirtoo/directory_load_worker.cpp
 )
 
 target_include_directories(dirtoo-tests PRIVATE

@@ -1047,7 +1047,7 @@ Full file inventory + notes: **`AUDIT.md`** (section *Full source inventory + au
 - [ ] **D5 — Store writer queue** — Serialize SQLite writes for tags + checksums.
 - [x] **D6 — Dual icon paint stacks** — Launch flash unified in `paint_launch_flash` (icon_tile_paint); badges/status/tags already shared. Residual: caption layout still view-specific.
 - [x] **D7 — Fewer modal error boxes** — Tag skip/fail and Checksum job failure → status / message banner + ActivityMonitor log (no modal for batch outcomes).
-- [ ] **C4 — Tests** — `hash_file` / `hash_file_quick` + TagStore concurrent open/CRUD smoke done; still open: DirectoryLoadWorker cancel (Qt worker); filter `checksummed`/`tagged` already partly covered.
+- [x] **C4 — Tests** — `hash_file` / `hash_file_quick` + TagStore smoke + DirectoryLoadWorker list/cancel/next-gen; filter `checksummed`/`tagged` partly covered.
 
 ### Intentionally out of scope (still)
 

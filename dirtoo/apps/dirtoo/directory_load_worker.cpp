@@ -16,8 +16,9 @@ DirectoryLoadWorker::DirectoryLoadWorker(QObject* parent)
 
 void DirectoryLoadWorker::cancel()
 {
-  // Force any in-flight load() to observe a mismatched generation.
-  cancel_generation_.store(0, std::memory_order_relaxed);
+  // Invalidate whatever generation is in flight (including generation 0).
+  const quint64 cur = cancel_generation_.load(std::memory_order_relaxed);
+  cancel_generation_.store(cur ^ ~quint64{0}, std::memory_order_relaxed);
 }
 
 void DirectoryLoadWorker::load(const QString& path, quint64 generation)
