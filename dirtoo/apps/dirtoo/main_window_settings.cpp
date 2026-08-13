@@ -11,6 +11,9 @@
 #include "checksum_dialog.hpp"
 
 #include "dirtoo/fs/location.hpp"
+#include "dirtoo/fs/file_info.hpp"
+#include "dirtoo/tags/tag_store.hpp"
+#include "activity_monitor.hpp"
 
 #include <QInputDialog>
 #include <QProgressDialog>
@@ -20,6 +23,8 @@
 #include <QLineEdit>
 #include "size_format.hpp"
 #include <QHeaderView>
+#include <filesystem>
+#include <set>
 
 namespace dirtoo::app {
 
@@ -283,9 +288,94 @@ void MainWindow::on_tag_manager()
       tree_view_->viewport()->update();
     }
   });
+  connect(dlg, &TagManagerDialog::show_tag_files, this, [this, dlg](const QString& tag) {
+    open_tag_collection(tag);
+    dlg->close();
+  });
   dlg->show();
   dlg->raise();
   dlg->activateWindow();
+}
+
+void MainWindow::open_tag_collection(const QString& tag_name)
+{
+  const QString key = tag_name.trimmed();
+  if (key.isEmpty()) {
+    return;
+  }
+
+  // Leave any live recursive search; tag view is its own result session.
+  stop_search();
+
+  ActivityMonitor::instance().set_task(QStringLiteral("tag-view"),
+                                       QStringLiteral("Loading tag:%1…").arg(key), -1, -1);
+
+  dirtoo::tags::TagStore store;
+  std::string err;
+  if (!store.open(dirtoo::tags::TagStore::default_path(), &err)) {
+    ActivityMonitor::instance().clear_task(QStringLiteral("tag-view"));
+    QMessageBox::warning(this, QStringLiteral("Tags"),
+                         QStringLiteral("Cannot open tags database:\n%1")
+                             .arg(QString::fromStdString(err)));
+    return;
+  }
+
+  const auto tagged = store.files_for_tag(key.toStdString());
+  std::vector<dirtoo::fs::FileInfo> items;
+  items.reserve(tagged.size());
+  std::set<std::string> seen;
+  int missing = 0;
+  for (const auto& tf : tagged) {
+    for (const auto& path_str : tf.paths) {
+      if (!seen.insert(path_str).second) {
+        continue;
+      }
+      // Archive member URLs stay as path keys; FileInfo::from_path only works for
+      // real files. Skip non-existent paths (moved/deleted) with a count.
+      if (path_str.find("://") != std::string::npos) {
+        // Virtual / archive URL — try Location-based synthetic entry.
+        try {
+          auto loc = dirtoo::fs::Location::from_url(path_str);
+          items.push_back(dirtoo::fs::FileInfo::from_location(loc));
+        } catch (...) {
+          ++missing;
+        }
+        continue;
+      }
+      std::error_code ec;
+      const std::filesystem::path p{path_str};
+      if (!std::filesystem::exists(p, ec) || ec) {
+        ++missing;
+        continue;
+      }
+      items.push_back(dirtoo::fs::FileInfo::from_path(p));
+    }
+  }
+
+  // Search-session style: watcher must not wipe this synthetic listing until
+  // the user navigates to a real directory.
+  search_session_.active = true;
+  search_session_.results.clear();
+  search_session_.batch.clear();
+  search_session_.status_matched = 0;
+
+  collection_.set_items(std::move(items));
+  filter_search_.set_filter_text({});
+  refresh_list();
+  request_thumbnails_for_visible();
+
+  const QString url = QStringLiteral("tag://%1").arg(key);
+  location_chrome_.show_line_edit();
+  if (location_chrome_.edit() != nullptr) {
+    location_chrome_.edit()->setText(url);
+  }
+
+  ActivityMonitor::instance().clear_task(QStringLiteral("tag-view"));
+  QString msg = QStringLiteral("%1 file(s) with tag:%2").arg(collection_.visible_items().size()).arg(key);
+  if (missing > 0) {
+    msg += QStringLiteral(" (%1 missing path(s) skipped)").arg(missing);
+  }
+  set_status(msg);
 }
 
 void MainWindow::apply_settings(const AppSettings& s)

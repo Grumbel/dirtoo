@@ -30,16 +30,26 @@ bool edit_tag_properties(QWidget* parent, const QString& name, QString* label, Q
 {
   QDialog dlg(parent);
   dlg.setWindowTitle(QStringLiteral("Edit Tag — %1").arg(name));
-  dlg.setMinimumWidth(420);
+  dlg.setMinimumSize(520, 320);
+  dlg.resize(560, 360);
   auto* layout = new QVBoxLayout(&dlg);
+  layout->setSpacing(12);
 
   auto* form = new QFormLayout();
+  form->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
+  form->setRowWrapPolicy(QFormLayout::DontWrapRows);
+  form->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
+  form->setHorizontalSpacing(12);
+  form->setVerticalSpacing(10);
+
   auto* name_lbl = new QLabel(name, &dlg);
   name_lbl->setTextInteractionFlags(Qt::TextSelectableByMouse);
+  name_lbl->setMinimumWidth(280);
   form->addRow(QStringLiteral("Name (key)"), name_lbl);
 
   auto* label_edit = new QLineEdit(*label, &dlg);
   label_edit->setPlaceholderText(QStringLiteral("Display text (defaults to name)"));
+  label_edit->setMinimumWidth(280);
   form->addRow(QStringLiteral("Label"), label_edit);
 
   auto* color_row = new QWidget(&dlg);
@@ -48,6 +58,7 @@ bool edit_tag_properties(QWidget* parent, const QString& name, QString* label, Q
   auto* color_edit = new QLineEdit(*color, &dlg);
   color_edit->setPlaceholderText(QStringLiteral("#rrggbb or empty for auto"));
   auto* color_btn = new QPushButton(QStringLiteral("Pick…"), color_row);
+  color_edit->setMinimumWidth(220);
   color_layout->addWidget(color_edit, 1);
   color_layout->addWidget(color_btn);
   form->addRow(QStringLiteral("Color"), color_row);
@@ -58,6 +69,7 @@ bool edit_tag_properties(QWidget* parent, const QString& name, QString* label, Q
   auto* badge_edit = new QLineEdit(*badge, &dlg);
   badge_edit->setPlaceholderText(QStringLiteral("Theme icon, file path, or empty"));
   auto* badge_btn = new QPushButton(QStringLiteral("Browse…"), badge_row);
+  badge_edit->setMinimumWidth(220);
   badge_layout->addWidget(badge_edit, 1);
   badge_layout->addWidget(badge_btn);
   form->addRow(QStringLiteral("Badge"), badge_row);
@@ -155,13 +167,17 @@ TagManagerDialog::TagManagerDialog(QWidget* parent)
   rename_btn_ = new QPushButton(QStringLiteral("Rename…"), this);
   edit_btn_ = new QPushButton(QStringLiteral("Edit…"), this);
   delete_btn_ = new QPushButton(QStringLiteral("Delete…"), this);
+  show_btn_ = new QPushButton(QStringLiteral("Show files"), this);
+  show_btn_->setToolTip(QStringLiteral("List all files with this tag in the main window (tag://)"));
   rename_btn_->setEnabled(false);
   edit_btn_->setEnabled(false);
   delete_btn_->setEnabled(false);
+  show_btn_->setEnabled(false);
   auto* refresh_btn = new QPushButton(QStringLiteral("Refresh"), this);
   row->addWidget(rename_btn_);
   row->addWidget(edit_btn_);
   row->addWidget(delete_btn_);
+  row->addWidget(show_btn_);
   row->addWidget(refresh_btn);
   row->addStretch(1);
   auto* buttons = new QDialogButtonBox(QDialogButtonBox::Close, this);
@@ -171,6 +187,7 @@ TagManagerDialog::TagManagerDialog(QWidget* parent)
   connect(rename_btn_, &QPushButton::clicked, this, &TagManagerDialog::rename_selected);
   connect(edit_btn_, &QPushButton::clicked, this, &TagManagerDialog::edit_selected);
   connect(delete_btn_, &QPushButton::clicked, this, &TagManagerDialog::delete_selected);
+  connect(show_btn_, &QPushButton::clicked, this, &TagManagerDialog::show_selected_files);
   connect(refresh_btn, &QPushButton::clicked, this, &TagManagerDialog::reload);
   connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
   connect(tree_, &QTreeWidget::itemSelectionChanged, this, &TagManagerDialog::on_selection_changed);
@@ -187,10 +204,31 @@ TagManagerDialog::TagManagerDialog(QWidget* parent)
 
 void TagManagerDialog::on_selection_changed()
 {
-  const bool has = !tree_->selectedItems().isEmpty();
+  const bool has = tree_->currentItem() != nullptr;
   rename_btn_->setEnabled(has);
   edit_btn_->setEnabled(has);
   delete_btn_->setEnabled(has);
+  show_btn_->setEnabled(has);
+}
+
+
+QString TagManagerDialog::selected_tag_name() const
+{
+  QTreeWidgetItem* item = tree_ != nullptr ? tree_->currentItem() : nullptr;
+  if (item == nullptr) {
+    return {};
+  }
+  return item->text(0).trimmed();
+}
+
+void TagManagerDialog::show_selected_files()
+{
+  const QString name = selected_tag_name();
+  if (name.isEmpty()) {
+    return;
+  }
+  emit show_tag_files(name);
+  // Keep manager open; user can switch tags.
 }
 
 void TagManagerDialog::reload()

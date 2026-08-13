@@ -965,6 +965,19 @@ Primary algo for identity: **SHA-256**. Always compute the set in one pass.
 4. `dirtoo-tags` + `dt-tag`  
 5. `tag:` filter + badges
 
+
+#### Agent session 2026-08-13 (checksummed / tag view / progress)
+
+- [x] **`checksummed:yes|no` predicate** — cache hit only (no hashing on filter);
+      aliases `hashed:`, `csum:`.
+- [x] **Tag Manager Edit Tag dialog sizing** — min 520×320, ExpandingFieldsGrow,
+      wider line edits.
+- [x] **Progress reporting polish** — task summary includes percent when total known;
+      headline elide at 72 chars.
+- [x] **Show files for a tag in main view** — Tag Manager **Show files** loads matching
+      paths into a search-like session; location chrome shows `tag://name`.
+      Full `Location` protocol still deferred (see Feature ideas).
+
 ## Feature ideas (backlog — not committed work)
 
 Useful product ideas gathered during the 2026-08-13 sessions. None are required
@@ -973,9 +986,9 @@ for MVP parity; pick when polishing tagging / large-library workflows.
 | Idea | Notes |
 |------|--------|
 | **QuickFilter untagged chips** | Done: `Untagged` / `Untagged images` auto-chips. |
-| **`checksummed:yes\|no` predicate** | Stricter untagged = known SHA-256 and no tags; avoids treating never-scanned files as untagged. |
+| **`checksummed:yes\|no` predicate** | Done. |
 | **Pin “Untagged images” by default** | Optional first-run pin with subtree scope. |
-| **Tag Manager → filter this tag** | Button sets `tag:name` in the main window (chip click already does this in views). |
+| **Tag Manager → show tag files** | Done: **Show files** → virtual `tag://name` listing (search-session style). Full Location protocol later. |
 | **Bulk checksum-then-tag** | From Tag… when cache misses, offer “Hash selection first” with progress (TagJob already hashes; expose as explicit step). |
 | **Live tags.sqlite watch** | Chip cache invalidation when another process tags files (inotify on the DB file). |
 | **Tag stats in Tag Manager** | Sort by count; histogram; last-used (needs `tagged_at` aggregate). |

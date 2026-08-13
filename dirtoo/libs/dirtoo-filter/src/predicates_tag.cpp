@@ -63,6 +63,16 @@ struct TagLookup {
     }
     return tags.tags_for_path(checksums, path_key(item));
   }
+
+  [[nodiscard]] bool has_checksum(const FilterItem& item) const
+  {
+    std::lock_guard<std::mutex> lock(mu);
+    if (!open) {
+      return false;
+    }
+    auto dig = checksums.get(path_key(item));
+    return dig.has_value() && dig->sha256_hex.size() == 64;
+  }
 };
 
 class TagNameMatch : public MatchFunc {
@@ -103,6 +113,22 @@ public:
 
 private:
   bool want_any_;
+};
+
+class ChecksummedMatch : public MatchFunc {
+public:
+  explicit ChecksummedMatch(bool want_present)
+      : want_present_(want_present)
+  {
+  }
+  bool matches(const FilterItem& item) const override
+  {
+    const bool has = TagLookup::instance().has_checksum(item);
+    return want_present_ ? has : !has;
+  }
+
+private:
+  bool want_present_;
 };
 
 } // namespace
@@ -148,5 +174,21 @@ MatchFuncPtr make_tagged(std::string_view arg)
   }
   return std::make_shared<AlwaysFalse>();
 }
+
+MatchFuncPtr make_checksummed(std::string_view arg)
+{
+  std::string a(arg);
+  for (char& c : a) {
+    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  }
+  if (a == "yes" || a == "true" || a == "1" || a == "any") {
+    return std::make_shared<ChecksummedMatch>(true);
+  }
+  if (a == "no" || a == "false" || a == "0" || a == "none") {
+    return std::make_shared<ChecksummedMatch>(false);
+  }
+  return std::make_shared<AlwaysFalse>();
+}
+
 
 } // namespace dirtoo::filter

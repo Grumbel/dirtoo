@@ -6,6 +6,8 @@
 #include <QMutex>
 #include <QMutexLocker>
 
+#include <algorithm>
+
 namespace dirtoo::app {
 namespace {
 
@@ -41,7 +43,8 @@ QString ActivityTask::summary() const
     return {};
   }
   if (total > 0 && done >= 0) {
-    return QStringLiteral("%1 %2/%3").arg(label).arg(done).arg(total);
+    const int pct = static_cast<int>((100.0 * std::min(done, total)) / total);
+    return QStringLiteral("%1 %2/%3 (%4%)").arg(label).arg(done).arg(total).arg(pct);
   }
   if (done >= 0 && total <= 0) {
     return QStringLiteral("%1 %2").arg(label).arg(done);
@@ -148,10 +151,10 @@ QString ActivityMonitor::headline() const
   if (parts.isEmpty()) {
     return QStringLiteral("Working…");
   }
-  // Keep toolbar text short.
+  // Keep toolbar text short but allow multi-task detail.
   QString out = parts.join(QStringLiteral(" · "));
-  if (out.size() > 48) {
-    out = out.left(45) + QStringLiteral("…");
+  if (out.size() > 72) {
+    out = out.left(69) + QStringLiteral("…");
   }
   return out;
 }

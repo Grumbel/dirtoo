@@ -60,5 +60,6 @@ namespace dirtoo::filter {
 [[nodiscard]] MatchFuncPtr make_tag(std::string_view tag_name);
 /// tagged:yes|no — any / no tags on the file.
 [[nodiscard]] MatchFuncPtr make_tagged(std::string_view arg);
+[[nodiscard]] MatchFuncPtr make_checksummed(std::string_view arg);
 
 } // namespace dirtoo::filter

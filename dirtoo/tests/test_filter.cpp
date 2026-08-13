@@ -462,3 +462,12 @@ TEST_CASE("normalize_tag_name keeps hyphen and colon namespace", "[tags]")
   REQUIRE(tag_name_matches("location-london", "location-*"));
   REQUIRE_FALSE(tag_name_matches("other-paris", "location-*"));
 }
+
+TEST_CASE("checksummed:yes|no parses", "[filter]")
+{
+  REQUIRE_NOTHROW(dirtoo::filter::parse_filter("checksummed:yes"));
+  REQUIRE_NOTHROW(dirtoo::filter::parse_filter("checksummed:no"));
+  REQUIRE_NOTHROW(dirtoo::filter::parse_filter("type:image checksummed:yes tagged:no"));
+  REQUIRE_NOTHROW(dirtoo::filter::parse_filter("hashed:yes"));
+}
+

@@ -302,6 +302,9 @@ private:
     if (c == "tagged") {
       return make_tagged(arg);
     }
+    if (c == "checksummed" || c == "hashed" || c == "csum") {
+      return make_checksummed(arg);
+    }
     if (c == "size") {
       return make_size(arg);
     }
@@ -397,6 +400,7 @@ Terms (juxtaposition = AND, OR joins alternatives):
   size:>1M        size compare (K/M/G); also size:10K-2M or size:10K..2M
   tag:work        files tagged "work" (needs checksum + dt-tag)
   tagged:yes|no   any tags / no tags (checksum cache lookup only)
+  checksummed:yes|no  known SHA-256 in cache / never hashed (aliases: hashed:, csum:)
   type:dir        type:file|dir|video|image|archive|audio (t:)
   width:>=1920    image/video width (needs ffprobe)
   height:=1080    image/video height
@@ -465,7 +469,10 @@ std::string filter_help_html()
 <tr><td><code>tag:work</code></td>
     <td>Files with tag <i>work</i> (checksum cache + tags DB; no hashing)</td></tr>
 <tr><td><code>tagged:yes</code> / <code>tagged:no</code></td>
-    <td>Any tags / no tags on the file</td></tr>
+<td>Any tags / no tags (checksum cache)</td></tr>
+<tr><td><code>checksummed:yes</code> / <code>checksummed:no</code></td>
+    <td>Known SHA-256 in checksum cache / never hashed (no hashing on filter;
+        aliases <code>hashed:</code>, <code>csum:</code>)</td></tr>
 <tr><td><code>size:&gt;1M</code></td>
     <td>Size compare (<code>K</code>/<code>M</code>/<code>G</code>);
         also ranges like <code>size:10K-2M</code> / <code>size:10K..2M</code></td></tr>
