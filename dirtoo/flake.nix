@@ -280,14 +280,23 @@
           dirtoo = {
             type = "app";
             program = "${dirtoo}/bin/dirtoo";
+            meta = {
+              description = "dirtoo GUI file manager";
+            };
           };
           dt-filter = {
             type = "app";
             program = "${dirtoo-filter}/bin/dt-filter";
+            meta = {
+              description = "dirtoo filter DSL CLI (dt-filter)";
+            };
           };
           dt-copy = {
             type = "app";
             program = "${dirops}/bin/dt-copy";
+            meta = {
+              description = "dirtoo copy tool (dt-copy)";
+            };
           };
         };
 
