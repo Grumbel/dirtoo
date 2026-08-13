@@ -4,6 +4,7 @@
 #include "main_window_common.hpp"
 
 #include "clipboard.hpp"
+#include "path_display.hpp"
 #include "conflict_dialog.hpp"
 #include "name_input_dialog.hpp"
 #include "operations_history.hpp"
@@ -13,105 +14,6 @@
 #include <filesystem>
 
 namespace dirtoo::app {
-
-namespace {
-
-/// Collapse intermediate path segments when the path is long.
-/// Example: /usr/local/bin/tool -> /u…/l…/b…/tool (basename always full).
-/// Leaves the path unchanged when it already fits max_chars.
-QString elide_path_for_title(QString path, int max_chars = 96)
-{
-  path.replace(QLatin1Char('\\'), QLatin1Char('/'));
-  if (path.size() <= max_chars || max_chars < 8) {
-    return path;
-  }
-
-  // Preserve a trailing slash meaning "directory root style" only if path is "/".
-  const bool absolute = path.startsWith(QLatin1Char('/'));
-  QStringList parts = path.split(QLatin1Char('/'), Qt::KeepEmptyParts);
-  // Absolute "/a/b" -> ["", "a", "b"]; collapse only non-empty intermediate parts.
-  if (parts.isEmpty()) {
-    return path;
-  }
-
-  auto joined = [&]() {
-    QString out;
-    for (int i = 0; i < parts.size(); ++i) {
-      if (i > 0) {
-        out += QLatin1Char('/');
-      }
-      out += parts[i];
-    }
-    // split("a") on non-absolute keeps single element without leading slash — fine.
-    if (absolute && !out.startsWith(QLatin1Char('/'))) {
-      out.prepend(QLatin1Char('/'));
-    }
-    return out;
-  };
-
-  // Indices of collapsible segments: non-empty, not the last non-empty component.
-  int last_nonempty = -1;
-  for (int i = parts.size() - 1; i >= 0; --i) {
-    if (!parts[i].isEmpty()) {
-      last_nonempty = i;
-      break;
-    }
-  }
-  if (last_nonempty < 0) {
-    return path;
-  }
-
-  auto is_collapsed = [](const QString& s) {
-    return s.size() >= 2 && s.endsWith(QChar(0x2026)); // …
-  };
-
-  // Prefer collapsing leftmost long segments first (keep basename + nearby parents readable longer).
-  while (joined().size() > max_chars) {
-    int victim = -1;
-    for (int i = 0; i < last_nonempty; ++i) {
-      if (parts[i].isEmpty()) {
-        continue;
-      }
-      if (!is_collapsed(parts[i]) && parts[i].size() > 1) {
-        victim = i;
-        break;
-      }
-    }
-    if (victim < 0) {
-      // Everything intermediate already minimal; hard-trim from the left of the string.
-      QString j = joined();
-      if (j.size() <= max_chars) {
-        return j;
-      }
-      // Keep basename region: "…/basename"
-      const QString base = parts[last_nonempty];
-      const QString suffix = QLatin1Char('/') + base;
-      const int keep = max_chars - 1; // for leading …
-      if (keep <= suffix.size()) {
-        return QChar(0x2026) + base.right(std::max(1, max_chars - 1));
-      }
-      return QChar(0x2026) + j.right(max_chars - 1);
-    }
-    // First character + ellipsis (… U+2026).
-    const QChar head = parts[victim].at(0);
-    parts[victim] = QString(head) + QChar(0x2026);
-  }
-  return joined();
-}
-
-QString location_display_path(const dirtoo::fs::Location& loc)
-{
-  if (loc.empty()) {
-    return QString();
-  }
-  if (loc.is_archive() || loc.is_tag()) {
-    return QString::fromStdString(loc.as_url());
-  }
-  return QString::fromStdString(loc.as_path().string());
-}
-
-} // namespace
-
 
 void MainWindow::set_clipboard(ClipboardMode mode)
 {
@@ -167,36 +69,9 @@ void MainWindow::update_mutation_actions()
 
 void MainWindow::update_window_title()
 {
-  const QString path = location_display_path(location_);
-  // Title bar has room for a longer path; taskbar/icon labels often ~20 chars.
-  const QString title_path =
-      path.isEmpty() ? QString() : elide_path_for_title(path, /*max_chars=*/96);
-  const QString icon_path =
-      path.isEmpty() ? QString() : elide_path_for_title(path, /*max_chars=*/20);
-
-  QString title;
-  if (!title_path.isEmpty()) {
-    title = title_path + QStringLiteral(" — dirtoo");
-  } else {
-    title = QStringLiteral("dirtoo");
-  }
-  if (read_only_) {
-    title += QStringLiteral(" [read-only]");
-  }
-  setWindowTitle(title);
-
-  // Separate minimized/taskbar name where the WM supports WM_ICON_NAME.
-  // Keep path-first; drop the " — dirtoo" suffix so the ~20 char budget is path.
-  QString icon;
-  if (!icon_path.isEmpty()) {
-    icon = icon_path;
-    if (read_only_) {
-      icon += QStringLiteral(" [ro]");
-    }
-  } else {
-    icon = read_only_ ? QStringLiteral("dirtoo [ro]") : QStringLiteral("dirtoo");
-  }
-  setWindowIconText(icon);
+  const WindowTitleTexts titles = make_window_title_texts(location_, read_only_);
+  setWindowTitle(titles.window_title);
+  setWindowIconText(titles.icon_text);
 }
 
 void MainWindow::on_toggle_read_only(bool checked)

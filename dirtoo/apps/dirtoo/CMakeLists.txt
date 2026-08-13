@@ -71,6 +71,8 @@ qt_add_executable(dirtoo-app
   app_settings.hpp
   sort_settings.cpp
   sort_settings.hpp
+  path_display.cpp
+  path_display.hpp
   size_format.cpp
   size_format.hpp
   open_with.cpp
