@@ -248,10 +248,14 @@ void TagController::tag_files(std::vector<dirtoo::fs::FileInfo> selection)
   std::vector<dirtoo::fs::FileInfo> files;
   files.reserve(selection.size());
   for (auto& fi : selection) {
+    // Regular files only (directories are not tagged). Search hits and tag://
+    // listings are synthetic FileInfos but still have a real path and
+    // is_regular_file() — do not reject those (previously required non-synthetic
+    // or archive, which blocked Tag… from recursive search results).
     if (!fi.is_regular_file()) {
       continue;
     }
-    if (fi.is_synthetic() && !fi.location().is_archive()) {
+    if (fi.path().empty() && !fi.location().is_archive()) {
       continue;
     }
     files.push_back(std::move(fi));
@@ -259,7 +263,7 @@ void TagController::tag_files(std::vector<dirtoo::fs::FileInfo> selection)
   if (files.empty()) {
     QMessageBox::information(dialog_parent_, QStringLiteral("Tag"),
                              QStringLiteral("Select one or more regular files first "
-                                            "(disk files or archive members)."));
+                                            "(disk files, search hits, or archive members)."));
     return;
   }
 
