@@ -2235,3 +2235,367 @@ Status: **present** / **partial** / **missing** / **OOS** (out of scope for the 
 3. Verify flake installs icons to `share/dirtoo/icons` and GUI finds them without `DIRTOO_ICON_DIR`
 4. Only re-open AUDIT for file-level notes when a bug fix needs a permanent record
 
+
+
+---
+
+# Full source inventory + audit pass (2026-08-13)
+
+Tip at audit: `1ed4ded` (quick sample hash + non-modal tagging). **234** `.cpp`/`.hpp` files under `dirtoo/`.
+
+## Inventory by module
+
+### `apps/dirtoo/` (152 files)
+
+- `apps/dirtoo/about_dialog.cpp`
+- `apps/dirtoo/about_dialog.hpp`
+- `apps/dirtoo/activity_dialog.cpp`
+- `apps/dirtoo/activity_dialog.hpp`
+- `apps/dirtoo/activity_indicator.cpp`
+- `apps/dirtoo/activity_indicator.hpp`
+- `apps/dirtoo/activity_monitor.cpp`
+- `apps/dirtoo/activity_monitor.hpp`
+- `apps/dirtoo/app_settings.cpp`
+- `apps/dirtoo/app_settings.hpp`
+- `apps/dirtoo/archive_listing.cpp`
+- `apps/dirtoo/archive_listing.hpp`
+- `apps/dirtoo/archive_member_cache.cpp`
+- `apps/dirtoo/archive_member_cache.hpp`
+- `apps/dirtoo/badge_icons.hpp`
+- `apps/dirtoo/bookmarks.cpp`
+- `apps/dirtoo/bookmarks.hpp`
+- `apps/dirtoo/checksum_dialog.cpp`
+- `apps/dirtoo/checksum_dialog.hpp`
+- `apps/dirtoo/clipboard.cpp`
+- `apps/dirtoo/clipboard.hpp`
+- `apps/dirtoo/conflict_dialog.cpp`
+- `apps/dirtoo/conflict_dialog.hpp`
+- `apps/dirtoo/devices_controller.cpp`
+- `apps/dirtoo/devices_controller.hpp`
+- `apps/dirtoo/directory_load_worker.cpp`
+- `apps/dirtoo/directory_load_worker.hpp`
+- `apps/dirtoo/directory_session.hpp`
+- `apps/dirtoo/directory_thumbnail_worker.cpp`
+- `apps/dirtoo/directory_thumbnail_worker.hpp`
+- `apps/dirtoo/directory_tree_model.cpp`
+- `apps/dirtoo/directory_tree_model.hpp`
+- `apps/dirtoo/drag_action_overlay.cpp`
+- `apps/dirtoo/drag_action_overlay.hpp`
+- `apps/dirtoo/file_context_menu.cpp`
+- `apps/dirtoo/file_context_menu.hpp`
+- `apps/dirtoo/file_item_delegate.cpp`
+- `apps/dirtoo/file_item_delegate.hpp`
+- `apps/dirtoo/file_list_model.cpp`
+- `apps/dirtoo/file_list_model.hpp`
+- `apps/dirtoo/file_list_model_thumbs.cpp`
+- `apps/dirtoo/file_views.hpp`
+- `apps/dirtoo/filter_history.cpp`
+- `apps/dirtoo/filter_history.hpp`
+- `apps/dirtoo/filter_search_chrome.cpp`
+- `apps/dirtoo/filter_search_chrome.hpp`
+- `apps/dirtoo/filter_worker.cpp`
+- `apps/dirtoo/filter_worker.hpp`
+- `apps/dirtoo/graphics_file_item.cpp`
+- `apps/dirtoo/graphics_file_item.hpp`
+- `apps/dirtoo/graphics_file_view.cpp`
+- `apps/dirtoo/graphics_file_view.hpp`
+- `apps/dirtoo/graphics_file_view_dnd.cpp`
+- `apps/dirtoo/graphics_file_view_selection.cpp`
+- `apps/dirtoo/group_header_paint.hpp`
+- `apps/dirtoo/history_menu.cpp`
+- `apps/dirtoo/history_menu.hpp`
+- `apps/dirtoo/icon_tile_paint.hpp`
+- `apps/dirtoo/leap_widget.cpp`
+- `apps/dirtoo/leap_widget.hpp`
+- `apps/dirtoo/list_pipeline_workers.cpp`
+- `apps/dirtoo/list_pipeline_workers.hpp`
+- `apps/dirtoo/location_button_bar.cpp`
+- `apps/dirtoo/location_button_bar.hpp`
+- `apps/dirtoo/location_chrome.cpp`
+- `apps/dirtoo/location_chrome.hpp`
+- `apps/dirtoo/location_icons.hpp`
+- `apps/dirtoo/location_menu_helpers.hpp`
+- `apps/dirtoo/location_url.hpp`
+- `apps/dirtoo/main.cpp`
+- `apps/dirtoo/main_window.cpp`
+- `apps/dirtoo/main_window.hpp`
+- `apps/dirtoo/main_window_actions.cpp`
+- `apps/dirtoo/main_window_common.hpp`
+- `apps/dirtoo/main_window_context.cpp`
+- `apps/dirtoo/main_window_events.cpp`
+- `apps/dirtoo/main_window_filter.cpp`
+- `apps/dirtoo/main_window_load.cpp`
+- `apps/dirtoo/main_window_location.cpp`
+- `apps/dirtoo/main_window_nav.cpp`
+- `apps/dirtoo/main_window_ops.cpp`
+- `apps/dirtoo/main_window_settings.cpp`
+- `apps/dirtoo/main_window_setup.cpp`
+- `apps/dirtoo/main_window_setup_central.cpp`
+- `apps/dirtoo/main_window_setup_menus.cpp`
+- `apps/dirtoo/main_window_setup_menus_edit.cpp`
+- `apps/dirtoo/main_window_setup_menus_file.cpp`
+- `apps/dirtoo/main_window_setup_menus_go.cpp`
+- `apps/dirtoo/main_window_setup_menus_sort.cpp`
+- `apps/dirtoo/main_window_setup_menus_view.cpp`
+- `apps/dirtoo/main_window_setup_toolbar.cpp`
+- `apps/dirtoo/main_window_sidebar.cpp`
+- `apps/dirtoo/main_window_sort.cpp`
+- `apps/dirtoo/main_window_thumbs.cpp`
+- `apps/dirtoo/main_window_transfer.cpp`
+- `apps/dirtoo/main_window_view.cpp`
+- `apps/dirtoo/message_area.cpp`
+- `apps/dirtoo/message_area.hpp`
+- `apps/dirtoo/name_input_dialog.cpp`
+- `apps/dirtoo/name_input_dialog.hpp`
+- `apps/dirtoo/navigation_history.cpp`
+- `apps/dirtoo/navigation_history.hpp`
+- `apps/dirtoo/open_history.cpp`
+- `apps/dirtoo/open_history.hpp`
+- `apps/dirtoo/open_with.cpp`
+- `apps/dirtoo/open_with.hpp`
+- `apps/dirtoo/operations_history.cpp`
+- `apps/dirtoo/operations_history.hpp`
+- `apps/dirtoo/path_completion_service.cpp`
+- `apps/dirtoo/path_completion_service.hpp`
+- `apps/dirtoo/path_completion_worker.cpp`
+- `apps/dirtoo/path_completion_worker.hpp`
+- `apps/dirtoo/preferences_dialog.cpp`
+- `apps/dirtoo/preferences_dialog.hpp`
+- `apps/dirtoo/properties_dialog.cpp`
+- `apps/dirtoo/properties_dialog.hpp`
+- `apps/dirtoo/quick_filter_bar.cpp`
+- `apps/dirtoo/quick_filter_bar.hpp`
+- `apps/dirtoo/search_controller.cpp`
+- `apps/dirtoo/search_controller.hpp`
+- `apps/dirtoo/search_session.hpp`
+- `apps/dirtoo/search_worker.cpp`
+- `apps/dirtoo/search_worker.hpp`
+- `apps/dirtoo/sidebar_controller.cpp`
+- `apps/dirtoo/sidebar_controller.hpp`
+- `apps/dirtoo/sidebar_places.cpp`
+- `apps/dirtoo/sidebar_places.hpp`
+- `apps/dirtoo/size_format.cpp`
+- `apps/dirtoo/size_format.hpp`
+- `apps/dirtoo/sort_worker.cpp`
+- `apps/dirtoo/sort_worker.hpp`
+- `apps/dirtoo/tag_controller.cpp`
+- `apps/dirtoo/tag_controller.hpp`
+- `apps/dirtoo/tag_job.cpp`
+- `apps/dirtoo/tag_job.hpp`
+- `apps/dirtoo/tag_manager_dialog.cpp`
+- `apps/dirtoo/tag_manager_dialog.hpp`
+- `apps/dirtoo/tag_paint.hpp`
+- `apps/dirtoo/theme_icons.hpp`
+- `apps/dirtoo/thumbnail_coordinator.cpp`
+- `apps/dirtoo/thumbnail_coordinator.hpp`
+- `apps/dirtoo/transfer_controller.cpp`
+- `apps/dirtoo/transfer_controller.hpp`
+- `apps/dirtoo/transfer_dialog.cpp`
+- `apps/dirtoo/transfer_dialog.hpp`
+- `apps/dirtoo/transfer_worker.cpp`
+- `apps/dirtoo/transfer_worker.hpp`
+- `apps/dirtoo/udisks_client.cpp`
+- `apps/dirtoo/udisks_client.hpp`
+- `apps/dirtoo/view_mode.hpp`
+- `apps/dirtoo/view_zoom.cpp`
+- `apps/dirtoo/view_zoom.hpp`
+
+### `libs/dirops/` (6 files)
+
+- `libs/dirops/include/dirops/error.hpp`
+- `libs/dirops/include/dirops/ops.hpp`
+- `libs/dirops/include/dirops/util.hpp`
+- `libs/dirops/src/error.cpp`
+- `libs/dirops/src/ops.cpp`
+- `libs/dirops/src/util.cpp`
+
+### `libs/dirtoo-archive/` (5 files)
+
+- `libs/dirtoo-archive/include/dirtoo/archive/archive_index.hpp`
+- `libs/dirtoo-archive/include/dirtoo/archive/archive_manager.hpp`
+- `libs/dirtoo-archive/src/archive_index.cpp`
+- `libs/dirtoo-archive/src/archive_libarchive.cpp`
+- `libs/dirtoo-archive/src/archive_manager.cpp`
+
+### `libs/dirtoo-collection/` (5 files)
+
+- `libs/dirtoo-collection/include/dirtoo/collection/file_collection.hpp`
+- `libs/dirtoo-collection/include/dirtoo/collection/grouper.hpp`
+- `libs/dirtoo-collection/include/dirtoo/collection/sorter.hpp`
+- `libs/dirtoo-collection/src/file_collection.cpp`
+- `libs/dirtoo-collection/src/sorter.cpp`
+
+### `libs/dirtoo-filter/` (20 files)
+
+- `libs/dirtoo-filter/include/dirtoo/filter/filter_item.hpp`
+- `libs/dirtoo-filter/include/dirtoo/filter/match_func.hpp`
+- `libs/dirtoo-filter/include/dirtoo/filter/media_meta_cache.hpp`
+- `libs/dirtoo-filter/include/dirtoo/filter/media_probe.hpp`
+- `libs/dirtoo-filter/include/dirtoo/filter/parser.hpp`
+- `libs/dirtoo-filter/include/dirtoo/filter/predicates.hpp`
+- `libs/dirtoo-filter/include/dirtoo/filter/search.hpp`
+- `libs/dirtoo-filter/src/media_meta_cache.cpp`
+- `libs/dirtoo-filter/src/media_probe.cpp`
+- `libs/dirtoo-filter/src/parser.cpp`
+- `libs/dirtoo-filter/src/predicates_content.cpp`
+- `libs/dirtoo-filter/src/predicates_detail.hpp`
+- `libs/dirtoo-filter/src/predicates_fuzzy.cpp`
+- `libs/dirtoo-filter/src/predicates_media.cpp`
+- `libs/dirtoo-filter/src/predicates_meta.cpp`
+- `libs/dirtoo-filter/src/predicates_misc.cpp`
+- `libs/dirtoo-filter/src/predicates_name.cpp`
+- `libs/dirtoo-filter/src/predicates_tag.cpp`
+- `libs/dirtoo-filter/src/search.cpp`
+- `libs/dirtoo-filter/tools/dt_filter.cpp`
+
+### `libs/dirtoo-fs/` (4 files)
+
+- `libs/dirtoo-fs/include/dirtoo/fs/file_info.hpp`
+- `libs/dirtoo-fs/include/dirtoo/fs/location.hpp`
+- `libs/dirtoo-fs/src/file_info.cpp`
+- `libs/dirtoo-fs/src/location.cpp`
+
+### `libs/dirtoo-hash/` (5 files)
+
+- `libs/dirtoo-hash/include/dirtoo/hash/checksum_store.hpp`
+- `libs/dirtoo-hash/include/dirtoo/hash/digests.hpp`
+- `libs/dirtoo-hash/include/dirtoo/hash/hash_file.hpp`
+- `libs/dirtoo-hash/src/checksum_store.cpp`
+- `libs/dirtoo-hash/src/hash_file.cpp`
+
+### `libs/dirtoo-tags/` (4 files)
+
+- `libs/dirtoo-tags/include/dirtoo/tags/tag_def.hpp`
+- `libs/dirtoo-tags/include/dirtoo/tags/tag_store.hpp`
+- `libs/dirtoo-tags/src/tag_name.cpp`
+- `libs/dirtoo-tags/src/tag_store.cpp`
+
+### `libs/dirtoo-thumbnail/` (2 files)
+
+- `libs/dirtoo-thumbnail/include/dirtoo/thumbnail/thumbnailer.hpp`
+- `libs/dirtoo-thumbnail/src/thumbnailer.cpp`
+
+### `libs/dirtoo-watcher/` (2 files)
+
+- `libs/dirtoo-watcher/include/dirtoo/watcher/directory_watcher.hpp`
+- `libs/dirtoo-watcher/src/directory_watcher.cpp`
+
+### `tests/` (7 files)
+
+- `tests/test_archive_index.cpp`
+- `tests/test_clipboard_text.cpp`
+- `tests/test_collection.cpp`
+- `tests/test_dirops.cpp`
+- `tests/test_dirops_rename.cpp`
+- `tests/test_filter.cpp`
+- `tests/test_location.cpp`
+
+### `tools/` (22 files)
+
+- `tools/cli_common.hpp`
+- `tools/dt_archiveinfo.cpp`
+- `tools/dt_checksum.cpp`
+- `tools/dt_copy.cpp`
+- `tools/dt_desktop.cpp`
+- `tools/dt_find.cpp`
+- `tools/dt_fsck.cpp`
+- `tools/dt_icon.cpp`
+- `tools/dt_mediainfo.cpp`
+- `tools/dt_metadata.cpp`
+- `tools/dt_mime.cpp`
+- `tools/dt_mkdir.cpp`
+- `tools/dt_mkfile.cpp`
+- `tools/dt_move.cpp`
+- `tools/dt_rename.cpp`
+- `tools/dt_rm.cpp`
+- `tools/dt_rmdir.cpp`
+- `tools/dt_swap.cpp`
+- `tools/dt_symlink.cpp`
+- `tools/dt_tag.cpp`
+- `tools/dt_watch.cpp`
+- `tools/json_util.hpp`
+
+## Audit method (this pass)
+
+1. Refresh full file inventory (above).
+2. Pattern scan: blocking I/O on GUI paths, threads, SQLite, TODOs, processEvents.
+3. Targeted reads of MainWindow split, directory load, filter/tag/hash, transfer, graphics, sidebar tree, Location.
+4. Cross-check against residual `TODO.md` and prior AUDIT gaps.
+5. Record **bugs / risks**, **missing features**, and **architecture** items into `TODO.md`.
+
+Not a line-by-line formal proof of every file; high-churn GUI and data-path modules got deeper review than thin CLI wrappers.
+
+## Findings summary (2026-08-13)
+
+### Critical / high
+
+| ID | Area | Issue |
+|----|------|-------|
+| A1 | `open_location` / archive | `archive_listing_.load()` still runs **on the GUI thread** with WaitCursor — large archives freeze UI |
+| A2 | `Location::from_path` | `weakly_canonical` on every navigation can stall on dead NFS/SMB mounts before async list starts |
+| A3 | SQLite tags/checksums | No `busy_timeout` / no WAL on TagStore or ChecksumStore — concurrent TagJobs + UI Tag Manager can hit `SQLITE_BUSY` or corrupt under load |
+| A4 | Concurrent `TagJob` | Multiple non-modal jobs share ActivityMonitor id `tag` and open separate DB handles without coordination — progress races; last clear wins |
+| A5 | `inotify_add_watch` | Deferred but still can block when it runs on hung mounts |
+
+### Medium
+
+| ID | Area | Issue |
+|----|------|-------|
+| B1 | MainWindow | Still ~6k lines across many `.cpp` slices; gravity reduction incomplete (settings/ops/actions still fat) |
+| B2 | `tag://` | Virtual listing via `search_session_.active` hack; not a real `Location` protocol — history, watcher, sidebar, filter interaction are fragile |
+| B3 | Quick hash | `hash_file_quick` exists but not in store; no filter `checksummed:quick`; CRC marker `"quick"` is a hack |
+| B4 | List/Icons thumbs | Viewport sampling improved; Detail/List still full model (no row virtualization) |
+| B5 | Icon captions | Wider tiles + wrap; no user-adjustable spacing/cell width preference |
+| B6 | `MediaMetaCache::get` sync wait | CLI path blocks; GUI must only use async `request` — verify no GUI callers of sync get |
+| B7 | Search results | Synthetic FileInfo; metadata/columns may stay empty until something re-stats |
+| B8 | Archive extract on open member | Temp extract under `/tmp/dirtoo-open` — no cleanup policy documented |
+| B9 | Child counts | QtConcurrent ok, but many concurrent dir reads on huge trees can still thrash |
+| B10 | Preferences | Improved tabs; zoom-per-mode ok; no icon spacing, no thumbnail size independent of zoom text |
+| B11 | Operations history | Inspection only — no undo/redo of filesystem ops |
+| B12 | RelativeIcons | Mode exists; unclear discoverability / polish vs normal Icons |
+
+### Lower / polish
+
+| ID | Area | Issue |
+|----|------|-------|
+| C1 | Filter DSL | `type:link` may extra-lstat; content filters still expensive on huge dirs even async |
+| C2 | Devices | UDisks2 only; no non-systemd fallback messaging clarity |
+| C3 | Open With | Desktop file parse is custom — edge cases vs GIO/KService |
+| C4 | Tests | ~67 cases; little GUI/Qt coverage; no tests for TagJob, ThumbnailCoordinator, DirectoryLoadWorker, quick hash |
+| C5 | Tools | Many `dt-*` CLIs; parity/docs uneven |
+| C6 | Clipboard | GNOME + internal MIME; KDE-specific formats partial |
+| C7 | Watcher | inotify + QFileSystemWatcher fallback; network FS often need poll (not implemented) |
+| C8 | flash_launch | Nested QTimers; fine if model lives; no cancel on navigate-away |
+| C9 | Checksum dialog | Modeless good; quick sample not stored (by design) |
+| C10 | Sidebar Places | Bookmarks section ok; ensure_path_visible still walk/stat heavy on deep trees |
+
+### Architecture / cleanup
+
+| ID | Topic | Suggestion |
+|----|-------|------------|
+| D1 | MainWindow façade | Continue extracting: NavController, FilterSession, ArchiveSession already partial — finish settings/ops |
+| D2 | ActivityMonitor ids | Structured task tokens (job id) so concurrent tags/checksums/dir-loads compose |
+| D3 | Virtual locations | Formal `Location` protocols: `tag:`, `search:` (optional) with shared listing backend |
+| D4 | Hash pipeline | Single HashService queue (full vs quick priority) shared by TagJob, ChecksumDialog, filters |
+| D5 | Store layer | WAL + busy_timeout + single writer queue for tags.sqlite / checksums.sqlite |
+| D6 | View abstraction | Unify Graphics vs QListView IconMode paths — List uses QListView, Icons uses Graphics; dual paint stacks |
+| D7 | Error surfaces | Prefer status/Activity over modal QMessageBox for recoverable batch failures |
+| D8 | AUDIT.md size | This inventory supersedes older path lists where filenames moved; prefer `TODO.md` for live work |
+
+### Explicitly OK / improved since prior audit
+
+- Directory listing async + progress + deferred watcher/sidebar
+- Content filter off GUI thread
+- Tag dialog remove + multi-tag + namespaces + glob
+- Checksummed / tagged filters
+- Non-modal TagJob progress
+- Launch flash feedback
+- List multi-column thumbnail sampling
+- Preferences tabs
+- Filter bar default hidden
+- Places Bookmarks heading
+- Selection restore on reorder
+
+### Out of scope (unchanged)
+
+- Archive write, remote VFS, full undo, nested multi-protocol Location stacks

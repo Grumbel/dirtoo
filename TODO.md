@@ -10,9 +10,9 @@ Critical freezes, DnD/Link, content-filter offload, Graphics reuse, and core
 parity features are in place. Catch suite: 57 cases (Overwrite-directory test
 aligned with into-dir resolution + `remove_for_overwrite` safety).
 
-**Residual focus:** MainWindow gravity (ongoing), QuickFilter UX polish, archive
-force-reload edge cases, optional list virtualization. Tags + QuickFilter + filter
-ranges landed 2026-08-12 (see *Session notes*).
+**Residual focus:** Audit 2026-08-13 (see bottom): archive TOC off GUI, SQLite WAL,
+concurrent TagJobs, `tag://` Location, MainWindow gravity, quick-hash productization.
+Prior: QuickFilter polish, list virtualization optional.
 
 Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 
@@ -997,4 +997,54 @@ for MVP parity; pick when polishing tagging / large-library workflows.
 | **Dual-pane / compare** | Out of current modular focus; large feature. |
 | **Detail list virtualization** | Optional for 100k+ dirs; model still full. |
 | **Smart albums** | Saved QuickFilter pins with labels are already a light form of this. |
+
+
+---
+
+## Audit findings (2026-08-13)
+
+Full file inventory + notes: **`AUDIT.md`** (section *Full source inventory + audit pass (2026-08-13)*).  
+~234 `.cpp`/`.hpp` files under `dirtoo/`. Tip reviewed: post–quick-hash / non-modal tag.
+
+### Bugs / risks (do these)
+
+- [ ] **A1 — Archive TOC on GUI thread** — `archive_listing_.load()` in `open_location` blocks with WaitCursor. Move list/index build to a worker (same pattern as `DirectoryLoadWorker`).
+- [ ] **A2 — `weakly_canonical` on navigate** — `Location::from_path` / `from_human` can hang on dead network mounts before async listing. Consider `from_path_unchecked` for UI navigation, or timeout/async canonicalize.
+- [ ] **A3 — SQLite busy / no WAL** — `TagStore` and `ChecksumStore` open without `busy_timeout` or WAL (meta cache has WAL). Concurrent TagJobs + Tag Manager can fail or block. Add `PRAGMA busy_timeout` + `journal_mode=WAL` (and ideally a single writer).
+- [ ] **A4 — Concurrent TagJobs** — Non-modal tagging allows overlapping jobs; shared ActivityMonitor id `tag` races; multiple DB writers. Queue jobs or unique task ids + serialized store access.
+- [ ] **A5 — Watcher start on slow mounts** — `inotify_add_watch` deferred but can still stall when it runs. Soft-fail / timeout / skip watch on ETIMEDOUT.
+- [ ] **B7 — Search hit metadata** — Synthetic search `FileInfo`s skip stat; Detail columns (size already set; mtime/type/media) may stay blank until refresh/stat.
+- [ ] **B8 — Open-from-archive temp files** — Extract under temp for open; define cleanup (age/size) so `/tmp/dirtoo-open` does not grow forever.
+- [ ] **C8 — Launch flash timers** — Nested `QTimer`s not cancelled on navigate-away; low risk of painting wrong row after list replace (path key mitigates).
+
+### Missing features / product
+
+- [ ] **B2 — Real `tag://` Location** — Today: synthetic list + `search_session_.active`. Need protocol support in Location, history, breadcrumb, filter/search interaction, exit path.
+- [ ] **B3 — Quick hash productization** — API + Checksum “Quick sample” exist; optional separate store/column; filter token; never feed sample digests into tag identity.
+- [ ] **B5 — Icon spacing control** — User-adjustable tile width / gap (Preferences or View menu); filenames still crop on extreme lengths.
+- [ ] **B10 — Preferences gaps** — Thumbnail crop/zoom ok; no spacing; no “default open app”; no hash policy (full vs prompt on large files).
+- [ ] **B11 — Undo** — Operations history is log-only; no restore.
+- [ ] **B12 — RelativeIcons polish** — Mode present; document in UI/help; verify layout quality.
+- [ ] **C2 — Devices without UDisks** — Clear empty state / install hint.
+- [ ] **C7 — Network FS watcher** — Poll fallback when inotify unreliable.
+- [ ] **Filter: untagged in recursive search** — Works if expression supports `tagged:no`; confirm search path uses same predicates.
+- [ ] **Tag autocomplete in filter bar** — Chip/list exists in Tag dialog; filter bar still plain text.
+- [ ] **Background full checksum queue** — Idle hashing of visible folder for faster `checksummed:` / tagging later.
+
+### Architecture / cleanup
+
+- [ ] **D1 — MainWindow gravity** — Continue extracting collaborators; `main_window_ops.cpp` / `actions.cpp` / `settings.cpp` still large.
+- [ ] **D2 — ActivityMonitor job tokens** — Per-job ids so concurrent tag/checksum/dir-load compose in the busy badge.
+- [ ] **D4 — Shared HashService** — One queue for full/quick hash used by TagJob, ChecksumDialog, future idle scanner.
+- [ ] **D5 — Store writer queue** — Serialize SQLite writes for tags + checksums.
+- [ ] **D6 — Dual icon paint stacks** — GraphicsFileItem vs FileItemDelegate divergence (flash, tags, captions); share more via `icon_tile_paint`.
+- [ ] **D7 — Fewer modal error boxes** — Batch tag/checksum failures → status + Activity details dialog.
+- [ ] **C4 — Tests** — Add `hash_file_quick` unit tests; TagStore concurrent open smoke; DirectoryLoadWorker cancel; filter `checksummed`/`tagged` already partly covered.
+
+### Intentionally out of scope (still)
+
+- Archive write/modify
+- Remote VFS (SMB/SFTP as first-class Location)
+- Full multi-step undo
+- Nested multi-payload Location stacks / `search://` as Location (unless we choose B2-style protocols)
 
