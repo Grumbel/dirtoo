@@ -135,6 +135,16 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
     // Distinct tile background for hidden (dot) files when shown.
     painter->fillRect(br, QColor(200, 200, 210));
   }
+  // Brief flash after open/launch so slow app start still feels acknowledged.
+  if (idx.data(LaunchFlashRole).toBool()) {
+    QColor flash = highlight.isValid() ? highlight : QColor(80, 140, 255);
+    flash.setAlpha(160);
+    painter->fillRect(br, flash);
+    QPen pen(flash.darker(120), 2);
+    painter->setPen(pen);
+    painter->setBrush(Qt::NoBrush);
+    painter->drawRoundedRect(br.adjusted(1, 1, -1, -1), 4, 4);
+  }
   if (drop_target_) {
     QColor fill = highlight;
     fill.setAlpha(120);

@@ -58,6 +58,41 @@ void FileListModel::set_thumbnail_failed(const QString& path)
   emit_path_changed(path);
 }
 
+void FileListModel::flash_launch(const QString& path)
+{
+  if (path.isEmpty()) {
+    return;
+  }
+  // Short blink so double-click feedback is obvious while the external app starts.
+  launch_flash_paths_.insert(path);
+  emit_path_changed(path);
+  QTimer::singleShot(90, this, [this, path] {
+    launch_flash_paths_.remove(path);
+    emit_path_changed(path);
+    QTimer::singleShot(90, this, [this, path] {
+      launch_flash_paths_.insert(path);
+      emit_path_changed(path);
+      QTimer::singleShot(90, this, [this, path] {
+        launch_flash_paths_.remove(path);
+        emit_path_changed(path);
+        QTimer::singleShot(90, this, [this, path] {
+          launch_flash_paths_.insert(path);
+          emit_path_changed(path);
+          QTimer::singleShot(140, this, [this, path] {
+            launch_flash_paths_.remove(path);
+            emit_path_changed(path);
+          });
+        });
+      });
+    });
+  });
+}
+
+bool FileListModel::is_launch_flash(const QString& path) const
+{
+  return launch_flash_paths_.contains(path);
+}
+
 void FileListModel::mark_new(const QString& path)
 {
   new_paths_.insert(path);

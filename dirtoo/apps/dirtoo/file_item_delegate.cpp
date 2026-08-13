@@ -228,6 +228,11 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
       painter->fillRect(opt.rect, QColor(200, 200, 210));
     }
     style->drawPrimitive(QStyle::PE_PanelItemViewItem, &opt, painter, opt.widget);
+    if (index.data(LaunchFlashRole).toBool()) {
+      QColor flash = opt.palette.color(QPalette::Highlight);
+      flash.setAlpha(140);
+      painter->fillRect(opt.rect, flash);
+    }
 
     const int icon = opt.decorationSize.isValid()
                          ? std::max(opt.decorationSize.width(), opt.decorationSize.height())
@@ -308,6 +313,11 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     painter->fillRect(opt.rect, c);
   } else if (index.data(IsHiddenRole).toBool()) {
     painter->fillRect(opt.rect, QColor(200, 200, 210));
+  }
+  if (index.data(LaunchFlashRole).toBool()) {
+    QColor flash = opt.palette.color(QPalette::Highlight);
+    flash.setAlpha(150);
+    painter->fillRect(opt.rect, flash);
   }
 
   const QIcon icon = opt.icon;

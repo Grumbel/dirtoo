@@ -68,6 +68,9 @@ void MainWindow::on_item_activated(const QModelIndex& index)
       if (message_area_ != nullptr) {
         message_area_->show_error(msg);
       }
+    } else if (model_ != nullptr) {
+      model_->flash_launch(QString::fromStdString(fi.path().string()));
+      set_status(QStringLiteral("Opening %1…").arg(QString::fromStdString(fi.basename())));
     }
     return;
   }
@@ -94,7 +97,12 @@ void MainWindow::on_item_activated(const QModelIndex& index)
     if (fs::looks_like_archive(*extracted)) {
       open_location(fs::Location::from_archive(*extracted, {}));
     } else {
-      open_default(*extracted);
+      if (open_default(*extracted)) {
+        if (model_ != nullptr) {
+          model_->flash_launch(QString::fromStdString(fi.path().string()));
+        }
+        set_status(QStringLiteral("Opening %1…").arg(QString::fromStdString(fi.basename())));
+      }
     }
   } else if (fs::looks_like_archive(fi.path())) {
     open_location(fs::Location::from_archive(fi.path(), {}));
@@ -106,6 +114,9 @@ void MainWindow::on_item_activated(const QModelIndex& index)
       if (message_area_ != nullptr) {
         message_area_->show_error(msg);
       }
+    } else if (model_ != nullptr) {
+      model_->flash_launch(QString::fromStdString(fi.path().string()));
+      set_status(QStringLiteral("Opening %1…").arg(QString::fromStdString(fi.basename())));
     }
   }
 }

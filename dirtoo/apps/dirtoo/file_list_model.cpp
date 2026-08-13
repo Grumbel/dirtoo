@@ -129,7 +129,8 @@ void FileListModel::emit_path_changed(const QString& path)
           index(row, static_cast<int>(FileListColumn::Count) - 1);
       emit dataChanged(left, right,
                        {Qt::DecorationRole, Qt::DisplayRole, ThumbnailStatusRole, IsNewRole,
-                        AccessDeniedRole, IsUnreadableRole, IsUnwritableRole, ChildCountRole});
+                        AccessDeniedRole, IsUnreadableRole, IsUnwritableRole, ChildCountRole,
+                        LaunchFlashRole});
       break;
     }
   }
@@ -435,6 +436,10 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
 
   if (role == IsNewRole) {
     return is_new(QString::fromStdString(fi->path().string()));
+  }
+
+  if (role == LaunchFlashRole) {
+    return is_launch_flash(QString::fromStdString(fi->path().string()));
   }
 
   if (role == IsHiddenRole) {

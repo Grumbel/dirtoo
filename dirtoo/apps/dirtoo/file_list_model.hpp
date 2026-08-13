@@ -49,6 +49,8 @@ enum FileListRole {
   IsUnreadableRole = Qt::UserRole + 10,
   /// True when the current user cannot write the entry.
   IsUnwritableRole = Qt::UserRole + 11,
+  /// True while a brief post-launch flash is active (open feedback).
+  LaunchFlashRole = Qt::UserRole + 12,
 };
 
 enum class ThumbnailStatus {
@@ -82,6 +84,10 @@ public:
   void mark_new(const QString& path);
   void clear_new_marks();
   void prune_new_marks(const QSet<QString>& keep_paths);
+
+  /// Brief icon blink after a successful open (search hits and normal files).
+  void flash_launch(const QString& path);
+  [[nodiscard]] bool is_launch_flash(const QString& path) const;
 
   [[nodiscard]] ThumbnailStatus thumbnail_status(const QString& path) const;
   /// Counts of thumbnail states among paths currently tracked (visible requests).
@@ -154,6 +160,7 @@ private:
   /// msecs since epoch when path entered Pending (for stale re-queue).
   QHash<QString, qint64> thumbnail_pending_since_;
   QSet<QString> new_paths_;
+  QSet<QString> launch_flash_paths_;
   QHash<QString, qint64> child_counts_; // -1 = pending, >=0 = known
   QSet<QString> child_count_pending_;
   bool icon_style_ = false;
