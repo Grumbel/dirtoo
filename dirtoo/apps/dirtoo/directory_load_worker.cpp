@@ -30,6 +30,7 @@ void DirectoryLoadWorker::load(const QString& path, quint64 generation)
     items.reserve(256);
     std::error_code ec;
     const auto opts = std::filesystem::directory_options::skip_permission_denied;
+    int seen = 0;
     for (const auto& entry : std::filesystem::directory_iterator(dir_path, opts, ec)) {
       if (ec) {
         ec.clear();
@@ -39,6 +40,11 @@ void DirectoryLoadWorker::load(const QString& path, quint64 generation)
         return; // superseded
       }
       items.push_back(fs::FileInfo::from_directory_entry(entry));
+      ++seen;
+      // Keep the UI informed on slow media without flooding the event queue.
+      if ((seen % 32) == 0) {
+        emit progress(generation, seen);
+      }
     }
     if (cancel_generation_.load(std::memory_order_relaxed) != generation) {
       return;

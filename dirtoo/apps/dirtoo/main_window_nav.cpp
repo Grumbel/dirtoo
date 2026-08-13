@@ -10,6 +10,7 @@
 #include "archive_listing.hpp"
 #include "dirtoo/filter/media_meta_cache.hpp"
 #include <QDir>
+#include <QTimer>
 #include <QFileInfo>
 #include <QSet>
 #include <QMimeDatabase>
@@ -75,15 +76,25 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
       }
     }
   } else {
-    start_watcher_for_location();
-    // Initial listing (watcher no longer emits on start).
+    // List first so status/activity can show “Loading…” before anything that may
+    // block on a slow volume (inotify_add_watch, sidebar path walk).
     reload_directory(false);
+    QTimer::singleShot(0, this, [this] {
+      if (search_session_.active || location_.is_archive()) {
+        return;
+      }
+      start_watcher_for_location();
+      sync_sidebar_to_location();
+    });
   }
 
   if (auto* view = current_view()) {
     view->setFocus(Qt::OtherFocusReason);
   }
-  sync_sidebar_to_location();
+  // Archive path still syncs sidebar immediately (index is local once loaded).
+  if (location_.is_archive()) {
+    sync_sidebar_to_location();
+  }
 
 }
 

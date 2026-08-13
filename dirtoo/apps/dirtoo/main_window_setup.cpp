@@ -79,6 +79,8 @@ void MainWindow::setup_background_workers()
   list_workers_.setup();
   connect(list_workers_.dir_load(), &DirectoryLoadWorker::loaded, this, &MainWindow::on_directory_loaded);
   connect(list_workers_.dir_load(), &DirectoryLoadWorker::failed, this, &MainWindow::on_directory_load_failed);
+  connect(list_workers_.dir_load(), &DirectoryLoadWorker::progress, this,
+          &MainWindow::on_directory_load_progress);
   connect(list_workers_.sort(), &SortWorker::sorted, this, &MainWindow::on_sort_finished);
   connect(list_workers_.filter(), &FilterWorker::filtered, this, &MainWindow::on_filter_finished);
 

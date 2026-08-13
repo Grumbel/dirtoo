@@ -28,6 +28,8 @@ public slots:
   void cancel();
 
 signals:
+  /// Emitted periodically while listing (slow / network drives).
+  void progress(quint64 generation, int entries_seen);
   void loaded(quint64 generation, std::vector<dirtoo::fs::FileInfo> items);
   void failed(quint64 generation, QString error);
 

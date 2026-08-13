@@ -105,6 +105,7 @@ private slots:
   void reload_directory(bool soft);
   void on_directory_loaded(quint64 generation, std::vector<dirtoo::fs::FileInfo> items);
   void on_directory_load_failed(quint64 generation, QString error);
+  void on_directory_load_progress(quint64 generation, int entries_seen);
   void on_sort_finished(quint64 generation, std::vector<dirtoo::fs::FileInfo> items);
   void request_async_sort();
   void update_detail_row_heights();

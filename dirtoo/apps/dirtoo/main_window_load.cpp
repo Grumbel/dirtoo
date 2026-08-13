@@ -2,10 +2,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include "activity_monitor.hpp"
 
 #include "archive_listing.hpp"
 #include "tag_paint.hpp"
 #include <QSet>
+#include <QCoreApplication>
+#include <QEventLoop>
 #include <QStringList>
 #include <filesystem>
 
@@ -77,20 +80,35 @@ void MainWindow::reload_directory(bool soft)
   }
 
   const quint64 gen = list_workers_.next_dir_load_generation();
-  set_status(soft ? QStringLiteral("Refreshing…") : QStringLiteral("Loading…"));
+  const QString path = QString::fromStdString(load_loc.as_path().string());
+  const QString short_path = [&path] {
+    if (path.size() <= 48) {
+      return path;
+    }
+    return QStringLiteral("…") + path.right(45);
+  }();
+  const QString activity =
+      soft ? QStringLiteral("Refreshing %1…").arg(short_path)
+           : QStringLiteral("Loading %1…").arg(short_path);
+  set_status(activity);
+  ActivityMonitor::instance().set_task(QStringLiteral("dir-load"), activity, -1, -1);
+  update_busy_indicator(activity);
+
   // Hard navigation: clear immediately so the old directory does not linger.
   // Soft (watcher): keep showing the previous listing until the worker finishes.
   if (!soft) {
     collection_.clear();
     refresh_list();
+    // Let the empty list + status/busy paint before a slow volume stalls later work.
+    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
   }
 
   if (list_workers_.dir_load() == nullptr) {
+    ActivityMonitor::instance().clear_task(QStringLiteral("dir-load"));
     return;
   }
   // Supersede any in-flight listing (especially important when soft refreshes stack up).
   QMetaObject::invokeMethod(list_workers_.dir_load(), "cancel", Qt::QueuedConnection);
-  const QString path = QString::fromStdString(load_loc.as_path().string());
   QMetaObject::invokeMethod(list_workers_.dir_load(), "load", Qt::QueuedConnection,
                             Q_ARG(QString, path), Q_ARG(quint64, gen));
 }
@@ -104,6 +122,8 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
   if (generation != list_workers_.dir_load_generation() || search_session_.active) {
     return;
   }
+  ActivityMonitor::instance().clear_task(QStringLiteral("dir-load"));
+  update_busy_indicator({});
   // "New" badge: paths that appeared since we last listed this location.
   // Keep marks across soft watcher reloads (Python keeps _new until the item
   // is gone / the directory is left). Only clear when navigating away.
@@ -182,6 +202,8 @@ void MainWindow::on_directory_load_failed(quint64 generation, QString error)
   if (generation != list_workers_.dir_load_generation()) {
     return;
   }
+  ActivityMonitor::instance().clear_task(QStringLiteral("dir-load"));
+  update_busy_indicator({});
   set_status(error);
   if (message_area_ != nullptr) {
     message_area_->show_error(error);
@@ -250,6 +272,17 @@ void MainWindow::rebuild_quick_filters()
   quick_filter_bar_->set_current_directory(cur);
   quick_filter_bar_->rebuild_from_items(collection_.items());
   quick_filter_bar_->set_active_expression(filter_search_.filter_text());
+}
+
+void MainWindow::on_directory_load_progress(quint64 generation, int entries_seen)
+{
+  if (generation != list_workers_.dir_load_generation()) {
+    return;
+  }
+  const QString label = QStringLiteral("Loading… %1 entries").arg(entries_seen);
+  set_status(label);
+  ActivityMonitor::instance().set_task(QStringLiteral("dir-load"), label, entries_seen, -1);
+  update_busy_indicator(label);
 }
 
 } // namespace dirtoo::app
