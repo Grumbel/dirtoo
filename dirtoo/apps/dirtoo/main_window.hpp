@@ -264,6 +264,8 @@ private:
   watcher::DirectoryWatcher watcher_;
   archive::ArchiveManager archive_manager_;
   ArchiveListing archive_listing_;
+  /// Bumped when starting an async archive TOC load; stale results ignored.
+  quint64 archive_index_generation_ = 0;
   DirectorySession dir_session_;
   FileListModel* model_ = nullptr;
 

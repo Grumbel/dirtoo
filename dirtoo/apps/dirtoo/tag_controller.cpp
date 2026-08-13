@@ -3,7 +3,6 @@
 
 #include "tag_controller.hpp"
 
-#include "tag_job.hpp"
 #include "activity_monitor.hpp"
 
 #include "dirtoo/hash/checksum_store.hpp"
@@ -280,31 +279,71 @@ void TagController::tag_files(std::vector<dirtoo::fs::FileInfo> selection)
     return;
   }
 
-  const int total = static_cast<int>(files.size());
-  const QString tag_label = tag_list.join(QLatin1Char(','));
-  const QString activity_verb =
-      (mode == TagJob::Mode::Remove) ? QStringLiteral("Untagging") : QStringLiteral("Tagging");
+  Pending pending;
+  pending.files = std::move(files);
+  pending.tags = tag_list;
+  pending.mode = mode;
+  enqueue_job(std::move(pending));
+}
 
-  // Non-modal: TagJob already runs off the GUI thread. A WindowModal progress
-  // dialog blocked further Tag… actions; ActivityMonitor + status is enough.
-  auto* job = new TagJob(std::move(files), tag_list, mode, this);
+void TagController::enqueue_job(Pending pending)
+{
+  const int n = static_cast<int>(pending.files.size());
+  queue_.push_back(std::move(pending));
+  if (active_job_ != nullptr || queue_.size() > 1) {
+    emit status_message(
+        QStringLiteral("Tag job queued (%1 file(s); %2 waiting)…")
+            .arg(n)
+            .arg(queue_.size() + (active_job_ != nullptr ? 1 : 0) - 1),
+        3000);
+  }
+  start_next_job();
+}
+
+void TagController::start_next_job()
+{
+  if (active_job_ != nullptr || queue_.empty()) {
+    return;
+  }
+  Pending pending = std::move(queue_.front());
+  queue_.pop_front();
+
+  const int total = static_cast<int>(pending.files.size());
+  const QString tag_label = pending.tags.join(QLatin1Char(','));
+  const QString activity_verb =
+      (pending.mode == TagJob::Mode::Remove) ? QStringLiteral("Untagging")
+                                             : QStringLiteral("Tagging");
+  const int seq = ++job_seq_;
+  const QString task_id = QStringLiteral("tag-%1").arg(seq);
+
+  auto* job = new TagJob(std::move(pending.files), pending.tags, pending.mode, this);
+  active_job_ = job;
+  const TagJob::Mode mode = pending.mode;
+
   connect(job, &TagJob::progress, this,
-          [tag_label, activity_verb](int done, int total_n, const QString& name) {
+          [task_id, tag_label, activity_verb](int done, int total_n, const QString& name) {
             QString activity =
                 tag_label.isEmpty() ? activity_verb
                                     : QStringLiteral("%1 %2").arg(activity_verb, tag_label);
             if (!name.isEmpty()) {
               activity += QStringLiteral(" — %1").arg(name);
             }
-            ActivityMonitor::instance().set_task(QStringLiteral("tag"), activity, done, total_n);
+            ActivityMonitor::instance().set_task(task_id, activity, done, total_n);
           });
-  connect(job, &TagJob::failed, this, [this, job](const QString& message) {
-    ActivityMonitor::instance().clear_task(QStringLiteral("tag"));
+  connect(job, &TagJob::failed, this, [this, job, task_id](const QString& message) {
+    if (active_job_ == job) {
+      active_job_ = nullptr;
+    }
+    ActivityMonitor::instance().clear_task(task_id);
     QMessageBox::warning(dialog_parent_, QStringLiteral("Tag"), message);
     job->deleteLater();
+    start_next_job();
   });
   connect(job, &TagJob::finished, this,
-          [this, job, mode](int changed, int skipped, const QStringList& problems) {
+          [this, job, mode, task_id](int changed, int skipped, const QStringList& problems) {
+            if (active_job_ == job) {
+              active_job_ = nullptr;
+            }
             const QString done_verb =
                 (mode == TagJob::Mode::Remove) ? QStringLiteral("Removed tags from")
                                                : QStringLiteral("Tagged");
@@ -315,7 +354,7 @@ void TagController::tag_files(std::vector<dirtoo::fs::FileInfo> selection)
             if (!problems.isEmpty() && problems.size() <= 5) {
               msg += QLatin1Char('\n') + problems.join(QLatin1Char('\n'));
             }
-            ActivityMonitor::instance().clear_task(QStringLiteral("tag"));
+            ActivityMonitor::instance().clear_task(task_id);
             emit status_message(msg, 5000);
             if (changed > 0) {
               emit tags_applied(changed);
@@ -324,15 +363,16 @@ void TagController::tag_files(std::vector<dirtoo::fs::FileInfo> selection)
               QMessageBox::warning(dialog_parent_, QStringLiteral("Tag"), msg);
             }
             job->deleteLater();
+            start_next_job();
           });
-  {
-    const QString activity =
-        tag_label.isEmpty() ? activity_verb
-                            : QStringLiteral("%1 %2").arg(activity_verb, tag_label);
-    ActivityMonitor::instance().set_task(QStringLiteral("tag"), activity, 0, total);
-    emit status_message(QStringLiteral("%1 (%2 file(s))…").arg(activity).arg(total), 3000);
-  }
+
+  const QString activity =
+      tag_label.isEmpty() ? activity_verb
+                          : QStringLiteral("%1 %2").arg(activity_verb, tag_label);
+  ActivityMonitor::instance().set_task(task_id, activity, 0, total);
+  emit status_message(QStringLiteral("%1 (%2 file(s))…").arg(activity).arg(total), 3000);
   job->start();
 }
 
 } // namespace dirtoo::app
+

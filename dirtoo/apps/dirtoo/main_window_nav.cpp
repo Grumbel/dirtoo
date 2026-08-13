@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include "activity_monitor.hpp"
 #include "location_menu_helpers.hpp"
 #include "location_icons.hpp"
 #include <QMenu>
@@ -11,6 +12,7 @@
 #include "dirtoo/filter/media_meta_cache.hpp"
 #include <QDir>
 #include <QTimer>
+#include <QtConcurrent>
 #include <QFileInfo>
 #include <QSet>
 #include <QMimeDatabase>
@@ -56,24 +58,43 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
       start_watcher_for_location();
       on_directory_changed();
     } else {
-      QApplication::setOverrideCursor(Qt::WaitCursor);
-      std::string list_err;
-      const bool listed = archive_listing_.load(location_.as_path(), &list_err);
-      QApplication::restoreOverrideCursor();
-      if (listed) {
-        set_status(QStringLiteral("Archive index: %1 entries")
-                                   .arg(archive_listing_.entries().size()));
-        start_watcher_for_location();
-        on_directory_changed();
-      } else {
-        set_status(QStringLiteral("Listing failed (%1); extracting…")
-                                   .arg(QString::fromStdString(list_err)));
-        if (archive_manager_.status(fs::Location::from_archive(location_.as_path(), {}))
-            != archive::ExtractStatus::Ready) {
-          QApplication::setOverrideCursor(Qt::WaitCursor);
-        }
-        archive_manager_.open(location_);
-      }
+      // TOC listing can take a long time on large archives — never block the GUI.
+      const auto path = location_.as_path();
+      const quint64 gen = ++archive_index_generation_;
+      set_status(QStringLiteral("Indexing archive…"));
+      ActivityMonitor::instance().set_task(QStringLiteral("archive-index"),
+                                           QStringLiteral("Indexing archive…"), -1, -1);
+      update_busy_indicator(QStringLiteral("Indexing archive…"));
+      (void)QtConcurrent::run([this, path, gen]() {
+        ArchiveListing listed;
+        std::string list_err;
+        const bool ok = listed.load(path, &list_err);
+        QMetaObject::invokeMethod(
+            this,
+            [this, path, gen, ok, list_err, listing = std::move(listed)]() mutable {
+              if (gen != archive_index_generation_ || location_.as_path() != path) {
+                return; // navigated away
+              }
+              ActivityMonitor::instance().clear_task(QStringLiteral("archive-index"));
+              update_busy_indicator({});
+              if (ok) {
+                archive_listing_ = std::move(listing);
+                set_status(QStringLiteral("Archive index: %1 entries")
+                               .arg(archive_listing_.entries().size()));
+                start_watcher_for_location();
+                on_directory_changed();
+              } else {
+                set_status(QStringLiteral("Listing failed (%1); extracting…")
+                               .arg(QString::fromStdString(list_err)));
+                if (archive_manager_.status(fs::Location::from_archive(path, {}))
+                    != archive::ExtractStatus::Ready) {
+                  QApplication::setOverrideCursor(Qt::WaitCursor);
+                }
+                archive_manager_.open(location_);
+              }
+            },
+            Qt::QueuedConnection);
+      });
     }
   } else {
     // List first so status/activity can show “Loading…” before anything that may

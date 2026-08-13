@@ -100,6 +100,10 @@ bool TagStore::open(std::filesystem::path db_path, std::string* error)
     return false;
   }
   sqlite3_exec(raw, "PRAGMA foreign_keys = ON", nullptr, nullptr, nullptr);
+  // Concurrent TagJobs / UI + workers: wait instead of SQLITE_BUSY; WAL helps readers.
+  sqlite3_exec(raw, "PRAGMA busy_timeout=5000", nullptr, nullptr, nullptr);
+  sqlite3_exec(raw, "PRAGMA journal_mode=WAL", nullptr, nullptr, nullptr);
+  sqlite3_exec(raw, "PRAGMA synchronous=NORMAL", nullptr, nullptr, nullptr);
   db_ = raw;
   if (!ensure_schema(error)) {
     close();
