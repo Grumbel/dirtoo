@@ -1,134 +1,126 @@
 # dirtoo
 
-**dirtoo** is a local file manager for Linux. It is built for people who live in
-folders of photos, videos, and mixed media: fast filtering, rich thumbnails, and
-keyboard-friendly browsing without giving up ordinary copy/paste and drag-and-drop.
+A local file manager for Linux, aimed at media-heavy folders: filtering,
+thumbnails, tags, archives, and keyboard-friendly browsing—without dropping
+ordinary copy/paste and drag-and-drop.
 
-> This application is under active development. Prefer not to rely on it as the
-> only tool for irreplaceable data. A one-time warning appears at startup (you
-> can dismiss it permanently).
+> Still under development. Prefer not to rely on it as the only tool for
+> irreplaceable data. A one-time warning appears at startup (you can dismiss
+> it for good).
 
-The active implementation is **C++23 / Qt6**. An older Python version lives in
-`../dirtoo-py/` as a behavioral reference only.
+This is the **C++23 / Qt6** app. The older Python version in `../dirtoo-py/`
+is a behavioral reference only.
 
 ---
 
 ## What you can do
 
-### Browse and navigate
+### Browse
 
-- Open folders from the **location bar** (breadcrumb or editable path).
-- **Back / Forward**, **Parent**, and **Home** from the toolbar or shortcuts.
-- **Sidebar** with places, bookmarks, and removable devices (mount / unmount / eject when UDisks is available).
-- **Bookmarks**, **history**, and **Recently Opened** files.
-- **New window** (Ctrl+N). **Middle-click** a folder, breadcrumb segment, or history entry to open it in another window.
-- Browse **archives** (zip, tar, tar.gz, 7z, rar, …) read-only by double-clicking them.
-- Window title shows the current path (shortened when long); the taskbar/icon name uses a tighter form where the desktop supports it.
+- Location bar as breadcrumb or editable path (**Ctrl+L**)
+- Back / Forward, Parent, Home
+- Sidebar: standard places, **Bookmarks** (separate section), removable devices
+  (mount / unmount / eject when UDisks is around)
+- History and recently opened files
+- New window (**Ctrl+N**); middle-click a folder or breadcrumb to open another window
+- **Archives** (zip, tar, tar.gz, 7z, rar, …) browse read-only by opening them
 
-### View modes
+### Views
 
-| Mode | Best for |
+| Mode | Good for |
 |------|----------|
 | **Detail** | Columns, sorting, dense lists |
-| **Icons** | Thumbnails, media badges, visual browsing |
-| **Small icons** | Compact icon grid |
+| **Icons** | Thumbnails and media badges |
+| **Small icons** | Compact grid |
 
-In Icons mode you can **zoom**, switch crop vs letterbox thumbnails, and show
-media badges (size, duration, fps, page count, and similar). Folders can show a
-**montage** of child thumbnails. Hidden files can use a distinct muted look.
-Read- and write-protected files show permission badges.
+Zoom the icon views, choose crop vs letterbox thumbnails, and toggle media
+badges (size, duration, resolution, and similar). Folders can show a small
+montage of their contents. Hidden files and permission-restricted files get
+visual hints so they don’t look identical to everything else.
 
-### Filter (current folder)
+### Filter (this folder only)
 
-The filter bar narrows what you see **in the current directory** without starting
-a full-disk search. Results update as you type; **Enter** keeps the filter and
-returns focus to the file list.
-
-Examples:
+The filter bar narrows the current directory as you type. **Enter** keeps the
+filter and returns focus to the list.
 
 ```text
 *.png
 size:>1M type:file
 size:1M..50M
-type:video
-duration:3-10m
+type:video duration:3-10m
 tag:work
+tagged:no
+checksummed:yes tagged:no
 contains:hello
 date:2024
 aspect:16:9
 (a or b) and not c
 ```
 
-Inclusive ranges use **`lo-hi`** or **`lo..hi`** (e.g. `duration:3-10m` means
-3–10 minutes when the unit is only on the high side). Use **Help → Filter
-expression help** in the app for the full language, or `dt-filter --help` on
-the command line. Filter history is available with **Up / Down** in the filter
-field.
+Ranges use `lo-hi` or `lo..hi` (e.g. `duration:3-10m` is three to ten minutes
+when the unit sits on the high end only). **Help → Filter expression help** in
+the app has the full language; `dt-filter --help` covers the same from the CLI.
+**Up / Down** in the filter field walks recent expressions.
 
-**QuickFilter** chips above the filter line offer one-click `type:…` / `tag:…`
-filters from the current listing; **Pin filter** saves the current expression
-(right-click a pin to edit expression/label, set directory scope, or remove).
+**QuickFilter** chips above the bar offer one-click type and tag filters from
+the current listing (including **Untagged** / **Untagged images** when that
+makes sense). **Pin filter** saves an expression; right-click a pin to edit it,
+limit it to a directory or subtree, or remove it.
 
 ### Search (recursive)
 
-The search row runs a **recursive** search with the same expression language.
-Use it when the file may be nested under the current location.
-
-### Thumbnails
-
-Thumbnails come from the desktop **freedesktop thumbnailer** (D-Bus) when
-available, with sensible fallbacks. Directory tiles can request child thumbs and
-compose a small grid so video-heavy folders still look representative.
-**View → Reload Thumbnails** deletes the on-disk cache for the selection (or
-visible items) and regenerates from scratch.
+**F3** / **Ctrl+F** opens recursive search with the same expression language.
+Use that when the file might live deeper under the current location—not only
+in the folder you’re looking at.
 
 ### Tags
 
-Files are tagged by **content identity** (SHA-256 from the checksum cache —
-never hashed on the GUI thread). Use **Tools → Tag…** (Ctrl+T) on a selection,
-**Tools → Tag Manager…** to list/rename/delete tags and edit label, color, and
-optional badge image, and filter with `tag:name` / `tagged:yes|no`.
+Tags are tied to a file’s content (via checksum), not only its path, so a
+rename or move doesn’t invent a “new” untagged file.
 
-### Select, open, and edit
+- **Tag…** on the selection (context menu or **Ctrl+T**): add or remove tags;
+  multiple names in one go (spaces or commas); pick from known tags or type
+  with completion
+- **Tag Manager**: rename definitions, edit label/color/badge, **Show files**
+  for everything known with that tag (`tag://name` in the location line)
+- Click a tag chip on a thumbnail to filter for that tag
+- Filter helpers: `tag:name`, `tag:location-*`, `tagged:yes|no`,
+  `checksummed:yes|no` (cache only—filter never hashes whole trees)
 
-- Click to select; **Ctrl-click** to add or remove items (standard multi-select).
-- In **Icons** mode a keyboard **cursor** (outline) moves with the arrow keys:
-  - **Space** — toggle selection on the cursor item
-  - **Shift + arrows** — toggle the current item, then “paint” that same on/off
-    state onto tiles you move through while Shift is held
-  - **Escape** — clear the selection (cursor stays)
-- **Enter** opens the item under the cursor (or activates the default action).
-- **F2** rename, **F3** properties (with thumbnail preview), **Delete** delete.
-- Clipboard **Cut / Copy / Paste**, including **link** paste where supported.
-- Drag and drop between windows and onto folder tiles; modifier keys choose
-  **copy**, **move**, or **link** where the desktop allows.
+Namespaces use `:` (e.g. `game:doom`). Chips show the local part; an unprefixed
+`tag:doom` matches any namespace.
 
-### Transfers
+### Thumbnails
 
-Long operations run in a **transfer dialog**: progress, byte counts, pause /
-resume, activity log, and conflict handling (replace, rename, skip, apply to all).
-Archive members are treated as read-only sources.
+Uses the desktop freedesktop thumbnailer over D-Bus when present. You can
+reload thumbnails for the selection when something is wrong or missing.
+Archive members are extracted on demand so they can get thumbs too. Background
+work shows up in the activity indicator (counts and percentages when known).
 
-### Safety and history
+### Files and transfers
 
-- **Read-only mode** (toolbar / Ctrl+Shift+R) blocks filesystem changes.
-- **Operations history** records recent renames, moves, copies, deletes, and
-  similar actions (inspection log — not a full undo stack).
+Copy, cut, paste, delete, rename, mkdir, new empty file, and drag-and-drop work
+as you’d expect. Transfers can run in the background with conflict prompts.
+There is an operations history for inspection—not a full multi-step undo.
 
-### Command-line tools
+### Odds and ends
 
-The same tree ships small `dt-*` utilities (copy, move, rename, mkdir, filter,
-mediainfo, archiveinfo, …). See `man/` after install, or run each tool with
-`--help`.
+- **Read-only mode** (**Ctrl+Shift+R**) blocks accidental writes
+- Save the visible file list (**Ctrl+Shift+S**)
+- Properties dialog, Open With…, and context menus grouped like a normal
+  desktop file manager
+- CLI helpers in the same tree: `dt-copy`, `dt-filter`, `dt-mediainfo`, and
+  friends (`--help` or man pages after install)
 
 ---
 
-## Keyboard shortcuts (common)
+## Keyboard shortcuts
 
 | Shortcut | Action |
 |----------|--------|
 | **F2** | Rename |
 | **F3** / **Ctrl+F** | Recursive search |
+| **Ctrl+T** | Tag selection |
 | **Alt+Return** | Properties |
 | **F5** | Refresh |
 | **Backspace** / **Alt+Up** | Parent directory |
@@ -141,10 +133,10 @@ mediainfo, archiveinfo, …). See `man/` after install, or run each tool with
 | **Ctrl+N** | New window |
 | **Ctrl+Shift+R** | Toggle read-only mode |
 | **Ctrl+Shift+S** | Save file list as… |
-| **Escape** | Clear selection (Icons cursor mode) |
+| **Escape** | Clear selection / dismiss overlays |
 
-Type-ahead: with the file view focused, typing printable characters either jumps
-via the leap widget or goes to the filter bar when it is visible.
+With the file view focused, typing jumps via type-ahead (or goes to the filter
+bar when that bar is open).
 
 ---
 
@@ -153,52 +145,54 @@ via the leap widget or goes to the filter bar when it is visible.
 ```bash
 cmake -B build -G Ninja
 cmake --build build
-ctest --test-dir build          # optional
-cmake --install build           # binaries + man pages
+./build/apps/dirtoo/dirtoo
 ```
 
-With Nix:
+Optional:
+
+```bash
+ctest --test-dir build
+cmake --install build    # binaries + man pages
+```
+
+With Nix (from this directory):
 
 ```bash
 nix develop
 cmake -B build -G Ninja && cmake --build build
 ```
 
-Run the GUI:
-
-```bash
-./build/apps/dirtoo/dirtoo
-```
+`nix build` builds the package without running tests. `nix flake check` runs
+the unit tests using the already-built binary when it’s in the store.
 
 ---
 
-## Project layout (for developers)
+## Layout (developers)
 
 | Path | Purpose |
 |------|---------|
-| `apps/dirtoo` | GUI application |
-| `libs/dirops` | Copy / move / rename / delete / mkdir (Qt-free) |
+| `apps/dirtoo` | GUI |
+| `libs/dirops` | Copy / move / rename / delete / mkdir |
 | `libs/dirtoo-fs` | Locations, file info, listing |
 | `libs/dirtoo-collection` | Sort, filter, group |
-| `libs/dirtoo-filter` | Filter language + media metadata cache |
-| `libs/dirtoo-hash` | Checksum compute + SQLite cache |
-| `libs/dirtoo-tags` | Tag definitions and associations (by SHA-256) |
+| `libs/dirtoo-filter` | Filter language + media metadata |
+| `libs/dirtoo-hash` | Checksums + SQLite cache |
+| `libs/dirtoo-tags` | Tag definitions and associations |
 | `libs/dirtoo-watcher` | Directory change notifications |
-| `libs/dirtoo-thumbnail` | Freedesktop thumbnailer client |
-| `libs/dirtoo-archive` | Read-only archive listing and extract-on-demand |
-| `tools/` | `dt-*` command-line helpers |
+| `libs/dirtoo-thumbnail` | Thumbnailer client |
+| `libs/dirtoo-archive` | Read-only archive access |
+| `tools/` | `dt-*` CLI helpers |
 | `tests/` | Catch2 tests |
-| `resources/` | Icons, badges, cursors |
 
-Contributor rules and open work: [`../AGENTS.md`](../AGENTS.md), [`../TODO.md`](../TODO.md).
+Contributor rules and open work: [`../AGENTS.md`](../AGENTS.md),
+[`../TODO.md`](../TODO.md).
 
-### Intentional limits
+### Not in scope right now
 
-Not in scope right now: writing into archives, remote/network filesystems (SMB,
-SFTP, …), and a full multi-step undo system.
+Writing into archives, remote filesystems (SMB, SFTP, …), and a full undo stack.
 
 ---
 
 ## License
 
-**GPL-3.0-or-later**. Source files use REUSE-style SPDX headers.
+**GPL-3.0-or-later**. Source files carry REUSE-style SPDX headers.
