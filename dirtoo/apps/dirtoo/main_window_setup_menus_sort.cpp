@@ -83,6 +83,11 @@ void MainWindow::setup_sort_menu()
     connect(act, &QAction::toggled, this, [this](bool on) {
       sort_ascending_ = !on;
       collection_.sorter().set_ascending(!on);
+      {
+        AppSettings s = load_settings();
+        s.sort_ascending = sort_ascending_;
+        save_settings(s);
+      }
       request_async_sort();
     });
   }

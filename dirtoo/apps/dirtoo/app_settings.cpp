@@ -31,6 +31,8 @@ AppSettings load_settings()
   out.sidebar_width = s.value(QStringLiteral("ui/sidebar_width"), out.sidebar_width).toInt();
   out.read_only = s.value(QStringLiteral("ui/read_only"), out.read_only).toBool();
   out.directories_first = s.value(QStringLiteral("ui/directories_first"), out.directories_first).toBool();
+  out.sort_key = s.value(QStringLiteral("ui/sort_key"), out.sort_key).toString();
+  out.sort_ascending = s.value(QStringLiteral("ui/sort_ascending"), out.sort_ascending).toBool();
   out.group_mode = s.value(QStringLiteral("ui/group_mode"), out.group_mode).toString();
   out.size_units = s.value(QStringLiteral("ui/size_units"), out.size_units).toString();
   out.window_geometry = s.value(QStringLiteral("window/geometry")).toByteArray();
@@ -62,6 +64,8 @@ void save_settings(const AppSettings& settings)
   s.setValue(QStringLiteral("ui/sidebar_width"), settings.sidebar_width);
   s.setValue(QStringLiteral("ui/read_only"), settings.read_only);
   s.setValue(QStringLiteral("ui/directories_first"), settings.directories_first);
+  s.setValue(QStringLiteral("ui/sort_key"), settings.sort_key);
+  s.setValue(QStringLiteral("ui/sort_ascending"), settings.sort_ascending);
   s.setValue(QStringLiteral("ui/group_mode"), settings.group_mode);
   s.setValue(QStringLiteral("ui/size_units"), settings.size_units);
   s.setValue(QStringLiteral("window/geometry"), settings.window_geometry);

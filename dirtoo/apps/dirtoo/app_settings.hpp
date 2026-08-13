@@ -37,6 +37,10 @@ struct AppSettings {
   /// When true, filesystem mutations (delete, rename, paste, mkdir, …) are blocked.
   bool read_only = false;
   bool directories_first = true;
+  /// Default / restored sort key (name|size|extension|modified|type|…).
+  QString sort_key = QStringLiteral("name");
+  /// When true, sort ascending (false = reverse order).
+  bool sort_ascending = true;
   QString group_mode = QStringLiteral("none"); // none|day|directory|duration|session
   /// Size display units: "si" (kB/MB, base 1000) or "iec" (KiB/MiB, base 1024).
   QString size_units = QStringLiteral("si");

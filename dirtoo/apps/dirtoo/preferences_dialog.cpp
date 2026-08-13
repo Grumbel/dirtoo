@@ -111,7 +111,7 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   }
 
   auto* size_units = new QComboBox(&dialog);
-  size_units->addItem(QStringLiteral("Decimal (KB, MB, GB — base 1000)"), QStringLiteral("si"));
+  size_units->addItem(QStringLiteral("Decimal (kB, MB, GB — base 1000)"), QStringLiteral("si"));
   size_units->addItem(QStringLiteral("Binary (KiB, MiB, GiB — base 1024)"), QStringLiteral("iec"));
   {
     const QString su = settings->size_units.toLower();
@@ -142,6 +142,46 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   auto* dirs_first = new QCheckBox(QStringLiteral("Directories first when sorting"), &dialog);
   dirs_first->setChecked(settings->directories_first);
 
+  auto* default_sort = new QComboBox(&dialog);
+  default_sort->setToolTip(
+      QStringLiteral("Sort mode applied at startup and when Preferences are saved."));
+  struct SortChoice {
+    const char* label;
+    const char* key;
+  };
+  static constexpr SortChoice kSortChoices[] = {
+      {"Name", "name"},
+      {"Size", "size"},
+      {"Extension", "extension"},
+      {"Date (modified)", "modified"},
+      {"Type", "type"},
+      {"Width", "width"},
+      {"Height", "height"},
+      {"Resolution", "resolution"},
+      {"Aspect ratio", "aspectratio"},
+      {"Duration", "duration"},
+      {"Framerate", "framerate"},
+      {"Permissions", "permissions"},
+      {"Random", "random"},
+  };
+  for (const auto& sc : kSortChoices) {
+    default_sort->addItem(QString::fromUtf8(sc.label), QString::fromUtf8(sc.key));
+  }
+  {
+    const QString sk = settings->sort_key.toLower();
+    int idx = 0;
+    for (int i = 0; i < default_sort->count(); ++i) {
+      if (default_sort->itemData(i).toString() == sk) {
+        idx = i;
+        break;
+      }
+    }
+    default_sort->setCurrentIndex(idx);
+  }
+
+  auto* sort_ascending = new QCheckBox(QStringLiteral("Sort ascending (uncheck for reverse)"), &dialog);
+  sort_ascending->setChecked(settings->sort_ascending);
+
   appearance_form->addRow(QStringLiteral("Default view:"), view);
   appearance_form->addRow(QStringLiteral("Icons zoom:"), zoom_icons);
   appearance_form->addRow(QStringLiteral("List zoom:"), zoom_list);
@@ -152,6 +192,8 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   appearance_form->addRow(crop);
   appearance_form->addRow(QStringLiteral("Icon spacing:"), icon_spacing);
   appearance_form->addRow(QStringLiteral("Icon label width:"), icon_pad);
+  appearance_form->addRow(QStringLiteral("Default sort:"), default_sort);
+  appearance_form->addRow(sort_ascending);
   appearance_form->addRow(dirs_first);
   tabs->addTab(wrap_form(appearance_form, &dialog), QStringLiteral("Appearance"));
 
@@ -299,6 +341,8 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   settings->icon_spacing = icon_spacing->value();
   settings->icon_cell_padding = icon_pad->value();
   settings->directories_first = dirs_first->isChecked();
+  settings->sort_key = default_sort->currentData().toString();
+  settings->sort_ascending = sort_ascending->isChecked();
   settings->show_filter = show_filter->isChecked();
   settings->filter_pinned = pin_filter->isChecked();
   settings->show_sidebar = show_sidebar->isChecked();

@@ -70,6 +70,41 @@ void MainWindow::restore_settings()
   }
   collection_.sorter().set_directories_first(s.directories_first);
   {
+    // Default sort from preferences / last session.
+    collection::SortKey sk = collection::SortKey::Name;
+    const QString k = s.sort_key.toLower();
+    if (k == QLatin1String("size")) {
+      sk = collection::SortKey::Size;
+    } else if (k == QLatin1String("extension")) {
+      sk = collection::SortKey::Extension;
+    } else if (k == QLatin1String("modified") || k == QLatin1String("date")) {
+      sk = collection::SortKey::Modified;
+    } else if (k == QLatin1String("type")) {
+      sk = collection::SortKey::Type;
+    } else if (k == QLatin1String("width")) {
+      sk = collection::SortKey::Width;
+    } else if (k == QLatin1String("height")) {
+      sk = collection::SortKey::Height;
+    } else if (k == QLatin1String("resolution") || k == QLatin1String("dimensions")) {
+      sk = collection::SortKey::Resolution;
+    } else if (k == QLatin1String("aspectratio") || k == QLatin1String("aspect")) {
+      sk = collection::SortKey::AspectRatio;
+    } else if (k == QLatin1String("duration")) {
+      sk = collection::SortKey::Duration;
+    } else if (k == QLatin1String("framerate") || k == QLatin1String("fps")) {
+      sk = collection::SortKey::Framerate;
+    } else if (k == QLatin1String("permissions")) {
+      sk = collection::SortKey::Permissions;
+    } else if (k == QLatin1String("random")) {
+      sk = collection::SortKey::Random;
+    }
+    sort_key_ = sk;
+    sort_ascending_ = s.sort_ascending;
+    collection_.sorter().set_key(sk);
+    collection_.sorter().set_ascending(s.sort_ascending);
+    update_sort_toolbar_label();
+  }
+  {
     collection::GroupMode gm = collection::GroupMode::None;
     const QString g = s.group_mode.toLower();
     if (g == QLatin1String("day")) {
@@ -185,6 +220,41 @@ void MainWindow::persist_settings() const
   }
   s.filter_pinned = filter_pinned_;
   s.directories_first = collection_.sorter().directories_first();
+
+  // Persist current sort (same mapping as Preferences default-sort keys).
+  auto sort_key_str = [](collection::SortKey key) -> QString {
+    switch (key) {
+    case collection::SortKey::Size:
+      return QStringLiteral("size");
+    case collection::SortKey::Extension:
+      return QStringLiteral("extension");
+    case collection::SortKey::Modified:
+      return QStringLiteral("modified");
+    case collection::SortKey::Type:
+      return QStringLiteral("type");
+    case collection::SortKey::Width:
+      return QStringLiteral("width");
+    case collection::SortKey::Height:
+      return QStringLiteral("height");
+    case collection::SortKey::Resolution:
+      return QStringLiteral("resolution");
+    case collection::SortKey::AspectRatio:
+      return QStringLiteral("aspectratio");
+    case collection::SortKey::Duration:
+      return QStringLiteral("duration");
+    case collection::SortKey::Framerate:
+      return QStringLiteral("framerate");
+    case collection::SortKey::Permissions:
+      return QStringLiteral("permissions");
+    case collection::SortKey::Random:
+      return QStringLiteral("random");
+    case collection::SortKey::Name:
+    default:
+      return QStringLiteral("name");
+    }
+  };
+  s.sort_key = sort_key_str(sort_key_);
+  s.sort_ascending = sort_ascending_;
   s.size_units = size_unit_style_to_string(size_unit_style());
   switch (collection_.group_mode()) {
   case collection::GroupMode::Day:
@@ -245,6 +315,41 @@ void MainWindow::on_preferences()
   s.read_only = read_only_;
   s.dismiss_dev_warning = load_settings().dismiss_dev_warning;
   s.directories_first = collection_.sorter().directories_first();
+
+  // Persist current sort (same mapping as Preferences default-sort keys).
+  auto sort_key_str = [](collection::SortKey key) -> QString {
+    switch (key) {
+    case collection::SortKey::Size:
+      return QStringLiteral("size");
+    case collection::SortKey::Extension:
+      return QStringLiteral("extension");
+    case collection::SortKey::Modified:
+      return QStringLiteral("modified");
+    case collection::SortKey::Type:
+      return QStringLiteral("type");
+    case collection::SortKey::Width:
+      return QStringLiteral("width");
+    case collection::SortKey::Height:
+      return QStringLiteral("height");
+    case collection::SortKey::Resolution:
+      return QStringLiteral("resolution");
+    case collection::SortKey::AspectRatio:
+      return QStringLiteral("aspectratio");
+    case collection::SortKey::Duration:
+      return QStringLiteral("duration");
+    case collection::SortKey::Framerate:
+      return QStringLiteral("framerate");
+    case collection::SortKey::Permissions:
+      return QStringLiteral("permissions");
+    case collection::SortKey::Random:
+      return QStringLiteral("random");
+    case collection::SortKey::Name:
+    default:
+      return QStringLiteral("name");
+    }
+  };
+  s.sort_key = sort_key_str(sort_key_);
+  s.sort_ascending = sort_ascending_;
   switch (collection_.group_mode()) {
   case collection::GroupMode::Day:
     s.group_mode = QStringLiteral("day");
@@ -436,6 +541,41 @@ void MainWindow::apply_settings(const AppSettings& s)
     show_hidden_act_->setChecked(s.show_hidden);
   }
   collection_.sorter().set_directories_first(s.directories_first);
+  {
+    collection::SortKey sk = collection::SortKey::Name;
+    const QString k = s.sort_key.toLower();
+    if (k == QLatin1String("size")) {
+      sk = collection::SortKey::Size;
+    } else if (k == QLatin1String("extension")) {
+      sk = collection::SortKey::Extension;
+    } else if (k == QLatin1String("modified") || k == QLatin1String("date")) {
+      sk = collection::SortKey::Modified;
+    } else if (k == QLatin1String("type")) {
+      sk = collection::SortKey::Type;
+    } else if (k == QLatin1String("width")) {
+      sk = collection::SortKey::Width;
+    } else if (k == QLatin1String("height")) {
+      sk = collection::SortKey::Height;
+    } else if (k == QLatin1String("resolution") || k == QLatin1String("dimensions")) {
+      sk = collection::SortKey::Resolution;
+    } else if (k == QLatin1String("aspectratio") || k == QLatin1String("aspect")) {
+      sk = collection::SortKey::AspectRatio;
+    } else if (k == QLatin1String("duration")) {
+      sk = collection::SortKey::Duration;
+    } else if (k == QLatin1String("framerate") || k == QLatin1String("fps")) {
+      sk = collection::SortKey::Framerate;
+    } else if (k == QLatin1String("permissions")) {
+      sk = collection::SortKey::Permissions;
+    } else if (k == QLatin1String("random")) {
+      sk = collection::SortKey::Random;
+    }
+    sort_key_ = sk;
+    sort_ascending_ = s.sort_ascending;
+    collection_.sorter().set_key(sk);
+    collection_.sorter().set_ascending(s.sort_ascending);
+    update_sort_toolbar_label();
+    request_async_sort();
+  }
   {
     collection::GroupMode gm = collection::GroupMode::None;
     const QString g = s.group_mode.toLower();
