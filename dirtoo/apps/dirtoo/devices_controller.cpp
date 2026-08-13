@@ -42,6 +42,10 @@ void DevicesController::attach(QListWidget* list, QWidget* parent_for_menus)
 void DevicesController::set_list_widget(QListWidget* list)
 {
   list_ = list;
+  if (list_ != nullptr) {
+    list_->setWordWrap(true);
+    list_->setTextElideMode(Qt::ElideNone);
+  }
 }
 
 void DevicesController::set_parent_widget(QWidget* parent_for_menus)
@@ -70,16 +74,42 @@ void DevicesController::rebuild_list()
   list_->setVisible(true);
   const bool avail = client_->available();
   const auto vols = client_->volumes();
-  if (!avail) {
-    auto* item = new QListWidgetItem(QStringLiteral("Disks unavailable"));
-    item->setFlags(item->flags() & ~Qt::ItemIsEnabled);
+
+  auto add_placeholder = [this](const QString& title, const QString& detail, const QString& tip) {
+    QString text = title;
+    if (!detail.isEmpty()) {
+      text += QLatin1Char('\n') + detail;
+    }
+    auto* item = new QListWidgetItem(text);
+    item->setFlags(item->flags() & ~Qt::ItemIsEnabled & ~Qt::ItemIsSelectable);
+    item->setToolTip(tip);
+    if (list_ != nullptr) {
+      const QColor muted = list_->palette().color(QPalette::Disabled, QPalette::Text);
+      item->setForeground(muted);
+    }
     list_->addItem(item);
+  };
+
+  if (!avail) {
+    // C2: clear empty state + install / service hint when UDisks2 is missing.
+    add_placeholder(
+        QStringLiteral("UDisks2 not available"),
+        QStringLiteral("Install the udisks2 package and ensure\nthe system service is running."),
+        QStringLiteral(
+            "The Devices list needs the org.freedesktop.UDisks2 D-Bus service.\n"
+            "Debian/Ubuntu: sudo apt install udisks2\n"
+            "Fedora: sudo dnf install udisks2\n"
+            "Arch: sudo pacman -S udisks2\n"
+            "Then: systemctl status udisks2"));
     return;
   }
   if (vols.isEmpty()) {
-    auto* item = new QListWidgetItem(QStringLiteral("No volumes"));
-    item->setFlags(item->flags() & ~Qt::ItemIsEnabled);
-    list_->addItem(item);
+    add_placeholder(
+        QStringLiteral("No volumes detected"),
+        QStringLiteral("Mount a drive or insert removable media."),
+        QStringLiteral(
+            "UDisks2 is running but reported no usable filesystems.\n"
+            "System partitions may be hidden; removable or mounted volumes appear here."));
     return;
   }
   for (const auto& v : vols) {
