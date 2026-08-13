@@ -9,6 +9,9 @@
 
 #include <QAbstractItemView>
 #include <QApplication>
+#include <QAction>
+#include <QGuiApplication>
+#include <QMenu>
 #include <QClipboard>
 #include <QDialogButtonBox>
 #include <QFileInfo>
@@ -157,10 +160,13 @@ ChecksumDialog::ChecksumDialog(QStringList paths, QWidget* parent)
   tree_->setAlternatingRowColors(true);
   tree_->setSelectionMode(QAbstractItemView::ExtendedSelection);
   tree_->setUniformRowHeights(true);
+  tree_->setContextMenuPolicy(Qt::CustomContextMenu);
   tree_->header()->setStretchLastSection(true);
   tree_->header()->resizeSection(0, 280);
   tree_->header()->resizeSection(1, 70);
   layout->addWidget(tree_, 1);
+  connect(tree_, &QTreeWidget::customContextMenuRequested, this,
+          &ChecksumDialog::show_tree_context_menu);
 
   progress_ = new QProgressBar(this);
   progress_->setRange(0, std::max(qsizetype{1}, paths_.size()));
@@ -170,13 +176,11 @@ ChecksumDialog::ChecksumDialog(QStringList paths, QWidget* parent)
   auto* btn_row = new QHBoxLayout();
   compute_btn_ = new QPushButton(QStringLiteral("Compute / Refresh"), this);
   cached_btn_ = new QPushButton(QStringLiteral("Show cached only"), this);
-  auto* copy_btn = new QPushButton(QStringLiteral("Copy SHA-256"), this);
   auto* clear_btn = new QPushButton(QStringLiteral("Clear cache entries"), this);
   cancel_btn_ = new QPushButton(QStringLiteral("Cancel"), this);
   cancel_btn_->setEnabled(false);
   btn_row->addWidget(compute_btn_);
   btn_row->addWidget(cached_btn_);
-  btn_row->addWidget(copy_btn);
   btn_row->addWidget(clear_btn);
   btn_row->addStretch(1);
   btn_row->addWidget(cancel_btn_);
@@ -195,7 +199,6 @@ ChecksumDialog::ChecksumDialog(QStringList paths, QWidget* parent)
   connect(compute_btn_, &QPushButton::clicked, this, &ChecksumDialog::start_compute);
   connect(cached_btn_, &QPushButton::clicked, this, &ChecksumDialog::start_cached_only);
   connect(cancel_btn_, &QPushButton::clicked, this, &ChecksumDialog::cancel_job);
-  connect(copy_btn, &QPushButton::clicked, this, &ChecksumDialog::copy_sha256);
   connect(clear_btn, &QPushButton::clicked, this, &ChecksumDialog::clear_cache_entries);
 
   // Default: use cache, hash only on miss.
@@ -304,7 +307,14 @@ void ChecksumDialog::on_row(const QString& path, const QString& status, const QS
       item->setText(3, md5);
       item->setText(4, sha1);
       item->setText(5, sha256);
+      item->setData(2, Qt::UserRole, crc32);
+      item->setData(3, Qt::UserRole, md5);
+      item->setData(4, Qt::UserRole, sha1);
       item->setData(5, Qt::UserRole, sha256);
+      item->setToolTip(2, crc32.isEmpty() ? QString() : QStringLiteral("Right-click to copy CRC32"));
+      item->setToolTip(3, md5.isEmpty() ? QString() : QStringLiteral("Right-click to copy MD5"));
+      item->setToolTip(4, sha1.isEmpty() ? QString() : QStringLiteral("Right-click to copy SHA-1"));
+      item->setToolTip(5, sha256.isEmpty() ? QString() : QStringLiteral("Right-click to copy SHA-256"));
       if (!error.isEmpty()) {
         item->setToolTip(1, error);
       }
@@ -318,6 +328,9 @@ void ChecksumDialog::on_row(const QString& path, const QString& status, const QS
   item->setText(3, md5);
   item->setText(4, sha1);
   item->setText(5, sha256);
+  item->setData(2, Qt::UserRole, crc32);
+  item->setData(3, Qt::UserRole, md5);
+  item->setData(4, Qt::UserRole, sha1);
   item->setData(5, Qt::UserRole, sha256);
 }
 
@@ -337,8 +350,97 @@ void ChecksumDialog::on_failed(const QString& message)
   QMessageBox::warning(this, QStringLiteral("Checksums"), message);
 }
 
-void ChecksumDialog::copy_sha256()
+void ChecksumDialog::show_tree_context_menu(const QPoint& pos)
 {
+  QTreeWidgetItem* under = tree_->itemAt(pos);
+  if (under != nullptr && !under->isSelected()) {
+    tree_->setCurrentItem(under);
+    under->setSelected(true);
+  }
+
+  auto selected = tree_->selectedItems();
+  if (selected.isEmpty() && under != nullptr) {
+    selected.push_back(under);
+  }
+  if (selected.isEmpty()) {
+    return;
+  }
+
+  // Prefer the column under the cursor so right-click on MD5 copies MD5.
+  int col = tree_->columnAt(pos.x());
+  if (col < 2 || col > 5) {
+    col = 5; // default to SHA-256
+  }
+
+  auto* menu = new QMenu(this);
+  const struct {
+    int column;
+    const char* label;
+  } kDigests[] = {
+      {2, "CRC32"},
+      {3, "MD5"},
+      {4, "SHA-1"},
+      {5, "SHA-256"},
+  };
+  for (const auto& d : kDigests) {
+    auto* act = menu->addAction(QStringLiteral("Copy %1").arg(QString::fromUtf8(d.label)));
+    if (d.column == col) {
+      menu->setDefaultAction(act);
+    }
+    const int column = d.column;
+    connect(act, &QAction::triggered, this, [this, column] { copy_digest_column(column, false); });
+  }
+  menu->addSeparator();
+  auto* with_path = menu->addAction(QStringLiteral("Copy %1 with path")
+                                        .arg(QString::fromUtf8(kDigests[col - 2].label)));
+  connect(with_path, &QAction::triggered, this, [this, col] { copy_digest_column(col, true); });
+  auto* all_digests = menu->addAction(QStringLiteral("Copy all digests (this selection)"));
+  connect(all_digests, &QAction::triggered, this, [this] {
+    QStringList blocks;
+    auto items = tree_->selectedItems();
+    if (items.isEmpty()) {
+      return;
+    }
+    for (QTreeWidgetItem* item : items) {
+      QStringList parts;
+      parts << item->text(0);
+      for (int c = 2; c <= 5; ++c) {
+        const QString v = item->data(c, Qt::UserRole).toString();
+        if (v.isEmpty()) {
+          continue;
+        }
+        static const char* names[] = {"CRC32", "MD5", "SHA-1", "SHA-256"};
+        parts << QStringLiteral("%1: %2").arg(QString::fromUtf8(names[c - 2]), v);
+      }
+      if (parts.size() > 1) {
+        blocks << parts.join(QLatin1Char('\n'));
+      }
+    }
+    if (!blocks.isEmpty()) {
+      QApplication::clipboard()->setText(blocks.join(QStringLiteral("\n\n")));
+    }
+  });
+  menu->addSeparator();
+  auto* copy_path = menu->addAction(QStringLiteral("Copy path"));
+  connect(copy_path, &QAction::triggered, this, [this] {
+    QStringList paths;
+    for (QTreeWidgetItem* item : tree_->selectedItems()) {
+      paths << item->text(0);
+    }
+    if (!paths.isEmpty()) {
+      QApplication::clipboard()->setText(paths.join(QLatin1Char('\n')));
+    }
+  });
+
+  menu->exec(tree_->viewport()->mapToGlobal(pos));
+  menu->deleteLater();
+}
+
+void ChecksumDialog::copy_digest_column(int column, bool include_path)
+{
+  if (column < 2 || column > 5 || tree_ == nullptr) {
+    return;
+  }
   QStringList lines;
   auto items = tree_->selectedItems();
   if (items.isEmpty()) {
@@ -347,9 +449,17 @@ void ChecksumDialog::copy_sha256()
     }
   }
   for (QTreeWidgetItem* item : items) {
-    const QString sha = item->data(5, Qt::UserRole).toString();
-    if (!sha.isEmpty()) {
-      lines << QStringLiteral("%1  %2").arg(sha, item->text(0));
+    QString dig = item->data(column, Qt::UserRole).toString();
+    if (dig.isEmpty()) {
+      dig = item->text(column).trimmed();
+    }
+    if (dig.isEmpty() || dig == QLatin1String("…")) {
+      continue;
+    }
+    if (include_path) {
+      lines << QStringLiteral("%1  %2").arg(dig, item->text(0));
+    } else {
+      lines << dig;
     }
   }
   if (!lines.isEmpty()) {
@@ -376,6 +486,9 @@ void ChecksumDialog::clear_cache_entries()
     item->setText(3, {});
     item->setText(4, {});
     item->setText(5, {});
+    item->setData(2, Qt::UserRole, {});
+    item->setData(3, Qt::UserRole, {});
+    item->setData(4, Qt::UserRole, {});
     item->setData(5, Qt::UserRole, {});
   }
 }

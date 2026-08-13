@@ -27,8 +27,9 @@ private slots:
   void start_compute();
   void start_cached_only();
   void cancel_job();
-  void copy_sha256();
   void clear_cache_entries();
+  void show_tree_context_menu(const QPoint& pos);
+  void copy_digest_column(int column, bool include_path);
   void on_row(const QString& path, const QString& status, const QString& crc32, const QString& md5,
               const QString& sha1, const QString& sha256, const QString& error);
   void on_progress(int done, int total);
