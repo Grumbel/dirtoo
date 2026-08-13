@@ -4,6 +4,8 @@
 #include "directory_tree_model.hpp"
 
 #include <QFileIconProvider>
+#include <QFont>
+#include <QColor>
 #include <QSet>
 #include <QFileInfo>
 #include <QtConcurrent>
@@ -69,7 +71,7 @@ void DirectoryTreeModel::set_show_hidden(bool show)
   QStringList paths;
   QStringList labels;
   for (Node* n : root_.children) {
-    paths.append(n->path);
+    paths.append(n->path); // empty path keeps section headers
     labels.append(n->display);
   }
   reset_roots(paths, labels);
@@ -97,6 +99,8 @@ void DirectoryTreeModel::reset_roots(const QStringList& root_paths, const QStrin
   for (int i = 0; i < n; ++i) {
     auto* node = new Node;
     node->path = root_paths[i];
+    const bool section = node->path.isEmpty() && i < root_labels.size() && !root_labels[i].isEmpty();
+    node->is_section = section;
     node->display = (i < root_labels.size() && !root_labels[i].isEmpty())
                         ? root_labels[i]
                         : QFileInfo(root_paths[i]).fileName();
@@ -104,8 +108,9 @@ void DirectoryTreeModel::reset_roots(const QStringList& root_paths, const QStrin
       node->display = root_paths[i];
     }
     node->parent = &root_;
-    node->loaded = false;
-    node->is_dir = true;
+    // Section headers never load children; ordinary roots are directories.
+    node->loaded = section;
+    node->is_dir = !section;
     root_.children.append(node);
   }
   endResetModel();
@@ -182,8 +187,29 @@ QVariant DirectoryTreeModel::data(const QModelIndex& index, int role) const
   case Qt::EditRole:
     return n->display;
   case Qt::DecorationRole:
+    if (n->is_section) {
+      return {};
+    }
     return folder_icon_;
+  case Qt::FontRole:
+    if (n->is_section) {
+      QFont f;
+      f.setBold(true);
+      f.setPointSizeF(std::max(8.0, f.pointSizeF() - 0.5));
+      return f;
+    }
+    return {};
+  case Qt::ForegroundRole:
+    if (n->is_section) {
+      // Slightly muted so it reads as a heading, not a place.
+      return QColor(90, 90, 100);
+    }
+    return {};
   case Qt::ToolTipRole:
+    if (n->is_section) {
+      return {};
+    }
+    return n->path;
   case Qt::UserRole:
     return n->path;
   default:
@@ -195,6 +221,11 @@ Qt::ItemFlags DirectoryTreeModel::flags(const QModelIndex& index) const
 {
   if (!index.isValid()) {
     return Qt::NoItemFlags;
+  }
+  Node* n = node_from_index(index);
+  if (n != nullptr && n->is_section) {
+    // Visible heading only — not selectable / not a navigation target.
+    return Qt::ItemIsEnabled;
   }
   return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
 }

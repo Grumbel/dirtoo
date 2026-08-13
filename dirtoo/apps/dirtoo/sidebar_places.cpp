@@ -43,17 +43,29 @@ void SidebarPlaces::rebuild(const Bookmarks& bookmarks)
       labels << QStandardPaths::displayName(loc);
     }
   }
+
+  // User bookmarks under a non-interactive "Bookmarks" heading so they are not
+  // mixed with the standard places list.
+  QStringList bookmark_paths;
+  QStringList bookmark_labels;
   for (const auto& loc : bookmarks.entries()) {
     if (!loc.is_file()) {
       continue;
     }
     const QString path = QString::fromStdString(loc.as_path().string());
-    if (path.isEmpty() || roots.contains(path)) {
+    if (path.isEmpty() || roots.contains(path) || bookmark_paths.contains(path)) {
       continue;
     }
-    roots << path;
-    labels << QFileInfo(path).fileName();
+    bookmark_paths << path;
+    bookmark_labels << QFileInfo(path).fileName();
   }
+  if (!bookmark_paths.isEmpty()) {
+    roots << QString(); // section header (empty path)
+    labels << QStringLiteral("Bookmarks");
+    roots << bookmark_paths;
+    labels << bookmark_labels;
+  }
+
   m->reset_roots(roots, labels);
 }
 

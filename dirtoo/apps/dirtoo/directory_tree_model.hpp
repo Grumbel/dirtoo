@@ -26,6 +26,8 @@ public:
   [[nodiscard]] bool show_hidden() const { return show_hidden_; }
 
   /// Rebuild top-level places (Home, /, optional extra roots).
+  /// An empty path with a non-empty label is a non-interactive section header
+  /// (e.g. "Bookmarks").
   void reset_roots(const QStringList& root_paths, const QStringList& root_labels);
 
   [[nodiscard]] QString path_for_index(const QModelIndex& index) const;
@@ -59,6 +61,7 @@ private:
     bool loaded = false;
     bool loading = false;
     bool is_dir = true;
+    bool is_section = false; ///< Non-interactive heading row (empty path).
     std::uint64_t fetch_generation = 0;
   };
 

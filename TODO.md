@@ -313,6 +313,9 @@ Handoff bundles **dirtoo-003** … **dirtoo-015** (tip after 015: filter ranges)
 - [x] **Keep selection visible after reorder** — snapshot paths before sort
       refresh; restore multi-selection by path; scroll `last_selected_path_`
       (cursor / current index) into view with priority over other selected rows.
+- [x] **Places: Bookmarks section heading** — user bookmarks listed under a
+      non-interactive bold "Bookmarks" row; no longer mixed with Home/Filesystem
+      and XDG standard locations.
 
 ### Review residuals (earlier 2026-08)
 
