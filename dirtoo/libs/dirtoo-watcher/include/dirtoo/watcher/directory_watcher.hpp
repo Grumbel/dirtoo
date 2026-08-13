@@ -16,6 +16,8 @@ namespace dirtoo::watcher {
 /// Watches one or more filesystem paths for changes.
 /// On Linux, uses inotify for per-name create/delete/modify when possible;
 /// falls back to QFileSystemWatcher (directory/file changed only).
+/// Network filesystems (NFS/SMB/CIFS/FUSE/…) and total watch failure enable a
+/// ~2.5s directory-fingerprint poll as a last-resort change detector.
 class DirectoryWatcher : public QObject {
   Q_OBJECT
 

@@ -12,15 +12,109 @@
 #include <cerrno>
 #include <cstdint>
 #include <cstring>
+#include <sstream>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 
 #if defined(__linux__)
 #  include <sys/inotify.h>
+#  include <sys/statfs.h>
 #  include <unistd.h>
 #endif
 
 namespace dirtoo::watcher {
+namespace {
+
+[[nodiscard]] bool is_remote_filesystem(const std::filesystem::path& path)
+{
+#if defined(__linux__)
+  struct statfs st {};
+  if (statfs(path.c_str(), &st) != 0) {
+    return false;
+  }
+  // Common network / fuse magic numbers (linux/magic.h).
+  switch (static_cast<unsigned long>(st.f_type)) {
+  case 0x6969:      // NFS_SUPER_MAGIC
+  case 0xFF534D42:  // CIFS_MAGIC_NUMBER
+  case 0xFE534D42:  // SMB2_SUPER_MAGIC
+  case 0x65735546:  // FUSE_SUPER_MAGIC
+  case 0x65735543:  // FUSECTL
+  case 0x6B414653:  // AFS
+  case 0x517B:      // SMB_SUPER_MAGIC (older)
+  case 0x564C:      // NCP_SUPER_MAGIC
+  case 0x01021997:  // V9FS
+    return true;
+  default:
+    return false;
+  }
+#else
+  (void)path;
+  return false;
+#endif
+}
+
+/// Cheap content fingerprint for poll fallback (worker thread only).
+[[nodiscard]] std::string directory_fingerprint(const std::filesystem::path& dir)
+{
+  std::ostringstream oss;
+  std::error_code ec;
+  const auto mtime = std::filesystem::last_write_time(dir, ec);
+  if (!ec) {
+    oss << mtime.time_since_epoch().count();
+  } else {
+    oss << "x";
+  }
+  oss << '|';
+  auto opts = std::filesystem::directory_options::skip_permission_denied;
+  std::size_t count = 0;
+  std::uint64_t name_hash = 14695981039346656037ull; // FNV-1a offset
+  for (const auto& entry : std::filesystem::directory_iterator(dir, opts, ec)) {
+    if (ec) {
+      break;
+    }
+    ++count;
+    const auto name = entry.path().filename().string();
+    for (unsigned char c : name) {
+      name_hash ^= c;
+      name_hash *= 1099511628211ull;
+    }
+    name_hash ^= static_cast<std::uint64_t>(name.size());
+    // Cap work on huge directories — still detect create/delete via count.
+    if (count >= 4096) {
+      oss << count << "|trunc|" << name_hash;
+      return oss.str();
+    }
+  }
+  oss << count << '|' << name_hash;
+  return oss.str();
+}
+
+[[nodiscard]] std::string paths_fingerprint(const std::vector<std::filesystem::path>& paths)
+{
+  std::ostringstream oss;
+  for (const auto& p : paths) {
+    if (p.empty()) {
+      continue;
+    }
+    std::error_code ec;
+    if (std::filesystem::is_directory(p, ec) && !ec) {
+      oss << p.string() << '=' << directory_fingerprint(p) << ';';
+    } else {
+      const auto mtime = std::filesystem::last_write_time(p, ec);
+      oss << p.string() << '=';
+      if (!ec) {
+        oss << mtime.time_since_epoch().count();
+      } else {
+        oss << "missing";
+      }
+      oss << ';';
+    }
+  }
+  return oss.str();
+}
+
+} // namespace
 
 class DirectoryWatcher::Impl {
 public:
@@ -32,6 +126,13 @@ public:
   bool name_deltas = false;
   /// Bumped on stop/start so in-flight async watch setup is ignored.
   std::uint64_t start_generation = 0;
+  /// Paths we may poll (directories). Used when inotify is unreliable (NFS/SMB/…)
+  /// or when neither inotify nor QFileSystemWatcher armed successfully.
+  std::vector<std::filesystem::path> poll_paths;
+  QTimer* poll_timer = nullptr;
+  std::string last_fingerprint;
+  bool poll_in_flight = false;
+  bool poll_enabled = false;
 
 #if defined(__linux__)
   int inotify_fd = -1;
@@ -81,6 +182,40 @@ DirectoryWatcher::DirectoryWatcher(QObject* parent)
     }
   });
 #endif
+
+  impl_->poll_timer = new QTimer(this);
+  impl_->poll_timer->setInterval(2500);
+  QObject::connect(impl_->poll_timer, &QTimer::timeout, this, [this] {
+    if (!impl_->running || !impl_->poll_enabled || impl_->poll_in_flight) {
+      return;
+    }
+    if (impl_->poll_paths.empty()) {
+      return;
+    }
+    impl_->poll_in_flight = true;
+    const std::uint64_t gen = impl_->start_generation;
+    const auto paths = impl_->poll_paths;
+    (void)QtConcurrent::run([this, gen, paths]() {
+      const std::string fp = paths_fingerprint(paths);
+      QMetaObject::invokeMethod(
+          this,
+          [this, gen, fp]() {
+            impl_->poll_in_flight = false;
+            if (!impl_->running || gen != impl_->start_generation || !impl_->poll_enabled) {
+              return;
+            }
+            if (impl_->last_fingerprint.empty()) {
+              impl_->last_fingerprint = fp;
+              return;
+            }
+            if (fp != impl_->last_fingerprint) {
+              impl_->last_fingerprint = fp;
+              emit directory_changed();
+            }
+          },
+          Qt::QueuedConnection);
+    });
+  });
 }
 
 DirectoryWatcher::~DirectoryWatcher()
@@ -151,6 +286,13 @@ void DirectoryWatcher::start()
   const std::uint64_t gen = impl_->start_generation;
   impl_->running = true;
   impl_->name_deltas = false;
+  impl_->poll_enabled = false;
+  impl_->poll_in_flight = false;
+  impl_->last_fingerprint.clear();
+  impl_->poll_paths = paths;
+  if (impl_->poll_timer != nullptr) {
+    impl_->poll_timer->stop();
+  }
 
   // is_directory / inotify_add_watch / QFileSystemWatcher::addPath can all
   // block for a long time on hung network mounts — never do that on the GUI thread.
@@ -324,6 +466,45 @@ void DirectoryWatcher::start()
           if (added == 0 && !impl_->name_deltas) {
             emit message(QStringLiteral("DirectoryWatcher: failed to watch any path"));
           }
+
+          // Poll fallback: network mounts often claim inotify success but miss
+          // events; also enable when no native watch could be armed at all.
+          bool remote = false;
+          for (const auto& p : paths) {
+            if (!p.empty() && is_remote_filesystem(p)) {
+              remote = true;
+              break;
+            }
+          }
+          // Prefer poll on remote even when inotify/qwatcher reported success.
+          if (remote || (added == 0 && !impl_->name_deltas)) {
+            impl_->poll_enabled = true;
+            // Seed fingerprint asynchronously so the first tick only compares.
+            const auto seed_paths = impl_->poll_paths;
+            const std::uint64_t seed_gen = gen;
+            (void)QtConcurrent::run([this, seed_gen, seed_paths]() {
+              const std::string fp = paths_fingerprint(seed_paths);
+              QMetaObject::invokeMethod(
+                  this,
+                  [this, seed_gen, fp]() {
+                    if (!impl_->running || seed_gen != impl_->start_generation) {
+                      return;
+                    }
+                    impl_->last_fingerprint = fp;
+                  },
+                  Qt::QueuedConnection);
+            });
+            if (impl_->poll_timer != nullptr) {
+              impl_->poll_timer->start();
+            }
+            if (remote) {
+              emit message(QStringLiteral(
+                  "DirectoryWatcher: network filesystem detected — enabling poll fallback"));
+            } else {
+              emit message(QStringLiteral(
+                  "DirectoryWatcher: no native watches — enabling poll fallback"));
+            }
+          }
         },
         Qt::QueuedConnection);
   });
@@ -334,6 +515,12 @@ void DirectoryWatcher::stop()
   ++impl_->start_generation;
   impl_->running = false;
   impl_->name_deltas = false;
+  impl_->poll_enabled = false;
+  impl_->poll_in_flight = false;
+  impl_->last_fingerprint.clear();
+  if (impl_->poll_timer != nullptr) {
+    impl_->poll_timer->stop();
+  }
 
 #if defined(__linux__)
   if (impl_->coalesce_timer != nullptr) {

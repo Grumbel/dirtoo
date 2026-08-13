@@ -1026,7 +1026,7 @@ Full file inventory + notes: **`AUDIT.md`** (section *Full source inventory + au
 - [ ] **B11 — Undo** — Operations history is log-only; no restore.
 - [ ] **B12 — RelativeIcons polish** — Mode present; document in UI/help; verify layout quality.
 - [x] **C2 — Devices without UDisks** — Placeholder title + install/service tip (apt/dnf/pacman) when UDisks2 missing; separate empty-volumes message when service is up.
-- [ ] **C7 — Network FS watcher** — Poll fallback when inotify unreliable.
+- [x] **C7 — Network FS watcher** — Poll fallback (~2.5s fingerprint) when path is remote (NFS/SMB/FUSE/…) or no native watch could be armed.
 - [x] **Filter: untagged in recursive search** — Confirmed: `search_directory` applies the same `MatchFunc` (`make_tagged` / `TagLookup`); `tagged:no` parses and matches via checksum+TagStore lookup only (no hashing).
 - [x] **Tag autocomplete in filter bar** — `FilterExpressionCompleter` on filter + search edits: last-token complete for `tag:<name>` (from TagStore), `tagged:`/`checksummed:`/`type:` keywords; refresh after Tag Manager / tag apply.
 - [ ] **Background full checksum queue** — Idle hashing of visible folder for faster `checksummed:` / tagging later.
