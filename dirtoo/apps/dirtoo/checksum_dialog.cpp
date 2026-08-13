@@ -4,6 +4,7 @@
 #include "checksum_dialog.hpp"
 #include "activity_monitor.hpp"
 #include "app_settings.hpp"
+#include "hash_service.hpp"
 
 #include "dirtoo/hash/checksum_store.hpp"
 #include "dirtoo/hash/hash_file.hpp"
@@ -48,9 +49,9 @@ public:
 public slots:
   void run()
   {
-    dirtoo::hash::ChecksumStore store;
+    auto& hashes = HashService::instance();
     std::string err;
-    if (!store.open(dirtoo::hash::ChecksumStore::default_path(), &err)) {
+    if (!hashes.ensure_open(&err)) {
       emit failed(QString::fromStdString(err));
       emit finished_all();
       return;
@@ -84,13 +85,13 @@ public slots:
       const std::string key = ec ? path.toStdString() : abs.lexically_normal().string();
 
       if (cached_only_) {
-        if (auto d = store.get(key)) {
+        if (auto d = hashes.get_full(key)) {
           status = QStringLiteral("Cached");
           crc32 = QString::fromStdString(d->crc32_hex);
           md5 = QString::fromStdString(d->md5_hex);
           sha1 = QString::fromStdString(d->sha1_hex);
           sha256 = QString::fromStdString(d->sha256_hex);
-        } else if (auto d = store.get_quick(key)) {
+        } else if (auto d = hashes.get_quick(key)) {
           status = QStringLiteral("Quick cached");
           sha256 = QString::fromStdString(d->sha256_hex);
           error = QStringLiteral("sample only");
@@ -109,7 +110,7 @@ public slots:
         dirtoo::hash::QuickHashOptions qopts;
         qopts.should_cancel = [this] { return cancel_.load(); };
         if (auto d = dirtoo::hash::hash_file_quick(abs, qopts, &herr)) {
-          store.put_quick(key, *d);
+          hashes.put_quick(key, *d);
           status = QStringLiteral("Quick");
           sha256 = QString::fromStdString(d->sha256_hex);
           error = QStringLiteral("sample (head/mid/tail); stored as quick:");
@@ -117,7 +118,7 @@ public slots:
           status = QStringLiteral("Error");
           error = QString::fromStdString(herr.message);
         }
-      } else if (auto d = store.ensure(abs, key, refresh_, &herr)) {
+      } else if (auto d = hashes.ensure_full(abs, key, refresh_, &herr)) {
         status = refresh_ ? QStringLiteral("Hashed") : QStringLiteral("OK");
         crc32 = QString::fromStdString(d->crc32_hex);
         md5 = QString::fromStdString(d->md5_hex);
@@ -574,9 +575,9 @@ void ChecksumDialog::copy_digest_column(int column, bool include_path)
 
 void ChecksumDialog::clear_cache_entries()
 {
-  dirtoo::hash::ChecksumStore store;
+  auto& hashes = HashService::instance();
   std::string err;
-  if (!store.open(dirtoo::hash::ChecksumStore::default_path(), &err)) {
+  if (!hashes.ensure_open(&err)) {
     QMessageBox::warning(this, QStringLiteral("Checksums"), QString::fromStdString(err));
     return;
   }
@@ -585,7 +586,7 @@ void ChecksumDialog::clear_cache_entries()
     std::error_code ec;
     const auto abs = std::filesystem::absolute(item->text(0).toStdString(), ec);
     const std::string key = ec ? item->text(0).toStdString() : abs.lexically_normal().string();
-    store.remove(key);
+    hashes.remove(key);
     item->setText(1, QStringLiteral("Cleared"));
     item->setText(2, {});
     item->setText(3, {});
