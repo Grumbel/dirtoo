@@ -271,25 +271,19 @@ Handoff bundles **dirtoo-003** … **dirtoo-015** (tip after 015: filter ranges)
       and either idle properly or keep the indicator truthful while work runs.
 
 **Tag UI / apply**
-- [ ] **Tag dialog: clickable list of existing tags (medium)** — UI for setting
-      tags should offer a list of known tags to click and apply without typing.
-- [ ] **Apply multiple tags at once (medium)** — Accept space- or comma-separated
-      tag names in the Tag… dialog (and CLI if easy) and apply all in one job.
-- [ ] **Auto-complete for tag names (nice)** — Completer on the Tag… name field
-      from `TagStore` definitions (and optionally recent / file-local tags).
-- [ ] **Click tag chip → filter for that tag (medium)** — Clicking a painted tag
-      chip on an item should set/activate a `tag:…` filter (or toggle) for that tag.
+- [x] **Tag dialog: clickable list of existing tags (medium)** — TagNameDialog lists
+      known tags; click appends to the field.
+- [x] **Apply multiple tags at once (medium)** — Space/comma-separated names; TagJob
+      applies the full list per file.
+- [x] **Auto-complete for tag names (nice)** — QCompleter over TagStore list_tags().
+- [x] **Click tag chip → filter for that tag (medium)** — Icons/Graphics: chip hit-test
+      sets filter to `tag:<name>` (Detail view still open).
 
 **Tag model / filter language**
-- [ ] **`tag:` glob patterns (medium)** — Support shell-style globs in the filter
-      language so `tag:location-*` matches `location-paris`, `location-london`, etc.
-- [ ] **Allow `:` in tag names as namespace separator (medium)** — Stop forbidding
-      `:` in tag names. Treat `ns:local` as a namespaced tag.
-      - Display: hide the namespace in chips (show local part only) unless
-        disambiguation is needed.
-      - Search: `tag:doom` matches `game:doom` and `movie:doom` (namespace ignored
-        unless given); `tag:game:doom` matches only the namespaced form.
-      - Update validation in `dirtoo-tags` (`tag_name.cpp` / store) and predicates.
+- [x] **`tag:` glob patterns (medium)** — Trailing `*` supported (`tag:location-*`).
+- [x] **Allow `:` in tag names as namespace separator (medium)** — `:` allowed in
+      normalize; chips show local part; `tag:doom` matches any `*:doom`;
+      `tag:game:doom` exact.
 
 ### Review residuals (earlier 2026-08)
 
