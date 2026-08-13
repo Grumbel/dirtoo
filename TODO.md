@@ -1020,7 +1020,7 @@ Full file inventory + notes: **`AUDIT.md`** (section *Full source inventory + au
 ### Missing features / product
 
 - [x] **B2 — Real `tag://` Location** — `Location::from_tag` / `is_tag` / `tag_query`; `open_location` loads union for `tag://a,b`; history + location bar; no search_session hack; F5 reloads tag listing.
-- [ ] **B3 — Quick hash productization** — API + Checksum “Quick sample” exist; optional separate store/column; filter token; never feed sample digests into tag identity.
+- [x] **B3 — Quick hash productization** — Quick samples stored under `quick:` path keys; filter `checksummed:quick`; full `checksummed:yes` / TagJob / ensure() ignore samples.
 - [x] **B5 — Icon spacing control** — Preferences → Appearance: Icon spacing + Icon label width; applied in Icons/RelativeIcons grid.
 - [ ] **B10 — Preferences gaps** — Thumbnail crop/zoom ok; no spacing; no “default open app”; no hash policy (full vs prompt on large files).
 - [ ] **B11 — Undo** — Operations history is log-only; no restore.

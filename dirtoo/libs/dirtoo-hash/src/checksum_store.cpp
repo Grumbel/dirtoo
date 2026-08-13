@@ -307,4 +307,32 @@ ChecksumStore::ensure(const std::filesystem::path& path, std::string_view path_k
   return digests;
 }
 
+
+std::string ChecksumStore::quick_key(std::string_view path_key)
+{
+  return std::string("quick:") + std::string(path_key);
+}
+
+std::optional<FileDigests> ChecksumStore::get_quick(std::string_view path_key) const
+{
+  return get(quick_key(path_key));
+}
+
+void ChecksumStore::put_quick(std::string_view path_key, const FileDigests& digests)
+{
+  put(quick_key(path_key), digests);
+}
+
+bool ChecksumStore::has_full(std::string_view path_key) const
+{
+  auto d = get(path_key);
+  return d.has_value() && d->sha256_hex.size() == 64;
+}
+
+bool ChecksumStore::has_quick(std::string_view path_key) const
+{
+  auto d = get_quick(path_key);
+  return d.has_value() && d->sha256_hex.size() == 64;
+}
+
 } // namespace dirtoo::hash

@@ -51,9 +51,21 @@ public:
 
   /// Ensure digests for path: cache hit if valid, else hash_file + put.
   /// @p path_key should be a stable absolute path string.
+  /// Always uses a *full* file hash — never sample/quick digests (safe for tags).
   [[nodiscard]] std::optional<FileDigests>
   ensure(const std::filesystem::path& path, std::string_view path_key, bool refresh,
          HashError* error = nullptr);
+
+  /// Path key namespace for sample digests so they never collide with full hashes.
+  [[nodiscard]] static std::string quick_key(std::string_view path_key);
+
+  [[nodiscard]] std::optional<FileDigests> get_quick(std::string_view path_key) const;
+  void put_quick(std::string_view path_key, const FileDigests& digests);
+
+  /// Full SHA-256 present (64 hex). Ignores quick samples.
+  [[nodiscard]] bool has_full(std::string_view path_key) const;
+  /// Sample (quick) digest present.
+  [[nodiscard]] bool has_quick(std::string_view path_key) const;
 
 private:
   bool ensure_schema(std::string* error);

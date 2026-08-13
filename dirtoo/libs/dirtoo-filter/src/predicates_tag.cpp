@@ -70,8 +70,17 @@ struct TagLookup {
     if (!open) {
       return false;
     }
-    auto dig = checksums.get(path_key(item));
-    return dig.has_value() && dig->sha256_hex.size() == 64;
+    // Full digests only — quick: keys are never treated as tagged identity.
+    return checksums.has_full(path_key(item));
+  }
+
+  [[nodiscard]] bool has_quick_checksum(const FilterItem& item) const
+  {
+    std::lock_guard<std::mutex> lock(mu);
+    if (!open) {
+      return false;
+    }
+    return checksums.has_quick(path_key(item));
   }
 };
 
@@ -117,18 +126,22 @@ private:
 
 class ChecksummedMatch : public MatchFunc {
 public:
-  explicit ChecksummedMatch(bool want_present)
+  enum class Kind { Full, Quick };
+  ChecksummedMatch(bool want_present, Kind kind = Kind::Full)
       : want_present_(want_present)
+      , kind_(kind)
   {
   }
   bool matches(const FilterItem& item) const override
   {
-    const bool has = TagLookup::instance().has_checksum(item);
+    const bool has = (kind_ == Kind::Quick) ? TagLookup::instance().has_quick_checksum(item)
+                                            : TagLookup::instance().has_checksum(item);
     return want_present_ ? has : !has;
   }
 
 private:
   bool want_present_;
+  Kind kind_;
 };
 
 } // namespace
@@ -181,11 +194,14 @@ MatchFuncPtr make_checksummed(std::string_view arg)
   for (char& c : a) {
     c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
   }
-  if (a == "yes" || a == "true" || a == "1" || a == "any") {
-    return std::make_shared<ChecksummedMatch>(true);
+  if (a == "yes" || a == "true" || a == "1" || a == "any" || a == "full") {
+    return std::make_shared<ChecksummedMatch>(true, ChecksummedMatch::Kind::Full);
   }
   if (a == "no" || a == "false" || a == "0" || a == "none") {
-    return std::make_shared<ChecksummedMatch>(false);
+    return std::make_shared<ChecksummedMatch>(false, ChecksummedMatch::Kind::Full);
+  }
+  if (a == "quick" || a == "sample") {
+    return std::make_shared<ChecksummedMatch>(true, ChecksummedMatch::Kind::Quick);
   }
   return std::make_shared<AlwaysFalse>();
 }

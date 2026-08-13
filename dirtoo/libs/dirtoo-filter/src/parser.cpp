@@ -400,7 +400,7 @@ Terms (juxtaposition = AND, OR joins alternatives):
   size:>1M        size compare (K/M/G); also size:10K-2M or size:10K..2M
   tag:work        files tagged "work" (needs checksum + dt-tag)
   tagged:yes|no   any tags / no tags (checksum cache lookup only)
-  checksummed:yes|no  known SHA-256 in cache / never hashed (aliases: hashed:, csum:)
+  checksummed:yes|no|full|quick  full SHA-256 / none / sample (aliases: hashed:, csum:)
   type:dir        type:file|dir|video|image|archive|audio (t:)
   width:>=1920    image/video width (needs ffprobe)
   height:=1080    image/video height
@@ -470,7 +470,7 @@ std::string filter_help_html()
     <td>Files with tag <i>work</i> (checksum cache + tags DB; no hashing)</td></tr>
 <tr><td><code>tagged:yes</code> / <code>tagged:no</code></td>
 <td>Any tags / no tags (checksum cache)</td></tr>
-<tr><td><code>checksummed:yes</code> / <code>checksummed:no</code></td>
+<tr><td><code>checksummed:yes</code> / <code>no</code> / <code>full</code> / <code>quick</code></td>
     <td>Known SHA-256 in checksum cache / never hashed (no hashing on filter;
         aliases <code>hashed:</code>, <code>csum:</code>)</td></tr>
 <tr><td><code>size:&gt;1M</code></td>

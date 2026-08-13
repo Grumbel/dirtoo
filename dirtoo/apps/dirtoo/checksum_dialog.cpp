@@ -88,6 +88,10 @@ public slots:
           md5 = QString::fromStdString(d->md5_hex);
           sha1 = QString::fromStdString(d->sha1_hex);
           sha256 = QString::fromStdString(d->sha256_hex);
+        } else if (auto d = store.get_quick(key)) {
+          status = QStringLiteral("Quick cached");
+          sha256 = QString::fromStdString(d->sha256_hex);
+          error = QStringLiteral("sample only");
         } else {
           status = QStringLiteral("Missing");
           error = QStringLiteral("not in cache");
@@ -98,14 +102,15 @@ public slots:
 
       dirtoo::hash::HashError herr;
       if (quick_) {
-        // Sample hash only — never write into ChecksumStore (would collide with
-        // full SHA-256 used for tags).
+        // Sample hash — stored under quick: key so it never collides with full
+        // SHA-256 used for tags (ChecksumStore::ensure / TagJob).
         dirtoo::hash::QuickHashOptions qopts;
         qopts.should_cancel = [this] { return cancel_.load(); };
         if (auto d = dirtoo::hash::hash_file_quick(abs, qopts, &herr)) {
+          store.put_quick(key, *d);
           status = QStringLiteral("Quick");
           sha256 = QString::fromStdString(d->sha256_hex);
-          error = QStringLiteral("sample (head/mid/tail); not stored");
+          error = QStringLiteral("sample (head/mid/tail); stored as quick:");
         } else {
           status = QStringLiteral("Error");
           error = QString::fromStdString(herr.message);
