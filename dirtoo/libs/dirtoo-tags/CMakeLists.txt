@@ -38,7 +38,7 @@ target_include_directories(dirtoo-tags PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
-target_link_libraries(dirtoo-tags PUBLIC dirtoo-hash::dirtoo-hash SQLite::SQLite3)
+target_link_libraries(dirtoo-tags PUBLIC dirtoo-hash::dirtoo-hash SQLite3::SQLite3)
 target_compile_features(dirtoo-tags PUBLIC cxx_std_23)
 target_compile_options(dirtoo-tags PRIVATE
   $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic>

@@ -202,14 +202,6 @@ TEST_CASE("FileCollection group by session gaps", "[collection][group]")
   using dirtoo::fs::FileInfo;
   using dirtoo::fs::Location;
 
-  // Build three files: two close in time, one >10h earlier.
-  auto make = [](const char* path, const char* name, std::int64_t epoch_sec) {
-    auto fi = FileInfo::synthetic(Location::from_path(path), name, false);
-    // synthetic leaves mtime at epoch 0; we only check apply_grouping ordering
-    // via group_key Session labels through the collection API after set.
-    (void)epoch_sec;
-    return fi;
-  };
   // Without controllable mtime on synthetic entries, verify mode switches and
   // that apply_grouping returns same-size label vector.
   std::vector<FileInfo> items;

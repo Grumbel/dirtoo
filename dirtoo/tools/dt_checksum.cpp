@@ -56,23 +56,6 @@ const std::string& pick(const dh::FileDigests& d, Algo a)
   }
 }
 
-const char* algo_label(Algo a)
-{
-  switch (a) {
-  case Algo::Md5:
-    return "MD5";
-  case Algo::Sha1:
-    return "SHA1";
-  case Algo::Crc32:
-    return "CRC32";
-  case Algo::Sha256:
-    return "SHA256";
-  case Algo::All:
-    return "ALL";
-  }
-  return "SHA256";
-}
-
 std::optional<Algo> parse_algo(std::string_view s)
 {
   if (s == "md5") {
