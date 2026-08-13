@@ -11,6 +11,7 @@
 #include <QIcon>
 #include <QFontMetrics>
 #include <QPainter>
+#include <QRectF>
 #include <QPen>
 #include <QPolygonF>
 #include <QPixmap>
@@ -127,7 +128,8 @@ inline void paint_symlink_emblem(QPainter* painter, const QRect& thumb)
 
 /// Brief highlight after open/launch (LaunchFlashRole).
 /// Graphics tiles also draw a rounded outline for stronger acknowledgement.
-inline void paint_launch_flash(QPainter* painter, const QRect& rect, const QColor& highlight,
+/// Accepts QRectF so GraphicsFileItem can pass boundingRect() without conversion.
+inline void paint_launch_flash(QPainter* painter, const QRectF& rect, const QColor& highlight,
                                bool outline = false)
 {
   if (painter == nullptr || rect.isEmpty()) {
@@ -144,6 +146,12 @@ inline void paint_launch_flash(QPainter* painter, const QRect& rect, const QColo
     painter->drawRoundedRect(rect.adjusted(1, 1, -1, -1), 4, 4);
   }
   painter->restore();
+}
+
+inline void paint_launch_flash(QPainter* painter, const QRect& rect, const QColor& highlight,
+                               bool outline = false)
+{
+  paint_launch_flash(painter, QRectF(rect), highlight, outline);
 }
 
 /// New / loading / error / symlink stickers from model roles.
