@@ -67,18 +67,18 @@ struct TagLookup {
 
 class TagNameMatch : public MatchFunc {
 public:
-  explicit TagNameMatch(std::string name)
-      : name_(std::move(name))
+  explicit TagNameMatch(std::string query)
+      : query_(std::move(query))
   {
   }
   bool matches(const FilterItem& item) const override
   {
-    if (name_.empty()) {
+    if (query_.empty()) {
       return false;
     }
     const auto tags = TagLookup::instance().tags_for(item);
     for (const auto& t : tags) {
-      if (t == name_) {
+      if (dirtoo::tags::tag_name_matches(t, query_)) {
         return true;
       }
     }
@@ -86,7 +86,7 @@ public:
   }
 
 private:
-  std::string name_;
+  std::string query_;
 };
 
 class TaggedMatch : public MatchFunc {
@@ -109,11 +109,26 @@ private:
 
 MatchFuncPtr make_tag(std::string_view tag_name)
 {
-  const std::string norm = dirtoo::tags::normalize_tag_name(tag_name);
+  // Preserve trailing '*' for glob; normalize the rest via the same rules as
+  // tag definitions (lowercase, allow namespace ':').
+  std::string raw(tag_name);
+  bool glob = false;
+  if (!raw.empty() && raw.back() == '*') {
+    glob = true;
+    raw.pop_back();
+  }
+  std::string norm = dirtoo::tags::normalize_tag_name(raw);
+  if (norm.empty() && !raw.empty()) {
+    // normalize rejected the name
+    return std::make_shared<AlwaysFalse>();
+  }
+  if (glob) {
+    norm.push_back('*');
+  }
   if (norm.empty()) {
     return std::make_shared<AlwaysFalse>();
   }
-  return std::make_shared<TagNameMatch>(norm);
+  return std::make_shared<TagNameMatch>(std::move(norm));
 }
 
 MatchFuncPtr make_tagged(std::string_view arg)

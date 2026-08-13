@@ -118,7 +118,9 @@ inline std::vector<TagChip> chips_for_path(const std::filesystem::path& path)
   for (const auto& name : st.tags.tags_for_sha256(digests->sha256_hex)) {
     TagChip chip;
     chip.name = QString::fromStdString(name);
-    chip.label = chip.name;
+    // Hide namespace in the chip text (show local part only). Explicit TagDef
+    // label still wins when set.
+    chip.label = QString::fromStdString(dirtoo::tags::local_tag_name(name));
     if (auto def = st.tags.get_tag(name)) {
       chip.color = color_for_tag(*def);
       if (!def->label.empty()) {
@@ -214,6 +216,48 @@ inline void paint_tag_chips(QPainter* painter, const QRect& thumb, const std::fi
     x += w + 2;
   }
   painter->restore();
+}
+
+
+/// Hit-test tag chips in the same layout as paint_tag_chips. Returns the stable
+/// tag name (with namespace) of the chip under `pos`, or empty if none.
+inline QString tag_chip_at(const QRect& thumb, const std::filesystem::path& path, const QPoint& pos)
+{
+  if (thumb.isEmpty() || !thumb.contains(pos)) {
+    return {};
+  }
+  const auto chips = tag_paint_detail::chips_for_path(path);
+  if (chips.empty()) {
+    return {};
+  }
+  QFont font;
+  font.setPointSizeF(std::max(7.5, font.pointSizeF() * 0.8));
+  const QFontMetrics fm(font);
+  const int pad_x = 3;
+  const int h = fm.height() + 2;
+  const int icon_sz = std::max(10, h - 2);
+  int x = thumb.left() + 2;
+  const int bottom_meta_reserve = h + 6;
+  const int y = thumb.bottom() - h - 2 - bottom_meta_reserve;
+  for (const auto& chip : chips) {
+    QString text = chip.label.isEmpty() ? chip.name : chip.label;
+    const QPixmap icon = load_tag_badge_pixmap(chip.badge, icon_sz);
+    const int icon_w = icon.isNull() ? 0 : (icon_sz + 2);
+    const int max_text = std::max(12, thumb.width() / 3 - icon_w);
+    if (fm.horizontalAdvance(text) > max_text) {
+      text = fm.elidedText(text, Qt::ElideRight, max_text);
+    }
+    const int w = fm.horizontalAdvance(text) + pad_x * 2 + icon_w;
+    if (x + w > thumb.right() - 2) {
+      break;
+    }
+    const QRect badge(x, y, w, h);
+    if (badge.contains(pos)) {
+      return chip.name;
+    }
+    x += w + 2;
+  }
+  return {};
 }
 
 } // namespace dirtoo::app
