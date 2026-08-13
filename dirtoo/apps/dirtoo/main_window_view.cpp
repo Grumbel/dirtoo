@@ -29,8 +29,9 @@ void MainWindow::apply_icon_zoom()
     icon_view_->setIconSize(QSize(size, size));
     icon_view_->setSpacing(2);
     // Row a little taller than the icon/filename; column wide enough for a name.
-    const int row_h = std::max(size, 16) + 6;
-    const int col_w = std::max(size + 12 + 140, 180);
+    // Wider columns so long basenames are less often elided in multi-column List.
+    const int row_h = std::max(size, 16) + 8;
+    const int col_w = std::max(size + 12 + 200, 220);
     icon_view_->setGridSize(QSize(col_w, row_h));
     if (model_ != nullptr) {
       // List layout: Decoration left, DisplayRole text to the right (not under icon).
@@ -60,11 +61,15 @@ void MainWindow::apply_icon_zoom()
   }
   icon_view_->setIconSize(QSize(size, size));
   const int text_rows = model_ != nullptr ? model_->icon_text_rows() : 1;
-  const int text_h = 6 + text_rows * 18;
-  const int cell_w = std::max(size + 40, 96);
-  const int cell_h = size + text_h + 16;
+  // Extra height for a second name line when captions are enabled (long names).
+  const int name_lines = text_rows > 0 ? 2 : 0;
+  const int meta_lines = std::max(0, text_rows - 1);
+  const int text_h = 6 + (name_lines + meta_lines) * 17;
+  // Tile wider than the pixmap so middle-elided names still show more characters.
+  const int cell_w = std::max({size + 72, 128, size + 48 + text_rows * 8});
+  const int cell_h = size + text_h + 20;
   icon_view_->setGridSize(QSize(cell_w, cell_h));
-  icon_view_->setSpacing(8);
+  icon_view_->setSpacing(12);
   if (graphics_view_ != nullptr) {
     graphics_view_->set_tile_size(QSize(cell_w, cell_h));
     graphics_view_->set_compact(false);

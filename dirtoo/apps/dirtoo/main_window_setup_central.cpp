@@ -183,6 +183,8 @@ void MainWindow::setup_central_ui()
   connect(icon_view_, &QWidget::customContextMenuRequested, this, &MainWindow::on_context_menu);
   connect(icon_view_->verticalScrollBar(), &QScrollBar::valueChanged, this,
         [this](int) { request_thumbnails_for_visible(); });
+  connect(icon_view_->horizontalScrollBar(), &QScrollBar::valueChanged, this,
+        [this](int) { request_thumbnails_for_visible(); });
   view_stack_->addWidget(icon_view_);
 
   graphics_view_ = new GraphicsFileView(view_stack_);
@@ -212,6 +214,8 @@ void MainWindow::setup_central_ui()
   connect(graphics_view_, &GraphicsFileView::visible_window_changed, this,
         [this] { request_thumbnails_for_visible(); });
   connect(graphics_view_->verticalScrollBar(), &QScrollBar::valueChanged, this,
+        [this](int) { request_thumbnails_for_visible(); });
+  connect(graphics_view_->horizontalScrollBar(), &QScrollBar::valueChanged, this,
         [this](int) { request_thumbnails_for_visible(); });
   view_stack_->addWidget(graphics_view_);
 

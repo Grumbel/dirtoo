@@ -175,8 +175,9 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
   }
 
   const int text_rows = model_->icon_text_rows();
+  // +1 line budget so a long basename can wrap without eating meta lines.
   const int caption_h =
-      text_rows > 0 ? (6 + text_rows * 16)
+      text_rows > 0 ? (6 + (text_rows + 1) * 16)
                     : (model_->icon_detail_level() > 0 ? 22 : 0);
   int icon_side = std::min(tile_size_.width() - 8, tile_size_.height() - caption_h - top_pad - 4);
   icon_side = std::max(16, icon_side);
@@ -325,21 +326,49 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
   paint_tile_status_overlays(painter, thumb, idx);
 
   // Captions: basename in normal text color; size/date in gray (dirtoo-py).
-  // No outline; selection keeps black text (selection fill provides contrast).
+  // Long names wrap to a second line when the tile budget allows, else elide.
   if (!text.isEmpty() && caption_h > 0) {
     QRect text_rect = br.toRect().adjusted(4, thumb.bottom() + 2, -4, -2);
     const QColor name_color = text_color.isValid() ? text_color : QColor(0, 0, 0);
     const QColor secondary(96, 96, 96);
     const QFontMetrics fm(painter->font());
-    const QStringList lines = text.split(QLatin1Char('\n'));
+    QStringList parts = text.split(QLatin1Char('\n'));
+    QStringList paint_lines;
+    if (!parts.isEmpty()) {
+      const QString name = parts.front();
+      const bool can_wrap = text_rows >= 1 && text_rect.width() > 24
+                            && fm.horizontalAdvance(name) > text_rect.width();
+      if (can_wrap) {
+        int brk = name.size() / 2;
+        for (int i = brk; i < name.size() && i < brk + 12; ++i) {
+          const QChar ch = name[i];
+          if (ch == QLatin1Char('-') || ch == QLatin1Char('_') || ch == QLatin1Char('.')
+              || ch == QLatin1Char(' ')) {
+            brk = i + 1;
+            break;
+          }
+        }
+        brk = std::clamp(brk, 1, static_cast<int>(name.size()) - 1);
+        paint_lines << name.left(brk);
+        paint_lines << name.mid(brk);
+      } else {
+        paint_lines << name;
+      }
+      for (int i = 1; i < parts.size(); ++i) {
+        paint_lines << parts[i];
+      }
+    }
+    const int name_line_count = (paint_lines.size() >= 2 && parts.size() == 1) ? 2 : 1;
     int y = text_rect.top();
     int drawn = 0;
-    for (const QString& line : lines) {
-      if (y + fm.height() > text_rect.bottom() || (text_rows > 0 && drawn >= text_rows)) {
+    const int budget = std::max(text_rows, name_line_count + std::max(0, text_rows - 1));
+    for (const QString& line : paint_lines) {
+      if (y + fm.height() > text_rect.bottom() || drawn >= budget) {
         break;
       }
       const QString elided = fm.elidedText(line, Qt::ElideMiddle, text_rect.width());
-      painter->setPen(drawn == 0 ? name_color : secondary);
+      const bool is_name = drawn < name_line_count;
+      painter->setPen(is_name ? name_color : secondary);
       painter->drawText(QRect(text_rect.left(), y, text_rect.width(), fm.height()),
                         Qt::AlignHCenter | Qt::AlignTop, elided);
       y += fm.height() + 1;

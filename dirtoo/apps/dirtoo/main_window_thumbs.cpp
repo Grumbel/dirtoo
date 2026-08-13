@@ -7,6 +7,8 @@
 #include "dirtoo/archive/archive_index.hpp"
 #include "dirtoo/thumbnail/thumbnailer.hpp"
 #include <QDebug>
+#include <QSet>
+#include <algorithm>
 #include <QFile>
 #include <QMimeDatabase>
 #include <QStandardPaths>
@@ -116,34 +118,67 @@ void MainWindow::request_thumbnails_for_visible()
       from_viewport = !rows.empty();
     } else if (QAbstractItemView* view = current_view()) {
       const QRect vp = view->viewport()->rect();
-      // Walk the viewport by approximate row step so Detail/List only queue
-      // thumbnails for on-screen rows (plus a small pad), not a huge range.
-      const int step = std::max(8, view->sizeHintForRow(0) > 0 ? view->sizeHintForRow(0) : 24);
-      int first = model_->rowCount();
-      int last = -1;
-      for (int y = 0; y < vp.height(); y += step) {
-        const QModelIndex idx = view->indexAt(QPoint(4, y));
-        if (!idx.isValid()) {
-          continue;
+      // List mode is multi-column (top-to-bottom, then left-to-right). Sampling
+      // only x=4 missed every column after the first when the window is wide.
+      // Detail is single-column; still sample a few x positions for safety.
+      QSet<int> row_set;
+      int step_y = 24;
+      int step_x = vp.width(); // one column by default (Detail)
+      if (view_mode_ == ViewMode::List && icon_view_ != nullptr) {
+        const QSize grid = icon_view_->gridSize();
+        step_x = std::max(48, grid.width() > 0 ? grid.width() : 180);
+        step_y = std::max(16, grid.height() > 0 ? grid.height() : 24);
+      } else {
+        const int hint = view->sizeHintForRow(0);
+        step_y = std::max(8, hint > 0 ? hint : 24);
+        step_x = std::max(64, vp.width() / 4);
+      }
+      for (int x = 4; x < vp.width() + step_x; x += step_x) {
+        const int sx = std::min(x, std::max(0, vp.width() - 4));
+        for (int y = 4; y < vp.height() + step_y; y += step_y) {
+          const int sy = std::min(y, std::max(0, vp.height() - 4));
+          const QModelIndex idx = view->indexAt(QPoint(sx, sy));
+          if (idx.isValid()) {
+            row_set.insert(idx.row());
+          }
         }
-        first = std::min(first, idx.row());
-        last = std::max(last, idx.row());
       }
-      if (last < 0) {
+      if (row_set.isEmpty()) {
         const QModelIndex top = view->indexAt(vp.topLeft() + QPoint(4, 4));
-        const QModelIndex bot = view->indexAt(vp.bottomLeft() + QPoint(4, -4));
-        first = top.isValid() ? top.row() : 0;
-        last = bot.isValid() ? bot.row() : first;
+        const QModelIndex bot = view->indexAt(vp.bottomRight() - QPoint(4, 4));
+        if (top.isValid()) {
+          row_set.insert(top.row());
+        }
+        if (bot.isValid()) {
+          row_set.insert(bot.row());
+        }
       }
-      if (last < first) {
-        std::swap(first, last);
+      if (!row_set.isEmpty()) {
+        int first = *std::min_element(row_set.begin(), row_set.end());
+        int last = *std::max_element(row_set.begin(), row_set.end());
+        first = std::max(0, first - 4);
+        last = std::min(model_->rowCount() - 1, last + 8);
+        // List mode row indices are not contiguous on screen (columns interleave
+        // in model order). Prefer the actual set plus a small pad of neighbours.
+        if (view_mode_ == ViewMode::List) {
+          QSet<int> expanded = row_set;
+          for (int r : row_set) {
+            for (int d = -2; d <= 2; ++d) {
+              const int rr = r + d;
+              if (rr >= 0 && rr < model_->rowCount()) {
+                expanded.insert(rr);
+              }
+            }
+          }
+          rows.assign(expanded.begin(), expanded.end());
+          std::sort(rows.begin(), rows.end());
+        } else {
+          for (int r = first; r <= last; ++r) {
+            rows.push_back(r);
+          }
+        }
+        from_viewport = !rows.empty();
       }
-      first = std::max(0, first - 4);
-      last = std::min(model_->rowCount() - 1, last + 8);
-      for (int r = first; r <= last; ++r) {
-        rows.push_back(r);
-      }
-      from_viewport = !rows.empty();
     }
 
     // Cap only the blind fallback. Viewport-derived ranges must not be
