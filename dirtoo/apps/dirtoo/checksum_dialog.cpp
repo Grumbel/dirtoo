@@ -3,6 +3,7 @@
 
 #include "checksum_dialog.hpp"
 #include "activity_monitor.hpp"
+#include "app_settings.hpp"
 
 #include "dirtoo/hash/checksum_store.hpp"
 #include "dirtoo/hash/hash_file.hpp"
@@ -26,6 +27,7 @@
 #include <QTreeWidgetItem>
 #include <QVBoxLayout>
 
+#include <algorithm>
 #include <atomic>
 #include <utility>
 
@@ -228,8 +230,41 @@ ChecksumDialog::ChecksumDialog(QStringList paths, QWidget* parent)
   connect(cancel_btn_, &QPushButton::clicked, this, &ChecksumDialog::cancel_job);
   connect(clear_btn, &QPushButton::clicked, this, &ChecksumDialog::clear_cache_entries);
 
-  // Default: use cache, hash only on miss.
-  start_job(false, false, false);
+  // Default start respects Preferences hash policy for large files.
+  const AppSettings settings = load_settings();
+  const qint64 threshold =
+      static_cast<qint64>(std::max(1, settings.hash_large_mib)) * 1024 * 1024;
+  int large_count = 0;
+  for (const QString& p : paths_) {
+    const QFileInfo fi(p);
+    if (fi.isFile() && fi.size() >= threshold) {
+      ++large_count;
+    }
+  }
+  const QString policy = settings.hash_policy.toLower();
+  if (large_count > 0 && policy == QLatin1String("quick")) {
+    start_job(false, false, true);
+  } else if (large_count > 0 && policy == QLatin1String("prompt")) {
+    const auto choice = QMessageBox::question(
+        this, QStringLiteral("Large files"),
+        QStringLiteral("%1 file(s) are %2 MiB or larger.\n\n"
+                       "Full hash is thorough but slow. Quick sample is fast and is not "
+                       "written to the checksum cache.\n\n"
+                       "Compute a full hash?")
+            .arg(large_count)
+            .arg(settings.hash_large_mib),
+        QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel, QMessageBox::Yes);
+    if (choice == QMessageBox::Cancel) {
+      // Show rows only; user can press a button later.
+    } else if (choice == QMessageBox::No) {
+      start_job(false, false, true);
+    } else {
+      start_job(false, false, false);
+    }
+  } else {
+    // full policy, or no large files: use cache, hash only on miss.
+    start_job(false, false, false);
+  }
 }
 
 ChecksumDialog::~ChecksumDialog()

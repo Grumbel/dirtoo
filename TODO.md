@@ -1022,7 +1022,7 @@ Full file inventory + notes: **`AUDIT.md`** (section *Full source inventory + au
 - [x] **B2 — Real `tag://` Location** — `Location::from_tag` / `is_tag` / `tag_query`; `open_location` loads union for `tag://a,b`; history + location bar; no search_session hack; F5 reloads tag listing.
 - [x] **B3 — Quick hash productization** — Quick samples stored under `quick:` path keys; filter `checksummed:quick`; full `checksummed:yes` / TagJob / ensure() ignore samples.
 - [x] **B5 — Icon spacing control** — Preferences → Appearance: Icon spacing + Icon label width; applied in Icons/RelativeIcons grid.
-- [ ] **B10 — Preferences gaps** — Spacing + default sort mode + SI label `kB` done; still open: “default open app”; hash policy (full vs prompt on large files).
+- [x] **B10 — Preferences gaps** — Spacing, default sort, SI `kB`, default open desktop id, hash policy (full/quick/prompt + MiB threshold) for Checksum dialog + tag large-file confirm.
 - [ ] **B11 — Undo** — Operations history is log-only; no restore.
 - [ ] **B12 — RelativeIcons polish** — Mode present; document in UI/help; verify layout quality.
 - [x] **C2 — Devices without UDisks** — Placeholder title + install/service tip (apt/dnf/pacman) when UDisks2 missing; separate empty-volumes message when service is up.

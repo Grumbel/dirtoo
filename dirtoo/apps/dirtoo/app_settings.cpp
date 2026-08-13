@@ -35,6 +35,10 @@ AppSettings load_settings()
   out.sort_ascending = s.value(QStringLiteral("ui/sort_ascending"), out.sort_ascending).toBool();
   out.group_mode = s.value(QStringLiteral("ui/group_mode"), out.group_mode).toString();
   out.size_units = s.value(QStringLiteral("ui/size_units"), out.size_units).toString();
+  out.default_open_desktop_id =
+      s.value(QStringLiteral("open/default_desktop_id"), out.default_open_desktop_id).toString();
+  out.hash_policy = s.value(QStringLiteral("hash/policy"), out.hash_policy).toString();
+  out.hash_large_mib = s.value(QStringLiteral("hash/large_mib"), out.hash_large_mib).toInt();
   out.window_geometry = s.value(QStringLiteral("window/geometry")).toByteArray();
   out.window_state = s.value(QStringLiteral("window/state")).toByteArray();
   out.last_location = s.value(QStringLiteral("session/last_location")).toString();
@@ -68,6 +72,9 @@ void save_settings(const AppSettings& settings)
   s.setValue(QStringLiteral("ui/sort_ascending"), settings.sort_ascending);
   s.setValue(QStringLiteral("ui/group_mode"), settings.group_mode);
   s.setValue(QStringLiteral("ui/size_units"), settings.size_units);
+  s.setValue(QStringLiteral("open/default_desktop_id"), settings.default_open_desktop_id);
+  s.setValue(QStringLiteral("hash/policy"), settings.hash_policy);
+  s.setValue(QStringLiteral("hash/large_mib"), settings.hash_large_mib);
   s.setValue(QStringLiteral("window/geometry"), settings.window_geometry);
   s.setValue(QStringLiteral("window/state"), settings.window_state);
   s.setValue(QStringLiteral("session/last_location"), settings.last_location);

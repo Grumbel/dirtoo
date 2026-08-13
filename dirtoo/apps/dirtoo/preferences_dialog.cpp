@@ -12,6 +12,7 @@
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QLabel>
+#include <QLineEdit>
 #include <QPushButton>
 #include <QSpinBox>
 #include <QTabWidget>
@@ -247,6 +248,60 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   interface_form->addRow(dismiss_warn);
   tabs->addTab(wrap_form(interface_form, &dialog), QStringLiteral("Interface"));
 
+  // ----- Files (open + hash) -----
+  auto* files_form = new QFormLayout();
+  files_form->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
+  files_form->setHorizontalSpacing(12);
+  files_form->setVerticalSpacing(10);
+
+  auto* default_open = new QLineEdit(&dialog);
+  default_open->setText(settings->default_open_desktop_id);
+  default_open->setPlaceholderText(QStringLiteral("empty = system default"));
+  default_open->setToolTip(
+      QStringLiteral("Desktop file id used for double-click / Enter open "
+                     "(e.g. org.gnome.gedit.desktop or firefox.desktop). "
+                     "Leave empty to use the system MIME default."));
+  default_open->setClearButtonEnabled(true);
+
+  auto* hash_policy = new QComboBox(&dialog);
+  hash_policy->addItem(QStringLiteral("Always full hash"), QStringLiteral("full"));
+  hash_policy->addItem(QStringLiteral("Prefer quick sample on large files"), QStringLiteral("quick"));
+  hash_policy->addItem(QStringLiteral("Ask when files are large"), QStringLiteral("prompt"));
+  {
+    const QString hp = settings->hash_policy.toLower();
+    int idx = 2; // prompt default
+    for (int i = 0; i < hash_policy->count(); ++i) {
+      if (hash_policy->itemData(i).toString() == hp) {
+        idx = i;
+        break;
+      }
+    }
+    hash_policy->setCurrentIndex(idx);
+  }
+  hash_policy->setToolTip(
+      QStringLiteral("Checksum dialog default for large files. Tagging still needs a full "
+                     "SHA-256; “Ask” prompts before hashing large selections."));
+
+  auto* hash_mib = new QSpinBox(&dialog);
+  hash_mib->setRange(1, 1024 * 16);
+  hash_mib->setValue(std::clamp(settings->hash_large_mib, 1, 1024 * 16));
+  hash_mib->setSuffix(QStringLiteral(" MiB"));
+  hash_mib->setToolTip(QStringLiteral("Files at or above this size are “large” for the hash policy."));
+
+  auto* files_hint = new QLabel(
+      QStringLiteral(
+          "Quick sample hashes ~1 MiB from head/middle/tail (fast, not stored as a full "
+          "checksum). Full SHA-256 is required for tags."),
+      &dialog);
+  files_hint->setWordWrap(true);
+  files_hint->setStyleSheet(QStringLiteral("color: palette(mid);"));
+
+  files_form->addRow(QStringLiteral("Default open app:"), default_open);
+  files_form->addRow(QStringLiteral("Large-file hash:"), hash_policy);
+  files_form->addRow(QStringLiteral("Large-file threshold:"), hash_mib);
+  files_form->addRow(files_hint);
+  tabs->addTab(wrap_form(files_form, &dialog), QStringLiteral("Files"));
+
   // ----- Detail columns -----
   auto* columns_page = new QWidget(&dialog);
   auto* columns_layout = new QVBoxLayout(columns_page);
@@ -349,6 +404,9 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   settings->show_hidden = hidden->isChecked();
   settings->read_only = read_only->isChecked();
   settings->dismiss_dev_warning = dismiss_warn->isChecked();
+  settings->default_open_desktop_id = default_open->text().trimmed();
+  settings->hash_policy = hash_policy->currentData().toString();
+  settings->hash_large_mib = hash_mib->value();
 
   QStringList cols;
   for (QCheckBox* cb : col_boxes) {

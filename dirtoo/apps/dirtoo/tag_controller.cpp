@@ -4,6 +4,7 @@
 #include "tag_controller.hpp"
 
 #include "activity_monitor.hpp"
+#include "app_settings.hpp"
 
 #include "dirtoo/hash/checksum_store.hpp"
 #include "dirtoo/tags/tag_store.hpp"
@@ -20,6 +21,7 @@
 #include <QStringListModel>
 #include <QVBoxLayout>
 
+#include <algorithm>
 #include <filesystem>
 #include <set>
 
@@ -277,6 +279,37 @@ void TagController::tag_files(std::vector<dirtoo::fs::FileInfo> selection)
       (mode == TagJob::Mode::Remove) ? dlg.tags_to_remove() : dlg.tags_to_add();
   if (tag_list.isEmpty()) {
     return;
+  }
+
+  // Tagging always needs a full SHA-256. Respect large-file hash policy as a
+  // confirmation gate (quick policy still runs full hash after the user OK's).
+  {
+    const AppSettings settings = load_settings();
+    const QString policy = settings.hash_policy.toLower();
+    const qint64 threshold =
+        static_cast<qint64>(std::max(1, settings.hash_large_mib)) * 1024 * 1024;
+    int large_count = 0;
+    for (const auto& fi : files) {
+      if (fi.is_regular_file() && !fi.location().is_archive()
+          && static_cast<qint64>(fi.size()) >= threshold) {
+        ++large_count;
+      }
+    }
+    if (large_count > 0
+        && (policy == QLatin1String("prompt") || policy == QLatin1String("quick"))) {
+      const auto choice = QMessageBox::question(
+          dialog_parent_, QStringLiteral("Large files"),
+          QStringLiteral(
+              "%1 file(s) are %2 MiB or larger.\n\n"
+              "Tagging requires a full SHA-256 of each file (quick sample is not enough). "
+              "Continue?")
+              .arg(large_count)
+              .arg(settings.hash_large_mib),
+          QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Yes);
+      if (choice != QMessageBox::Yes) {
+        return;
+      }
+    }
   }
 
   Pending pending;

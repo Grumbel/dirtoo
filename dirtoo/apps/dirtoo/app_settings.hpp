@@ -44,6 +44,15 @@ struct AppSettings {
   QString group_mode = QStringLiteral("none"); // none|day|directory|duration|session
   /// Size display units: "si" (kB/MB, base 1000) or "iec" (KiB/MiB, base 1024).
   QString size_units = QStringLiteral("si");
+  /// Preferred desktop application id for double-click open (e.g. "org.gnome.gedit.desktop").
+  /// Empty = system default via xdg / QDesktopServices.
+  QString default_open_desktop_id;
+  /// How to hash large files in Checksum dialog / before tagging:
+  /// "full" always full SHA-256; "quick" prefer sample hash when over threshold;
+  /// "prompt" ask Full vs Quick when any selected file exceeds threshold.
+  QString hash_policy = QStringLiteral("prompt");
+  /// Size threshold in MiB for hash_policy prompt/quick (regular files only).
+  int hash_large_mib = 64;
   QByteArray window_geometry;
   QByteArray window_state;
   QString last_location;

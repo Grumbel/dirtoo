@@ -3,6 +3,8 @@
 
 #include "open_with.hpp"
 
+#include "app_settings.hpp"
+
 #include "open_history.hpp"
 
 #include <QAction>
@@ -303,6 +305,26 @@ std::vector<DesktopApp> intersect_apps(const std::vector<std::vector<DesktopApp>
 
 bool open_default(const std::filesystem::path& path)
 {
+  // Optional Preferences override: fixed desktop application id.
+  const AppSettings settings = load_settings();
+  const QString preferred_id = settings.default_open_desktop_id.trimmed();
+  if (!preferred_id.isEmpty()) {
+    DesktopApp preferred = parse_desktop_file(find_desktop_file(preferred_id));
+    if (preferred.exec.isEmpty()) {
+      // Try MIME association lists in case the id is listed without a full parse path.
+      for (const auto& a : associated_apps_for_paths({path})) {
+        if (a.id == preferred_id) {
+          preferred = a;
+          break;
+        }
+      }
+    }
+    if (!preferred.exec.isEmpty() && launch_desktop_app(preferred, {path})) {
+      return true; // launch_desktop_app already records open history
+    }
+    // Preferred app failed; fall through to system default.
+  }
+
   const bool ok =
       QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(path.string())));
   if (ok) {
