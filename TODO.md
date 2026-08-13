@@ -256,6 +256,42 @@ Handoff bundles **dirtoo-003** … **dirtoo-015** (tip after 015: filter ranges)
 - [ ] **MainWindow gravity (ongoing)** — see Refactoring track; chrome/controllers
       improved but ops/nav/load still large
 
+#### Open issues from 2026-08-13 (user report / feature requests)
+
+**Activity / background work**
+- [ ] **Thumbnail activity counter only goes up, never down (high)** — Background
+      activity indicator for Thumbnails increments but never decrements on finish
+      or failure. Likely missing finished/failed accounting in
+      `ThumbnailCoordinator` / `ActivityMonitor` wiring. Investigate and fix.
+- [ ] **Show which tags are currently being processed (nice)** — When TagJob is
+      active, surface the tag name(s) under work in the Activity detail dialog
+      (or status), not only a generic “Tagging…” headline.
+- [ ] **Progress indicator shows “idle” while still at ~100% of one CPU (high)** —
+      Activity toolbar reports Idle but a core stays saturated. Find the spin
+      (busy loop, tight timer, unreaped worker, filter/sort thrash, watcher, etc.)
+      and either idle properly or keep the indicator truthful while work runs.
+
+**Tag UI / apply**
+- [ ] **Tag dialog: clickable list of existing tags (medium)** — UI for setting
+      tags should offer a list of known tags to click and apply without typing.
+- [ ] **Apply multiple tags at once (medium)** — Accept space- or comma-separated
+      tag names in the Tag… dialog (and CLI if easy) and apply all in one job.
+- [ ] **Auto-complete for tag names (nice)** — Completer on the Tag… name field
+      from `TagStore` definitions (and optionally recent / file-local tags).
+- [ ] **Click tag chip → filter for that tag (medium)** — Clicking a painted tag
+      chip on an item should set/activate a `tag:…` filter (or toggle) for that tag.
+
+**Tag model / filter language**
+- [ ] **`tag:` glob patterns (medium)** — Support shell-style globs in the filter
+      language so `tag:location-*` matches `location-paris`, `location-london`, etc.
+- [ ] **Allow `:` in tag names as namespace separator (medium)** — Stop forbidding
+      `:` in tag names. Treat `ns:local` as a namespaced tag.
+      - Display: hide the namespace in chips (show local part only) unless
+        disambiguation is needed.
+      - Search: `tag:doom` matches `game:doom` and `movie:doom` (namespace ignored
+        unless given); `tag:game:doom` matches only the namespaced form.
+      - Update validation in `dirtoo-tags` (`tag_name.cpp` / store) and predicates.
+
 ### Review residuals (earlier 2026-08)
 
 Prioritized issues from a multi-day change review.
