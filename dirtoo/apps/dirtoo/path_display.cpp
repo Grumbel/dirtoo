@@ -3,6 +3,8 @@
 
 #include "path_display.hpp"
 
+#include <QStringList>
+
 #include <algorithm>
 
 namespace dirtoo::app {
