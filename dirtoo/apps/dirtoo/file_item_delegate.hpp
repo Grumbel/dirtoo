@@ -4,6 +4,7 @@
 #pragma once
 
 #include <QStyledItemDelegate>
+#include <QString>
 
 namespace dirtoo::app {
 
@@ -22,7 +23,15 @@ public:
   [[nodiscard]] QSize sizeHint(const QStyleOptionViewItem& option,
                                const QModelIndex& index) const override;
 
+  bool editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option,
+                   const QModelIndex& index) override;
+
+signals:
+  void tag_chip_clicked(const QString& tag_name);
+
 private:
+  [[nodiscard]] QRect thumb_rect_for(const QStyleOptionViewItem& option,
+                                     const QModelIndex& index) const;
   FileListModel* model_ = nullptr;
 };
 

@@ -252,8 +252,10 @@ Handoff bundles **dirtoo-003** … **dirtoo-015** (tip after 015: filter ranges)
 - [x] **Reload Thumbnails + archive members (medium)** — unextracted members now go
       through `ensure_archive_member_extracted` (same as request_rows) then force
       Thumbnailer1 on the real path; no more bare archive URL queue.
-- [ ] **Tag Manager file counts (low)** — `files_for_tag` per tag on reload; optional COUNT
-- [ ] **Filter range unit tests (P3)** — `split_range_arg` + duration unit inheritance
+- [x] **Tag Manager file counts (low)** — `TagStore::count_files_for_tag` (SQL COUNT);
+      Tag Manager reload no longer expands all paths via `files_for_tag`.
+- [x] **Filter range unit tests (P3)** — size lo-hi / lo..hi match tests; duration
+      range parse + unit inheritance smoke tests; width/height/length/fps/pages
 - [ ] **MainWindow gravity (ongoing)** — see Refactoring track; chrome/controllers
       improved but ops/nav/load still large
 
@@ -280,8 +282,8 @@ Handoff bundles **dirtoo-003** … **dirtoo-015** (tip after 015: filter ranges)
 - [x] **Apply multiple tags at once (medium)** — Space/comma-separated names; TagJob
       applies the full list per file.
 - [x] **Auto-complete for tag names (nice)** — QCompleter over TagStore list_tags().
-- [x] **Click tag chip → filter for that tag (medium)** — Icons/Graphics: chip hit-test
-      sets filter to `tag:<name>` (Detail view still open).
+- [x] **Click tag chip → filter for that tag (medium)** — Graphics + Small Icons
+      (`FileItemDelegate::editorEvent`); Detail column icons are too small for chips.
 
 **Tag model / filter language**
 - [x] **`tag:` glob patterns (medium)** — Trailing `*` supported (`tag:location-*`).

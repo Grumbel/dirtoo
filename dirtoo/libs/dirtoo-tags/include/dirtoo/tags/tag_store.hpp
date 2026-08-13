@@ -82,6 +82,8 @@ public:
                                                       std::string_view path_key) const;
 
   [[nodiscard]] std::vector<TaggedFile> files_for_tag(std::string_view tag_name) const;
+  /// Cheap COUNT(*) of files with this tag (no path expansion).
+  [[nodiscard]] std::int64_t count_files_for_tag(std::string_view tag_name) const;
 
 private:
   bool ensure_schema(std::string* error);

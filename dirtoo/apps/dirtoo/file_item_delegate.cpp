@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "file_item_delegate.hpp"
+#include <QMouseEvent>
+#include <QEvent>
 #include "icon_tile_paint.hpp"
 #include "group_header_paint.hpp"
 #include "badge_icons.hpp"
@@ -481,6 +483,64 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
   }
 
   painter->restore();
+}
+
+
+QRect FileItemDelegate::thumb_rect_for(const QStyleOptionViewItem& option,
+                                       const QModelIndex& index) const
+{
+  QStyleOptionViewItem opt = option;
+  initStyleOption(&opt, index);
+  if (index.isValid() && index.data(IsGroupStartRole).toBool()) {
+    const QString label = index.data(GroupLabelRole).toString();
+    if (!label.isEmpty()) {
+      opt.rect.setTop(opt.rect.top() + group_header_height(option.fontMetrics));
+    }
+  }
+  if (index.isValid()) {
+    const qint64 gap = index.data(TimeGapSecondsRole).toLongLong();
+    if (gap >= kTimeGapThresholdSecs) {
+      opt.rect.setTop(opt.rect.top() + option.fontMetrics.height() + 6);
+    }
+  }
+  // Detail / list: small square at left — chips are not interactive there.
+  if (model_ == nullptr || !model_->icon_style_active()) {
+    return {};
+  }
+  const int text_rows = model_->icon_text_rows();
+  const int caption_budget =
+      text_rows > 0 ? (6 + text_rows * 18)
+                    : (model_->icon_detail_level() > 0 ? 22 : 0);
+  int icon_side = opt.decorationSize.width() > 0 ? opt.decorationSize.width()
+                                                 : std::min(opt.rect.width() - 8, opt.rect.height() / 2);
+  icon_side = std::min(icon_side, std::max(16, opt.rect.height() - caption_budget - 8));
+  icon_side = std::min(icon_side, opt.rect.width() - 8);
+  QRect thumb(0, 0, icon_side, icon_side);
+  thumb.moveCenter(QPoint(opt.rect.center().x(), opt.rect.top() + icon_side / 2 + 4));
+  return thumb;
+}
+
+bool FileItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model,
+                                   const QStyleOptionViewItem& option, const QModelIndex& index)
+{
+  if (event != nullptr && event->type() == QEvent::MouseButtonRelease
+      && model_ != nullptr && index.isValid()) {
+    const auto* me = static_cast<QMouseEvent*>(event);
+    if (me->button() == Qt::LeftButton) {
+      const QRect thumb = thumb_rect_for(option, index);
+      if (!thumb.isEmpty()) {
+        if (const auto* fi = model_->file_at(index.row());
+            fi != nullptr && !fi->is_directory()) {
+          const QString tag = tag_chip_at(thumb, fi->path(), me->pos());
+          if (!tag.isEmpty()) {
+            emit tag_chip_clicked(tag);
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return QStyledItemDelegate::editorEvent(event, model, option, index);
 }
 
 } // namespace dirtoo::app

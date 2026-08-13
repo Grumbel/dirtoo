@@ -376,3 +376,63 @@ TEST_CASE("filter type:video image archive audio", "[filter]")
   REQUIRE(audio);
   REQUIRE((*audio)->matches(file("song.flac")));
 }
+
+TEST_CASE("filter inclusive size ranges lo-hi and lo..hi", "[filter][range]")
+{
+  auto dash = parse_filter("size:1K-2K");
+  REQUIRE(dash);
+  REQUIRE((*dash)->matches(file("a.bin", 1500)));
+  REQUIRE_FALSE((*dash)->matches(file("b.bin", 500)));
+  REQUIRE_FALSE((*dash)->matches(file("c.bin", 3000)));
+  // Inclusive endpoints
+  REQUIRE((*dash)->matches(file("lo.bin", 1024)));
+  REQUIRE((*dash)->matches(file("hi.bin", 2048)));
+
+  auto dots = parse_filter("size:1M..2M");
+  REQUIRE(dots);
+  REQUIRE((*dots)->matches(file("mid.bin", 1500 * 1024)));
+  REQUIRE_FALSE((*dots)->matches(file("tiny.bin", 100)));
+  REQUIRE_FALSE((*dots)->matches(file("huge.bin", 5u * 1024 * 1024)));
+}
+
+TEST_CASE("filter duration range unit inheritance", "[filter][range][media]")
+{
+  // duration:3-10m → lo inherits minutes from hi (180s–600s).
+  // Without inheritance, bare "3" would be 3 seconds and the range would be
+  // inverted / wrong. parse must succeed (not AlwaysFalse for a valid range).
+  auto m = parse_filter("duration:3-10m");
+  REQUIRE(m);
+  m = parse_filter("duration:3m..10m");
+  REQUIRE(m);
+  m = parse_filter("duration:90-180");
+  REQUIRE(m);
+  m = parse_filter("duration:1-2h");
+  REQUIRE(m);
+
+  // Comparison forms are not ranges
+  m = parse_filter("duration:>1m");
+  REQUIRE(m);
+}
+
+TEST_CASE("filter width/height/length ranges", "[filter][range]")
+{
+  REQUIRE(parse_filter("width:640-1920"));
+  REQUIRE(parse_filter("height:100..800"));
+  REQUIRE(parse_filter("length:1-10"));
+  REQUIRE(parse_filter("fps:24-60"));
+  REQUIRE(parse_filter("pages:1-5"));
+  REQUIRE(parse_filter("filecount:2..20"));
+}
+
+TEST_CASE("filter tag namespace and glob parse", "[filter][tag]")
+{
+  auto exact_ns = parse_filter("tag:game:doom");
+  REQUIRE(exact_ns);
+  auto local = parse_filter("tag:doom");
+  REQUIRE(local);
+  auto glob = parse_filter("tag:location-*");
+  REQUIRE(glob);
+  // Invalid characters still rejected → AlwaysFalse but parse still returns a matcher
+  auto bad = parse_filter("tag:!!!");
+  REQUIRE(bad);
+}

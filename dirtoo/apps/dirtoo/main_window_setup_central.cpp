@@ -127,7 +127,18 @@ void MainWindow::setup_central_ui()
   tree_view_->setColumnWidth(0, 320);
   tree_view_->setColumnWidth(1, 100);
   tree_view_->setColumnWidth(2, 160);
-  tree_view_->setItemDelegate(new FileItemDelegate(model_, tree_view_));
+  {
+    auto* del = new FileItemDelegate(model_, tree_view_);
+    tree_view_->setItemDelegate(del);
+    connect(del, &FileItemDelegate::tag_chip_clicked, this, [this](const QString& tag) {
+      const QString expr = QStringLiteral("tag:%1").arg(tag);
+      if (filter_search_.filter_text() == expr) {
+        return;
+      }
+      filter_search_.set_filter_text(expr);
+      filter_search_.set_filter_visible(true);
+    });
+  }
   connect(tree_view_, &QTreeView::activated, this, &MainWindow::on_item_activated);
   tree_view_->viewport()->installEventFilter(this);
   tree_view_->installEventFilter(this);
@@ -144,7 +155,18 @@ void MainWindow::setup_central_ui()
   icon_view_->setResizeMode(QListView::Adjust);
   icon_view_->setMovement(QListView::Static);
   icon_view_->setUniformItemSizes(true);
-  icon_view_->setItemDelegate(new FileItemDelegate(model_, icon_view_));
+  {
+    auto* del = new FileItemDelegate(model_, icon_view_);
+    icon_view_->setItemDelegate(del);
+    connect(del, &FileItemDelegate::tag_chip_clicked, this, [this](const QString& tag) {
+      const QString expr = QStringLiteral("tag:%1").arg(tag);
+      if (filter_search_.filter_text() == expr) {
+        return;
+      }
+      filter_search_.set_filter_text(expr);
+      filter_search_.set_filter_visible(true);
+    });
+  }
   icon_view_->setWordWrap(true);
   icon_view_->setSelectionMode(QAbstractItemView::ExtendedSelection);
   icon_view_->setContextMenuPolicy(Qt::CustomContextMenu);

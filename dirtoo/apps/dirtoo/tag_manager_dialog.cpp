@@ -216,8 +216,8 @@ void TagManagerDialog::reload()
     item->setText(1, label);
     item->setText(2, QString::fromStdString(def.color));
     item->setText(3, QString::fromStdString(def.badge));
-    const auto files = store.files_for_tag(def.name);
-    item->setText(4, QString::number(static_cast<qulonglong>(files.size())));
+    const auto n = store.count_files_for_tag(def.name);
+    item->setText(4, QString::number(static_cast<qulonglong>(n)));
     item->setData(0, Qt::UserRole, QString::fromStdString(def.name));
     if (!def.color.empty()) {
       const QColor c(QString::fromStdString(def.color));
