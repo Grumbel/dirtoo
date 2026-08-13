@@ -125,6 +125,27 @@ inline void paint_symlink_emblem(QPainter* painter, const QRect& thumb)
   painter->restore();
 }
 
+/// Brief highlight after open/launch (LaunchFlashRole).
+/// Graphics tiles also draw a rounded outline for stronger acknowledgement.
+inline void paint_launch_flash(QPainter* painter, const QRect& rect, const QColor& highlight,
+                               bool outline = false)
+{
+  if (painter == nullptr || rect.isEmpty()) {
+    return;
+  }
+  QColor flash = highlight.isValid() ? highlight : QColor(80, 140, 255);
+  flash.setAlpha(outline ? 160 : 150);
+  painter->save();
+  painter->fillRect(rect, flash);
+  if (outline) {
+    QPen pen(flash.darker(120), 2);
+    painter->setPen(pen);
+    painter->setBrush(Qt::NoBrush);
+    painter->drawRoundedRect(rect.adjusted(1, 1, -1, -1), 4, 4);
+  }
+  painter->restore();
+}
+
 /// New / loading / error / symlink stickers from model roles.
 inline void paint_tile_status_overlays(QPainter* painter, const QRect& thumb,
                                        const QModelIndex& index)

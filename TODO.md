@@ -1045,7 +1045,7 @@ Full file inventory + notes: **`AUDIT.md`** (section *Full source inventory + au
 - [x] **D2 — ActivityMonitor job tokens** — `begin_job`/`update_job`/`end_job` + `ScopedActivityJob`; `kind` on tasks; `clear_jobs_of_kind`. Tag + checksum use unique tokens; dir-load/thumbs/transfer remain single-flight named slots that compose with jobs in the headline.
 - [ ] **D4 — Shared HashService** — One queue for full/quick hash used by TagJob, ChecksumDialog, future idle scanner.
 - [ ] **D5 — Store writer queue** — Serialize SQLite writes for tags + checksums.
-- [ ] **D6 — Dual icon paint stacks** — GraphicsFileItem vs FileItemDelegate divergence (flash, tags, captions); share more via `icon_tile_paint`.
+- [x] **D6 — Dual icon paint stacks** — Launch flash unified in `paint_launch_flash` (icon_tile_paint); badges/status/tags already shared. Residual: caption layout still view-specific.
 - [x] **D7 — Fewer modal error boxes** — Tag skip/fail and Checksum job failure → status / message banner + ActivityMonitor log (no modal for batch outcomes).
 - [ ] **C4 — Tests** — `hash_file` / `hash_file_quick` + TagStore concurrent open/CRUD smoke done; still open: DirectoryLoadWorker cancel (Qt worker); filter `checksummed`/`tagged` already partly covered.
 

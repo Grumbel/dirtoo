@@ -239,9 +239,7 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
       painter->restore();
     }
     if (index.data(LaunchFlashRole).toBool()) {
-      QColor flash = opt.palette.color(QPalette::Highlight);
-      flash.setAlpha(140);
-      painter->fillRect(opt.rect, flash);
+      paint_launch_flash(painter, opt.rect, opt.palette.color(QPalette::Highlight));
     }
 
     const int icon = opt.decorationSize.isValid()
@@ -333,9 +331,7 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
                       opt.rect.bottom() - 2);
   }
   if (index.data(LaunchFlashRole).toBool()) {
-    QColor flash = opt.palette.color(QPalette::Highlight);
-    flash.setAlpha(150);
-    painter->fillRect(opt.rect, flash);
+    paint_launch_flash(painter, opt.rect, opt.palette.color(QPalette::Highlight));
   }
 
   const QIcon icon = opt.icon;
