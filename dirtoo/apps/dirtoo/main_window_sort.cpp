@@ -20,7 +20,7 @@ void MainWindow::request_async_sort()
   }
   if (list_workers_.sort() == nullptr) {
     collection_.apply_sort();
-    refresh_list();
+    refresh_list_preserving_selection();
     return;
   }
   const quint64 gen = list_workers_.next_sort_generation();
@@ -41,7 +41,7 @@ void MainWindow::on_sort_finished(quint64 generation, std::vector<fs::FileInfo> 
   }
   // match_/filter and show_hidden stay; only item order changes.
   collection_.replace_items_sorted(std::move(items));
-  refresh_list();
+  refresh_list_preserving_selection();
   set_status(QStringLiteral("%1 items").arg(collection_.visible_items().size()));
   request_thumbnails_for_visible();
 }

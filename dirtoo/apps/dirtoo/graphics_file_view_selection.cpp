@@ -351,6 +351,26 @@ void GraphicsFileView::ensure_cursor_visible()
   update_visible_window();
 }
 
+void GraphicsFileView::scroll_row_into_view(int row)
+{
+  if (model_ == nullptr || row < 0 || row >= model_->rowCount()) {
+    return;
+  }
+  materialize_row(row);
+  if (static_cast<std::size_t>(row) >= slot_pos_.size()) {
+    return;
+  }
+  const QPointF p = slot_pos_[static_cast<std::size_t>(row)];
+  const QSize tile_sz =
+      (static_cast<std::size_t>(row) < slot_tile_size_.size())
+          ? slot_tile_size_[static_cast<std::size_t>(row)]
+          : tile_size_;
+  const QRectF r(p.x(), p.y(), tile_sz.width(), tile_sz.height());
+  // Larger margin so the tile lands near the centre of the viewport.
+  ensureVisible(r, viewport()->width() / 3, viewport()->height() / 3);
+  update_visible_window();
+}
+
 void GraphicsFileView::cursor_move(int dx, int dy)
 {
   const int rows = model_ != nullptr ? model_->rowCount() : 0;

@@ -203,6 +203,11 @@ private slots:
 
 private:
   void refresh_list();
+  /// Snapshot selected paths, refresh, restore selection, scroll priority into view.
+  void refresh_list_preserving_selection();
+  void update_last_selected_path();
+  void restore_selection_by_paths(const QStringList& paths, const QString& priority_path);
+  void ensure_row_visible(int row);
   void update_history_actions();
   void update_edit_actions();
   void update_status_selection();
@@ -246,6 +251,8 @@ private:
   [[nodiscard]] QAbstractItemView* current_view() const;
 
   fs::Location location_;
+  /// Path of the most recently focused/selected item (reorder scroll priority).
+  QString last_selected_path_;
   collection::FileCollection collection_;
 
   ThumbnailCoordinator thumbs_{this};

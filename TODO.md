@@ -310,6 +310,9 @@ Handoff bundles **dirtoo-003** … **dirtoo-015** (tip after 015: filter ranges)
 - [x] **Tests via `nix flake check`** — `doCheck = false` on packages.dirtoo;
       tests installed to `$out/libexec/dirtoo/dirtoo-tests`; `checks.dirtoo-tests`
       runs that binary so check does not recompile when the package is cached.
+- [x] **Keep selection visible after reorder** — snapshot paths before sort
+      refresh; restore multi-selection by path; scroll `last_selected_path_`
+      (cursor / current index) into view with priority over other selected rows.
 
 ### Review residuals (earlier 2026-08)
 

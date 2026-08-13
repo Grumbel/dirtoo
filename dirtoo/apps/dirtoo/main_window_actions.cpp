@@ -151,6 +151,138 @@ void MainWindow::refresh_list()
   update_status_selection();
 }
 
+void MainWindow::update_last_selected_path()
+{
+  if (model_ == nullptr) {
+    return;
+  }
+  int row = -1;
+  if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr) {
+    row = graphics_view_->cursor_row();
+    if (row < 0) {
+      const auto rows = graphics_view_->selected_rows();
+      if (!rows.empty()) {
+        row = rows.back();
+      }
+    }
+  } else if (QAbstractItemView* view = current_view()) {
+    const QModelIndex cur = view->currentIndex();
+    if (cur.isValid()) {
+      row = cur.row();
+    }
+  }
+  if (row < 0 || row >= model_->rowCount()) {
+    return;
+  }
+  if (const auto* fi = model_->file_at(row)) {
+    if (!fi->path().empty()) {
+      last_selected_path_ = QString::fromStdString(fi->path().string());
+    }
+  }
+}
+
+void MainWindow::ensure_row_visible(int row)
+{
+  if (model_ == nullptr || row < 0 || row >= model_->rowCount()) {
+    return;
+  }
+  const QModelIndex idx = model_->index(row, 0);
+  if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr) {
+    // Keep multi-selection; force scroll (set_cursor_row follow policy would not).
+    graphics_view_->select_row(row, /*clear_others=*/false);
+    graphics_view_->set_cursor_row(row, /*ensure_visible=*/false);
+    graphics_view_->scroll_row_into_view(row);
+    return;
+  }
+  if (QAbstractItemView* view = current_view()) {
+    view->setCurrentIndex(idx);
+    view->scrollTo(idx, QAbstractItemView::PositionAtCenter);
+  }
+}
+
+void MainWindow::restore_selection_by_paths(const QStringList& paths, const QString& priority_path)
+{
+  if (model_ == nullptr || paths.isEmpty()) {
+    return;
+  }
+  QHash<QString, int> row_of;
+  row_of.reserve(model_->rowCount());
+  for (int r = 0; r < model_->rowCount(); ++r) {
+    if (const auto* fi = model_->file_at(r); fi != nullptr && !fi->path().empty()) {
+      row_of.insert(QString::fromStdString(fi->path().string()), r);
+    }
+  }
+
+  int priority_row = -1;
+  if (!priority_path.isEmpty()) {
+    const auto it = row_of.constFind(priority_path);
+    if (it != row_of.cend()) {
+      priority_row = it.value();
+    }
+  }
+
+  if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr) {
+    bool first = true;
+    int any_row = -1;
+    for (const QString& p : paths) {
+      const auto it = row_of.constFind(p);
+      if (it == row_of.cend()) {
+        continue;
+      }
+      graphics_view_->select_row(it.value(), /*clear_others=*/first);
+      first = false;
+      any_row = it.value();
+    }
+    if (priority_row >= 0) {
+      ensure_row_visible(priority_row);
+    } else if (any_row >= 0) {
+      ensure_row_visible(any_row);
+    }
+    return;
+  }
+
+  QAbstractItemView* view = current_view();
+  if (view == nullptr || view->selectionModel() == nullptr) {
+    return;
+  }
+  view->selectionModel()->clearSelection();
+  int any_row = -1;
+  for (const QString& p : paths) {
+    const auto it = row_of.constFind(p);
+    if (it == row_of.cend()) {
+      continue;
+    }
+    const int r = it.value();
+    any_row = r;
+    const QModelIndex idx = model_->index(r, 0);
+    view->selectionModel()->select(idx, QItemSelectionModel::Select | QItemSelectionModel::Rows);
+  }
+  if (priority_row >= 0) {
+    const QModelIndex idx = model_->index(priority_row, 0);
+    view->setCurrentIndex(idx);
+    view->scrollTo(idx, QAbstractItemView::PositionAtCenter);
+  } else if (any_row >= 0) {
+    const QModelIndex idx = model_->index(any_row, 0);
+    view->setCurrentIndex(idx);
+    view->scrollTo(idx, QAbstractItemView::PositionAtCenter);
+  }
+}
+
+void MainWindow::refresh_list_preserving_selection()
+{
+  QStringList paths;
+  for (const auto& fi : selected_fileinfos()) {
+    if (!fi.path().empty()) {
+      paths << QString::fromStdString(fi.path().string());
+    }
+  }
+  const QString priority = last_selected_path_;
+  refresh_list();
+  if (!paths.isEmpty()) {
+    restore_selection_by_paths(paths, priority);
+  }
+}
+
 void MainWindow::on_properties()
 {
   const auto selected = selected_fileinfos();
@@ -164,6 +296,7 @@ void MainWindow::on_properties()
 void MainWindow::on_selection_changed()
 {
   update_status_selection();
+  update_last_selected_path();
 }
 
 void MainWindow::update_status_selection()

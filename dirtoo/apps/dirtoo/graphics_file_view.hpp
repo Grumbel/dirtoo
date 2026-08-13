@@ -109,6 +109,8 @@ public:
   [[nodiscard]] int cursor_row() const noexcept { return cursor_row_; }
   [[nodiscard]] bool is_cursor_row(int row) const noexcept { return row >= 0 && row == cursor_row_; }
   void set_cursor_row(int row, bool ensure_visible = true);
+  /// Force-scroll so @p row is in the viewport (unlike set_cursor_row follow policy).
+  void scroll_row_into_view(int row);
   void clear_cursor();
   void cursor_move(int dx, int dy);
 
