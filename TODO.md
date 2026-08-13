@@ -349,7 +349,8 @@ Prioritized issues from a multi-day change review.
   Progress: `TagJob` + `TagController`; R6 `FilterSearchChrome` +
   `SidebarController::create`; `DevicesController::attach`;
   `ThumbnailCoordinator::request_rows` (viewport row discovery still on MainWindow);
-  QuickFilterBar is separate chrome (not MainWindow methods).
+  QuickFilterBar is separate chrome (not MainWindow methods);
+  `sort_settings` — shared SortKey ↔ settings string (deduped from settings/sort TUs).
 
 
 | Item | Notes |
@@ -1038,7 +1039,7 @@ Full file inventory + notes: **`AUDIT.md`** (section *Full source inventory + au
 
 ### Architecture / cleanup
 
-- [ ] **D1 — MainWindow gravity** — Continue extracting collaborators; `main_window_ops.cpp` / `actions.cpp` / `settings.cpp` still large.
+- [ ] **D1 — MainWindow gravity** — Ongoing; `sort_settings` extracted. Still large: `ops` / `actions` / `settings` / `nav` TUs; viewport row discovery still on MainWindow.
 - [x] **D2 — ActivityMonitor job tokens** — `begin_job`/`update_job`/`end_job` + `ScopedActivityJob`; `kind` on tasks; `clear_jobs_of_kind`. Tag + checksum use unique tokens; dir-load/thumbs/transfer remain single-flight named slots that compose with jobs in the headline.
 - [ ] **D4 — Shared HashService** — One queue for full/quick hash used by TagJob, ChecksumDialog, future idle scanner.
 - [ ] **D5 — Store writer queue** — Serialize SQLite writes for tags + checksums.
