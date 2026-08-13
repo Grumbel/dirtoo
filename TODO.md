@@ -265,10 +265,13 @@ Handoff bundles **dirtoo-003** … **dirtoo-015** (tip after 015: filter ranges)
       pending hit 0 after the status change).
 - [x] **Show which tags are currently being processed (nice)** — Activity label is
       now `Tagging <name>` (seeded at job start; updated on progress).
-- [ ] **Progress indicator shows “idle” while still at ~100% of one CPU (high)** —
-      Activity toolbar reports Idle but a core stays saturated. Find the spin
-      (busy loop, tight timer, unreaped worker, filter/sort thrash, watcher, etc.)
-      and either idle properly or keep the indicator truthful while work runs.
+- [x] **Progress indicator shows “idle” while still at ~100% of one CPU (high)** —
+      Root cause: `FileListModel::data` Duration column did
+      `if (!meta || !meta->duration_ms) request(...)`. Cached image meta (no
+      duration) is not negative, so `MediaMetaCache::request` hit memory and
+      synchronously invoked the ready callback → `notify_row_changed` Queued →
+      data() again → infinite loop with ActivityMonitor Idle. Fixed to only
+      request when `!meta` (same pattern as Graphics/delegate).
 
 **Tag UI / apply**
 - [x] **Tag dialog: clickable list of existing tags (medium)** — TagNameDialog lists

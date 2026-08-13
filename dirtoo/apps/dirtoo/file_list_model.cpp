@@ -317,6 +317,11 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
       }
       const auto meta = filter::MediaMetaCache::instance().try_get(fi->path());
       if (!meta) {
+        // Only enqueue a probe when the path is not yet in the cache (positive or
+        // negative). Re-requesting a hit that lacks a field (e.g. image without
+        // duration) immediately invokes the ready callback and queues
+        // notify_row_changed → infinite data()/paint loop at 100% CPU while
+        // ActivityMonitor stays Idle.
         if (!fi->path().empty() && !filter::MediaMetaCache::instance().is_negative(fi->path())) {
           const int row = index.row();
           filter::MediaMetaCache::instance().request(
@@ -366,7 +371,7 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
         return {};
       }
       const auto meta = filter::MediaMetaCache::instance().try_get(fi->path());
-      if (!meta || !meta->duration_ms) {
+      if (!meta) {
         if (!fi->path().empty() && !filter::MediaMetaCache::instance().is_negative(fi->path())) {
           const int row = index.row();
           filter::MediaMetaCache::instance().request(
@@ -376,6 +381,9 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
                                           Qt::QueuedConnection, Q_ARG(int, row));
               });
         }
+        return {};
+      }
+      if (!meta->duration_ms) {
         return {};
       }
       const auto total_s = static_cast<qint64>(*meta->duration_ms / 1000);
