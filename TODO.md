@@ -1030,7 +1030,7 @@ Full file inventory + notes: **`AUDIT.md`** (section *Full source inventory + au
 - [x] **B5 — Icon spacing control** — Preferences → Appearance: Icon spacing + Icon label width; applied in Icons/RelativeIcons grid.
 - [x] **B10 — Preferences gaps** — Spacing, default sort, SI `kB`, default open desktop id, hash policy (full/quick/prompt + MiB threshold) for Checksum dialog + tag large-file confirm.
 - [ ] **B11 — Undo** — Operations history is log-only; no restore.
-- [ ] **B12 — RelativeIcons polish** — Mode present; document in UI/help; verify layout quality.
+- [x] **B12 — RelativeIcons polish** — Persist `relative` view mode; Preferences default-view entry; clearer toolbar/menu tooltips; status line on switch. Core log₂ flow layout unchanged.
 - [x] **C2 — Devices without UDisks** — Placeholder title + install/service tip (apt/dnf/pacman) when UDisks2 missing; separate empty-volumes message when service is up.
 - [x] **C7 — Network FS watcher** — Poll fallback (~2.5s fingerprint) when path is remote (NFS/SMB/FUSE/…) or no native watch could be armed.
 - [x] **Filter: untagged in recursive search** — Confirmed: `search_directory` applies the same `MatchFunc` (`make_tagged` / `TagLookup`); `tagged:no` parses and matches via checksum+TagStore lookup only (no hashing).

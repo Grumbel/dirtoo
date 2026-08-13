@@ -114,6 +114,9 @@ void MainWindow::restore_settings()
   }
   if (s.view_mode == QLatin1String("icons")) {
     set_view_mode(ViewMode::Icons);
+  } else if (s.view_mode == QLatin1String("relative")
+             || s.view_mode == QLatin1String("relativeicons")) {
+    set_view_mode(ViewMode::RelativeIcons);
   } else if (s.view_mode == QLatin1String("small") || s.view_mode == QLatin1String("smallicons")) {
     set_view_mode(ViewMode::List);
   } else {
@@ -170,6 +173,8 @@ void MainWindow::persist_settings() const
   AppSettings s = load_settings(); // keep size_units and other offline prefs
   if (view_mode_ == ViewMode::Icons) {
     s.view_mode = QStringLiteral("icons");
+  } else if (view_mode_ == ViewMode::RelativeIcons) {
+    s.view_mode = QStringLiteral("relative");
   } else if (view_mode_ == ViewMode::List) {
     s.view_mode = QStringLiteral("small");
   } else {
@@ -237,6 +242,8 @@ void MainWindow::on_preferences()
   // Reflect live UI into the struct before editing.
   if (view_mode_ == ViewMode::Icons) {
     s.view_mode = QStringLiteral("icons");
+  } else if (view_mode_ == ViewMode::RelativeIcons) {
+    s.view_mode = QStringLiteral("relative");
   } else if (view_mode_ == ViewMode::List) {
     s.view_mode = QStringLiteral("small");
   } else {
@@ -451,6 +458,9 @@ void MainWindow::apply_settings(const AppSettings& s)
   apply_icon_zoom();
   if (s.view_mode == QLatin1String("icons")) {
     set_view_mode(ViewMode::Icons);
+  } else if (s.view_mode == QLatin1String("relative")
+             || s.view_mode == QLatin1String("relativeicons")) {
+    set_view_mode(ViewMode::RelativeIcons);
   } else if (s.view_mode == QLatin1String("small") || s.view_mode == QLatin1String("smallicons")) {
     set_view_mode(ViewMode::List);
   } else {

@@ -212,6 +212,7 @@ void MainWindow::on_view_icons()
 void MainWindow::on_view_relative_icons()
 {
   set_view_mode(ViewMode::RelativeIcons);
+  set_status(QStringLiteral("Relative Icons — tile size scales with file size"));
 }
 
 void MainWindow::on_view_small_icons()

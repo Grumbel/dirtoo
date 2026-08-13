@@ -219,8 +219,12 @@ void MainWindow::setup_toolbar()
   // View modes: Icons, List (Win95-style), Detail
   icons_act_ = toolbar->addAction(theme_icon("view-grid", "view-list-icons"), QStringLiteral("Icons"));
   relative_icons_act_ = toolbar->addAction(theme_icon("zoom-fit-best", "view-grid"),
-                                           QStringLiteral("Relative Size"));
-  relative_icons_act_->setToolTip(QStringLiteral("Icons scaled by file size (log)"));
+                                           QStringLiteral("Relative Icons"));
+  relative_icons_act_->setToolTip(
+      QStringLiteral("Icons view with tile size scaled by file size (log₂ of bytes). "
+                     "Larger files get larger tiles; layout flows left-to-right."));
+  relative_icons_act_->setStatusTip(
+      QStringLiteral("Show icons sized relative to each file’s size (not a fixed grid)"));
   small_icons_act_ = toolbar->addAction(theme_icon("view-list", "view-list-details"),
                                       QStringLiteral("List"));
   detail_act_ = toolbar->addAction(theme_icon("view-list-details", "view-list"), QStringLiteral("Detail"));

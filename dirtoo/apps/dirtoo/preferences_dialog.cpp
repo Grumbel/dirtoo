@@ -58,16 +58,23 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   auto* view = new QComboBox(&dialog);
   view->addItem(QStringLiteral("Detail"), QStringLiteral("detail"));
   view->addItem(QStringLiteral("Icons"), QStringLiteral("icons"));
+  view->addItem(QStringLiteral("Relative Icons (size-scaled)"), QStringLiteral("relative"));
   view->addItem(QStringLiteral("Small icons (List)"), QStringLiteral("small"));
-  if (settings->view_mode == QLatin1String("icons")) {
-    view->setCurrentIndex(1);
-  } else if (settings->view_mode == QLatin1String("small")
-             || settings->view_mode == QLatin1String("smallicons")) {
-    view->setCurrentIndex(2);
-  } else {
-    view->setCurrentIndex(0);
+  {
+    const QString vm = settings->view_mode.toLower();
+    if (vm == QLatin1String("icons")) {
+      view->setCurrentIndex(1);
+    } else if (vm == QLatin1String("relative") || vm == QLatin1String("relativeicons")) {
+      view->setCurrentIndex(2);
+    } else if (vm == QLatin1String("small") || vm == QLatin1String("smallicons")) {
+      view->setCurrentIndex(3);
+    } else {
+      view->setCurrentIndex(0);
+    }
   }
-  view->setToolTip(QStringLiteral("View mode used when dirtoo starts"));
+  view->setToolTip(
+      QStringLiteral("View mode used when dirtoo starts. Relative Icons scales each tile "
+                     "by file size (log) in a flow layout."));
 
   auto* zoom_icons = new QSpinBox(&dialog);
   zoom_icons->setRange(0, 9);
