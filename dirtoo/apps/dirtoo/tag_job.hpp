@@ -14,11 +14,14 @@
 namespace dirtoo::app {
 
 /// Background tag job: hash (and archive extract) off the GUI thread, then
-/// write tags via TagStore. Parent shows progress and handles finished/failed.
+/// add or remove tags via TagStore. Parent shows progress and handles finished/failed.
 class TagJob : public QObject {
   Q_OBJECT
 public:
-  TagJob(std::vector<dirtoo::fs::FileInfo> files, QStringList tags, QObject* parent = nullptr);
+  enum class Mode { Add, Remove };
+
+  TagJob(std::vector<dirtoo::fs::FileInfo> files, QStringList tags, Mode mode = Mode::Add,
+         QObject* parent = nullptr);
   ~TagJob() override;
 
   void start();
@@ -26,12 +29,14 @@ public:
 
 signals:
   void progress(int done, int total, const QString& name);
-  void finished(int tagged, int skipped, const QStringList& problems);
+  /// @p changed = files that gained/lost at least one requested tag.
+  void finished(int changed, int skipped, const QStringList& problems);
   void failed(const QString& message);
 
 private:
   std::vector<dirtoo::fs::FileInfo> files_;
   QStringList tags_;
+  Mode mode_ = Mode::Add;
   struct Impl;
   Impl* impl_ = nullptr;
 };

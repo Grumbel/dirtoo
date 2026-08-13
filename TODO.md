@@ -299,6 +299,9 @@ Handoff bundles **dirtoo-003** … **dirtoo-015** (tip after 015: filter ranges)
       `_` (`location-paris` stays hyphenated; globs still work).
 - [x] **Reload Thumbnails → ThumbnailCoordinator::force_regenerate** — archive
       extract + force queue moved off MainWindow (gravity: thumbs surface).
+- [x] **Tag dialog: remove current tags** — dialog lists tags already on the
+      selection (checksum-cache hits); multi-select + Remove / double-click runs
+      TagJob in Remove mode (`remove_tag_from_file`).
 
 ### Review residuals (earlier 2026-08)
 

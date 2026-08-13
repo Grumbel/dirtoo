@@ -22,10 +22,11 @@ namespace {
 class TagWorker : public QObject {
   Q_OBJECT
 public:
-  TagWorker(std::vector<dirtoo::fs::FileInfo> files, QStringList tags,
+  TagWorker(std::vector<dirtoo::fs::FileInfo> files, QStringList tags, TagJob::Mode mode,
             std::shared_ptr<std::atomic_bool> cancel)
       : files_(std::move(files))
       , tags_(std::move(tags))
+      , mode_(mode)
       , cancel_(std::move(cancel))
   {
   }
@@ -109,7 +110,10 @@ public slots:
       bool any = false;
       for (const QString& tg : tags_) {
         std::string e2;
-        if (!tags.add_tag_to_file(*id, tg.toStdString(), &e2)) {
+        const bool ok = (mode_ == TagJob::Mode::Remove)
+                            ? tags.remove_tag_from_file(*id, tg.toStdString(), &e2)
+                            : tags.add_tag_to_file(*id, tg.toStdString(), &e2);
+        if (!ok) {
           problems << QStringLiteral("%1 [%2]: %3")
                           .arg(display, tg, QString::fromStdString(e2));
           continue;
@@ -135,6 +139,7 @@ signals:
 private:
   std::vector<dirtoo::fs::FileInfo> files_;
   QStringList tags_;
+  TagJob::Mode mode_ = TagJob::Mode::Add;
   std::shared_ptr<std::atomic_bool> cancel_;
 };
 
@@ -147,10 +152,12 @@ struct TagJob::Impl {
   std::shared_ptr<std::atomic_bool> cancel = std::make_shared<std::atomic_bool>(false);
 };
 
-TagJob::TagJob(std::vector<dirtoo::fs::FileInfo> files, QStringList tags, QObject* parent)
+TagJob::TagJob(std::vector<dirtoo::fs::FileInfo> files, QStringList tags, Mode mode,
+               QObject* parent)
     : QObject(parent)
     , files_(std::move(files))
     , tags_(std::move(tags))
+    , mode_(mode)
     , impl_(new Impl)
 {
 }
@@ -174,7 +181,7 @@ void TagJob::start()
   if (impl_->cancel) {
     impl_->cancel->store(false);
   }
-  impl_->worker = new TagWorker(std::move(files_), tags_, impl_->cancel);
+  impl_->worker = new TagWorker(std::move(files_), tags_, mode_, impl_->cancel);
   impl_->thread = new QThread(this);
   impl_->worker->moveToThread(impl_->thread);
   connect(impl_->thread, &QThread::started, impl_->worker, &TagWorker::run);

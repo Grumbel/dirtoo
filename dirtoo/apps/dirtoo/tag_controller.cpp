@@ -6,6 +6,7 @@
 #include "tag_job.hpp"
 #include "activity_monitor.hpp"
 
+#include "dirtoo/hash/checksum_store.hpp"
 #include "dirtoo/tags/tag_store.hpp"
 
 #include <QDialog>
@@ -17,8 +18,12 @@
 #include <QListWidget>
 #include <QMessageBox>
 #include <QProgressDialog>
+#include <QPushButton>
 #include <QStringListModel>
 #include <QVBoxLayout>
+
+#include <filesystem>
+#include <set>
 
 namespace dirtoo::app {
 namespace {
@@ -62,19 +67,94 @@ QStringList known_tag_names()
   return names;
 }
 
-/// Dialog: line edit (multi tag, completer) + clickable list of existing tags.
+std::string path_key_for(const dirtoo::fs::FileInfo& fi)
+{
+  const std::string path_str = fi.path().string();
+  if (path_str.find("://") != std::string::npos || path_str.find("//archive") != std::string::npos) {
+    return path_str;
+  }
+  if (fi.location().is_archive()) {
+    return fi.location().as_url();
+  }
+  std::error_code ec;
+  const auto abs = std::filesystem::absolute(fi.path(), ec);
+  return ec ? path_str : abs.lexically_normal().string();
+}
+
+/// Union of tags present on any selected file (checksum-cache hits only; no hashing).
+QStringList tags_on_selection(const std::vector<dirtoo::fs::FileInfo>& files)
+{
+  dirtoo::hash::ChecksumStore checksums;
+  dirtoo::tags::TagStore tags;
+  std::string err;
+  if (!checksums.open(dirtoo::hash::ChecksumStore::default_path(), &err)
+      || !tags.open(dirtoo::tags::TagStore::default_path(), &err)) {
+    return {};
+  }
+  std::set<std::string> all;
+  for (const auto& fi : files) {
+    for (const auto& name : tags.tags_for_path(checksums, path_key_for(fi))) {
+      all.insert(name);
+    }
+  }
+  QStringList out;
+  for (const auto& n : all) {
+    out << QString::fromStdString(n);
+  }
+  return out;
+}
+
+/// Dialog: current tags (remove) + line edit / known list (add).
 class TagNameDialog : public QDialog {
 public:
-  explicit TagNameDialog(int file_count, QWidget* parent = nullptr)
+  enum class Action { Cancel, Add, Remove };
+
+  explicit TagNameDialog(int file_count, const QStringList& current_tags,
+                         QWidget* parent = nullptr)
       : QDialog(parent)
   {
     setWindowTitle(QStringLiteral("Tag"));
     auto* layout = new QVBoxLayout(this);
+
+    // --- Current tags (remove) ---
     layout->addWidget(new QLabel(
-        QStringLiteral("Tag name(s) for %1 file(s).\n"
-                       "Separate multiple tags with spaces or commas.\n"
-                       "Click a known tag below to append it.")
+        QStringLiteral("Current tags on the selection (%1 file(s)).\n"
+                       "Select one or more, then Remove.")
             .arg(file_count),
+        this));
+    current_list_ = new QListWidget(this);
+    current_list_->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    current_list_->addItems(current_tags);
+    current_list_->setMinimumHeight(100);
+    current_list_->setEnabled(!current_tags.isEmpty());
+    layout->addWidget(current_list_);
+
+    remove_btn_ = new QPushButton(QStringLiteral("Remove selected"), this);
+    remove_btn_->setEnabled(!current_tags.isEmpty());
+    connect(remove_btn_, &QPushButton::clicked, this, [this] {
+      action_ = Action::Remove;
+      accept();
+    });
+    connect(current_list_, &QListWidget::itemSelectionChanged, this, [this] {
+      remove_btn_->setEnabled(!current_list_->selectedItems().isEmpty());
+    });
+    // Double-click removes that single tag immediately.
+    connect(current_list_, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem* item) {
+      if (item == nullptr) {
+        return;
+      }
+      current_list_->clearSelection();
+      item->setSelected(true);
+      action_ = Action::Remove;
+      accept();
+    });
+    layout->addWidget(remove_btn_);
+
+    // --- Add tags ---
+    layout->addWidget(new QLabel(
+        QStringLiteral("Add tag name(s).\n"
+                       "Separate multiple tags with spaces or commas.\n"
+                       "Click a known tag below to append it."),
         this));
 
     edit_ = new QLineEdit(this);
@@ -88,12 +168,12 @@ public:
     completer->setFilterMode(Qt::MatchContains);
     edit_->setCompleter(completer);
 
-    list_ = new QListWidget(this);
-    list_->addItems(known_);
-    list_->setSelectionMode(QAbstractItemView::SingleSelection);
-    list_->setMinimumHeight(160);
-    layout->addWidget(list_);
-    connect(list_, &QListWidget::itemClicked, this, [this](QListWidgetItem* item) {
+    known_list_ = new QListWidget(this);
+    known_list_->addItems(known_);
+    known_list_->setSelectionMode(QAbstractItemView::SingleSelection);
+    known_list_->setMinimumHeight(120);
+    layout->addWidget(known_list_);
+    connect(known_list_, &QListWidget::itemClicked, this, [this](QListWidgetItem* item) {
       if (item == nullptr) {
         return;
       }
@@ -102,7 +182,6 @@ public:
       if (text.isEmpty()) {
         edit_->setText(name);
       } else {
-        // Avoid duplicates in the field.
         const QStringList parts = split_tag_names(text);
         if (!parts.contains(name)) {
           edit_->setText(text + QLatin1Char(' ') + name);
@@ -113,21 +192,43 @@ public:
     });
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
-    // GNOME order via app style hint.
-    connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
-    connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
+    buttons->button(QDialogButtonBox::Ok)->setText(QStringLiteral("Add"));
+    connect(buttons, &QDialogButtonBox::accepted, this, [this] {
+      action_ = Action::Add;
+      accept();
+    });
+    connect(buttons, &QDialogButtonBox::rejected, this, [this] {
+      action_ = Action::Cancel;
+      reject();
+    });
     layout->addWidget(buttons);
 
     edit_->setFocus();
-    resize(420, 360);
+    resize(440, 480);
   }
 
-  [[nodiscard]] QStringList tags() const { return split_tag_names(edit_->text()); }
+  [[nodiscard]] Action action() const { return action_; }
+
+  [[nodiscard]] QStringList tags_to_add() const { return split_tag_names(edit_->text()); }
+
+  [[nodiscard]] QStringList tags_to_remove() const
+  {
+    QStringList out;
+    for (QListWidgetItem* item : current_list_->selectedItems()) {
+      if (item != nullptr && !item->text().isEmpty()) {
+        out << item->text();
+      }
+    }
+    return out;
+  }
 
 private:
   QLineEdit* edit_ = nullptr;
-  QListWidget* list_ = nullptr;
+  QListWidget* known_list_ = nullptr;
+  QListWidget* current_list_ = nullptr;
+  QPushButton* remove_btn_ = nullptr;
   QStringList known_;
+  Action action_ = Action::Cancel;
 };
 
 } // namespace
@@ -162,41 +263,48 @@ void TagController::tag_files(std::vector<dirtoo::fs::FileInfo> selection)
     return;
   }
 
-  TagNameDialog dlg(static_cast<int>(files.size()), dialog_parent_);
+  const QStringList current = tags_on_selection(files);
+  TagNameDialog dlg(static_cast<int>(files.size()), current, dialog_parent_);
   if (dlg.exec() != QDialog::Accepted) {
     return;
   }
-  const QStringList tag_list = dlg.tags();
+
+  const TagJob::Mode mode =
+      (dlg.action() == TagNameDialog::Action::Remove) ? TagJob::Mode::Remove : TagJob::Mode::Add;
+  const QStringList tag_list =
+      (mode == TagJob::Mode::Remove) ? dlg.tags_to_remove() : dlg.tags_to_add();
   if (tag_list.isEmpty()) {
     return;
   }
 
   const int total = static_cast<int>(files.size());
-  auto* progress = new QProgressDialog(QStringLiteral("Tagging files…"), QStringLiteral("Cancel"),
-                                       0, total, dialog_parent_);
+  const QString verb =
+      (mode == TagJob::Mode::Remove) ? QStringLiteral("Removing tags…") : QStringLiteral("Tagging files…");
+  auto* progress = new QProgressDialog(verb, QStringLiteral("Cancel"), 0, total, dialog_parent_);
   progress->setWindowModality(Qt::WindowModal);
   progress->setMinimumDuration(total > 1 ? 0 : 2000);
   progress->setAttribute(Qt::WA_DeleteOnClose);
   progress->setValue(0);
 
   const QString tag_label = tag_list.join(QLatin1Char(','));
+  const QString activity_verb =
+      (mode == TagJob::Mode::Remove) ? QStringLiteral("Untagging") : QStringLiteral("Tagging");
 
-  // Hash + archive extract on a worker thread (AGENTS: no hash on GUI).
-  auto* job = new TagJob(std::move(files), tag_list, this);
+  auto* job = new TagJob(std::move(files), tag_list, mode, this);
   connect(progress, &QProgressDialog::canceled, job, &TagJob::cancel);
   connect(job, &TagJob::progress, this,
-          [progress, tag_label](int done, int total_n, const QString& name) {
+          [progress, tag_label, activity_verb](int done, int total_n, const QString& name) {
             if (progress == nullptr) {
               return;
             }
             progress->setMaximum(total_n);
             progress->setValue(done);
             if (!name.isEmpty()) {
-              progress->setLabelText(QStringLiteral("Tagging %1…").arg(name));
+              progress->setLabelText(QStringLiteral("%1 %2…").arg(activity_verb, name));
             }
             const QString activity =
-                tag_label.isEmpty() ? QStringLiteral("Tagging")
-                                    : QStringLiteral("Tagging %1").arg(tag_label);
+                tag_label.isEmpty() ? activity_verb
+                                    : QStringLiteral("%1 %2").arg(activity_verb, tag_label);
             ActivityMonitor::instance().set_task(QStringLiteral("tag"), activity, done, total_n);
           });
   connect(job, &TagJob::failed, this, [this, progress, job](const QString& message) {
@@ -208,12 +316,15 @@ void TagController::tag_files(std::vector<dirtoo::fs::FileInfo> selection)
     job->deleteLater();
   });
   connect(job, &TagJob::finished, this,
-          [this, progress, job](int tagged, int skipped, const QStringList& problems) {
+          [this, progress, job, mode](int changed, int skipped, const QStringList& problems) {
             if (progress != nullptr) {
               progress->setValue(progress->maximum());
               progress->close();
             }
-            QString msg = QStringLiteral("Tagged %1 file(s).").arg(tagged);
+            const QString done_verb =
+                (mode == TagJob::Mode::Remove) ? QStringLiteral("Removed tags from")
+                                               : QStringLiteral("Tagged");
+            QString msg = QStringLiteral("%1 %2 file(s).").arg(done_verb).arg(changed);
             if (skipped > 0) {
               msg += QStringLiteral(" Skipped %1.").arg(skipped);
             }
@@ -222,8 +333,8 @@ void TagController::tag_files(std::vector<dirtoo::fs::FileInfo> selection)
             }
             ActivityMonitor::instance().clear_task(QStringLiteral("tag"));
             emit status_message(msg, 5000);
-            if (tagged > 0) {
-              emit tags_applied(tagged);
+            if (changed > 0) {
+              emit tags_applied(changed);
             }
             if (skipped > 0) {
               QMessageBox::warning(dialog_parent_, QStringLiteral("Tag"), msg);
@@ -231,8 +342,9 @@ void TagController::tag_files(std::vector<dirtoo::fs::FileInfo> selection)
             job->deleteLater();
           });
   {
-    const QString activity = tag_label.isEmpty() ? QStringLiteral("Tagging")
-                                                 : QStringLiteral("Tagging %1").arg(tag_label);
+    const QString activity =
+        tag_label.isEmpty() ? activity_verb
+                            : QStringLiteral("%1 %2").arg(activity_verb, tag_label);
     ActivityMonitor::instance().set_task(QStringLiteral("tag"), activity, 0, total);
   }
   job->start();
