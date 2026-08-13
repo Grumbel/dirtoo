@@ -227,8 +227,16 @@ void MainWindow::on_preferences()
     s.crop_thumbnails = model_->crop_thumbnails();
   }
   s.show_hidden = collection_.show_hidden();
-  s.show_filter = show_filter_act_ != nullptr && show_filter_act_->isChecked();
   s.filter_pinned = filter_pinned_;
+  // show_filter: if pinned, keep the saved preference; else mirror the action.
+  if (filter_pinned_) {
+    s.show_filter = load_settings().show_filter;
+  } else {
+    s.show_filter = show_filter_act_ != nullptr && show_filter_act_->isChecked();
+  }
+  s.show_sidebar = show_sidebar_act_ != nullptr && show_sidebar_act_->isChecked();
+  s.read_only = read_only_;
+  s.dismiss_dev_warning = load_settings().dismiss_dev_warning;
   s.directories_first = collection_.sorter().directories_first();
   switch (collection_.group_mode()) {
   case collection::GroupMode::Day:
@@ -453,6 +461,10 @@ void MainWindow::apply_settings(const AppSettings& s)
   if (filter_search_.filter_edit() != nullptr) {
     filter_search_.filter_edit()->setVisible(true);
     filter_search_.filter_edit()->setEnabled(true);
+  }
+  read_only_ = s.read_only;
+  if (read_only_act_ != nullptr) {
+    read_only_act_->setChecked(s.read_only);
   }
   request_async_sort();
   refresh_list();

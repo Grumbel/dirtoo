@@ -26,7 +26,7 @@ struct AppSettings {
                              QStringLiteral("duration"), QStringLiteral("modified"),
                              QStringLiteral("type")};
   bool show_hidden = false;
-  bool show_filter = true;
+  bool show_filter = false; ///< Filter bar hidden until shown (View menu / pin).
   bool filter_pinned = false;
   bool show_sidebar = true;
   int sidebar_width = 220;
