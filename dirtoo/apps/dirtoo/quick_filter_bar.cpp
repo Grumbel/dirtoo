@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "quick_filter_bar.hpp"
+#include "hash_service.hpp"
 
-#include "dirtoo/hash/checksum_store.hpp"
 #include "dirtoo/tags/tag_store.hpp"
 
 #include <QAction>
@@ -227,10 +227,10 @@ void QuickFilterBar::rebuild_from_items(const std::vector<dirtoo::fs::FileInfo>&
   QSet<QString> types;
   QSet<QString> tags_seen;
 
-  dirtoo::hash::ChecksumStore checksums;
+  auto& hashes = HashService::instance();
   dirtoo::tags::TagStore tag_store;
   std::string err;
-  const bool tags_ok = checksums.open(dirtoo::hash::ChecksumStore::default_path(), &err)
+  const bool tags_ok = hashes.ensure_open(&err)
                        && tag_store.open(dirtoo::tags::TagStore::default_path(), &err);
 
   constexpr std::size_t kMaxScan = 2000;
@@ -252,7 +252,7 @@ void QuickFilterBar::rebuild_from_items(const std::vector<dirtoo::fs::FileInfo>&
       const auto abs = std::filesystem::absolute(fi.path(), ec);
       key = ec ? fi.path().string() : abs.lexically_normal().string();
     }
-    if (auto dig = checksums.get(key)) {
+    if (auto dig = hashes.get_full(key)) {
       for (const auto& t : tag_store.tags_for_sha256(dig->sha256_hex)) {
         tags_seen.insert(QString::fromStdString(t));
         if (tags_seen.size() >= 24) {

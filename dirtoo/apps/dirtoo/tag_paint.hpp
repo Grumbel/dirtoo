@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "dirtoo/hash/checksum_store.hpp"
+#include "hash_service.hpp"
 #include "dirtoo/tags/tag_store.hpp"
 
 #include <QColor>
@@ -65,7 +65,6 @@ inline std::string cache_key_for_path(const std::filesystem::path& path)
 }
 
 struct ChipCacheState {
-  dirtoo::hash::ChecksumStore checksums;
   dirtoo::tags::TagStore tags;
   bool open = false;
   std::once_flag once;
@@ -96,7 +95,8 @@ inline std::vector<TagChip> chips_for_path(const std::filesystem::path& path)
   auto& st = chip_cache_state();
   std::call_once(st.once, [&] {
     std::string err;
-    st.open = st.checksums.open(dirtoo::hash::ChecksumStore::default_path(), &err)
+    // Checksums via process-wide HashService; only TagStore is owned here.
+    st.open = HashService::instance().ensure_open(&err)
               && st.tags.open(dirtoo::tags::TagStore::default_path(), &err);
   });
 
@@ -109,7 +109,7 @@ inline std::vector<TagChip> chips_for_path(const std::filesystem::path& path)
   if (const auto it = st.chips.find(key); it != st.chips.end()) {
     return it->second;
   }
-  auto digests = st.checksums.get(key);
+  auto digests = HashService::instance().get_full(key);
   if (!digests) {
     st.chips.emplace(key, std::vector<TagChip>{});
     return {};

@@ -5,8 +5,8 @@
 
 #include "activity_monitor.hpp"
 #include "app_settings.hpp"
+#include "hash_service.hpp"
 
-#include "dirtoo/hash/checksum_store.hpp"
 #include "dirtoo/tags/tag_store.hpp"
 
 #include <QDialog>
@@ -84,16 +84,18 @@ std::string path_key_for(const dirtoo::fs::FileInfo& fi)
 /// Union of tags present on any selected file (checksum-cache hits only; no hashing).
 QStringList tags_on_selection(const std::vector<dirtoo::fs::FileInfo>& files)
 {
-  dirtoo::hash::ChecksumStore checksums;
+  auto& hashes = HashService::instance();
   dirtoo::tags::TagStore tags;
   std::string err;
-  if (!checksums.open(dirtoo::hash::ChecksumStore::default_path(), &err)
-      || !tags.open(dirtoo::tags::TagStore::default_path(), &err)) {
+  if (!hashes.ensure_open(&err) || !tags.open(dirtoo::tags::TagStore::default_path(), &err)) {
     return {};
   }
   std::set<std::string> all;
   for (const auto& fi : files) {
-    for (const auto& name : tags.tags_for_path(checksums, path_key_for(fi))) {
+    const auto names = hashes.with_store([&](dirtoo::hash::ChecksumStore& store) {
+      return tags.tags_for_path(store, path_key_for(fi));
+    });
+    for (const auto& name : names) {
       all.insert(name);
     }
   }
