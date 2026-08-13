@@ -1028,7 +1028,7 @@ Full file inventory + notes: **`AUDIT.md`** (section *Full source inventory + au
 - [ ] **C2 — Devices without UDisks** — Clear empty state / install hint.
 - [ ] **C7 — Network FS watcher** — Poll fallback when inotify unreliable.
 - [x] **Filter: untagged in recursive search** — Confirmed: `search_directory` applies the same `MatchFunc` (`make_tagged` / `TagLookup`); `tagged:no` parses and matches via checksum+TagStore lookup only (no hashing).
-- [ ] **Tag autocomplete in filter bar** — Chip/list exists in Tag dialog; filter bar still plain text.
+- [x] **Tag autocomplete in filter bar** — `FilterExpressionCompleter` on filter + search edits: last-token complete for `tag:<name>` (from TagStore), `tagged:`/`checksummed:`/`type:` keywords; refresh after Tag Manager / tag apply.
 - [ ] **Background full checksum queue** — Idle hashing of visible folder for faster `checksummed:` / tagging later.
 
 ### Architecture / cleanup

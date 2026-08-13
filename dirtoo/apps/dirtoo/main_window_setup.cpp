@@ -65,6 +65,7 @@ void MainWindow::setup_background_workers()
           });
   connect(&tag_, &TagController::tags_applied, this, [this](int) {
     tag_paint_detail::clear_tag_chip_cache();
+    filter_search_.refresh_filter_completions();
     if (graphics_view_ != nullptr) {
       graphics_view_->viewport()->update();
     }

@@ -103,6 +103,7 @@ qt_add_executable(dirtoo-app
   path_completion_service.cpp
   location_chrome.cpp
   filter_search_chrome.cpp
+  filter_expression_completer.cpp
   list_pipeline_workers.cpp
   sidebar_places.cpp
   sidebar_controller.cpp

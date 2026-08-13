@@ -293,6 +293,7 @@ void MainWindow::on_tag_manager()
   auto* dlg = new TagManagerDialog(this);
   connect(dlg, &TagManagerDialog::tags_changed, this, [this] {
     tag_paint_detail::clear_tag_chip_cache();
+    filter_search_.refresh_filter_completions();
     if (graphics_view_ != nullptr) {
       graphics_view_->viewport()->update();
     }

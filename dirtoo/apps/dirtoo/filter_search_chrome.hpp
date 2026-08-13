@@ -12,6 +12,8 @@ class QWidget;
 
 namespace dirtoo::app {
 
+class FilterExpressionCompleter;
+
 /// Owns filter + recursive-search row chrome (labels, edits, Help buttons).
 /// MainWindow embeds the host widgets from create_*() and connects signals;
 /// event filters (history keys, Escape, FocusOut) stay on MainWindow.
@@ -43,6 +45,9 @@ public:
   void set_filter_text(const QString& text);
   void clear_search();
 
+  /// Reload tag: / keyword completions (e.g. after Tag Manager edits).
+  void refresh_filter_completions();
+
   /// Reset filter-row palette to app Window/Base so it does not inherit a
   /// tinted view Base (parity with update_filter_chrome bar portion).
   void reset_filter_bar_palette();
@@ -57,6 +62,8 @@ private:
   QLineEdit* filter_edit_ = nullptr;
   QWidget* search_row_ = nullptr;
   QLineEdit* search_edit_ = nullptr;
+  FilterExpressionCompleter* filter_completer_ = nullptr;
+  FilterExpressionCompleter* search_completer_ = nullptr;
 };
 
 } // namespace dirtoo::app

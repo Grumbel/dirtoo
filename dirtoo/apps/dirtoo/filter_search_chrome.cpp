@@ -3,12 +3,14 @@
 
 #include "filter_search_chrome.hpp"
 
+#include "filter_expression_completer.hpp"
+
+#include <QApplication>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPalette>
 #include <QPushButton>
-#include <QApplication>
 
 namespace dirtoo::app {
 
@@ -28,10 +30,15 @@ QWidget* FilterSearchChrome::create_filter_row(QWidget* parent)
   auto* filter_label = new QLabel(QStringLiteral("Filter:"), filter_row_);
   filter_edit_ = new QLineEdit(filter_row_);
   filter_edit_->setPlaceholderText(
-      QStringLiteral("Filter by name, glob, or expression (e.g. *.png, size:>1M)…"));
+      QStringLiteral("Filter by name, glob, or expression (e.g. *.png, size:>1M, tag:work)…"));
   filter_edit_->setClearButtonEnabled(true);
   filter_edit_->setEnabled(true);
   filter_edit_->setVisible(true);
+  filter_edit_->setToolTip(
+      QStringLiteral("Type tag: for known tags, tagged:/checksummed: for presence filters.\n"
+                     "Multi-term expressions complete the last token only."));
+  filter_completer_ = new FilterExpressionCompleter(this);
+  filter_completer_->attach(filter_edit_);
   connect(filter_edit_, &QLineEdit::textChanged, this, &FilterSearchChrome::filter_text_changed);
   filter_label->setBuddy(filter_edit_);
   auto* filter_help_btn = new QPushButton(QStringLiteral("Help"), filter_row_);
@@ -55,6 +62,10 @@ QWidget* FilterSearchChrome::create_search_row(QWidget* parent)
   search_edit_->setPlaceholderText(
       QStringLiteral("Recursive search (filter expression, Enter to run, Esc to close)…"));
   search_edit_->setVisible(true);
+  search_edit_->setToolTip(
+      QStringLiteral("Same expression language as the filter bar (including tag: completion)."));
+  search_completer_ = new FilterExpressionCompleter(this);
+  search_completer_->attach(search_edit_);
   connect(search_edit_, &QLineEdit::returnPressed, this, &FilterSearchChrome::search_submitted);
   search_label->setBuddy(search_edit_);
   auto* search_help_btn = new QPushButton(QStringLiteral("Help"), search_row_);
@@ -98,6 +109,7 @@ void FilterSearchChrome::focus_filter(Qt::FocusReason reason)
   if (filter_edit_ == nullptr) {
     return;
   }
+  refresh_filter_completions();
   filter_edit_->setVisible(true);
   filter_edit_->setEnabled(true);
   filter_edit_->setFocus(reason);
@@ -109,6 +121,7 @@ void FilterSearchChrome::focus_search(Qt::FocusReason reason)
   if (search_edit_ == nullptr) {
     return;
   }
+  refresh_filter_completions();
   search_edit_->setFocus(reason);
   search_edit_->selectAll();
 }
@@ -136,6 +149,16 @@ void FilterSearchChrome::clear_search()
 {
   if (search_edit_ != nullptr) {
     search_edit_->clear();
+  }
+}
+
+void FilterSearchChrome::refresh_filter_completions()
+{
+  if (filter_completer_ != nullptr) {
+    filter_completer_->refresh_suggestions();
+  }
+  if (search_completer_ != nullptr) {
+    search_completer_->refresh_suggestions();
   }
 }
 
