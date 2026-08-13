@@ -239,7 +239,10 @@ ChecksumDialog::~ChecksumDialog()
 
 void ChecksumDialog::stop_worker()
 {
-  ActivityMonitor::instance().clear_task(QStringLiteral("checksum"));
+  if (!activity_job_id_.isEmpty()) {
+    ActivityMonitor::instance().end_job(activity_job_id_);
+    activity_job_id_.clear();
+  }
   if (auto* w = qobject_cast<ChecksumWorker*>(worker_)) {
     w->request_cancel();
   }
@@ -281,6 +284,10 @@ void ChecksumDialog::start_job(bool refresh, bool cached_only, bool quick)
   }
   cancel_btn_->setEnabled(true);
 
+  activity_job_id_ = ActivityMonitor::instance().begin_job(
+      QStringLiteral("checksum"), QStringLiteral("Checksums"), 0,
+      static_cast<int>(paths_.size()));
+
   thread_ = new QThread(this);
   auto* worker = new ChecksumWorker(paths_, refresh, cached_only, quick);
   worker_ = worker;
@@ -288,9 +295,11 @@ void ChecksumDialog::start_job(bool refresh, bool cached_only, bool quick)
 
   connect(thread_, &QThread::started, worker, &ChecksumWorker::run);
   connect(worker, &ChecksumWorker::progress, this, &ChecksumDialog::on_progress);
-  connect(worker, &ChecksumWorker::progress, this, [](int done, int total) {
-    ActivityMonitor::instance().set_task(QStringLiteral("checksum"), QStringLiteral("Checksums"),
-                                         done, total);
+  connect(worker, &ChecksumWorker::progress, this, [this](int done, int total) {
+    if (!activity_job_id_.isEmpty()) {
+      ActivityMonitor::instance().update_job(activity_job_id_, QStringLiteral("Checksums"), done,
+                                             total);
+    }
   });
   connect(worker, &ChecksumWorker::row_ready, this, &ChecksumDialog::on_row);
   connect(worker, &ChecksumWorker::failed, this, &ChecksumDialog::on_failed);
@@ -324,7 +333,10 @@ void ChecksumDialog::cancel_job()
   if (auto* w = qobject_cast<ChecksumWorker*>(worker_)) {
     w->request_cancel();
   }
-  ActivityMonitor::instance().clear_task(QStringLiteral("checksum"));
+  if (!activity_job_id_.isEmpty()) {
+    ActivityMonitor::instance().end_job(activity_job_id_);
+    activity_job_id_.clear();
+  }
 }
 
 void ChecksumDialog::on_progress(int done, int total)
@@ -374,7 +386,10 @@ void ChecksumDialog::on_row(const QString& path, const QString& status, const QS
 
 void ChecksumDialog::on_finished()
 {
-  ActivityMonitor::instance().clear_task(QStringLiteral("checksum"));
+  if (!activity_job_id_.isEmpty()) {
+    ActivityMonitor::instance().end_job(activity_job_id_);
+    activity_job_id_.clear();
+  }
   cancel_btn_->setEnabled(false);
   compute_btn_->setEnabled(true);
   cached_btn_->setEnabled(true);

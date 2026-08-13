@@ -313,8 +313,11 @@ void TagController::start_next_job()
   const QString activity_verb =
       (pending.mode == TagJob::Mode::Remove) ? QStringLiteral("Untagging")
                                              : QStringLiteral("Tagging");
-  const int seq = ++job_seq_;
-  const QString task_id = QStringLiteral("tag-%1").arg(seq);
+  QString activity0 =
+      tag_label.isEmpty() ? activity_verb
+                          : QStringLiteral("%1 %2").arg(activity_verb, tag_label);
+  const QString task_id =
+      ActivityMonitor::instance().begin_job(QStringLiteral("tag"), activity0, 0, total);
 
   auto* job = new TagJob(std::move(pending.files), pending.tags, pending.mode, this);
   active_job_ = job;
@@ -328,13 +331,13 @@ void TagController::start_next_job()
             if (!name.isEmpty()) {
               activity += QStringLiteral(" — %1").arg(name);
             }
-            ActivityMonitor::instance().set_task(task_id, activity, done, total_n);
+            ActivityMonitor::instance().update_job(task_id, activity, done, total_n);
           });
   connect(job, &TagJob::failed, this, [this, job, task_id](const QString& message) {
     if (active_job_ == job) {
       active_job_ = nullptr;
     }
-    ActivityMonitor::instance().clear_task(task_id);
+    ActivityMonitor::instance().end_job(task_id);
     QMessageBox::warning(dialog_parent_, QStringLiteral("Tag"), message);
     job->deleteLater();
     start_next_job();
@@ -354,7 +357,7 @@ void TagController::start_next_job()
             if (!problems.isEmpty() && problems.size() <= 5) {
               msg += QLatin1Char('\n') + problems.join(QLatin1Char('\n'));
             }
-            ActivityMonitor::instance().clear_task(task_id);
+            ActivityMonitor::instance().end_job(task_id);
             emit status_message(msg, 5000);
             if (changed > 0) {
               emit tags_applied(changed);
@@ -369,7 +372,7 @@ void TagController::start_next_job()
   const QString activity =
       tag_label.isEmpty() ? activity_verb
                           : QStringLiteral("%1 %2").arg(activity_verb, tag_label);
-  ActivityMonitor::instance().set_task(task_id, activity, 0, total);
+  // task registered via begin_job above
   emit status_message(QStringLiteral("%1 (%2 file(s))…").arg(activity).arg(total), 3000);
   job->start();
 }

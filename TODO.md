@@ -1034,7 +1034,7 @@ Full file inventory + notes: **`AUDIT.md`** (section *Full source inventory + au
 ### Architecture / cleanup
 
 - [ ] **D1 — MainWindow gravity** — Continue extracting collaborators; `main_window_ops.cpp` / `actions.cpp` / `settings.cpp` still large.
-- [ ] **D2 — ActivityMonitor job tokens** — Per-job ids so concurrent tag/checksum/dir-load compose in the busy badge.
+- [x] **D2 — ActivityMonitor job tokens** — `begin_job`/`update_job`/`end_job` + `ScopedActivityJob`; `kind` on tasks; `clear_jobs_of_kind`. Tag + checksum use unique tokens; dir-load/thumbs/transfer remain single-flight named slots that compose with jobs in the headline.
 - [ ] **D4 — Shared HashService** — One queue for full/quick hash used by TagJob, ChecksumDialog, future idle scanner.
 - [ ] **D5 — Store writer queue** — Serialize SQLite writes for tags + checksums.
 - [ ] **D6 — Dual icon paint stacks** — GraphicsFileItem vs FileItemDelegate divergence (flash, tags, captions); share more via `icon_tile_paint`.

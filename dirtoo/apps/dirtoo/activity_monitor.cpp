@@ -46,8 +46,8 @@ QString ActivityTask::summary() const
     const int pct = static_cast<int>((100.0 * std::min(done, total)) / total);
     return QStringLiteral("%1 %2/%3 (%4%)").arg(label).arg(done).arg(total).arg(pct);
   }
-  if (done >= 0 && total <= 0) {
-    return QStringLiteral("%1 %2").arg(label).arg(done);
+  if (done >= 0 && total < 0) {
+    return QStringLiteral("%1 (%2)").arg(label).arg(done);
   }
   return label;
 }
@@ -79,11 +79,15 @@ void ActivityMonitor::set_task(const QString& id, const QString& label, int done
         task.label = label;
         task.done = done;
         task.total = total;
+        if (task.kind.isEmpty()) {
+          task.kind = id;
+        }
         goto emit_out;
       }
     }
     ActivityTask task;
     task.id = id;
+    task.kind = id;
     task.label = label;
     task.done = done;
     task.total = total;
@@ -121,6 +125,52 @@ void ActivityMonitor::clear_all_tasks()
     tasks_.clear();
   }
   emit changed();
+}
+
+QString ActivityMonitor::begin_job(const QString& kind, const QString& label, int done, int total)
+{
+  const QString safe_kind = kind.isEmpty() ? QStringLiteral("job") : kind;
+  const quint64 seq = job_seq_.fetch_add(1, std::memory_order_relaxed) + 1;
+  const QString id = QStringLiteral("%1-%2").arg(safe_kind).arg(seq);
+  {
+    QMutexLocker lock(&monitor_mu());
+    ActivityTask task;
+    task.id = id;
+    task.kind = safe_kind;
+    task.label = label.isEmpty() ? safe_kind : label;
+    task.done = done;
+    task.total = total;
+    tasks_.push_back(std::move(task));
+  }
+  emit changed();
+  return id;
+}
+
+void ActivityMonitor::update_job(const QString& id, const QString& label, int done, int total)
+{
+  set_task(id, label, done, total);
+}
+
+void ActivityMonitor::clear_jobs_of_kind(const QString& kind)
+{
+  if (kind.isEmpty()) {
+    return;
+  }
+  const QString prefix = kind + QLatin1Char('-');
+  bool changed_flag = false;
+  {
+    QMutexLocker lock(&monitor_mu());
+    for (int i = tasks_.size() - 1; i >= 0; --i) {
+      const QString& id = tasks_[i].id;
+      if (id == kind || id.startsWith(prefix) || tasks_[i].kind == kind) {
+        tasks_.removeAt(i);
+        changed_flag = true;
+      }
+    }
+  }
+  if (changed_flag) {
+    emit changed();
+  }
 }
 
 QVector<ActivityTask> ActivityMonitor::tasks() const

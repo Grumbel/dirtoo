@@ -45,7 +45,6 @@ private:
   QWidget* dialog_parent_ = nullptr;
   std::deque<Pending> queue_;
   TagJob* active_job_ = nullptr;
-  int job_seq_ = 0;
 };
 
 } // namespace dirtoo::app

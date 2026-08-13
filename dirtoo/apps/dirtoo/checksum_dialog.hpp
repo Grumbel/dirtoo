@@ -50,6 +50,8 @@ private:
   QPushButton* cancel_btn_ = nullptr;
   QThread* thread_ = nullptr;
   QObject* worker_ = nullptr;
+  /// ActivityMonitor job token for the current run (empty when idle).
+  QString activity_job_id_;
 };
 
 /// Show checksum dialog for the given paths (compute/refresh via ChecksumStore).
