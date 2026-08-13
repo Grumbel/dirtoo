@@ -86,6 +86,7 @@ FileListModel::FileListModel(QObject* parent)
 
 void FileListModel::set_collection(collection::FileCollection* collection)
 {
+  clear_launch_flash();
   beginResetModel();
   collection_ = collection;
   endResetModel();

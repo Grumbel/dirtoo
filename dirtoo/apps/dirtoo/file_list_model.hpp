@@ -88,6 +88,8 @@ public:
   /// Brief icon blink after a successful open (search hits and normal files).
   void flash_launch(const QString& path);
   [[nodiscard]] bool is_launch_flash(const QString& path) const;
+  /// Cancel any in-flight launch flash timers (e.g. navigate away / list replace).
+  void clear_launch_flash();
 
   [[nodiscard]] ThumbnailStatus thumbnail_status(const QString& path) const;
   /// Counts of thumbnail states among paths currently tracked (visible requests).
@@ -161,6 +163,8 @@ private:
   QHash<QString, qint64> thumbnail_pending_since_;
   QSet<QString> new_paths_;
   QSet<QString> launch_flash_paths_;
+  /// Bumped by clear_launch_flash / new flash so nested QTimers become no-ops.
+  quint64 launch_flash_generation_ = 0;
   QHash<QString, qint64> child_counts_; // -1 = pending, >=0 = known
   QSet<QString> child_count_pending_;
   bool icon_style_ = false;

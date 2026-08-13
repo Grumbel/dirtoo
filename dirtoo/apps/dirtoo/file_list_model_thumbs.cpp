@@ -63,29 +63,65 @@ void FileListModel::flash_launch(const QString& path)
   if (path.isEmpty()) {
     return;
   }
+  // Invalidate any previous blink sequence (navigate / re-open).
+  clear_launch_flash();
+  const quint64 gen = ++launch_flash_generation_;
+
   // Short blink so double-click feedback is obvious while the external app starts.
-  launch_flash_paths_.insert(path);
-  emit_path_changed(path);
-  QTimer::singleShot(90, this, [this, path] {
-    launch_flash_paths_.remove(path);
-    emit_path_changed(path);
-    QTimer::singleShot(90, this, [this, path] {
+  // Nested singleShots capture @p gen; clear_launch_flash bumps the generation so
+  // timers from a prior list still fire but do not paint the wrong row.
+  auto step = [this, path, gen](bool on) {
+    if (gen != launch_flash_generation_) {
+      return false;
+    }
+    if (on) {
       launch_flash_paths_.insert(path);
-      emit_path_changed(path);
-      QTimer::singleShot(90, this, [this, path] {
-        launch_flash_paths_.remove(path);
-        emit_path_changed(path);
-        QTimer::singleShot(90, this, [this, path] {
-          launch_flash_paths_.insert(path);
-          emit_path_changed(path);
-          QTimer::singleShot(140, this, [this, path] {
-            launch_flash_paths_.remove(path);
-            emit_path_changed(path);
+    } else {
+      launch_flash_paths_.remove(path);
+    }
+    emit_path_changed(path);
+    return true;
+  };
+
+  step(true);
+  QTimer::singleShot(90, this, [this, path, gen, step] {
+    if (!step(false)) {
+      return;
+    }
+    QTimer::singleShot(90, this, [this, path, gen, step] {
+      if (!step(true)) {
+        return;
+      }
+      QTimer::singleShot(90, this, [this, path, gen, step] {
+        if (!step(false)) {
+          return;
+        }
+        QTimer::singleShot(90, this, [this, path, gen, step] {
+          if (!step(true)) {
+            return;
+          }
+          QTimer::singleShot(140, this, [this, path, gen, step] {
+            (void)step(false);
+            (void)gen;
+            (void)path;
           });
         });
       });
     });
   });
+}
+
+void FileListModel::clear_launch_flash()
+{
+  ++launch_flash_generation_;
+  if (launch_flash_paths_.isEmpty()) {
+    return;
+  }
+  const QSet<QString> paths = launch_flash_paths_;
+  launch_flash_paths_.clear();
+  for (const QString& p : paths) {
+    emit_path_changed(p);
+  }
 }
 
 bool FileListModel::is_launch_flash(const QString& path) const

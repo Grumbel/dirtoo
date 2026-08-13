@@ -1015,7 +1015,7 @@ Full file inventory + notes: **`AUDIT.md`** (section *Full source inventory + au
 - [x] **A5 — Watcher start on slow mounts** — `is_directory` + `inotify_add_watch` on QtConcurrent; generation-cancelled on stop. Residual: `QFileSystemWatcher::addPath` still on GUI for non-inotify paths (e.g. archive file).
 - [ ] **B7 — Search hit metadata** — Synthetic search `FileInfo`s skip stat; Detail columns (size already set; mtime/type/media) may stay blank until refresh/stat.
 - [x] **B8 — Open-from-archive temp files** — Open extract uses XDG cache `dirtoo-open` via `ensure_archive_member_extracted`; startup `prune_all_archive_member_caches` (7d age, 2 GiB budget) covers open/thumbs/drop + legacy `/tmp/dirtoo-open`.
-- [ ] **C8 — Launch flash timers** — Nested `QTimer`s not cancelled on navigate-away; low risk of painting wrong row after list replace (path key mitigates).
+- [x] **C8 — Launch flash timers** — `launch_flash_generation_` + `clear_launch_flash()`; nested timers no-op when gen mismatches; clear on hard navigate and `set_collection`.
 
 ### Missing features / product
 

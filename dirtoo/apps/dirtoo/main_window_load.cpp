@@ -101,6 +101,9 @@ void MainWindow::reload_directory(bool soft)
   // Hard navigation: clear immediately so the old directory does not linger.
   // Soft (watcher): keep showing the previous listing until the worker finishes.
   if (!soft) {
+    if (model_ != nullptr) {
+      model_->clear_launch_flash();
+    }
     collection_.clear();
     refresh_list();
     // Let the empty list + status/busy paint before a slow volume stalls later work.
