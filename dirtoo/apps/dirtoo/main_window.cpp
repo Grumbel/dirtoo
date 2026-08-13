@@ -102,6 +102,17 @@ MainWindow::MainWindow(QWidget* parent)
   update_edit_actions();
   set_view_mode(ViewMode::Detail);
   restore_settings();
+
+  // B8: keep extract caches from growing forever (open / thumbs / drop + legacy /tmp).
+  {
+    const auto pruned = prune_all_archive_member_caches();
+    if (pruned.trees_removed > 0 || pruned.bytes_removed > 0) {
+      qInfo().noquote() << QStringLiteral(
+          "archive cache prune: removed %1 tree(s), %2 bytes")
+                             .arg(pruned.trees_removed)
+                             .arg(pruned.bytes_removed);
+    }
+  }
 }
 
 MainWindow::~MainWindow()

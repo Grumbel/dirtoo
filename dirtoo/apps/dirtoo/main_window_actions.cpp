@@ -3,6 +3,7 @@
 
 #include "main_window_common.hpp"
 #include "activity_monitor.hpp"
+#include "archive_member_cache.hpp"
 
 #include "file_context_menu.hpp"
 #include "properties_dialog.hpp"
@@ -83,15 +84,17 @@ void MainWindow::on_item_activated(const QModelIndex& index)
     }
   } else if (location_.is_archive()) {
     // Extract single member then open with the default application.
+    // Cache under XDG cache (dirtoo-open); pruned by age/size at startup.
     const auto member = location_.entry_path().empty()
                             ? std::filesystem::path{fi.basename()}
                             : location_.entry_path() / fi.basename();
-    const auto cache = std::filesystem::temp_directory_path() / "dirtoo-open" /
-                       std::to_string(std::hash<std::string>{}(location_.as_path().string()));
-    auto extracted = archive::extract_member(location_.as_path(), member, cache);
+    const auto cache_root = archive_member_cache_root("dirtoo-open");
+    const auto dest = archive_member_dest_dir(cache_root, location_.as_path());
+    auto extracted = ensure_archive_member_extracted(location_.as_path(), member, dest);
     if (!extracted) {
       QMessageBox::warning(this, QStringLiteral("Archive"),
-                           QString::fromStdString(extracted.error()));
+                           QStringLiteral("Could not extract %1 from the archive.")
+                               .arg(QString::fromStdString(fi.basename())));
       return;
     }
     if (fs::looks_like_archive(*extracted)) {
