@@ -1027,7 +1027,7 @@ Full file inventory + notes: **`AUDIT.md`** (section *Full source inventory + au
 - [ ] **B12 — RelativeIcons polish** — Mode present; document in UI/help; verify layout quality.
 - [ ] **C2 — Devices without UDisks** — Clear empty state / install hint.
 - [ ] **C7 — Network FS watcher** — Poll fallback when inotify unreliable.
-- [ ] **Filter: untagged in recursive search** — Works if expression supports `tagged:no`; confirm search path uses same predicates.
+- [x] **Filter: untagged in recursive search** — Confirmed: `search_directory` applies the same `MatchFunc` (`make_tagged` / `TagLookup`); `tagged:no` parses and matches via checksum+TagStore lookup only (no hashing).
 - [ ] **Tag autocomplete in filter bar** — Chip/list exists in Tag dialog; filter bar still plain text.
 - [ ] **Background full checksum queue** — Idle hashing of visible folder for faster `checksummed:` / tagging later.
 
@@ -1039,7 +1039,7 @@ Full file inventory + notes: **`AUDIT.md`** (section *Full source inventory + au
 - [ ] **D5 — Store writer queue** — Serialize SQLite writes for tags + checksums.
 - [ ] **D6 — Dual icon paint stacks** — GraphicsFileItem vs FileItemDelegate divergence (flash, tags, captions); share more via `icon_tile_paint`.
 - [ ] **D7 — Fewer modal error boxes** — Batch tag/checksum failures → status + Activity details dialog.
-- [ ] **C4 — Tests** — `hash_file` / `hash_file_quick` Catch cases done; still open: TagStore concurrent open smoke; DirectoryLoadWorker cancel; filter `checksummed`/`tagged` already partly covered.
+- [ ] **C4 — Tests** — `hash_file` / `hash_file_quick` + TagStore concurrent open/CRUD smoke done; still open: DirectoryLoadWorker cancel (Qt worker); filter `checksummed`/`tagged` already partly covered.
 
 ### Intentionally out of scope (still)
 

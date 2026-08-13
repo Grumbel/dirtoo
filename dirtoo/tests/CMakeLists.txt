@@ -11,6 +11,7 @@ add_executable(dirtoo-tests
   test_archive_index.cpp
   test_filter.cpp
   test_hash.cpp
+  test_tag_store.cpp
   ${CMAKE_SOURCE_DIR}/apps/dirtoo/clipboard.cpp
 )
 
