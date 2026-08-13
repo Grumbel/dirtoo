@@ -5,7 +5,9 @@
 
 #include <openssl/evp.h>
 
+#include <algorithm>
 #include <array>
+#include <cstdint>
 #include <cstdio>
 #include <fstream>
 #include <vector>
@@ -174,6 +176,143 @@ std::optional<FileDigests> hash_file(const std::filesystem::path& path, const Ha
   out.md5_hex = to_hex(md5, md5_len);
   out.sha1_hex = to_hex(sha1, sha1_len);
   out.sha256_hex = to_hex(sha256, sha256_len);
+  return out;
+}
+
+
+std::optional<FileDigests> hash_file_quick(const std::filesystem::path& path,
+                                           const QuickHashOptions& options, HashError* error)
+{
+  std::error_code ec;
+  const auto st = std::filesystem::symlink_status(path, ec);
+  if (ec) {
+    if (error) {
+      error->message = "stat failed: " + ec.message();
+    }
+    return std::nullopt;
+  }
+  if (!std::filesystem::is_regular_file(st)) {
+    if (error) {
+      error->message = "not a regular file";
+    }
+    return std::nullopt;
+  }
+
+  const auto size = static_cast<std::uint64_t>(std::filesystem::file_size(path, ec));
+  if (ec) {
+    if (error) {
+      error->message = "file_size failed: " + ec.message();
+    }
+    return std::nullopt;
+  }
+
+  std::optional<std::int64_t> mtime_ns;
+  {
+    const auto ftime = std::filesystem::last_write_time(path, ec);
+    if (!ec) {
+      mtime_ns = static_cast<std::int64_t>(ftime.time_since_epoch().count());
+    }
+  }
+
+  const std::uint64_t window =
+      std::max<std::uint64_t>(4096, options.window_bytes == 0 ? (1ULL << 20) : options.window_bytes);
+
+  // Small enough: one sequential full hash is fine.
+  if (size <= window * 3) {
+    HashOptions full;
+    full.should_cancel = options.should_cancel;
+    auto digests = hash_file(path, full, error);
+    if (digests && mtime_ns) {
+      digests->mtime_ns = mtime_ns;
+    }
+    return digests;
+  }
+
+  std::ifstream in(path, std::ios::binary);
+  if (!in) {
+    if (error) {
+      error->message = "open failed";
+    }
+    return std::nullopt;
+  }
+
+  EVP_MD_CTX* ctx = EVP_MD_CTX_new();
+  if (ctx == nullptr || EVP_DigestInit_ex(ctx, EVP_sha256(), nullptr) != 1) {
+    if (ctx) {
+      EVP_MD_CTX_free(ctx);
+    }
+    if (error) {
+      error->message = "EVP_DigestInit failed";
+    }
+    return std::nullopt;
+  }
+
+  auto feed = [&](const void* data, std::size_t n) { EVP_DigestUpdate(ctx, data, n); };
+
+  const char magic[] = "dirtoo-quick-v1";
+  feed(magic, sizeof(magic) - 1);
+  const std::uint64_t size_le = size;
+  feed(&size_le, sizeof(size_le));
+
+  std::vector<unsigned char> buf(static_cast<std::size_t>(std::min(window, std::uint64_t{1ULL << 20})));
+  if (buf.size() < static_cast<std::size_t>(window) && window <= (1ULL << 22)) {
+    buf.resize(static_cast<std::size_t>(window));
+  }
+
+  auto read_at = [&](std::uint64_t offset, std::uint64_t len) -> bool {
+    if (options.should_cancel && options.should_cancel()) {
+      return false;
+    }
+    in.clear();
+    in.seekg(static_cast<std::streamoff>(offset), std::ios::beg);
+    if (!in) {
+      return false;
+    }
+    std::uint64_t left = len;
+    while (left > 0) {
+      if (options.should_cancel && options.should_cancel()) {
+        return false;
+      }
+      const std::size_t chunk =
+          static_cast<std::size_t>(std::min<std::uint64_t>(left, buf.size()));
+      in.read(reinterpret_cast<char*>(buf.data()), static_cast<std::streamsize>(chunk));
+      const auto got = static_cast<std::size_t>(in.gcount());
+      if (got == 0) {
+        return false;
+      }
+      feed(buf.data(), got);
+      left -= got;
+    }
+    return true;
+  };
+
+  const std::uint64_t mid = size / 2 > window / 2 ? size / 2 - window / 2 : 0;
+  const std::uint64_t tail = size - window;
+  if (!read_at(0, window) || !read_at(mid, window) || !read_at(tail, window)) {
+    EVP_MD_CTX_free(ctx);
+    if (error) {
+      error->message = (options.should_cancel && options.should_cancel()) ? "cancelled"
+                                                                          : "sample read failed";
+    }
+    return std::nullopt;
+  }
+
+  unsigned char md[EVP_MAX_MD_SIZE];
+  unsigned int md_len = 0;
+  if (EVP_DigestFinal_ex(ctx, md, &md_len) != 1) {
+    EVP_MD_CTX_free(ctx);
+    if (error) {
+      error->message = "EVP_DigestFinal failed";
+    }
+    return std::nullopt;
+  }
+  EVP_MD_CTX_free(ctx);
+
+  FileDigests out;
+  out.size = size;
+  out.mtime_ns = mtime_ns;
+  out.sha256_hex = to_hex(md, md_len);
+  out.crc32_hex = "quick"; // marker: sample digest, not a real CRC
   return out;
 }
 

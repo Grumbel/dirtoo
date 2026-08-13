@@ -35,10 +35,11 @@ namespace {
 class ChecksumWorker : public QObject {
   Q_OBJECT
 public:
-  ChecksumWorker(QStringList paths, bool refresh, bool cached_only)
+  ChecksumWorker(QStringList paths, bool refresh, bool cached_only, bool quick = false)
       : paths_(std::move(paths))
       , refresh_(refresh)
       , cached_only_(cached_only)
+      , quick_(quick)
   {
   }
 
@@ -96,7 +97,20 @@ public slots:
       }
 
       dirtoo::hash::HashError herr;
-      if (auto d = store.ensure(abs, key, refresh_, &herr)) {
+      if (quick_) {
+        // Sample hash only — never write into ChecksumStore (would collide with
+        // full SHA-256 used for tags).
+        dirtoo::hash::QuickHashOptions qopts;
+        qopts.should_cancel = [this] { return cancel_.load(); };
+        if (auto d = dirtoo::hash::hash_file_quick(abs, qopts, &herr)) {
+          status = QStringLiteral("Quick");
+          sha256 = QString::fromStdString(d->sha256_hex);
+          error = QStringLiteral("sample (head/mid/tail); not stored");
+        } else {
+          status = QStringLiteral("Error");
+          error = QString::fromStdString(herr.message);
+        }
+      } else if (auto d = store.ensure(abs, key, refresh_, &herr)) {
         status = refresh_ ? QStringLiteral("Hashed") : QStringLiteral("OK");
         crc32 = QString::fromStdString(d->crc32_hex);
         md5 = QString::fromStdString(d->md5_hex);
@@ -126,6 +140,7 @@ private:
   QStringList paths_;
   bool refresh_ = false;
   bool cached_only_ = false;
+  bool quick_ = false;
   std::atomic<bool> cancel_{false};
 };
 
@@ -176,11 +191,17 @@ ChecksumDialog::ChecksumDialog(QStringList paths, QWidget* parent)
   auto* btn_row = new QHBoxLayout();
   compute_btn_ = new QPushButton(QStringLiteral("Compute / Refresh"), this);
   cached_btn_ = new QPushButton(QStringLiteral("Show cached only"), this);
+  quick_btn_ = new QPushButton(QStringLiteral("Quick sample"), this);
+  quick_btn_->setToolTip(
+      QStringLiteral("Hash ~1 MiB from head, middle, and tail only. Fast on large files; "
+                     "weaker than a full hash. Result is not written to the checksum cache "
+                     "(tags still need a full SHA-256)."));
   auto* clear_btn = new QPushButton(QStringLiteral("Clear cache entries"), this);
   cancel_btn_ = new QPushButton(QStringLiteral("Cancel"), this);
   cancel_btn_->setEnabled(false);
   btn_row->addWidget(compute_btn_);
   btn_row->addWidget(cached_btn_);
+  btn_row->addWidget(quick_btn_);
   btn_row->addWidget(clear_btn);
   btn_row->addStretch(1);
   btn_row->addWidget(cancel_btn_);
@@ -198,11 +219,12 @@ ChecksumDialog::ChecksumDialog(QStringList paths, QWidget* parent)
 
   connect(compute_btn_, &QPushButton::clicked, this, &ChecksumDialog::start_compute);
   connect(cached_btn_, &QPushButton::clicked, this, &ChecksumDialog::start_cached_only);
+  connect(quick_btn_, &QPushButton::clicked, this, &ChecksumDialog::start_quick);
   connect(cancel_btn_, &QPushButton::clicked, this, &ChecksumDialog::cancel_job);
   connect(clear_btn, &QPushButton::clicked, this, &ChecksumDialog::clear_cache_entries);
 
   // Default: use cache, hash only on miss.
-  start_job(false, false);
+  start_job(false, false, false);
 }
 
 ChecksumDialog::~ChecksumDialog()
@@ -231,9 +253,12 @@ void ChecksumDialog::stop_worker()
   if (cached_btn_ != nullptr) {
     cached_btn_->setEnabled(true);
   }
+  if (quick_btn_ != nullptr) {
+    quick_btn_->setEnabled(true);
+  }
 }
 
-void ChecksumDialog::start_job(bool refresh, bool cached_only)
+void ChecksumDialog::start_job(bool refresh, bool cached_only, bool quick)
 {
   stop_worker();
   tree_->clear();
@@ -246,10 +271,13 @@ void ChecksumDialog::start_job(bool refresh, bool cached_only)
   progress_->setMaximum(std::max(qsizetype{1}, paths_.size()));
   compute_btn_->setEnabled(false);
   cached_btn_->setEnabled(false);
+  if (quick_btn_ != nullptr) {
+    quick_btn_->setEnabled(false);
+  }
   cancel_btn_->setEnabled(true);
 
   thread_ = new QThread(this);
-  auto* worker = new ChecksumWorker(paths_, refresh, cached_only);
+  auto* worker = new ChecksumWorker(paths_, refresh, cached_only, quick);
   worker_ = worker;
   worker->moveToThread(thread_);
 
@@ -273,12 +301,17 @@ void ChecksumDialog::start_job(bool refresh, bool cached_only)
 
 void ChecksumDialog::start_compute()
 {
-  start_job(true, false);
+  start_job(true, false, false);
 }
 
 void ChecksumDialog::start_cached_only()
 {
-  start_job(false, true);
+  start_job(false, true, false);
+}
+
+void ChecksumDialog::start_quick()
+{
+  start_job(false, false, true);
 }
 
 void ChecksumDialog::cancel_job()
@@ -340,6 +373,9 @@ void ChecksumDialog::on_finished()
   cancel_btn_->setEnabled(false);
   compute_btn_->setEnabled(true);
   cached_btn_->setEnabled(true);
+  if (quick_btn_ != nullptr) {
+    quick_btn_->setEnabled(true);
+  }
   if (thread_ != nullptr) {
     thread_->quit();
   }

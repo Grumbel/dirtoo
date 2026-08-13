@@ -26,6 +26,7 @@ public:
 private slots:
   void start_compute();
   void start_cached_only();
+  void start_quick();
   void cancel_job();
   void clear_cache_entries();
   void show_tree_context_menu(const QPoint& pos);
@@ -37,7 +38,7 @@ private slots:
   void on_failed(const QString& message);
 
 private:
-  void start_job(bool refresh, bool cached_only);
+  void start_job(bool refresh, bool cached_only, bool quick = false);
   void stop_worker();
 
   QStringList paths_;
@@ -45,6 +46,7 @@ private:
   QProgressBar* progress_ = nullptr;
   QPushButton* compute_btn_ = nullptr;
   QPushButton* cached_btn_ = nullptr;
+  QPushButton* quick_btn_ = nullptr;
   QPushButton* cancel_btn_ = nullptr;
   QThread* thread_ = nullptr;
   QObject* worker_ = nullptr;

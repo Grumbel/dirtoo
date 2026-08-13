@@ -17,7 +17,6 @@
 #include <QLineEdit>
 #include <QListWidget>
 #include <QMessageBox>
-#include <QProgressDialog>
 #include <QPushButton>
 #include <QStringListModel>
 #include <QVBoxLayout>
@@ -282,49 +281,30 @@ void TagController::tag_files(std::vector<dirtoo::fs::FileInfo> selection)
   }
 
   const int total = static_cast<int>(files.size());
-  const QString verb =
-      (mode == TagJob::Mode::Remove) ? QStringLiteral("Removing tags…") : QStringLiteral("Tagging files…");
-  auto* progress = new QProgressDialog(verb, QStringLiteral("Cancel"), 0, total, dialog_parent_);
-  progress->setWindowModality(Qt::WindowModal);
-  progress->setMinimumDuration(total > 1 ? 0 : 2000);
-  progress->setAttribute(Qt::WA_DeleteOnClose);
-  progress->setValue(0);
-
   const QString tag_label = tag_list.join(QLatin1Char(','));
   const QString activity_verb =
       (mode == TagJob::Mode::Remove) ? QStringLiteral("Untagging") : QStringLiteral("Tagging");
 
+  // Non-modal: TagJob already runs off the GUI thread. A WindowModal progress
+  // dialog blocked further Tag… actions; ActivityMonitor + status is enough.
   auto* job = new TagJob(std::move(files), tag_list, mode, this);
-  connect(progress, &QProgressDialog::canceled, job, &TagJob::cancel);
   connect(job, &TagJob::progress, this,
-          [progress, tag_label, activity_verb](int done, int total_n, const QString& name) {
-            if (progress == nullptr) {
-              return;
-            }
-            progress->setMaximum(total_n);
-            progress->setValue(done);
-            if (!name.isEmpty()) {
-              progress->setLabelText(QStringLiteral("%1 %2…").arg(activity_verb, name));
-            }
-            const QString activity =
+          [tag_label, activity_verb](int done, int total_n, const QString& name) {
+            QString activity =
                 tag_label.isEmpty() ? activity_verb
                                     : QStringLiteral("%1 %2").arg(activity_verb, tag_label);
+            if (!name.isEmpty()) {
+              activity += QStringLiteral(" — %1").arg(name);
+            }
             ActivityMonitor::instance().set_task(QStringLiteral("tag"), activity, done, total_n);
           });
-  connect(job, &TagJob::failed, this, [this, progress, job](const QString& message) {
-    if (progress != nullptr) {
-      progress->close();
-    }
+  connect(job, &TagJob::failed, this, [this, job](const QString& message) {
     ActivityMonitor::instance().clear_task(QStringLiteral("tag"));
     QMessageBox::warning(dialog_parent_, QStringLiteral("Tag"), message);
     job->deleteLater();
   });
   connect(job, &TagJob::finished, this,
-          [this, progress, job, mode](int changed, int skipped, const QStringList& problems) {
-            if (progress != nullptr) {
-              progress->setValue(progress->maximum());
-              progress->close();
-            }
+          [this, job, mode](int changed, int skipped, const QStringList& problems) {
             const QString done_verb =
                 (mode == TagJob::Mode::Remove) ? QStringLiteral("Removed tags from")
                                                : QStringLiteral("Tagged");
@@ -340,7 +320,7 @@ void TagController::tag_files(std::vector<dirtoo::fs::FileInfo> selection)
             if (changed > 0) {
               emit tags_applied(changed);
             }
-            if (skipped > 0) {
+            if (skipped > 0 && !problems.isEmpty()) {
               QMessageBox::warning(dialog_parent_, QStringLiteral("Tag"), msg);
             }
             job->deleteLater();
@@ -350,9 +330,9 @@ void TagController::tag_files(std::vector<dirtoo::fs::FileInfo> selection)
         tag_label.isEmpty() ? activity_verb
                             : QStringLiteral("%1 %2").arg(activity_verb, tag_label);
     ActivityMonitor::instance().set_task(QStringLiteral("tag"), activity, 0, total);
+    emit status_message(QStringLiteral("%1 (%2 file(s))…").arg(activity).arg(total), 3000);
   }
   job->start();
-  progress->show();
 }
 
 } // namespace dirtoo::app
