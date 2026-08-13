@@ -470,7 +470,7 @@ void DirectoryWatcher::start()
           // Poll fallback: network mounts often claim inotify success but miss
           // events; also enable when no native watch could be armed at all.
           bool remote = false;
-          for (const auto& p : paths) {
+          for (const auto& p : impl_->poll_paths) {
             if (!p.empty() && is_remote_filesystem(p)) {
               remote = true;
               break;
