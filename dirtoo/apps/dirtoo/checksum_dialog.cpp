@@ -438,7 +438,21 @@ void ChecksumDialog::on_finished()
 
 void ChecksumDialog::on_failed(const QString& message)
 {
-  QMessageBox::warning(this, QStringLiteral("Checksums"), message);
+  ActivityMonitor::instance().append_log(QtWarningMsg,
+                                         QStringLiteral("Checksum: %1").arg(message));
+  // Reflect on the dialog without a modal box; rows already show per-path status.
+  if (progress_ != nullptr) {
+    progress_->setFormat(QStringLiteral("Failed: %1").arg(message));
+  }
+  setWindowTitle(QStringLiteral("Checksums — error"));
+  if (tree_ != nullptr) {
+    for (int i = 0; i < tree_->topLevelItemCount(); ++i) {
+      auto* item = tree_->topLevelItem(i);
+      if (item != nullptr && item->text(1) == QLatin1String("…")) {
+        item->setText(1, QStringLiteral("Error"));
+      }
+    }
+  }
 }
 
 void ChecksumDialog::show_tree_context_menu(const QPoint& pos)

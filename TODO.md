@@ -1043,7 +1043,7 @@ Full file inventory + notes: **`AUDIT.md`** (section *Full source inventory + au
 - [ ] **D4 — Shared HashService** — One queue for full/quick hash used by TagJob, ChecksumDialog, future idle scanner.
 - [ ] **D5 — Store writer queue** — Serialize SQLite writes for tags + checksums.
 - [ ] **D6 — Dual icon paint stacks** — GraphicsFileItem vs FileItemDelegate divergence (flash, tags, captions); share more via `icon_tile_paint`.
-- [ ] **D7 — Fewer modal error boxes** — Batch tag/checksum failures → status + Activity details dialog.
+- [x] **D7 — Fewer modal error boxes** — Tag skip/fail and Checksum job failure → status / message banner + ActivityMonitor log (no modal for batch outcomes).
 - [ ] **C4 — Tests** — `hash_file` / `hash_file_quick` + TagStore concurrent open/CRUD smoke done; still open: DirectoryLoadWorker cancel (Qt worker); filter `checksummed`/`tagged` already partly covered.
 
 ### Intentionally out of scope (still)

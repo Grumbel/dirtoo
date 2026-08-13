@@ -62,6 +62,12 @@ void MainWindow::setup_background_workers()
             if (statusBar() != nullptr) {
               statusBar()->showMessage(text, timeout_ms);
             }
+            // Surface skip/failure batches in the non-modal banner; Activity log has full detail.
+            if (message_area_ != nullptr
+                && (text.contains(QStringLiteral("failed"), Qt::CaseInsensitive)
+                    || text.contains(QStringLiteral("Skipped")))) {
+              message_area_->show_error(text, timeout_ms);
+            }
           });
   connect(&tag_, &TagController::tags_applied, this, [this](int) {
     tag_paint_detail::clear_tag_chip_cache();

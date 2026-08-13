@@ -371,7 +371,10 @@ void TagController::start_next_job()
       active_job_ = nullptr;
     }
     ActivityMonitor::instance().end_job(task_id);
-    QMessageBox::warning(dialog_parent_, QStringLiteral("Tag"), message);
+    ActivityMonitor::instance().append_log(QtWarningMsg,
+                                           QStringLiteral("Tag failed: %1").arg(message));
+    // Non-modal: status bar + Activity log (open Activity dialog for details).
+    emit status_message(QStringLiteral("Tag failed: %1").arg(message), 8000);
     job->deleteLater();
     start_next_job();
   });
@@ -387,16 +390,24 @@ void TagController::start_next_job()
             if (skipped > 0) {
               msg += QStringLiteral(" Skipped %1.").arg(skipped);
             }
-            if (!problems.isEmpty() && problems.size() <= 5) {
-              msg += QLatin1Char('\n') + problems.join(QLatin1Char('\n'));
-            }
             ActivityMonitor::instance().end_job(task_id);
-            emit status_message(msg, 5000);
+            if (!problems.isEmpty()) {
+              for (const QString& prob : problems) {
+                ActivityMonitor::instance().append_log(
+                    QtWarningMsg, QStringLiteral("Tag: %1").arg(prob));
+              }
+              const int show_n = std::min(3, static_cast<int>(problems.size()));
+              QString detail = problems.mid(0, show_n).join(QStringLiteral("; "));
+              if (problems.size() > show_n) {
+                detail += QStringLiteral(" (+%1 more — see Activity)").arg(problems.size() - show_n);
+              }
+              msg += QStringLiteral(" — %1").arg(detail);
+              emit status_message(msg, 10000);
+            } else {
+              emit status_message(msg, 5000);
+            }
             if (changed > 0) {
               emit tags_applied(changed);
-            }
-            if (skipped > 0 && !problems.isEmpty()) {
-              QMessageBox::warning(dialog_parent_, QStringLiteral("Tag"), msg);
             }
             job->deleteLater();
             start_next_job();
