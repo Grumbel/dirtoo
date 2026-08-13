@@ -259,13 +259,12 @@ Handoff bundles **dirtoo-003** … **dirtoo-015** (tip after 015: filter ranges)
 #### Open issues from 2026-08-13 (user report / feature requests)
 
 **Activity / background work**
-- [ ] **Thumbnail activity counter only goes up, never down (high)** — Background
-      activity indicator for Thumbnails increments but never decrements on finish
-      or failure. Likely missing finished/failed accounting in
-      `ThumbnailCoordinator` / `ActivityMonitor` wiring. Investigate and fix.
-- [ ] **Show which tags are currently being processed (nice)** — When TagJob is
-      active, surface the tag name(s) under work in the Activity detail dialog
-      (or status), not only a generic “Tagging…” headline.
+- [x] **Thumbnail activity counter only goes up, never down (high)** — Fixed:
+      `on_thumbnail_ready`/`failed` always call `update_status_selection` so the
+      last pending→ready/failed clears ActivityMonitor (previously skipped when
+      pending hit 0 after the status change).
+- [x] **Show which tags are currently being processed (nice)** — Activity label is
+      now `Tagging <name>` (seeded at job start; updated on progress).
 - [ ] **Progress indicator shows “idle” while still at ~100% of one CPU (high)** —
       Activity toolbar reports Idle but a core stays saturated. Find the spin
       (busy loop, tight timer, unreaped worker, filter/sort thrash, watcher, etc.)
