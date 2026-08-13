@@ -6,8 +6,11 @@
 #include <QFileSystemWatcher>
 #include <QSocketNotifier>
 #include <QTimer>
+#include <QMetaObject>
+#include <QtConcurrent>
 
 #include <cerrno>
+#include <cstdint>
 #include <cstring>
 #include <unordered_map>
 #include <unordered_set>
@@ -27,6 +30,8 @@ public:
   QFileSystemWatcher qwatcher;
   bool running = false;
   bool name_deltas = false;
+  /// Bumped on stop/start so in-flight async watch setup is ignored.
+  std::uint64_t start_generation = 0;
 
 #if defined(__linux__)
   int inotify_fd = -1;
@@ -141,140 +146,192 @@ void DirectoryWatcher::start()
     return;
   }
 
+  // Mark running before the worker returns so stop() can cancel via generation.
+  ++impl_->start_generation;
+  const std::uint64_t gen = impl_->start_generation;
+  impl_->running = true;
   impl_->name_deltas = false;
 
+  // is_directory / inotify_add_watch / QFileSystemWatcher::addPath can all
+  // block for a long time on hung network mounts — never do that on the GUI thread.
+  (void)QtConcurrent::run([this, paths, gen]() {
+    struct Result {
+      bool name_deltas = false;
+      int inotify_fd = -1;
+      std::vector<std::pair<int, std::filesystem::path>> inotify_watches;
+      std::vector<std::filesystem::path> qwatcher_paths;
+      QStringList messages;
+    } result;
+
 #if defined(__linux__)
-  // Prefer inotify for directories so we get per-name events.
-  impl_->inotify_fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
-  if (impl_->inotify_fd >= 0) {
-    // IN_CLOSE_WRITE: editors often write via temp+rename or truncate+write;
-    // close-after-write catches content changes that IN_MODIFY alone may miss or
-    // coalesce poorly. IN_OPEN is intentionally omitted (too noisy).
-    constexpr uint32_t kMask = IN_CREATE | IN_DELETE | IN_MOVED_FROM | IN_MOVED_TO
-                               | IN_MODIFY | IN_ATTRIB | IN_CLOSE_WRITE
-                               | IN_DELETE_SELF | IN_MOVE_SELF;
+    result.inotify_fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
+    if (result.inotify_fd >= 0) {
+      constexpr uint32_t kMask = IN_CREATE | IN_DELETE | IN_MOVED_FROM | IN_MOVED_TO
+                                 | IN_MODIFY | IN_ATTRIB | IN_CLOSE_WRITE
+                                 | IN_DELETE_SELF | IN_MOVE_SELF;
+      for (const auto& p : paths) {
+        if (p.empty()) {
+          continue;
+        }
+        std::error_code ec;
+        if (!std::filesystem::is_directory(p, ec) || ec) {
+          continue;
+        }
+        const auto key = p.lexically_normal();
+        const int wd = inotify_add_watch(result.inotify_fd, key.c_str(), kMask);
+        if (wd >= 0) {
+          result.inotify_watches.emplace_back(wd, key);
+          result.name_deltas = true;
+        } else {
+          result.messages << QStringLiteral("DirectoryWatcher: inotify_add_watch failed for %1: %2")
+                                 .arg(QString::fromStdString(key.string()),
+                                      QString::fromLocal8Bit(std::strerror(errno)));
+        }
+      }
+      if (!result.name_deltas) {
+        ::close(result.inotify_fd);
+        result.inotify_fd = -1;
+      }
+    }
+#endif
+
+    std::unordered_set<std::string> seen;
     for (const auto& p : paths) {
       if (p.empty()) {
         continue;
       }
-      std::error_code ec;
-      if (!std::filesystem::is_directory(p, ec) || ec) {
-        // Non-directories: fall through to QFileSystemWatcher file watch.
+      const auto key = p.lexically_normal().string();
+      if (!seen.insert(key).second) {
         continue;
       }
-      const auto key = p.lexically_normal();
-      const int wd = inotify_add_watch(impl_->inotify_fd, key.c_str(), kMask);
-      if (wd >= 0) {
-        impl_->wd_to_dir.emplace(wd, key);
-        impl_->name_deltas = true;
-      } else {
-        emit message(QStringLiteral("DirectoryWatcher: inotify_add_watch failed for %1: %2")
-                         .arg(QString::fromStdString(key.string()),
-                              QString::fromLocal8Bit(std::strerror(errno))));
+      std::error_code ec;
+      const bool is_dir = std::filesystem::is_directory(p, ec) && !ec;
+      if (is_dir && result.name_deltas) {
+        continue; // covered by inotify
       }
+      result.qwatcher_paths.push_back(p.lexically_normal());
     }
-    if (impl_->name_deltas) {
-      impl_->notifier = new QSocketNotifier(impl_->inotify_fd, QSocketNotifier::Read, this);
-      QObject::connect(impl_->notifier, &QSocketNotifier::activated, this, [this](QSocketDescriptor) {
-        if (!impl_->running || impl_->inotify_fd < 0) {
-          return;
-        }
-        alignas(struct inotify_event) char buf[4096];
-        for (;;) {
-          const ssize_t n = ::read(impl_->inotify_fd, buf, sizeof(buf));
-          if (n < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
-              break;
-            }
-            break;
-          }
-          if (n == 0) {
-            break;
-          }
-          ssize_t off = 0;
-          while (off < n) {
-            const auto* ev = reinterpret_cast<const struct inotify_event*>(buf + off);
-            off += static_cast<ssize_t>(sizeof(struct inotify_event) + ev->len);
-            const auto it = impl_->wd_to_dir.find(ev->wd);
-            if (it == impl_->wd_to_dir.end()) {
-              continue;
-            }
-            if ((ev->mask & (IN_DELETE_SELF | IN_MOVE_SELF)) != 0) {
-              // Directory itself went away — coarse reload.
-              emit directory_changed();
-              continue;
-            }
-            if (ev->len == 0 || ev->name[0] == '\0') {
-              continue;
-            }
-            // Skip noisy internal names.
-            if (ev->name[0] == '.' && (ev->name[1] == '\0' || (ev->name[1] == '.' && ev->name[2] == '\0'))) {
-              continue;
-            }
-            const auto full = it->second / ev->name;
-            const QString q = QString::fromStdString(full.string());
-            if ((ev->mask & (IN_CREATE | IN_MOVED_TO)) != 0) {
-              impl_->pending_created.push_back(q);
-            }
-            if ((ev->mask & (IN_DELETE | IN_MOVED_FROM)) != 0) {
-              impl_->pending_removed.push_back(q);
-            }
-            if ((ev->mask & (IN_MODIFY | IN_ATTRIB | IN_CLOSE_WRITE)) != 0) {
-              impl_->pending_modified.push_back(q);
-            }
-          }
-        }
-        if (impl_->coalesce_timer != nullptr
-            && (!impl_->pending_created.isEmpty() || !impl_->pending_removed.isEmpty()
-                || !impl_->pending_modified.isEmpty())) {
-          impl_->coalesce_timer->start();
-        }
-      });
-    } else {
-      ::close(impl_->inotify_fd);
-      impl_->inotify_fd = -1;
-    }
-  }
-#endif
 
-  // QFileSystemWatcher: always for files; for dirs when inotify is unavailable.
-  std::unordered_set<std::string> seen;
-  int added = 0;
-  for (const auto& p : paths) {
-    if (p.empty()) {
-      continue;
-    }
-    const auto key = p.lexically_normal().string();
-    if (!seen.insert(key).second) {
-      continue;
-    }
-    std::error_code ec;
-    const bool is_dir = std::filesystem::is_directory(p, ec) && !ec;
-    if (is_dir && impl_->name_deltas) {
-      // Already covered by inotify.
-      ++added;
-      continue;
-    }
-    const QString qpath = QString::fromStdString(key);
-    if (impl_->qwatcher.directories().contains(qpath) || impl_->qwatcher.files().contains(qpath)) {
-      ++added;
-      continue;
-    }
-    if (impl_->qwatcher.addPath(qpath)) {
-      ++added;
-    } else {
-      emit message(QStringLiteral("DirectoryWatcher: failed to watch %1").arg(qpath));
-    }
-  }
-  if (added == 0 && !impl_->name_deltas) {
-    emit message(QStringLiteral("DirectoryWatcher: failed to watch any path"));
-    return;
-  }
-  impl_->running = true;
+    QMetaObject::invokeMethod(
+        this,
+        [this, gen, result = std::move(result)]() mutable {
+          if (gen != impl_->start_generation) {
+            // Superseded by stop/start — drop any fd we opened.
+#if defined(__linux__)
+            if (result.inotify_fd >= 0) {
+              ::close(result.inotify_fd);
+            }
+#endif
+            return;
+          }
+          for (const QString& m : result.messages) {
+            emit message(m);
+          }
+#if defined(__linux__)
+          // Clear any previous inotify state (stop() should have, but be safe).
+          if (impl_->notifier != nullptr) {
+            impl_->notifier->setEnabled(false);
+            impl_->notifier->deleteLater();
+            impl_->notifier = nullptr;
+          }
+          if (impl_->inotify_fd >= 0) {
+            ::close(impl_->inotify_fd);
+            impl_->inotify_fd = -1;
+          }
+          impl_->wd_to_dir.clear();
+          impl_->inotify_fd = result.inotify_fd;
+          impl_->name_deltas = result.name_deltas;
+          for (const auto& [wd, key] : result.inotify_watches) {
+            impl_->wd_to_dir.emplace(wd, key);
+          }
+          if (impl_->inotify_fd >= 0 && impl_->name_deltas) {
+            impl_->notifier = new QSocketNotifier(impl_->inotify_fd, QSocketNotifier::Read, this);
+            QObject::connect(impl_->notifier, &QSocketNotifier::activated, this,
+                             [this](QSocketDescriptor) {
+              if (!impl_->running || impl_->inotify_fd < 0) {
+                return;
+              }
+              alignas(struct inotify_event) char buf[4096];
+              for (;;) {
+                const ssize_t n = ::read(impl_->inotify_fd, buf, sizeof(buf));
+                if (n < 0) {
+                  if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    break;
+                  }
+                  break;
+                }
+                if (n == 0) {
+                  break;
+                }
+                ssize_t off = 0;
+                while (off < n) {
+                  const auto* ev = reinterpret_cast<const struct inotify_event*>(buf + off);
+                  off += static_cast<ssize_t>(sizeof(struct inotify_event) + ev->len);
+                  const auto it = impl_->wd_to_dir.find(ev->wd);
+                  if (it == impl_->wd_to_dir.end()) {
+                    continue;
+                  }
+                  if ((ev->mask & (IN_DELETE_SELF | IN_MOVE_SELF)) != 0) {
+                    emit directory_changed();
+                    continue;
+                  }
+                  if (ev->len == 0 || ev->name[0] == '\0') {
+                    continue;
+                  }
+                  if (ev->name[0] == '.'
+                      && (ev->name[1] == '\0'
+                          || (ev->name[1] == '.' && ev->name[2] == '\0'))) {
+                    continue;
+                  }
+                  const auto full = it->second / ev->name;
+                  const QString q = QString::fromStdString(full.string());
+                  if ((ev->mask & (IN_CREATE | IN_MOVED_TO)) != 0) {
+                    impl_->pending_created.push_back(q);
+                  }
+                  if ((ev->mask & (IN_DELETE | IN_MOVED_FROM)) != 0) {
+                    impl_->pending_removed.push_back(q);
+                  }
+                  if ((ev->mask & (IN_MODIFY | IN_ATTRIB | IN_CLOSE_WRITE)) != 0) {
+                    impl_->pending_modified.push_back(q);
+                  }
+                }
+              }
+              if (impl_->coalesce_timer != nullptr
+                  && (!impl_->pending_created.isEmpty() || !impl_->pending_removed.isEmpty()
+                      || !impl_->pending_modified.isEmpty())) {
+                impl_->coalesce_timer->start();
+              }
+            });
+          }
+#endif
+          int added = 0;
+          for (const auto& p : result.qwatcher_paths) {
+            const QString qpath = QString::fromStdString(p.string());
+            if (impl_->qwatcher.directories().contains(qpath)
+                || impl_->qwatcher.files().contains(qpath)) {
+              ++added;
+              continue;
+            }
+            if (impl_->qwatcher.addPath(qpath)) {
+              ++added;
+            } else {
+              emit message(QStringLiteral("DirectoryWatcher: failed to watch %1").arg(qpath));
+            }
+          }
+          if (impl_->name_deltas) {
+            added += static_cast<int>(impl_->wd_to_dir.size());
+          }
+          if (added == 0 && !impl_->name_deltas) {
+            emit message(QStringLiteral("DirectoryWatcher: failed to watch any path"));
+          }
+        },
+        Qt::QueuedConnection);
+  });
 }
 
 void DirectoryWatcher::stop()
 {
+  ++impl_->start_generation;
   impl_->running = false;
   impl_->name_deltas = false;
 

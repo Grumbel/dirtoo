@@ -13,14 +13,17 @@ namespace {
 std::filesystem::path normalize_file_path(std::filesystem::path path)
 {
   if (!path.is_absolute()) {
-    path = std::filesystem::absolute(path);
+    std::error_code ec;
+    path = std::filesystem::absolute(path, ec);
+    if (ec) {
+      // Keep best-effort path; callers still navigate with the string they typed.
+      return path.lexically_normal();
+    }
   }
-  std::error_code ec;
-  auto weak = std::filesystem::weakly_canonical(path, ec);
-  if (!ec) {
-    return weak;
-  }
-  return path;
+  // Do not call weakly_canonical: it follows the filesystem and can block
+  // indefinitely on hung NFS/SMB mounts (GUI navigate path). Lexical cleanup
+  // is enough for Location keys; listing uses the path as given.
+  return path.lexically_normal();
 }
 
 bool is_hex_digit(char c)

@@ -22,7 +22,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
-find_package(Qt6 REQUIRED COMPONENTS Core)
+find_package(Qt6 REQUIRED COMPONENTS Core Concurrent)
 find_package(dirtoo-fs REQUIRED CONFIG)
 qt_standard_project_setup()
 
@@ -37,7 +37,7 @@ target_include_directories(dirtoo-watcher PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
-target_link_libraries(dirtoo-watcher PUBLIC dirtoo-fs::dirtoo-fs Qt6::Core)
+target_link_libraries(dirtoo-watcher PUBLIC dirtoo-fs::dirtoo-fs Qt6::Core Qt6::Concurrent)
 target_compile_features(dirtoo-watcher PUBLIC cxx_std_23)
 target_compile_options(dirtoo-watcher PRIVATE
   $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic>

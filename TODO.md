@@ -1009,10 +1009,10 @@ Full file inventory + notes: **`AUDIT.md`** (section *Full source inventory + au
 ### Bugs / risks (do these)
 
 - [x] **A1 — Archive TOC on GUI thread** — async `QtConcurrent` + generation; status/Activity “Indexing archive…”. Extract fallback still uses WaitCursor until ArchiveManager signals ready.
-- [ ] **A2 — `weakly_canonical` on navigate** — `Location::from_path` / `from_human` can hang on dead network mounts before async listing. Consider `from_path_unchecked` for UI navigation, or timeout/async canonicalize.
+- [x] **A2 — `weakly_canonical` on navigate** — `normalize_file_path` uses absolute + lexically_normal only (no `weakly_canonical`). Symlink targets are not resolved into Location keys.
 - [x] **A3 — SQLite busy / no WAL** — TagStore + ChecksumStore: `busy_timeout=5000`, `journal_mode=WAL`, `synchronous=NORMAL`. Single-writer queue still desirable under heavy load.
 - [x] **A4 — Concurrent TagJobs** — FIFO queue in TagController; one active job; per-job ActivityMonitor id `tag-N`.
-- [ ] **A5 — Watcher start on slow mounts** — `inotify_add_watch` deferred but can still stall when it runs. Soft-fail / timeout / skip watch on ETIMEDOUT.
+- [x] **A5 — Watcher start on slow mounts** — `is_directory` + `inotify_add_watch` on QtConcurrent; generation-cancelled on stop. Residual: `QFileSystemWatcher::addPath` still on GUI for non-inotify paths (e.g. archive file).
 - [ ] **B7 — Search hit metadata** — Synthetic search `FileInfo`s skip stat; Detail columns (size already set; mtime/type/media) may stay blank until refresh/stat.
 - [ ] **B8 — Open-from-archive temp files** — Extract under temp for open; define cleanup (age/size) so `/tmp/dirtoo-open` does not grow forever.
 - [ ] **C8 — Launch flash timers** — Nested `QTimer`s not cancelled on navigate-away; low risk of painting wrong row after list replace (path key mitigates).
