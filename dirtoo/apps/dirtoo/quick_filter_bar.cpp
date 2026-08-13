@@ -278,6 +278,20 @@ void QuickFilterBar::rebuild_from_items(const std::vector<dirtoo::fs::FileInfo>&
     auto_chips_.push_back(std::move(c));
   }
 
+  // Tagging workflow chips (filter language already supports these).
+  if (types.contains(QStringLiteral("image"))) {
+    AutoChip c;
+    c.label = QStringLiteral("Untagged images");
+    c.expression = QStringLiteral("type:image tagged:no");
+    auto_chips_.push_back(std::move(c));
+  }
+  if (tags_ok) {
+    AutoChip c;
+    c.label = QStringLiteral("Untagged");
+    c.expression = QStringLiteral("tagged:no");
+    auto_chips_.push_back(std::move(c));
+  }
+
   QStringList tag_list = tags_seen.values();
   std::sort(tag_list.begin(), tag_list.end(),
             [](const QString& a, const QString& b) { return a.toLower() < b.toLower(); });

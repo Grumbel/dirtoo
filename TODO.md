@@ -302,6 +302,9 @@ Handoff bundles **dirtoo-003** … **dirtoo-015** (tip after 015: filter ranges)
 - [x] **Tag dialog: remove current tags** — dialog lists tags already on the
       selection (checksum-cache hits); multi-select + Remove / double-click runs
       TagJob in Remove mode (`remove_tag_from_file`).
+- [x] **QuickFilter: Untagged / Untagged images chips** — when the listing has
+      images and/or a tags DB, auto-chips offer `type:image tagged:no` and
+      `tagged:no` (checksum-cache semantics; no hashing on filter).
 
 ### Review residuals (earlier 2026-08)
 
@@ -949,5 +952,25 @@ Primary algo for identity: **SHA-256**. Always compute the set in one pass.
 2. `ChecksumStore` + `dt-checksum`  
 3. Checksum GUI (Tools + Preferences entry)  
 4. `dirtoo-tags` + `dt-tag`  
-5. `tag:` filter + badges  
+5. `tag:` filter + badges
+
+## Feature ideas (backlog — not committed work)
+
+Useful product ideas gathered during the 2026-08-13 sessions. None are required
+for MVP parity; pick when polishing tagging / large-library workflows.
+
+| Idea | Notes |
+|------|--------|
+| **QuickFilter untagged chips** | Done: `Untagged` / `Untagged images` auto-chips. |
+| **`checksummed:yes\|no` predicate** | Stricter untagged = known SHA-256 and no tags; avoids treating never-scanned files as untagged. |
+| **Pin “Untagged images” by default** | Optional first-run pin with subtree scope. |
+| **Tag Manager → filter this tag** | Button sets `tag:name` in the main window (chip click already does this in views). |
+| **Bulk checksum-then-tag** | From Tag… when cache misses, offer “Hash selection first” with progress (TagJob already hashes; expose as explicit step). |
+| **Live tags.sqlite watch** | Chip cache invalidation when another process tags files (inotify on the DB file). |
+| **Tag stats in Tag Manager** | Sort by count; histogram; last-used (needs `tagged_at` aggregate). |
+| **Namespaces browser** | Group Tag Manager by `ns:` prefix; filter chips by namespace. |
+| **Operations History → re-open paths** | Jump to dest dir of a logged op (dialog may already support; verify UX). |
+| **Dual-pane / compare** | Out of current modular focus; large feature. |
+| **Detail list virtualization** | Optional for 100k+ dirs; model still full. |
+| **Smart albums** | Saved QuickFilter pins with labels are already a light form of this. |
 

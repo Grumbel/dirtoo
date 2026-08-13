@@ -34,7 +34,7 @@ struct PinnedQuickFilter {
 };
 
 /// Bottom strip of filter chips (browser bookmark-bar style).
-/// Auto buttons from the current listing (type:image/video/…, tag:…);
+/// Auto buttons from the current listing (type:…, untagged helpers, tag:…);
 /// user pins with optional label and directory scope.
 class QuickFilterBar : public QWidget {
   Q_OBJECT
