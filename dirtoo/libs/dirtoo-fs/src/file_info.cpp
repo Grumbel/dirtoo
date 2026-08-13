@@ -128,6 +128,19 @@ FileInfo FileInfo::synthetic(Location location, std::string display_name, bool i
   return info;
 }
 
+void FileInfo::set_mtime_unix(std::int64_t sec)
+{
+  if (sec <= 0) {
+    return;
+  }
+  try {
+    const auto sys = std::chrono::system_clock::time_point{std::chrono::seconds{sec}};
+    mtime_ = std::chrono::clock_cast<std::filesystem::file_time_type::clock>(sys);
+  } catch (...) {
+    // Leave default mtime on conversion failure.
+  }
+}
+
 std::string FileInfo::basename() const
 {
   if (!display_name_.empty()) {

@@ -1013,7 +1013,7 @@ Full file inventory + notes: **`AUDIT.md`** (section *Full source inventory + au
 - [x] **A3 — SQLite busy / no WAL** — TagStore + ChecksumStore: `busy_timeout=5000`, `journal_mode=WAL`, `synchronous=NORMAL`. Single-writer queue still desirable under heavy load.
 - [x] **A4 — Concurrent TagJobs** — FIFO queue in TagController; one active job; per-job ActivityMonitor id `tag-N`.
 - [x] **A5 — Watcher start on slow mounts** — `is_directory` + `inotify_add_watch` on QtConcurrent; generation-cancelled on stop. Residual: `QFileSystemWatcher::addPath` still on GUI for non-inotify paths (e.g. archive file).
-- [ ] **B7 — Search hit metadata** — Synthetic search `FileInfo`s skip stat; Detail columns (size already set; mtime/type/media) may stay blank until refresh/stat.
+- [x] **B7 — Search hit metadata** — Worker passes `mtime_sec` from `FilterItem` (dirent on search thread); synthetic hits get `set_mtime_unix` so Detail Modified fills without GUI stat. Size already set; type from basename; media still via MediaMetaCache async.
 - [x] **B8 — Open-from-archive temp files** — Open extract uses XDG cache `dirtoo-open` via `ensure_archive_member_extracted`; startup `prune_all_archive_member_caches` (7d age, 2 GiB budget) covers open/thumbs/drop + legacy `/tmp/dirtoo-open`.
 - [x] **C8 — Launch flash timers** — `launch_flash_generation_` + `clear_launch_flash()`; nested timers no-op when gen mismatches; clear on hard navigate and `set_collection`.
 

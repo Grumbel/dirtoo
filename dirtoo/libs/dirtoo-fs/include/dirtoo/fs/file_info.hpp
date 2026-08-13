@@ -24,6 +24,10 @@ public:
   [[nodiscard]] static FileInfo synthetic(Location location, std::string display_name,
                                           bool is_directory, std::uint64_t size = 0);
 
+  /// Set mtime from Unix epoch seconds (search worker already has this from dirent).
+  /// No-op when sec <= 0. Keeps the entry synthetic (no extra stat).
+  void set_mtime_unix(std::int64_t sec);
+
   [[nodiscard]] const Location& location() const noexcept { return location_; }
   [[nodiscard]] const std::filesystem::path& path() const noexcept { return path_; }
 

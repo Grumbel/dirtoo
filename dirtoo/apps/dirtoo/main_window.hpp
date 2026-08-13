@@ -163,7 +163,7 @@ private slots:
   void on_focus_filter();
   void on_show_search();
   void on_search_submitted();
-  void on_search_match(const QString& path, bool is_directory, quint64 size);
+  void on_search_match(const QString& path, bool is_directory, quint64 size, qint64 mtime_sec);
   void flush_search_batch();
   void on_search_finished(quint64 matched, quint64 visited, const QString& error);
   void on_search_progress(quint64 visited, quint64 matched);

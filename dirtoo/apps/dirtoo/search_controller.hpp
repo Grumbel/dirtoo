@@ -30,7 +30,7 @@ public:
   [[nodiscard]] bool is_running() const noexcept { return running_; }
 
 signals:
-  void match_found(const QString& path, bool is_directory, quint64 size);
+  void match_found(const QString& path, bool is_directory, quint64 size, qint64 mtime_sec);
   void progress(quint64 visited, quint64 matched);
   void finished(quint64 matched, quint64 visited, const QString& error);
 

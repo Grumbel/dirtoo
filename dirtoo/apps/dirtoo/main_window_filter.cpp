@@ -205,15 +205,20 @@ void MainWindow::on_search_submitted()
   search_controller_.start(root, expr, show_hidden, /*max_depth=*/-1);
 }
 
-void MainWindow::on_search_match(const QString& path, bool is_directory, quint64 size)
+void MainWindow::on_search_match(const QString& path, bool is_directory, quint64 size,
+                                 qint64 mtime_sec)
 {
   if (!search_session_.active) {
     return;
   }
-  // Synthetic only: avoid FileInfo::from_path (stat) on the GUI thread for every hit.
+  // Synthetic: size/mtime already collected on the worker via directory_entry.
+  // Avoid FileInfo::from_path (stat) on the GUI thread for every hit.
   const std::filesystem::path p{path.toStdString()};
   auto info = fs::FileInfo::synthetic(fs::Location::from_path(p), p.filename().string(),
                                       is_directory, size);
+  if (mtime_sec > 0) {
+    info.set_mtime_unix(static_cast<std::int64_t>(mtime_sec));
+  }
   search_session_.results.push_back(info);
   search_session_.batch.push_back(std::move(info));
   // Incremental inserts (batched) beat periodic full layoutChanged on large sets.

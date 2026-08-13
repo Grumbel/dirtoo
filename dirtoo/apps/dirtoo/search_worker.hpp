@@ -24,7 +24,7 @@ public slots:
 
 signals:
   /// Absolute filesystem path of a match.
-  void match_found(const QString& path, bool is_directory, quint64 size);
+  void match_found(const QString& path, bool is_directory, quint64 size, qint64 mtime_sec);
   void finished(quint64 matched, quint64 visited, const QString& error);
   void progress(quint64 visited, quint64 matched);
 

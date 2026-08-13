@@ -46,8 +46,9 @@ void SearchWorker::start(const QString& root_path, const QString& expression, bo
   const auto stats = filter::search_directory(
       root, *match, options, [this, &matched_so_far](const filter::FilterItem& item) {
         ++matched_so_far;
+        const qint64 mtime_sec = item.mtime_sec ? static_cast<qint64>(*item.mtime_sec) : qint64{-1};
         emit match_found(QString::fromStdString(item.path.string()), item.is_directory,
-                         static_cast<quint64>(item.size));
+                         static_cast<quint64>(item.size), mtime_sec);
         // Status bar only displays the match count; visited is finalized on finished().
         if ((matched_so_far % 16) == 0) {
           emit progress(0, matched_so_far);
