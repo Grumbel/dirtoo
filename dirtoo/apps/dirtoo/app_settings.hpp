@@ -19,6 +19,10 @@ struct AppSettings {
   int zoom_index = 2;
   int icon_detail_level = 3;
   bool crop_thumbnails = false;
+  /// Gap between icon tiles (pixels). Icons / RelativeIcons views.
+  int icon_spacing = 12;
+  /// Extra width past the thumbnail for the caption (pixels).
+  int icon_cell_padding = 72;
   /// Detail-view columns that are visible (logical names). Name is always on.
   /// Defaults include Dimensions+Framerate+Duration; Width/Height optional.
   QStringList detail_columns{QStringLiteral("size"), QStringLiteral("dimensions"),

@@ -6,6 +6,7 @@
 #include "checksum_dialog.hpp"
 
 #include <QCheckBox>
+#include <algorithm>
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QFormLayout>
@@ -124,6 +125,20 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
                              &dialog);
   crop->setChecked(settings->crop_thumbnails);
 
+  auto* icon_spacing = new QSpinBox(&dialog);
+  icon_spacing->setRange(0, 48);
+  icon_spacing->setValue(std::clamp(settings->icon_spacing, 0, 48));
+  icon_spacing->setSuffix(QStringLiteral(" px"));
+  icon_spacing->setToolTip(QStringLiteral("Gap between tiles in Icons view."));
+
+  auto* icon_pad = new QSpinBox(&dialog);
+  icon_pad->setRange(16, 240);
+  icon_pad->setValue(std::clamp(settings->icon_cell_padding, 16, 240));
+  icon_pad->setSuffix(QStringLiteral(" px"));
+  icon_pad->setToolTip(
+      QStringLiteral("Extra width past the thumbnail for the file name caption. "
+                     "Increase if names are often cropped."));
+
   auto* dirs_first = new QCheckBox(QStringLiteral("Directories first when sorting"), &dialog);
   dirs_first->setChecked(settings->directories_first);
 
@@ -135,6 +150,8 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   appearance_form->addRow(QStringLiteral("Group by:"), group);
   appearance_form->addRow(QStringLiteral("Size units:"), size_units);
   appearance_form->addRow(crop);
+  appearance_form->addRow(QStringLiteral("Icon spacing:"), icon_spacing);
+  appearance_form->addRow(QStringLiteral("Icon label width:"), icon_pad);
   appearance_form->addRow(dirs_first);
   tabs->addTab(wrap_form(appearance_form, &dialog), QStringLiteral("Appearance"));
 
@@ -279,6 +296,8 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   settings->group_mode = group->currentData().toString();
   settings->size_units = size_units->currentData().toString();
   settings->crop_thumbnails = crop->isChecked();
+  settings->icon_spacing = icon_spacing->value();
+  settings->icon_cell_padding = icon_pad->value();
   settings->directories_first = dirs_first->isChecked();
   settings->show_filter = show_filter->isChecked();
   settings->filter_pinned = pin_filter->isChecked();

@@ -1,3 +1,4 @@
+#include <algorithm>
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -66,10 +67,13 @@ void MainWindow::apply_icon_zoom()
   const int meta_lines = std::max(0, text_rows - 1);
   const int text_h = 6 + (name_lines + meta_lines) * 17;
   // Tile wider than the pixmap so middle-elided names still show more characters.
-  const int cell_w = std::max({size + 72, 128, size + 48 + text_rows * 8});
+  // Padding and spacing come from Preferences (icon_cell_padding_ / icon_spacing_).
+  const int pad = std::clamp(icon_cell_padding_, 16, 240);
+  const int gap = std::clamp(icon_spacing_, 0, 48);
+  const int cell_w = std::max({size + pad, 128, size + pad / 2 + text_rows * 8});
   const int cell_h = size + text_h + 20;
   icon_view_->setGridSize(QSize(cell_w, cell_h));
-  icon_view_->setSpacing(12);
+  icon_view_->setSpacing(gap);
   if (graphics_view_ != nullptr) {
     graphics_view_->set_tile_size(QSize(cell_w, cell_h));
     graphics_view_->set_compact(false);

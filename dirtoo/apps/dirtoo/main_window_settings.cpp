@@ -24,6 +24,7 @@
 #include "size_format.hpp"
 #include <QHeaderView>
 #include <filesystem>
+#include <algorithm>
 #include <set>
 
 namespace dirtoo::app {
@@ -43,6 +44,8 @@ void MainWindow::restore_settings()
   zoom_.list = s.zoom_list;
   zoom_.detail = s.zoom_detail;
   zoom_.clamp_all();
+  icon_spacing_ = std::clamp(s.icon_spacing, 0, 48);
+  icon_cell_padding_ = std::clamp(s.icon_cell_padding, 16, 240);
   if (!s.detail_columns.isEmpty()) {
     detail_columns_ = s.detail_columns;
   }
@@ -161,6 +164,8 @@ void MainWindow::persist_settings() const
   s.zoom_list = zoom_.list;
   s.zoom_detail = zoom_.detail;
   s.zoom_index = zoom_.icons;
+  s.icon_spacing = icon_spacing_;
+  s.icon_cell_padding = icon_cell_padding_;
   s.detail_columns = detail_columns_;
   if (model_ != nullptr) {
     s.icon_detail_level = model_->icon_detail_level();
@@ -221,6 +226,8 @@ void MainWindow::on_preferences()
   s.zoom_list = zoom_.list;
   s.zoom_detail = zoom_.detail;
   s.zoom_index = zoom_.icons;
+  s.icon_spacing = icon_spacing_;
+  s.icon_cell_padding = icon_cell_padding_;
   s.detail_columns = detail_columns_;
   if (model_ != nullptr) {
     s.icon_detail_level = model_->icon_detail_level();
@@ -409,6 +416,8 @@ void MainWindow::apply_settings(const AppSettings& s)
   zoom_.list = s.zoom_list;
   zoom_.detail = s.zoom_detail;
   zoom_.clamp_all();
+  icon_spacing_ = std::clamp(s.icon_spacing, 0, 48);
+  icon_cell_padding_ = std::clamp(s.icon_cell_padding, 16, 240);
   if (!s.detail_columns.isEmpty()) {
     detail_columns_ = s.detail_columns;
   }

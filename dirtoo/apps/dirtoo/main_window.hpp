@@ -281,6 +281,8 @@ private:
   ViewMode view_mode_ = ViewMode::Detail;
 
   ViewZoom zoom_;
+  int icon_spacing_ = 12;
+  int icon_cell_padding_ = 72;
   QStringList detail_columns_;
   void apply_detail_column_visibility();
   [[nodiscard]] int& zoom_for_current_view() { return zoom_.for_mode(view_mode_); }
