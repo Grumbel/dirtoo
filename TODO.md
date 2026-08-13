@@ -1039,7 +1039,7 @@ Full file inventory + notes: **`AUDIT.md`** (section *Full source inventory + au
 - [ ] **D5 — Store writer queue** — Serialize SQLite writes for tags + checksums.
 - [ ] **D6 — Dual icon paint stacks** — GraphicsFileItem vs FileItemDelegate divergence (flash, tags, captions); share more via `icon_tile_paint`.
 - [ ] **D7 — Fewer modal error boxes** — Batch tag/checksum failures → status + Activity details dialog.
-- [ ] **C4 — Tests** — Add `hash_file_quick` unit tests; TagStore concurrent open smoke; DirectoryLoadWorker cancel; filter `checksummed`/`tagged` already partly covered.
+- [ ] **C4 — Tests** — `hash_file` / `hash_file_quick` Catch cases done; still open: TagStore concurrent open smoke; DirectoryLoadWorker cancel; filter `checksummed`/`tagged` already partly covered.
 
 ### Intentionally out of scope (still)
 
