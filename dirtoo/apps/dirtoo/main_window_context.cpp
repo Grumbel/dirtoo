@@ -60,7 +60,9 @@ void MainWindow::on_context_menu(const QPoint& pos)
   cb.checksums_selected = [this] { on_checksums(); };
   cb.tag_selected = [this] { on_tag_selected(); };
   cb.create_set_from_selection = [this] { create_set_from_selection(); };
+  cb.create_new_set_from_selection = [this] { create_new_set_from_selection(); };
   cb.add_selection_to_last_set = [this] { add_selection_to_last_set(); };
+  cb.remove_selection_from_set = [this] { remove_selection_from_set(); };
   cb.select_set_members = [this] { select_set_members_of_focus(); };
   cb.open_set_of_selection = [this] {
     const auto sel = selected_fileinfos();

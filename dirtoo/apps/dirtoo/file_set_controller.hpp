@@ -16,7 +16,7 @@
 
 namespace dirtoo::app {
 
-/// Orchestrates persistent ad-hoc file sets (create from selection, last set, open).
+/// Orchestrates persistent ad-hoc file sets (create / toggle / extend).
 class FileSetController : public QObject {
   Q_OBJECT
 public:
@@ -24,33 +24,43 @@ public:
 
   void set_dialog_parent(QWidget* parent);
 
-  /// Create a new anonymous set from @p selection; stores last_set_id_.
-  /// Returns the set id (empty on failure).
+  /// Single-gesture set control (Ctrl+G):
+  /// - none in a set → create new set with selection
+  /// - some in a set → put all selection into that set (first/majority shared set)
+  /// - all in the same set → remove selection from that set (delete set if empty)
+  /// - all in sets but different sets → remove each from its set
+  QString toggle_set_for_selection(const std::vector<dirtoo::fs::FileInfo>& selection);
+
+  /// Always create a brand-new set from selection (context menu).
   QString create_set_from_selection(const std::vector<dirtoo::fs::FileInfo>& selection);
 
+  /// Add selection to @p set_id (exclusive membership moves paths from other sets).
+  bool add_selection_to_set(const std::vector<dirtoo::fs::FileInfo>& selection,
+                            const QString& set_id);
+
+  /// Remove selection from whichever set each file is in.
+  bool remove_selection_from_set(const std::vector<dirtoo::fs::FileInfo>& selection);
+
   /// Add selection to the most recently created/used set (if any).
-  /// Returns true if at least one path was added.
   bool add_selection_to_last_set(const std::vector<dirtoo::fs::FileInfo>& selection);
 
   [[nodiscard]] QString last_set_id() const { return last_set_id_; }
   void set_last_set_id(const QString& id) { last_set_id_ = id; }
 
-  /// Resolve set:// query (id or unique label) to a set id.
   [[nodiscard]] std::optional<dirtoo::sets::FileSet>
   resolve_query(std::string_view query, std::string* error = nullptr);
 
-  /// Ensure the store is open (shared process DB).
   [[nodiscard]] bool ensure_store(std::string* error = nullptr);
 
   [[nodiscard]] dirtoo::sets::FileSetStore& store();
 
-  /// Member path_keys for the first set containing @p path_key (empty if none).
   [[nodiscard]] QStringList member_paths_for_path(const QString& path_key);
 
 signals:
   void status_message(const QString& message, int timeout_ms = 4000);
   void set_created(const QString& set_id, int member_count);
   void set_updated(const QString& set_id, int member_count);
+  void set_dissolved(const QString& set_id);
 
 private:
   [[nodiscard]] static std::string path_key_for(const dirtoo::fs::FileInfo& fi);

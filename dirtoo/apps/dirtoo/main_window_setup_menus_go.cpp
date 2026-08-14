@@ -65,10 +65,10 @@ void MainWindow::setup_go_help_menus()
   }
   {
     auto* act = tools_menu->addAction(theme_icon("object-group", "folder-new"),
-                                      QStringLiteral("Create Set from Selection"),
+                                      QStringLiteral("Toggle Set"),
                                       this, &MainWindow::create_set_from_selection);
     act->setShortcut(QKeySequence(QStringLiteral("Ctrl+G")));
-    act->setStatusTip(QStringLiteral("Create a persistent ad-hoc set from the selection"));
+    act->setStatusTip(QStringLiteral("Toggle set: create, extend shared set, or remove when all selected are in the same set"));
   }
   {
     auto* act = tools_menu->addAction(theme_icon("list-add", "folder-new"),

@@ -178,6 +178,9 @@ private slots:
   void load_set_location_listing();
   void create_set_from_selection();
   void add_selection_to_last_set();
+  void refresh_set_ui();
+  void create_new_set_from_selection();
+  void remove_selection_from_set();
   void open_set_location(const QString& set_id);
   void select_set_members_of_focus();
   void on_rebuild_history_menu();

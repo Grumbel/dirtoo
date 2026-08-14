@@ -26,52 +26,108 @@ struct SetLookup {
   static SetLookup& instance()
   {
     static SetLookup inst;
-    static std::once_flag once;
-    std::call_once(once, [] {
-      std::string err;
-      inst.open = inst.store.open(dirtoo::sets::FileSetStore::default_path(), &err);
-    });
     return inst;
   }
 
-  [[nodiscard]] std::string path_key(const FilterItem& item) const
+  bool ensure_open()
   {
+    if (open && store.is_open()) {
+      return true;
+    }
+    std::string err;
+    open = store.open(dirtoo::sets::FileSetStore::default_path(), &err);
+    return open;
+  }
+
+  /// Candidate path keys (absolute + as stored) so listing paths match DB rows.
+  [[nodiscard]] static std::vector<std::string> path_keys(const FilterItem& item)
+  {
+    std::vector<std::string> keys;
     const std::string path_str = item.path.string();
+    if (path_str.empty()) {
+      return keys;
+    }
+    auto push_unique = [&](std::string k) {
+      if (k.empty()) {
+        return;
+      }
+      for (const auto& e : keys) {
+        if (e == k) {
+          return;
+        }
+      }
+      keys.push_back(std::move(k));
+    };
+    push_unique(path_str);
     if (path_str.find("://") != std::string::npos
         || path_str.find("//archive") != std::string::npos) {
-      return path_str;
+      return keys;
     }
     std::error_code ec;
     const auto abs = std::filesystem::absolute(item.path, ec);
-    if (ec) {
-      return path_str;
+    if (!ec) {
+      push_unique(abs.lexically_normal().string());
+      push_unique(abs.string());
     }
-    return abs.lexically_normal().string();
+    const auto weak = std::filesystem::weakly_canonical(item.path, ec);
+    if (!ec) {
+      push_unique(weak.string());
+    }
+    return keys;
   }
 
-  [[nodiscard]] std::vector<dirtoo::sets::FileSet> sets_for(const FilterItem& item) const
+  [[nodiscard]] std::vector<dirtoo::sets::FileSet> sets_for(const FilterItem& item)
   {
     std::lock_guard<std::mutex> lock(mu);
-    if (!open) {
+    if (!ensure_open()) {
       return {};
     }
-    return store.sets_for_path(path_key(item));
+    for (const auto& key : path_keys(item)) {
+      auto sets = store.sets_for_path(key);
+      if (!sets.empty()) {
+        return sets;
+      }
+    }
+    return {};
   }
 
-  [[nodiscard]] bool in_set(const FilterItem& item, std::string_view query) const
+  [[nodiscard]] bool in_set(const FilterItem& item, std::string_view query)
   {
     std::lock_guard<std::mutex> lock(mu);
-    if (!open || query.empty()) {
+    if (!ensure_open() || query.empty()) {
       return false;
     }
-    const std::string key = path_key(item);
+    const auto keys = path_keys(item);
+
+    auto path_in = [&](std::string_view set_id) {
+      for (const auto& key : keys) {
+        if (store.contains(set_id, key)) {
+          return true;
+        }
+      }
+      return false;
+    };
+
     // Exact id.
-    if (store.contains(query, key)) {
+    if (path_in(query)) {
       return true;
     }
-    // Label match (any set with that label containing path).
+    // Unique id prefix (QuickFilter may show short ids).
+    if (query.size() >= 8) {
+      std::vector<std::string> prefix_hits;
+      for (const auto& s : store.list_sets()) {
+        if (s.id.size() >= query.size()
+            && s.id.compare(0, query.size(), query) == 0) {
+          prefix_hits.push_back(s.id);
+        }
+      }
+      if (prefix_hits.size() == 1 && path_in(prefix_hits.front())) {
+        return true;
+      }
+    }
+    // Label match.
     for (const auto& s : store.list_sets()) {
-      if (s.label == query && store.contains(s.id, key)) {
+      if (s.label == query && path_in(s.id)) {
         return true;
       }
     }

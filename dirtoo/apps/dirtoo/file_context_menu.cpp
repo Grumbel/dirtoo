@@ -197,25 +197,33 @@ void exec_item_context_menu(QWidget* parent, const QPoint& global_pos,
     menu.addAction(theme_icon("document-properties"), QStringLiteral("Properties…"), parent,
                    cb.properties_selected);
   }
-  if (cb.tag_selected) {
-    if (cb.create_set_from_selection) {
-    menu.addAction(theme_icon("object-group", "folder-new"), QStringLiteral("Create Set"), parent,
+  if (cb.create_set_from_selection) {
+    menu.addAction(theme_icon("object-group", "folder-new"),
+                   QStringLiteral("Toggle Set (Ctrl+G)"), parent,
                    [cb] { cb.create_set_from_selection(); });
+  }
+  if (cb.create_new_set_from_selection) {
+    menu.addAction(theme_icon("folder-new", "object-group"), QStringLiteral("Create New Set"), parent,
+                   [cb] { cb.create_new_set_from_selection(); });
   }
   if (cb.add_selection_to_last_set) {
     menu.addAction(theme_icon("list-add", "folder-new"), QStringLiteral("Add to Last Set"), parent,
                    [cb] { cb.add_selection_to_last_set(); });
   }
+  if (cb.remove_selection_from_set) {
+    menu.addAction(theme_icon("list-remove", "edit-delete"), QStringLiteral("Remove from Set"), parent,
+                   [cb] { cb.remove_selection_from_set(); });
+  }
   if (cb.select_set_members) {
-    menu.addAction(theme_icon("edit-select-all", "object-group"), QStringLiteral("Select Set Members"), parent,
-                   [cb] { cb.select_set_members(); });
+    menu.addAction(theme_icon("edit-select-all", "object-group"), QStringLiteral("Select Set Members"),
+                   parent, [cb] { cb.select_set_members(); });
   }
   if (cb.open_set_of_selection) {
     menu.addAction(theme_icon("folder-open", "object-group"), QStringLiteral("Filter to Set"), parent,
                    [cb] { cb.open_set_of_selection(); });
   }
-  menu.addAction(theme_icon("bookmark-new", "tag"), QStringLiteral("Tag…"), parent,
-                   cb.tag_selected);
+  if (cb.tag_selected) {
+    menu.addAction(theme_icon("bookmark-new", "tag"), QStringLiteral("Tag…"), parent, cb.tag_selected);
   }
   if (cb.mark_opened) {
     menu.addAction(theme_icon("mail-mark-read", "checkmark"), QStringLiteral("Mark as Opened"),

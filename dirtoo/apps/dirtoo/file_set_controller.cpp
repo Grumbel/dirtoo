@@ -8,11 +8,12 @@
 #include <QMessageBox>
 
 #include <filesystem>
+#include <map>
+#include <unordered_map>
 
 namespace dirtoo::app {
 namespace {
 
-/// Status bar + stderr (qWarning → message handler → Activity recent log).
 void report_set_error(FileSetController* self, const QString& message, int timeout_ms = 8000)
 {
   qWarning().noquote() << QStringLiteral("dirtoo: sets: %1").arg(message);
@@ -69,7 +70,8 @@ QString FileSetController::create_set_from_selection(
   }
   std::string err;
   if (!ensure_store(&err)) {
-    const QString msg = QStringLiteral("Cannot open sets database: %1").arg(QString::fromStdString(err));
+    const QString msg =
+        QStringLiteral("Cannot open sets database: %1").arg(QString::fromStdString(err));
     report_set_error(this, msg);
     QMessageBox::warning(dialog_parent_, QStringLiteral("Sets"), msg);
     return {};
@@ -88,40 +90,31 @@ QString FileSetController::create_set_from_selection(
   err.clear();
   const int n = store_.add_members(set->id, keys, &err);
   if (!err.empty() && n == 0 && !keys.empty()) {
-    report_set_error(
-        this, QStringLiteral("Set created but adding members failed: %1")
-                  .arg(QString::fromStdString(err)));
+    report_set_error(this, QStringLiteral("Set created but adding members failed: %1")
+                               .arg(QString::fromStdString(err)));
   }
   last_set_id_ = QString::fromStdString(set->id);
   emit set_created(last_set_id_, n);
-  emit status_message(
-      QStringLiteral("Set created (%1 file%2)")
-          .arg(n)
-          .arg(n == 1 ? QString() : QStringLiteral("s")),
-      4000);
+  emit status_message(QStringLiteral("Set created (%1 file%2)")
+                          .arg(n)
+                          .arg(n == 1 ? QString() : QStringLiteral("s")),
+                      4000);
   return last_set_id_;
 }
 
-bool FileSetController::add_selection_to_last_set(
-    const std::vector<dirtoo::fs::FileInfo>& selection)
+bool FileSetController::add_selection_to_set(const std::vector<dirtoo::fs::FileInfo>& selection,
+                                             const QString& set_id)
 {
-  if (selection.empty()) {
-    emit status_message(QStringLiteral("Select files to add to the set"), 3000);
-    return false;
-  }
-  if (last_set_id_.isEmpty()) {
-    emit status_message(QStringLiteral("No set yet — create one with Ctrl+G first"), 4000);
+  if (selection.empty() || set_id.isEmpty()) {
     return false;
   }
   std::string err;
   if (!ensure_store(&err)) {
-    report_set_error(
-        this, QStringLiteral("Cannot open sets: %1").arg(QString::fromStdString(err)));
+    report_set_error(this, QStringLiteral("Cannot open sets: %1").arg(QString::fromStdString(err)));
     return false;
   }
-  if (!store_.get_set(last_set_id_.toStdString())) {
-    report_set_error(this, QStringLiteral("Last set no longer exists"));
-    last_set_id_.clear();
+  if (!store_.get_set(set_id.toStdString())) {
+    report_set_error(this, QStringLiteral("Set no longer exists"));
     return false;
   }
   std::vector<std::string> keys;
@@ -130,19 +123,136 @@ bool FileSetController::add_selection_to_last_set(
     keys.push_back(path_key_for(fi));
   }
   err.clear();
-  const int n = store_.add_members(last_set_id_.toStdString(), keys, &err);
-  if (!err.empty() && n == 0 && !keys.empty()) {
-    report_set_error(
-        this, QStringLiteral("Could not add to set: %1").arg(QString::fromStdString(err)));
+  const int n = store_.add_members(set_id.toStdString(), keys, &err);
+  last_set_id_ = set_id;
+  emit set_updated(set_id, static_cast<int>(store_.member_count(set_id.toStdString())));
+  emit status_message(QStringLiteral("Added to set (%1 file%2)")
+                          .arg(n)
+                          .arg(n == 1 ? QString() : QStringLiteral("s")),
+                      4000);
+  return true;
+}
+
+bool FileSetController::remove_selection_from_set(
+    const std::vector<dirtoo::fs::FileInfo>& selection)
+{
+  if (selection.empty()) {
+    emit status_message(QStringLiteral("Select files to remove from a set"), 3000);
     return false;
   }
-  emit set_updated(last_set_id_, static_cast<int>(store_.member_count(last_set_id_.toStdString())));
-  emit status_message(
-      QStringLiteral("Added %1 file%2 to set")
-          .arg(n)
-          .arg(n == 1 ? QString() : QStringLiteral("s")),
-      4000);
-  return n > 0;
+  std::string err;
+  if (!ensure_store(&err)) {
+    report_set_error(this, QStringLiteral("Cannot open sets: %1").arg(QString::fromStdString(err)));
+    return false;
+  }
+  int removed = 0;
+  std::map<std::string, int> touched; // set_id → remaining count after
+  for (const auto& fi : selection) {
+    const std::string key = path_key_for(fi);
+    const auto sets = store_.sets_for_path(key);
+    for (const auto& s : sets) {
+      if (store_.remove_member(s.id, key, &err)) {
+        ++removed;
+        touched[s.id] = static_cast<int>(store_.member_count(s.id));
+      }
+    }
+  }
+  if (removed == 0) {
+    emit status_message(QStringLiteral("Selection is not in any set"), 3000);
+    return false;
+  }
+  for (const auto& [sid, count] : touched) {
+    if (count <= 0) {
+      store_.delete_set(sid, &err);
+      emit set_dissolved(QString::fromStdString(sid));
+      if (last_set_id_ == QString::fromStdString(sid)) {
+        last_set_id_.clear();
+      }
+    } else {
+      emit set_updated(QString::fromStdString(sid), count);
+    }
+  }
+  emit status_message(QStringLiteral("Removed %1 file%2 from set")
+                          .arg(removed)
+                          .arg(removed == 1 ? QString() : QStringLiteral("s")),
+                      4000);
+  return true;
+}
+
+bool FileSetController::add_selection_to_last_set(
+    const std::vector<dirtoo::fs::FileInfo>& selection)
+{
+  if (last_set_id_.isEmpty()) {
+    emit status_message(QStringLiteral("No set yet — use Ctrl+G or Create Set"), 4000);
+    return false;
+  }
+  return add_selection_to_set(selection, last_set_id_);
+}
+
+QString FileSetController::toggle_set_for_selection(
+    const std::vector<dirtoo::fs::FileInfo>& selection)
+{
+  if (selection.empty()) {
+    emit status_message(QStringLiteral("Select files to toggle set membership"), 3000);
+    return {};
+  }
+  std::string err;
+  if (!ensure_store(&err)) {
+    report_set_error(this,
+                     QStringLiteral("Cannot open sets: %1").arg(QString::fromStdString(err)));
+    return {};
+  }
+
+  struct Entry {
+    std::string key;
+    std::string set_id; // empty if not in a set
+  };
+  std::vector<Entry> entries;
+  entries.reserve(selection.size());
+  std::unordered_map<std::string, int> set_counts;
+  int in_set_count = 0;
+  for (const auto& fi : selection) {
+    Entry e;
+    e.key = path_key_for(fi);
+    const auto sets = store_.sets_for_path(e.key);
+    if (!sets.empty()) {
+      e.set_id = sets.front().id;
+      ++in_set_count;
+      ++set_counts[e.set_id];
+    }
+    entries.push_back(std::move(e));
+  }
+
+  const int n = static_cast<int>(entries.size());
+
+  // All selected files are already in a set → remove them (toggle off).
+  if (in_set_count == n) {
+    // Prefer one message when all share the same set.
+    (void)remove_selection_from_set(selection);
+    return {};
+  }
+
+  // At least one file has no set → create or extend.
+  std::string target_id;
+  if (!set_counts.empty()) {
+    // Use the set that already covers the most of the selection.
+    int best = -1;
+    for (const auto& [sid, c] : set_counts) {
+      if (c > best) {
+        best = c;
+        target_id = sid;
+      }
+    }
+  }
+
+  if (target_id.empty()) {
+    return create_set_from_selection(selection);
+  }
+
+  if (add_selection_to_set(selection, QString::fromStdString(target_id))) {
+    return QString::fromStdString(target_id);
+  }
+  return {};
 }
 
 std::optional<dirtoo::sets::FileSet>
@@ -157,11 +267,27 @@ FileSetController::resolve_query(std::string_view query, std::string* error)
     }
     return std::nullopt;
   }
-  // Prefer exact id.
   if (auto by_id = store_.get_set(query)) {
     return by_id;
   }
-  // Unique label match (case-sensitive for now).
+  // Unique id prefix.
+  if (query.size() >= 8) {
+    std::optional<dirtoo::sets::FileSet> pref;
+    for (const auto& s : store_.list_sets()) {
+      if (s.id.size() >= query.size() && s.id.compare(0, query.size(), query) == 0) {
+        if (pref) {
+          if (error != nullptr) {
+            *error = "ambiguous set id prefix";
+          }
+          return std::nullopt;
+        }
+        pref = s;
+      }
+    }
+    if (pref) {
+      return pref;
+    }
+  }
   std::optional<dirtoo::sets::FileSet> found;
   for (const auto& s : store_.list_sets()) {
     if (s.label == query) {

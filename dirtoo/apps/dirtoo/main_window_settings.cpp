@@ -547,33 +547,8 @@ void MainWindow::apply_settings(const AppSettings& s)
 
 
 
-void MainWindow::create_set_from_selection()
+void MainWindow::refresh_set_ui()
 {
-  const QString id = file_sets_.create_set_from_selection(selected_fileinfos());
-  if (id.isEmpty()) {
-    return;
-  }
-  clear_set_membership_cache();
-  if (graphics_view_ != nullptr) {
-    graphics_view_->viewport()->update();
-  }
-  if (icon_view_ != nullptr) {
-    icon_view_->viewport()->update();
-  }
-  if (tree_view_ != nullptr) {
-    tree_view_->viewport()->update();
-  }
-  rebuild_quick_filters();
-  if (QApplication::keyboardModifiers() & Qt::AltModifier) {
-    open_set_location(id);
-  }
-}
-
-void MainWindow::add_selection_to_last_set()
-{
-  if (!file_sets_.add_selection_to_last_set(selected_fileinfos())) {
-    return;
-  }
   clear_set_membership_cache();
   if (graphics_view_ != nullptr) {
     graphics_view_->viewport()->update();
@@ -588,6 +563,41 @@ void MainWindow::add_selection_to_last_set()
   if (location_.is_set()) {
     load_set_location_listing();
   }
+}
+
+void MainWindow::create_set_from_selection()
+{
+  // Ctrl+G: toggle / merge / create (see FileSetController::toggle_set_for_selection).
+  const QString id = file_sets_.toggle_set_for_selection(selected_fileinfos());
+  refresh_set_ui();
+  if (!id.isEmpty() && (QApplication::keyboardModifiers() & Qt::AltModifier)) {
+    open_set_location(id);
+  }
+}
+
+void MainWindow::add_selection_to_last_set()
+{
+  if (!file_sets_.add_selection_to_last_set(selected_fileinfos())) {
+    return;
+  }
+  refresh_set_ui();
+}
+
+void MainWindow::create_new_set_from_selection()
+{
+  const QString id = file_sets_.create_set_from_selection(selected_fileinfos());
+  refresh_set_ui();
+  if (!id.isEmpty() && (QApplication::keyboardModifiers() & Qt::AltModifier)) {
+    open_set_location(id);
+  }
+}
+
+void MainWindow::remove_selection_from_set()
+{
+  if (!file_sets_.remove_selection_from_set(selected_fileinfos())) {
+    return;
+  }
+  refresh_set_ui();
 }
 
 void MainWindow::open_set_location(const QString& set_id)
