@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "ui_colors.hpp"
+
 #include <QByteArray>
 #include <QString>
 #include <QStringList>
@@ -32,8 +34,8 @@ struct AppSettings {
   bool show_hidden = false;
   /// Highlight files not yet opened (OpenedFilesStore) — unread-mail style.
   bool show_opened_state = false;
-  /// CSS-like #RRGGBB or #AARRGGBB for the unopened highlight fill/edge base.
-  QString unopened_highlight_color = QStringLiteral("#3B82F6");
+  /// Chrome colors (Preferences → Colors).
+  UiColors colors;
   bool show_filter = false; ///< Filter bar hidden until shown (View menu / pin).
   bool filter_pinned = false;
   bool show_sidebar = true;

@@ -217,18 +217,12 @@ void FileListModel::set_show_opened_state(bool on)
   }
 }
 
-void FileListModel::set_unopened_highlight_color(const QColor& c)
+void FileListModel::set_ui_colors(const UiColors& colors)
 {
-  if (!c.isValid()) {
-    return;
-  }
-  if (unopened_highlight_color_ == c) {
-    return;
-  }
-  unopened_highlight_color_ = c;
-  if (show_opened_state_ && rowCount() > 0) {
+  ui_colors_ = colors;
+  if (rowCount() > 0) {
     emit dataChanged(index(0, 0), index(rowCount() - 1, columnCount() - 1),
-                     {IsOpenedRole, Qt::BackgroundRole});
+                     {IsOpenedRole, Qt::BackgroundRole, Qt::DecorationRole});
   }
 }
 

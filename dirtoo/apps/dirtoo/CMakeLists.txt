@@ -18,6 +18,8 @@ qt_add_executable(dirtoo-app
   thumbnail_coordinator.cpp
   mime_util.cpp
   mime_util.hpp
+  ui_colors.cpp
+  ui_colors.hpp
   main_window_transfer.cpp
   main_window_events.cpp
   main_window_settings.cpp

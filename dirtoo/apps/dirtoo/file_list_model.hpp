@@ -9,6 +9,8 @@
 #include <QAbstractTableModel>
 #include <QHash>
 #include <QSet>
+#include "ui_colors.hpp"
+
 #include <QColor>
 #include <QIcon>
 #include <QUrl>
@@ -106,8 +108,9 @@ public:
   [[nodiscard]] bool is_opened(const QString& path) const;
   void set_show_opened_state(bool on);
   [[nodiscard]] bool show_opened_state() const noexcept { return show_opened_state_; }
-  void set_unopened_highlight_color(const QColor& c);
-  [[nodiscard]] QColor unopened_highlight_color() const { return unopened_highlight_color_; }
+  void set_ui_colors(const UiColors& colors);
+  [[nodiscard]] const UiColors& ui_colors() const { return ui_colors_; }
+  [[nodiscard]] QColor unopened_highlight_color() const { return ui_colors_.unopened_highlight_qcolor(); }
   /// Re-emit IsOpenedRole after store membership changes.
   void notify_opened_changed(const QStringList& paths);
   void refresh_opened_roles();
@@ -184,7 +187,7 @@ private:
   bool show_abspath_ = false;
   bool show_timegaps_ = false;
   bool show_opened_state_ = false;
-  QColor unopened_highlight_color_{0x3b, 0x82, 0xf6};
+  UiColors ui_colors_;
   bool group_refresh_pending_ = false;
 };
 

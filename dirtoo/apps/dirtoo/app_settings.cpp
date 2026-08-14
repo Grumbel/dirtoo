@@ -27,9 +27,7 @@ AppSettings load_settings()
   out.show_hidden = s.value(QStringLiteral("ui/show_hidden"), out.show_hidden).toBool();
   out.show_opened_state =
       s.value(QStringLiteral("ui/show_opened_state"), out.show_opened_state).toBool();
-  out.unopened_highlight_color =
-      s.value(QStringLiteral("ui/unopened_highlight_color"), out.unopened_highlight_color)
-          .toString();
+  out.colors.load(s);
   out.show_filter = s.value(QStringLiteral("ui/show_filter"), out.show_filter).toBool();
   out.filter_pinned = s.value(QStringLiteral("ui/filter_pinned"), out.filter_pinned).toBool();
   out.show_sidebar = s.value(QStringLiteral("ui/show_sidebar"), out.show_sidebar).toBool();
@@ -68,7 +66,7 @@ void save_settings(const AppSettings& settings)
   s.setValue(QStringLiteral("ui/icon_cell_padding"), settings.icon_cell_padding);
   s.setValue(QStringLiteral("ui/show_hidden"), settings.show_hidden);
   s.setValue(QStringLiteral("ui/show_opened_state"), settings.show_opened_state);
-  s.setValue(QStringLiteral("ui/unopened_highlight_color"), settings.unopened_highlight_color);
+  settings.colors.save(s);
   s.setValue(QStringLiteral("ui/show_filter"), settings.show_filter);
   s.setValue(QStringLiteral("ui/filter_pinned"), settings.filter_pinned);
   s.setValue(QStringLiteral("ui/show_sidebar"), settings.show_sidebar);

@@ -133,7 +133,7 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
     painter->fillRect(br, fill);
   } else if (idx.data(IsHiddenRole).toBool()) {
     // Distinct tile background for hidden (dot) files when shown.
-    painter->fillRect(br, QColor(200, 200, 210));
+    painter->fillRect(br, model_->ui_colors().hidden_tint_qcolor());
   }
   // Unread-mail style: files not yet opened (under/over selection so the edge stays visible).
   if (model_->show_opened_state() && !idx.data(IsOpenedRole).toBool()) {
@@ -156,8 +156,8 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
   // File cursor outline (dirtoo-py is_cursor): light fill + black border, independent of selection.
   if (view_ != nullptr && view_->is_cursor_row(row_)) {
     painter->setOpacity(1.0);
-    painter->setPen(QPen(QColor(0, 0, 0), 1));
-    painter->setBrush(QColor(255, 255, 255, 96));
+    painter->setPen(QPen(model_->ui_colors().cursor_outline_qcolor(), 1));
+    painter->setBrush(model_->ui_colors().cursor_fill_qcolor());
     painter->drawRect(br.adjusted(0.5, 0.5, -0.5, -0.5));
   }
 
@@ -214,14 +214,16 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
   if (fi != nullptr && fi->is_directory()
       && idx.data(ThumbnailStatusRole).toInt() == static_cast<int>(ThumbnailStatus::Ready)
       && !hover) {
-    paint_directory_montage_overlay(painter, thumb);
+    paint_directory_montage_overlay(painter, thumb, model_->ui_colors().montage_wash_qcolor());
   }
 
   // Non-recursive file count for folders.
   if (fi != nullptr && fi->is_directory()) {
     const qint64 n = idx.data(ChildCountRole).toLongLong();
     if (n >= 0) {
-      paint_tile_badge(painter, thumb, QStringLiteral("%1").arg(n), Qt::AlignRight | Qt::AlignBottom);
+      paint_tile_badge(painter, thumb, QStringLiteral("%1").arg(n), Qt::AlignRight | Qt::AlignBottom,
+                       model_->ui_colors().badge_background_qcolor(),
+                       model_->ui_colors().badge_foreground_qcolor());
     }
   }
 
@@ -286,9 +288,13 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
           bottom_left = QStringLiteral("%1×%2").arg(*meta->width).arg(*meta->height);
         }
       }
-      paint_tile_badge(painter, thumb, top_left, Qt::AlignLeft | Qt::AlignTop);
-      paint_tile_badge(painter, thumb, top_right, Qt::AlignRight | Qt::AlignTop);
-      paint_tile_badge(painter, thumb, bottom_left, Qt::AlignLeft | Qt::AlignBottom);
+      {
+        const QColor bbg = model_->ui_colors().badge_background_qcolor();
+        const QColor bfg = model_->ui_colors().badge_foreground_qcolor();
+        paint_tile_badge(painter, thumb, top_left, Qt::AlignLeft | Qt::AlignTop, bbg, bfg);
+        paint_tile_badge(painter, thumb, top_right, Qt::AlignRight | Qt::AlignTop, bbg, bfg);
+        paint_tile_badge(painter, thumb, bottom_left, Qt::AlignLeft | Qt::AlignBottom, bbg, bfg);
+      }
     }
 
     if (fi != nullptr) {

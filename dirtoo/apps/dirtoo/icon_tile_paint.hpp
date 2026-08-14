@@ -25,7 +25,9 @@ namespace dirtoo::app {
 /// directory montage / badges / status stickers cannot drift between views.
 
 inline void paint_tile_badge(QPainter* painter, const QRect& thumb, const QString& text,
-                             Qt::Alignment align)
+                             Qt::Alignment align,
+                             const QColor& bg = QColor(255, 255, 255, 170),
+                             const QColor& fg = QColor(20, 20, 20))
 {
   if (painter == nullptr || text.isEmpty() || thumb.isEmpty()) {
     return;
@@ -50,9 +52,9 @@ inline void paint_tile_badge(QPainter* painter, const QRect& thumb, const QStrin
     badge.moveTop(thumb.top() + 1);
   }
   painter->setPen(Qt::NoPen);
-  painter->setBrush(QColor(255, 255, 255, 170));
+  painter->setBrush(bg.isValid() ? bg : QColor(255, 255, 255, 170));
   painter->drawRoundedRect(badge, 2, 2);
-  painter->setPen(QColor(20, 20, 20));
+  painter->setPen(fg.isValid() ? fg : QColor(20, 20, 20));
   painter->drawText(badge.adjusted(pad_x, 0, -pad_x, 0), Qt::AlignVCenter | Qt::AlignLeft, text);
   painter->restore();
 }
@@ -77,12 +79,13 @@ inline void paint_unopened_indicator(QPainter* painter, const QRectF& br, const 
                     QPointF(br.left() + 2.0, br.bottom() - 2));
 }
 
-inline void paint_directory_montage_overlay(QPainter* painter, const QRect& thumb)
+inline void paint_directory_montage_overlay(QPainter* painter, const QRect& thumb,
+                                            const QColor& wash = QColor(255, 255, 255, 160))
 {
   if (painter == nullptr || thumb.isEmpty()) {
     return;
   }
-  painter->fillRect(thumb, QColor(255, 255, 255, 160));
+  painter->fillRect(thumb, wash.isValid() ? wash : QColor(255, 255, 255, 160));
   static QFileIconProvider provider;
   const QIcon folder_icon = provider.icon(QFileIconProvider::Folder);
   const int m = std::max(2, thumb.width() / 16);
@@ -157,7 +160,7 @@ inline void paint_launch_flash(QPainter* painter, const QRectF& rect, const QCol
   if (painter == nullptr || rect.isEmpty()) {
     return;
   }
-  QColor flash = highlight.isValid() ? highlight : QColor(80, 140, 255);
+  QColor flash = highlight.isValid() ? highlight : QColor(80, 140, 255); // caller may pass launch_flash
   flash.setAlpha(outline ? 160 : 150);
   painter->save();
   painter->fillRect(rect, flash);

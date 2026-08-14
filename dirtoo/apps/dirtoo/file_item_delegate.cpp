@@ -225,7 +225,8 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     const QStyle* style = opt.widget != nullptr ? opt.widget->style() : QApplication::style();
     // Hidden-file row tint before the style panel (selection still wins via state).
     if (!(opt.state & QStyle::State_Selected) && index.data(IsHiddenRole).toBool()) {
-      painter->fillRect(opt.rect, QColor(200, 200, 210));
+      painter->fillRect(opt.rect, model_ != nullptr ? model_->ui_colors().hidden_tint_qcolor()
+                                                  : QColor(200, 200, 210));
     }
     style->drawPrimitive(QStyle::PE_PanelItemViewItem, &opt, painter, opt.widget);
     if (model_ != nullptr && model_->show_opened_state() && !index.data(IsOpenedRole).toBool()) {
@@ -313,7 +314,8 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     c.setAlpha(40);
     painter->fillRect(opt.rect, c);
   } else if (index.data(IsHiddenRole).toBool()) {
-    painter->fillRect(opt.rect, QColor(200, 200, 210));
+    painter->fillRect(opt.rect, model_ != nullptr ? model_->ui_colors().hidden_tint_qcolor()
+                                                  : QColor(200, 200, 210));
   }
   if (model_ != nullptr && model_->show_opened_state() && !index.data(IsOpenedRole).toBool()) {
     paint_unopened_indicator(painter, opt.rect, model_->unopened_highlight_color());

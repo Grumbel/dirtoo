@@ -62,13 +62,7 @@ void MainWindow::restore_settings()
   }
   if (model_ != nullptr) {
     model_->set_show_opened_state(s.show_opened_state);
-    {
-      QColor c(s.unopened_highlight_color);
-      if (!c.isValid()) {
-        c = QColor(QStringLiteral("#3B82F6"));
-      }
-      model_->set_unopened_highlight_color(c);
-    }
+    model_->set_ui_colors(s.colors);
   }
   filter_pinned_ = s.filter_pinned;
   if (pin_filter_act_ != nullptr) {
@@ -484,13 +478,7 @@ void MainWindow::apply_settings(const AppSettings& s)
   }
   if (model_ != nullptr) {
     model_->set_show_opened_state(s.show_opened_state);
-    {
-      QColor c(s.unopened_highlight_color);
-      if (!c.isValid()) {
-        c = QColor(QStringLiteral("#3B82F6"));
-      }
-      model_->set_unopened_highlight_color(c);
-    }
+    model_->set_ui_colors(s.colors);
   }
   {
     const collection::SortKey sk = sort_key_from_settings_string(s.sort_key);

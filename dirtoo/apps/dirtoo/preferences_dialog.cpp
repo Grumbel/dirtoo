@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "preferences_dialog.hpp"
+#include "ui_colors.hpp"
 
 #include "checksum_dialog.hpp"
 
@@ -149,38 +150,6 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
                      "edge-to-edge; increase only if you want a wider caption band."));
 
 
-  auto* unopened_color_btn = new QPushButton(&dialog);
-  {
-    QColor c(settings->unopened_highlight_color);
-    if (!c.isValid()) {
-      c = QColor(QStringLiteral("#3B82F6"));
-    }
-    auto apply_btn = [unopened_color_btn](const QColor& col) {
-      unopened_color_btn->setText(col.name(QColor::HexRgb));
-      unopened_color_btn->setStyleSheet(
-          QStringLiteral("background-color: %1; color: %2; min-width: 7em;")
-              .arg(col.name(QColor::HexRgb),
-                   col.lightness() > 140 ? QStringLiteral("#000") : QStringLiteral("#fff")));
-      unopened_color_btn->setProperty("colorName", col.name(QColor::HexRgb));
-    };
-    apply_btn(c);
-    QObject::connect(unopened_color_btn, &QPushButton::clicked, &dialog, [unopened_color_btn, apply_btn]() {
-      QColor cur(unopened_color_btn->property("colorName").toString());
-      if (!cur.isValid()) {
-        cur = QColor(QStringLiteral("#3B82F6"));
-      }
-      const QColor picked = QColorDialog::getColor(cur, unopened_color_btn,
-                                                   QStringLiteral("Unopened highlight color"));
-      if (picked.isValid()) {
-        apply_btn(picked);
-      }
-    });
-  }
-  auto* unopened_hint = new QLabel(
-      QStringLiteral("Used when View → Highlight Unopened is on (toolbar toggle)."), &dialog);
-  unopened_hint->setStyleSheet(QStringLiteral("color: palette(mid);"));
-  unopened_hint->setWordWrap(true);
-
   auto* dirs_first = new QCheckBox(QStringLiteral("Directories first when sorting"), &dialog);
   dirs_first->setChecked(settings->directories_first);
 
@@ -234,12 +203,100 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   appearance_form->addRow(crop);
   appearance_form->addRow(QStringLiteral("Icon spacing:"), icon_spacing);
   appearance_form->addRow(QStringLiteral("Icon label width:"), icon_pad);
-  appearance_form->addRow(QStringLiteral("Unopened highlight:"), unopened_color_btn);
-  appearance_form->addRow(QString(), unopened_hint);
   appearance_form->addRow(QStringLiteral("Default sort:"), default_sort);
   appearance_form->addRow(sort_ascending);
   appearance_form->addRow(dirs_first);
   tabs->addTab(wrap_form(appearance_form, &dialog), QStringLiteral("Appearance"));
+
+  // ----- Colors -----
+  auto* colors_form = new QFormLayout();
+  auto make_color_btn = [&dialog](const QString& initial, const QString& title) {
+    auto* btn = new QPushButton(&dialog);
+    QColor c(initial);
+    if (!c.isValid()) {
+      c = QColor(QStringLiteral("#808080"));
+    }
+    auto apply = [btn](const QColor& col) {
+      const QString name = col.name(QColor::HexArgb);
+      btn->setText(col.alpha() < 255 ? name : col.name(QColor::HexRgb));
+      btn->setProperty("colorName", name);
+      btn->setStyleSheet(
+          QStringLiteral("background-color: %1; color: %2; min-width: 8em;")
+              .arg(col.name(QColor::HexRgb),
+                   col.lightness() > 140 ? QStringLiteral("#000") : QStringLiteral("#fff")));
+    };
+    apply(c);
+    QObject::connect(btn, &QPushButton::clicked, &dialog, [btn, apply, title]() {
+      QColor cur(btn->property("colorName").toString());
+      if (!cur.isValid()) {
+        cur = QColor(Qt::gray);
+      }
+      const QColor picked = QColorDialog::getColor(cur, btn, title, QColorDialog::ShowAlphaChannel);
+      if (picked.isValid()) {
+        apply(picked);
+      }
+    });
+    return btn;
+  };
+
+  const UiColors& cols = settings->colors;
+  auto* c_unopened = make_color_btn(cols.unopened_highlight, QStringLiteral("Unopened highlight"));
+  auto* c_hidden = make_color_btn(cols.hidden_tint, QStringLiteral("Hidden file tint"));
+  auto* c_badge_bg = make_color_btn(cols.badge_background, QStringLiteral("Meta badge background"));
+  auto* c_badge_fg = make_color_btn(cols.badge_foreground, QStringLiteral("Meta badge text"));
+  auto* c_cursor_o = make_color_btn(cols.cursor_outline, QStringLiteral("Cursor outline"));
+  auto* c_cursor_f = make_color_btn(cols.cursor_fill, QStringLiteral("Cursor fill"));
+  auto* c_montage = make_color_btn(cols.montage_wash, QStringLiteral("Directory montage wash"));
+  auto* c_symlink = make_color_btn(cols.symlink_accent, QStringLiteral("Symlink emblem"));
+  auto* c_flash = make_color_btn(cols.launch_flash, QStringLiteral("Launch flash fallback"));
+
+  colors_form->addRow(QStringLiteral("Unopened highlight:"), c_unopened);
+  colors_form->addRow(QStringLiteral("Hidden files:"), c_hidden);
+  colors_form->addRow(QStringLiteral("Meta badge background:"), c_badge_bg);
+  colors_form->addRow(QStringLiteral("Meta badge text:"), c_badge_fg);
+  colors_form->addRow(QStringLiteral("Cursor outline:"), c_cursor_o);
+  colors_form->addRow(QStringLiteral("Cursor fill:"), c_cursor_f);
+  colors_form->addRow(QStringLiteral("Directory montage wash:"), c_montage);
+  colors_form->addRow(QStringLiteral("Symlink emblem:"), c_symlink);
+  colors_form->addRow(QStringLiteral("Launch flash:"), c_flash);
+
+  auto* colors_hint = new QLabel(
+      QStringLiteral("These colors apply to file-view chrome. Selection/hover still follow the system theme."),
+      &dialog);
+  colors_hint->setWordWrap(true);
+  colors_hint->setStyleSheet(QStringLiteral("color: palette(mid);"));
+  colors_form->addRow(colors_hint);
+
+  auto* reset_colors = new QPushButton(QStringLiteral("Reset colors to defaults"), &dialog);
+  QObject::connect(reset_colors, &QPushButton::clicked, &dialog, [=]() {
+    const UiColors d = UiColors::defaults();
+    auto set_btn = [](QPushButton* btn, const QString& spec) {
+      QColor c(spec);
+      if (!c.isValid()) {
+        return;
+      }
+      const QString name = c.name(QColor::HexArgb);
+      btn->setText(c.alpha() < 255 ? name : c.name(QColor::HexRgb));
+      btn->setProperty("colorName", name);
+      btn->setStyleSheet(
+          QStringLiteral("background-color: %1; color: %2; min-width: 8em;")
+              .arg(c.name(QColor::HexRgb),
+                   c.lightness() > 140 ? QStringLiteral("#000") : QStringLiteral("#fff")));
+    };
+    set_btn(c_unopened, d.unopened_highlight);
+    set_btn(c_hidden, d.hidden_tint);
+    set_btn(c_badge_bg, d.badge_background);
+    set_btn(c_badge_fg, d.badge_foreground);
+    set_btn(c_cursor_o, d.cursor_outline);
+    set_btn(c_cursor_f, d.cursor_fill);
+    set_btn(c_montage, d.montage_wash);
+    set_btn(c_symlink, d.symlink_accent);
+    set_btn(c_flash, d.launch_flash);
+  });
+  colors_form->addRow(reset_colors);
+
+  tabs->addTab(wrap_form(colors_form, &dialog), QStringLiteral("Colors"));
+
 
   // ----- Interface -----
   auto* interface_form = new QFormLayout();
@@ -438,11 +495,15 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   settings->crop_thumbnails = crop->isChecked();
   settings->icon_spacing = icon_spacing->value();
   settings->icon_cell_padding = icon_pad->value();
-  settings->unopened_highlight_color =
-      unopened_color_btn->property("colorName").toString();
-  if (settings->unopened_highlight_color.isEmpty()) {
-    settings->unopened_highlight_color = QStringLiteral("#3B82F6");
-  }
+  settings->colors.unopened_highlight = c_unopened->property("colorName").toString();
+  settings->colors.hidden_tint = c_hidden->property("colorName").toString();
+  settings->colors.badge_background = c_badge_bg->property("colorName").toString();
+  settings->colors.badge_foreground = c_badge_fg->property("colorName").toString();
+  settings->colors.cursor_outline = c_cursor_o->property("colorName").toString();
+  settings->colors.cursor_fill = c_cursor_f->property("colorName").toString();
+  settings->colors.montage_wash = c_montage->property("colorName").toString();
+  settings->colors.symlink_accent = c_symlink->property("colorName").toString();
+  settings->colors.launch_flash = c_flash->property("colorName").toString();
   settings->directories_first = dirs_first->isChecked();
   settings->sort_key = default_sort->currentData().toString();
   settings->sort_ascending = sort_ascending->isChecked();
