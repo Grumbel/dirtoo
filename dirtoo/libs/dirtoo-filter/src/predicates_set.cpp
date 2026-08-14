@@ -88,31 +88,69 @@ std::string lower_copy(std::string_view s)
   return out;
 }
 
+class SetNameMatch : public MatchFunc {
+public:
+  explicit SetNameMatch(std::string query)
+      : query_(std::move(query))
+  {
+  }
+
+  bool matches(const FilterItem& item) const override
+  {
+    if (query_.empty()) {
+      return false;
+    }
+    return SetLookup::instance().in_set(item, query_);
+  }
+
+private:
+  std::string query_;
+};
+
+class InSetMatch : public MatchFunc {
+public:
+  explicit InSetMatch(bool want_any)
+      : want_any_(want_any)
+  {
+  }
+
+  bool matches(const FilterItem& item) const override
+  {
+    const bool has = !SetLookup::instance().sets_for(item).empty();
+    return want_any_ ? has : !has;
+  }
+
+private:
+  bool want_any_;
+};
+
 } // namespace
 
 MatchFuncPtr make_set(std::string_view arg)
 {
-  const std::string query{arg};
-  return [query](const FilterItem& item) -> bool {
-    if (query.empty()) {
-      return false;
-    }
-    return SetLookup::instance().in_set(item, query);
-  };
+  std::string query{arg};
+  while (!query.empty() && std::isspace(static_cast<unsigned char>(query.front()))) {
+    query.erase(query.begin());
+  }
+  while (!query.empty() && std::isspace(static_cast<unsigned char>(query.back()))) {
+    query.pop_back();
+  }
+  if (query.empty()) {
+    return std::make_shared<AlwaysFalse>();
+  }
+  return std::make_shared<SetNameMatch>(std::move(query));
 }
 
 MatchFuncPtr make_in_set(std::string_view arg)
 {
   const std::string a = lower_copy(arg);
-  const bool want = (a.empty() || a == "yes" || a == "true" || a == "1");
-  const bool want_no = (a == "no" || a == "false" || a == "0");
-  return [want, want_no](const FilterItem& item) -> bool {
-    const bool has = !SetLookup::instance().sets_for(item).empty();
-    if (want_no) {
-      return !has;
-    }
-    return want ? has : has;
-  };
+  if (a == "yes" || a == "true" || a == "1" || a == "any" || a.empty()) {
+    return std::make_shared<InSetMatch>(true);
+  }
+  if (a == "no" || a == "false" || a == "0" || a == "none") {
+    return std::make_shared<InSetMatch>(false);
+  }
+  return std::make_shared<AlwaysFalse>();
 }
 
 } // namespace dirtoo::filter

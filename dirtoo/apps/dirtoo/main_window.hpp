@@ -228,7 +228,9 @@ private:
   void apply_icon_zoom();
   void set_view_mode(ViewMode mode);
   /// Update status bar and mirror the text to qInfo (visible with --verbose).
-  void set_status(const QString& text);
+  /// timeout_ms > 0: transient QStatusBar::showMessage (does not replace the
+  /// permanent status_label_ text after the timeout elapses).
+  void set_status(const QString& text, int timeout_ms = 0);
   /// Show/hide the status-bar busy indicator and set its tooltip.
   void update_busy_indicator(const QString& activity = {});
   void set_clipboard(ClipboardMode mode);

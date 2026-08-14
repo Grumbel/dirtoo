@@ -134,15 +134,21 @@ QAbstractItemView* MainWindow::current_view() const
 }
 
 
-void MainWindow::set_status(const QString& text)
+void MainWindow::set_status(const QString& text, int timeout_ms)
 {
-  if (status_label_ != nullptr) {
+  if (timeout_ms > 0) {
+    if (statusBar() != nullptr) {
+      statusBar()->showMessage(text, timeout_ms);
+    }
+  } else if (status_label_ != nullptr) {
     status_label_->setText(text);
   }
   if (!text.isEmpty()) {
     qInfo().noquote() << QStringLiteral("status: %1").arg(text);
   }
-  update_busy_indicator(text);
+  if (timeout_ms <= 0) {
+    update_busy_indicator(text);
+  }
 }
 
 void MainWindow::update_busy_indicator(const QString& activity)

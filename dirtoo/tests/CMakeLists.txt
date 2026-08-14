@@ -40,6 +40,11 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/libs/dirtoo-tags/src/file_set_store.cpp")
   target_sources(dirtoo-tests PRIVATE
     "${CMAKE_SOURCE_DIR}/libs/dirtoo-tags/src/file_set_store.cpp")
 endif()
+# Location::from_set / set_query — same stale-package problem as FileSetStore.
+if(EXISTS "${CMAKE_SOURCE_DIR}/libs/dirtoo-fs/src/location.cpp")
+  target_sources(dirtoo-tests PRIVATE
+    "${CMAKE_SOURCE_DIR}/libs/dirtoo-fs/src/location.cpp")
+endif()
 
 target_link_libraries(dirtoo-tests
   PRIVATE

@@ -159,8 +159,8 @@ find_package(SQLite3 REQUIRED)
 
 
 # In-tree lib headers (sets / Location set://) must win over stale find_package installs.
-# Rebuild nix packages dirtoo-fs, dirtoo-tags, dirtoo-filter after pulling those APIs so
-# link symbols match; headers alone are not enough for Location::from_set.
+# In-tree .cpp units below supply Location::from_set / FileSetStore when the
+# installed packages lag the checkout (headers alone are not enough).
 set(_dirtoo_in_tree_lib_incs "")
 foreach(_inc
     "${CMAKE_SOURCE_DIR}/libs/dirtoo-tags/include"
@@ -179,6 +179,11 @@ endif()
 if(EXISTS "${CMAKE_SOURCE_DIR}/libs/dirtoo-tags/src/file_set_store.cpp")
   target_sources(dirtoo-app PRIVATE
     "${CMAKE_SOURCE_DIR}/libs/dirtoo-tags/src/file_set_store.cpp")
+endif()
+# Location::from_set / set_query when installed dirtoo-fs is older than headers.
+if(EXISTS "${CMAKE_SOURCE_DIR}/libs/dirtoo-fs/src/location.cpp")
+  target_sources(dirtoo-app PRIVATE
+    "${CMAKE_SOURCE_DIR}/libs/dirtoo-fs/src/location.cpp")
 endif()
 
 target_link_libraries(dirtoo-app
