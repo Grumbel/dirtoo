@@ -86,7 +86,6 @@ private:
 protected:
   void resizeEvent(QResizeEvent* event) override;
 
-  QWidget* strip_ = nullptr;
   FlowLayout* strip_layout_ = nullptr;
   QToolButton* pin_btn_ = nullptr;
 

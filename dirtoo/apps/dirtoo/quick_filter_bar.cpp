@@ -31,6 +31,7 @@
 #include <QSignalBlocker>
 #include <QStandardPaths>
 #include <QToolButton>
+#include <QTimer>
 #include <QStyle>
 #include <QFrame>
 #include <QDialog>
@@ -191,24 +192,18 @@ QString pins_settings_path()
 QuickFilterBar::QuickFilterBar(QWidget* parent)
     : QWidget(parent)
 {
-  auto* outer = new QHBoxLayout(this);
-  outer->setContentsMargins(4, 2, 4, 2);
-  outer->setSpacing(4);
-
   setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
   setMinimumHeight(28);
 
-  strip_ = new QWidget(this);
-  strip_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-  strip_layout_ = new FlowLayout(strip_, /*margin=*/0, /*h=*/4, /*v=*/4);
-  outer->addWidget(strip_, 1);
+  // FlowLayout is *this* widget's layout so heightForWidth is the single source of truth.
+  strip_layout_ = new FlowLayout(this, /*margin=*/4, /*h=*/4, /*v=*/4);
 
   pin_btn_ = new QToolButton(this);
   pin_btn_->setText(QStringLiteral("Pin filter"));
   pin_btn_->setToolTip(QStringLiteral("Pin the current filter expression as a QuickFilter button"));
   pin_btn_->setAutoRaise(true);
   connect(pin_btn_, &QToolButton::clicked, this, &QuickFilterBar::pin_current_requested);
-  outer->addWidget(pin_btn_);
+  strip_layout_->addWidget(pin_btn_);
 
   load_pins();
   relayout_height();
@@ -425,10 +420,7 @@ void QuickFilterBar::set_active_expression(const QString& expr)
   }
   active_ = e;
   // Only update checked state — do not tear down chips on every keystroke.
-  if (strip_ == nullptr) {
-    return;
-  }
-  for (auto* btn : strip_->findChildren<QToolButton*>()) {
+  for (auto* btn : findChildren<QToolButton*>()) {
     const QString bexpr = btn->property("dirtoo_qf_expr").toString();
     if (!bexpr.isEmpty()) {
       const bool on = (bexpr == active_);
@@ -498,9 +490,15 @@ void QuickFilterBar::clear_buttons()
   if (strip_layout_ == nullptr) {
     return;
   }
-  while (QLayoutItem* item = strip_layout_->takeAt(0)) {
-    if (item->widget() != nullptr) {
-      item->widget()->deleteLater();
+  // Remove chips/separators but keep the pin button instance.
+  while (strip_layout_->count() > 0) {
+    QLayoutItem* item = strip_layout_->takeAt(0);
+    if (item == nullptr) {
+      break;
+    }
+    QWidget* w = item->widget();
+    if (w != nullptr && w != pin_btn_) {
+      w->deleteLater();
     }
     delete item;
   }
@@ -508,7 +506,7 @@ void QuickFilterBar::clear_buttons()
 
 QToolButton* QuickFilterBar::make_auto_chip(const AutoChip& chip)
 {
-  auto* btn = new QToolButton(strip_);
+  auto* btn = new QToolButton(this);
   btn->setText(chip.label);
   btn->setCheckable(true);
   btn->setAutoRaise(false); // keep border visible when active
@@ -552,6 +550,7 @@ QToolButton* QuickFilterBar::make_auto_chip(const AutoChip& chip)
         "  font-weight: 800;"
         "}"));
   }
+    btn->ensurePolished();
   connect(btn, &QToolButton::clicked, this, [this, expression = chip.expression](bool checked) {
     if (checked) {
       emit filter_requested(expression);
@@ -572,7 +571,7 @@ QToolButton* QuickFilterBar::make_auto_chip(const AutoChip& chip)
 
 QWidget* QuickFilterBar::make_separator()
 {
-  auto* line = new QFrame(strip_);
+  auto* line = new QFrame(this);
   line->setFrameShape(QFrame::VLine);
   line->setFrameShadow(QFrame::Sunken);
   line->setFixedWidth(6);
@@ -586,7 +585,7 @@ QToolButton* QuickFilterBar::make_pinned_chip(int pin_index)
     return nullptr;
   }
   const auto& pin = pins_[static_cast<std::size_t>(pin_index)];
-  auto* btn = new QToolButton(strip_);
+  auto* btn = new QToolButton(this);
   QString lab = pin.label.isEmpty() ? pin.expression : pin.label;
   if (lab.size() > 28) {
     lab = lab.left(25) + QStringLiteral("…");
@@ -949,7 +948,17 @@ void QuickFilterBar::rebuild_buttons()
       strip_layout_->addWidget(btn);
     }
   }
+  // Pin stays last so it remains reachable after wrap.
+  if (pin_btn_ != nullptr) {
+    strip_layout_->addWidget(pin_btn_);
+    pin_btn_->show();
+  }
+  for (auto* btn : findChildren<QToolButton*>()) {
+    btn->ensurePolished();
+  }
+  // Height after this layout pass has a real width from the parent.
   relayout_height();
+  QTimer::singleShot(0, this, [this]() { relayout_height(); });
 }
 
 void QuickFilterBar::load_pins()
@@ -996,22 +1005,11 @@ void QuickFilterBar::save_pins() const
 
 int QuickFilterBar::heightForWidth(int width) const
 {
-  const QMargins m = layout() != nullptr ? layout()->contentsMargins() : contentsMargins();
-  int pin_w = 8;
-  int pin_h = 28;
-  if (pin_btn_ != nullptr) {
-    const QSize ps = pin_btn_->sizeHint();
-    pin_w = ps.width() + 8;
-    pin_h = std::max(pin_h, ps.height());
+  if (strip_layout_ == nullptr) {
+    return 28;
   }
-  const int strip_w = std::max(1, width - pin_w - m.left() - m.right());
-  int strip_h = 0;
-  if (strip_layout_ != nullptr && strip_layout_->count() > 0) {
-    strip_h = strip_layout_->heightForWidth(strip_w);
-  }
-  // Always at least one row so the pin control stays visible.
-  const int content_h = std::max({strip_h, pin_h, 28});
-  return content_h + m.top() + m.bottom();
+  const int h = strip_layout_->heightForWidth(std::max(1, width));
+  return std::max(28, h);
 }
 
 QSize QuickFilterBar::sizeHint() const
@@ -1027,7 +1025,6 @@ QSize QuickFilterBar::minimumSizeHint() const
 
 void QuickFilterBar::relayout_height()
 {
-  // Prefer the real width once laid out; fall back so we never lock height to 0.
   int w = width();
   if (w <= 0 && parentWidget() != nullptr) {
     w = parentWidget()->width();
@@ -1035,22 +1032,27 @@ void QuickFilterBar::relayout_height()
   if (w <= 0) {
     w = 640;
   }
+  // Style sheets affect sizeHint; polish before measuring.
+  for (auto* btn : findChildren<QToolButton*>(QString(), Qt::FindDirectChildrenOnly)) {
+    btn->ensurePolished();
+  }
   const int h = heightForWidth(w);
-  // Fixed height is the reliable way to make the parent layout reserve space;
-  // heightForWidth alone was collapsing the bar to 0 before the first show.
-  if (minimumHeight() != h || maximumHeight() != h) {
+  if (height() != h || minimumHeight() != h || maximumHeight() != h) {
     setFixedHeight(h);
   }
-  if (strip_ != nullptr) {
-    strip_->setMinimumHeight(0);
-    strip_->setMaximumHeight(16777215);
-  }
   updateGeometry();
+  if (QWidget* p = parentWidget()) {
+    if (QLayout* pl = p->layout()) {
+      pl->invalidate();
+    }
+    p->updateGeometry();
+  }
 }
 
 void QuickFilterBar::resizeEvent(QResizeEvent* event)
 {
   QWidget::resizeEvent(event);
+  // Width changed → recompute wrapped height.
   relayout_height();
 }
 

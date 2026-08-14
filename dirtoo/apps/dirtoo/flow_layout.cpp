@@ -77,7 +77,14 @@ void FlowLayout::setGeometry(const QRect& rect)
 
 QSize FlowLayout::sizeHint() const
 {
-  return minimumSize();
+  int w = 640;
+  if (QWidget* pw = parentWidget()) {
+    if (pw->width() > 0) {
+      w = pw->width();
+    }
+  }
+  // Prefer multi-row height for the current width over single-item minimumSize.
+  return QSize(minimumSize().width(), heightForWidth(w));
 }
 
 QSize FlowLayout::minimumSize() const
@@ -123,18 +130,25 @@ int FlowLayout::do_layout(const QRect& rect, bool test_only) const
   const int space_y = v_space >= 0 ? v_space : 4;
 
   for (QLayoutItem* item : items_) {
-    int next_x = x + item->sizeHint().width() + space_x;
+    QSize sh = item->sizeHint().expandedTo(item->minimumSize());
+    if (sh.width() < 1) {
+      sh.setWidth(24);
+    }
+    if (sh.height() < 1) {
+      sh.setHeight(24);
+    }
+    int next_x = x + sh.width() + space_x;
     if (next_x - space_x > effective.right() && line_height > 0) {
       x = effective.x();
       y = y + line_height + space_y;
-      next_x = x + item->sizeHint().width() + space_x;
+      next_x = x + sh.width() + space_x;
       line_height = 0;
     }
     if (!test_only) {
-      item->setGeometry(QRect(QPoint(x, y), item->sizeHint()));
+      item->setGeometry(QRect(QPoint(x, y), sh));
     }
     x = next_x;
-    line_height = std::max(line_height, item->sizeHint().height());
+    line_height = std::max(line_height, sh.height());
   }
   const int total = y + line_height - rect.y() + bottom;
   return std::max(0, total);
