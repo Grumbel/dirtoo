@@ -61,18 +61,18 @@ void MainWindow::apply_icon_zoom()
     icon_view_->setUniformItemSizes(true);
   }
   icon_view_->setIconSize(QSize(size, size));
+  // Match Python IconMode: tile = thumbnail size + 16px per caption line.
+  // Image owns the full tile width; spacing is only the gap *between* tiles.
   const int text_rows = model_ != nullptr ? model_->icon_text_rows() : 1;
-  // Extra height for a second name line when captions are enabled (long names).
-  const int name_lines = text_rows > 0 ? 2 : 0;
-  const int meta_lines = std::max(0, text_rows - 1);
-  const int text_h = 6 + (name_lines + meta_lines) * 17;
-  // Tile width tracks zoom size so the image square can fill the cell width
-  // (centered). Optional icon_cell_padding adds width only for wider captions.
-  // Gap between tiles is icon_spacing — not empty space inside the tile.
+  constexpr int kLineH = 16;
+  constexpr int kCaptionPad = 4; // top of caption strip under the image
+  const int caption_h = text_rows > 0 ? (kCaptionPad + text_rows * kLineH) : 0;
+  // Optional extra width for long captions only (does not shrink the image band).
+  // Prefer 0 so the square thumb can fill the tile edge-to-edge.
   const int pad = std::clamp(icon_cell_padding_, 0, 240);
   const int gap = std::clamp(icon_spacing_, 0, 48);
   const int cell_w = std::max(size + pad, 48);
-  const int cell_h = size + text_h + 12;
+  const int cell_h = size + caption_h;
   icon_view_->setGridSize(QSize(cell_w, cell_h));
   icon_view_->setSpacing(gap);
   if (graphics_view_ != nullptr) {

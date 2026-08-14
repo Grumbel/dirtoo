@@ -163,8 +163,11 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
   }
 
   // Group headers: full-width band in GraphicsFileView::drawForeground.
-  // Image band = full tile minus caption strip. Largest centered square in that band.
-  const int margin = 2;
+  // Image band = tile minus caption strip (same budget as apply_icon_zoom).
+  // Largest centered square in that band — fills the tile when pad is 0.
+  constexpr int kLineH = 16;
+  constexpr int kCaptionPad = 4;
+  constexpr int kMargin = 1;
 
   const QIcon icon = idx.data(Qt::DecorationRole).value<QIcon>();
   QString text = idx.data(Qt::DisplayRole).toString();
@@ -175,16 +178,13 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
   }
 
   const int text_rows = model_->icon_text_rows();
-  // +1 line budget so a long basename can wrap without eating meta lines.
-  const int caption_h =
-      text_rows > 0 ? (6 + (text_rows + 1) * 16)
-                    : (model_->icon_detail_level() > 0 ? 22 : 0);
+  const int caption_h = text_rows > 0 ? (kCaptionPad + text_rows * kLineH) : 0;
   const int band_h = std::max(16, tile_size_.height() - caption_h);
   const int band_w = tile_size_.width();
-  int icon_side = std::min(band_w - 2 * margin, band_h - 2 * margin);
+  // Prefer filling the band: use the full width when height allows.
+  int icon_side = std::min(band_w - 2 * kMargin, band_h - 2 * kMargin);
   icon_side = std::max(16, icon_side);
   QRect thumb(0, 0, icon_side, icon_side);
-  // Center in the image band (not the whole tile including caption).
   thumb.moveCenter(QPoint(band_w / 2, band_h / 2));
 
   if (!icon.isNull()) {
@@ -411,14 +411,14 @@ void GraphicsFileItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
       const fs::FileInfo* fi = model_->file_at(row_);
       if (fi != nullptr && !fi->is_directory()) {
         const QRectF br = boundingRect();
-        const int margin = 2;
+        constexpr int kLineH = 16;
+        constexpr int kCaptionPad = 4;
+        constexpr int kMargin = 1;
         const int text_rows = model_->icon_text_rows();
-        const int caption_h =
-            text_rows > 0 ? (6 + (text_rows + 1) * 16)
-                          : (model_->icon_detail_level() > 0 ? 22 : 0);
+        const int caption_h = text_rows > 0 ? (kCaptionPad + text_rows * kLineH) : 0;
         const int band_h = std::max(16, tile_size_.height() - caption_h);
         const int band_w = tile_size_.width();
-        int icon_side = std::min(band_w - 2 * margin, band_h - 2 * margin);
+        int icon_side = std::min(band_w - 2 * kMargin, band_h - 2 * kMargin);
         icon_side = std::max(16, icon_side);
         QRect thumb(0, 0, icon_side, icon_side);
         thumb.moveCenter(QPoint(band_w / 2, band_h / 2));
