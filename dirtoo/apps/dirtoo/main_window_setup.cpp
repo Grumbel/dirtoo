@@ -137,9 +137,8 @@ void MainWindow::setup_shortcuts()
   add_shortcut(QKeySequence(QStringLiteral("Ctrl+K")), &MainWindow::on_focus_filter);
   add_shortcut(QKeySequence(Qt::Key_Escape), &MainWindow::on_clear_filter);
   add_shortcut(QKeySequence(QStringLiteral("Ctrl+D")), &MainWindow::on_toggle_bookmark);
-  // Persistent ad-hoc file sets (not View → Group By).
-  add_shortcut(QKeySequence(QStringLiteral("Ctrl+G")), &MainWindow::create_set_from_selection);
-  add_shortcut(QKeySequence(QStringLiteral("Ctrl+Shift+G")), &MainWindow::add_selection_to_last_set);
+  // Ctrl+G / Ctrl+Shift+G: bound on Go menu actions only (see setup_menus_go).
+  // Registering them again here causes "Ambiguous shortcut overload: Ctrl+G".
 }
 
 void MainWindow::setup_status_and_services()

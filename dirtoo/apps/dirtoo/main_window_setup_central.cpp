@@ -52,7 +52,10 @@ void MainWindow::setup_central_ui()
   connect(&devices_, &DevicesController::open_path, this, [this](const QString& path) {
     open_location(fs::Location::from_path(std::filesystem::path(path.toStdString())), true);
   });
-  connect(&devices_, &DevicesController::status_message, this, &MainWindow::set_status);
+  // set_status has optional timeout_ms; PMF would bind the 2-arg form and
+  // fail Qt's signal/slot arity check against status_message(QString).
+  connect(&devices_, &DevicesController::status_message, this,
+          [this](const QString& text) { set_status(text); });
   devices_.refresh();
 
   main_splitter_->addWidget(sidebar_host);
