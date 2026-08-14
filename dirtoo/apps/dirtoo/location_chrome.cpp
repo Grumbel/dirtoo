@@ -108,7 +108,7 @@ void LocationChrome::focus_line_edit(Qt::FocusReason reason)
 void LocationChrome::set_location(const dirtoo::fs::Location& location)
 {
   if (edit_ != nullptr) {
-    if (location.is_archive() || location.is_tag()) {
+    if (location.is_archive() || location.is_tag() || location.is_set()) {
       edit_->setText(QString::fromStdString(location.as_url()));
     } else {
       edit_->setText(QString::fromStdString(location.as_path().string()));

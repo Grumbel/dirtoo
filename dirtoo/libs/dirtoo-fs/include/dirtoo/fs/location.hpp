@@ -16,6 +16,7 @@ namespace dirtoo::fs {
 /// - file:  path is a normal filesystem path
 /// - archive: path is the archive file; entry_ is the path inside the archive
 /// - tag: path is the tag name (or comma-separated names); virtual collection
+/// - set: path is the set id (32 hex) or label lookup key; virtual collection
 ///
 /// URL encoding for archives (Python-style, preferred):
 ///   file:///abs/path/to.zip//archive
@@ -38,6 +39,7 @@ public:
                                              const std::filesystem::path& entry = {});
   /// Virtual listing of files with the given tag name (may include namespace / commas).
   [[nodiscard]] static Location from_tag(std::string_view tag_name);
+  [[nodiscard]] static Location from_set(std::string_view set_id_or_label);
   [[nodiscard]] static Location from_url(std::string_view url);
   [[nodiscard]] static Location from_human(std::string_view text);
 
@@ -50,12 +52,16 @@ public:
   [[nodiscard]] bool is_archive() const noexcept { return protocol_ == "archive"; }
   [[nodiscard]] bool is_file() const noexcept { return protocol_ == "file"; }
   [[nodiscard]] bool is_tag() const noexcept { return protocol_ == "tag"; }
+  [[nodiscard]] bool is_set() const noexcept { return protocol_ == "set"; }
 
   /// Path inside the archive (empty = archive root). Only meaningful if is_archive().
   [[nodiscard]] std::filesystem::path entry_path() const { return entry_; }
 
   /// Tag query string (e.g. "work" or "foo,bar"). Only meaningful if is_tag().
   [[nodiscard]] std::string tag_query() const;
+
+  /// Set id or label key. Only meaningful if is_set().
+  [[nodiscard]] std::string set_query() const;
 
   [[nodiscard]] Location parent() const;
   [[nodiscard]] Location join(std::string_view child) const;

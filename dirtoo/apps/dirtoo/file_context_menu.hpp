@@ -31,6 +31,8 @@ struct FileContextMenuCallbacks {
   std::function<void()> properties_selected;
   std::function<void()> checksums_selected;
   std::function<void()> tag_selected;
+  std::function<void()> create_set_from_selection;
+  std::function<void()> add_selection_to_last_set;
   std::function<void()> mark_opened;
   std::function<void()> mark_unopened;
   std::function<void()> reload_thumbnails;

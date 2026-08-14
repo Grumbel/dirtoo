@@ -63,6 +63,17 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
     return;
   }
 
+  if (location_.is_set()) {
+    stop_search();
+    search_session_.active = false;
+    watcher_.stop();
+    load_set_location_listing();
+    if (auto* view = current_view()) {
+      view->setFocus(Qt::OtherFocusReason);
+    }
+    return;
+  }
+
   if (location_.is_archive()) {
     dir_session_.pending_archive_location = location_;
 
@@ -114,7 +125,7 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
     // block on a slow volume (inotify_add_watch, sidebar path walk).
     reload_directory(false);
     QTimer::singleShot(0, this, [this] {
-      if (search_session_.active || location_.is_archive() || location_.is_tag()) {
+      if (search_session_.active || location_.is_archive() || location_.is_tag() || location_.is_set()) {
         return;
       }
       start_watcher_for_location();

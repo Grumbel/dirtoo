@@ -36,6 +36,7 @@
 #include "filter_worker.hpp"
 #include "thumbnail_coordinator.hpp"
 #include "tag_controller.hpp"
+#include "file_set_controller.hpp"
 #include "leap_widget.hpp"
 #include "transfer_dialog.hpp"
 #include "transfer_worker.hpp"
@@ -174,6 +175,10 @@ private slots:
   /// List all known paths for a tag (virtual tag:// session, like search results).
   void open_tag_collection(const QString& tag_name);
   void load_tag_location_listing();
+  void load_set_location_listing();
+  void create_set_from_selection();
+  void add_selection_to_last_set();
+  void open_set_location(const QString& set_id);
   void on_rebuild_history_menu();
   void on_rebuild_recent_opens_menu();
   void on_rebuild_bookmarks_menu();
@@ -319,6 +324,7 @@ private:
   SearchSession search_session_;
   SearchController search_controller_;
   TagController tag_{this};
+  FileSetController file_sets_{this};
   QTimer* watcher_reload_timer_ = nullptr;
   QStackedWidget* view_stack_ = nullptr;
   QTreeView* tree_view_ = nullptr;

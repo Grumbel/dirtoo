@@ -63,6 +63,19 @@ void MainWindow::setup_go_help_menus()
     act->setShortcut(QKeySequence(QStringLiteral("Ctrl+T")));
     act->setStatusTip(QStringLiteral("Tag the selected regular file(s)"));
   }
+  {
+    auto* act = tools_menu->addAction(theme_icon("object-group", "folder-new"),
+                                      QStringLiteral("Create Set from Selection"),
+                                      this, &MainWindow::create_set_from_selection);
+    act->setShortcut(QKeySequence(QStringLiteral("Ctrl+G")));
+    act->setStatusTip(QStringLiteral("Create a persistent ad-hoc set from the selection"));
+  }
+  {
+    auto* act = tools_menu->addAction(theme_icon("list-add", "folder-new"),
+                                      QStringLiteral("Add Selection to Last Set"),
+                                      this, &MainWindow::add_selection_to_last_set);
+    act->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+G")));
+  }
   tools_menu->addAction(theme_icon("preferences-other", "tag"), QStringLiteral("Tag Manager…"),
                         this, &MainWindow::on_tag_manager);
   tools_menu->addAction(theme_icon("view-refresh", "process-working"),

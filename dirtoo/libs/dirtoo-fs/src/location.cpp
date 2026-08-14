@@ -151,10 +151,25 @@ Location Location::from_tag(std::string_view tag_name)
   return Location{"tag", std::filesystem::path{name}, {}};
 }
 
+Location Location::from_set(std::string_view set_id_or_label)
+{
+  std::string name{set_id_or_label};
+  while (!name.empty() && (name.front() == ' ' || name.front() == '	')) {
+    name.erase(name.begin());
+  }
+  while (!name.empty() && (name.back() == ' ' || name.back() == '	')) {
+    name.pop_back();
+  }
+  return Location{"set", std::filesystem::path{name}, {}};
+}
+
 Location Location::from_url(std::string_view url)
 {
   if (url.starts_with("tag://")) {
     return from_tag(percent_decode(std::string{url.substr(6)}));
+  }
+  if (url.starts_with("set://")) {
+    return from_set(percent_decode(std::string{url.substr(6)}));
   }
   // Python-style archive: file:///path/to.zip//archive or file:///path/to.zip//archive:entry
   // Legacy JAR-style:     archive:///path/to.zip!/entry
@@ -205,7 +220,7 @@ Location Location::from_human(std::string_view text)
     return from_path(std::filesystem::current_path());
   }
   if (text.starts_with("file://") || text.starts_with("archive://")
-      || text.starts_with("tag://")) {
+      || text.starts_with("tag://") || text.starts_with("set://")) {
     return from_url(text);
   }
   // Bare path that embeds Python-style //archive payload (typed without scheme).
@@ -219,6 +234,9 @@ std::string Location::as_url() const
 {
   if (protocol_ == "tag") {
     return "tag://" + percent_encode_path(path_.generic_string());
+  }
+  if (protocol_ == "set") {
+    return "set://" + percent_encode_path(path_.generic_string());
   }
   // Prefer Python-style URLs so the location bar matches dirtoo-py:
   //   file:///path/to.zip//archive
@@ -238,7 +256,7 @@ std::string Location::as_url() const
 
 std::filesystem::path Location::as_path() const
 {
-  if (protocol_ == "tag") {
+  if (protocol_ == "tag" || protocol_ == "set") {
     return {};
   }
   return path_;
@@ -252,9 +270,17 @@ std::string Location::tag_query() const
   return path_.generic_string();
 }
 
+std::string Location::set_query() const
+{
+  if (protocol_ != "set") {
+    return {};
+  }
+  return path_.generic_string();
+}
+
 Location Location::parent() const
 {
-  if (protocol_ == "tag") {
+  if (protocol_ == "tag" || protocol_ == "set") {
     return {};
   }
   if (protocol_ == "archive") {
@@ -277,7 +303,7 @@ Location Location::parent() const
 
 Location Location::join(std::string_view child) const
 {
-  if (protocol_ == "tag") {
+  if (protocol_ == "tag" || protocol_ == "set") {
     (void)child;
     return *this;
   }
@@ -289,7 +315,7 @@ Location Location::join(std::string_view child) const
 
 std::string Location::basename() const
 {
-  if (protocol_ == "tag") {
+  if (protocol_ == "tag" || protocol_ == "set") {
     return path_.generic_string();
   }
   if (protocol_ == "archive") {

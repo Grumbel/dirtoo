@@ -24,6 +24,10 @@ void MainWindow::reload_directory(bool soft)
     load_tag_location_listing();
     return;
   }
+  if (location_.is_set()) {
+    load_set_location_listing();
+    return;
+  }
   qInfo().noquote() << QStringLiteral("reload_directory soft=%1 path=%2")
                            .arg(soft)
                            .arg(QString::fromStdString(location_.as_url()));
@@ -220,7 +224,7 @@ void MainWindow::on_directory_load_failed(quint64 generation, QString error)
 void MainWindow::start_watcher_for_location()
 {
   watcher_.stop();
-  if (location_.is_tag()) {
+  if (location_.is_tag() || location_.is_set()) {
     return;
   }
   if (location_.is_archive()) {

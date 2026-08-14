@@ -151,3 +151,22 @@ TEST_CASE("Location tag:// protocol", "[location]")
   REQUIRE(round.is_tag());
   REQUIRE(round.tag_query() == "foo,bar");
 }
+
+TEST_CASE("Location set:// protocol", "[location]")
+{
+  const auto loc = dirtoo::fs::Location::from_set("abcdef0123456789abcdef0123456789");
+  REQUIRE(loc.is_set());
+  REQUIRE_FALSE(loc.is_file());
+  REQUIRE_FALSE(loc.is_tag());
+  REQUIRE(loc.set_query() == "abcdef0123456789abcdef0123456789");
+  REQUIRE(loc.as_url() == "set://abcdef0123456789abcdef0123456789");
+  REQUIRE(loc.as_path().empty());
+
+  const auto again = dirtoo::fs::Location::from_url("set://my-picks");
+  REQUIRE(again.is_set());
+  REQUIRE(again.set_query() == "my-picks");
+
+  const auto human = dirtoo::fs::Location::from_human("set://refs");
+  REQUIRE(human.is_set());
+  REQUIRE(human.set_query() == "refs");
+}

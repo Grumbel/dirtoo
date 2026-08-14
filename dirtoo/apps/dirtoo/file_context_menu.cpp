@@ -198,7 +198,15 @@ void exec_item_context_menu(QWidget* parent, const QPoint& global_pos,
                    cb.properties_selected);
   }
   if (cb.tag_selected) {
-    menu.addAction(theme_icon("bookmark-new", "tag"), QStringLiteral("Tag…"), parent,
+    if (cb.create_set_from_selection) {
+    menu.addAction(theme_icon("object-group", "folder-new"), QStringLiteral("Create Set"), parent,
+                   [cb] { cb.create_set_from_selection(); });
+  }
+  if (cb.add_selection_to_last_set) {
+    menu.addAction(theme_icon("list-add", "folder-new"), QStringLiteral("Add to Last Set"), parent,
+                   [cb] { cb.add_selection_to_last_set(); });
+  }
+  menu.addAction(theme_icon("bookmark-new", "tag"), QStringLiteral("Tag…"), parent,
                    cb.tag_selected);
   }
   if (cb.mark_opened) {

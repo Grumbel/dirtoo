@@ -20,6 +20,7 @@
 #include <QInputDialog>
 #include <QProgressDialog>
 #include <QFileInfo>
+#include <QApplication>
 #include <QMessageBox>
 #include <QStatusBar>
 #include <QLineEdit>
@@ -543,5 +544,104 @@ void MainWindow::apply_settings(const AppSettings& s)
 }
 
 
+
+
+void MainWindow::create_set_from_selection()
+{
+  const QString id = file_sets_.create_set_from_selection(selected_fileinfos());
+  if (!id.isEmpty() && QApplication::keyboardModifiers() & Qt::AltModifier) {
+    open_set_location(id);
+  }
+}
+
+void MainWindow::add_selection_to_last_set()
+{
+  file_sets_.add_selection_to_last_set(selected_fileinfos());
+  if (location_.is_set()) {
+    load_set_location_listing();
+  }
+}
+
+void MainWindow::open_set_location(const QString& set_id)
+{
+  const QString key = set_id.trimmed();
+  if (key.isEmpty()) {
+    return;
+  }
+  open_location(fs::Location::from_set(key.toStdString()), true);
+}
+
+void MainWindow::load_set_location_listing()
+{
+  if (!location_.is_set()) {
+    return;
+  }
+  const QString key = QString::fromStdString(location_.set_query());
+  if (key.isEmpty()) {
+    set_status(QStringLiteral("Empty set:// location"));
+    collection_.clear();
+    refresh_list();
+    return;
+  }
+
+  ActivityMonitor::instance().set_task(QStringLiteral("set-view"),
+                                       QStringLiteral("Loading set…"), -1, -1);
+
+  std::string err;
+  auto resolved = file_sets_.resolve_query(key.toStdString(), &err);
+  if (!resolved) {
+    ActivityMonitor::instance().clear_task(QStringLiteral("set-view"));
+    set_status(QStringLiteral("Set not found: %1").arg(QString::fromStdString(err)));
+    collection_.clear();
+    refresh_list();
+    return;
+  }
+
+  file_sets_.set_last_set_id(QString::fromStdString(resolved->id));
+  const auto members = file_sets_.store().members(resolved->id);
+  std::vector<dirtoo::fs::FileInfo> items;
+  items.reserve(members.size());
+  int missing = 0;
+  for (const auto& m : members) {
+    const std::string& path_str = m.path_key;
+    if (path_str.find("://") != std::string::npos) {
+      try {
+        auto loc = dirtoo::fs::Location::from_url(path_str);
+        items.push_back(dirtoo::fs::FileInfo::from_location(loc));
+      } catch (...) {
+        ++missing;
+      }
+      continue;
+    }
+    std::error_code ec;
+    const std::filesystem::path p{path_str};
+    if (!std::filesystem::exists(p, ec) || ec) {
+      ++missing;
+      continue;
+    }
+    items.push_back(dirtoo::fs::FileInfo::from_path(p));
+  }
+
+  search_session_.active = false;
+  search_session_.results.clear();
+  search_session_.batch.clear();
+
+  const int shown = static_cast<int>(items.size());
+  collection_.set_items(std::move(items));
+  filter_search_.set_filter_text({});
+  refresh_list();
+  request_thumbnails_for_visible();
+
+  ActivityMonitor::instance().clear_task(QStringLiteral("set-view"));
+  const QString label = resolved->label.empty()
+                            ? QString::fromStdString(resolved->id.substr(0, 8))
+                            : QString::fromStdString(resolved->label);
+  set_status(QStringLiteral("Set “%1”: %2 file%3%4")
+                 .arg(label)
+                 .arg(shown)
+                 .arg(shown == 1 ? QString() : QStringLiteral("s"))
+                 .arg(missing > 0 ? QStringLiteral(" (%1 missing)").arg(missing) : QString()),
+             5000);
+}
 
 } // namespace dirtoo::app

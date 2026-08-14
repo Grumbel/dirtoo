@@ -86,7 +86,7 @@ QString location_display_path(const fs::Location& loc)
   if (loc.empty()) {
     return QString();
   }
-  if (loc.is_archive() || loc.is_tag()) {
+  if (loc.is_archive() || loc.is_tag() || loc.is_set()) {
     return QString::fromStdString(loc.as_url());
   }
   return QString::fromStdString(loc.as_path().string());

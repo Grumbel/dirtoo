@@ -57,6 +57,9 @@ void MainWindow::setup_background_workers()
   connect(&search_controller_, &SearchController::finished, this, &MainWindow::on_search_finished);
 
   tag_.set_dialog_parent(this);
+  connect(&file_sets_, &FileSetController::status_message, this,
+          [this](const QString& msg, int ms) { set_status(msg, ms); });
+  file_sets_.set_dialog_parent(this);
   connect(&tag_, &TagController::status_message, this,
           [this](const QString& text, int timeout_ms) {
             if (statusBar() != nullptr) {
@@ -134,6 +137,9 @@ void MainWindow::setup_shortcuts()
   add_shortcut(QKeySequence(QStringLiteral("Ctrl+K")), &MainWindow::on_focus_filter);
   add_shortcut(QKeySequence(Qt::Key_Escape), &MainWindow::on_clear_filter);
   add_shortcut(QKeySequence(QStringLiteral("Ctrl+D")), &MainWindow::on_toggle_bookmark);
+  // Persistent ad-hoc file sets (not View → Group By).
+  add_shortcut(QKeySequence(QStringLiteral("Ctrl+G")), &MainWindow::create_set_from_selection);
+  add_shortcut(QKeySequence(QStringLiteral("Ctrl+Shift+G")), &MainWindow::add_selection_to_last_set);
 }
 
 void MainWindow::setup_status_and_services()

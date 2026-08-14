@@ -33,7 +33,7 @@ std::vector<std::filesystem::path> paths_from_fileinfos(const std::vector<fs::Fi
 
 bool location_allows_filesystem_mutations(const fs::Location& location)
 {
-  return !location.is_archive() && !location.is_tag();
+  return !location.is_archive() && !location.is_tag() && !location.is_set();
 }
 
 void apply_paths_to_system_clipboard(ClipboardMode mode,
