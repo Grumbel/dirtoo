@@ -89,14 +89,14 @@ tints, badges, and indicators.
 
 **Implementation steps**
 
-1. [ ] Inventory every hardcoded `QColor(...)` in paint paths; name keys.
-2. [ ] `UiColors` struct + load/save next to `AppSettings` (or nested).
-3. [ ] Colors tab UI (QFormLayout of color buttons).
-4. [ ] Move unopened color control off Appearance onto Colors tab.
-5. [ ] Thread `UiColors` into model / paint helpers (no more magic RGB in paint).
-6. [ ] Defaults match current shipped look (incl. restored meta-badge style).
-
-**Do not** restyle meta badges again until Colors tab can own badge bg/fg.
+1. [x] Inventory every hardcoded `QColor(...)` in paint paths; name keys.
+2. [x] `UiColors` struct + load/save (`ui/colors/*`; migrates legacy unopened key).
+3. [x] Colors tab UI (swatches + reset-to-defaults).
+4. [x] Move unopened color control off Appearance onto Colors tab.
+5. [x] Thread `UiColors` into model / paint (unopened, hidden, badges, cursor, montage).
+6. [x] Defaults match shipped look (original meta-badge style).
+7. [ ] Symlink emblem + launch-flash still use local fallbacks in a few paths.
+8. [ ] Optional: selection/hover alpha overrides (system palette for now).
 
 ---
 
