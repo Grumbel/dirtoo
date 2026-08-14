@@ -134,17 +134,10 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
   } else if (idx.data(IsHiddenRole).toBool()) {
     // Distinct tile background for hidden (dot) files when shown.
     painter->fillRect(br, QColor(200, 200, 210));
-  } else if (model_->show_opened_state() && idx.data(IsOpenedRole).toBool()) {
-    // Soft teal tint for files marked opened (optional visualization).
-    painter->fillRect(br, QColor(180, 220, 200, 90));
   }
-  // Opened-state edge (visible even with selection/hover when indicators on).
-  if (model_->show_opened_state() && idx.data(IsOpenedRole).toBool()) {
-    QPen edge(QColor(40, 140, 110), 3);
-    edge.setCapStyle(Qt::FlatCap);
-    painter->setPen(edge);
-    painter->drawLine(QPointF(br.left() + 1.5, br.top() + 3),
-                      QPointF(br.left() + 1.5, br.bottom() - 3));
+  // Unread-mail style: files not yet opened (under/over selection so the edge stays visible).
+  if (model_->show_opened_state() && !idx.data(IsOpenedRole).toBool()) {
+    paint_unopened_indicator(painter, br, model_->unopened_highlight_color());
   }
   // Brief flash after open/launch so slow app start still feels acknowledged.
   if (idx.data(LaunchFlashRole).toBool()) {
@@ -169,7 +162,8 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
   }
 
   // Group headers: full-width band in GraphicsFileView::drawForeground.
-  const int top_pad = 4;
+  const int top_pad = 1;
+  const int side_margin = 1;
 
   const QIcon icon = idx.data(Qt::DecorationRole).value<QIcon>();
   QString text = idx.data(Qt::DisplayRole).toString();
@@ -182,12 +176,17 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
   const int text_rows = model_->icon_text_rows();
   // +1 line budget so a long basename can wrap without eating meta lines.
   const int caption_h =
-      text_rows > 0 ? (6 + (text_rows + 1) * 16)
-                    : (model_->icon_detail_level() > 0 ? 22 : 0);
-  int icon_side = std::min(tile_size_.width() - 8, tile_size_.height() - caption_h - top_pad - 4);
+      text_rows > 0 ? (4 + (text_rows + 1) * 16)
+                    : (model_->icon_detail_level() > 0 ? 20 : 0);
+  // Fill the tile width; vertical room left for caption under the image.
+  const int avail_h = std::max(16, tile_size_.height() - caption_h - top_pad - 2);
+  int icon_side = std::min(tile_size_.width() - 2 * side_margin, avail_h);
   icon_side = std::max(16, icon_side);
-  QRect thumb(0, 0, icon_side, icon_side);
-  thumb.moveCenter(QPoint(static_cast<int>(br.center().x()), top_pad + icon_side / 2));
+  // Prefer full width when the tile is wider than tall (caption-only extra height).
+  if (tile_size_.width() - 2 * side_margin <= avail_h) {
+    icon_side = tile_size_.width() - 2 * side_margin;
+  }
+  QRect thumb(side_margin, top_pad, icon_side, icon_side);
 
   if (!icon.isNull()) {
     const QPixmap pm = icon.pixmap(QSize(icon_side * 2, icon_side * 2));
@@ -411,11 +410,15 @@ void GraphicsFileItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
         const int caption_h =
             text_rows > 0 ? (6 + text_rows * 16)
                           : (model_->icon_detail_level() > 0 ? 22 : 0);
-        int icon_side =
-            std::min(tile_size_.width() - 8, tile_size_.height() - caption_h - top_pad - 4);
+        const int side_margin = 1;
+        const int top_pad = 1;
+        const int avail_h = std::max(16, tile_size_.height() - caption_h - top_pad - 2);
+        int icon_side = std::min(tile_size_.width() - 2 * side_margin, avail_h);
         icon_side = std::max(16, icon_side);
-        QRect thumb(0, 0, icon_side, icon_side);
-        thumb.moveCenter(QPoint(static_cast<int>(br.center().x()), top_pad + icon_side / 2));
+        if (tile_size_.width() - 2 * side_margin <= avail_h) {
+          icon_side = tile_size_.width() - 2 * side_margin;
+        }
+        QRect thumb(side_margin, top_pad, icon_side, icon_side);
         const QPoint local = event->pos().toPoint();
         const QString tag = tag_chip_at(thumb, fi->path(), local);
         if (!tag.isEmpty()) {

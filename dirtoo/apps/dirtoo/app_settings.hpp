@@ -22,7 +22,7 @@ struct AppSettings {
   /// Gap between icon tiles (pixels). Icons / RelativeIcons views.
   int icon_spacing = 12;
   /// Extra width past the thumbnail for the caption (pixels).
-  int icon_cell_padding = 72;
+  int icon_cell_padding = 0;  // extra tile width beyond zoom size (0 = dense)
   /// Detail-view columns that are visible (logical names). Name is always on.
   /// Defaults include Dimensions+Framerate+Duration; Width/Height optional.
   QStringList detail_columns{QStringLiteral("size"), QStringLiteral("dimensions"),
@@ -30,8 +30,10 @@ struct AppSettings {
                              QStringLiteral("duration"), QStringLiteral("modified"),
                              QStringLiteral("type")};
   bool show_hidden = false;
-  /// Highlight files marked as opened (OpenedFilesStore) in the view.
+  /// Highlight files not yet opened (OpenedFilesStore) — unread-mail style.
   bool show_opened_state = false;
+  /// CSS-like #RRGGBB or #AARRGGBB for the unopened highlight fill/edge base.
+  QString unopened_highlight_color = QStringLiteral("#3B82F6");
   bool show_filter = false; ///< Filter bar hidden until shown (View menu / pin).
   bool filter_pinned = false;
   bool show_sidebar = true;

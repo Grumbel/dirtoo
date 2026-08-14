@@ -29,6 +29,9 @@ Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 
 ### Recent polish (agent, 2026-08)
 
+- [x] **Highlight Unopened** (inverted opened cue), denser icon tiles, scaled
+      corner meta badges, configurable unopened color in Preferences.
+
 - [x] **Content-MIME thumbnail retry** — extension first for Thumbnailer1; on
       failure, one `MatchContent` re-queue when magic differs (JPEG-as-.png);
       shared `mime_util`; Open With uses MatchDefault for single-file.

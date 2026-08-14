@@ -6,6 +6,7 @@
 #include "checksum_dialog.hpp"
 
 #include <QCheckBox>
+#include <QColorDialog>
 #include <algorithm>
 #include <QComboBox>
 #include <QDialogButtonBox>
@@ -140,12 +141,45 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   icon_spacing->setToolTip(QStringLiteral("Gap between tiles in Icons view."));
 
   auto* icon_pad = new QSpinBox(&dialog);
-  icon_pad->setRange(16, 240);
-  icon_pad->setValue(std::clamp(settings->icon_cell_padding, 16, 240));
+  icon_pad->setRange(0, 240);
+  icon_pad->setValue(std::clamp(settings->icon_cell_padding, 0, 240));
   icon_pad->setSuffix(QStringLiteral(" px"));
   icon_pad->setToolTip(
-      QStringLiteral("Extra width past the thumbnail for the file name caption. "
-                     "Increase if names are often cropped."));
+      QStringLiteral("Extra tile width beyond the image size. 0 packs the image "
+                     "edge-to-edge; increase only if you want a wider caption band."));
+
+
+  auto* unopened_color_btn = new QPushButton(&dialog);
+  {
+    QColor c(settings->unopened_highlight_color);
+    if (!c.isValid()) {
+      c = QColor(QStringLiteral("#3B82F6"));
+    }
+    auto apply_btn = [unopened_color_btn](const QColor& col) {
+      unopened_color_btn->setText(col.name(QColor::HexRgb));
+      unopened_color_btn->setStyleSheet(
+          QStringLiteral("background-color: %1; color: %2; min-width: 7em;")
+              .arg(col.name(QColor::HexRgb),
+                   col.lightness() > 140 ? QStringLiteral("#000") : QStringLiteral("#fff")));
+      unopened_color_btn->setProperty("colorName", col.name(QColor::HexRgb));
+    };
+    apply_btn(c);
+    QObject::connect(unopened_color_btn, &QPushButton::clicked, &dialog, [unopened_color_btn, apply_btn]() {
+      QColor cur(unopened_color_btn->property("colorName").toString());
+      if (!cur.isValid()) {
+        cur = QColor(QStringLiteral("#3B82F6"));
+      }
+      const QColor picked = QColorDialog::getColor(cur, unopened_color_btn,
+                                                   QStringLiteral("Unopened highlight color"));
+      if (picked.isValid()) {
+        apply_btn(picked);
+      }
+    });
+  }
+  auto* unopened_hint = new QLabel(
+      QStringLiteral("Used when View → Highlight Unopened is on (toolbar toggle)."), &dialog);
+  unopened_hint->setStyleSheet(QStringLiteral("color: palette(mid);"));
+  unopened_hint->setWordWrap(true);
 
   auto* dirs_first = new QCheckBox(QStringLiteral("Directories first when sorting"), &dialog);
   dirs_first->setChecked(settings->directories_first);
@@ -200,6 +234,8 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   appearance_form->addRow(crop);
   appearance_form->addRow(QStringLiteral("Icon spacing:"), icon_spacing);
   appearance_form->addRow(QStringLiteral("Icon label width:"), icon_pad);
+  appearance_form->addRow(QStringLiteral("Unopened highlight:"), unopened_color_btn);
+  appearance_form->addRow(QString(), unopened_hint);
   appearance_form->addRow(QStringLiteral("Default sort:"), default_sort);
   appearance_form->addRow(sort_ascending);
   appearance_form->addRow(dirs_first);
@@ -402,6 +438,11 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   settings->crop_thumbnails = crop->isChecked();
   settings->icon_spacing = icon_spacing->value();
   settings->icon_cell_padding = icon_pad->value();
+  settings->unopened_highlight_color =
+      unopened_color_btn->property("colorName").toString();
+  if (settings->unopened_highlight_color.isEmpty()) {
+    settings->unopened_highlight_color = QStringLiteral("#3B82F6");
+  }
   settings->directories_first = dirs_first->isChecked();
   settings->sort_key = default_sort->currentData().toString();
   settings->sort_ascending = sort_ascending->isChecked();

@@ -82,10 +82,10 @@ void MainWindow::setup_toolbar()
   connect(show_hidden_act_, &QAction::toggled, this, &MainWindow::on_toggle_hidden);
 
   show_opened_state_act_ = toolbar->addAction(
-      theme_icon("mail-mark-read", "view-filter"), QStringLiteral("Show Opened State"));
+      theme_icon("mail-mark-read", "view-filter"), QStringLiteral("Highlight Unopened"));
   show_opened_state_act_->setCheckable(true);
   show_opened_state_act_->setToolTip(
-      QStringLiteral("Highlight files that have been opened (or marked as opened)"));
+      QStringLiteral("Highlight files that have not been opened yet (unread style)"));
   connect(show_opened_state_act_, &QAction::toggled, this, &MainWindow::on_toggle_opened_state);
 
   show_sidebar_act_ = toolbar->addAction(theme_icon("view-sidetree", "view-list-tree"),

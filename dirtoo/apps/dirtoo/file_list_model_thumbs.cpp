@@ -217,6 +217,21 @@ void FileListModel::set_show_opened_state(bool on)
   }
 }
 
+void FileListModel::set_unopened_highlight_color(const QColor& c)
+{
+  if (!c.isValid()) {
+    return;
+  }
+  if (unopened_highlight_color_ == c) {
+    return;
+  }
+  unopened_highlight_color_ = c;
+  if (show_opened_state_ && rowCount() > 0) {
+    emit dataChanged(index(0, 0), index(rowCount() - 1, columnCount() - 1),
+                     {IsOpenedRole, Qt::BackgroundRole});
+  }
+}
+
 void FileListModel::notify_opened_changed(const QStringList& paths)
 {
   for (const QString& p : paths) {

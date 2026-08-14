@@ -226,17 +226,10 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     // Hidden-file row tint before the style panel (selection still wins via state).
     if (!(opt.state & QStyle::State_Selected) && index.data(IsHiddenRole).toBool()) {
       painter->fillRect(opt.rect, QColor(200, 200, 210));
-    } else if (!(opt.state & QStyle::State_Selected) && model_ != nullptr
-               && model_->show_opened_state() && index.data(IsOpenedRole).toBool()) {
-      painter->fillRect(opt.rect, QColor(180, 220, 200, 70));
     }
     style->drawPrimitive(QStyle::PE_PanelItemViewItem, &opt, painter, opt.widget);
-    if (model_ != nullptr && model_->show_opened_state() && index.data(IsOpenedRole).toBool()) {
-      painter->save();
-      painter->setPen(QPen(QColor(40, 140, 110), 3));
-      const QRect r = opt.rect;
-      painter->drawLine(r.left() + 1, r.top() + 2, r.left() + 1, r.bottom() - 2);
-      painter->restore();
+    if (model_ != nullptr && model_->show_opened_state() && !index.data(IsOpenedRole).toBool()) {
+      paint_unopened_indicator(painter, opt.rect, model_->unopened_highlight_color());
     }
     if (index.data(LaunchFlashRole).toBool()) {
       paint_launch_flash(painter, opt.rect, opt.palette.color(QPalette::Highlight));
@@ -321,14 +314,9 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     painter->fillRect(opt.rect, c);
   } else if (index.data(IsHiddenRole).toBool()) {
     painter->fillRect(opt.rect, QColor(200, 200, 210));
-  } else if (model_ != nullptr && model_->show_opened_state()
-             && index.data(IsOpenedRole).toBool()) {
-    painter->fillRect(opt.rect, QColor(180, 220, 200, 90));
   }
-  if (model_ != nullptr && model_->show_opened_state() && index.data(IsOpenedRole).toBool()) {
-    painter->setPen(QPen(QColor(40, 140, 110), 3));
-    painter->drawLine(opt.rect.left() + 1, opt.rect.top() + 2, opt.rect.left() + 1,
-                      opt.rect.bottom() - 2);
+  if (model_ != nullptr && model_->show_opened_state() && !index.data(IsOpenedRole).toBool()) {
+    paint_unopened_indicator(painter, opt.rect, model_->unopened_highlight_color());
   }
   if (index.data(LaunchFlashRole).toBool()) {
     paint_launch_flash(painter, opt.rect, opt.palette.color(QPalette::Highlight));
@@ -345,13 +333,16 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
   const int caption_budget =
       text_rows > 0 ? (6 + text_rows * 18)
                     : (model_ != nullptr && model_->icon_detail_level() > 0 ? 22 : 0);
-  int icon_side = opt.decorationSize.width() > 0 ? opt.decorationSize.width()
-                                                 : std::min(opt.rect.width() - 8, opt.rect.height() / 2);
-  // Keep enough vertical space under the icon for the caption lines.
-  icon_side = std::min(icon_side, std::max(16, opt.rect.height() - caption_budget - 8));
-  icon_side = std::min(icon_side, opt.rect.width() - 8);
-  QRect thumb(0, 0, icon_side, icon_side);
-  thumb.moveCenter(QPoint(opt.rect.center().x(), opt.rect.top() + icon_side / 2 + 4));
+  // Dense: fill cell width; leave caption_budget under the image.
+  const int side_margin = 1;
+  const int top_pad = 1;
+  const int avail_h = std::max(16, opt.rect.height() - caption_budget - top_pad - 2);
+  int icon_side = std::min(opt.rect.width() - 2 * side_margin, avail_h);
+  icon_side = std::max(16, icon_side);
+  if (opt.rect.width() - 2 * side_margin <= avail_h) {
+    icon_side = opt.rect.width() - 2 * side_margin;
+  }
+  QRect thumb(opt.rect.left() + side_margin, opt.rect.top() + top_pad, icon_side, icon_side);
 
   // Icon / thumbnail — letterbox (fit) vs cover (crop), matching Python crop_thumbnails.
   if (!icon.isNull()) {

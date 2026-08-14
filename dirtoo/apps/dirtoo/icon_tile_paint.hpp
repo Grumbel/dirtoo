@@ -3,6 +3,9 @@
 
 #pragma once
 
+#include <algorithm>
+#include <cmath>
+
 #include "badge_icons.hpp"
 #include "file_list_model.hpp"
 
@@ -28,30 +31,56 @@ inline void paint_tile_badge(QPainter* painter, const QRect& thumb, const QStrin
     return;
   }
   painter->save();
+  // Scale badge with thumbnail so corners stay readable on large zoom levels.
+  const qreal scale = std::clamp(thumb.width() / 96.0, 0.9, 2.75);
   QFont font = painter->font();
-  font.setPointSizeF(std::max(8.0, font.pointSizeF() * 0.85));
+  const qreal base = font.pointSizeF() > 0 ? font.pointSizeF() : 10.0;
+  font.setPointSizeF(std::max(8.0, base * 0.9 * scale));
+  font.setBold(true);
   painter->setFont(font);
   const QFontMetrics fm(font);
-  const int pad_x = 3;
-  const int h = fm.height() + 2;
+  const int pad_x = std::max(3, static_cast<int>(std::lround(3 * scale)));
+  const int pad_y = std::max(1, static_cast<int>(std::lround(1 * scale)));
+  const int h = fm.height() + pad_y * 2;
   const int w = fm.horizontalAdvance(text) + pad_x * 2;
   QRect badge(0, 0, w, h);
+  // Flush to thumbnail corners (1px inset only).
   if (align & Qt::AlignRight) {
-    badge.moveRight(thumb.right() - 1);
+    badge.moveRight(thumb.right());
   } else {
-    badge.moveLeft(thumb.left() + 1);
+    badge.moveLeft(thumb.left());
   }
   if (align & Qt::AlignBottom) {
-    badge.moveBottom(thumb.bottom() - 1);
+    badge.moveBottom(thumb.bottom());
   } else {
-    badge.moveTop(thumb.top() + 1);
+    badge.moveTop(thumb.top());
   }
   painter->setPen(Qt::NoPen);
-  painter->setBrush(QColor(255, 255, 255, 170));
-  painter->drawRoundedRect(badge, 2, 2);
-  painter->setPen(QColor(20, 20, 20));
+  painter->setBrush(QColor(0, 0, 0, 160));
+  painter->drawRoundedRect(badge, std::max(2.0, 2.0 * scale), std::max(2.0, 2.0 * scale));
+  painter->setPen(QColor(255, 255, 255));
   painter->drawText(badge.adjusted(pad_x, 0, -pad_x, 0), Qt::AlignVCenter | Qt::AlignLeft, text);
   painter->restore();
+}
+
+/// Unread-style cue for files not yet opened (when the preference is enabled).
+inline void paint_unopened_indicator(QPainter* painter, const QRectF& br, const QColor& base)
+{
+  if (painter == nullptr || !br.isValid() || !base.isValid()) {
+    return;
+  }
+  QColor fill = base;
+  fill.setAlpha(110);
+  painter->fillRect(br, fill);
+  QColor edge = base;
+  if (edge.alpha() < 200) {
+    edge.setAlpha(255);
+  }
+  QPen pen(edge, 4);
+  pen.setCapStyle(Qt::FlatCap);
+  painter->setPen(pen);
+  painter->drawLine(QPointF(br.left() + 2.0, br.top() + 2),
+                    QPointF(br.left() + 2.0, br.bottom() - 2));
 }
 
 /// Whitened full-size folder glyph over a directory montage (hidden on hover).

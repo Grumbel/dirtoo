@@ -66,12 +66,12 @@ void MainWindow::apply_icon_zoom()
   const int name_lines = text_rows > 0 ? 2 : 0;
   const int meta_lines = std::max(0, text_rows - 1);
   const int text_h = 6 + (name_lines + meta_lines) * 17;
-  // Tile wider than the pixmap so middle-elided names still show more characters.
-  // Padding and spacing come from Preferences (icon_cell_padding_ / icon_spacing_).
-  const int pad = std::clamp(icon_cell_padding_, 16, 240);
+  // Dense tiles: pixmap fills cell width; gap between tiles is icon_spacing only.
+  // icon_cell_padding is optional extra width (for wider captions under the image).
+  const int pad = std::clamp(icon_cell_padding_, 0, 240);
   const int gap = std::clamp(icon_spacing_, 0, 48);
-  const int cell_w = std::max({size + pad, 128, size + pad / 2 + text_rows * 8});
-  const int cell_h = size + text_h + 20;
+  const int cell_w = std::max(size + pad, 48);
+  const int cell_h = size + text_h + 8;
   icon_view_->setGridSize(QSize(cell_w, cell_h));
   icon_view_->setSpacing(gap);
   if (graphics_view_ != nullptr) {
