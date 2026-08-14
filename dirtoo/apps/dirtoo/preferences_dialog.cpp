@@ -239,16 +239,16 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
     return btn;
   };
 
-  const UiColors& cols = settings->colors;
-  auto* c_unopened = make_color_btn(cols.unopened_highlight, QStringLiteral("Unopened highlight"));
-  auto* c_hidden = make_color_btn(cols.hidden_tint, QStringLiteral("Hidden file tint"));
-  auto* c_badge_bg = make_color_btn(cols.badge_background, QStringLiteral("Meta badge background"));
-  auto* c_badge_fg = make_color_btn(cols.badge_foreground, QStringLiteral("Meta badge text"));
-  auto* c_cursor_o = make_color_btn(cols.cursor_outline, QStringLiteral("Cursor outline"));
-  auto* c_cursor_f = make_color_btn(cols.cursor_fill, QStringLiteral("Cursor fill"));
-  auto* c_montage = make_color_btn(cols.montage_wash, QStringLiteral("Directory montage wash"));
-  auto* c_symlink = make_color_btn(cols.symlink_accent, QStringLiteral("Symlink emblem"));
-  auto* c_flash = make_color_btn(cols.launch_flash, QStringLiteral("Launch flash fallback"));
+  const UiColors& ui_cols = settings->colors;
+  auto* c_unopened = make_color_btn(ui_cols.unopened_highlight, QStringLiteral("Unopened highlight"));
+  auto* c_hidden = make_color_btn(ui_cols.hidden_tint, QStringLiteral("Hidden file tint"));
+  auto* c_badge_bg = make_color_btn(ui_cols.badge_background, QStringLiteral("Meta badge background"));
+  auto* c_badge_fg = make_color_btn(ui_cols.badge_foreground, QStringLiteral("Meta badge text"));
+  auto* c_cursor_o = make_color_btn(ui_cols.cursor_outline, QStringLiteral("Cursor outline"));
+  auto* c_cursor_f = make_color_btn(ui_cols.cursor_fill, QStringLiteral("Cursor fill"));
+  auto* c_montage = make_color_btn(ui_cols.montage_wash, QStringLiteral("Directory montage wash"));
+  auto* c_symlink = make_color_btn(ui_cols.symlink_accent, QStringLiteral("Symlink emblem"));
+  auto* c_flash = make_color_btn(ui_cols.launch_flash, QStringLiteral("Launch flash fallback"));
 
   colors_form->addRow(QStringLiteral("Unopened highlight:"), c_unopened);
   colors_form->addRow(QStringLiteral("Hidden files:"), c_hidden);
