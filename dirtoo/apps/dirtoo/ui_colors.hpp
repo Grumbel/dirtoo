@@ -13,9 +13,10 @@ namespace dirtoo::app {
 /// Product chrome colors (Preferences → Colors). Defaults match the shipped look.
 struct UiColors {
   /// Unopened-file highlight base (fill uses ~110 alpha; edge opaque).
-  QString unopened_highlight = QStringLiteral("#3B82F6");
-  /// Tint for hidden (dotfile) rows/tiles when shown.
-  QString hidden_tint = QStringLiteral("#C8C8D2"); // rgb(200,200,210)
+  /// Amber — unread/new cue, deliberately away from system selection blue.
+  QString unopened_highlight = QStringLiteral("#E5A00D");
+  /// Tint for hidden (dotfile) rows/tiles when shown (warm neutral gray).
+  QString hidden_tint = QStringLiteral("#C9C4B8");
   /// Meta badge (fps / duration / resolution) background — supports #AARRGGBB.
   QString badge_background = QStringLiteral("#AAFFFFFF"); // white @ ~170/255
   /// Meta badge text.
@@ -26,10 +27,10 @@ struct UiColors {
   QString cursor_fill = QStringLiteral("#60FFFFFF"); // white @ 96/255
   /// Directory montage white wash (#AARRGGBB).
   QString montage_wash = QStringLiteral("#A0FFFFFF"); // white @ 160/255
-  /// Symlink emblem stroke/fill.
-  QString symlink_accent = QStringLiteral("#1E5AC8"); // rgb(30,90,200)
-  /// Launch-flash fallback when palette Highlight is unavailable.
-  QString launch_flash = QStringLiteral("#508CFF"); // rgb(80,140,255)
+  /// Symlink emblem stroke/fill (teal — cool but not selection-blue).
+  QString symlink_accent = QStringLiteral("#0F766E");
+  /// Launch-flash fallback when palette Highlight is unavailable (violet).
+  QString launch_flash = QStringLiteral("#8B5CF6");
 
   [[nodiscard]] static UiColors defaults() { return {}; }
 

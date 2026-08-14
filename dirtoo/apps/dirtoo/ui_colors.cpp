@@ -71,12 +71,12 @@ void UiColors::save(QSettings& s) const
 
 QColor UiColors::unopened_highlight_qcolor() const
 {
-  return parse_ui_color(unopened_highlight, QColor(0x3b, 0x82, 0xf6));
+  return parse_ui_color(unopened_highlight, QColor(0xe5, 0xa0, 0x0d));
 }
 
 QColor UiColors::hidden_tint_qcolor() const
 {
-  return parse_ui_color(hidden_tint, QColor(200, 200, 210));
+  return parse_ui_color(hidden_tint, QColor(0xc9, 0xc4, 0xb8));
 }
 
 QColor UiColors::badge_background_qcolor() const
@@ -106,12 +106,12 @@ QColor UiColors::montage_wash_qcolor() const
 
 QColor UiColors::symlink_accent_qcolor() const
 {
-  return parse_ui_color(symlink_accent, QColor(30, 90, 200));
+  return parse_ui_color(symlink_accent, QColor(0x0f, 0x76, 0x6e));
 }
 
 QColor UiColors::launch_flash_qcolor() const
 {
-  return parse_ui_color(launch_flash, QColor(80, 140, 255));
+  return parse_ui_color(launch_flash, QColor(0x8b, 0x5c, 0xf6));
 }
 
 } // namespace dirtoo::app

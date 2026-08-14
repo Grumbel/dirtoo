@@ -226,7 +226,7 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     // Hidden-file row tint before the style panel (selection still wins via state).
     if (!(opt.state & QStyle::State_Selected) && index.data(IsHiddenRole).toBool()) {
       painter->fillRect(opt.rect, model_ != nullptr ? model_->ui_colors().hidden_tint_qcolor()
-                                                  : QColor(200, 200, 210));
+                                                  : QColor(0xc9, 0xc4, 0xb8));
     }
     style->drawPrimitive(QStyle::PE_PanelItemViewItem, &opt, painter, opt.widget);
     if (model_ != nullptr && model_->show_opened_state() && !index.data(IsOpenedRole).toBool()) {
@@ -235,7 +235,7 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     if (index.data(LaunchFlashRole).toBool()) {
       paint_launch_flash(painter, opt.rect, opt.palette.color(QPalette::Highlight), false,
                        model_ != nullptr ? model_->ui_colors().launch_flash_qcolor()
-                                         : QColor(80, 140, 255));
+                                         : QColor(0x8b, 0x5c, 0xf6));
     }
 
     const int icon = opt.decorationSize.isValid()
@@ -317,7 +317,7 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     painter->fillRect(opt.rect, c);
   } else if (index.data(IsHiddenRole).toBool()) {
     painter->fillRect(opt.rect, model_ != nullptr ? model_->ui_colors().hidden_tint_qcolor()
-                                                  : QColor(200, 200, 210));
+                                                  : QColor(0xc9, 0xc4, 0xb8));
   }
   if (model_ != nullptr && model_->show_opened_state() && !index.data(IsOpenedRole).toBool()) {
     paint_unopened_indicator(painter, opt.rect, model_->unopened_highlight_color());
@@ -325,7 +325,7 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
   if (index.data(LaunchFlashRole).toBool()) {
     paint_launch_flash(painter, opt.rect, opt.palette.color(QPalette::Highlight), false,
                        model_ != nullptr ? model_->ui_colors().launch_flash_qcolor()
-                                         : QColor(80, 140, 255));
+                                         : QColor(0x8b, 0x5c, 0xf6));
   }
 
   const QIcon icon = opt.icon;
@@ -472,7 +472,7 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
 
   paint_tile_status_overlays(painter, thumb, index,
                              model_ != nullptr ? model_->ui_colors().symlink_accent_qcolor()
-                                               : QColor(30, 90, 200));
+                                               : QColor(0x0f, 0x76, 0x6e));
 
   // Captions: basename in normal text; size/date in gray (dirtoo-py). No outline.
   if (!text.isEmpty() && model_->icon_detail_level() > 0) {

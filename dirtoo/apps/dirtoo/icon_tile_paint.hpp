@@ -118,7 +118,7 @@ inline void paint_status_pixmap(QPainter* painter, const QRect& thumb, const QPi
 
 /// Symlink emblem (bottom-left): theme emblem-symbolic-link or drawn arrow.
 inline void paint_symlink_emblem(QPainter* painter, const QRect& thumb,
-                                 const QColor& accent = QColor(30, 90, 200))
+                                 const QColor& accent = QColor(0x0f, 0x76, 0x6e))
 {
   if (painter == nullptr || thumb.isEmpty()) {
     return;
@@ -134,7 +134,7 @@ inline void paint_symlink_emblem(QPainter* painter, const QRect& thumb,
     return;
   }
   // Fallback: white disc + accent curved arrow hint.
-  const QColor ac = accent.isValid() ? accent : QColor(30, 90, 200);
+  const QColor ac = accent.isValid() ? accent : QColor(0x0f, 0x76, 0x6e);
   painter->save();
   painter->setRenderHint(QPainter::Antialiasing, true);
   painter->setPen(Qt::NoPen);
@@ -158,12 +158,12 @@ inline void paint_symlink_emblem(QPainter* painter, const QRect& thumb,
 /// Accepts QRectF so GraphicsFileItem can pass boundingRect() without conversion.
 inline void paint_launch_flash(QPainter* painter, const QRectF& rect, const QColor& highlight,
                                bool outline = false,
-                               const QColor& fallback = QColor(80, 140, 255))
+                               const QColor& fallback = QColor(0x8b, 0x5c, 0xf6))
 {
   if (painter == nullptr || rect.isEmpty()) {
     return;
   }
-  QColor flash = highlight.isValid() ? highlight : (fallback.isValid() ? fallback : QColor(80, 140, 255));
+  QColor flash = highlight.isValid() ? highlight : (fallback.isValid() ? fallback : QColor(0x8b, 0x5c, 0xf6));
   flash.setAlpha(outline ? 160 : 150);
   painter->save();
   painter->fillRect(rect, flash);
@@ -178,7 +178,7 @@ inline void paint_launch_flash(QPainter* painter, const QRectF& rect, const QCol
 
 inline void paint_launch_flash(QPainter* painter, const QRect& rect, const QColor& highlight,
                                bool outline = false,
-                               const QColor& fallback = QColor(80, 140, 255))
+                               const QColor& fallback = QColor(0x8b, 0x5c, 0xf6))
 {
   paint_launch_flash(painter, QRectF(rect), highlight, outline, fallback);
 }
@@ -186,7 +186,7 @@ inline void paint_launch_flash(QPainter* painter, const QRect& rect, const QColo
 /// New / loading / error / symlink stickers from model roles.
 inline void paint_tile_status_overlays(QPainter* painter, const QRect& thumb,
                                        const QModelIndex& index,
-                                       const QColor& symlink_accent = QColor(30, 90, 200))
+                                       const QColor& symlink_accent = QColor(0x0f, 0x76, 0x6e))
 {
   if (painter == nullptr || !index.isValid() || thumb.isEmpty()) {
     return;
