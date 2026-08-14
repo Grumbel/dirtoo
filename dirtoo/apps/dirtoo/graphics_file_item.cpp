@@ -405,13 +405,12 @@ void GraphicsFileItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
       const fs::FileInfo* fi = model_->file_at(row_);
       if (fi != nullptr && !fi->is_directory()) {
         const QRectF br = boundingRect();
-        const int top_pad = 4;
+        const int top_pad = 1;
+        const int side_margin = 1;
         const int text_rows = model_->icon_text_rows();
         const int caption_h =
-            text_rows > 0 ? (6 + text_rows * 16)
-                          : (model_->icon_detail_level() > 0 ? 22 : 0);
-        const int side_margin = 1;
-        const int top_pad = 1;
+            text_rows > 0 ? (4 + (text_rows + 1) * 16)
+                          : (model_->icon_detail_level() > 0 ? 20 : 0);
         const int avail_h = std::max(16, tile_size_.height() - caption_h - top_pad - 2);
         int icon_side = std::min(tile_size_.width() - 2 * side_margin, avail_h);
         icon_side = std::max(16, icon_side);
