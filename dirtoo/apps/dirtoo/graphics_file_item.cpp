@@ -141,7 +141,8 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
   }
   // Brief flash after open/launch so slow app start still feels acknowledged.
   if (idx.data(LaunchFlashRole).toBool()) {
-    paint_launch_flash(painter, br, highlight, /*outline=*/true);
+    paint_launch_flash(painter, br, highlight, /*outline=*/true,
+                     model_->ui_colors().launch_flash_qcolor());
   }
   if (drop_target_) {
     QColor fill = highlight;
@@ -331,7 +332,8 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
     }
   }
 
-  paint_tile_status_overlays(painter, thumb, idx);
+  paint_tile_status_overlays(painter, thumb, idx,
+                             model_->ui_colors().symlink_accent_qcolor());
 
   // Captions: basename in normal text color; size/date in gray (dirtoo-py).
   // Long names wrap to a second line when the tile budget allows, else elide.

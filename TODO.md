@@ -95,7 +95,7 @@ tints, badges, and indicators.
 4. [x] Move unopened color control off Appearance onto Colors tab.
 5. [x] Thread `UiColors` into model / paint (unopened, hidden, badges, cursor, montage).
 6. [x] Defaults match shipped look (original meta-badge style).
-7. [ ] Symlink emblem + launch-flash still use local fallbacks in a few paths.
+7. [x] Symlink emblem + launch-flash take UiColors (theme emblem still preferred when available).
 8. [ ] Optional: selection/hover alpha overrides (system palette for now).
 
 ---

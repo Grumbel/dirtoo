@@ -117,7 +117,8 @@ inline void paint_status_pixmap(QPainter* painter, const QRect& thumb, const QPi
 }
 
 /// Symlink emblem (bottom-left): theme emblem-symbolic-link or drawn arrow.
-inline void paint_symlink_emblem(QPainter* painter, const QRect& thumb)
+inline void paint_symlink_emblem(QPainter* painter, const QRect& thumb,
+                                 const QColor& accent = QColor(30, 90, 200))
 {
   if (painter == nullptr || thumb.isEmpty()) {
     return;
@@ -132,18 +133,19 @@ inline void paint_symlink_emblem(QPainter* painter, const QRect& thumb)
     theme_icon.paint(painter, r, Qt::AlignCenter);
     return;
   }
-  // Fallback: white disc + blue curved arrow hint.
+  // Fallback: white disc + accent curved arrow hint.
+  const QColor ac = accent.isValid() ? accent : QColor(30, 90, 200);
   painter->save();
   painter->setRenderHint(QPainter::Antialiasing, true);
   painter->setPen(Qt::NoPen);
   painter->setBrush(QColor(255, 255, 255, 210));
   painter->drawEllipse(r);
-  painter->setPen(QPen(QColor(30, 90, 200), std::max(1.5, size / 10.0)));
+  painter->setPen(QPen(ac, std::max(1.5, size / 10.0)));
   painter->setBrush(Qt::NoBrush);
   const QRectF arc = r.adjusted(size * 0.2, size * 0.15, -size * 0.15, -size * 0.2);
   painter->drawArc(arc, 40 * 16, 200 * 16);
   const QPointF tip(r.right() - size * 0.22, r.center().y() - size * 0.05);
-  painter->setBrush(QColor(30, 90, 200));
+  painter->setBrush(ac);
   QPolygonF head;
   head << tip << QPointF(tip.x() - size * 0.28, tip.y() - size * 0.18)
        << QPointF(tip.x() - size * 0.28, tip.y() + size * 0.18);
@@ -155,12 +157,13 @@ inline void paint_symlink_emblem(QPainter* painter, const QRect& thumb)
 /// Graphics tiles also draw a rounded outline for stronger acknowledgement.
 /// Accepts QRectF so GraphicsFileItem can pass boundingRect() without conversion.
 inline void paint_launch_flash(QPainter* painter, const QRectF& rect, const QColor& highlight,
-                               bool outline = false)
+                               bool outline = false,
+                               const QColor& fallback = QColor(80, 140, 255))
 {
   if (painter == nullptr || rect.isEmpty()) {
     return;
   }
-  QColor flash = highlight.isValid() ? highlight : QColor(80, 140, 255); // caller may pass launch_flash
+  QColor flash = highlight.isValid() ? highlight : (fallback.isValid() ? fallback : QColor(80, 140, 255));
   flash.setAlpha(outline ? 160 : 150);
   painter->save();
   painter->fillRect(rect, flash);
@@ -174,14 +177,16 @@ inline void paint_launch_flash(QPainter* painter, const QRectF& rect, const QCol
 }
 
 inline void paint_launch_flash(QPainter* painter, const QRect& rect, const QColor& highlight,
-                               bool outline = false)
+                               bool outline = false,
+                               const QColor& fallback = QColor(80, 140, 255))
 {
-  paint_launch_flash(painter, QRectF(rect), highlight, outline);
+  paint_launch_flash(painter, QRectF(rect), highlight, outline, fallback);
 }
 
 /// New / loading / error / symlink stickers from model roles.
 inline void paint_tile_status_overlays(QPainter* painter, const QRect& thumb,
-                                       const QModelIndex& index)
+                                       const QModelIndex& index,
+                                       const QColor& symlink_accent = QColor(30, 90, 200))
 {
   if (painter == nullptr || !index.isValid() || thumb.isEmpty()) {
     return;
@@ -205,7 +210,7 @@ inline void paint_tile_status_overlays(QPainter* painter, const QRect& thumb,
     paint_status_pixmap(painter, thumb, k_nw, Qt::AlignRight | Qt::AlignBottom, 0.7);
   }
   if (index.data(IsSymlinkRole).toBool()) {
-    paint_symlink_emblem(painter, thumb);
+    paint_symlink_emblem(painter, thumb, symlink_accent);
   }
   const auto status = static_cast<ThumbnailStatus>(index.data(ThumbnailStatusRole).toInt());
   if (status == ThumbnailStatus::Pending) {

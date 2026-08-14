@@ -233,7 +233,9 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
       paint_unopened_indicator(painter, opt.rect, model_->unopened_highlight_color());
     }
     if (index.data(LaunchFlashRole).toBool()) {
-      paint_launch_flash(painter, opt.rect, opt.palette.color(QPalette::Highlight));
+      paint_launch_flash(painter, opt.rect, opt.palette.color(QPalette::Highlight), false,
+                       model_ != nullptr ? model_->ui_colors().launch_flash_qcolor()
+                                         : QColor(80, 140, 255));
     }
 
     const int icon = opt.decorationSize.isValid()
@@ -321,7 +323,9 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     paint_unopened_indicator(painter, opt.rect, model_->unopened_highlight_color());
   }
   if (index.data(LaunchFlashRole).toBool()) {
-    paint_launch_flash(painter, opt.rect, opt.palette.color(QPalette::Highlight));
+    paint_launch_flash(painter, opt.rect, opt.palette.color(QPalette::Highlight), false,
+                       model_ != nullptr ? model_->ui_colors().launch_flash_qcolor()
+                                         : QColor(80, 140, 255));
   }
 
   const QIcon icon = opt.icon;
@@ -468,7 +472,9 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     draw_type_badge(painter, thumb, kind);
   }
 
-  paint_tile_status_overlays(painter, thumb, index);
+  paint_tile_status_overlays(painter, thumb, index,
+                             model_ != nullptr ? model_->ui_colors().symlink_accent_qcolor()
+                                               : QColor(30, 90, 200));
 
   // Captions: basename in normal text; size/date in gray (dirtoo-py). No outline.
   if (!text.isEmpty() && model_->icon_detail_level() > 0) {
