@@ -463,8 +463,9 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
   }
 
   if (fi != nullptr) {
-    paint_set_membership(painter, option.rect, fi->path());
     paint_tag_chips(painter, thumb, fi->path());
+    // After the pixmap so bars sit on top of the thumbnail (not under it).
+    paint_set_membership(painter, thumb, fi->path());
   }
 
   // Type sticker after text badges; before status overlays so loading/new stay on top.

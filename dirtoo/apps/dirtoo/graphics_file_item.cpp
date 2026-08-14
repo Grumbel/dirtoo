@@ -163,10 +163,6 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
     painter->drawRect(br.adjusted(0.5, 0.5, -0.5, -0.5));
   }
 
-  if (const auto* fi = model_->file_at(row_)) {
-    paint_set_membership(painter, br.toRect(), fi->path());
-  }
-
   // Group headers: full-width band in GraphicsFileView::drawForeground.
   // Image band = tile minus caption strip (same budget as apply_icon_zoom).
   // Largest centered square in that band — fills the tile when pad is 0.
@@ -305,6 +301,8 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
 
     if (fi != nullptr) {
       paint_tag_chips(painter, thumb, fi->path());
+      // After the pixmap so bars sit on top of the thumbnail (not under it).
+      paint_set_membership(painter, thumb, fi->path());
     }
 
     // Type sticker: bottom-right (Python paint_metadata / SharedPixmaps).

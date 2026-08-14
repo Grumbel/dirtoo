@@ -105,6 +105,7 @@ inline void clear_set_membership_cache()
 }
 
 /// Top-edge color bars for set membership (one bar per set, stacked, max 4).
+/// Call after drawing the thumbnail so bars sit on top of the image.
 inline void paint_set_membership(QPainter* painter, const QRect& tile,
                                  const std::filesystem::path& path)
 {
@@ -116,17 +117,24 @@ inline void paint_set_membership(QPainter* painter, const QRect& tile,
     return;
   }
   constexpr int kMax = 4;
-  constexpr int kBar = 3;
-  constexpr int kGap = 1;
-  int y = tile.top() + 1;
+  constexpr int kBar = 7;
+  constexpr int kGap = 2;
   const int n = std::min(static_cast<int>(sets.size()), kMax);
-  const int x = tile.left() + 1;
-  const int w = std::max(1, tile.width() - 2);
+  const int x = tile.left();
+  const int w = std::max(1, tile.width());
+  int y = tile.top();
+  painter->save();
+  // Soft dark underlay so pastel bars read on light thumbs.
+  const int stack_h = n * kBar + (n - 1) * kGap;
+  painter->fillRect(QRect(x, y, w, stack_h + 2), QColor(0, 0, 0, 90));
+  y += 1;
   for (int i = 0; i < n; ++i) {
-    painter->fillRect(QRect(x, y, w, kBar),
-                      set_paint_detail::color_for_set(sets[static_cast<std::size_t>(i)]));
+    QColor c = set_paint_detail::color_for_set(sets[static_cast<std::size_t>(i)]);
+    c.setAlpha(255);
+    painter->fillRect(QRect(x, y, w, kBar), c);
     y += kBar + kGap;
   }
+  painter->restore();
 }
 
 } // namespace dirtoo::app
