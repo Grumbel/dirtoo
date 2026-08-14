@@ -12,6 +12,7 @@
 
 #include <QThread>
 
+#include <algorithm>
 #include <atomic>
 #include <filesystem>
 #include <memory>
@@ -48,6 +49,13 @@ public slots:
     int skipped = 0;
     QStringList problems;
     const int total = static_cast<int>(files_.size());
+    constexpr int kScale = 1000;
+    const int total_scaled = std::max(1, total) * kScale;
+    auto emit_file_progress = [&](int index, double frac, const QString& name) {
+      frac = std::clamp(frac, 0.0, 1.0);
+      const int done = index * kScale + static_cast<int>(frac * (kScale - 1));
+      emit progress(done, total_scaled, name);
+    };
     // Share extract cache with thumbnails so re-tagging does not re-extract.
     const auto cache_root = archive_member_cache_root("dirtoo-archive-thumbs");
 
@@ -57,7 +65,7 @@ public slots:
       }
       const auto& fi = files_[static_cast<std::size_t>(i)];
       const QString display = QString::fromStdString(fi.basename());
-      emit progress(i, total, display);
+      emit_file_progress(i, 0.0, display);
 
       std::string key;
       dirtoo::hash::HashError herr;
@@ -80,7 +88,15 @@ public slots:
             problems << QStringLiteral("%1: archive extract failed").arg(display);
             continue;
           }
-          auto digests = dirtoo::hash::hash_file(*extracted, {}, &herr);
+          dirtoo::hash::HashOptions hops;
+          hops.should_cancel = [this]() { return cancel_ && cancel_->load(); };
+          hops.on_progress = [this, i, total, display, &emit_file_progress](std::uint64_t rd, std::uint64_t sz) {
+            (void)this;
+            if (sz > 0) {
+              emit_file_progress(i, static_cast<double>(rd) / static_cast<double>(sz), display);
+            }
+          };
+          auto digests = dirtoo::hash::hash_file(*extracted, hops, &herr);
           if (!digests) {
             ++skipped;
             problems << QStringLiteral("%1: %2").arg(display, QString::fromStdString(herr.message));
@@ -93,7 +109,14 @@ public slots:
         std::error_code ec;
         const auto abs = std::filesystem::absolute(fi.path(), ec);
         key = ec ? fi.path().string() : abs.lexically_normal().string();
-        if (!hashes.ensure_full(abs, key, false, &herr)) {
+        dirtoo::hash::HashOptions hops;
+        hops.should_cancel = [this]() { return cancel_ && cancel_->load(); };
+        hops.on_progress = [i, display, &emit_file_progress](std::uint64_t rd, std::uint64_t sz) {
+          if (sz > 0) {
+            emit_file_progress(i, static_cast<double>(rd) / static_cast<double>(sz), display);
+          }
+        };
+        if (!hashes.ensure_full(abs, key, false, &herr, hops)) {
           ++skipped;
           problems << QStringLiteral("%1: %2").arg(display, QString::fromStdString(herr.message));
           continue;
@@ -128,7 +151,7 @@ public slots:
       }
     }
 
-    emit progress(total, total, {});
+    emit progress(total_scaled, total_scaled, {});
     emit finished(tagged, skipped, problems);
   }
 

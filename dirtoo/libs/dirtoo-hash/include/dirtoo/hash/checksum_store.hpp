@@ -54,7 +54,7 @@ public:
   /// Always uses a *full* file hash — never sample/quick digests (safe for tags).
   [[nodiscard]] std::optional<FileDigests>
   ensure(const std::filesystem::path& path, std::string_view path_key, bool refresh,
-         HashError* error = nullptr);
+         HashError* error = nullptr, const HashOptions& hash_options = {});
 
   /// Path key namespace for sample digests so they never collide with full hashes.
   [[nodiscard]] static std::string quick_key(std::string_view path_key);

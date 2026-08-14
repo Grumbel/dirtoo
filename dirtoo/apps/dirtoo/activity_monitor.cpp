@@ -44,6 +44,16 @@ QString ActivityTask::summary() const
   }
   if (total > 0 && done >= 0) {
     const int pct = static_cast<int>((100.0 * std::min(done, total)) / total);
+    // Milli-file scale (N*1000): show file index + overall percent, not raw milli units.
+    if (total >= 1000 && total % 1000 == 0) {
+      const int files_total = total / 1000;
+      const int cur_file = std::min(files_total, done / 1000 + 1);
+      return QStringLiteral("%1 %2/%3 (%4%)")
+          .arg(label)
+          .arg(cur_file)
+          .arg(files_total)
+          .arg(pct);
+    }
     return QStringLiteral("%1 %2/%3 (%4%)").arg(label).arg(done).arg(total).arg(pct);
   }
   if (done >= 0 && total < 0) {

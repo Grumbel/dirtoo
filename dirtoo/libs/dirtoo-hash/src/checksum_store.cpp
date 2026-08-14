@@ -271,7 +271,7 @@ ChecksumStore::paths_for_hash(std::string_view algo, std::string_view hex) const
 
 std::optional<FileDigests>
 ChecksumStore::ensure(const std::filesystem::path& path, std::string_view path_key, bool refresh,
-                      HashError* error)
+                      HashError* error, const HashOptions& hash_options)
 {
   std::error_code ec;
   const auto size = static_cast<std::uint64_t>(std::filesystem::file_size(path, ec));
@@ -295,7 +295,7 @@ ChecksumStore::ensure(const std::filesystem::path& path, std::string_view path_k
     }
   }
 
-  auto digests = hash_file(path, {}, error);
+  auto digests = hash_file(path, hash_options, error);
   if (!digests) {
     return std::nullopt;
   }

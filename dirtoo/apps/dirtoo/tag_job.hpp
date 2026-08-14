@@ -28,6 +28,7 @@ public:
   void cancel();
 
 signals:
+  /// @p done/@p total are in milli-files (file_index*1000 + in-file fraction).
   void progress(int done, int total, const QString& name);
   /// @p changed = files that gained/lost at least one requested tag.
   void finished(int changed, int skipped, const QStringList& problems);

@@ -31,10 +31,12 @@ public:
 
   [[nodiscard]] bool is_open() const;
 
-  /// Full-file ensure (cache hit or hash_file + put). Thread-safe store access.
+  /// Full-file ensure (cache hit or hash_file + put).
+  /// Mutex is held only for SQLite get/put — not during the CPU hash.
   [[nodiscard]] std::optional<dirtoo::hash::FileDigests>
   ensure_full(const std::filesystem::path& path, std::string_view path_key, bool refresh,
-              dirtoo::hash::HashError* error = nullptr);
+              dirtoo::hash::HashError* error = nullptr,
+              const dirtoo::hash::HashOptions& hash_options = {});
 
   [[nodiscard]] std::optional<dirtoo::hash::FileDigests> get_full(std::string_view path_key);
 

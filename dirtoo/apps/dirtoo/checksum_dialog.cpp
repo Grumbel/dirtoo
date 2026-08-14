@@ -58,11 +58,17 @@ public slots:
     }
 
     const int total = static_cast<int>(paths_.size());
+    constexpr int kScale = 1000;
+    const int total_scaled = std::max(1, total) * kScale;
+    auto emit_prog = [&](int index, double frac) {
+      frac = std::clamp(frac, 0.0, 1.0);
+      emit progress(index * kScale + static_cast<int>(frac * (kScale - 1)), total_scaled);
+    };
     for (int i = 0; i < total; ++i) {
       if (cancel_.load()) {
         break;
       }
-      emit progress(i, total);
+      emit_prog(i, 0.0);
 
       const QString path = paths_[i];
       QString status;
@@ -118,19 +124,28 @@ public slots:
           status = QStringLiteral("Error");
           error = QString::fromStdString(herr.message);
         }
-      } else if (auto d = hashes.ensure_full(abs, key, refresh_, &herr)) {
-        status = refresh_ ? QStringLiteral("Hashed") : QStringLiteral("OK");
-        crc32 = QString::fromStdString(d->crc32_hex);
-        md5 = QString::fromStdString(d->md5_hex);
-        sha1 = QString::fromStdString(d->sha1_hex);
-        sha256 = QString::fromStdString(d->sha256_hex);
       } else {
-        status = QStringLiteral("Error");
-        error = QString::fromStdString(herr.message);
+        dirtoo::hash::HashOptions hops;
+        hops.should_cancel = [this] { return cancel_.load(); };
+        hops.on_progress = [i, &emit_prog](std::uint64_t rd, std::uint64_t sz) {
+          if (sz > 0) {
+            emit_prog(i, static_cast<double>(rd) / static_cast<double>(sz));
+          }
+        };
+        if (auto d = hashes.ensure_full(abs, key, refresh_, &herr, hops)) {
+          status = refresh_ ? QStringLiteral("Hashed") : QStringLiteral("OK");
+          crc32 = QString::fromStdString(d->crc32_hex);
+          md5 = QString::fromStdString(d->md5_hex);
+          sha1 = QString::fromStdString(d->sha1_hex);
+          sha256 = QString::fromStdString(d->sha256_hex);
+        } else {
+          status = QStringLiteral("Error");
+          error = QString::fromStdString(herr.message);
+        }
       }
       emit row_ready(path, status, crc32, md5, sha1, sha256, error);
     }
-    emit progress(total, total);
+    emit progress(total_scaled, total_scaled);
     emit finished_all();
   }
 
@@ -377,8 +392,20 @@ void ChecksumDialog::cancel_job()
 
 void ChecksumDialog::on_progress(int done, int total)
 {
+  if (progress_ == nullptr) {
+    return;
+  }
   progress_->setMaximum(std::max(1, total));
-  progress_->setValue(done);
+  progress_->setValue(std::clamp(done, 0, progress_->maximum()));
+  if (total >= 1000 && total % 1000 == 0) {
+    const int pct = static_cast<int>((100.0 * std::min(done, total)) / total);
+    const int files_total = total / 1000;
+    const int cur = std::min(files_total, done / 1000 + 1);
+    progress_->setFormat(QStringLiteral("%1/%2 — %p%").arg(cur).arg(files_total));
+    (void)pct;
+  } else {
+    progress_->setFormat(QStringLiteral("%v/%m"));
+  }
 }
 
 void ChecksumDialog::on_row(const QString& path, const QString& status, const QString& crc32,

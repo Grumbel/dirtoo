@@ -134,6 +134,7 @@ std::optional<FileDigests> hash_file(const std::filesystem::path& path, const Ha
   std::uint32_t crc = 0;
   std::vector<char> buf(1 << 16);
   std::uint64_t read_total = 0;
+  std::uint64_t last_progress_emit = 0;
 
   while (in) {
     if (options.should_cancel && options.should_cancel()) {
@@ -157,7 +158,13 @@ std::optional<FileDigests> hash_file(const std::filesystem::path& path, const Ha
     EVP_DigestUpdate(sha256_ctx, bytes, n);
     read_total += n;
     if (options.on_progress) {
-      options.on_progress(read_total, size);
+      // Throttle: every ~256 KiB or final byte so UI stays smooth without flood.
+      constexpr std::uint64_t kStep = 256ULL * 1024;
+      if (read_total == size || read_total - last_progress_emit >= kStep
+          || last_progress_emit == 0) {
+        last_progress_emit = read_total;
+        options.on_progress(read_total, size);
+      }
     }
   }
 
