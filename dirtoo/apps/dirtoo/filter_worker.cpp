@@ -93,14 +93,16 @@ void FilterWorker::filter_items(std::vector<fs::FileInfo> items, const QString& 
   // Pure set:… handled in the app against FileSetStore so membership works even
   // when an older installed dirtoo-filter MatchFunc still misses path keys.
   bool pure_set = false;
-  std::optional<std::string> set_id;
-  dirtoo::sets::FileSetStore set_store;
+  std::optional<set_membership::MemberIndex> set_index;
   if (!expr.empty()) {
     if (auto q = set_membership::pure_set_query(expr)) {
       pure_set = true;
+      dirtoo::sets::FileSetStore set_store;
       std::string err;
       if (set_store.open(dirtoo::sets::FileSetStore::default_path(), &err)) {
-        set_id = set_membership::resolve_set_id(set_store, *q);
+        if (auto id = set_membership::resolve_set_id(set_store, *q)) {
+          set_index = set_membership::build_member_index(set_store, *id);
+        }
       }
     } else {
       auto parsed = filter::parse_filter(expr);
@@ -120,9 +122,7 @@ void FilterWorker::filter_items(std::vector<fs::FileInfo> items, const QString& 
       continue;
     }
     if (pure_set) {
-      // Unknown / empty set → match nothing.
-      if (!set_id.has_value()
-          || !set_membership::path_in_set(set_store, *set_id, fi.path())) {
+      if (!set_index || !set_membership::path_in_index(*set_index, fi.path())) {
         continue;
       }
     } else if (match != nullptr && !match->matches(to_filter_item(fi))) {

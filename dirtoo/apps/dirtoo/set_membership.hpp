@@ -11,11 +11,14 @@
 #include <string>
 #include <string_view>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace dirtoo::app {
 namespace set_membership {
 
+/// Path string forms for membership lookup. Avoids weakly_canonical / equivalent
+/// (those are disk-bound and were the set-filter latency source).
 inline void push_path_forms(std::unordered_set<std::string>& out, const std::filesystem::path& p)
 {
   const std::string raw = p.string();
@@ -31,10 +34,6 @@ inline void push_path_forms(std::unordered_set<std::string>& out, const std::fil
   if (!ec) {
     out.insert(abs.string());
     out.insert(abs.lexically_normal().string());
-  }
-  const auto weak = std::filesystem::weakly_canonical(p, ec);
-  if (!ec) {
-    out.insert(weak.string());
   }
 }
 
@@ -73,51 +72,53 @@ resolve_set_id(dirtoo::sets::FileSetStore& store, std::string_view query)
   return by_label;
 }
 
-/// True if path is a member of set_id (robust path comparison).
-[[nodiscard]] inline bool path_in_set(dirtoo::sets::FileSetStore& store, std::string_view set_id,
-                                      const std::filesystem::path& path)
+/// Preloaded membership index for one set (build once per filter pass).
+struct MemberIndex {
+  std::unordered_set<std::string> keys; ///< All path_key forms for members
+  /// basename → parent path forms (for same-dir basename fallback)
+  std::vector<std::pair<std::string, std::unordered_set<std::string>>> by_basename;
+};
+
+[[nodiscard]] inline MemberIndex build_member_index(dirtoo::sets::FileSetStore& store,
+                                                    std::string_view set_id)
+{
+  MemberIndex idx;
+  for (const auto& m : store.members(set_id)) {
+    idx.keys.insert(m.path_key);
+    push_path_forms(idx.keys, std::filesystem::path{m.path_key});
+    const std::filesystem::path mp{m.path_key};
+    const std::string base = mp.filename().string();
+    if (!base.empty()) {
+      std::unordered_set<std::string> parents;
+      push_path_forms(parents, mp.parent_path());
+      idx.by_basename.emplace_back(base, std::move(parents));
+    }
+  }
+  return idx;
+}
+
+[[nodiscard]] inline bool path_in_index(const MemberIndex& idx, const std::filesystem::path& path)
 {
   std::unordered_set<std::string> keys;
   push_path_forms(keys, path);
   for (const auto& k : keys) {
-    if (store.contains(set_id, k)) {
+    if (idx.keys.contains(k)) {
       return true;
     }
   }
-  const auto members = store.members(set_id);
-  for (const auto& m : members) {
-    for (const auto& k : keys) {
-      if (k == m.path_key) {
-        return true;
-      }
-    }
-  }
-  for (const auto& m : members) {
-    std::error_code ec;
-    if (std::filesystem::equivalent(path, m.path_key, ec) && !ec) {
-      return true;
-    }
-  }
-  const auto item_parent = path.parent_path();
-  const auto item_name = path.filename().string();
-  if (item_name.empty()) {
+  // Same directory + same basename without filesystem::equivalent.
+  const std::string base = path.filename().string();
+  if (base.empty()) {
     return false;
   }
-  for (const auto& m : members) {
-    const std::filesystem::path mp{m.path_key};
-    if (mp.filename().string() != item_name) {
+  std::unordered_set<std::string> parents;
+  push_path_forms(parents, path.parent_path());
+  for (const auto& [name, mem_parents] : idx.by_basename) {
+    if (name != base) {
       continue;
     }
-    std::error_code ec;
-    if (std::filesystem::equivalent(item_parent, mp.parent_path(), ec) && !ec) {
-      return true;
-    }
-    std::unordered_set<std::string> a;
-    std::unordered_set<std::string> b;
-    push_path_forms(a, item_parent);
-    push_path_forms(b, mp.parent_path());
-    for (const auto& x : a) {
-      if (b.contains(x)) {
+    for (const auto& p : parents) {
+      if (mem_parents.contains(p)) {
         return true;
       }
     }
@@ -125,7 +126,13 @@ resolve_set_id(dirtoo::sets::FileSetStore& store, std::string_view query)
   return false;
 }
 
-/// Sets that contain this path (tries multiple key forms).
+/// Convenience: load members once then test (prefer build_member_index in loops).
+[[nodiscard]] inline bool path_in_set(dirtoo::sets::FileSetStore& store, std::string_view set_id,
+                                      const std::filesystem::path& path)
+{
+  return path_in_index(build_member_index(store, set_id), path);
+}
+
 [[nodiscard]] inline std::vector<dirtoo::sets::FileSet>
 sets_for_path_robust(dirtoo::sets::FileSetStore& store, const std::filesystem::path& path)
 {
@@ -143,7 +150,6 @@ sets_for_path_robust(dirtoo::sets::FileSetStore& store, const std::filesystem::p
   return out;
 }
 
-/// Parse a pure set:… expression (optional surrounding whitespace). Empty = not pure set.
 [[nodiscard]] inline std::optional<std::string> pure_set_query(std::string_view expr)
 {
   while (!expr.empty() && std::isspace(static_cast<unsigned char>(expr.front()))) {
@@ -155,12 +161,10 @@ sets_for_path_robust(dirtoo::sets::FileSetStore& store, const std::filesystem::p
   if (expr.size() < 5) {
     return std::nullopt;
   }
-  // set:
   if (!(expr[0] == 's' || expr[0] == 'S') || !(expr[1] == 'e' || expr[1] == 'E')
       || !(expr[2] == 't' || expr[2] == 'T') || expr[3] != ':') {
     return std::nullopt;
   }
-  // Pure: no spaces after set: (compound filters go through MatchFunc).
   const auto rest = expr.substr(4);
   for (char c : rest) {
     if (std::isspace(static_cast<unsigned char>(c))) {

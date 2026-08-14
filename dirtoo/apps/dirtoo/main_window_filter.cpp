@@ -69,9 +69,11 @@ void MainWindow::apply_filter_expression_sync(const QString& text)
   if (auto q = set_membership::pure_set_query(text.toStdString())) {
     dirtoo::sets::FileSetStore store;
     std::string err;
-    std::optional<std::string> set_id;
+    std::optional<set_membership::MemberIndex> index;
     if (store.open(dirtoo::sets::FileSetStore::default_path(), &err)) {
-      set_id = set_membership::resolve_set_id(store, *q);
+      if (auto id = set_membership::resolve_set_id(store, *q)) {
+        index = set_membership::build_member_index(store, *id);
+      }
     }
     std::vector<fs::FileInfo> visible;
     visible.reserve(collection_.items().size());
@@ -79,7 +81,7 @@ void MainWindow::apply_filter_expression_sync(const QString& text)
       if (!collection_.show_hidden() && !fi.basename().empty() && fi.basename()[0] == '.') {
         continue;
       }
-      if (set_id && set_membership::path_in_set(store, *set_id, fi.path())) {
+      if (index && set_membership::path_in_index(*index, fi.path())) {
         visible.push_back(fi);
       }
     }
@@ -102,10 +104,12 @@ void MainWindow::on_filter_changed(const QString& text)
     quick_filter_bar_->set_active_expression(text);
   }
   update_filter_chrome(!text.isEmpty());
-  // Pure set:… must use FileSetStore membership (FilterWorker / apply_set_filter),
-  // not FileCollection::set_name_filter → installed dirtoo-filter MatchFunc.
-  if (filter_expression_needs_content_io(text)
-      || set_membership::pure_set_query(text.toStdString()).has_value()) {
+  // Pure set:… → sync membership index (fast); content IO → worker thread.
+  if (set_membership::pure_set_query(text.toStdString()).has_value()) {
+    apply_filter_expression_sync(text);
+    return;
+  }
+  if (filter_expression_needs_content_io(text)) {
     request_async_filter(/*keep_previous_visible=*/true);
     return;
   }
