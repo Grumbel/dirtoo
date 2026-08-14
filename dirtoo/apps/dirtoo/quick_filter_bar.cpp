@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "quick_filter_bar.hpp"
+#include "flow_layout.hpp"
 #include <QList>
 #include <QHash>
 #include "set_paint.hpp"
@@ -24,6 +25,7 @@
 #include <QMessageBox>
 #include <QMimeDatabase>
 #include <QScrollArea>
+#include <QSizePolicy>
 #include <QSet>
 #include <QSettings>
 #include <QSignalBlocker>
@@ -195,16 +197,15 @@ QuickFilterBar::QuickFilterBar(QWidget* parent)
 
   scroll_ = new QScrollArea(this);
   scroll_->setWidgetResizable(true);
-  scroll_->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-  scroll_->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  scroll_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  scroll_->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
   scroll_->setFrameShape(QFrame::NoFrame);
-  scroll_->setFixedHeight(36);
+  scroll_->setMinimumHeight(36);
+  scroll_->setMaximumHeight(120); // a few wrapped rows; scroll if still more
+  scroll_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
   strip_ = new QWidget(scroll_);
-  strip_layout_ = new QHBoxLayout(strip_);
-  strip_layout_->setContentsMargins(0, 0, 0, 0);
-  strip_layout_->setSpacing(4);
-  strip_layout_->addStretch(1);
+  strip_layout_ = new FlowLayout(strip_, /*margin=*/0, /*h=*/4, /*v=*/4);
   scroll_->setWidget(strip_);
   outer->addWidget(scroll_, 1);
 
@@ -953,7 +954,13 @@ void QuickFilterBar::rebuild_buttons()
       strip_layout_->addWidget(btn);
     }
   }
-  strip_layout_->addStretch(1);
+  if (strip_ != nullptr && strip_layout_ != nullptr) {
+    const int w = scroll_ != nullptr ? scroll_->viewport()->width() : strip_->width();
+    const int h = strip_layout_->heightForWidth(std::max(1, w));
+    strip_->setMinimumHeight(h);
+    strip_->updateGeometry();
+  }
+  updateGeometry();
 }
 
 void QuickFilterBar::load_pins()

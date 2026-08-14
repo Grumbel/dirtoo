@@ -13,6 +13,7 @@
 #include <vector>
 
 class QHBoxLayout;
+class FlowLayout;
 class QScrollArea;
 class QToolButton;
 
@@ -78,7 +79,7 @@ private:
 
   QScrollArea* scroll_ = nullptr;
   QWidget* strip_ = nullptr;
-  QHBoxLayout* strip_layout_ = nullptr;
+  FlowLayout* strip_layout_ = nullptr;
   QToolButton* pin_btn_ = nullptr;
 
   struct AutoChip {
