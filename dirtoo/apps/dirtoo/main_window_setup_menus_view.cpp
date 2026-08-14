@@ -85,6 +85,9 @@ void MainWindow::setup_view_menu()
   if (show_hidden_act_ != nullptr) {
     view_menu->addAction(show_hidden_act_);
   }
+  if (show_opened_state_act_ != nullptr) {
+    view_menu->addAction(show_opened_state_act_);
+  }
   if (read_only_act_ != nullptr) {
     view_menu->addAction(read_only_act_);
   }

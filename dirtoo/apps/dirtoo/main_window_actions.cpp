@@ -20,6 +20,7 @@
 #include <QUrl>
 #include <filesystem>
 #include <set>
+#include "opened_files_store.hpp"
 
 namespace dirtoo::app {
 
@@ -553,6 +554,43 @@ void MainWindow::jump_to_row(int row)
   view->setCurrentIndex(idx);
   view->selectionModel()->select(idx, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
   view->scrollTo(idx, QAbstractItemView::PositionAtCenter);
+}
+
+
+void MainWindow::on_toggle_opened_state(bool checked)
+{
+  if (model_ != nullptr) {
+    model_->set_show_opened_state(checked);
+  }
+  if (show_opened_state_act_ != nullptr && show_opened_state_act_->isChecked() != checked) {
+    show_opened_state_act_->setChecked(checked);
+  }
+}
+
+void MainWindow::on_mark_selection_opened()
+{
+  std::vector<std::filesystem::path> paths;
+  for (const auto& fi : selected_fileinfos()) {
+    paths.push_back(fi.path());
+  }
+  if (paths.empty()) {
+    return;
+  }
+  opened_files_store().mark_opened(paths);
+  set_status(QStringLiteral("Marked %1 file(s) as opened").arg(paths.size()));
+}
+
+void MainWindow::on_mark_selection_unopened()
+{
+  std::vector<std::filesystem::path> paths;
+  for (const auto& fi : selected_fileinfos()) {
+    paths.push_back(fi.path());
+  }
+  if (paths.empty()) {
+    return;
+  }
+  opened_files_store().mark_unopened(paths);
+  set_status(QStringLiteral("Marked %1 file(s) as unopened").arg(paths.size()));
 }
 
 } // namespace dirtoo::app

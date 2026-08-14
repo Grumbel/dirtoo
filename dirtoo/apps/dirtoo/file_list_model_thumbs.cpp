@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "file_list_model.hpp"
+#include "opened_files_store.hpp"
 #include <QDateTime>
 
 #include <QIcon>
@@ -197,6 +198,38 @@ FileListModel::ThumbnailCounts FileListModel::thumbnail_counts() const
 bool FileListModel::is_new(const QString& path) const
 {
   return new_paths_.contains(path);
+}
+
+bool FileListModel::is_opened(const QString& path) const
+{
+  return opened_files_store().is_opened(path);
+}
+
+void FileListModel::set_show_opened_state(bool on)
+{
+  if (show_opened_state_ == on) {
+    return;
+  }
+  show_opened_state_ = on;
+  if (rowCount() > 0) {
+    emit dataChanged(index(0, 0), index(rowCount() - 1, columnCount() - 1),
+                     {IsOpenedRole, Qt::BackgroundRole});
+  }
+}
+
+void FileListModel::notify_opened_changed(const QStringList& paths)
+{
+  for (const QString& p : paths) {
+    emit_path_changed(p);
+  }
+}
+
+void FileListModel::refresh_opened_roles()
+{
+  if (rowCount() > 0) {
+    emit dataChanged(index(0, 0), index(rowCount() - 1, columnCount() - 1),
+                     {IsOpenedRole, Qt::BackgroundRole});
+  }
 }
 
 void FileListModel::clear_child_counts()

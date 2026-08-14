@@ -30,6 +30,8 @@ struct AppSettings {
                              QStringLiteral("duration"), QStringLiteral("modified"),
                              QStringLiteral("type")};
   bool show_hidden = false;
+  /// Highlight files marked as opened (OpenedFilesStore) in the view.
+  bool show_opened_state = false;
   bool show_filter = false; ///< Filter bar hidden until shown (View menu / pin).
   bool filter_pinned = false;
   bool show_sidebar = true;

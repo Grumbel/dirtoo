@@ -201,6 +201,14 @@ void exec_item_context_menu(QWidget* parent, const QPoint& global_pos,
     menu.addAction(theme_icon("bookmark-new", "tag"), QStringLiteral("Tag…"), parent,
                    cb.tag_selected);
   }
+  if (cb.mark_opened) {
+    menu.addAction(theme_icon("mail-mark-read", "checkmark"), QStringLiteral("Mark as Opened"),
+                   parent, cb.mark_opened);
+  }
+  if (cb.mark_unopened) {
+    menu.addAction(theme_icon("mail-mark-unread", "edit-clear"), QStringLiteral("Mark as Unopened"),
+                   parent, cb.mark_unopened);
+  }
   if (cb.checksums_selected) {
     menu.addAction(theme_icon("document-properties"), QStringLiteral("Checksums…"), parent,
                    cb.checksums_selected);

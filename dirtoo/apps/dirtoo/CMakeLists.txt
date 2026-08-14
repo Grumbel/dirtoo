@@ -75,6 +75,8 @@ qt_add_executable(dirtoo-app
   open_with.hpp
   open_history.cpp
   open_history.hpp
+  opened_files_store.cpp
+  opened_files_store.hpp
   operations_history.cpp
   operations_history.hpp
   about_dialog.cpp

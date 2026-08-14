@@ -3,6 +3,8 @@
 
 #include "open_history.hpp"
 
+#include "opened_files_store.hpp"
+
 #include "open_with.hpp"
 
 #include <QAbstractItemView>
@@ -290,6 +292,8 @@ void OpenHistory::record_open(const QString& app_id, const QString& app_name, co
     e.paths << QString::fromStdString(p.string());
   }
   record(std::move(e));
+  // Parallel “opened” marks — does not affect this history log’s semantics.
+  opened_files_store().mark_opened(paths);
 }
 
 std::vector<OpenHistoryEntry> OpenHistory::entries() const

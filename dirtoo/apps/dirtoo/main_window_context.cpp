@@ -59,6 +59,8 @@ void MainWindow::on_context_menu(const QPoint& pos)
   cb.rename_selected = [this] { on_rename_selected(); };
   cb.checksums_selected = [this] { on_checksums(); };
   cb.tag_selected = [this] { on_tag_selected(); };
+  cb.mark_opened = [this] { on_mark_selection_opened(); };
+  cb.mark_unopened = [this] { on_mark_selection_unopened(); };
   cb.properties_selected = [this] { on_properties(); };
   cb.reload_thumbnails = [this] { on_reload_thumbnails(); };
   cb.prepare_thumbnails = [this] { on_prepare_thumbnails(); };

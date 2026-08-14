@@ -51,6 +51,8 @@ enum FileListRole {
   IsUnwritableRole = Qt::UserRole + 11,
   /// True while a brief post-launch flash is active (open feedback).
   LaunchFlashRole = Qt::UserRole + 12,
+  /// True when the path is marked opened (OpenedFilesStore).
+  IsOpenedRole = Qt::UserRole + 13,
 };
 
 enum class ThumbnailStatus {
@@ -100,6 +102,12 @@ public:
   };
   [[nodiscard]] ThumbnailCounts thumbnail_counts() const;
   [[nodiscard]] bool is_new(const QString& path) const;
+  [[nodiscard]] bool is_opened(const QString& path) const;
+  void set_show_opened_state(bool on);
+  [[nodiscard]] bool show_opened_state() const noexcept { return show_opened_state_; }
+  /// Re-emit IsOpenedRole after store membership changes.
+  void notify_opened_changed(const QStringList& paths);
+  void refresh_opened_roles();
 
   /// Thread-safe request to refresh a row (queues to this object's thread).
   Q_INVOKABLE void notify_row_changed(int row);
@@ -172,6 +180,7 @@ private:
   bool crop_thumbnails_ = false;
   bool show_abspath_ = false;
   bool show_timegaps_ = false;
+  bool show_opened_state_ = false;
   bool group_refresh_pending_ = false;
 };
 

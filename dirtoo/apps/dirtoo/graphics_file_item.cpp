@@ -134,6 +134,17 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
   } else if (idx.data(IsHiddenRole).toBool()) {
     // Distinct tile background for hidden (dot) files when shown.
     painter->fillRect(br, QColor(200, 200, 210));
+  } else if (model_->show_opened_state() && idx.data(IsOpenedRole).toBool()) {
+    // Soft teal tint for files marked opened (optional visualization).
+    painter->fillRect(br, QColor(180, 220, 200, 90));
+  }
+  // Opened-state edge (visible even with selection/hover when indicators on).
+  if (model_->show_opened_state() && idx.data(IsOpenedRole).toBool()) {
+    QPen edge(QColor(40, 140, 110), 3);
+    edge.setCapStyle(Qt::FlatCap);
+    painter->setPen(edge);
+    painter->drawLine(QPointF(br.left() + 1.5, br.top() + 3),
+                      QPointF(br.left() + 1.5, br.bottom() - 3));
   }
   // Brief flash after open/launch so slow app start still feels acknowledged.
   if (idx.data(LaunchFlashRole).toBool()) {

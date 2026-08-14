@@ -129,6 +129,9 @@ private slots:
   void on_open_with();
   void on_open_terminal();
   void on_toggle_hidden(bool checked);
+  void on_toggle_opened_state(bool checked);
+  void on_mark_selection_opened();
+  void on_mark_selection_unopened();
   void on_toggle_sidebar(bool checked);
   void on_toggle_read_only(bool checked);
   void on_sidebar_activated(const QModelIndex& index);
@@ -340,6 +343,7 @@ private:
   QToolButton* group_toolbar_btn_ = nullptr;
   QAction* crop_thumbnails_act_ = nullptr;
   QAction* show_hidden_act_ = nullptr;
+  QAction* show_opened_state_act_ = nullptr;
 };
 
 } // namespace dirtoo::app

@@ -29,6 +29,11 @@ Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 
 ### Recent polish (agent, 2026-08)
 
+- [x] **Opened / unopened visualization** — separate `OpenedFilesStore` (not OpenHistory);
+      toolbar + View “Show Opened State”; teal edge/tint; context Mark as Opened/Unopened;
+      auto-mark on successful open; seed empty store from recent-open log once.
+
+
 - [x] Context menu with large selection: no MatchContent / full-path Open With scan;
       unique MIME sample + lazy Open with…; selectedRows(0) not selectedIndexes
 - [x] Ctrl+T / Tools → Tag… opens tag name dialog for selection

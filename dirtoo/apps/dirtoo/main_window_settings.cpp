@@ -55,6 +55,12 @@ void MainWindow::restore_settings()
   if (show_hidden_act_ != nullptr) {
     show_hidden_act_->setChecked(s.show_hidden);
   }
+  if (show_opened_state_act_ != nullptr) {
+    show_opened_state_act_->setChecked(s.show_opened_state);
+  }
+  if (model_ != nullptr) {
+    model_->set_show_opened_state(s.show_opened_state);
+  }
   filter_pinned_ = s.filter_pinned;
   if (pin_filter_act_ != nullptr) {
     pin_filter_act_->setChecked(s.filter_pinned);
@@ -207,6 +213,8 @@ void MainWindow::persist_settings() const
     s.crop_thumbnails = model_->crop_thumbnails();
   }
   s.show_hidden = collection_.show_hidden();
+  s.show_opened_state =
+      show_opened_state_act_ != nullptr && show_opened_state_act_->isChecked();
   s.show_filter = show_filter_act_ != nullptr && show_filter_act_->isChecked();
   s.show_sidebar = show_sidebar_act_ != nullptr && show_sidebar_act_->isChecked();
   s.read_only = read_only_;
@@ -304,6 +312,8 @@ void MainWindow::on_preferences()
     s.crop_thumbnails = model_->crop_thumbnails();
   }
   s.show_hidden = collection_.show_hidden();
+  s.show_opened_state =
+      show_opened_state_act_ != nullptr && show_opened_state_act_->isChecked();
   s.filter_pinned = filter_pinned_;
   // show_filter: if pinned, keep the saved preference; else mirror the action.
   if (filter_pinned_) {
@@ -541,6 +551,12 @@ void MainWindow::apply_settings(const AppSettings& s)
     show_hidden_act_->setChecked(s.show_hidden);
   }
   collection_.sorter().set_directories_first(s.directories_first);
+  if (show_opened_state_act_ != nullptr) {
+    show_opened_state_act_->setChecked(s.show_opened_state);
+  }
+  if (model_ != nullptr) {
+    model_->set_show_opened_state(s.show_opened_state);
+  }
   {
     collection::SortKey sk = collection::SortKey::Name;
     const QString k = s.sort_key.toLower();

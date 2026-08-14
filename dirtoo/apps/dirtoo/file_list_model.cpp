@@ -131,7 +131,7 @@ void FileListModel::emit_path_changed(const QString& path)
       emit dataChanged(left, right,
                        {Qt::DecorationRole, Qt::DisplayRole, ThumbnailStatusRole, IsNewRole,
                         AccessDeniedRole, IsUnreadableRole, IsUnwritableRole, ChildCountRole,
-                        LaunchFlashRole});
+                        LaunchFlashRole, IsOpenedRole});
       break;
     }
   }
@@ -441,6 +441,10 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
 
   if (role == LaunchFlashRole) {
     return is_launch_flash(QString::fromStdString(fi->path().string()));
+  }
+
+  if (role == IsOpenedRole) {
+    return is_opened(QString::fromStdString(fi->path().string()));
   }
 
   if (role == IsHiddenRole) {

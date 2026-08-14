@@ -226,8 +226,18 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     // Hidden-file row tint before the style panel (selection still wins via state).
     if (!(opt.state & QStyle::State_Selected) && index.data(IsHiddenRole).toBool()) {
       painter->fillRect(opt.rect, QColor(200, 200, 210));
+    } else if (!(opt.state & QStyle::State_Selected) && model_ != nullptr
+               && model_->show_opened_state() && index.data(IsOpenedRole).toBool()) {
+      painter->fillRect(opt.rect, QColor(180, 220, 200, 70));
     }
     style->drawPrimitive(QStyle::PE_PanelItemViewItem, &opt, painter, opt.widget);
+    if (model_ != nullptr && model_->show_opened_state() && index.data(IsOpenedRole).toBool()) {
+      painter->save();
+      painter->setPen(QPen(QColor(40, 140, 110), 3));
+      const QRect r = opt.rect;
+      painter->drawLine(r.left() + 1, r.top() + 2, r.left() + 1, r.bottom() - 2);
+      painter->restore();
+    }
     if (index.data(LaunchFlashRole).toBool()) {
       QColor flash = opt.palette.color(QPalette::Highlight);
       flash.setAlpha(140);
@@ -313,6 +323,14 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     painter->fillRect(opt.rect, c);
   } else if (index.data(IsHiddenRole).toBool()) {
     painter->fillRect(opt.rect, QColor(200, 200, 210));
+  } else if (model_ != nullptr && model_->show_opened_state()
+             && index.data(IsOpenedRole).toBool()) {
+    painter->fillRect(opt.rect, QColor(180, 220, 200, 90));
+  }
+  if (model_ != nullptr && model_->show_opened_state() && index.data(IsOpenedRole).toBool()) {
+    painter->setPen(QPen(QColor(40, 140, 110), 3));
+    painter->drawLine(opt.rect.left() + 1, opt.rect.top() + 2, opt.rect.left() + 1,
+                      opt.rect.bottom() - 2);
   }
   if (index.data(LaunchFlashRole).toBool()) {
     QColor flash = opt.palette.color(QPalette::Highlight);

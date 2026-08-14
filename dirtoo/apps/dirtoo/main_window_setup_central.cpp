@@ -13,6 +13,7 @@
 #include "devices_controller.hpp"
 #include "about_dialog.hpp"
 #include "open_history.hpp"
+#include "opened_files_store.hpp"
 #include "operations_history.hpp"
 #include "preferences_dialog.hpp"
 #include "open_with.hpp"
@@ -97,6 +98,11 @@ void MainWindow::setup_central_ui()
   dirtoo::filter::MediaMetaCache::instance().open();
   model_->set_collection(&collection_);
   connect(model_, &FileListModel::urls_dropped, this, &MainWindow::on_urls_dropped_to);
+  opened_files_store().seed_from_open_history_if_empty();
+  connect(&opened_files_store(), &OpenedFilesStore::membership_changed, model_,
+          &FileListModel::notify_opened_changed);
+  connect(&opened_files_store(), &OpenedFilesStore::store_cleared, model_,
+          &FileListModel::refresh_opened_roles);
 
   view_stack_ = new QStackedWidget(central);
 
