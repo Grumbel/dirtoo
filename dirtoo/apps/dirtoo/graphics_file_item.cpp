@@ -113,6 +113,7 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
   painter->setRenderHint(QPainter::Antialiasing, true);
   painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
 
+  const QRectF br = boundingRect();
   const bool selected = option != nullptr && (option->state & QStyle::State_Selected);
   const bool hover = option != nullptr && (option->state & QStyle::State_MouseOver);
 
