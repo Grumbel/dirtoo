@@ -146,8 +146,9 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   icon_pad->setValue(std::clamp(settings->icon_cell_padding, 0, 240));
   icon_pad->setSuffix(QStringLiteral(" px"));
   icon_pad->setToolTip(
-      QStringLiteral("Extra tile width beyond the image size. 0 packs the image "
-                     "edge-to-edge; increase only if you want a wider caption band."));
+      QStringLiteral("Horizontal padding added to each Icons-view tile beyond the "
+                     "zoomed thumbnail size. Default 0 fills the tile with the image; "
+                     "raise only if you want extra room beside the caption."));
 
 
   auto* dirs_first = new QCheckBox(QStringLiteral("Directories first when sorting"), &dialog);
@@ -202,7 +203,7 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   appearance_form->addRow(QStringLiteral("Size units:"), size_units);
   appearance_form->addRow(crop);
   appearance_form->addRow(QStringLiteral("Icon spacing:"), icon_spacing);
-  appearance_form->addRow(QStringLiteral("Icon label width:"), icon_pad);
+  appearance_form->addRow(QStringLiteral("Icon tile padding:"), icon_pad);
   appearance_form->addRow(QStringLiteral("Default sort:"), default_sort);
   appearance_form->addRow(sort_ascending);
   appearance_form->addRow(dirs_first);
