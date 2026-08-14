@@ -116,7 +116,7 @@ inline void paint_set_membership(QPainter* painter, const QRect& tile,
   if (sets.empty()) {
     return;
   }
-  constexpr int kMax = 4;
+  constexpr int kMax = 1; // one set per file
   constexpr int kBar = 7;
   constexpr int kGap = 2;
   const int n = std::min(static_cast<int>(sets.size()), kMax);

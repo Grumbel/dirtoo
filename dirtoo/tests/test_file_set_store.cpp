@@ -63,7 +63,7 @@ TEST_CASE("FileSetStore create anonymous set and reopen", "[sets]")
   remove_db_sidecars(path);
 }
 
-TEST_CASE("FileSetStore membership and overlap", "[sets]")
+TEST_CASE("FileSetStore membership exclusive (one set per file)", "[sets]")
 {
   const auto path = temp_db_path("overlap");
   remove_db_sidecars(path);
@@ -79,17 +79,18 @@ TEST_CASE("FileSetStore membership and overlap", "[sets]")
 
   REQUIRE(store.add_member(a->id, "/media/clip1.mp4", {}, &err));
   REQUIRE(store.add_member(a->id, "/media/clip2.mp4", {}, &err));
-  REQUIRE(store.add_member(b->id, "/media/clip2.mp4", {}, &err)); // overlap
+  REQUIRE(store.add_member(b->id, "/media/clip2.mp4", {}, &err)); // moves clip2 from a → b
   REQUIRE(store.add_member(b->id, "/media/still.png", "abc123", &err));
 
-  CHECK(store.member_count(a->id) == 2);
+  CHECK(store.member_count(a->id) == 1);
   CHECK(store.member_count(b->id) == 2);
-  CHECK(store.contains(a->id, "/media/clip2.mp4"));
+  CHECK_FALSE(store.contains(a->id, "/media/clip2.mp4"));
   CHECK(store.contains(b->id, "/media/clip2.mp4"));
   CHECK_FALSE(store.contains(a->id, "/media/still.png"));
 
   const auto in_clip2 = store.sets_for_path("/media/clip2.mp4");
-  REQUIRE(in_clip2.size() == 2);
+  REQUIRE(in_clip2.size() == 1);
+  CHECK(in_clip2.front().id == b->id);
 
   const auto members_a = store.members(a->id);
   REQUIRE(members_a.size() == 2);

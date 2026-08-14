@@ -377,6 +377,16 @@ bool FileSetStore::add_member(std::string_view set_id, std::string_view path_key
     }
     return false;
   }
+  // One set per file: drop any existing membership for this path first.
+  {
+    sqlite3_stmt* del = nullptr;
+    constexpr const char* dsql = "DELETE FROM file_set_members WHERE path_key = ?1";
+    if (sqlite3_prepare_v2(static_cast<sqlite3*>(db_), dsql, -1, &del, nullptr) == SQLITE_OK) {
+      bind_text(del, 1, path_key);
+      sqlite3_step(del);
+      sqlite3_finalize(del);
+    }
+  }
   sqlite3_stmt* stmt = nullptr;
   constexpr const char* sql =
       "INSERT INTO file_set_members (set_id, path_key, sha256) VALUES (?1,?2,?3) "

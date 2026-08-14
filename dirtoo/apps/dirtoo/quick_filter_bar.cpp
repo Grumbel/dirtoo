@@ -16,6 +16,7 @@
 #include <QFormLayout>
 #include <QHBoxLayout>
 #include <QInputDialog>
+#include <QColorDialog>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMenu>
@@ -366,6 +367,7 @@ void QuickFilterBar::rebuild_from_items(const std::vector<dirtoo::fs::FileInfo>&
     for (const auto& s : set_list) {
       AutoChip c;
       c.group = AutoChip::Group::Set;
+      c.set_id = QString::fromStdString(s.id);
       if (!s.label.empty()) {
         c.label = QString::fromStdString(s.label);
         c.expression = QStringLiteral("set:%1").arg(c.label);
@@ -494,6 +496,14 @@ QToolButton* QuickFilterBar::make_auto_chip(const AutoChip& chip)
       emit filter_requested(QString());
     }
   });
+  if (chip.group == AutoChip::Group::Set && !chip.set_id.isEmpty()) {
+    btn->setContextMenuPolicy(Qt::CustomContextMenu);
+    btn->setProperty("dirtoo_qf_set_id", chip.set_id);
+    connect(btn, &QWidget::customContextMenuRequested, this,
+            [this, set_id = chip.set_id, btn](const QPoint& pos) {
+              show_set_menu(set_id, btn->mapToGlobal(pos));
+            });
+  }
   return btn;
 }
 
@@ -543,6 +553,108 @@ QToolButton* QuickFilterBar::make_pinned_chip(int pin_index)
     show_pin_menu(pin_index, btn->mapToGlobal(pos));
   });
   return btn;
+}
+
+void QuickFilterBar::show_set_menu(const QString& set_id, const QPoint& global_pos)
+{
+  if (set_id.isEmpty()) {
+    return;
+  }
+  dirtoo::sets::FileSetStore store;
+  std::string err;
+  if (!store.open(dirtoo::sets::FileSetStore::default_path(), &err)) {
+    QMessageBox::warning(this, QStringLiteral("Sets"),
+                         QStringLiteral("Cannot open sets database:\n%1")
+                             .arg(QString::fromStdString(err)));
+    return;
+  }
+  auto set = store.get_set(set_id.toStdString());
+  if (!set) {
+    QMessageBox::warning(this, QStringLiteral("Sets"), QStringLiteral("Set no longer exists."));
+    emit sets_changed();
+    return;
+  }
+
+  const QString filter_expr = !set->label.empty()
+                                  ? QStringLiteral("set:%1").arg(QString::fromStdString(set->label))
+                                  : QStringLiteral("set:%1").arg(QString::fromStdString(set->id));
+  const QString set_label = !set->label.empty() ? QString::fromStdString(set->label)
+                                                : set_id.left(8);
+
+  QMenu menu(this);
+  menu.addAction(QStringLiteral("Filter to this set"), this, [this, filter_expr] {
+    emit filter_requested(filter_expr);
+  });
+  menu.addSeparator();
+  menu.addAction(QStringLiteral("Rename…"), this, [this, set_id] {
+    dirtoo::sets::FileSetStore st;
+    std::string e;
+    if (!st.open(dirtoo::sets::FileSetStore::default_path(), &e)) {
+      return;
+    }
+    auto cur = st.get_set(set_id.toStdString());
+    const QString current = cur ? QString::fromStdString(cur->label) : QString();
+    bool ok = false;
+    const QString text = QInputDialog::getText(this, QStringLiteral("Rename set"),
+                                               QStringLiteral("Label:"), QLineEdit::Normal,
+                                               current, &ok);
+    if (!ok) {
+      return;
+    }
+    if (!st.set_label(set_id.toStdString(), text.trimmed().toStdString(), &e)) {
+      QMessageBox::warning(this, QStringLiteral("Sets"),
+                           QStringLiteral("Could not rename: %1").arg(QString::fromStdString(e)));
+      return;
+    }
+    emit sets_changed();
+  });
+  menu.addAction(QStringLiteral("Color…"), this, [this, set_id] {
+    dirtoo::sets::FileSetStore st;
+    std::string e;
+    if (!st.open(dirtoo::sets::FileSetStore::default_path(), &e)) {
+      return;
+    }
+    auto cur = st.get_set(set_id.toStdString());
+    QColor initial(Qt::gray);
+    if (cur && cur->color.size() >= 7 && cur->color[0] == '#') {
+      initial = QColor(QString::fromStdString(cur->color));
+    } else if (cur) {
+      initial = set_paint_detail::color_for_set(*cur);
+    }
+    const QColor chosen = QColorDialog::getColor(initial, this, QStringLiteral("Set color"));
+    if (!chosen.isValid()) {
+      return;
+    }
+    const QString hex = chosen.name(QColor::HexRgb);
+    if (!st.set_color(set_id.toStdString(), hex.toStdString(), &e)) {
+      QMessageBox::warning(this, QStringLiteral("Sets"),
+                           QStringLiteral("Could not set color: %1").arg(QString::fromStdString(e)));
+      return;
+    }
+    emit sets_changed();
+  });
+  menu.addSeparator();
+  menu.addAction(QStringLiteral("Dissolve set…"), this, [this, set_id, set_label] {
+    const auto reply = QMessageBox::question(
+        this, QStringLiteral("Dissolve set"),
+        QStringLiteral("Remove set “%1” and all membership? Files on disk are not deleted.")
+            .arg(set_label));
+    if (reply != QMessageBox::Yes) {
+      return;
+    }
+    dirtoo::sets::FileSetStore st;
+    std::string e;
+    if (!st.open(dirtoo::sets::FileSetStore::default_path(), &e)) {
+      return;
+    }
+    if (!st.delete_set(set_id.toStdString(), &e)) {
+      QMessageBox::warning(this, QStringLiteral("Sets"),
+                           QStringLiteral("Could not dissolve: %1").arg(QString::fromStdString(e)));
+      return;
+    }
+    emit sets_changed();
+  });
+  menu.exec(global_pos);
 }
 
 void QuickFilterBar::show_pin_menu(int pin_index, const QPoint& global_pos)

@@ -59,6 +59,8 @@ signals:
   void filter_requested(const QString& expression);
   /// User asked to pin whatever is currently in the filter line.
   void pin_current_requested();
+  /// Set renamed/colored/dissolved from a QuickFilter chip menu.
+  void sets_changed();
 
 private:
   void rebuild_buttons();
@@ -83,12 +85,14 @@ private:
     QString label;
     QString expression;
     QColor accent; ///< Invalid = default chrome; set for tags/sets
+    QString set_id; ///< Non-empty for Group::Set chips (stable id for menus).
     /// Groups for separators: type → helper → tag → set (then pinned).
     enum class Group { Type, Helper, Tag, Set };
     Group group = Group::Type;
   };
   QToolButton* make_auto_chip(const AutoChip& chip);
   QWidget* make_separator();
+  void show_set_menu(const QString& set_id, const QPoint& global_pos);
   std::vector<AutoChip> auto_chips_;
   std::vector<PinnedQuickFilter> pins_;
   QString active_;

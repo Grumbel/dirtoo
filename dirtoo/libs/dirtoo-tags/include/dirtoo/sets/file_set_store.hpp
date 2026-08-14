@@ -30,7 +30,7 @@ struct FileSetMember {
 
 /// Persistent ad-hoc file sets (“these files belong together”).
 /// Path-keyed membership does not require hashing; optional sha256 enables
-/// later content-based matching. Sets may overlap. Separate from tags and from
+/// later content-based matching. One set per file (membership is exclusive). Separate from tags and from
 /// View → Group By.
 class FileSetStore {
 public:
@@ -64,6 +64,7 @@ public:
   /// Delete set and all membership rows. Files on disk are untouched.
   bool delete_set(std::string_view set_id, std::string* error = nullptr);
 
+  /// Add path to set. Removes the path from any other set first (one set per file).
   bool add_member(std::string_view set_id, std::string_view path_key,
                   std::string_view sha256 = {}, std::string* error = nullptr);
   bool remove_member(std::string_view set_id, std::string_view path_key,
@@ -77,7 +78,7 @@ public:
   [[nodiscard]] std::vector<FileSetMember> members(std::string_view set_id) const;
   [[nodiscard]] std::int64_t member_count(std::string_view set_id) const;
 
-  /// Sets that contain this path_key (overlap allowed).
+  /// Sets that contain this path_key (at most one after exclusive membership).
   [[nodiscard]] std::vector<FileSet> sets_for_path(std::string_view path_key) const;
 
   /// True if path is in the set.

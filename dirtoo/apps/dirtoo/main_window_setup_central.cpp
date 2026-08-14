@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include "set_paint.hpp"
 
 #include "badge_icons.hpp"
 #include "location_icons.hpp"
@@ -248,6 +249,19 @@ void MainWindow::setup_central_ui()
       return;
     }
     quick_filter_bar_->pin_expression(expr);
+  });
+  connect(quick_filter_bar_, &QuickFilterBar::sets_changed, this, [this] {
+    clear_set_membership_cache();
+    rebuild_quick_filters();
+    if (graphics_view_ != nullptr) {
+      graphics_view_->viewport()->update();
+    }
+    if (icon_view_ != nullptr) {
+      icon_view_->viewport()->update();
+    }
+    if (tree_view_ != nullptr) {
+      tree_view_->viewport()->update();
+    }
   });
   layout->addWidget(quick_filter_bar_);
 
