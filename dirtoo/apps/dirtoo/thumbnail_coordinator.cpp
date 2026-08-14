@@ -6,13 +6,13 @@
 
 #include "archive_member_cache.hpp"
 #include "file_list_model.hpp"
+#include "mime_util.hpp"
 #include "dirtoo/fs/location.hpp"
 #include "dirtoo/thumbnail/thumbnailer.hpp"
 
 #include <QDebug>
 #include <QFile>
 #include <QIcon>
-#include <QMimeDatabase>
 #include <QtConcurrent>
 
 #include <filesystem>
@@ -32,11 +32,18 @@ ThumbnailCoordinator::~ThumbnailCoordinator()
 void ThumbnailCoordinator::cancel_all()
 {
   thumbnailer_.cancel_all();
+  content_mime_retried_.clear();
 }
 
 void ThumbnailCoordinator::clear_aliases()
 {
   thumb_alias_.clear();
+  content_mime_retried_.clear();
+}
+
+void ThumbnailCoordinator::clear_content_retries()
+{
+  content_mime_retried_.clear();
 }
 
 void ThumbnailCoordinator::request_many(const std::vector<fs::Location>& locs,
@@ -57,8 +64,6 @@ bool ThumbnailCoordinator::request_rows(const std::vector<fs::FileInfo>& visible
   locs.reserve(rows.size());
   mimes.reserve(static_cast<int>(rows.size()));
   bool any_dir_without_cache = false;
-  static QMimeDatabase mime_db;
-
   for (int r : rows) {
     if (r < 0 || static_cast<std::size_t>(r) >= visible.size()) {
       continue;
@@ -86,10 +91,8 @@ bool ThumbnailCoordinator::request_rows(const std::vector<fs::FileInfo>& visible
       }
       model->set_thumbnail_pending(model_key);
     }
-    const QString name_for_mime = QString::fromStdString(fi.basename());
-    const QMimeType mt = mime_db.mimeTypeForFile(name_for_mime, QMimeDatabase::MatchExtension);
-    const QString mime =
-        mt.isValid() ? mt.name() : QStringLiteral("application/octet-stream");
+    // Extension of the full path (fast). Content retry happens on Thumbnailer failure.
+    const QString mime = mime_for_thumbnail_fast(fi.path());
 
     if (fi.location().is_archive()) {
       const auto archive_file = fi.location().as_path();
@@ -188,7 +191,6 @@ int ThumbnailCoordinator::force_regenerate(const std::vector<fs::FileInfo>& targ
   if (model == nullptr) {
     return 0;
   }
-  QMimeDatabase mime_db;
   std::vector<fs::Location> locs;
   QStringList mimes;
   QStringList dir_paths;
@@ -223,10 +225,8 @@ int ThumbnailCoordinator::force_regenerate(const std::vector<fs::FileInfo>& targ
 
     model->set_thumbnail_pending(path);
 
-    const QString name_for_mime = QString::fromStdString(fi.basename());
-    const QMimeType mt = mime_db.mimeTypeForFile(name_for_mime, QMimeDatabase::MatchExtension);
-    const QString mime =
-        mt.isValid() ? mt.name() : QStringLiteral("application/octet-stream");
+    // Extension of the full path (fast). Content retry happens on Thumbnailer failure.
+    const QString mime = mime_for_thumbnail_fast(fi.path());
 
     if (fi.location().is_archive()) {
       const auto archive_file = fi.location().as_path();
@@ -284,6 +284,49 @@ int ThumbnailCoordinator::force_regenerate(const std::vector<fs::FileInfo>& targ
     }
   }
   return static_cast<int>(locs.size()) + dir_paths.size();
+}
+
+
+bool ThumbnailCoordinator::try_content_mime_retry(const fs::Location& location)
+{
+  // Only regular local (or extracted) files — not pure archive URLs without a path.
+  std::filesystem::path path;
+  try {
+    path = location.as_path();
+  } catch (...) {
+    return false;
+  }
+  if (path.empty()) {
+    return false;
+  }
+  const QString path_q = QString::fromStdString(path.string());
+  if (content_mime_retried_.contains(path_q)) {
+    return false;
+  }
+
+  std::error_code ec;
+  if (!std::filesystem::is_regular_file(path, ec) || ec) {
+    return false;
+  }
+
+  const QString ext_mime = mime_from_extension(path_q);
+  // Content sniff (disk I/O) — only after a failure, once per path.
+  const QString content_mime = mime_from_content(path_q);
+  if (content_mime.isEmpty()
+      || content_mime == QLatin1String("application/octet-stream")
+      || mime_equivalent_for_thumb(ext_mime, content_mime)) {
+    content_mime_retried_.insert(path_q); // avoid repeat work on re-fail
+    return false;
+  }
+
+  content_mime_retried_.insert(path_q);
+  qWarning().noquote() << QStringLiteral(
+      "dirtoo: thumbnail MIME retry %1: extension=%2 content=%3")
+                                  .arg(path_q, ext_mime, content_mime);
+
+  (void)thumbnail::Thumbnailer::remove_cache_for(location);
+  request_many({location}, {content_mime}, /*force=*/true);
+  return true;
 }
 
 } // namespace dirtoo::app

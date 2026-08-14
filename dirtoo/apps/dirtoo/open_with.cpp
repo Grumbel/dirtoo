@@ -3,6 +3,8 @@
 
 #include "open_with.hpp"
 
+#include "mime_util.hpp"
+
 #include "app_settings.hpp"
 
 #include "open_history.hpp"
@@ -249,14 +251,14 @@ QStringList expand_exec(const QString& exec, const std::vector<std::filesystem::
   return out;
 }
 
-QString mime_for_path(const std::filesystem::path& p)
+QString mime_for_path(const std::filesystem::path& p, bool allow_content)
 {
-  // Extension-only: MatchContent reads file bytes and freezes the UI when the
-  // context menu walks a large multi-selection.
-  QMimeDatabase db;
-  const QMimeType mt =
-      db.mimeTypeForFile(QString::fromStdString(p.string()), QMimeDatabase::MatchExtension);
-  return mt.isValid() ? mt.name() : QStringLiteral("application/octet-stream");
+  // Large multi-select: extension only (content I/O freezes the context menu).
+  // Single path: MatchDefault so wrong extensions still get the right apps.
+  if (allow_content) {
+    return mime_from_default(p);
+  }
+  return mime_from_extension(p);
 }
 
 /// Cap how many paths we inspect for MIME/app intersection. Beyond this we only
@@ -269,8 +271,9 @@ constexpr std::size_t kOpenWithPathSample = 64;
   std::vector<QString> out;
   const std::size_t n = std::min(paths.size(), kOpenWithPathSample);
   out.reserve(n);
+  const bool allow_content = paths.size() == 1;
   for (std::size_t i = 0; i < n; ++i) {
-    const QString mime = mime_for_path(paths[i]);
+    const QString mime = mime_for_path(paths[i], allow_content);
     if (seen.contains(mime)) {
       continue;
     }

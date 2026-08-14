@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include "mime_util.hpp"
 #include "directory_thumbnail_worker.hpp"
 
 #include "dirtoo/archive/archive_index.hpp"
@@ -248,6 +249,12 @@ void MainWindow::on_thumbnail_failed(const fs::Location& location, const QString
     qWarning().noquote() << QStringLiteral("dirtoo: thumbnail failed for %1 (no reason given)")
                                 .arg(key);
   }
+
+  // Extension was wrong (e.g. .png that is JPEG): one content-MIME re-queue.
+  if (thumbs_.try_content_mime_retry(location)) {
+    return;
+  }
+
   if (model_ == nullptr) {
     return;
   }
@@ -255,16 +262,9 @@ void MainWindow::on_thumbnail_failed(const fs::Location& location, const QString
   // thumbnails. Text, binaries, etc. often fail the D-Bus thumbnailer — fall
   // back to the system icon without a warning sticker (dirtoo-py Unavailable).
   // Directory montages report their own failures via DirectoryThumbnailWorker.
-  const QString name = QString::fromStdString(location.basename());
-  static QMimeDatabase mime_db;
-  const QMimeType mt = mime_db.mimeTypeForFile(name, QMimeDatabase::MatchExtension);
-  const QString mime = mt.isValid() ? mt.name() : QString{};
+  const QString mime = mime_from_extension(location.as_path());
   const bool expect_thumb =
-      mime.startsWith(QLatin1String("image/")) || mime.startsWith(QLatin1String("video/"))
-      || mime == QLatin1String("application/pdf")
-      || mime.contains(QLatin1String("opendocument"))
-      || mime.contains(QLatin1String("officedocument"))
-      || message.contains(QLatin1String("directory thumbnail"));
+      mime_expects_thumbnail(mime) || message.contains(QLatin1String("directory thumbnail"));
   if (expect_thumb) {
     model_->set_thumbnail_failed(key);
   } else {

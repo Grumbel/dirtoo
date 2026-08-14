@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "directory_thumbnail_worker.hpp"
+#include "mime_util.hpp"
 
 #include "dirtoo/fs/location.hpp"
 #include "dirtoo/thumbnail/thumbnailer.hpp"
@@ -111,8 +112,6 @@ std::vector<Candidate> collect_candidates(const QString& dir_path)
   std::vector<Candidate> images;
   std::vector<Candidate> videos;
   std::vector<Candidate> docs;
-  QMimeDatabase mime_db;
-
   for (const QString& name : entries) {
     if (!is_thumbnail_candidate(name)) {
       continue;
@@ -121,8 +120,7 @@ std::vector<Candidate> collect_candidates(const QString& dir_path)
     Candidate c;
     c.abs_path = abs;
     c.location = fs::Location::from_path(std::filesystem::path{abs.toStdString()});
-    const auto mt = mime_db.mimeTypeForFile(abs, QMimeDatabase::MatchExtension);
-    c.mime = mt.isValid() ? mt.name() : QStringLiteral("application/octet-stream");
+    c.mime = mime_for_thumbnail_fast(abs);
     if (is_image_ext(name)) {
       images.push_back(std::move(c));
     } else if (is_video_ext(name)) {

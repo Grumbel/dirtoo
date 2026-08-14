@@ -21,6 +21,7 @@
 #include <filesystem>
 #include <set>
 #include "opened_files_store.hpp"
+#include "mime_util.hpp"
 
 namespace dirtoo::app {
 
@@ -455,10 +456,10 @@ void MainWindow::on_open_with()
     paths.push_back(fi.path());
   }
   // Prefer a listed default app when available; otherwise prompt for a command.
-  QMimeDatabase db;
-  const QMimeType mt = db.mimeTypeForFile(QString::fromStdString(paths.front().string()),
-                                          QMimeDatabase::MatchExtension);
-  const auto apps = apps_for_mime(mt.isValid() ? mt.name() : QStringLiteral("application/octet-stream"));
+  // Single primary path: MatchDefault so misnamed files (JPEG as .png) open correctly.
+  const QString mime = paths.size() == 1 ? mime_from_default(paths.front())
+                                         : mime_from_extension(paths.front());
+  const auto apps = apps_for_mime(mime);
   if (!apps.empty()) {
     if (launch_desktop_app(apps.front(), paths)) {
       return;

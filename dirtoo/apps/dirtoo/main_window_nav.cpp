@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include "mime_util.hpp"
 #include "activity_monitor.hpp"
 #include "location_menu_helpers.hpp"
 #include "location_icons.hpp"
@@ -363,7 +364,6 @@ void MainWindow::apply_watcher_upserts(std::vector<fs::FileInfo> infos,
 
   // Thumbnails for newly created regular files (extension MIME only — no stat).
   if (model_ != nullptr && !created_paths.isEmpty()) {
-    QMimeDatabase mime_db;
     std::vector<fs::Location> locs;
     QStringList mimes;
     for (const QString& path : created_paths) {
@@ -382,7 +382,7 @@ void MainWindow::apply_watcher_upserts(std::vector<fs::FileInfo> infos,
       model_->clear_thumbnail(path);
       model_->set_thumbnail_pending(path);
       locs.push_back(loc);
-      mimes.push_back(mime_db.mimeTypeForFile(path, QMimeDatabase::MatchExtension).name());
+      mimes.push_back(mime_for_thumbnail_fast(path));
     }
     if (!locs.empty()) {
       request_thumbnails_for_paths(locs, mimes);

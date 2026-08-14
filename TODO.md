@@ -29,6 +29,10 @@ Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 
 ### Recent polish (agent, 2026-08)
 
+- [x] **Content-MIME thumbnail retry** — extension first for Thumbnailer1; on
+      failure, one `MatchContent` re-queue when magic differs (JPEG-as-.png);
+      shared `mime_util`; Open With uses MatchDefault for single-file.
+
 - [x] **Opened / unopened visualization** — separate `OpenedFilesStore` (not OpenHistory);
       toolbar + View “Show Opened State”; teal edge/tint; context Mark as Opened/Unopened;
       auto-mark on successful open; seed empty store from recent-open log once.

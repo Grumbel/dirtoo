@@ -9,6 +9,7 @@
 #include "directory_thumbnail_worker.hpp"
 
 #include <QHash>
+#include <QSet>
 #include <QObject>
 #include <QString>
 #include <QStringList>
@@ -42,8 +43,14 @@ public:
 
   void cancel_all();
   void clear_aliases();
+  void clear_content_retries();
   void request_many(const std::vector<dirtoo::fs::Location>& locs, const QStringList& mimes,
                     bool force = false);
+
+  /// After Thumbnailer1 fails: one content-MIME re-queue if magic differs from the
+  /// extension guess (e.g. .png that is actually JPEG). Returns true if a retry
+  /// was scheduled (caller should not mark the model failed yet).
+  bool try_content_mime_retry(const dirtoo::fs::Location& location);
 
   /// Resolve archive-root extract path for a member (MainWindow/ArchiveManager).
   using ExtractedRootFn =
@@ -86,6 +93,8 @@ private:
   QHash<QString, QString> thumb_alias_;
   QThread* dir_thumb_thread_ = nullptr;
   DirectoryThumbnailWorker* dir_thumb_worker_ = nullptr;
+  /// Absolute paths already re-queued with MatchContent for this session.
+  QSet<QString> content_mime_retried_;
 };
 
 } // namespace dirtoo::app
