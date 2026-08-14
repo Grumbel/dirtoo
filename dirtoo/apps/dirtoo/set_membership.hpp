@@ -5,6 +5,7 @@
 
 #include "dirtoo/sets/file_set_store.hpp"
 
+#include <algorithm>
 #include <cctype>
 #include <filesystem>
 #include <optional>
@@ -175,6 +176,95 @@ sets_for_path_robust(dirtoo::sets::FileSetStore& store, const std::filesystem::p
     return std::nullopt;
   }
   return std::string{rest};
+}
+
+
+/// If expr is one or more set:… terms joined by OR (and nothing else), return the queries.
+[[nodiscard]] inline std::optional<std::vector<std::string>>
+pure_set_or_queries(std::string_view expr)
+{
+  // Reuse pure_set_query for a single term; for OR, split on top-level OR.
+  while (!expr.empty() && std::isspace(static_cast<unsigned char>(expr.front()))) {
+    expr.remove_prefix(1);
+  }
+  while (!expr.empty() && std::isspace(static_cast<unsigned char>(expr.back()))) {
+    expr.remove_suffix(1);
+  }
+  if (expr.empty()) {
+    return std::nullopt;
+  }
+  if (auto one = pure_set_query(expr)) {
+    return std::vector<std::string>{*one};
+  }
+  std::vector<std::string> parts;
+  std::string cur;
+  int depth = 0;
+  for (std::size_t i = 0; i < expr.size(); ++i) {
+    const char c = expr[i];
+    if (c == '(') {
+      ++depth;
+      cur.push_back(c);
+      continue;
+    }
+    if (c == ')') {
+      depth = std::max(0, depth - 1);
+      cur.push_back(c);
+      continue;
+    }
+    if (depth == 0 && i + 1 < expr.size()
+        && (c == 'O' || c == 'o') && (expr[i + 1] == 'R' || expr[i + 1] == 'r')) {
+      const bool before_ok = (i == 0) || std::isspace(static_cast<unsigned char>(expr[i - 1]))
+                             || expr[i - 1] == ')';
+      const std::size_t j = i + 2;
+      const bool after_ok =
+          (j >= expr.size()) || std::isspace(static_cast<unsigned char>(expr[j])) || expr[j] == '(';
+      if (before_ok && after_ok) {
+        // trim cur
+        std::string_view cv{cur};
+        while (!cv.empty() && std::isspace(static_cast<unsigned char>(cv.front()))) {
+          cv.remove_prefix(1);
+        }
+        while (!cv.empty() && std::isspace(static_cast<unsigned char>(cv.back()))) {
+          cv.remove_suffix(1);
+        }
+        // strip one layer of parens
+        if (cv.size() >= 2 && cv.front() == '(' && cv.back() == ')') {
+          cv = cv.substr(1, cv.size() - 2);
+        }
+        if (auto q = pure_set_query(cv)) {
+          parts.push_back(*q);
+        } else {
+          return std::nullopt;
+        }
+        cur.clear();
+        i = j - 1;
+        while (i + 1 < expr.size() && std::isspace(static_cast<unsigned char>(expr[i + 1]))) {
+          ++i;
+        }
+        continue;
+      }
+    }
+    cur.push_back(c);
+  }
+  std::string_view cv{cur};
+  while (!cv.empty() && std::isspace(static_cast<unsigned char>(cv.front()))) {
+    cv.remove_prefix(1);
+  }
+  while (!cv.empty() && std::isspace(static_cast<unsigned char>(cv.back()))) {
+    cv.remove_suffix(1);
+  }
+  if (cv.size() >= 2 && cv.front() == '(' && cv.back() == ')') {
+    cv = cv.substr(1, cv.size() - 2);
+  }
+  if (auto q = pure_set_query(cv)) {
+    parts.push_back(*q);
+  } else {
+    return std::nullopt;
+  }
+  if (parts.size() < 2) {
+    return std::nullopt; // single already handled
+  }
+  return parts;
 }
 
 } // namespace set_membership

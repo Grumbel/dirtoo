@@ -13,6 +13,7 @@
 #include "dirtoo/tags/tag_store.hpp"
 
 #include <QAction>
+#include <QGuiApplication>
 #include <QActionGroup>
 #include <QFileDialog>
 #include <QFormLayout>
@@ -188,6 +189,151 @@ QString pins_settings_path()
 }
 
 } // namespace
+
+
+/// Split a filter expression into top-level OR alternatives (paren-aware).
+QStringList split_or_terms(const QString& expr)
+{
+  QStringList out;
+  QString cur;
+  int depth = 0;
+  const QString s = expr.trimmed();
+  int i = 0;
+  while (i < s.size()) {
+    const QChar ch = s[i];
+    if (ch == QLatin1Char('(')) {
+      ++depth;
+      cur += ch;
+      ++i;
+      continue;
+    }
+    if (ch == QLatin1Char(')')) {
+      depth = std::max(0, depth - 1);
+      cur += ch;
+      ++i;
+      continue;
+    }
+    if (depth == 0) {
+      // Match OR / or as a whole token with surrounding whitespace.
+      if ((ch == QLatin1Char('O') || ch == QLatin1Char('o')) && i + 1 < s.size()
+          && (s[i + 1] == QLatin1Char('R') || s[i + 1] == QLatin1Char('r'))) {
+        const bool before_ok = (i == 0) || s[i - 1].isSpace() || s[i - 1] == QLatin1Char(')');
+        int j = i + 2;
+        const bool after_ok = (j >= s.size()) || s[j].isSpace() || s[j] == QLatin1Char('(');
+        if (before_ok && after_ok) {
+          const QString term = cur.trimmed();
+          if (!term.isEmpty()) {
+            out.push_back(term);
+          }
+          cur.clear();
+          while (j < s.size() && s[j].isSpace()) {
+            ++j;
+          }
+          i = j;
+          continue;
+        }
+      }
+    }
+    cur += ch;
+    ++i;
+  }
+  const QString term = cur.trimmed();
+  if (!term.isEmpty()) {
+    out.push_back(term);
+  }
+  if (out.isEmpty() && !s.isEmpty()) {
+    out.push_back(s);
+  }
+  return out;
+}
+
+QString unwrap_parens(QString t)
+{
+  t = t.trimmed();
+  while (t.size() >= 2 && t.startsWith(QLatin1Char('(')) && t.endsWith(QLatin1Char(')'))) {
+    // Only strip if outermost parens match.
+    int depth = 0;
+    bool wrap = true;
+    for (int i = 0; i < t.size(); ++i) {
+      if (t[i] == QLatin1Char('(')) {
+        ++depth;
+      } else if (t[i] == QLatin1Char(')')) {
+        --depth;
+        if (depth == 0 && i + 1 < t.size()) {
+          wrap = false;
+          break;
+        }
+      }
+    }
+    if (!wrap || depth != 0) {
+      break;
+    }
+    t = t.mid(1, t.size() - 2).trimmed();
+  }
+  return t;
+}
+
+bool term_is_active(const QString& active, const QString& term)
+{
+  if (term.isEmpty()) {
+    return false;
+  }
+  if (active.trimmed() == term) {
+    return true;
+  }
+  const QString want = unwrap_parens(term);
+  for (const QString& part : split_or_terms(active)) {
+    if (unwrap_parens(part) == want || part.trimmed() == term) {
+      return true;
+    }
+  }
+  return false;
+}
+
+QString or_add_term(const QString& active, const QString& term)
+{
+  if (term.isEmpty()) {
+    return active;
+  }
+  if (active.trimmed().isEmpty()) {
+    return term;
+  }
+  if (term_is_active(active, term)) {
+    return active.trimmed();
+  }
+  return active.trimmed() + QStringLiteral(" OR ") + term;
+}
+
+QString or_remove_term(const QString& active, const QString& term)
+{
+  if (active.trimmed().isEmpty() || term.isEmpty()) {
+    return active.trimmed();
+  }
+  QStringList kept;
+  const QString want = unwrap_parens(term);
+  for (const QString& part : split_or_terms(active)) {
+    if (unwrap_parens(part) == want || part.trimmed() == term) {
+      continue;
+    }
+    kept.push_back(part.trimmed());
+  }
+  return kept.join(QStringLiteral(" OR "));
+}
+
+QString chip_click_expression(const QString& active, const QString& term, bool shift)
+{
+  if (shift) {
+    if (term_is_active(active, term)) {
+      return or_remove_term(active, term);
+    }
+    return or_add_term(active, term);
+  }
+  // Plain click: select only this term (or clear if it was the sole selection).
+  if (active.trimmed() == term) {
+    return QString();
+  }
+  return term;
+}
 
 QuickFilterBar::QuickFilterBar(QWidget* parent)
     : QWidget(parent)
@@ -423,7 +569,7 @@ void QuickFilterBar::set_active_expression(const QString& expr)
   for (auto* btn : findChildren<QToolButton*>()) {
     const QString bexpr = btn->property("dirtoo_qf_expr").toString();
     if (!bexpr.isEmpty()) {
-      const bool on = (bexpr == active_);
+      const bool on = term_is_active(active_, bexpr);
       if (btn->isChecked() != on) {
         const QSignalBlocker block(btn);
         btn->setChecked(on);
@@ -510,9 +656,9 @@ QToolButton* QuickFilterBar::make_auto_chip(const AutoChip& chip)
   btn->setText(chip.label);
   btn->setCheckable(true);
   btn->setAutoRaise(false); // keep border visible when active
-  btn->setToolTip(chip.expression);
   btn->setProperty("dirtoo_qf_expr", chip.expression);
-  btn->setChecked(active_ == chip.expression);
+  btn->setChecked(term_is_active(active_, chip.expression));
+  btn->setToolTip(chip.expression + QStringLiteral("\nShift+click to OR with current filter"));
   // Active: thick palette(text) outline + bold. Accent fill alone is ambiguous
   // when every set chip already has its own color.
   if (chip.accent.isValid()) {
@@ -551,12 +697,10 @@ QToolButton* QuickFilterBar::make_auto_chip(const AutoChip& chip)
         "}"));
   }
     btn->ensurePolished();
-  connect(btn, &QToolButton::clicked, this, [this, expression = chip.expression](bool checked) {
-    if (checked) {
-      emit filter_requested(expression);
-    } else if (active_ == expression) {
-      emit filter_requested(QString());
-    }
+  connect(btn, &QToolButton::clicked, this, [this, expression = chip.expression](bool /*checked*/) {
+    const bool shift = QGuiApplication::keyboardModifiers().testFlag(Qt::ShiftModifier);
+    const QString next = chip_click_expression(active_, expression, shift);
+    emit filter_requested(next);
   });
   if (chip.group == AutoChip::Group::Set && !chip.set_id.isEmpty()) {
     btn->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -607,13 +751,11 @@ QToolButton* QuickFilterBar::make_pinned_chip(int pin_index)
   tip += QStringLiteral("\nRight-click for options");
   btn->setToolTip(tip);
   btn->setProperty("dirtoo_qf_expr", pin.expression);
-  btn->setChecked(active_ == pin.expression);
-  connect(btn, &QToolButton::clicked, this, [this, expr = pin.expression](bool checked) {
-    if (checked) {
-      emit filter_requested(expr);
-    } else if (active_ == expr) {
-      emit filter_requested(QString());
-    }
+  btn->setChecked(term_is_active(active_, pin.expression));
+  connect(btn, &QToolButton::clicked, this, [this, expr = pin.expression](bool /*checked*/) {
+    const bool shift = QGuiApplication::keyboardModifiers().testFlag(Qt::ShiftModifier);
+    const QString next = chip_click_expression(active_, expr, shift);
+    emit filter_requested(next);
   });
   btn->setContextMenuPolicy(Qt::CustomContextMenu);
   connect(btn, &QWidget::customContextMenuRequested, this, [this, pin_index, btn](const QPoint& pos) {

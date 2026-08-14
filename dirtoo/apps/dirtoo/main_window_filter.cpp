@@ -3,6 +3,7 @@
 
 #include "main_window_common.hpp"
 #include "set_membership.hpp"
+#include <vector>
 #include "dirtoo/sets/file_set_store.hpp"
 
 #include "dirtoo/filter/parser.hpp"
@@ -66,13 +67,22 @@ void MainWindow::update_filter_chrome(bool filtered)
 
 void MainWindow::apply_filter_expression_sync(const QString& text)
 {
-  if (auto q = set_membership::pure_set_query(text.toStdString())) {
+  const std::string expr = text.toStdString();
+  std::vector<std::string> set_queries;
+  if (auto q = set_membership::pure_set_query(expr)) {
+    set_queries.push_back(*q);
+  } else if (auto qs = set_membership::pure_set_or_queries(expr)) {
+    set_queries = *qs;
+  }
+  if (!set_queries.empty()) {
     dirtoo::sets::FileSetStore store;
     std::string err;
-    std::optional<set_membership::MemberIndex> index;
+    std::vector<set_membership::MemberIndex> indexes;
     if (store.open(dirtoo::sets::FileSetStore::default_path(), &err)) {
-      if (auto id = set_membership::resolve_set_id(store, *q)) {
-        index = set_membership::build_member_index(store, *id);
+      for (const auto& q : set_queries) {
+        if (auto id = set_membership::resolve_set_id(store, q)) {
+          indexes.push_back(set_membership::build_member_index(store, *id));
+        }
       }
     }
     std::vector<fs::FileInfo> visible;
@@ -81,7 +91,14 @@ void MainWindow::apply_filter_expression_sync(const QString& text)
       if (!collection_.show_hidden() && !fi.basename().empty() && fi.basename()[0] == '.') {
         continue;
       }
-      if (index && set_membership::path_in_index(*index, fi.path())) {
+      bool hit = false;
+      for (const auto& idx : indexes) {
+        if (set_membership::path_in_index(idx, fi.path())) {
+          hit = true;
+          break;
+        }
+      }
+      if (hit) {
         visible.push_back(fi);
       }
     }
@@ -104,10 +121,14 @@ void MainWindow::on_filter_changed(const QString& text)
     quick_filter_bar_->set_active_expression(text);
   }
   update_filter_chrome(!text.isEmpty());
-  // Pure set:… → sync membership index (fast); content IO → worker thread.
-  if (set_membership::pure_set_query(text.toStdString()).has_value()) {
-    apply_filter_expression_sync(text);
-    return;
+  // Pure set:… or set:a OR set:b → sync membership index (fast); content IO → worker.
+  {
+    const std::string expr = text.toStdString();
+    if (set_membership::pure_set_query(expr).has_value()
+        || set_membership::pure_set_or_queries(expr).has_value()) {
+      apply_filter_expression_sync(text);
+      return;
+    }
   }
   if (filter_expression_needs_content_io(text)) {
     request_async_filter(/*keep_previous_visible=*/true);

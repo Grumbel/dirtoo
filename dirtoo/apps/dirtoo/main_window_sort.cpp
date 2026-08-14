@@ -16,7 +16,8 @@ void MainWindow::request_async_sort()
   // replace_items_sorted → rebuild_visible (GUI content I/O / wipe filter).
   if (!filter_search_.filter_text().isEmpty()
       && (filter_expression_needs_content_io(filter_search_.filter_text())
-          || set_membership::pure_set_query(filter_search_.filter_text().toStdString()).has_value())) {
+          || set_membership::pure_set_query(filter_search_.filter_text().toStdString()).has_value()
+          || set_membership::pure_set_or_queries(filter_search_.filter_text().toStdString()).has_value())) {
     collection_.sort_items_only();
     request_async_filter(/*keep_previous_visible=*/true);
     return;

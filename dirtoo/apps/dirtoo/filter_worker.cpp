@@ -93,15 +93,23 @@ void FilterWorker::filter_items(std::vector<fs::FileInfo> items, const QString& 
   // Pure set:… handled in the app against FileSetStore so membership works even
   // when an older installed dirtoo-filter MatchFunc still misses path keys.
   bool pure_set = false;
-  std::optional<set_membership::MemberIndex> set_index;
+  std::vector<set_membership::MemberIndex> set_indexes;
   if (!expr.empty()) {
+    std::vector<std::string> set_queries;
     if (auto q = set_membership::pure_set_query(expr)) {
+      set_queries.push_back(*q);
+    } else if (auto qs = set_membership::pure_set_or_queries(expr)) {
+      set_queries = *qs;
+    }
+    if (!set_queries.empty()) {
       pure_set = true;
       dirtoo::sets::FileSetStore set_store;
       std::string err;
       if (set_store.open(dirtoo::sets::FileSetStore::default_path(), &err)) {
-        if (auto id = set_membership::resolve_set_id(set_store, *q)) {
-          set_index = set_membership::build_member_index(set_store, *id);
+        for (const auto& q : set_queries) {
+          if (auto id = set_membership::resolve_set_id(set_store, q)) {
+            set_indexes.push_back(set_membership::build_member_index(set_store, *id));
+          }
         }
       }
     } else {
@@ -122,7 +130,14 @@ void FilterWorker::filter_items(std::vector<fs::FileInfo> items, const QString& 
       continue;
     }
     if (pure_set) {
-      if (!set_index || !set_membership::path_in_index(*set_index, fi.path())) {
+      bool hit = false;
+      for (const auto& idx : set_indexes) {
+        if (set_membership::path_in_index(idx, fi.path())) {
+          hit = true;
+          break;
+        }
+      }
+      if (!hit) {
         continue;
       }
     } else if (match != nullptr && !match->matches(to_filter_item(fi))) {
