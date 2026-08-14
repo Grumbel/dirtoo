@@ -61,6 +61,21 @@ void MainWindow::on_context_menu(const QPoint& pos)
   cb.tag_selected = [this] { on_tag_selected(); };
   cb.create_set_from_selection = [this] { create_set_from_selection(); };
   cb.add_selection_to_last_set = [this] { add_selection_to_last_set(); };
+  cb.select_set_members = [this] { select_set_members_of_focus(); };
+  cb.open_set_of_selection = [this] {
+    const auto sel = selected_fileinfos();
+    if (sel.empty()) return;
+    std::string key;
+    if (sel.front().location().is_archive()) key = sel.front().location().as_url();
+    else {
+      std::error_code ec;
+      const auto abs = std::filesystem::absolute(sel.front().path(), ec);
+      key = ec ? sel.front().path().string() : abs.lexically_normal().string();
+    }
+    const auto sets = file_sets_.store().sets_for_path(key);
+    if (sets.empty()) { set_status(QStringLiteral("Not in a set"), 3000); return; }
+    open_set_location(QString::fromStdString(sets.front().id));
+  };
   cb.mark_opened = [this] { on_mark_selection_opened(); };
   cb.mark_unopened = [this] { on_mark_selection_unopened(); };
   cb.properties_selected = [this] { on_properties(); };

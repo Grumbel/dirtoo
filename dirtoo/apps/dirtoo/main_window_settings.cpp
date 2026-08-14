@@ -644,4 +644,60 @@ void MainWindow::load_set_location_listing()
              5000);
 }
 
+
+void MainWindow::select_set_members_of_focus()
+{
+  const auto sel = selected_fileinfos();
+  if (sel.empty()) {
+    set_status(QStringLiteral("Select a file that belongs to a set"), 3000);
+    return;
+  }
+  const auto& fi = sel.front();
+  std::string key;
+  if (fi.location().is_archive()) {
+    key = fi.location().as_url();
+  } else {
+    std::error_code ec;
+    const auto abs = std::filesystem::absolute(fi.path(), ec);
+    key = ec ? fi.path().string() : abs.lexically_normal().string();
+  }
+  const QStringList members = file_sets_.member_paths_for_path(QString::fromStdString(key));
+  if (members.isEmpty()) {
+    set_status(QStringLiteral("File is not in any set"), 3000);
+    return;
+  }
+  // Select rows in the current model whose path matches a member.
+  if (model_ == nullptr) {
+    return;
+  }
+  QItemSelection selection;
+  int matched = 0;
+  for (int row = 0; row < model_->rowCount(); ++row) {
+    const auto* row_fi = model_->file_at(row);
+    if (row_fi == nullptr) {
+      continue;
+    }
+    std::string row_key;
+    if (row_fi->location().is_archive()) {
+      row_key = row_fi->location().as_url();
+    } else {
+      std::error_code ec;
+      const auto abs = std::filesystem::absolute(row_fi->path(), ec);
+      row_key = ec ? row_fi->path().string() : abs.lexically_normal().string();
+    }
+    if (members.contains(QString::fromStdString(row_key))) {
+      const QModelIndex idx = model_->index(row, 0);
+      selection.select(idx, idx);
+      ++matched;
+    }
+  }
+  if (auto* view = current_view()) {
+    view->selectionModel()->select(selection, QItemSelectionModel::ClearAndSelect);
+  }
+  set_status(QStringLiteral("Selected %1 set member%2 in view")
+                 .arg(matched)
+                 .arg(matched == 1 ? QString() : QStringLiteral("s")),
+             4000);
+}
+
 } // namespace dirtoo::app

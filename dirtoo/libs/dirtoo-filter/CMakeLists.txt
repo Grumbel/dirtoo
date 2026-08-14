@@ -26,6 +26,7 @@ add_library(dirtoo-filter
   src/parser.cpp
   src/predicates_name.cpp
   src/predicates_tag.cpp
+  src/predicates_set.cpp
   src/predicates_media.cpp
   src/predicates_fuzzy.cpp
   src/predicates_meta.cpp

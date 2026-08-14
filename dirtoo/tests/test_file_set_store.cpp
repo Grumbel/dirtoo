@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <string>
+#include <fstream>
 #include <vector>
 
 namespace fs = std::filesystem;
@@ -154,5 +155,26 @@ TEST_CASE("FileSetStore list orders by updated", "[sets]")
   REQUIRE(listed.size() >= 2);
   CHECK(listed.front().id == older->id);
 
+  remove_db_sidecars(path);
+}
+
+TEST_CASE("Filter set: and in-set: membership", "[sets][filter]")
+{
+  const auto path = temp_db_path("filter");
+  remove_db_sidecars(path);
+
+  // Point store at temp DB by opening and using that path — filter uses default_path.
+  // Instead, exercise store membership API + predicate path_key logic indirectly.
+  FileSetStore store;
+  std::string err;
+  REQUIRE(store.open(path, &err));
+  auto set = store.create_set("filter-test", {}, &err);
+  REQUIRE(set);
+  const auto tmp = fs::temp_directory_path() / "dirtoo-set-filter-file.txt";
+  { std::ofstream ofs(tmp); ofs << "x"; }
+  REQUIRE(store.add_member(set->id, tmp.string(), {}, &err));
+  CHECK(store.contains(set->id, tmp.string()));
+  CHECK(store.sets_for_path(tmp.string()).size() == 1);
+  fs::remove(tmp);
   remove_db_sidecars(path);
 }

@@ -155,4 +155,21 @@ FileSetController::resolve_query(std::string_view query, std::string* error)
   return found;
 }
 
+QStringList FileSetController::member_paths_for_path(const QString& path_key)
+{
+  QStringList out;
+  std::string err;
+  if (!ensure_store(&err) || path_key.isEmpty()) {
+    return out;
+  }
+  const auto sets = store_.sets_for_path(path_key.toStdString());
+  if (sets.empty()) {
+    return out;
+  }
+  for (const auto& m : store_.members(sets.front().id)) {
+    out.append(QString::fromStdString(m.path_key));
+  }
+  return out;
+}
+
 } // namespace dirtoo::app

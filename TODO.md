@@ -103,9 +103,11 @@ tints, badges, and indicators.
 ### Persistent file sets (FileSetStore)
 
 - [x] SQLite store + Catch2 tests (create/members/overlap/dissolve)
-- [ ] set:// virtual location + filter `set:`
-- [ ] Ctrl+G / context menu UI
-- [ ] Color cues in icon/list paint
+- [x] set:// Location + load listing + Ctrl+G / Ctrl+Shift+G + menus
+- [x] filter `set:` / `in-set:` predicates
+- [x] Color cues (left-edge stripes) in icon/list paint
+- [x] Select Set Members / Show Set context actions
+- [ ] Sets manager dialog (rename/recolor/dissolve UI)
 
 ## Critical / high-priority defect queue
 

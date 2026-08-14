@@ -8,6 +8,7 @@
 #include "group_header_paint.hpp"
 #include "badge_icons.hpp"
 #include "tag_paint.hpp"
+#include "set_paint.hpp"
 
 #include "file_list_model.hpp"
 #include "dirtoo/filter/media_meta_cache.hpp"
@@ -462,6 +463,7 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
   }
 
   if (fi != nullptr) {
+    paint_set_membership(painter, option.rect, fi->path());
     paint_tag_chips(painter, thumb, fi->path());
   }
 

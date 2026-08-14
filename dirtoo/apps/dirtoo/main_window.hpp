@@ -179,6 +179,7 @@ private slots:
   void create_set_from_selection();
   void add_selection_to_last_set();
   void open_set_location(const QString& set_id);
+  void select_set_members_of_focus();
   void on_rebuild_history_menu();
   void on_rebuild_recent_opens_menu();
   void on_rebuild_bookmarks_menu();

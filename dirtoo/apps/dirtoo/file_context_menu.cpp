@@ -206,6 +206,14 @@ void exec_item_context_menu(QWidget* parent, const QPoint& global_pos,
     menu.addAction(theme_icon("list-add", "folder-new"), QStringLiteral("Add to Last Set"), parent,
                    [cb] { cb.add_selection_to_last_set(); });
   }
+  if (cb.select_set_members) {
+    menu.addAction(theme_icon("edit-select-all", "object-group"), QStringLiteral("Select Set Members"), parent,
+                   [cb] { cb.select_set_members(); });
+  }
+  if (cb.open_set_of_selection) {
+    menu.addAction(theme_icon("folder-open", "object-group"), QStringLiteral("Show Set"), parent,
+                   [cb] { cb.open_set_of_selection(); });
+  }
   menu.addAction(theme_icon("bookmark-new", "tag"), QStringLiteral("Tag…"), parent,
                    cb.tag_selected);
   }

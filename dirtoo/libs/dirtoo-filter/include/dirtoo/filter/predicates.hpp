@@ -62,4 +62,10 @@ namespace dirtoo::filter {
 [[nodiscard]] MatchFuncPtr make_tagged(std::string_view arg);
 [[nodiscard]] MatchFuncPtr make_checksummed(std::string_view arg);
 
+/// set:<id|label> — membership in a persistent ad-hoc file set (path lookup).
+[[nodiscard]] MatchFuncPtr make_set(std::string_view arg);
+/// in-set:yes|no — any / no set membership.
+[[nodiscard]] MatchFuncPtr make_in_set(std::string_view arg);
+
 } // namespace dirtoo::filter
+

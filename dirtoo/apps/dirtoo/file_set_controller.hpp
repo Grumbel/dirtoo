@@ -44,6 +44,9 @@ public:
 
   [[nodiscard]] dirtoo::sets::FileSetStore& store();
 
+  /// Member path_keys for the first set containing @p path_key (empty if none).
+  [[nodiscard]] QStringList member_paths_for_path(const QString& path_key);
+
 signals:
   void status_message(const QString& message, int timeout_ms = 4000);
   void set_created(const QString& set_id, int member_count);

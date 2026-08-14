@@ -302,6 +302,12 @@ private:
     if (c == "tagged") {
       return make_tagged(arg);
     }
+    if (c == "set") {
+      return make_set(arg);
+    }
+    if (c == "in-set" || c == "inset") {
+      return make_in_set(arg);
+    }
     if (c == "checksummed" || c == "hashed" || c == "csum") {
       return make_checksummed(arg);
     }
@@ -400,6 +406,8 @@ Terms (juxtaposition = AND, OR joins alternatives):
   size:>1M        size compare (K/M/G); also size:10K-2M or size:10K..2M
   tag:work        files tagged "work" (needs checksum + dt-tag)
   tagged:yes|no   any tags / no tags (checksum cache lookup only)
+  set:<id|label>  members of a persistent file set (path lookup)
+  in-set:yes|no   any set membership / none
   checksummed:yes|no|full|quick  full SHA-256 / none / sample (aliases: hashed:, csum:)
   type:dir        type:file|dir|video|image|archive|audio (t:)
   width:>=1920    image/video width (needs ffprobe)
@@ -470,6 +478,10 @@ std::string filter_help_html()
     <td>Files with tag <i>work</i> (checksum cache + tags DB; no hashing)</td></tr>
 <tr><td><code>tagged:yes</code> / <code>tagged:no</code></td>
 <td>Any tags / no tags (checksum cache)</td></tr>
+<tr><td><code>set:id-or-label</code></td>
+<td>Files in a persistent ad-hoc set (path membership)</td></tr>
+<tr><td><code>in-set:yes</code> / <code>in-set:no</code></td>
+<td>Any set membership / none</td></tr>
 <tr><td><code>checksummed:yes</code> / <code>no</code> / <code>full</code> / <code>quick</code></td>
     <td>Known SHA-256 in checksum cache / never hashed (no hashing on filter;
         aliases <code>hashed:</code>, <code>csum:</code>)</td></tr>

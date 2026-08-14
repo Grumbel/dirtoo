@@ -5,6 +5,7 @@
 #include "icon_tile_paint.hpp"
 #include "badge_icons.hpp"
 #include "tag_paint.hpp"
+#include "set_paint.hpp"
 
 #include "file_list_model.hpp"
 #include "graphics_file_view.hpp"
@@ -160,6 +161,10 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
     painter->setPen(QPen(model_->ui_colors().cursor_outline_qcolor(), 1));
     painter->setBrush(model_->ui_colors().cursor_fill_qcolor());
     painter->drawRect(br.adjusted(0.5, 0.5, -0.5, -0.5));
+  }
+
+  if (const auto* fi = model_->file_at(row_)) {
+    paint_set_membership(painter, br.toRect(), fi->path());
   }
 
   // Group headers: full-width band in GraphicsFileView::drawForeground.
