@@ -31,6 +31,12 @@ QString mime_from_extension(const QString& path)
   if (path.isEmpty()) {
     return QStringLiteral("application/octet-stream");
   }
+  // Directories have no useful extension; without this Open With never sees
+  // apps that declare MimeType=inode/directory (or mimeapps.list entries).
+  const QFileInfo fi(path);
+  if (fi.isDir()) {
+    return QStringLiteral("inode/directory");
+  }
   // Full path (or at least a name with extension) — not basename-only.
   return name_or_octet(mime_db().mimeTypeForFile(path, QMimeDatabase::MatchExtension));
 }
@@ -46,6 +52,9 @@ QString mime_from_content(const QString& path)
     return QStringLiteral("application/octet-stream");
   }
   const QFileInfo fi(path);
+  if (fi.isDir()) {
+    return QStringLiteral("inode/directory");
+  }
   if (!fi.isFile()) {
     return mime_from_extension(path);
   }
@@ -63,6 +72,11 @@ QString mime_from_default(const QString& path)
     return QStringLiteral("application/octet-stream");
   }
   const QFileInfo fi(path);
+  if (fi.isDir()) {
+    // MatchDefault on a directory is inode/directory; do not fall through to
+    // extension-only matching (dirs have no extension → octet-stream).
+    return QStringLiteral("inode/directory");
+  }
   if (fi.isFile()) {
     return name_or_octet(mime_db().mimeTypeForFile(fi, QMimeDatabase::MatchDefault));
   }
