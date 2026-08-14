@@ -41,13 +41,13 @@ FileFingerprint fingerprint_file(const std::filesystem::path& path)
   fp.valid = true;
   fp.size = static_cast<std::uint64_t>(st.st_size);
 #if defined(st_mtim)
-  fp.mtime_ns = static_cast<std::int64_t>(st.st_mtim.tv_sec) * 1'000'000'000LL
+  fp.mtime_ns = static_cast<std::int64_t>(st.st_mtim.tv_sec) * 1000000000LL
                 + static_cast<std::int64_t>(st.st_mtim.tv_nsec);
 #elif defined(__APPLE__)
-  fp.mtime_ns = static_cast<std::int64_t>(st.st_mtimespec.tv_sec) * 1'000'000'000LL
+  fp.mtime_ns = static_cast<std::int64_t>(st.st_mtimespec.tv_sec) * 1000000000LL
                 + static_cast<std::int64_t>(st.st_mtimespec.tv_nsec);
 #else
-  fp.mtime_ns = static_cast<std::int64_t>(st.st_mtime) * 1'000'000'000LL;
+  fp.mtime_ns = static_cast<std::int64_t>(st.st_mtime) * 1000000000LL;
 #endif
   return fp;
 }
