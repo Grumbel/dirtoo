@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include "set_membership.hpp"
 #include "activity_monitor.hpp"
 
 #include "archive_listing.hpp"
@@ -65,7 +66,8 @@ void MainWindow::reload_directory(bool soft)
     collection_.sorter().set_ascending(sort_ascending_);
     collection_.set_items(std::move(items));
     if (!filter_search_.filter_text().isEmpty()) {
-      if (filter_expression_needs_content_io(filter_search_.filter_text())) {
+      if (filter_expression_needs_content_io(filter_search_.filter_text())
+          || set_membership::pure_set_query(filter_search_.filter_text().toStdString()).has_value()) {
         request_async_filter();
       } else {
         collection_.set_name_filter(filter_search_.filter_text().toStdString());
@@ -172,7 +174,8 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
   // survivors, append newcomers) instead of replacing the whole vector.
   const bool content_filter =
       !filter_search_.filter_text().isEmpty()
-      && filter_expression_needs_content_io(filter_search_.filter_text());
+      && (filter_expression_needs_content_io(filter_search_.filter_text())
+          || set_membership::pure_set_query(filter_search_.filter_text().toStdString()).has_value());
   if (soft && !collection_.empty()) {
     // Avoid rebuild_visible when content matchers would hit the GUI thread.
     collection_.merge_items(std::move(items), !content_filter);

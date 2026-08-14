@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include "set_membership.hpp"
 #include "sort_settings.hpp"
 
 #include <QHeaderView>
@@ -14,7 +15,8 @@ void MainWindow::request_async_sort()
   // Content filters own visible_ via FilterWorker. Sorting must not call
   // replace_items_sorted → rebuild_visible (GUI content I/O / wipe filter).
   if (!filter_search_.filter_text().isEmpty()
-      && filter_expression_needs_content_io(filter_search_.filter_text())) {
+      && (filter_expression_needs_content_io(filter_search_.filter_text())
+          || set_membership::pure_set_query(filter_search_.filter_text().toStdString()).has_value())) {
     collection_.sort_items_only();
     request_async_filter(/*keep_previous_visible=*/true);
     return;

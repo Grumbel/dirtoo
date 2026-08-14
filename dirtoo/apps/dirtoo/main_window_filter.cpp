@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include "set_membership.hpp"
+#include "dirtoo/sets/file_set_store.hpp"
 
 #include "dirtoo/filter/parser.hpp"
 #include <QDialog>
@@ -62,15 +64,49 @@ void MainWindow::update_filter_chrome(bool filtered)
   filter_search_.reset_filter_bar_palette();
 }
 
+void MainWindow::apply_filter_expression_sync(const QString& text)
+{
+  if (auto q = set_membership::pure_set_query(text.toStdString())) {
+    dirtoo::sets::FileSetStore store;
+    std::string err;
+    std::optional<std::string> set_id;
+    if (store.open(dirtoo::sets::FileSetStore::default_path(), &err)) {
+      set_id = set_membership::resolve_set_id(store, *q);
+    }
+    std::vector<fs::FileInfo> visible;
+    visible.reserve(collection_.items().size());
+    for (const auto& fi : collection_.items()) {
+      if (!collection_.show_hidden() && !fi.basename().empty() && fi.basename()[0] == '.') {
+        continue;
+      }
+      if (set_id && set_membership::path_in_set(store, *set_id, fi.path())) {
+        visible.push_back(fi);
+      }
+    }
+    collection_.sorter().sort(visible);
+    collection_.replace_visible(std::move(visible), true);
+    refresh_list();
+    request_thumbnails_for_visible();
+    set_status(QStringLiteral("%1 items").arg(collection_.visible_items().size()));
+    return;
+  }
+  collection_.set_name_filter(text.toStdString());
+  refresh_list();
+  request_thumbnails_for_visible();
+  set_status(QStringLiteral("%1 items").arg(collection_.visible_items().size()));
+}
+
 void MainWindow::on_filter_changed(const QString& text)
 {
   if (quick_filter_bar_ != nullptr) {
     quick_filter_bar_->set_active_expression(text);
   }
   update_filter_chrome(!text.isEmpty());
-  if (filter_expression_needs_content_io(text)) {
-    // Content predicates must not run on the GUI thread.
-    request_async_filter();
+  // Pure set:… must use FileSetStore membership (FilterWorker / apply_set_filter),
+  // not FileCollection::set_name_filter → installed dirtoo-filter MatchFunc.
+  if (filter_expression_needs_content_io(text)
+      || set_membership::pure_set_query(text.toStdString()).has_value()) {
+    request_async_filter(/*keep_previous_visible=*/true);
     return;
   }
   collection_.set_name_filter(text.toStdString());
@@ -92,8 +128,8 @@ void MainWindow::on_filter_changed(const QString& text)
 void MainWindow::request_async_filter(bool keep_previous_visible)
 {
   if (list_workers_.filter() == nullptr) {
-    collection_.set_name_filter(filter_search_.filter_text().toStdString());
-    refresh_list();
+    // No worker thread: apply set: on the GUI via FileSetStore, else name filter.
+    apply_filter_expression_sync(filter_search_.filter_text());
     return;
   }
   const quint64 gen = list_workers_.next_filter_generation();
