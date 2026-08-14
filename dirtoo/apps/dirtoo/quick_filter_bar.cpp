@@ -195,7 +195,8 @@ QuickFilterBar::QuickFilterBar(QWidget* parent)
   outer->setContentsMargins(4, 2, 4, 2);
   outer->setSpacing(4);
 
-  setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+  setMinimumHeight(28);
 
   strip_ = new QWidget(this);
   strip_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
@@ -210,6 +211,7 @@ QuickFilterBar::QuickFilterBar(QWidget* parent)
   outer->addWidget(pin_btn_);
 
   load_pins();
+  relayout_height();
 }
 
 void QuickFilterBar::set_current_directory(const QString& path)
@@ -994,45 +996,56 @@ void QuickFilterBar::save_pins() const
 
 int QuickFilterBar::heightForWidth(int width) const
 {
-  if (strip_layout_ == nullptr) {
-    return 36;
-  }
-  // Pin button sits beside the strip in the outer HBox.
-  int pin_w = 0;
+  const QMargins m = layout() != nullptr ? layout()->contentsMargins() : contentsMargins();
+  int pin_w = 8;
+  int pin_h = 28;
   if (pin_btn_ != nullptr) {
-    pin_w = pin_btn_->sizeHint().width() + 4;
+    const QSize ps = pin_btn_->sizeHint();
+    pin_w = ps.width() + 8;
+    pin_h = std::max(pin_h, ps.height());
   }
-  const QMargins m = contentsMargins();
-  const int strip_w = std::max(1, width - pin_w - m.left() - m.right() - 8);
-  const int strip_h = strip_layout_->heightForWidth(strip_w);
-  return strip_h + m.top() + m.bottom() + 4;
+  const int strip_w = std::max(1, width - pin_w - m.left() - m.right());
+  int strip_h = 0;
+  if (strip_layout_ != nullptr && strip_layout_->count() > 0) {
+    strip_h = strip_layout_->heightForWidth(strip_w);
+  }
+  // Always at least one row so the pin control stays visible.
+  const int content_h = std::max({strip_h, pin_h, 28});
+  return content_h + m.top() + m.bottom();
 }
 
 QSize QuickFilterBar::sizeHint() const
 {
-  const int w = width() > 0 ? width() : 400;
+  const int w = width() > 0 ? width() : 640;
   return QSize(w, heightForWidth(w));
 }
 
 QSize QuickFilterBar::minimumSizeHint() const
 {
-  return QSize(100, 28);
+  return QSize(120, 28);
 }
 
 void QuickFilterBar::relayout_height()
 {
-  if (strip_ == nullptr || strip_layout_ == nullptr) {
-    return;
+  // Prefer the real width once laid out; fall back so we never lock height to 0.
+  int w = width();
+  if (w <= 0 && parentWidget() != nullptr) {
+    w = parentWidget()->width();
   }
-  const int w = std::max(1, strip_->width() > 0 ? strip_->width() : width() - 80);
-  const int h = strip_layout_->heightForWidth(w);
-  strip_->setMinimumHeight(h);
-  strip_->setMaximumHeight(h);
-  strip_->updateGeometry();
+  if (w <= 0) {
+    w = 640;
+  }
+  const int h = heightForWidth(w);
+  // Fixed height is the reliable way to make the parent layout reserve space;
+  // heightForWidth alone was collapsing the bar to 0 before the first show.
+  if (minimumHeight() != h || maximumHeight() != h) {
+    setFixedHeight(h);
+  }
+  if (strip_ != nullptr) {
+    strip_->setMinimumHeight(0);
+    strip_->setMaximumHeight(16777215);
+  }
   updateGeometry();
-  if (parentWidget() != nullptr) {
-    parentWidget()->updateGeometry();
-  }
 }
 
 void QuickFilterBar::resizeEvent(QResizeEvent* event)

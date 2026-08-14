@@ -109,6 +109,10 @@ int FlowLayout::do_layout(const QRect& rect, bool test_only) const
   int left, top, right, bottom;
   getContentsMargins(&left, &top, &right, &bottom);
   QRect effective = rect.adjusted(+left, +top, -right, -bottom);
+  if (effective.width() < 1) {
+    // Avoid 0-width layout producing one chip per row and a useless huge height.
+    effective.setWidth(std::max(1, rect.width()));
+  }
   int x = effective.x();
   int y = effective.y();
   int line_height = 0;
@@ -132,7 +136,8 @@ int FlowLayout::do_layout(const QRect& rect, bool test_only) const
     x = next_x;
     line_height = std::max(line_height, item->sizeHint().height());
   }
-  return y + line_height - rect.y() + bottom;
+  const int total = y + line_height - rect.y() + bottom;
+  return std::max(0, total);
 }
 
 } // namespace dirtoo::app
