@@ -212,6 +212,11 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
 
   const fs::FileInfo* fi = model_->file_at(row_);
 
+  // Membership bar over the thumb, under duration/fps badges (painted later).
+  if (fi != nullptr) {
+    paint_set_membership(painter, thumb, fi->path());
+  }
+
   // Directory montage overlay (shared with FileItemDelegate).
   if (fi != nullptr && fi->is_directory()
       && idx.data(ThumbnailStatusRole).toInt() == static_cast<int>(ThumbnailStatus::Ready)
@@ -301,8 +306,6 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
 
     if (fi != nullptr) {
       paint_tag_chips(painter, thumb, fi->path());
-      // After the pixmap so bars sit on top of the thumbnail (not under it).
-      paint_set_membership(painter, thumb, fi->path());
     }
 
     // Type sticker: bottom-right (Python paint_metadata / SharedPixmaps).

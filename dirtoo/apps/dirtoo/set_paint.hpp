@@ -6,6 +6,8 @@
 #include "dirtoo/sets/file_set_store.hpp"
 
 #include <QColor>
+#include <QFont>
+#include <QFontMetrics>
 #include <QPainter>
 #include <QRect>
 #include <QString>
@@ -104,8 +106,9 @@ inline void clear_set_membership_cache()
   set_paint_detail::clear_set_membership_cache();
 }
 
-/// Top-edge color bars for set membership (one bar per set, stacked, max 4).
-/// Call after drawing the thumbnail so bars sit on top of the image.
+/// Top-edge membership bar (one set per file). Same height as duration/fps
+/// badges (paint_tile_badge). Draw after the thumbnail and *before* those
+/// badges so duration/fps stay on top.
 inline void paint_set_membership(QPainter* painter, const QRect& tile,
                                  const std::filesystem::path& path)
 {
@@ -116,24 +119,16 @@ inline void paint_set_membership(QPainter* painter, const QRect& tile,
   if (sets.empty()) {
     return;
   }
-  constexpr int kMax = 1; // one set per file
-  constexpr int kBar = 7;
-  constexpr int kGap = 2;
-  const int n = std::min(static_cast<int>(sets.size()), kMax);
-  const int x = tile.left();
-  const int w = std::max(1, tile.width());
-  int y = tile.top();
+  // Match paint_tile_badge: font * 0.85, height = fm.height() + 2.
+  QFont font = painter->font();
+  font.setPointSizeF(std::max(8.0, font.pointSizeF() * 0.85));
+  const int kBar = QFontMetrics(font).height() + 2;
+
+  const auto& s = sets.front();
+  QColor c = set_paint_detail::color_for_set(s);
+  c.setAlpha(255);
   painter->save();
-  // Soft dark underlay so pastel bars read on light thumbs.
-  const int stack_h = n * kBar + (n - 1) * kGap;
-  painter->fillRect(QRect(x, y, w, stack_h + 2), QColor(0, 0, 0, 90));
-  y += 1;
-  for (int i = 0; i < n; ++i) {
-    QColor c = set_paint_detail::color_for_set(sets[static_cast<std::size_t>(i)]);
-    c.setAlpha(255);
-    painter->fillRect(QRect(x, y, w, kBar), c);
-    y += kBar + kGap;
-  }
+  painter->fillRect(QRect(tile.left(), tile.top(), tile.width(), kBar), c);
   painter->restore();
 }
 
