@@ -253,6 +253,13 @@ void MainWindow::on_search_submitted()
   search_session_.batch.clear();
   search_session_.status_matched = 0;
   search_session_.active = true;
+  // Drop prior-directory thumb state so search hits are not stuck behind
+  // Ready/Pending marks (and cancel in-flight D-Bus jobs for the old listing).
+  cancel_all_thumbnails();
+  clear_thumb_aliases();
+  if (model_ != nullptr) {
+    model_->clear_thumbnails();
+  }
   collection_.clear();
   collection_.clear_filter();
   refresh_list();
@@ -303,6 +310,8 @@ void MainWindow::flush_search_batch()
     return;
   }
   const int count = static_cast<int>(search_session_.batch.size());
+  // Row indices of the soon-to-be-appended hits (before append).
+  const int first_new = static_cast<int>(collection_.visible_items().size());
   collection_.append_visible_items(std::move(search_session_.batch));
   search_session_.batch.clear();
   if (model_ != nullptr) {
@@ -311,8 +320,25 @@ void MainWindow::flush_search_batch()
     refresh_list();
   }
   update_status_selection();
-  // Search hits arrive as synthetic FileInfos; queue thumbs as rows appear so
-  // Icons/Detail are not blank until the whole search finishes.
+  // Search hits are synthetic FileInfos (no GUI-thread stat) but still real
+  // local paths. Queue thumbs for the *just-appended* rows immediately —
+  // debounced viewport sampling alone can miss incremental inserts while
+  // GraphicsFileView slot_pos / indexAt lag behind notify_rows_appended.
+  if (model_ != nullptr && count > 0) {
+    std::vector<int> rows;
+    rows.reserve(static_cast<std::size_t>(count));
+    for (int i = 0; i < count; ++i) {
+      rows.push_back(first_new + i);
+    }
+    const bool need_dir = thumbs_.request_rows(
+        collection_.visible_items(), rows, model_,
+        [this](const fs::Location& archive_root) -> std::optional<std::filesystem::path> {
+          return archive_manager_.extracted_root(archive_root);
+        });
+    if (need_dir) {
+      schedule_directory_thumbnails_low_priority();
+    }
+  }
   request_thumbnails_for_visible();
 }
 

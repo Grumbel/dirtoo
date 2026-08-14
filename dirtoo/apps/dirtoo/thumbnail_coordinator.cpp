@@ -205,7 +205,8 @@ int ThumbnailCoordinator::force_regenerate(const std::vector<fs::FileInfo>& targ
 
     if (fi.is_directory()) {
       (void)thumbnail::Thumbnailer::remove_cache_for(fi.location());
-      if (!fi.is_synthetic()) {
+      // Synthetic search hits still have real paths; allow montage rebuild.
+      if (!path.isEmpty()) {
         dir_paths << path;
         model->set_thumbnail_pending(path);
       }

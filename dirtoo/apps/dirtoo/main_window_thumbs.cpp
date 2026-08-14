@@ -62,7 +62,9 @@ void MainWindow::schedule_directory_thumbnails_low_priority()
     }
     QStringList dirs;
     for (const auto& fi : collection_.visible_items()) {
-      if (!fi.is_directory() || fi.is_synthetic()) {
+      // Search hits are synthetic but still refer to real local directories —
+      // only skip empty / non-directory entries.
+      if (!fi.is_directory() || fi.path().empty()) {
         continue;
       }
       const QString path = QString::fromStdString(fi.path().string());
@@ -312,15 +314,15 @@ void MainWindow::on_make_directory_thumbnails()
   QStringList dirs;
   auto selected = selected_fileinfos();
   if (selected.empty()) {
-    // All visible directories
+    // All visible directories (include synthetic search hits with real paths)
     for (const auto& fi : collection_.visible_items()) {
-      if (fi.is_directory() && !fi.is_synthetic()) {
+      if (fi.is_directory() && !fi.path().empty()) {
         dirs << QString::fromStdString(fi.path().string());
       }
     }
   } else {
     for (const auto& fi : selected) {
-      if (fi.is_directory() && !fi.is_synthetic()) {
+      if (fi.is_directory() && !fi.path().empty()) {
         dirs << QString::fromStdString(fi.path().string());
       }
     }
