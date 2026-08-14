@@ -113,7 +113,6 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
   painter->setRenderHint(QPainter::Antialiasing, true);
   painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
 
-  const QRectF br = boundingRect();
   const bool selected = option != nullptr && (option->state & QStyle::State_Selected);
   const bool hover = option != nullptr && (option->state & QStyle::State_MouseOver);
 
@@ -410,7 +409,6 @@ void GraphicsFileItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
     if (view_ != nullptr && model_ != nullptr && row_ >= 0) {
       const fs::FileInfo* fi = model_->file_at(row_);
       if (fi != nullptr && !fi->is_directory()) {
-        const QRectF br = boundingRect();
         constexpr int kLineH = 16;
         constexpr int kCaptionPad = 4;
         constexpr int kMargin = 1;

@@ -304,14 +304,12 @@ void TagController::tag_files(std::vector<dirtoo::fs::FileInfo> selection)
       QMessageBox box(dialog_parent_);
       box.setIcon(QMessageBox::Question);
       box.setWindowTitle(QStringLiteral("Large files"));
-      box.setText(QStringLiteral(
-                       "%1 file(s) are %2 MiB or larger.
-
-"
-                       "Tagging requires a full SHA-256 of each file (quick sample is not enough). "
-                       "Continue?")
-                       .arg(large_count)
-                       .arg(settings.hash_large_mib));
+      box.setText(
+          QStringLiteral("%1 file(s) are %2 MiB or larger.\n\n"
+                         "Tagging requires a full SHA-256 of each file "
+                         "(quick sample is not enough). Continue?")
+              .arg(large_count)
+              .arg(settings.hash_large_mib));
       box.setStandardButtons(QMessageBox::Yes | QMessageBox::Cancel);
       box.setDefaultButton(QMessageBox::Yes);
       auto* dont_ask = new QCheckBox(QStringLiteral("Don't ask again"), &box);
@@ -324,7 +322,6 @@ void TagController::tag_files(std::vector<dirtoo::fs::FileInfo> selection)
         updated.dismiss_large_tag_prompt = true;
         save_settings(updated);
       }
-    }
     }
   }
 
