@@ -29,8 +29,9 @@ Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 
 ### Recent polish (agent, 2026-08)
 
-- [x] **Highlight Unopened** (inverted opened cue), denser icon tiles, scaled
-      corner meta badges, configurable unopened color in Preferences.
+- [x] **Highlight Unopened** (unread-style cue for never-opened files).
+- [ ] **Icon tile fill** — image centered in tile, square fills image band (width ≈ zoom size);
+      meta badges keep original look; full **Colors** tab tracked below.
 
 - [x] **Content-MIME thumbnail retry** — extension first for Thumbnailer1; on
       failure, one `MatchContent` re-queue when magic differs (JPEG-as-.png);
@@ -59,6 +60,45 @@ Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
 - [x] Read/write-protected file badges (`badge-readonly` / `badge-nowrite`)
 - [x] Directory montages use XDG cached thumbs for videos/non-images
 - [x] Directory montages are XDG-thumb-only; generate missing child thumbs first
+
+
+### Preferences — Colors tab (planned)
+
+**Intent:** one dedicated **Colors** tab for *all* product chrome colors, not a
+single “unopened” picker on Appearance. Appearance keeps layout/zoom; Colors owns
+tints, badges, and indicators.
+
+| Color | Current hardcode | Notes |
+|-------|------------------|--------|
+| Unopened highlight (fill + edge) | `#3B82F6` + alpha | Already partially wired (`ui/unopened_highlight_color`) — move UI to Colors tab |
+| Hidden-file row/tile tint | `rgb(200,200,210)` | Graphics + list |
+| Selection / hover overlays | palette Highlight × alpha | Optional overrides |
+| Meta badges (fps/duration/res) | white 170α bg, dark text | Restore original look; make bg/fg configurable later |
+| Launch-flash | Highlight / `#508cff` | |
+| Cursor outline | black + white fill | |
+| Symlink emblem | blue stroke | |
+| Directory montage wash | white 160α | |
+| Group header band | mid palette | |
+
+**UX**
+
+- Tab **Colors** in Preferences with rows: swatch button + reset-to-default.
+- Persist under `ui/color/<key>` (or a single `ui/colors` group).
+- “Reset all colors” button.
+- Live preview optional (v2); apply on OK like other prefs.
+
+**Implementation steps**
+
+1. [ ] Inventory every hardcoded `QColor(...)` in paint paths; name keys.
+2. [ ] `UiColors` struct + load/save next to `AppSettings` (or nested).
+3. [ ] Colors tab UI (QFormLayout of color buttons).
+4. [ ] Move unopened color control off Appearance onto Colors tab.
+5. [ ] Thread `UiColors` into model / paint helpers (no more magic RGB in paint).
+6. [ ] Defaults match current shipped look (incl. restored meta-badge style).
+
+**Do not** restyle meta badges again until Colors tab can own badge bg/fg.
+
+---
 
 ## Critical / high-priority defect queue
 

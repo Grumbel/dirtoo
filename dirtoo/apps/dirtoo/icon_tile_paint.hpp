@@ -31,34 +31,28 @@ inline void paint_tile_badge(QPainter* painter, const QRect& thumb, const QStrin
     return;
   }
   painter->save();
-  // Scale badge with thumbnail so corners stay readable on large zoom levels.
-  const qreal scale = std::clamp(thumb.width() / 96.0, 0.9, 2.75);
   QFont font = painter->font();
-  const qreal base = font.pointSizeF() > 0 ? font.pointSizeF() : 10.0;
-  font.setPointSizeF(std::max(8.0, base * 0.9 * scale));
-  font.setBold(true);
+  font.setPointSizeF(std::max(8.0, font.pointSizeF() * 0.85));
   painter->setFont(font);
   const QFontMetrics fm(font);
-  const int pad_x = std::max(3, static_cast<int>(std::lround(3 * scale)));
-  const int pad_y = std::max(1, static_cast<int>(std::lround(1 * scale)));
-  const int h = fm.height() + pad_y * 2;
+  const int pad_x = 3;
+  const int h = fm.height() + 2;
   const int w = fm.horizontalAdvance(text) + pad_x * 2;
   QRect badge(0, 0, w, h);
-  // Flush to thumbnail corners (1px inset only).
   if (align & Qt::AlignRight) {
-    badge.moveRight(thumb.right());
+    badge.moveRight(thumb.right() - 1);
   } else {
-    badge.moveLeft(thumb.left());
+    badge.moveLeft(thumb.left() + 1);
   }
   if (align & Qt::AlignBottom) {
-    badge.moveBottom(thumb.bottom());
+    badge.moveBottom(thumb.bottom() - 1);
   } else {
-    badge.moveTop(thumb.top());
+    badge.moveTop(thumb.top() + 1);
   }
   painter->setPen(Qt::NoPen);
-  painter->setBrush(QColor(0, 0, 0, 160));
-  painter->drawRoundedRect(badge, std::max(2.0, 2.0 * scale), std::max(2.0, 2.0 * scale));
-  painter->setPen(QColor(255, 255, 255));
+  painter->setBrush(QColor(255, 255, 255, 170));
+  painter->drawRoundedRect(badge, 2, 2);
+  painter->setPen(QColor(20, 20, 20));
   painter->drawText(badge.adjusted(pad_x, 0, -pad_x, 0), Qt::AlignVCenter | Qt::AlignLeft, text);
   painter->restore();
 }
@@ -83,7 +77,6 @@ inline void paint_unopened_indicator(QPainter* painter, const QRectF& br, const 
                     QPointF(br.left() + 2.0, br.bottom() - 2));
 }
 
-/// Whitened full-size folder glyph over a directory montage (hidden on hover).
 inline void paint_directory_montage_overlay(QPainter* painter, const QRect& thumb)
 {
   if (painter == nullptr || thumb.isEmpty()) {

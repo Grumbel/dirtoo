@@ -333,16 +333,13 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
   const int caption_budget =
       text_rows > 0 ? (6 + text_rows * 18)
                     : (model_ != nullptr && model_->icon_detail_level() > 0 ? 22 : 0);
-  // Dense: fill cell width; leave caption_budget under the image.
-  const int side_margin = 1;
-  const int top_pad = 1;
-  const int avail_h = std::max(16, opt.rect.height() - caption_budget - top_pad - 2);
-  int icon_side = std::min(opt.rect.width() - 2 * side_margin, avail_h);
+  // Largest centered square in the image band (cell minus caption strip).
+  const int margin = 2;
+  const int band_h = std::max(16, opt.rect.height() - caption_budget);
+  int icon_side = std::min(opt.rect.width() - 2 * margin, band_h - 2 * margin);
   icon_side = std::max(16, icon_side);
-  if (opt.rect.width() - 2 * side_margin <= avail_h) {
-    icon_side = opt.rect.width() - 2 * side_margin;
-  }
-  QRect thumb(opt.rect.left() + side_margin, opt.rect.top() + top_pad, icon_side, icon_side);
+  QRect thumb(0, 0, icon_side, icon_side);
+  thumb.moveCenter(QPoint(opt.rect.center().x(), opt.rect.top() + band_h / 2));
 
   // Icon / thumbnail — letterbox (fit) vs cover (crop), matching Python crop_thumbnails.
   if (!icon.isNull()) {

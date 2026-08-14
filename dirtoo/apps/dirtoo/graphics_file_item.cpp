@@ -162,8 +162,8 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
   }
 
   // Group headers: full-width band in GraphicsFileView::drawForeground.
-  const int top_pad = 1;
-  const int side_margin = 1;
+  // Image band = full tile minus caption strip. Largest centered square in that band.
+  const int margin = 2;
 
   const QIcon icon = idx.data(Qt::DecorationRole).value<QIcon>();
   QString text = idx.data(Qt::DisplayRole).toString();
@@ -176,17 +176,15 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
   const int text_rows = model_->icon_text_rows();
   // +1 line budget so a long basename can wrap without eating meta lines.
   const int caption_h =
-      text_rows > 0 ? (4 + (text_rows + 1) * 16)
-                    : (model_->icon_detail_level() > 0 ? 20 : 0);
-  // Fill the tile width; vertical room left for caption under the image.
-  const int avail_h = std::max(16, tile_size_.height() - caption_h - top_pad - 2);
-  int icon_side = std::min(tile_size_.width() - 2 * side_margin, avail_h);
+      text_rows > 0 ? (6 + (text_rows + 1) * 16)
+                    : (model_->icon_detail_level() > 0 ? 22 : 0);
+  const int band_h = std::max(16, tile_size_.height() - caption_h);
+  const int band_w = tile_size_.width();
+  int icon_side = std::min(band_w - 2 * margin, band_h - 2 * margin);
   icon_side = std::max(16, icon_side);
-  // Prefer full width when the tile is wider than tall (caption-only extra height).
-  if (tile_size_.width() - 2 * side_margin <= avail_h) {
-    icon_side = tile_size_.width() - 2 * side_margin;
-  }
-  QRect thumb(side_margin, top_pad, icon_side, icon_side);
+  QRect thumb(0, 0, icon_side, icon_side);
+  // Center in the image band (not the whole tile including caption).
+  thumb.moveCenter(QPoint(band_w / 2, band_h / 2));
 
   if (!icon.isNull()) {
     const QPixmap pm = icon.pixmap(QSize(icon_side * 2, icon_side * 2));
@@ -405,19 +403,17 @@ void GraphicsFileItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
       const fs::FileInfo* fi = model_->file_at(row_);
       if (fi != nullptr && !fi->is_directory()) {
         const QRectF br = boundingRect();
-        const int top_pad = 1;
-        const int side_margin = 1;
+        const int margin = 2;
         const int text_rows = model_->icon_text_rows();
         const int caption_h =
-            text_rows > 0 ? (4 + (text_rows + 1) * 16)
-                          : (model_->icon_detail_level() > 0 ? 20 : 0);
-        const int avail_h = std::max(16, tile_size_.height() - caption_h - top_pad - 2);
-        int icon_side = std::min(tile_size_.width() - 2 * side_margin, avail_h);
+            text_rows > 0 ? (6 + (text_rows + 1) * 16)
+                          : (model_->icon_detail_level() > 0 ? 22 : 0);
+        const int band_h = std::max(16, tile_size_.height() - caption_h);
+        const int band_w = tile_size_.width();
+        int icon_side = std::min(band_w - 2 * margin, band_h - 2 * margin);
         icon_side = std::max(16, icon_side);
-        if (tile_size_.width() - 2 * side_margin <= avail_h) {
-          icon_side = tile_size_.width() - 2 * side_margin;
-        }
-        QRect thumb(side_margin, top_pad, icon_side, icon_side);
+        QRect thumb(0, 0, icon_side, icon_side);
+        thumb.moveCenter(QPoint(band_w / 2, band_h / 2));
         const QPoint local = event->pos().toPoint();
         const QString tag = tag_chip_at(thumb, fi->path(), local);
         if (!tag.isEmpty()) {
