@@ -60,6 +60,8 @@ struct AppSettings {
   QString hash_policy = QStringLiteral("prompt");
   /// Size threshold in MiB for hash_policy prompt/quick (regular files only).
   int hash_large_mib = 64;
+  /// When true, skip the “large files need full hash” confirm before tagging.
+  bool dismiss_large_tag_prompt = false;
   QByteArray window_geometry;
   QByteArray window_state;
   QString last_location;

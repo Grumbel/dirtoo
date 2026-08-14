@@ -16,6 +16,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
+#include <QCheckBox>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QStringListModel>
@@ -298,19 +299,32 @@ void TagController::tag_files(std::vector<dirtoo::fs::FileInfo> selection)
       }
     }
     if (large_count > 0
-        && (policy == QLatin1String("prompt") || policy == QLatin1String("quick"))) {
-      const auto choice = QMessageBox::question(
-          dialog_parent_, QStringLiteral("Large files"),
-          QStringLiteral(
-              "%1 file(s) are %2 MiB or larger.\n\n"
-              "Tagging requires a full SHA-256 of each file (quick sample is not enough). "
-              "Continue?")
-              .arg(large_count)
-              .arg(settings.hash_large_mib),
-          QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Yes);
-      if (choice != QMessageBox::Yes) {
+        && (policy == QLatin1String("prompt") || policy == QLatin1String("quick"))
+        && !settings.dismiss_large_tag_prompt) {
+      QMessageBox box(dialog_parent_);
+      box.setIcon(QMessageBox::Question);
+      box.setWindowTitle(QStringLiteral("Large files"));
+      box.setText(QStringLiteral(
+                       "%1 file(s) are %2 MiB or larger.
+
+"
+                       "Tagging requires a full SHA-256 of each file (quick sample is not enough). "
+                       "Continue?")
+                       .arg(large_count)
+                       .arg(settings.hash_large_mib));
+      box.setStandardButtons(QMessageBox::Yes | QMessageBox::Cancel);
+      box.setDefaultButton(QMessageBox::Yes);
+      auto* dont_ask = new QCheckBox(QStringLiteral("Don't ask again"), &box);
+      box.setCheckBox(dont_ask);
+      if (box.exec() != QMessageBox::Yes) {
         return;
       }
+      if (dont_ask->isChecked()) {
+        AppSettings updated = load_settings();
+        updated.dismiss_large_tag_prompt = true;
+        save_settings(updated);
+      }
+    }
     }
   }
 

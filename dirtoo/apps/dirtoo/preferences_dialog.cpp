@@ -393,6 +393,13 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   hash_mib->setSuffix(QStringLiteral(" MiB"));
   hash_mib->setToolTip(QStringLiteral("Files at or above this size are “large” for the hash policy."));
 
+  auto* dismiss_large_tag = new QCheckBox(
+      QStringLiteral("Don't warn about large files when tagging"), &dialog);
+  dismiss_large_tag->setChecked(settings->dismiss_large_tag_prompt);
+  dismiss_large_tag->setToolTip(
+      QStringLiteral("Skip the confirmation that tagging large files needs a full SHA-256. "
+                     "You can turn this back on here."));
+
   auto* files_hint = new QLabel(
       QStringLiteral(
           "Quick sample hashes ~1 MiB from head/middle/tail (fast, not stored as a full "
@@ -404,6 +411,7 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   files_form->addRow(QStringLiteral("Default open app:"), default_open);
   files_form->addRow(QStringLiteral("Large-file hash:"), hash_policy);
   files_form->addRow(QStringLiteral("Large-file threshold:"), hash_mib);
+  files_form->addRow(dismiss_large_tag);
   files_form->addRow(files_hint);
   tabs->addTab(wrap_form(files_form, &dialog), QStringLiteral("Files"));
 
@@ -521,6 +529,7 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
   settings->default_open_desktop_id = default_open->text().trimmed();
   settings->hash_policy = hash_policy->currentData().toString();
   settings->hash_large_mib = hash_mib->value();
+  settings->dismiss_large_tag_prompt = dismiss_large_tag->isChecked();
 
   QStringList cols;
   for (QCheckBox* cb : col_boxes) {

@@ -42,6 +42,9 @@ AppSettings load_settings()
       s.value(QStringLiteral("open/default_desktop_id"), out.default_open_desktop_id).toString();
   out.hash_policy = s.value(QStringLiteral("hash/policy"), out.hash_policy).toString();
   out.hash_large_mib = s.value(QStringLiteral("hash/large_mib"), out.hash_large_mib).toInt();
+  out.dismiss_large_tag_prompt =
+      s.value(QStringLiteral("hash/dismiss_large_tag_prompt"), out.dismiss_large_tag_prompt)
+          .toBool();
   out.window_geometry = s.value(QStringLiteral("window/geometry")).toByteArray();
   out.window_state = s.value(QStringLiteral("window/state")).toByteArray();
   out.last_location = s.value(QStringLiteral("session/last_location")).toString();
@@ -80,6 +83,7 @@ void save_settings(const AppSettings& settings)
   s.setValue(QStringLiteral("open/default_desktop_id"), settings.default_open_desktop_id);
   s.setValue(QStringLiteral("hash/policy"), settings.hash_policy);
   s.setValue(QStringLiteral("hash/large_mib"), settings.hash_large_mib);
+  s.setValue(QStringLiteral("hash/dismiss_large_tag_prompt"), settings.dismiss_large_tag_prompt);
   s.setValue(QStringLiteral("window/geometry"), settings.window_geometry);
   s.setValue(QStringLiteral("window/state"), settings.window_state);
   s.setValue(QStringLiteral("session/last_location"), settings.last_location);
