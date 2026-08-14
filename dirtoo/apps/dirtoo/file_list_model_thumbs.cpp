@@ -4,6 +4,7 @@
 #include "file_list_model.hpp"
 #include "opened_files_store.hpp"
 #include <QDateTime>
+#include <QSet>
 
 #include <QIcon>
 #include <QPainter>
@@ -193,6 +194,44 @@ FileListModel::ThumbnailCounts FileListModel::thumbnail_counts() const
     }
   }
   return c;
+}
+
+FileListModel::ThumbnailCounts FileListModel::thumbnail_counts_for(const QStringList& paths) const
+{
+  ThumbnailCounts c;
+  for (const QString& path : paths) {
+    switch (thumbnail_status_.value(path, ThumbnailStatus::None)) {
+    case ThumbnailStatus::Pending:
+      ++c.pending;
+      break;
+    case ThumbnailStatus::Ready:
+      ++c.ready;
+      break;
+    case ThumbnailStatus::Failed:
+      ++c.failed;
+      break;
+    default:
+      break;
+    }
+  }
+  return c;
+}
+
+void FileListModel::clear_pending_except(const QSet<QString>& keep)
+{
+  QStringList drop;
+  for (auto it = thumbnail_status_.constBegin(); it != thumbnail_status_.constEnd(); ++it) {
+    if (it.value() != ThumbnailStatus::Pending) {
+      continue;
+    }
+    if (!keep.contains(it.key())) {
+      drop << it.key();
+    }
+  }
+  for (const QString& path : drop) {
+    thumbnail_status_.remove(path);
+    thumbnail_pending_since_.remove(path);
+  }
 }
 
 bool FileListModel::is_new(const QString& path) const

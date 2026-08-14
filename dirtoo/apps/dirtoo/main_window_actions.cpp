@@ -351,9 +351,18 @@ void MainWindow::update_status_selection()
                 .arg(format_byte_size(selected_bytes));
   }
 
-  // Thumbnail / meta progress for currently tracked paths.
+  // Thumbnail progress among *currently visible* rows only. Counting the whole
+  // model hash made the status numerator/denominator only grow as you scrolled
+  // a large directory (Ready marks accumulate forever until navigate-away).
   if (model_ != nullptr) {
-    const auto tc = model_->thumbnail_counts();
+    QStringList paths;
+    paths.reserve(static_cast<int>(visible.size()));
+    for (const auto& fi : visible) {
+      if (!fi.path().empty()) {
+        paths << QString::fromStdString(fi.path().string());
+      }
+    }
+    const auto tc = model_->thumbnail_counts_for(paths);
     const int tracked = tc.pending + tc.ready + tc.failed;
     if (tc.pending > 0) {
       info += QStringLiteral(", thumbs %1/%2")

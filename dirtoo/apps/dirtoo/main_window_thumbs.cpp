@@ -7,9 +7,12 @@
 
 #include "dirtoo/archive/archive_index.hpp"
 #include "dirtoo/thumbnail/thumbnailer.hpp"
+#include "dirtoo/filter/media_meta_cache.hpp"
 #include <QDebug>
 #include <QSet>
 #include <algorithm>
+#include <functional>
+#include <memory>
 #include <QFile>
 #include <QMimeDatabase>
 #include <QStandardPaths>
@@ -100,7 +103,8 @@ void MainWindow::schedule_directory_thumbnails_low_priority()
 void MainWindow::request_thumbnails_for_visible()
 {
   // Debounce rapid refresh/scroll storms (generation-safe via singleShot capturing this).
-  QTimer::singleShot(80, this, [this] {
+  // Slightly longer than a single wheel tick so flings coalesce into one request.
+  QTimer::singleShot(120, this, [this] {
     const auto& visible = collection_.visible_items();
     if (visible.empty()) {
       return;
@@ -184,10 +188,10 @@ void MainWindow::request_thumbnails_for_visible()
       }
     }
 
-    // Cap only the blind fallback. Viewport-derived ranges must not be
-    // truncated by lowest index (that left resize-exposed tiles unrequested).
-    constexpr int kMaxFallback = 64;
-    constexpr int kMaxViewport = 256;
+    // Cap viewport batches tightly: large scroll flings used to queue hundreds of
+    // Thumbnailer1 jobs and leave Pending marks for rows that scrolled away.
+    constexpr int kMaxFallback = 48;
+    constexpr int kMaxViewport = 64;
     if (rows.empty()) {
       const int n = std::min(static_cast<int>(visible.size()), kMaxFallback);
       rows.reserve(static_cast<std::size_t>(n));
@@ -203,6 +207,14 @@ void MainWindow::request_thumbnails_for_visible()
       int end = std::min(static_cast<int>(rows.size()), begin + kMaxViewport);
       begin = std::max(0, end - kMaxViewport);
       rows = std::vector<int>(rows.begin() + begin, rows.begin() + end);
+    }
+
+    // Drop D-Bus backlog from previous scroll positions. Ready icons stay in the
+    // model; clear *all* Pending so request_rows can re-queue the current
+    // viewport (it skips paths already marked Pending/Ready).
+    thumbs_.cancel_all();
+    if (model_ != nullptr) {
+      model_->clear_pending_thumbnails();
     }
 
     const bool need_dir = thumbs_.request_rows(
@@ -343,12 +355,71 @@ void MainWindow::on_make_directory_thumbnails()
 
 void MainWindow::on_prepare_thumbnails()
 {
-  if (view_mode_ == ViewMode::Detail) {
-    // Still useful: switch-less prepare for when user opens icons next
+  // Full-directory warm-up (not just the viewport): queue Thumbnailer1 for every
+  // listed item and kick MediaMetaCache probes so media columns / sorts can fill.
+  // Prefer the full collection (unfiltered) so Prepare matches "whole directory".
+  const auto& items = collection_.items();
+  if (items.empty()) {
+    set_status(QStringLiteral("Nothing to prepare"));
+    return;
   }
-  request_thumbnails_for_visible();
-  set_status(QStringLiteral("Preparing thumbnails for visible items…"));
-}
 
+  // Media metadata first (ffprobe/pdf/…) — independent of D-Bus thumbnail queue.
+  const std::uint64_t gen = filter::MediaMetaCache::instance().generation();
+  int meta_queued = 0;
+  for (const auto& fi : items) {
+    if (fi.is_directory() || fi.path().empty()) {
+      continue;
+    }
+    if (filter::MediaMetaCache::instance().try_get(fi.path()).has_value()
+        || filter::MediaMetaCache::instance().is_negative(fi.path())) {
+      continue;
+    }
+    // No ready callback: next paint/data() hits try_get and shows columns.
+    filter::MediaMetaCache::instance().request(fi.path(), gen, {});
+    ++meta_queued;
+  }
+
+  // Chunk Thumbnailer1 requests so a 10k-file folder does not build one giant
+  // D-Bus Queue message. Scroll-driven cancel_all can still interrupt this.
+  constexpr int kChunk = 80;
+  const int total = static_cast<int>(items.size());
+  auto queue_chunk = std::make_shared<std::function<void(int)>>();
+  *queue_chunk = [this, total, kChunk, queue_chunk](int start) {
+    if (start >= total) {
+      set_status(QStringLiteral("Prepare finished — %1 items queued").arg(total));
+      update_status_selection();
+      return;
+    }
+    const auto& items_now = collection_.items();
+    if (static_cast<int>(items_now.size()) != total) {
+      // Listing changed under us (navigate / filter); stop.
+      return;
+    }
+    std::vector<int> rows;
+    const int end = std::min(start + kChunk, total);
+    rows.reserve(static_cast<std::size_t>(end - start));
+    for (int i = start; i < end; ++i) {
+      rows.push_back(i);
+    }
+    const bool need_dir = thumbs_.request_rows(
+        items_now, rows, model_,
+        [this](const fs::Location& archive_root) -> std::optional<std::filesystem::path> {
+          return archive_manager_.extracted_root(archive_root);
+        });
+    if (need_dir) {
+      schedule_directory_thumbnails_low_priority();
+    }
+    set_status(QStringLiteral("Preparing thumbnails %1/%2…").arg(end).arg(total));
+    update_status_selection();
+    QTimer::singleShot(30, this, [queue_chunk, end] { (*queue_chunk)(end); });
+  };
+  (*queue_chunk)(0);
+
+  set_status(QStringLiteral("Preparing %1 item(s)… (%2 media probes)")
+                 .arg(total)
+                 .arg(meta_queued));
+  update_status_selection();
+}
 
 } // namespace dirtoo::app

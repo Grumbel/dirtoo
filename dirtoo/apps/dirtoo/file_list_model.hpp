@@ -104,6 +104,10 @@ public:
     int failed = 0;
   };
   [[nodiscard]] ThumbnailCounts thumbnail_counts() const;
+  /// Counts among the given paths only (e.g. current visible rows).
+  [[nodiscard]] ThumbnailCounts thumbnail_counts_for(const QStringList& paths) const;
+  /// Drop Pending marks not in @p keep (Ready/Failed unchanged).
+  void clear_pending_except(const QSet<QString>& keep);
   [[nodiscard]] bool is_new(const QString& path) const;
   [[nodiscard]] bool is_opened(const QString& path) const;
   void set_show_opened_state(bool on);
