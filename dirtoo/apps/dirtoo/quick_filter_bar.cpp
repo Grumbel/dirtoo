@@ -24,8 +24,8 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QMimeDatabase>
-#include <QScrollArea>
 #include <QSizePolicy>
+#include <QResizeEvent>
 #include <QSet>
 #include <QSettings>
 #include <QSignalBlocker>
@@ -195,19 +195,12 @@ QuickFilterBar::QuickFilterBar(QWidget* parent)
   outer->setContentsMargins(4, 2, 4, 2);
   outer->setSpacing(4);
 
-  scroll_ = new QScrollArea(this);
-  scroll_->setWidgetResizable(true);
-  scroll_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-  scroll_->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-  scroll_->setFrameShape(QFrame::NoFrame);
-  scroll_->setMinimumHeight(36);
-  scroll_->setMaximumHeight(120); // a few wrapped rows; scroll if still more
-  scroll_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-  strip_ = new QWidget(scroll_);
+  strip_ = new QWidget(this);
+  strip_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
   strip_layout_ = new FlowLayout(strip_, /*margin=*/0, /*h=*/4, /*v=*/4);
-  scroll_->setWidget(strip_);
-  outer->addWidget(scroll_, 1);
+  outer->addWidget(strip_, 1);
 
   pin_btn_ = new QToolButton(this);
   pin_btn_->setText(QStringLiteral("Pin filter"));
@@ -954,13 +947,7 @@ void QuickFilterBar::rebuild_buttons()
       strip_layout_->addWidget(btn);
     }
   }
-  if (strip_ != nullptr && strip_layout_ != nullptr) {
-    const int w = scroll_ != nullptr ? scroll_->viewport()->width() : strip_->width();
-    const int h = strip_layout_->heightForWidth(std::max(1, w));
-    strip_->setMinimumHeight(h);
-    strip_->updateGeometry();
-  }
-  updateGeometry();
+  relayout_height();
 }
 
 void QuickFilterBar::load_pins()
@@ -1002,6 +989,56 @@ void QuickFilterBar::save_pins() const
   }
   settings.endArray();
   settings.sync();
+}
+
+
+int QuickFilterBar::heightForWidth(int width) const
+{
+  if (strip_layout_ == nullptr) {
+    return 36;
+  }
+  // Pin button sits beside the strip in the outer HBox.
+  int pin_w = 0;
+  if (pin_btn_ != nullptr) {
+    pin_w = pin_btn_->sizeHint().width() + 4;
+  }
+  const QMargins m = contentsMargins();
+  const int strip_w = std::max(1, width - pin_w - m.left() - m.right() - 8);
+  const int strip_h = strip_layout_->heightForWidth(strip_w);
+  return strip_h + m.top() + m.bottom() + 4;
+}
+
+QSize QuickFilterBar::sizeHint() const
+{
+  const int w = width() > 0 ? width() : 400;
+  return QSize(w, heightForWidth(w));
+}
+
+QSize QuickFilterBar::minimumSizeHint() const
+{
+  return QSize(100, 28);
+}
+
+void QuickFilterBar::relayout_height()
+{
+  if (strip_ == nullptr || strip_layout_ == nullptr) {
+    return;
+  }
+  const int w = std::max(1, strip_->width() > 0 ? strip_->width() : width() - 80);
+  const int h = strip_layout_->heightForWidth(w);
+  strip_->setMinimumHeight(h);
+  strip_->setMaximumHeight(h);
+  strip_->updateGeometry();
+  updateGeometry();
+  if (parentWidget() != nullptr) {
+    parentWidget()->updateGeometry();
+  }
+}
+
+void QuickFilterBar::resizeEvent(QResizeEvent* event)
+{
+  QWidget::resizeEvent(event);
+  relayout_height();
 }
 
 } // namespace dirtoo::app

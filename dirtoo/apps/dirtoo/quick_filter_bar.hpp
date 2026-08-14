@@ -11,9 +11,10 @@
 #include <QStringList>
 #include <QWidget>
 
+class QResizeEvent;
+
 #include <vector>
 
-class QScrollArea;
 class QToolButton;
 
 namespace dirtoo::app {
@@ -54,6 +55,11 @@ public:
   /// Pin @p expr (no-op if empty). Uses current_directory_ for initial scope paths.
   void pin_expression(const QString& expr, const QString& label = {});
 
+  [[nodiscard]] bool hasHeightForWidth() const override { return true; }
+  [[nodiscard]] int heightForWidth(int width) const override;
+  [[nodiscard]] QSize sizeHint() const override;
+  [[nodiscard]] QSize minimumSizeHint() const override;
+
 signals:
   /// Empty string clears the filter.
   void filter_requested(const QString& expression);
@@ -75,8 +81,11 @@ private:
   [[nodiscard]] bool pin_visible(const PinnedQuickFilter& pin) const;
   void load_pins();
   void save_pins() const;
+  void relayout_height();
 
-  QScrollArea* scroll_ = nullptr;
+protected:
+  void resizeEvent(QResizeEvent* event) override;
+
   QWidget* strip_ = nullptr;
   FlowLayout* strip_layout_ = nullptr;
   QToolButton* pin_btn_ = nullptr;
