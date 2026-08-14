@@ -119,7 +119,6 @@ int FlowLayout::do_layout(const QRect& rect, bool test_only) const
   const int space_y = v_space >= 0 ? v_space : 4;
 
   for (QLayoutItem* item : items_) {
-    QWidget* wid = item->widget();
     int next_x = x + item->sizeHint().width() + space_x;
     if (next_x - space_x > effective.right() && line_height > 0) {
       x = effective.x();

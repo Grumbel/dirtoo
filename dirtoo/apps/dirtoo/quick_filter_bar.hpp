@@ -4,6 +4,7 @@
 #pragma once
 
 #include "dirtoo/fs/file_info.hpp"
+#include "flow_layout.hpp"
 
 #include <QColor>
 #include <QString>
@@ -12,8 +13,6 @@
 
 #include <vector>
 
-class QHBoxLayout;
-class FlowLayout;
 class QScrollArea;
 class QToolButton;
 
