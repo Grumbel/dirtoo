@@ -212,11 +212,6 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
 
   const fs::FileInfo* fi = model_->file_at(row_);
 
-  // Membership bar over the thumb, under duration/fps badges (painted later).
-  if (fi != nullptr) {
-    paint_set_membership(painter, thumb, fi->path());
-  }
-
   // Directory montage overlay (shared with FileItemDelegate).
   if (fi != nullptr && fi->is_directory()
       && idx.data(ThumbnailStatusRole).toInt() == static_cast<int>(ThumbnailStatus::Ready)
@@ -345,6 +340,10 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
   // Long names wrap to a second line when the tile budget allows, else elide.
   if (!text.isEmpty() && caption_h > 0) {
     QRect text_rect = br.toRect().adjusted(4, thumb.bottom() + 2, -4, -2);
+    // Set color wash behind name/size/date (not on the thumbnail).
+    if (fi != nullptr) {
+      paint_set_membership(painter, text_rect, fi->path());
+    }
     const QColor name_color = text_color.isValid() ? text_color : QColor(0, 0, 0);
     const QColor secondary(96, 96, 96);
     const QFontMetrics fm(painter->font());

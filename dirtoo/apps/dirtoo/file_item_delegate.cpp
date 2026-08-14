@@ -377,10 +377,6 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
   }
 
   const fs::FileInfo* fi = model_->file_at(index.row());
-  // Membership bar over the thumb, under duration/fps badges (painted later).
-  if (fi != nullptr) {
-    paint_set_membership(painter, thumb, fi->path());
-  }
   const bool is_dir = fi != nullptr && fi->is_directory();
   const bool hover = (opt.state & QStyle::State_MouseOver);
 
@@ -483,6 +479,10 @@ void FileItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
   if (!text.isEmpty() && model_->icon_detail_level() > 0) {
     QRect text_rect = opt.rect.adjusted(4, thumb.bottom() + 4, -4, -2);
     if (text_rect.height() > 0 && text_rect.width() > 0) {
+      // Set color wash behind name/size/date (not on the thumbnail).
+      if (fi != nullptr) {
+        paint_set_membership(painter, text_rect, fi->path());
+      }
       QPen pen = painter->pen();
       const QColor name_color = opt.palette.text().color();
       const QColor secondary(96, 96, 96);

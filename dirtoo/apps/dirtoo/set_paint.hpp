@@ -106,29 +106,25 @@ inline void clear_set_membership_cache()
   set_paint_detail::clear_set_membership_cache();
 }
 
-/// Top-edge membership bar (one set per file). Same height as duration/fps
-/// badges (paint_tile_badge). Draw after the thumbnail and *before* those
-/// badges so duration/fps stay on top.
-inline void paint_set_membership(QPainter* painter, const QRect& tile,
+/// Set membership wash behind icon captions (name / size / date).
+/// Pass the caption band (full width under the thumbnail). One set per file.
+inline void paint_set_membership(QPainter* painter, const QRect& caption_area,
                                  const std::filesystem::path& path)
 {
-  if (painter == nullptr || tile.isEmpty()) {
+  if (painter == nullptr || caption_area.isEmpty()) {
     return;
   }
   const auto sets = set_paint_detail::sets_for_path(path);
   if (sets.empty()) {
     return;
   }
-  // Match paint_tile_badge: font * 0.85, height = fm.height() + 2.
-  QFont font = painter->font();
-  font.setPointSizeF(std::max(8.0, font.pointSizeF() * 0.85));
-  const int kBar = QFontMetrics(font).height() + 2;
-
-  const auto& s = sets.front();
-  QColor c = set_paint_detail::color_for_set(s);
-  c.setAlpha(255);
+  QColor c = set_paint_detail::color_for_set(sets.front());
+  // Solid enough to read as "in a set", soft enough that text stays legible.
+  c.setAlpha(160);
   painter->save();
-  painter->fillRect(QRect(tile.left(), tile.top(), tile.width(), kBar), c);
+  painter->setPen(Qt::NoPen);
+  painter->setBrush(c);
+  painter->drawRoundedRect(caption_area.adjusted(1, 0, -1, 0), 3, 3);
   painter->restore();
 }
 
