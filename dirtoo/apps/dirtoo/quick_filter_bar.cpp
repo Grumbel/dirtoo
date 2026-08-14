@@ -5,6 +5,7 @@
 #include <QList>
 #include <QHash>
 #include "set_paint.hpp"
+#include "set_membership.hpp"
 #include "dirtoo/sets/file_set_store.hpp"
 #include "hash_service.hpp"
 
@@ -36,6 +37,7 @@
 #include <QVBoxLayout>
 
 #include <algorithm>
+#include <unordered_set>
 #include <filesystem>
 
 namespace dirtoo::app {
@@ -333,7 +335,8 @@ void QuickFilterBar::rebuild_from_items(const std::vector<dirtoo::fs::FileInfo>&
     auto_chips_.push_back(std::move(c));
   }
 
-  // Sets that have members among the scanned listing.
+  // Sets that have members among the scanned listing (robust path keys), and
+  // any set with a member whose parent is the current directory.
   dirtoo::sets::FileSetStore set_store;
   std::string set_err;
   if (set_store.open(dirtoo::sets::FileSetStore::default_path(), &set_err)) {
@@ -343,16 +346,50 @@ void QuickFilterBar::rebuild_from_items(const std::vector<dirtoo::fs::FileInfo>&
       if (fi.path().empty()) {
         continue;
       }
-      std::string key;
       if (fi.location().is_archive()) {
-        key = fi.location().as_url();
+        for (const auto& s : set_store.sets_for_path(fi.location().as_url())) {
+          sets_seen.insert(QString::fromStdString(s.id), s);
+        }
       } else {
-        std::error_code ec;
-        const auto abs = std::filesystem::absolute(fi.path(), ec);
-        key = ec ? fi.path().string() : abs.lexically_normal().string();
+        for (const auto& s : set_membership::sets_for_path_robust(set_store, fi.path())) {
+          sets_seen.insert(QString::fromStdString(s.id), s);
+        }
       }
-      for (const auto& s : set_store.sets_for_path(key)) {
-        sets_seen.insert(QString::fromStdString(s.id), s);
+    }
+    // Directory-scoped: member path's parent matches current_directory_.
+    if (!current_directory_.isEmpty()) {
+      std::unordered_set<std::string> dir_keys;
+      set_membership::push_path_forms(dir_keys,
+                                      std::filesystem::path{current_directory_.toStdString()});
+      for (const auto& s : set_store.list_sets()) {
+        if (sets_seen.contains(QString::fromStdString(s.id))) {
+          continue;
+        }
+        for (const auto& m : set_store.members(s.id)) {
+          const std::filesystem::path mp{m.path_key};
+          std::unordered_set<std::string> parent_keys;
+          set_membership::push_path_forms(parent_keys, mp.parent_path());
+          bool hit = false;
+          for (const auto& pk : parent_keys) {
+            if (dir_keys.contains(pk)) {
+              hit = true;
+              break;
+            }
+          }
+          if (!hit) {
+            std::error_code ec;
+            if (std::filesystem::equivalent(mp.parent_path(),
+                                            std::filesystem::path{current_directory_.toStdString()},
+                                            ec)
+                && !ec) {
+              hit = true;
+            }
+          }
+          if (hit) {
+            sets_seen.insert(QString::fromStdString(s.id), s);
+            break;
+          }
+        }
       }
     }
     QList<dirtoo::sets::FileSet> set_list = sets_seen.values();

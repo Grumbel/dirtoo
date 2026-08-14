@@ -3,6 +3,9 @@
 
 #include "filter_worker.hpp"
 
+#include "set_membership.hpp"
+#include "dirtoo/sets/file_set_store.hpp"
+
 #include "dirtoo/collection/grouper.hpp"
 #include "dirtoo/filter/filter_item.hpp"
 #include "dirtoo/filter/parser.hpp"
@@ -86,13 +89,27 @@ void FilterWorker::filter_items(std::vector<fs::FileInfo> items, const QString& 
   filter::MatchFuncPtr match;
   bool parse_ok = true;
   const std::string expr = expression.toStdString();
+
+  // Pure set:… handled in the app against FileSetStore so membership works even
+  // when an older installed dirtoo-filter MatchFunc still misses path keys.
+  bool pure_set = false;
+  std::optional<std::string> set_id;
+  dirtoo::sets::FileSetStore set_store;
   if (!expr.empty()) {
-    auto parsed = filter::parse_filter(expr);
-    if (parsed) {
-      match = *parsed;
+    if (auto q = set_membership::pure_set_query(expr)) {
+      pure_set = true;
+      std::string err;
+      if (set_store.open(dirtoo::sets::FileSetStore::default_path(), &err)) {
+        set_id = set_membership::resolve_set_id(set_store, *q);
+      }
     } else {
-      match = filter::make_name_substring(expr, false);
-      parse_ok = false;
+      auto parsed = filter::parse_filter(expr);
+      if (parsed) {
+        match = *parsed;
+      } else {
+        match = filter::make_name_substring(expr, false);
+        parse_ok = false;
+      }
     }
   }
 
@@ -102,7 +119,13 @@ void FilterWorker::filter_items(std::vector<fs::FileInfo> items, const QString& 
     if (!show_hidden && is_hidden_name(fi.basename())) {
       continue;
     }
-    if (match != nullptr && !match->matches(to_filter_item(fi))) {
+    if (pure_set) {
+      // Unknown / empty set → match nothing.
+      if (!set_id.has_value()
+          || !set_membership::path_in_set(set_store, *set_id, fi.path())) {
+        continue;
+      }
+    } else if (match != nullptr && !match->matches(to_filter_item(fi))) {
       continue;
     }
     visible.push_back(std::move(fi));
