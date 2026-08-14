@@ -42,7 +42,9 @@ public:
   [[nodiscard]] DirectoryThumbnailWorker* dir_worker() const { return dir_thumb_worker_; }
 
   void cancel_all();
-  [[nodiscard]] int in_flight_count() const { return thumbnailer_.in_flight_count(); }
+  /// Outstanding thumbnail jobs we still expect (D-Bus queue + archive extract).
+  /// Tracked here so the GUI does not depend on rebuilding dirtoo-thumbnail.
+  [[nodiscard]] int in_flight_count() const noexcept { return in_flight_; }
   void clear_aliases();
   void clear_content_retries();
   void request_many(const std::vector<dirtoo::fs::Location>& locs, const QStringList& mimes,
@@ -96,6 +98,8 @@ private:
   DirectoryThumbnailWorker* dir_thumb_worker_ = nullptr;
   /// Absolute paths already re-queued with MatchContent for this session.
   QSet<QString> content_mime_retried_;
+  /// Approximate outstanding work (request_many + archive extract paths).
+  int in_flight_ = 0;
 };
 
 } // namespace dirtoo::app

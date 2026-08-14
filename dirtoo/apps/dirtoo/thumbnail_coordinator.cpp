@@ -22,6 +22,19 @@ namespace dirtoo::app {
 ThumbnailCoordinator::ThumbnailCoordinator(QObject* parent)
     : QObject(parent)
 {
+  // Keep in_flight_ aligned with Thumbnailer1 completion (incl. sync cache hits).
+  connect(&thumbnailer_, &thumbnail::Thumbnailer::thumbnail_ready, this,
+          [this](const fs::Location&, const QString&) {
+            if (in_flight_ > 0) {
+              --in_flight_;
+            }
+          });
+  connect(&thumbnailer_, &thumbnail::Thumbnailer::thumbnail_failed, this,
+          [this](const fs::Location&, const QString&) {
+            if (in_flight_ > 0) {
+              --in_flight_;
+            }
+          });
 }
 
 ThumbnailCoordinator::~ThumbnailCoordinator()
@@ -33,6 +46,7 @@ void ThumbnailCoordinator::cancel_all()
 {
   thumbnailer_.cancel_all();
   content_mime_retried_.clear();
+  in_flight_ = 0;
 }
 
 void ThumbnailCoordinator::clear_aliases()
@@ -52,6 +66,9 @@ void ThumbnailCoordinator::request_many(const std::vector<fs::Location>& locs,
   if (locs.empty()) {
     return;
   }
+  // Count before the call: cache hits emit ready synchronously and will
+  // decrement via note_finished; D-Bus-queued items stay until Ready/Error.
+  in_flight_ += static_cast<int>(locs.size());
   thumbnailer_.request_many(locs, mimes, QStringLiteral("large"), force);
 }
 

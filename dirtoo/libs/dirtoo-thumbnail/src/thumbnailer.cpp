@@ -98,16 +98,6 @@ void Thumbnailer::cancel_all()
   pending_.clear();
 }
 
-int Thumbnailer::in_flight_count() const
-{
-  int n = 0;
-  for (const auto& [handle, locs] : pending_) {
-    (void)handle;
-    n += static_cast<int>(locs.size());
-  }
-  return n;
-}
-
 void Thumbnailer::request(const fs::Location& location, const QString& mime_type,
                           const QString& flavor, bool force)
 {
