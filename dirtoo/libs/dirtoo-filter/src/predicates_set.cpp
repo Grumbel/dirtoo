@@ -11,21 +11,55 @@
 #include <filesystem>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <string_view>
+#include <unordered_set>
 #include <vector>
 
 namespace dirtoo::filter {
 namespace {
 
-struct SetLookup {
+std::string lower_copy(std::string_view s)
+{
+  std::string out{s};
+  for (char& c : out) {
+    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  }
+  return out;
+}
+
+/// Normalize a filesystem path into several string forms for DB lookup.
+void push_path_forms(std::unordered_set<std::string>& out, const std::filesystem::path& p)
+{
+  const std::string raw = p.string();
+  if (raw.empty()) {
+    return;
+  }
+  out.insert(raw);
+  if (raw.find("://") != std::string::npos || raw.find("//archive") != std::string::npos) {
+    return;
+  }
+  std::error_code ec;
+  const auto abs = std::filesystem::absolute(p, ec);
+  if (!ec) {
+    out.insert(abs.string());
+    out.insert(abs.lexically_normal().string());
+  }
+  const auto weak = std::filesystem::weakly_canonical(p, ec);
+  if (!ec) {
+    out.insert(weak.string());
+  }
+}
+
+struct SetStoreHolder {
   dirtoo::sets::FileSetStore store;
   bool open = false;
-  mutable std::mutex mu;
+  std::mutex mu;
 
-  static SetLookup& instance()
+  static SetStoreHolder& instance()
   {
-    static SetLookup inst;
+    static SetStoreHolder inst;
     return inst;
   }
 
@@ -38,110 +72,41 @@ struct SetLookup {
     open = store.open(dirtoo::sets::FileSetStore::default_path(), &err);
     return open;
   }
-
-  /// Candidate path keys (absolute + as stored) so listing paths match DB rows.
-  [[nodiscard]] static std::vector<std::string> path_keys(const FilterItem& item)
-  {
-    std::vector<std::string> keys;
-    const std::string path_str = item.path.string();
-    if (path_str.empty()) {
-      return keys;
-    }
-    auto push_unique = [&](std::string k) {
-      if (k.empty()) {
-        return;
-      }
-      for (const auto& e : keys) {
-        if (e == k) {
-          return;
-        }
-      }
-      keys.push_back(std::move(k));
-    };
-    push_unique(path_str);
-    if (path_str.find("://") != std::string::npos
-        || path_str.find("//archive") != std::string::npos) {
-      return keys;
-    }
-    std::error_code ec;
-    const auto abs = std::filesystem::absolute(item.path, ec);
-    if (!ec) {
-      push_unique(abs.lexically_normal().string());
-      push_unique(abs.string());
-    }
-    const auto weak = std::filesystem::weakly_canonical(item.path, ec);
-    if (!ec) {
-      push_unique(weak.string());
-    }
-    return keys;
-  }
-
-  [[nodiscard]] std::vector<dirtoo::sets::FileSet> sets_for(const FilterItem& item)
-  {
-    std::lock_guard<std::mutex> lock(mu);
-    if (!ensure_open()) {
-      return {};
-    }
-    for (const auto& key : path_keys(item)) {
-      auto sets = store.sets_for_path(key);
-      if (!sets.empty()) {
-        return sets;
-      }
-    }
-    return {};
-  }
-
-  [[nodiscard]] bool in_set(const FilterItem& item, std::string_view query)
-  {
-    std::lock_guard<std::mutex> lock(mu);
-    if (!ensure_open() || query.empty()) {
-      return false;
-    }
-    const auto keys = path_keys(item);
-
-    auto path_in = [&](std::string_view set_id) {
-      for (const auto& key : keys) {
-        if (store.contains(set_id, key)) {
-          return true;
-        }
-      }
-      return false;
-    };
-
-    // Exact id.
-    if (path_in(query)) {
-      return true;
-    }
-    // Unique id prefix (QuickFilter may show short ids).
-    if (query.size() >= 8) {
-      std::vector<std::string> prefix_hits;
-      for (const auto& s : store.list_sets()) {
-        if (s.id.size() >= query.size()
-            && s.id.compare(0, query.size(), query) == 0) {
-          prefix_hits.push_back(s.id);
-        }
-      }
-      if (prefix_hits.size() == 1 && path_in(prefix_hits.front())) {
-        return true;
-      }
-    }
-    // Label match.
-    for (const auto& s : store.list_sets()) {
-      if (s.label == query && path_in(s.id)) {
-        return true;
-      }
-    }
-    return false;
-  }
 };
 
-std::string lower_copy(std::string_view s)
+/// Resolve set: query → set id (exact id, unique prefix ≥8 chars, or unique label).
+std::optional<std::string> resolve_set_id(dirtoo::sets::FileSetStore& store, std::string_view query)
 {
-  std::string out{s};
-  for (char& c : out) {
-    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  if (query.empty()) {
+    return std::nullopt;
   }
-  return out;
+  if (auto by_id = store.get_set(query)) {
+    return by_id->id;
+  }
+  if (query.size() >= 8) {
+    std::optional<std::string> pref;
+    for (const auto& s : store.list_sets()) {
+      if (s.id.size() >= query.size() && s.id.compare(0, query.size(), query) == 0) {
+        if (pref) {
+          return std::nullopt; // ambiguous
+        }
+        pref = s.id;
+      }
+    }
+    if (pref) {
+      return pref;
+    }
+  }
+  std::optional<std::string> by_label;
+  for (const auto& s : store.list_sets()) {
+    if (s.label == query) {
+      if (by_label) {
+        return std::nullopt;
+      }
+      by_label = s.id;
+    }
+  }
+  return by_label;
 }
 
 class SetNameMatch : public MatchFunc {
@@ -149,18 +114,81 @@ public:
   explicit SetNameMatch(std::string query)
       : query_(std::move(query))
   {
+    load_members();
   }
 
   bool matches(const FilterItem& item) const override
   {
-    if (query_.empty()) {
+    if (!resolved_ || member_keys_.empty()) {
       return false;
     }
-    return SetLookup::instance().in_set(item, query_);
+    std::unordered_set<std::string> item_keys;
+    push_path_forms(item_keys, item.path);
+    for (const auto& k : item_keys) {
+      if (member_keys_.contains(k)) {
+        return true;
+      }
+    }
+    // Filesystem equivalence (symlinks / relative vs absolute).
+    for (const auto& mk : member_paths_) {
+      std::error_code ec;
+      if (std::filesystem::equivalent(item.path, mk, ec) && !ec) {
+        return true;
+      }
+    }
+    // Same directory + same basename (covers residual path-string mismatches).
+    const auto item_parent = item.path.parent_path();
+    const auto item_name = item.path.filename().string();
+    if (item_name.empty()) {
+      return false;
+    }
+    for (const auto& mk : member_paths_) {
+      if (mk.filename().string() == item_name) {
+        std::error_code ec;
+        if (std::filesystem::equivalent(item_parent, mk.parent_path(), ec) && !ec) {
+          return true;
+        }
+        // String compare parents after normalization.
+        std::unordered_set<std::string> a;
+        std::unordered_set<std::string> b;
+        push_path_forms(a, item_parent);
+        push_path_forms(b, mk.parent_path());
+        for (const auto& x : a) {
+          if (b.contains(x)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
   }
 
 private:
+  void load_members()
+  {
+    auto& holder = SetStoreHolder::instance();
+    std::lock_guard lock(holder.mu);
+    if (!holder.ensure_open()) {
+      return;
+    }
+    auto id = resolve_set_id(holder.store, query_);
+    if (!id) {
+      return;
+    }
+    resolved_ = true;
+    set_id_ = *id;
+    for (const auto& m : holder.store.members(*id)) {
+      member_paths_.emplace_back(m.path_key);
+      push_path_forms(member_keys_, std::filesystem::path{m.path_key});
+      member_keys_.insert(m.path_key);
+    }
+  }
+
   std::string query_;
+  bool resolved_ = false;
+  std::string set_id_;
+  std::unordered_set<std::string> member_keys_;
+  std::vector<std::filesystem::path> member_paths_;
 };
 
 class InSetMatch : public MatchFunc {
@@ -172,7 +200,23 @@ public:
 
   bool matches(const FilterItem& item) const override
   {
-    const bool has = !SetLookup::instance().sets_for(item).empty();
+    auto& holder = SetStoreHolder::instance();
+    std::lock_guard lock(holder.mu);
+    if (!holder.ensure_open()) {
+      return want_any_ ? false : true;
+    }
+    std::unordered_set<std::string> keys;
+    push_path_forms(keys, item.path);
+    bool has = false;
+    for (const auto& k : keys) {
+      if (!holder.store.sets_for_path(k).empty()) {
+        has = true;
+        break;
+      }
+    }
+    if (!has) {
+      // equivalent scan is too heavy for in-set:yes over large dirs; path forms only.
+    }
     return want_any_ ? has : !has;
   }
 
