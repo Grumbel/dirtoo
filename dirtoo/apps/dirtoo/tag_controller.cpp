@@ -107,6 +107,70 @@ QStringList tags_on_selection(const std::vector<dirtoo::fs::FileInfo>& files)
   return out;
 }
 
+/// Completes the last space/comma-separated tag token (not the whole line).
+class TagNameCompleter : public QCompleter {
+public:
+  explicit TagNameCompleter(QAbstractItemModel* model, QObject* parent = nullptr)
+      : QCompleter(model, parent)
+  {
+    setCaseSensitivity(Qt::CaseInsensitive);
+    setFilterMode(Qt::MatchContains);
+    setCompletionMode(QCompleter::PopupCompletion);
+  }
+
+protected:
+  [[nodiscard]] QStringList splitPath(const QString& path) const override
+  {
+    return {last_token(path)};
+  }
+
+  [[nodiscard]] QString pathFromIndex(const QModelIndex& index) const override
+  {
+    if (!index.isValid()) {
+      return {};
+    }
+    const QString completion = index.data(Qt::EditRole).toString();
+    if (completion.isEmpty()) {
+      return index.data(Qt::DisplayRole).toString();
+    }
+    auto* edit = qobject_cast<QLineEdit*>(widget());
+    if (edit == nullptr) {
+      return completion;
+    }
+    const QString full = edit->text();
+    const int start = last_token_start(full);
+    // Keep earlier tags; replace only the incomplete trailing token.
+    QString prefix = full.left(start);
+    // Normalize trailing separators to a single space when appending.
+    while (prefix.endsWith(QLatin1Char(' ')) || prefix.endsWith(QLatin1Char(','))) {
+      prefix.chop(1);
+    }
+    if (prefix.isEmpty()) {
+      return completion;
+    }
+    return prefix + QLatin1Char(' ') + completion;
+  }
+
+private:
+  static int last_token_start(const QString& text)
+  {
+    int i = text.size() - 1;
+    while (i >= 0) {
+      const QChar ch = text.at(i);
+      if (ch.isSpace() || ch == QLatin1Char(',')) {
+        return i + 1;
+      }
+      --i;
+    }
+    return 0;
+  }
+
+  static QString last_token(const QString& text)
+  {
+    return text.mid(last_token_start(text));
+  }
+};
+
 /// Dialog: current tags (remove) + line edit / known list (add).
 class TagNameDialog : public QDialog {
 public:
@@ -166,9 +230,7 @@ public:
 
     known_ = known_tag_names();
     auto* model = new QStringListModel(known_, this);
-    auto* completer = new QCompleter(model, this);
-    completer->setCaseSensitivity(Qt::CaseInsensitive);
-    completer->setFilterMode(Qt::MatchContains);
+    auto* completer = new TagNameCompleter(model, this);
     edit_->setCompleter(completer);
 
     known_list_ = new QListWidget(this);
