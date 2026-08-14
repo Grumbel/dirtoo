@@ -1,6 +1,6 @@
 # Proposal: Persistent ad-hoc file sets (“groups”)
 
-Status: brainstorm / design notes only. No implementation yet.  
+Status: foundation started — FileSetStore + unit tests (no UI yet).  
 Related: existing **View → Group By** (Day / Directory / Session) is *transient
 sectioning* of the current listing — different feature. Tags are *global
 categories*. This is something in between.

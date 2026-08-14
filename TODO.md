@@ -100,6 +100,13 @@ tints, badges, and indicators.
 
 ---
 
+### Persistent file sets (FileSetStore)
+
+- [x] SQLite store + Catch2 tests (create/members/overlap/dissolve)
+- [ ] set:// virtual location + filter `set:`
+- [ ] Ctrl+G / context menu UI
+- [ ] Color cues in icon/list paint
+
 ## Critical / high-priority defect queue
 
 ### 1. UI freezes / jank on large directories

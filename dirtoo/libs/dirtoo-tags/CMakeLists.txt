@@ -28,8 +28,10 @@ find_package(dirtoo-hash REQUIRED CONFIG)
 add_library(dirtoo-tags
   include/dirtoo/tags/tag_def.hpp
   include/dirtoo/tags/tag_store.hpp
+  include/dirtoo/sets/file_set_store.hpp
   src/tag_name.cpp
   src/tag_store.cpp
+  src/file_set_store.cpp
 )
 add_library(dirtoo::tags ALIAS dirtoo-tags)
 add_library(dirtoo-tags::dirtoo-tags ALIAS dirtoo-tags)
