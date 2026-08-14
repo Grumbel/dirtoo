@@ -22,19 +22,24 @@ target_include_directories(dirtoo-tests PRIVATE
   ${CMAKE_SOURCE_DIR}/apps/dirtoo
 )
 
-# When building against in-tree libs/ (same checkout), prefer those headers so
-# tests see FileSetStore / Location::from_set without waiting on stale installs.
-# Linked binaries still come from find_package — rebuild dirtoo-fs, dirtoo-tags,
-# and dirtoo-filter after pulling set:// / FileSetStore work.
+# Prefer in-tree lib headers over stale find_package installs (BEFORE = first on path).
+set(_dirtoo_in_tree_lib_incs "")
 foreach(_inc
     "${CMAKE_SOURCE_DIR}/libs/dirtoo-tags/include"
     "${CMAKE_SOURCE_DIR}/libs/dirtoo-fs/include"
     "${CMAKE_SOURCE_DIR}/libs/dirtoo-filter/include"
     "${CMAKE_SOURCE_DIR}/libs/dirtoo-hash/include")
   if(EXISTS "${_inc}")
-    target_include_directories(dirtoo-tests PRIVATE "${_inc}")
+    list(APPEND _dirtoo_in_tree_lib_incs "${_inc}")
   endif()
 endforeach()
+if(_dirtoo_in_tree_lib_incs)
+  target_include_directories(dirtoo-tests BEFORE PRIVATE ${_dirtoo_in_tree_lib_incs})
+endif()
+if(EXISTS "${CMAKE_SOURCE_DIR}/libs/dirtoo-tags/src/file_set_store.cpp")
+  target_sources(dirtoo-tests PRIVATE
+    "${CMAKE_SOURCE_DIR}/libs/dirtoo-tags/src/file_set_store.cpp")
+endif()
 
 target_link_libraries(dirtoo-tests
   PRIVATE

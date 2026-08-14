@@ -157,6 +157,30 @@ target_compile_definitions(dirtoo-app PRIVATE
 
 find_package(SQLite3 REQUIRED)
 
+
+# In-tree lib headers (sets / Location set://) must win over stale find_package installs.
+# Rebuild nix packages dirtoo-fs, dirtoo-tags, dirtoo-filter after pulling those APIs so
+# link symbols match; headers alone are not enough for Location::from_set.
+set(_dirtoo_in_tree_lib_incs "")
+foreach(_inc
+    "${CMAKE_SOURCE_DIR}/libs/dirtoo-tags/include"
+    "${CMAKE_SOURCE_DIR}/libs/dirtoo-fs/include"
+    "${CMAKE_SOURCE_DIR}/libs/dirtoo-filter/include"
+    "${CMAKE_SOURCE_DIR}/libs/dirtoo-hash/include")
+  if(EXISTS "${_inc}")
+    list(APPEND _dirtoo_in_tree_lib_incs "${_inc}")
+  endif()
+endforeach()
+
+if(_dirtoo_in_tree_lib_incs)
+  target_include_directories(dirtoo-app BEFORE PRIVATE ${_dirtoo_in_tree_lib_incs})
+endif()
+# Compile FileSetStore into the app when the package install lacks it (same checkout).
+if(EXISTS "${CMAKE_SOURCE_DIR}/libs/dirtoo-tags/src/file_set_store.cpp")
+  target_sources(dirtoo-app PRIVATE
+    "${CMAKE_SOURCE_DIR}/libs/dirtoo-tags/src/file_set_store.cpp")
+endif()
+
 target_link_libraries(dirtoo-app
   PRIVATE
     dirtoo_warnings

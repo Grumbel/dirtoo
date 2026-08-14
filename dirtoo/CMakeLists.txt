@@ -47,6 +47,14 @@ find_package(dirtoo-archive REQUIRED CONFIG)
 find_package(dirtoo-hash REQUIRED CONFIG)
 find_package(dirtoo-tags REQUIRED CONFIG)
 
+# Sanity: FileSetStore / set:// need matching lib packages (or in-tree libs/).
+if(NOT EXISTS "${CMAKE_SOURCE_DIR}/libs/dirtoo-tags/include/dirtoo/sets/file_set_store.hpp")
+  # Rely on installed dirtoo-tags; cannot check easily here.
+  message(STATUS "dirtoo: in-tree FileSetStore header not found — using find_package(dirtoo-tags)")
+else()
+  message(STATUS "dirtoo: in-tree FileSetStore headers available under libs/dirtoo-tags/include")
+endif()
+
 add_compile_definitions(DIRTOO_VERSION="${PROJECT_VERSION_FULL}")
 
 # Compatibility aliases used by existing target_link_libraries in the app.
