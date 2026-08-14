@@ -29,6 +29,7 @@
 #include <QSignalBlocker>
 #include <QStandardPaths>
 #include <QToolButton>
+#include <QStyle>
 #include <QFrame>
 #include <QDialog>
 #include <QDir>
@@ -438,6 +439,9 @@ void QuickFilterBar::set_active_expression(const QString& expr)
       if (btn->isChecked() != on) {
         const QSignalBlocker block(btn);
         btn->setChecked(on);
+        btn->style()->unpolish(btn);
+        btn->style()->polish(btn);
+        btn->update();
       }
     }
   }
@@ -511,20 +515,46 @@ QToolButton* QuickFilterBar::make_auto_chip(const AutoChip& chip)
   auto* btn = new QToolButton(strip_);
   btn->setText(chip.label);
   btn->setCheckable(true);
-  btn->setAutoRaise(true);
+  btn->setAutoRaise(false); // keep border visible when active
   btn->setToolTip(chip.expression);
   btn->setProperty("dirtoo_qf_expr", chip.expression);
   btn->setChecked(active_ == chip.expression);
+  // Active: thick palette(text) outline + bold. Accent fill alone is ambiguous
+  // when every set chip already has its own color.
   if (chip.accent.isValid()) {
     const QColor c = chip.accent;
     const QString css = QStringLiteral(
-        "QToolButton { background-color: rgba(%1,%2,%3,55); border: 1px solid rgba(%1,%2,%3,160); "
-        "border-radius: 4px; padding: 2px 6px; }"
-        "QToolButton:checked { background-color: rgba(%1,%2,%3,140); }")
+        "QToolButton {"
+        "  background-color: rgba(%1,%2,%3,50);"
+        "  border: 1px solid rgba(%1,%2,%3,140);"
+        "  border-radius: 4px;"
+        "  padding: 3px 8px;"
+        "  font-weight: 500;"
+        "}"
+        "QToolButton:checked {"
+        "  background-color: rgba(%1,%2,%3,200);"
+        "  border: 3px solid palette(text);"
+        "  padding: 1px 6px;"
+        "  font-weight: 800;"
+        "}")
                             .arg(c.red())
                             .arg(c.green())
                             .arg(c.blue());
     btn->setStyleSheet(css);
+  } else {
+    btn->setStyleSheet(QStringLiteral(
+        "QToolButton {"
+        "  border: 1px solid transparent;"
+        "  border-radius: 4px;"
+        "  padding: 3px 8px;"
+        "}"
+        "QToolButton:checked {"
+        "  background-color: palette(highlight);"
+        "  color: palette(highlighted-text);"
+        "  border: 3px solid palette(text);"
+        "  padding: 1px 6px;"
+        "  font-weight: 800;"
+        "}"));
   }
   connect(btn, &QToolButton::clicked, this, [this, expression = chip.expression](bool checked) {
     if (checked) {
@@ -568,7 +598,12 @@ QToolButton* QuickFilterBar::make_pinned_chip(int pin_index)
   btn->setText(lab);
   btn->setCheckable(true);
   btn->setAutoRaise(true);
-  btn->setStyleSheet(QStringLiteral("QToolButton { font-weight: 600; }"));
+  btn->setAutoRaise(false);
+  btn->setStyleSheet(QStringLiteral(
+      "QToolButton { font-weight: 600; border: 1px solid transparent; border-radius: 4px; "
+      "padding: 3px 8px; }"
+      "QToolButton:checked { background-color: palette(highlight); color: palette(highlighted-text); "
+      "border: 3px solid palette(text); padding: 1px 6px; font-weight: 800; }"));
   QString tip = pin.expression;
   tip += QStringLiteral("\nScope: %1").arg(scope_to_string(pin.scope));
   if (!pin.directories.isEmpty()) {
