@@ -225,6 +225,9 @@ void MainWindow::request_thumbnails_for_visible()
     if (need_dir) {
       schedule_directory_thumbnails_low_priority();
     }
+    // Re-assert the ActivityMonitor task after cancel_all/clear_pending so we do
+    // not sit on Idle until the first Ready/Failed signal arrives.
+    update_status_selection();
   });
 }
 

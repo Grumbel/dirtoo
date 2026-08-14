@@ -42,6 +42,7 @@ public:
   [[nodiscard]] DirectoryThumbnailWorker* dir_worker() const { return dir_thumb_worker_; }
 
   void cancel_all();
+  [[nodiscard]] int in_flight_count() const { return thumbnailer_.in_flight_count(); }
   void clear_aliases();
   void clear_content_retries();
   void request_many(const std::vector<dirtoo::fs::Location>& locs, const QStringList& mimes,

@@ -41,6 +41,9 @@ public:
 
   void cancel_all();
 
+  /// Locations still waiting on Thumbnailer1 (Queued handles not Finished yet).
+  [[nodiscard]] int in_flight_count() const;
+
   void request_many(const std::vector<fs::Location>& locations, const QStringList& mime_types,
                     const QString& flavor = QStringLiteral("large"), bool force = false);
 

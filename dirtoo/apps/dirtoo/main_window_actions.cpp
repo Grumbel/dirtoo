@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include <QTimer>
 #include "activity_monitor.hpp"
 #include "archive_member_cache.hpp"
 
@@ -351,27 +352,47 @@ void MainWindow::update_status_selection()
                 .arg(format_byte_size(selected_bytes));
   }
 
-  // Thumbnail progress among *currently visible* rows only. Counting the whole
-  // model hash made the status numerator/denominator only grow as you scrolled
-  // a large directory (Ready marks accumulate forever until navigate-away).
+  // Thumbnail activity stays listed while any model Pending remains *or*
+  // Thumbnailer1 still has in-flight Queue handles. Idle used to flash between
+  // cancel_all/clear_pending and the next request_rows, and between Prepare
+  // chunks, because the task was cleared as soon as pending hit 0.
   if (model_ != nullptr) {
-    QStringList paths;
-    paths.reserve(static_cast<int>(visible.size()));
-    for (const auto& fi : visible) {
-      if (!fi.path().empty()) {
-        paths << QString::fromStdString(fi.path().string());
+    const auto all = model_->thumbnail_counts();
+    const int inflight = thumbs_.in_flight_count();
+    const bool busy = all.pending > 0 || inflight > 0;
+    if (busy) {
+      // Status fraction: among visible rows when possible (avoids a denominator
+      // that only grows while scrolling); fall back to global Pending work.
+      QStringList vis_paths;
+      vis_paths.reserve(static_cast<int>(visible.size()));
+      for (const auto& fi : visible) {
+        if (!fi.path().empty()) {
+          vis_paths << QString::fromStdString(fi.path().string());
+        }
       }
-    }
-    const auto tc = model_->thumbnail_counts_for(paths);
-    const int tracked = tc.pending + tc.ready + tc.failed;
-    if (tc.pending > 0) {
-      info += QStringLiteral(", thumbs %1/%2")
-                  .arg(tc.ready)
-                  .arg(tracked);
+      const auto vis = model_->thumbnail_counts_for(vis_paths);
+      const int vis_tracked = vis.ready + vis.pending + vis.failed;
+      int ready = all.ready;
+      int total = all.ready + all.pending;
+      if (vis_tracked > 0 && vis.pending > 0) {
+        ready = vis.ready;
+        total = vis_tracked;
+      } else if (inflight > all.pending) {
+        total = all.ready + inflight;
+      }
+      info += QStringLiteral(", thumbs %1/%2").arg(ready).arg(total);
       ActivityMonitor::instance().set_task(QStringLiteral("thumbs"),
-                                           QStringLiteral("Thumbnails"), tc.ready, tracked);
+                                           QStringLiteral("Thumbnails"), ready, total);
     } else {
-      ActivityMonitor::instance().clear_task(QStringLiteral("thumbs"));
+      // Debounce Idle so brief gaps (Prepare chunk timer, re-queue) do not flash.
+      QTimer::singleShot(250, this, [this] {
+        if (model_ == nullptr) {
+          return;
+        }
+        if (model_->thumbnail_counts().pending == 0 && thumbs_.in_flight_count() == 0) {
+          ActivityMonitor::instance().clear_task(QStringLiteral("thumbs"));
+        }
+      });
     }
   }
 
