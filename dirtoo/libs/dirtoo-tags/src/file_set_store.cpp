@@ -47,6 +47,13 @@ std::string column_text(sqlite3_stmt* stmt, int col)
   return p != nullptr ? std::string{p} : std::string{};
 }
 
+/// Bind TEXT; empty string_view often has data()==nullptr, which SQLite treats as NULL.
+void bind_text(sqlite3_stmt* stmt, int idx, std::string_view sv)
+{
+  const char* p = sv.empty() ? "" : sv.data();
+  sqlite3_bind_text(stmt, idx, p, static_cast<int>(sv.size()), SQLITE_TRANSIENT);
+}
+
 FileSet row_to_set(sqlite3_stmt* stmt, bool with_count)
 {
   FileSet s;
@@ -191,8 +198,8 @@ FileSetStore::create_set(std::string_view label, std::string_view color, std::st
     return std::nullopt;
   }
   sqlite3_bind_text(stmt, 1, id.c_str(), -1, SQLITE_TRANSIENT);
-  sqlite3_bind_text(stmt, 2, label.data(), static_cast<int>(label.size()), SQLITE_TRANSIENT);
-  sqlite3_bind_text(stmt, 3, color.data(), static_cast<int>(color.size()), SQLITE_TRANSIENT);
+  bind_text(stmt, 2, label);
+  bind_text(stmt, 3, color);
   sqlite3_bind_int64(stmt, 4, now);
   sqlite3_bind_int64(stmt, 5, now);
   const int rc = sqlite3_step(stmt);
@@ -226,7 +233,7 @@ std::optional<FileSet> FileSetStore::get_set(std::string_view set_id) const
   if (sqlite3_prepare_v2(static_cast<sqlite3*>(db_), sql, -1, &stmt, nullptr) != SQLITE_OK) {
     return std::nullopt;
   }
-  sqlite3_bind_text(stmt, 1, set_id.data(), static_cast<int>(set_id.size()), SQLITE_TRANSIENT);
+  bind_text(stmt, 1, set_id);
   std::optional<FileSet> out;
   if (sqlite3_step(stmt) == SQLITE_ROW) {
     out = row_to_set(stmt, true);
@@ -273,8 +280,8 @@ bool FileSetStore::set_label(std::string_view set_id, std::string_view label, st
     }
     return false;
   }
-  sqlite3_bind_text(stmt, 1, set_id.data(), static_cast<int>(set_id.size()), SQLITE_TRANSIENT);
-  sqlite3_bind_text(stmt, 2, label.data(), static_cast<int>(label.size()), SQLITE_TRANSIENT);
+  bind_text(stmt, 1, set_id);
+  bind_text(stmt, 2, label);
   sqlite3_bind_int64(stmt, 3, now_unix());
   const int rc = sqlite3_step(stmt);
   const int changes = sqlite3_changes(static_cast<sqlite3*>(db_));
@@ -305,8 +312,8 @@ bool FileSetStore::set_color(std::string_view set_id, std::string_view color, st
     }
     return false;
   }
-  sqlite3_bind_text(stmt, 1, set_id.data(), static_cast<int>(set_id.size()), SQLITE_TRANSIENT);
-  sqlite3_bind_text(stmt, 2, color.data(), static_cast<int>(color.size()), SQLITE_TRANSIENT);
+  bind_text(stmt, 1, set_id);
+  bind_text(stmt, 2, color);
   sqlite3_bind_int64(stmt, 3, now_unix());
   const int rc = sqlite3_step(stmt);
   const int changes = sqlite3_changes(static_cast<sqlite3*>(db_));
@@ -336,7 +343,7 @@ bool FileSetStore::delete_set(std::string_view set_id, std::string* error)
     }
     return false;
   }
-  sqlite3_bind_text(stmt, 1, set_id.data(), static_cast<int>(set_id.size()), SQLITE_TRANSIENT);
+  bind_text(stmt, 1, set_id);
   const int rc = sqlite3_step(stmt);
   const int changes = sqlite3_changes(static_cast<sqlite3*>(db_));
   sqlite3_finalize(stmt);
@@ -380,9 +387,9 @@ bool FileSetStore::add_member(std::string_view set_id, std::string_view path_key
     }
     return false;
   }
-  sqlite3_bind_text(stmt, 1, set_id.data(), static_cast<int>(set_id.size()), SQLITE_TRANSIENT);
-  sqlite3_bind_text(stmt, 2, path_key.data(), static_cast<int>(path_key.size()), SQLITE_TRANSIENT);
-  sqlite3_bind_text(stmt, 3, sha256.data(), static_cast<int>(sha256.size()), SQLITE_TRANSIENT);
+  bind_text(stmt, 1, set_id);
+  bind_text(stmt, 2, path_key);
+  bind_text(stmt, 3, sha256);
   const int rc = sqlite3_step(stmt);
   sqlite3_finalize(stmt);
   if (rc != SQLITE_DONE) {
@@ -395,7 +402,7 @@ bool FileSetStore::add_member(std::string_view set_id, std::string_view path_key
   sqlite3_stmt* touch = nullptr;
   constexpr const char* tsql = "UPDATE file_sets SET updated_at = ?2 WHERE id = ?1";
   if (sqlite3_prepare_v2(static_cast<sqlite3*>(db_), tsql, -1, &touch, nullptr) == SQLITE_OK) {
-    sqlite3_bind_text(touch, 1, set_id.data(), static_cast<int>(set_id.size()), SQLITE_TRANSIENT);
+    bind_text(touch, 1, set_id);
     sqlite3_bind_int64(touch, 2, now_unix());
     sqlite3_step(touch);
     sqlite3_finalize(touch);
@@ -421,8 +428,8 @@ bool FileSetStore::remove_member(std::string_view set_id, std::string_view path_
     }
     return false;
   }
-  sqlite3_bind_text(stmt, 1, set_id.data(), static_cast<int>(set_id.size()), SQLITE_TRANSIENT);
-  sqlite3_bind_text(stmt, 2, path_key.data(), static_cast<int>(path_key.size()), SQLITE_TRANSIENT);
+  bind_text(stmt, 1, set_id);
+  bind_text(stmt, 2, path_key);
   const int rc = sqlite3_step(stmt);
   sqlite3_finalize(stmt);
   if (rc != SQLITE_DONE) {
@@ -465,7 +472,7 @@ std::vector<FileSetMember> FileSetStore::members(std::string_view set_id) const
   if (sqlite3_prepare_v2(static_cast<sqlite3*>(db_), sql, -1, &stmt, nullptr) != SQLITE_OK) {
     return out;
   }
-  sqlite3_bind_text(stmt, 1, set_id.data(), static_cast<int>(set_id.size()), SQLITE_TRANSIENT);
+  bind_text(stmt, 1, set_id);
   while (sqlite3_step(stmt) == SQLITE_ROW) {
     FileSetMember m;
     m.path_key = column_text(stmt, 0);
@@ -487,7 +494,7 @@ std::int64_t FileSetStore::member_count(std::string_view set_id) const
   if (sqlite3_prepare_v2(static_cast<sqlite3*>(db_), sql, -1, &stmt, nullptr) != SQLITE_OK) {
     return 0;
   }
-  sqlite3_bind_text(stmt, 1, set_id.data(), static_cast<int>(set_id.size()), SQLITE_TRANSIENT);
+  bind_text(stmt, 1, set_id);
   std::int64_t n = 0;
   if (sqlite3_step(stmt) == SQLITE_ROW) {
     n = sqlite3_column_int64(stmt, 0);
@@ -513,7 +520,7 @@ std::vector<FileSet> FileSetStore::sets_for_path(std::string_view path_key) cons
   if (sqlite3_prepare_v2(static_cast<sqlite3*>(db_), sql, -1, &stmt, nullptr) != SQLITE_OK) {
     return out;
   }
-  sqlite3_bind_text(stmt, 1, path_key.data(), static_cast<int>(path_key.size()), SQLITE_TRANSIENT);
+  bind_text(stmt, 1, path_key);
   while (sqlite3_step(stmt) == SQLITE_ROW) {
     out.push_back(row_to_set(stmt, true));
   }
@@ -532,8 +539,8 @@ bool FileSetStore::contains(std::string_view set_id, std::string_view path_key) 
   if (sqlite3_prepare_v2(static_cast<sqlite3*>(db_), sql, -1, &stmt, nullptr) != SQLITE_OK) {
     return false;
   }
-  sqlite3_bind_text(stmt, 1, set_id.data(), static_cast<int>(set_id.size()), SQLITE_TRANSIENT);
-  sqlite3_bind_text(stmt, 2, path_key.data(), static_cast<int>(path_key.size()), SQLITE_TRANSIENT);
+  bind_text(stmt, 1, set_id);
+  bind_text(stmt, 2, path_key);
   const bool hit = sqlite3_step(stmt) == SQLITE_ROW;
   sqlite3_finalize(stmt);
   return hit;

@@ -3,11 +3,24 @@
 
 #include "file_set_controller.hpp"
 
+#include "activity_monitor.hpp"
+
 #include <QMessageBox>
 
 #include <filesystem>
 
 namespace dirtoo::app {
+namespace {
+
+/// Status bar + stderr (qWarning → message handler → Activity recent log).
+void report_set_error(FileSetController* self, const QString& message, int timeout_ms = 8000)
+{
+  qWarning().noquote() << QStringLiteral("dirtoo: sets: %1").arg(message);
+  ActivityMonitor::instance().append_log(QtWarningMsg, QStringLiteral("Sets: %1").arg(message));
+  emit self->status_message(message, timeout_ms);
+}
+
+} // namespace
 
 FileSetController::FileSetController(QObject* parent)
     : QObject(parent)
@@ -56,15 +69,15 @@ QString FileSetController::create_set_from_selection(
   }
   std::string err;
   if (!ensure_store(&err)) {
-    QMessageBox::warning(dialog_parent_, QStringLiteral("Sets"),
-                         QStringLiteral("Cannot open sets database:\n%1")
-                             .arg(QString::fromStdString(err)));
+    const QString msg = QStringLiteral("Cannot open sets database: %1").arg(QString::fromStdString(err));
+    report_set_error(this, msg);
+    QMessageBox::warning(dialog_parent_, QStringLiteral("Sets"), msg);
     return {};
   }
   auto set = store_.create_set({}, {}, &err);
   if (!set) {
-    emit status_message(QStringLiteral("Could not create set: %1").arg(QString::fromStdString(err)),
-                        5000);
+    report_set_error(
+        this, QStringLiteral("Could not create set: %1").arg(QString::fromStdString(err)));
     return {};
   }
   std::vector<std::string> keys;
@@ -72,7 +85,13 @@ QString FileSetController::create_set_from_selection(
   for (const auto& fi : selection) {
     keys.push_back(path_key_for(fi));
   }
+  err.clear();
   const int n = store_.add_members(set->id, keys, &err);
+  if (!err.empty() && n == 0 && !keys.empty()) {
+    report_set_error(
+        this, QStringLiteral("Set created but adding members failed: %1")
+                  .arg(QString::fromStdString(err)));
+  }
   last_set_id_ = QString::fromStdString(set->id);
   emit set_created(last_set_id_, n);
   emit status_message(
@@ -96,12 +115,12 @@ bool FileSetController::add_selection_to_last_set(
   }
   std::string err;
   if (!ensure_store(&err)) {
-    emit status_message(QStringLiteral("Cannot open sets: %1").arg(QString::fromStdString(err)),
-                        5000);
+    report_set_error(
+        this, QStringLiteral("Cannot open sets: %1").arg(QString::fromStdString(err)));
     return false;
   }
   if (!store_.get_set(last_set_id_.toStdString())) {
-    emit status_message(QStringLiteral("Last set no longer exists"), 4000);
+    report_set_error(this, QStringLiteral("Last set no longer exists"));
     last_set_id_.clear();
     return false;
   }
@@ -110,7 +129,13 @@ bool FileSetController::add_selection_to_last_set(
   for (const auto& fi : selection) {
     keys.push_back(path_key_for(fi));
   }
+  err.clear();
   const int n = store_.add_members(last_set_id_.toStdString(), keys, &err);
+  if (!err.empty() && n == 0 && !keys.empty()) {
+    report_set_error(
+        this, QStringLiteral("Could not add to set: %1").arg(QString::fromStdString(err)));
+    return false;
+  }
   emit set_updated(last_set_id_, static_cast<int>(store_.member_count(last_set_id_.toStdString())));
   emit status_message(
       QStringLiteral("Added %1 file%2 to set")
