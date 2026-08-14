@@ -221,18 +221,22 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
       const QString name = col.name(QColor::HexArgb);
       btn->setText(col.alpha() < 255 ? name : col.name(QColor::HexRgb));
       btn->setProperty("colorName", name);
+      // Type-scoped so the rule does not cascade into QColorDialog (child of btn).
       btn->setStyleSheet(
-          QStringLiteral("background-color: %1; color: %2; min-width: 8em;")
+          QStringLiteral("QPushButton { background-color: %1; color: %2; min-width: 8em; }")
               .arg(col.name(QColor::HexRgb),
                    col.lightness() > 140 ? QStringLiteral("#000") : QStringLiteral("#fff")));
     };
     apply(c);
-    QObject::connect(btn, &QPushButton::clicked, &dialog, [btn, apply, title]() {
+    QObject::connect(btn, &QPushButton::clicked, &dialog, [btn, apply, title, &dialog]() {
       QColor cur(btn->property("colorName").toString());
       if (!cur.isValid()) {
         cur = QColor(Qt::gray);
       }
-      const QColor picked = QColorDialog::getColor(cur, btn, title, QColorDialog::ShowAlphaChannel);
+      // Parent to preferences dialog — not the swatch button — so button stylesheets
+      // cannot cascade into the native/color picker chrome.
+      const QColor picked =
+          QColorDialog::getColor(cur, &dialog, title, QColorDialog::ShowAlphaChannel);
       if (picked.isValid()) {
         apply(picked);
       }
@@ -280,7 +284,7 @@ bool show_preferences_dialog(QWidget* parent, AppSettings* settings)
       btn->setText(c.alpha() < 255 ? name : c.name(QColor::HexRgb));
       btn->setProperty("colorName", name);
       btn->setStyleSheet(
-          QStringLiteral("background-color: %1; color: %2; min-width: 8em;")
+          QStringLiteral("QPushButton { background-color: %1; color: %2; min-width: 8em; }")
               .arg(c.name(QColor::HexRgb),
                    c.lightness() > 140 ? QStringLiteral("#000") : QStringLiteral("#fff")));
     };
