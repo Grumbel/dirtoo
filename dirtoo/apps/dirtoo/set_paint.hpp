@@ -13,7 +13,6 @@
 #include <algorithm>
 #include <filesystem>
 #include <mutex>
-#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -49,7 +48,6 @@ inline QColor color_for_set(const dirtoo::sets::FileSet& s)
     h ^= c;
     h *= 16777619u;
   }
-  // Distinct from tag pastels: slightly higher saturation.
   return QColor::fromHsv(static_cast<int>(h % 360), 180, 210);
 }
 
@@ -64,13 +62,29 @@ inline dirtoo::sets::FileSetStore& shared_store()
   return store;
 }
 
-inline std::vector<dirtoo::sets::FileSet> sets_for_path(const std::filesystem::path& path)
+inline std::mutex& cache_mu()
 {
   static std::mutex mu;
+  return mu;
+}
+
+inline std::unordered_map<std::string, std::vector<dirtoo::sets::FileSet>>& cache_map()
+{
   static std::unordered_map<std::string, std::vector<dirtoo::sets::FileSet>> cache;
+  return cache;
+}
+
+inline void clear_set_membership_cache()
+{
+  std::lock_guard lock(cache_mu());
+  cache_map().clear();
+}
+
+inline std::vector<dirtoo::sets::FileSet> sets_for_path(const std::filesystem::path& path)
+{
   const std::string key = path_key(path);
-  std::lock_guard lock(mu);
-  if (auto it = cache.find(key); it != cache.end()) {
+  std::lock_guard lock(cache_mu());
+  if (auto it = cache_map().find(key); it != cache_map().end()) {
     return it->second;
   }
   auto& store = shared_store();
@@ -78,13 +92,19 @@ inline std::vector<dirtoo::sets::FileSet> sets_for_path(const std::filesystem::p
     return {};
   }
   auto sets = store.sets_for_path(key);
-  cache[key] = sets;
+  cache_map()[key] = sets;
   return sets;
 }
 
 } // namespace set_paint_detail
 
-/// Left-edge stripes for set membership (one stripe per set, max 4).
+/// Invalidate path→sets cache after create/update membership (paint sees new data).
+inline void clear_set_membership_cache()
+{
+  set_paint_detail::clear_set_membership_cache();
+}
+
+/// Top-edge color bars for set membership (one bar per set, stacked, max 4).
 inline void paint_set_membership(QPainter* painter, const QRect& tile,
                                  const std::filesystem::path& path)
 {
@@ -96,14 +116,16 @@ inline void paint_set_membership(QPainter* painter, const QRect& tile,
     return;
   }
   constexpr int kMax = 4;
-  constexpr int kStripe = 3;
+  constexpr int kBar = 3;
   constexpr int kGap = 1;
-  int x = tile.left() + 1;
+  int y = tile.top() + 1;
   const int n = std::min(static_cast<int>(sets.size()), kMax);
+  const int x = tile.left() + 1;
+  const int w = std::max(1, tile.width() - 2);
   for (int i = 0; i < n; ++i) {
-    painter->fillRect(QRect(x, tile.top() + 2, kStripe, tile.height() - 4),
+    painter->fillRect(QRect(x, y, w, kBar),
                       set_paint_detail::color_for_set(sets[static_cast<std::size_t>(i)]));
-    x += kStripe + kGap;
+    y += kBar + kGap;
   }
 }
 

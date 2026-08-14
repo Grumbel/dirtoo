@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "quick_filter_bar.hpp"
+#include <QList>
+#include <QHash>
+#include "set_paint.hpp"
+#include "dirtoo/sets/file_set_store.hpp"
 #include "hash_service.hpp"
 
 #include "dirtoo/tags/tag_store.hpp"
@@ -275,6 +279,7 @@ void QuickFilterBar::rebuild_from_items(const std::vector<dirtoo::fs::FileInfo>&
     AutoChip c;
     c.label = label_for_type(cat);
     c.expression = QStringLiteral("type:%1").arg(cat);
+    c.group = AutoChip::Group::Type;
     auto_chips_.push_back(std::move(c));
   }
 
@@ -283,12 +288,14 @@ void QuickFilterBar::rebuild_from_items(const std::vector<dirtoo::fs::FileInfo>&
     AutoChip c;
     c.label = QStringLiteral("Untagged images");
     c.expression = QStringLiteral("type:image tagged:no");
+    c.group = AutoChip::Group::Helper;
     auto_chips_.push_back(std::move(c));
   }
   if (tags_ok) {
     AutoChip c;
     c.label = QStringLiteral("Untagged");
     c.expression = QStringLiteral("tagged:no");
+    c.group = AutoChip::Group::Helper;
     auto_chips_.push_back(std::move(c));
   }
 
@@ -299,7 +306,76 @@ void QuickFilterBar::rebuild_from_items(const std::vector<dirtoo::fs::FileInfo>&
     AutoChip c;
     c.label = t;
     c.expression = QStringLiteral("tag:%1").arg(t);
+    c.group = AutoChip::Group::Tag;
+    if (tags_ok) {
+      if (auto def = tag_store.get_tag(t.toStdString())) {
+        if (def->color.size() >= 7 && def->color[0] == '#') {
+          bool ok = false;
+          const auto rgb = QString::fromStdString(def->color).mid(1).toUInt(&ok, 16);
+          if (ok) {
+            c.accent = QColor::fromRgb(static_cast<QRgb>(rgb | 0xff000000u));
+          }
+        }
+        if (!c.accent.isValid()) {
+          unsigned h = 2166136261u;
+          for (unsigned char ch : def->name) {
+            h ^= ch;
+            h *= 16777619u;
+          }
+          c.accent = QColor::fromHsv(static_cast<int>(h % 360), 140, 220);
+        }
+        if (!def->label.empty()) {
+          c.label = QString::fromStdString(def->label);
+        }
+      }
+    }
     auto_chips_.push_back(std::move(c));
+  }
+
+  // Sets that have members among the scanned listing.
+  dirtoo::sets::FileSetStore set_store;
+  std::string set_err;
+  if (set_store.open(dirtoo::sets::FileSetStore::default_path(), &set_err)) {
+    QHash<QString, dirtoo::sets::FileSet> sets_seen;
+    for (std::size_t i = 0; i < n; ++i) {
+      const auto& fi = items[i];
+      if (fi.path().empty()) {
+        continue;
+      }
+      std::string key;
+      if (fi.location().is_archive()) {
+        key = fi.location().as_url();
+      } else {
+        std::error_code ec;
+        const auto abs = std::filesystem::absolute(fi.path(), ec);
+        key = ec ? fi.path().string() : abs.lexically_normal().string();
+      }
+      for (const auto& s : set_store.sets_for_path(key)) {
+        sets_seen.insert(QString::fromStdString(s.id), s);
+      }
+    }
+    QList<dirtoo::sets::FileSet> set_list = sets_seen.values();
+    std::sort(set_list.begin(), set_list.end(), [](const dirtoo::sets::FileSet& a,
+                                                   const dirtoo::sets::FileSet& b) {
+      const QString la = a.label.empty() ? QString::fromStdString(a.id.substr(0, 8))
+                                         : QString::fromStdString(a.label);
+      const QString lb = b.label.empty() ? QString::fromStdString(b.id.substr(0, 8))
+                                         : QString::fromStdString(b.label);
+      return la.toLower() < lb.toLower();
+    });
+    for (const auto& s : set_list) {
+      AutoChip c;
+      c.group = AutoChip::Group::Set;
+      if (!s.label.empty()) {
+        c.label = QString::fromStdString(s.label);
+        c.expression = QStringLiteral("set:%1").arg(c.label);
+      } else {
+        c.label = QStringLiteral("Set %1").arg(QString::fromStdString(s.id.substr(0, 8)));
+        c.expression = QStringLiteral("set:%1").arg(QString::fromStdString(s.id));
+      }
+      c.accent = set_paint_detail::color_for_set(s);
+      auto_chips_.push_back(std::move(c));
+    }
   }
 
   rebuild_buttons();
@@ -391,16 +467,27 @@ void QuickFilterBar::clear_buttons()
   }
 }
 
-QToolButton* QuickFilterBar::make_auto_chip(const QString& label, const QString& expression)
+QToolButton* QuickFilterBar::make_auto_chip(const AutoChip& chip)
 {
   auto* btn = new QToolButton(strip_);
-  btn->setText(label);
+  btn->setText(chip.label);
   btn->setCheckable(true);
   btn->setAutoRaise(true);
-  btn->setToolTip(expression);
-  btn->setProperty("dirtoo_qf_expr", expression);
-  btn->setChecked(active_ == expression);
-  connect(btn, &QToolButton::clicked, this, [this, expression](bool checked) {
+  btn->setToolTip(chip.expression);
+  btn->setProperty("dirtoo_qf_expr", chip.expression);
+  btn->setChecked(active_ == chip.expression);
+  if (chip.accent.isValid()) {
+    const QColor c = chip.accent;
+    const QString css = QStringLiteral(
+        "QToolButton { background-color: rgba(%1,%2,%3,55); border: 1px solid rgba(%1,%2,%3,160); "
+        "border-radius: 4px; padding: 2px 6px; }"
+        "QToolButton:checked { background-color: rgba(%1,%2,%3,140); }")
+                            .arg(c.red())
+                            .arg(c.green())
+                            .arg(c.blue());
+    btn->setStyleSheet(css);
+  }
+  connect(btn, &QToolButton::clicked, this, [this, expression = chip.expression](bool checked) {
     if (checked) {
       emit filter_requested(expression);
     } else if (active_ == expression) {
@@ -408,6 +495,16 @@ QToolButton* QuickFilterBar::make_auto_chip(const QString& label, const QString&
     }
   });
   return btn;
+}
+
+QWidget* QuickFilterBar::make_separator()
+{
+  auto* line = new QFrame(strip_);
+  line->setFrameShape(QFrame::VLine);
+  line->setFrameShadow(QFrame::Sunken);
+  line->setFixedWidth(6);
+  line->setStyleSheet(QStringLiteral("QFrame { color: palette(mid); margin: 4px 2px; }"));
+  return line;
 }
 
 QToolButton* QuickFilterBar::make_pinned_chip(int pin_index)
@@ -637,15 +734,36 @@ void QuickFilterBar::rebuild_buttons()
     pinned_exprs.insert(p.expression);
   }
 
-  for (const auto& c : auto_chips_) {
-    if (pinned_exprs.contains(c.expression)) {
-      continue;
+  auto add_group = [&](AutoChip::Group g) {
+    bool any = false;
+    for (const auto& c : auto_chips_) {
+      if (c.group != g || pinned_exprs.contains(c.expression)) {
+        continue;
+      }
+      if (!any) {
+        if (strip_layout_->count() > 0) {
+          strip_layout_->addWidget(make_separator());
+        }
+        any = true;
+      }
+      strip_layout_->addWidget(make_auto_chip(c));
     }
-    strip_layout_->addWidget(make_auto_chip(c.label, c.expression));
-  }
+  };
+  add_group(AutoChip::Group::Type);
+  add_group(AutoChip::Group::Helper);
+  add_group(AutoChip::Group::Tag);
+  add_group(AutoChip::Group::Set);
+
+  bool any_pin = false;
   for (int i = 0; i < static_cast<int>(pins_.size()); ++i) {
     if (!pin_visible(pins_[static_cast<std::size_t>(i)])) {
       continue;
+    }
+    if (!any_pin) {
+      if (strip_layout_->count() > 0) {
+        strip_layout_->addWidget(make_separator());
+      }
+      any_pin = true;
     }
     if (auto* btn = make_pinned_chip(i)) {
       strip_layout_->addWidget(btn);

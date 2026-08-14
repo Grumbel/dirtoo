@@ -5,6 +5,7 @@
 #include <QColor>
 #include "tag_manager_dialog.hpp"
 #include "tag_paint.hpp"
+#include "set_paint.hpp"
 #include "view_zoom.hpp"
 
 #include "app_settings.hpp"
@@ -549,14 +550,41 @@ void MainWindow::apply_settings(const AppSettings& s)
 void MainWindow::create_set_from_selection()
 {
   const QString id = file_sets_.create_set_from_selection(selected_fileinfos());
-  if (!id.isEmpty() && QApplication::keyboardModifiers() & Qt::AltModifier) {
+  if (id.isEmpty()) {
+    return;
+  }
+  clear_set_membership_cache();
+  if (graphics_view_ != nullptr) {
+    graphics_view_->viewport()->update();
+  }
+  if (icon_view_ != nullptr) {
+    icon_view_->viewport()->update();
+  }
+  if (tree_view_ != nullptr) {
+    tree_view_->viewport()->update();
+  }
+  rebuild_quick_filters();
+  if (QApplication::keyboardModifiers() & Qt::AltModifier) {
     open_set_location(id);
   }
 }
 
 void MainWindow::add_selection_to_last_set()
 {
-  file_sets_.add_selection_to_last_set(selected_fileinfos());
+  if (!file_sets_.add_selection_to_last_set(selected_fileinfos())) {
+    return;
+  }
+  clear_set_membership_cache();
+  if (graphics_view_ != nullptr) {
+    graphics_view_->viewport()->update();
+  }
+  if (icon_view_ != nullptr) {
+    icon_view_->viewport()->update();
+  }
+  if (tree_view_ != nullptr) {
+    tree_view_->viewport()->update();
+  }
+  rebuild_quick_filters();
   if (location_.is_set()) {
     load_set_location_listing();
   }
@@ -666,12 +694,10 @@ void MainWindow::select_set_members_of_focus()
     set_status(QStringLiteral("File is not in any set"), 3000);
     return;
   }
-  // Select rows in the current model whose path matches a member.
   if (model_ == nullptr) {
     return;
   }
-  QItemSelection selection;
-  int matched = 0;
+  QList<int> matched_rows;
   for (int row = 0; row < model_->rowCount(); ++row) {
     const auto* row_fi = model_->file_at(row);
     if (row_fi == nullptr) {
@@ -686,17 +712,38 @@ void MainWindow::select_set_members_of_focus()
       row_key = ec ? row_fi->path().string() : abs.lexically_normal().string();
     }
     if (members.contains(QString::fromStdString(row_key))) {
-      const QModelIndex idx = model_->index(row, 0);
-      selection.select(idx, idx);
-      ++matched;
+      matched_rows.append(row);
     }
   }
-  if (auto* view = current_view()) {
-    view->selectionModel()->select(selection, QItemSelectionModel::ClearAndSelect);
+  // Icons Graphics View keeps its own selected_row_set_; current_view() is the
+  // list fallback and is not the on-screen widget in Icons mode.
+  if ((view_mode_ == ViewMode::Icons || view_mode_ == ViewMode::RelativeIcons)
+      && graphics_view_ != nullptr) {
+    graphics_view_->clear_selection();
+    bool first = true;
+    for (int row : matched_rows) {
+      graphics_view_->select_row(row, /*clear_others=*/first);
+      first = false;
+    }
+    if (!matched_rows.isEmpty()) {
+      graphics_view_->scroll_row_into_view(matched_rows.front());
+    }
+  } else if (auto* view = current_view(); view != nullptr && view->selectionModel() != nullptr) {
+    QItemSelection selection;
+    for (int row : matched_rows) {
+      const QModelIndex idx = model_->index(row, 0);
+      selection.select(idx, idx);
+    }
+    view->selectionModel()->select(selection,
+                                   QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+    if (!matched_rows.isEmpty()) {
+      view->setCurrentIndex(model_->index(matched_rows.front(), 0));
+      view->scrollTo(model_->index(matched_rows.front(), 0));
+    }
   }
   set_status(QStringLiteral("Selected %1 set member%2 in view")
-                 .arg(matched)
-                 .arg(matched == 1 ? QString() : QStringLiteral("s")),
+                 .arg(matched_rows.size())
+                 .arg(matched_rows.size() == 1 ? QString() : QStringLiteral("s")),
              4000);
 }
 

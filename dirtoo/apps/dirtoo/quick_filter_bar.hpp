@@ -5,6 +5,7 @@
 
 #include "dirtoo/fs/file_info.hpp"
 
+#include <QColor>
 #include <QString>
 #include <QStringList>
 #include <QWidget>
@@ -62,7 +63,6 @@ signals:
 private:
   void rebuild_buttons();
   void clear_buttons();
-  QToolButton* make_auto_chip(const QString& label, const QString& expression);
   QToolButton* make_pinned_chip(int pin_index);
   void show_pin_menu(int pin_index, const QPoint& global_pos);
   void edit_pin_expression(int pin_index);
@@ -82,7 +82,13 @@ private:
   struct AutoChip {
     QString label;
     QString expression;
+    QColor accent; ///< Invalid = default chrome; set for tags/sets
+    /// Groups for separators: type → helper → tag → set (then pinned).
+    enum class Group { Type, Helper, Tag, Set };
+    Group group = Group::Type;
   };
+  QToolButton* make_auto_chip(const AutoChip& chip);
+  QWidget* make_separator();
   std::vector<AutoChip> auto_chips_;
   std::vector<PinnedQuickFilter> pins_;
   QString active_;

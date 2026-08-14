@@ -64,17 +64,30 @@ void MainWindow::on_context_menu(const QPoint& pos)
   cb.select_set_members = [this] { select_set_members_of_focus(); };
   cb.open_set_of_selection = [this] {
     const auto sel = selected_fileinfos();
-    if (sel.empty()) return;
+    if (sel.empty()) {
+      return;
+    }
     std::string key;
-    if (sel.front().location().is_archive()) key = sel.front().location().as_url();
-    else {
+    if (sel.front().location().is_archive()) {
+      key = sel.front().location().as_url();
+    } else {
       std::error_code ec;
       const auto abs = std::filesystem::absolute(sel.front().path(), ec);
       key = ec ? sel.front().path().string() : abs.lexically_normal().string();
     }
     const auto sets = file_sets_.store().sets_for_path(key);
-    if (sets.empty()) { set_status(QStringLiteral("Not in a set"), 3000); return; }
-    open_set_location(QString::fromStdString(sets.front().id));
+    if (sets.empty()) {
+      set_status(QStringLiteral("Not in a set"), 3000);
+      return;
+    }
+    // Prefer filter over set:// navigation for now (keeps folder context).
+    const auto& s = sets.front();
+    const QString expr = !s.label.empty()
+                             ? QStringLiteral("set:%1").arg(QString::fromStdString(s.label))
+                             : QStringLiteral("set:%1").arg(QString::fromStdString(s.id));
+    filter_search_.set_filter_text(expr);
+    filter_search_.set_filter_visible(true);
+    set_status(QStringLiteral("Filter: %1").arg(expr), 3000);
   };
   cb.mark_opened = [this] { on_mark_selection_opened(); };
   cb.mark_unopened = [this] { on_mark_selection_unopened(); };
