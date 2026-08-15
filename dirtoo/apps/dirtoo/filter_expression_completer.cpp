@@ -6,6 +6,7 @@
 #include "dirtoo/tags/tag_store.hpp"
 
 #include <QLineEdit>
+#include <QElapsedTimer>
 #include <QStringListModel>
 
 namespace dirtoo::app {
@@ -78,15 +79,29 @@ void FilterExpressionCompleter::refresh_suggestions()
 {
   QStringList items = static_keywords_;
 
-  dirtoo::tags::TagStore store;
-  std::string err;
-  if (store.open(dirtoo::tags::TagStore::default_path(), &err)) {
-    for (const auto& def : store.list_tags()) {
-      if (!def.name.empty()) {
-        items.append(QStringLiteral("tag:%1").arg(QString::fromStdString(def.name)));
+  // Tag list is opened from SQLite; do not hit the DB on every focus/keystroke.
+  if (tag_cache_.isEmpty() || !tag_cache_age_.isValid()
+      || tag_cache_age_.elapsed() > kTagCacheTtlMs) {
+    tag_cache_.clear();
+    dirtoo::tags::TagStore store;
+    std::string err;
+    if (store.open(dirtoo::tags::TagStore::default_path(), &err)) {
+      // Cap so a huge tag DB cannot freeze the completer popup.
+      constexpr int kMaxTags = 2000;
+      int n = 0;
+      for (const auto& def : store.list_tags()) {
+        if (def.name.empty()) {
+          continue;
+        }
+        tag_cache_.append(QStringLiteral("tag:%1").arg(QString::fromStdString(def.name)));
+        if (++n >= kMaxTags) {
+          break;
+        }
       }
     }
+    tag_cache_age_.restart();
   }
+  items += tag_cache_;
   items.removeDuplicates();
   items.sort(Qt::CaseInsensitive);
   model_->setStringList(items);

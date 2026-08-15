@@ -6,6 +6,7 @@
 #include <QCompleter>
 #include <QString>
 #include <QStringList>
+#include <QElapsedTimer>
 
 class QLineEdit;
 class QStringListModel;
@@ -36,6 +37,9 @@ protected:
 private:
   QStringListModel* model_ = nullptr;
   QStringList static_keywords_;
+  QStringList tag_cache_;
+  QElapsedTimer tag_cache_age_;
+  static constexpr qint64 kTagCacheTtlMs = 5000;
 };
 
 } // namespace dirtoo::app

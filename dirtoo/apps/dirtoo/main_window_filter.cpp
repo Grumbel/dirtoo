@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include <QTimer>
 #include "set_membership.hpp"
 #include <vector>
 #include "dirtoo/sets/file_set_store.hpp"
@@ -121,6 +122,32 @@ void MainWindow::on_filter_changed(const QString& text)
     quick_filter_bar_->set_active_expression(text);
   }
   update_filter_chrome(!text.isEmpty());
+
+  // Clearing the filter should apply immediately (cheap + restores the full list).
+  if (text.isEmpty()) {
+    if (filter_apply_timer_ != nullptr) {
+      filter_apply_timer_->stop();
+    }
+    apply_filter_from_edit();
+    return;
+  }
+
+  // Debounce: every keystroke used to refilter the whole collection, rebuild the
+  // graphics view, cancel/re-queue thumbnails, and — for tag:/width:/contains: —
+  // queue another full FilterWorker pass. On large directories that locked the UI
+  // for minutes as superseded jobs piled up.
+  if (filter_apply_timer_ == nullptr) {
+    filter_apply_timer_ = new QTimer(this);
+    filter_apply_timer_->setSingleShot(true);
+    connect(filter_apply_timer_, &QTimer::timeout, this, &MainWindow::apply_filter_from_edit);
+  }
+  filter_apply_timer_->start(180);
+  set_status(QStringLiteral("Filter…"));
+}
+
+void MainWindow::apply_filter_from_edit()
+{
+  const QString text = filter_search_.filter_text();
   // Pure set:… or set:a OR set:b → sync membership index (fast); content IO → worker.
   {
     const std::string expr = text.toStdString();
@@ -146,6 +173,8 @@ void MainWindow::on_filter_changed(const QString& text)
   if (!text.isEmpty() && collection_.items().empty()) {
     set_status(QStringLiteral("Filter ready — waiting for directory listing…"));
   } else if (!text.isEmpty()) {
+    set_status(QStringLiteral("%1 items").arg(collection_.visible_items().size()));
+  } else {
     set_status(QStringLiteral("%1 items").arg(collection_.visible_items().size()));
   }
 }

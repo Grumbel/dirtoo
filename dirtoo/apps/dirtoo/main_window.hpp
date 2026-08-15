@@ -116,6 +116,8 @@ private slots:
   void on_filter_finished(quint64 generation, std::vector<dirtoo::fs::FileInfo> visible, bool parse_ok);
   /// @param keep_previous_visible Soft reload: do not clear the list until filter finishes.
   void request_async_filter(bool keep_previous_visible = true);
+  /// Actual filter apply (called after debounce or immediately on empty clear).
+  void apply_filter_from_edit();
   void apply_filter_expression_sync(const QString& text);
   void on_paste_link();
   void on_item_activated(const QModelIndex& index);
@@ -333,6 +335,8 @@ private:
   TagController tag_{this};
   FileSetController file_sets_{this};
   QTimer* watcher_reload_timer_ = nullptr;
+  /// Debounces filter textChanged so each keystroke does not refilter/rebuild.
+  QTimer* filter_apply_timer_ = nullptr;
   QStackedWidget* view_stack_ = nullptr;
   QTreeView* tree_view_ = nullptr;
   QListView* icon_view_ = nullptr; // List view (and fallback if no Graphics)

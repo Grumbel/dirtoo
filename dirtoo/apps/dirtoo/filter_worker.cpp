@@ -50,6 +50,9 @@ bool filter_expression_needs_content_io(const QString& expression)
   // Predicates that may read file contents or run ffprobe/pdfinfo/bsdtar.
   // Must not run on the GUI thread (lookup_media → resolve_media_cached).
   const QString lower = expression.toLower();
+  // Anything that may open SQLite, run ffprobe/pdfinfo, or read file bytes.
+  // Interactive typing must not run these on the GUI thread (and should be
+  // debounced so the worker is not flooded with superseded jobs).
   static const char* keys[] = {
       "contains:",
       "containsre:",
@@ -68,6 +71,14 @@ bool filter_expression_needs_content_io(const QString& expression)
       "filecount:",
       "file_count:",
       "nfiles:",
+      "tag:",
+      "tagged:",
+      "checksummed:",
+      "hashed:",
+      "csum:",
+      "set:",
+      "in-set:",
+      "inset:",
   };
   for (const char* k : keys) {
     if (lower.contains(QLatin1String(k))) {
