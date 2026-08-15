@@ -3,7 +3,7 @@
 Toy **Hilbert-curve binary map** thumbnailer inspired by [CantorDust](https://github.com/google/cantordust)-style visualizations.
 
 Maps file bytes along a Hilbert curve onto a square PNG. Zero runs stay dark;
-high-entropy regions light up with a spectral palette. Useful for executables,
+byte values are colored by a selectable palette. Useful for executables,
 firmware, disk images, and other opaque binaries.
 
 ## Build (standalone)
@@ -19,11 +19,34 @@ Dependencies: C++20 compiler, zlib, CMake ≥ 3.20.
 ## CLI
 
 ```text
-dirtoo-hilbert-thumb <input> <output.png> [size]
+dirtoo-hilbert-thumb [options] <input> <output.png> [size]
+
+  --palette NAME / -p NAME   Color map (default: spectrum)
+  -h, --help
+  size                       Square edge in pixels (default 128, max 1024)
 ```
 
-`size` is the square edge in pixels (default **128**, max **1024**). The first
-16 MiB of the file are used (enough for a dense map at typical thumbnail sizes).
+The first 16 MiB of the file are used (enough for a dense map at typical
+thumbnail sizes).
+
+### Palettes
+
+| Name | Behavior |
+|------|----------|
+| **spectrum** | Original cool→green→red ramp. Readable on binaries; mid-range green dominates high-entropy / compressed data. |
+| **gray** | Grayscale intensity of the byte. |
+| **rgb** | High bits split across R/G/B channels — multicolored noise without a preferred hue. |
+| **hsv** | Hue = byte/255, fixed saturation/value (full color wheel). |
+| **viridis** | Approx. viridis-style ramp (purple→teal→yellow); flatter midtones. |
+
+Aliases: `grey`/`grayscale` → gray; `bits`/`channels` → rgb; `hue` → hsv;
+`flat`/`balanced` → viridis; `turbo`/`default` → spectrum.
+
+Example (neutral look on compressed data):
+
+```bash
+dirtoo-hilbert-thumb -p hsv archive.tar.gz /tmp/out.png 256
+```
 
 ## XDG thumbnailer (Thumbnailer1 / tumbler)
 
@@ -37,6 +60,9 @@ with `Exec=dirtoo-hilbert-thumb %i %o %s`. File managers that use the FreeDeskto
 thumbnailer service (including dirtoo via Thumbnailer1 D-Bus) will pick it up for
 the listed MIME types after install + session restart (or `pkill tumblerd` /
 thumbnailer daemon reload).
+
+Note: the `.thumbnailer` entry does not pass `--palette`; the default **spectrum**
+is used. Override only when invoking the CLI directly, or customize the Exec line.
 
 ### Writing your own thumbnailer
 
