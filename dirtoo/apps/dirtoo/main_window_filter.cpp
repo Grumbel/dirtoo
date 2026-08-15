@@ -302,6 +302,31 @@ void MainWindow::on_search_submitted()
   search_controller_.start(root, expr, show_hidden, /*max_depth=*/-1);
 }
 
+void MainWindow::on_unfold_hierarchy()
+{
+  // One-click: Group by Directory + Search * → every file under the current
+  // root, sectioned by parent folder (flat hierarchy / "unfolded tree").
+  if (location_.is_archive()) {
+    set_status(QStringLiteral("Unfold hierarchy is not available inside archives"));
+    return;
+  }
+
+  collection_.set_group_mode(collection::GroupMode::Directory);
+  if (group_toolbar_btn_ != nullptr) {
+    group_toolbar_btn_->setText(QStringLiteral("Directory"));
+  }
+  {
+    AppSettings s = load_settings();
+    s.group_mode = QStringLiteral("directory");
+    save_settings(s);
+  }
+  update_detail_row_heights();
+
+  filter_search_.set_search_visible(true);
+  filter_search_.set_search_text(QStringLiteral("*"));
+  on_search_submitted();
+}
+
 void MainWindow::on_search_match(const QString& path, bool is_directory, quint64 size,
                                  qint64 mtime_sec)
 {

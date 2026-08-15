@@ -44,6 +44,7 @@ public:
   void clear_filter();
   void set_filter_text(const QString& text);
   void clear_search();
+  void set_search_text(const QString& text);
 
   /// Reload tag: / keyword completions (e.g. after Tag Manager edits).
   void refresh_filter_completions();

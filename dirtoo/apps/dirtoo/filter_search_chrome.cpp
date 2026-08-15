@@ -152,6 +152,17 @@ void FilterSearchChrome::clear_search()
   }
 }
 
+void FilterSearchChrome::set_search_text(const QString& text)
+{
+  if (search_edit_ == nullptr) {
+    return;
+  }
+  if (search_edit_->text() == text) {
+    return;
+  }
+  search_edit_->setText(text);
+}
+
 void FilterSearchChrome::refresh_filter_completions()
 {
   if (filter_completer_ != nullptr) {

@@ -215,6 +215,18 @@ void MainWindow::setup_toolbar()
   toolbar->addWidget(group_btn);
   }
 
+  {
+    auto* act = toolbar->addAction(theme_icon("view-list-tree", "folder"),
+                                   QStringLiteral("Unfold Hierarchy"));
+    act->setToolTip(
+        QStringLiteral("Show all files under this directory, grouped by folder "
+                       "(Group by Directory + Search: *)"));
+    act->setStatusTip(
+        QStringLiteral("Recursive * search with Group by Directory — flat hierarchy view"));
+    act->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+U")));
+    connect(act, &QAction::triggered, this, &MainWindow::on_unfold_hierarchy);
+  }
+
   toolbar->addSeparator();
   // View modes: Icons, List (Win95-style), Detail
   icons_act_ = toolbar->addAction(theme_icon("view-grid", "view-list-icons"), QStringLiteral("Icons"));

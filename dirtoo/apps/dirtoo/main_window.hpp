@@ -170,6 +170,8 @@ private slots:
   void on_focus_filter();
   void on_show_search();
   void on_search_submitted();
+  /// Group by Directory + recursive search * (flat hierarchy view).
+  void on_unfold_hierarchy();
   void on_search_match(const QString& path, bool is_directory, quint64 size, qint64 mtime_sec);
   void flush_search_batch();
   void on_search_finished(quint64 matched, quint64 visited, const QString& error);

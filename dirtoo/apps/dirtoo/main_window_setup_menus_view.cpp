@@ -180,6 +180,14 @@ void MainWindow::setup_view_menu()
     act->setShortcuts({QKeySequence(QStringLiteral("Ctrl+F")), QKeySequence(Qt::Key_F3)});
   }
   {
+    auto* act = view_menu->addAction(theme_icon("view-list-tree", "folder"),
+                                     QStringLiteral("Unfold Hierarchy"), this,
+                                     &MainWindow::on_unfold_hierarchy);
+    act->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+U")));
+    act->setStatusTip(
+        QStringLiteral("Recursive * search with Group by Directory — all files under this folder"));
+  }
+  {
     auto* act = view_menu->addAction(theme_icon("zoom-in"), QStringLiteral("Zoom In"), this, &MainWindow::on_zoom_in);
     act->setShortcut(QKeySequence::ZoomIn);
   }
