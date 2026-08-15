@@ -544,7 +544,11 @@ void GraphicsFileView::on_model_data_changed(const QModelIndex& top_left, const 
   for (int r = top_left.row(); r <= bottom_right.row(); ++r) {
     if (r >= 0 && static_cast<std::size_t>(r) < items_.size()
         && items_[static_cast<std::size_t>(r)] != nullptr) {
-      items_[static_cast<std::size_t>(r)]->update();
+      auto* item = items_[static_cast<std::size_t>(r)];
+      if (model_ != nullptr) {
+        item->setToolTip(model_->index(r, 0).data(Qt::ToolTipRole).toString());
+      }
+      item->update();
     }
   }
 }

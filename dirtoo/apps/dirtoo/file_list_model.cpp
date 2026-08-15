@@ -129,9 +129,9 @@ void FileListModel::emit_path_changed(const QString& path)
       const QModelIndex right =
           index(row, static_cast<int>(FileListColumn::Count) - 1);
       emit dataChanged(left, right,
-                       {Qt::DecorationRole, Qt::DisplayRole, ThumbnailStatusRole, IsNewRole,
-                        AccessDeniedRole, IsUnreadableRole, IsUnwritableRole, ChildCountRole,
-                        LaunchFlashRole, IsOpenedRole});
+                       {Qt::DecorationRole, Qt::DisplayRole, Qt::ToolTipRole, ThumbnailStatusRole,
+                        IsNewRole, AccessDeniedRole, IsUnreadableRole, IsUnwritableRole,
+                        ChildCountRole, LaunchFlashRole, IsOpenedRole});
       break;
     }
   }
@@ -263,6 +263,15 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
         }
       } else {
         tip += QStringLiteral("\n(broken symlink)");
+      }
+    }
+    const QString path_key = QString::fromStdString(fi->path().string());
+    if (thumbnail_status_.value(path_key, ThumbnailStatus::None) == ThumbnailStatus::Failed) {
+      const QString err = thumbnail_errors_.value(path_key);
+      tip += QStringLiteral("\nThumbnail failed");
+      if (!err.isEmpty()) {
+        tip += QStringLiteral(": ");
+        tip += err;
       }
     }
     return tip;

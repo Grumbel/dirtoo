@@ -53,11 +53,21 @@ void FileListModel::set_thumbnail_pending(const QString& path)
   emit_path_changed(path);
 }
 
-void FileListModel::set_thumbnail_failed(const QString& path)
+void FileListModel::set_thumbnail_failed(const QString& path, const QString& error)
 {
   thumbnail_status_.insert(path, ThumbnailStatus::Failed);
   thumbnail_pending_since_.remove(path);
+  if (error.isEmpty()) {
+    thumbnail_errors_.remove(path);
+  } else {
+    thumbnail_errors_.insert(path, error);
+  }
   emit_path_changed(path);
+}
+
+QString FileListModel::thumbnail_error(const QString& path) const
+{
+  return thumbnail_errors_.value(path);
 }
 
 void FileListModel::flash_launch(const QString& path)
@@ -330,6 +340,7 @@ void FileListModel::set_child_count(const QString& path, qint64 count)
 
 void FileListModel::clear_thumbnail(const QString& path)
 {
+  thumbnail_errors_.remove(path);
   thumbnails_.remove(path);
   thumbnail_status_.remove(path);
   thumbnail_pending_since_.remove(path);
@@ -384,6 +395,7 @@ int FileListModel::clear_stale_pending_thumbnails(qint64 max_age_ms)
 
 void FileListModel::clear_thumbnails()
 {
+  thumbnail_errors_.clear();
   if (thumbnails_.isEmpty() && thumbnail_status_.isEmpty()) {
     return;
   }

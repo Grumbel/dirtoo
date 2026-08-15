@@ -79,7 +79,9 @@ public:
 
   void set_thumbnail(const QString& path, const QIcon& icon);
   void set_thumbnail_pending(const QString& path);
-  void set_thumbnail_failed(const QString& path);
+  /// @param error Optional human-readable reason (shown in item tooltip).
+  void set_thumbnail_failed(const QString& path, const QString& error = {});
+  [[nodiscard]] QString thumbnail_error(const QString& path) const;
   void clear_thumbnails();
   void clear_thumbnail(const QString& path);
   /// Drop Pending marks so a later request can re-queue after cancel/timeout.
@@ -177,6 +179,7 @@ private:
   collection::FileCollection* collection_ = nullptr;
   QHash<QString, QIcon> thumbnails_;
   QHash<QString, ThumbnailStatus> thumbnail_status_;
+  QHash<QString, QString> thumbnail_errors_;
   /// msecs since epoch when path entered Pending (for stale re-queue).
   QHash<QString, qint64> thumbnail_pending_since_;
   QSet<QString> new_paths_;

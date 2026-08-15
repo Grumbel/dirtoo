@@ -261,15 +261,6 @@ void MainWindow::on_thumbnail_failed(const fs::Location& location, const QString
   if (const auto it = thumbs_.aliases().constFind(key); it != thumbs_.aliases().cend()) {
     key = it.value();
   }
-  // Always surface the reason on stderr (not gated on --verbose/--debug).
-  if (!message.isEmpty()) {
-    qWarning().noquote() << QStringLiteral("dirtoo: thumbnail failed for %1: %2")
-                                .arg(key, message);
-  } else {
-    qWarning().noquote() << QStringLiteral("dirtoo: thumbnail failed for %1 (no reason given)")
-                                .arg(key);
-  }
-
   // Extension was wrong (e.g. .png that is JPEG): one content-MIME re-queue.
   if (thumbs_.try_content_mime_retry(location)) {
     return;
@@ -285,8 +276,29 @@ void MainWindow::on_thumbnail_failed(const fs::Location& location, const QString
   const QString mime = mime_from_extension(location.as_path());
   const bool expect_thumb =
       mime_expects_thumbnail(mime) || message.contains(QLatin1String("directory thumbnail"));
+  const bool routine =
+      !expect_thumb
+      || message.contains(QStringLiteral("No thumbnailer available"), Qt::CaseInsensitive);
+
+  // Routine "no thumbnailer" / non-media: qInfo → stderr only with --verbose.
+  if (routine) {
+    if (!message.isEmpty()) {
+      qInfo().noquote() << QStringLiteral("dirtoo: thumbnail failed for %1: %2")
+                               .arg(key, message);
+    } else {
+      qInfo().noquote() << QStringLiteral("dirtoo: thumbnail failed for %1 (no reason given)")
+                               .arg(key);
+    }
+  } else if (!message.isEmpty()) {
+    qWarning().noquote() << QStringLiteral("dirtoo: thumbnail failed for %1: %2")
+                                .arg(key, message);
+  } else {
+    qWarning().noquote() << QStringLiteral("dirtoo: thumbnail failed for %1 (no reason given)")
+                                .arg(key);
+  }
+
   if (expect_thumb) {
-    model_->set_thumbnail_failed(key);
+    model_->set_thumbnail_failed(key, message);
   } else {
     model_->clear_thumbnail(key);
   }
