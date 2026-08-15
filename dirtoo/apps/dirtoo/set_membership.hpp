@@ -166,14 +166,50 @@ sets_for_path_robust(dirtoo::sets::FileSetStore& store, const std::filesystem::p
       || !(expr[2] == 't' || expr[2] == 'T') || expr[3] != ':') {
     return std::nullopt;
   }
-  const auto rest = expr.substr(4);
+  std::string_view rest = expr.substr(4);
+  while (!rest.empty() && std::isspace(static_cast<unsigned char>(rest.front()))) {
+    rest.remove_prefix(1);
+  }
+  if (rest.empty()) {
+    return std::nullopt;
+  }
+
+  // set:"label with spaces" / set:'label' — strip quotes; whole expr must be pure set:.
+  if (rest.front() == '"' || rest.front() == '\'') {
+    const char quote = rest.front();
+    rest.remove_prefix(1);
+    std::string out;
+    bool closed = false;
+    for (std::size_t i = 0; i < rest.size(); ++i) {
+      if (rest[i] == '\\' && i + 1 < rest.size()) {
+        out.push_back(rest[i + 1]);
+        ++i;
+        continue;
+      }
+      if (rest[i] == quote) {
+        std::string_view tail = rest.substr(i + 1);
+        while (!tail.empty() && std::isspace(static_cast<unsigned char>(tail.front()))) {
+          tail.remove_prefix(1);
+        }
+        if (!tail.empty()) {
+          return std::nullopt; // trailing junk → not a pure set: term
+        }
+        closed = true;
+        break;
+      }
+      out.push_back(rest[i]);
+    }
+    if (!closed || out.empty()) {
+      return std::nullopt;
+    }
+    return out;
+  }
+
+  // Unquoted: no whitespace (spaces would be a second filter term).
   for (char c : rest) {
     if (std::isspace(static_cast<unsigned char>(c))) {
       return std::nullopt;
     }
-  }
-  if (rest.empty()) {
-    return std::nullopt;
   }
   return std::string{rest};
 }

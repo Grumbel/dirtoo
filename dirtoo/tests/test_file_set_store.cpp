@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "dirtoo/sets/file_set_store.hpp"
+#include "set_membership.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -178,4 +179,15 @@ TEST_CASE("Filter set: and in-set: membership", "[sets][filter]")
   CHECK(store.sets_for_path(tmp.string()).size() == 1);
   fs::remove(tmp);
   remove_db_sidecars(path);
+}
+
+TEST_CASE("pure_set_query accepts quoted labels with spaces", "[sets][filter]")
+{
+  using dirtoo::app::set_membership::pure_set_query;
+  REQUIRE(pure_set_query("set:abc") == std::string{"abc"});
+  REQUIRE(pure_set_query("set:\"foo bar\"") == std::string{"foo bar"});
+  REQUIRE(pure_set_query("set:'my set'") == std::string{"my set"});
+  REQUIRE_FALSE(pure_set_query("set:foo bar").has_value()); // unquoted space → not pure
+  REQUIRE_FALSE(pure_set_query("set:\"foo").has_value());
+  REQUIRE_FALSE(pure_set_query("png").has_value());
 }

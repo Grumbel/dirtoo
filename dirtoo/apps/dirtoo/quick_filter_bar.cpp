@@ -48,6 +48,27 @@
 namespace dirtoo::app {
 namespace {
 
+/// Filter term for a set. Prefer stable id (no spaces/quoting). Labels with
+/// spaces are emitted as set:"…" when an id is unavailable.
+QString set_filter_expression(const QString& id, const QString& label)
+{
+  if (!id.isEmpty()) {
+    return QStringLiteral("set:%1").arg(id);
+  }
+  if (label.isEmpty()) {
+    return {};
+  }
+  if (label.contains(QLatin1Char(' ')) || label.contains(QLatin1Char('"'))
+      || label.contains(QLatin1Char('\''))) {
+    QString esc = label;
+    esc.replace(QLatin1Char('\\'), QStringLiteral("\\\\"));
+    esc.replace(QLatin1Char('"'), QStringLiteral("\\\""));
+    return QStringLiteral("set:\"%1\"").arg(esc);
+  }
+  return QStringLiteral("set:%1").arg(label);
+}
+
+
 QString normalize_dir_path(QString path)
 {
   path = path.trimmed();
@@ -545,11 +566,11 @@ void QuickFilterBar::rebuild_from_items(const std::vector<dirtoo::fs::FileInfo>&
       c.set_id = QString::fromStdString(s.id);
       if (!s.label.empty()) {
         c.label = QString::fromStdString(s.label);
-        c.expression = QStringLiteral("set:%1").arg(c.label);
       } else {
         c.label = QStringLiteral("Set %1").arg(QString::fromStdString(s.id.substr(0, 8)));
-        c.expression = QStringLiteral("set:%1").arg(QString::fromStdString(s.id));
       }
+      // Always filter by stable set id so labels with spaces work without quotes.
+      c.expression = set_filter_expression(QString::fromStdString(s.id), c.label);
       c.accent = set_paint_detail::color_for_set(s);
       auto_chips_.push_back(std::move(c));
     }
@@ -784,9 +805,9 @@ void QuickFilterBar::show_set_menu(const QString& set_id, const QPoint& global_p
     return;
   }
 
-  const QString filter_expr = !set->label.empty()
-                                  ? QStringLiteral("set:%1").arg(QString::fromStdString(set->label))
-                                  : QStringLiteral("set:%1").arg(QString::fromStdString(set->id));
+  const QString filter_expr = set_filter_expression(
+      QString::fromStdString(set->id),
+      QString::fromStdString(set->label));
   const QString set_label = !set->label.empty() ? QString::fromStdString(set->label)
                                                 : set_id.left(8);
 
