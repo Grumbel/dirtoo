@@ -221,49 +221,81 @@ private:
 
   std::expected<MatchFuncPtr, ParseError> parse_atom()
   {
-    // Read until whitespace or special paren, but allow ':' inside command
+    // Read a word or command. Commands are name:arg; arg may be a quoted string
+    // so labels with spaces work: set:"foo bar", tag:"my tag", contains:"a b".
     skip_ws();
     if (eof()) {
       return std::unexpected(ParseError{"expected term", pos_});
     }
-    std::string token;
+
+    // Command name (or bare word) until ':', whitespace, or paren.
+    std::string head;
     while (!eof()) {
       const char c = peek();
       if (std::isspace(static_cast<unsigned char>(c)) || c == '(' || c == ')') {
         break;
       }
-      // Stop at AND/OR handled by higher level — they are separate tokens only if
-      // separated by spaces, so we read continuous token here.
+      if (c == ':') {
+        break;
+      }
       if (c == '\\' && pos_ + 1 < in_.size()) {
         ++pos_;
-        token.push_back(get());
+        head.push_back(get());
         continue;
       }
-      token.push_back(get());
+      head.push_back(get());
     }
-    if (token.empty()) {
+
+    if (head.empty() && peek() != ':') {
       return std::unexpected(ParseError{"empty token", pos_});
     }
 
-    // Reject pure keywords if they leaked
-    const auto lower = [&] {
-      std::string s = token;
+    const auto lower_head = [&] {
+      std::string s = head;
       for (char& ch : s) {
         ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
       }
       return s;
     }();
-    if (lower == "and" || lower == "or" || lower == "not") {
-      return std::unexpected(ParseError{"unexpected keyword '" + token + "'", pos_});
+    if (lower_head == "and" || lower_head == "or" || lower_head == "not") {
+      return std::unexpected(ParseError{"unexpected keyword '" + head + "'", pos_});
     }
 
-    const auto colon = token.find(':');
-    if (colon != std::string::npos && colon > 0) {
-      const std::string cmd = token.substr(0, colon);
-      const std::string arg = token.substr(colon + 1);
-      return command_to_match(cmd, arg);
+    if (peek() == ':') {
+      get(); // consume ':'
+      // Quoted arg after colon (set:"foo bar"). Unquoted arg stays tight so
+      // size:>1M does not swallow the next term.
+      std::string arg;
+      if (peek() == '"' || peek() == '\'') {
+        auto str = parse_quoted();
+        if (!str) {
+          return std::unexpected(str.error());
+        }
+        arg = std::move(*str);
+      } else {
+        while (!eof()) {
+          const char c = peek();
+          if (std::isspace(static_cast<unsigned char>(c)) || c == '(' || c == ')') {
+            break;
+          }
+          if (c == '\\' && pos_ + 1 < in_.size()) {
+            ++pos_;
+            arg.push_back(get());
+            continue;
+          }
+          arg.push_back(get());
+        }
+      }
+      if (head.empty()) {
+        return std::unexpected(ParseError{"empty command name", pos_});
+      }
+      return command_to_match(head, arg);
     }
-    return word_to_match(token);
+
+    if (head.empty()) {
+      return std::unexpected(ParseError{"empty token", pos_});
+    }
+    return word_to_match(head);
   }
 
   MatchFuncPtr word_to_match(const std::string& word)
@@ -404,9 +436,9 @@ Terms (juxtaposition = AND, OR joins alternatives):
   Glob:*.PNG      case-sensitive glob
   regex:^a.*      regex on basename (re:, r:)
   size:>1M        size compare (K/M/G); also size:10K-2M or size:10K..2M
-  tag:work        files tagged "work" (needs checksum + dt-tag)
+  tag:work        files tagged work (quote spaces: tag:"my tag")
   tagged:yes|no   any tags / no tags (checksum cache lookup only)
-  set:<id|label>  members of a persistent file set (path lookup)
+  set:<id|label>  set members (path lookup); set:"label with spaces"
   in-set:yes|no   any set membership / none
   checksummed:yes|no|full|quick  full SHA-256 / none / sample (aliases: hashed:, csum:)
   type:dir        type:file|dir|video|image|archive|audio (t:)
@@ -478,7 +510,7 @@ std::string filter_help_html()
     <td>Files with tag <i>work</i> (checksum cache + tags DB; no hashing)</td></tr>
 <tr><td><code>tagged:yes</code> / <code>tagged:no</code></td>
 <td>Any tags / no tags (checksum cache)</td></tr>
-<tr><td><code>set:id-or-label</code></td>
+<tr><td><code>set:id-or-label</code> / <code>set:"label with spaces"</code></td>
 <td>Files in a persistent ad-hoc set (path membership)</td></tr>
 <tr><td><code>in-set:yes</code> / <code>in-set:no</code></td>
 <td>Any set membership / none</td></tr>

@@ -463,6 +463,27 @@ TEST_CASE("normalize_tag_name keeps hyphen and colon namespace", "[tags]")
   REQUIRE_FALSE(tag_name_matches("other-paris", "location-*"));
 }
 
+
+TEST_CASE("filter quoted command arguments", "[filter]")
+{
+  // set: / tag: / contains: values with spaces need quotes after the colon.
+  auto m = parse_filter("set:\"foo bar\"");
+  REQUIRE(m);
+  m = parse_filter("set:'my set'");
+  REQUIRE(m);
+  m = parse_filter("tag:\"my tag\"");
+  REQUIRE(m);
+  m = parse_filter("contains:\"hello world\"");
+  REQUIRE(m);
+  // Unquoted forms still work (no spaces in the argument).
+  REQUIRE(parse_filter("set:foo"));
+  REQUIRE(parse_filter("size:>1M"));
+  REQUIRE(parse_filter("tag:game:doom")); // colon inside unquoted arg
+  // Unterminated quote is a parse error.
+  auto bad = parse_filter("set:\"foo");
+  REQUIRE_FALSE(bad);
+}
+
 TEST_CASE("checksummed:yes|no parses", "[filter]")
 {
   REQUIRE_NOTHROW(dirtoo::filter::parse_filter("checksummed:yes"));
