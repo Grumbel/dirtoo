@@ -247,12 +247,18 @@
           inherit version cmakeBuildType;
           src = srcFor [ ./thumbnailers/text ];
           dontStrip = true;
-          nativeBuildInputs = with pkgs; [ cmake ninja ];
-          buildInputs = with pkgs; [ zlib ];
+          nativeBuildInputs = with pkgs; [ cmake ninja pkg-config ];
+          buildInputs = with pkgs; [ zlib freetype fontconfig ];
+          # Compact mono defaults available to Fontconfig at runtime.
+          propagatedUserEnvPkgs = with pkgs; [
+            jetbrains-mono
+            ibm-plex
+            dejavu_fonts
+          ];
           postUnpack = ''sourceRoot+=/thumbnailers/text'';
           cmakeFlags = [ versionFlag ];
           meta = {
-            description = "Text layout thumbnailer (1–3 column start/mid/end preview)";
+            description = "Text layout thumbnailer (FreeType; 1–3 column start/mid/end)";
             mainProgram = "dirtoo-text-thumb";
           };
         };

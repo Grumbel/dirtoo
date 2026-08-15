@@ -8,10 +8,19 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(ZLIB REQUIRED)
+find_package(Freetype REQUIRED)
+find_package(Fontconfig REQUIRED)
 
 add_executable(dirtoo-text-thumb src/main.cpp)
-target_include_directories(dirtoo-text-thumb PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(dirtoo-text-thumb PRIVATE ZLIB::ZLIB)
+target_include_directories(dirtoo-text-thumb PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/src
+  ${FREETYPE_INCLUDE_DIRS}
+)
+target_link_libraries(dirtoo-text-thumb PRIVATE
+  ZLIB::ZLIB
+  Freetype::Freetype
+  Fontconfig::Fontconfig
+)
 
 install(TARGETS dirtoo-text-thumb RUNTIME DESTINATION bin)
 
