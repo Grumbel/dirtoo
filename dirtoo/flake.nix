@@ -253,10 +253,31 @@
           ];
           meta.description = "dirtoo CLI tools (dt-copy, dt-filter, dt-mediainfo, …)";
         };
+
+        # Everything installable: GUI, all libs, CLI tools, optional thumbnailers.
+        dirtoo-full = pkgs.symlinkJoin {
+          name = "dirtoo-full-${version}";
+          paths = [
+            dirops
+            dirtoo-fs
+            dirtoo-hash
+            dirtoo-tags
+            dirtoo-filter
+            dirtoo-collection
+            dirtoo-watcher
+            dirtoo-thumbnail
+            dirtoo-archive
+            dirtoo
+            hilbert-thumbnailer
+          ];
+          meta = {
+            description = "dirtoo meta-package: GUI + all libraries + optional tools (Hilbert thumbnailer, …)";
+            mainProgram = "dirtoo";
+          };
+        };
       in
       {
         packages = {
-          hilbert-thumbnailer = hilbert-thumbnailer;
           inherit
             dirops
             dirtoo-fs
@@ -268,7 +289,9 @@
             dirtoo-thumbnail
             dirtoo-archive
             dirtoo
-            dirtoo-tools;
+            dirtoo-tools
+            dirtoo-full
+            hilbert-thumbnailer;
           default = dirtoo;
           all-libs = pkgs.symlinkJoin {
             name = "dirtoo-all-libs-${version}";
@@ -352,6 +375,7 @@
             echo "  nix build .#dirtoo            # GUI (does not rehash lib sources)"
             echo "  nix build .#dirtoo-tools"
             echo "  nix build .#hilbert-thumbnailer  # standalone binary map thumbs"
+            echo "  nix build .#dirtoo-full           # GUI + libs + optional tools"
             echo "  nix build .#all-libs"
             echo "  nix run .#dirtoo"
           '';
