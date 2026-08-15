@@ -227,6 +227,21 @@
           touch "$out"
         '';
 
+        hilbert-thumbnailer = pkgs.stdenv.mkDerivation {
+          pname = "dirtoo-hilbert-thumb";
+          inherit version cmakeBuildType;
+          src = srcFor [ ./thumbnailers/hilbert ];
+          dontStrip = true;
+          nativeBuildInputs = with pkgs; [ cmake ninja ];
+          buildInputs = with pkgs; [ zlib ];
+          postUnpack = ''sourceRoot+=/thumbnailers/hilbert'';
+          cmakeFlags = [ versionFlag ];
+          meta = {
+            description = "Hilbert-curve binary map thumbnailer (XDG Thumbnailer1 example)";
+            mainProgram = "dirtoo-hilbert-thumb";
+          };
+        };
+
         dirtoo-tools = pkgs.symlinkJoin {
           name = "dirtoo-tools-${version}";
           paths = [
@@ -241,6 +256,7 @@
       in
       {
         packages = {
+          hilbert-thumbnailer = hilbert-thumbnailer;
           inherit
             dirops
             dirtoo-fs
@@ -270,6 +286,7 @@
           };
         };
 
+
         checks = {
           # `nix flake check` → run unit tests using the built package output.
           # Does not recompile if `packages.dirtoo` is already in the store.
@@ -277,6 +294,11 @@
         };
 
         apps = {
+          hilbert-thumb = {
+            type = "app";
+            program = "${hilbert-thumbnailer}/bin/dirtoo-hilbert-thumb";
+            meta.description = "Hilbert-curve binary thumbnailer";
+          };
           dirtoo = {
             type = "app";
             program = "${dirtoo}/bin/dirtoo";
@@ -329,6 +351,7 @@
             echo "  nix build .#dirtoo-archive"
             echo "  nix build .#dirtoo            # GUI (does not rehash lib sources)"
             echo "  nix build .#dirtoo-tools"
+            echo "  nix build .#hilbert-thumbnailer  # standalone binary map thumbs"
             echo "  nix build .#all-libs"
             echo "  nix run .#dirtoo"
           '';

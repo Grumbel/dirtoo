@@ -1,0 +1,6 @@
+[Thumbnailer Entry]
+# Example custom Thumbnailer1 / tumbler plugin for dirtoo and other XDG apps.
+# Renders the whole file as a Hilbert-curve color map (CantorDust-style toy).
+TryExec=dirtoo-hilbert-thumb
+Exec=dirtoo-hilbert-thumb %i %o %s
+MimeType=application/octet-stream;application/x-executable;application/x-sharedlib;application/x-object;application/wasm;application/x-msdownload;application/x-dosexec;application/x-raw-disk-image;application/x-iso9660-image;application/x-apple-diskimage;application/x-firmware;application/vnd.sqlite3;application/x-sqlite3;
