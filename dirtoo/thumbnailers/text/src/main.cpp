@@ -32,14 +32,14 @@ struct Options {
   std::string input;
   std::string output;
   int size = 128;
-  QColor fg{0, 0, 0};
-  QColor bg{255, 255, 255};
+  QColor fg{0x29, 0x27, 0x20}; // #292720
+  QColor bg{0xF5, 0xF0, 0xD8}; // #F5F0D8
   int ss = 4;
   // Pixel size before supersampling. Fractional so --size 128 can use e.g. 2.0
   // while --size 256 uses 4.0; QFont::setPixelSize only takes int, so we round
   // after multiplying by --ss.
-  double font_size = 6.0;
-  QString font_family = QStringLiteral("JetBrains Mono");
+  double font_size = 2.0;
+  QString font_family = QStringLiteral("DejaVu Sans Mono");
   QString font_weight = QStringLiteral("regular");
 };
 
@@ -51,11 +51,11 @@ void usage(const char* argv0)
       << "  Text layout thumbnail via QPainter (1–3 columns: start/mid/end).\n"
       << "\n"
       << "Options:\n"
-      << "  --fg COLOR         Foreground (text) color   (default #000000)\n"
-      << "  --bg COLOR         Background color          (default #ffffff)\n"
-      << "  --font FAMILY      Font family               (default JetBrains Mono)\n"
+      << "  --fg COLOR         Foreground (text) color   (default #292720)\n"
+      << "  --bg COLOR         Background color          (default #F5F0D8)\n"
+      << "  --font FAMILY      Font family               (default DejaVu Sans Mono)\n"
       << "  --weight NAME      light|regular|medium|bold (default regular)\n"
-      << "  --font-size F      Glyph pixel size (float)  (default 6, before --ss)\n"
+      << "  --font-size F      Glyph pixel size (float)  (default 2, before --ss)\n"
       << "  --ss N             Supersample factor 1–8    (default 4)\n"
       << "  --size N           Thumbnail edge pixels     (default 128)\n"
       << "  -h, --help\n"
@@ -345,15 +345,15 @@ int main(int argc, char** argv)
         std::max(1, static_cast<int>(std::lround(opt.font_size * static_cast<double>(ss))));
 
     QFont font = make_font(opt, pixel_size);
-    // Fallbacks when JetBrains Mono is not installed.
+    // Fallbacks when the requested family is not installed.
     {
       QFont f2 = font;
       f2.setFamilies(QStringList{
           opt.font_family,
-          QStringLiteral("JetBrains Mono"),
-          QStringLiteral("IBM Plex Mono"),
           QStringLiteral("DejaVu Sans Mono"),
           QStringLiteral("Liberation Mono"),
+          QStringLiteral("JetBrains Mono"),
+          QStringLiteral("IBM Plex Mono"),
           QStringLiteral("Nimbus Mono PS"),
           QStringLiteral("monospace"),
       });

@@ -3,8 +3,9 @@
 Layout-preview thumbnailer for text files using **Qt `QPainter`**.
 
 Up to **three columns** (~80 characters) show the **start / middle / end** of
-the file. Default typeface is **JetBrains Mono** (compact monospace), with
-Qt/fontconfig fallbacks.
+the file. Default typeface is **DejaVu Sans Mono**, with Qt/fontconfig
+fallbacks. Defaults target a readable 128×128 preview (supersample 4, font
+size 2, warm paper colors).
 
 ## Why Qt?
 
@@ -18,11 +19,12 @@ stack as the desktop, built-in antialiasing, smooth supersampled downscale via
 ```text
 dirtoo-text-thumb [options] <input> <output.png> [size]
 
-  --font FAMILY      font family              (default: JetBrains Mono)
+  --font FAMILY      font family              (default: DejaVu Sans Mono)
   --weight NAME      light|regular|medium|bold
-  --font-size F      pixel size before --ss   (default: 6; fractional OK)
-  --fg / --bg COLOR  #rgb / #rrggbb / R,G,B
+  --font-size F      pixel size before --ss   (default: 2; fractional OK)
+  --fg / --bg COLOR  #rgb / #rrggbb / R,G,B   (default #292720 / #F5F0D8)
   --ss N             supersample 1–8         (default: 4)
+  --size N           thumbnail edge pixels   (default: 128)
 ```
 
 Environment: `DIRTOO_TEXT_THUMB_{FONT,WEIGHT,FONT_SIZE,FG,BG,SS,SIZE}`.
