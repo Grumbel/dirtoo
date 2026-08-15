@@ -1,7 +1,20 @@
 # SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-find_package(Catch2 3 REQUIRED)
+# Catch2 3 provides <catch2/catch_test_macros.hpp>. Without it the GUI still
+# builds: pass -DDIRTOO_BUILD_TESTS=OFF or install catch2_3 (nix develop).
+find_package(Catch2 3 QUIET)
+if(NOT Catch2_FOUND)
+  message(WARNING
+    "Catch2 3 not found — skipping dirtoo-tests. "
+    "Install catch2_3 (e.g. nix develop) or reconfigure with -DDIRTOO_BUILD_TESTS=OFF.")
+  return()
+endif()
+if(NOT TARGET Catch2::Catch2WithMain)
+  message(WARNING
+    "Catch2 3 found but Catch2::Catch2WithMain is missing — skipping dirtoo-tests.")
+  return()
+endif()
 
 add_executable(dirtoo-tests
   test_location.cpp
@@ -60,6 +73,18 @@ target_link_libraries(dirtoo-tests
     dirtoo_warnings
 )
 
+# Some Catch2 installs export a usable link target but leave INTERFACE include
+# dirs empty on the consumer side — force them when present so
+# <catch2/catch_test_macros.hpp> resolves.
+foreach(_c2_tgt Catch2::Catch2WithMain Catch2::Catch2)
+  if(TARGET ${_c2_tgt})
+    get_target_property(_c2_inc ${_c2_tgt} INTERFACE_INCLUDE_DIRECTORIES)
+    if(_c2_inc AND NOT _c2_inc STREQUAL "_c2_inc-NOTFOUND")
+      target_include_directories(dirtoo-tests PRIVATE ${_c2_inc})
+    endif()
+  endif()
+endforeach()
+
 include(CTest)
 include(Catch)
 catch_discover_tests(dirtoo-tests)
@@ -67,4 +92,3 @@ catch_discover_tests(dirtoo-tests)
 # Installed so `nix flake check` can run tests against the built package
 # without rebuilding (dirtoo package installs the binary; checks run it).
 install(TARGETS dirtoo-tests RUNTIME DESTINATION libexec/dirtoo)
-
