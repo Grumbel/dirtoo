@@ -48,24 +48,30 @@
 namespace dirtoo::app {
 namespace {
 
-/// Filter term for a set. Prefer stable id (no spaces/quoting). Labels with
-/// spaces are emitted as set:"…" when an id is unavailable.
+/// Filter term for a set. Prefer human label (quoted when it has spaces or
+/// quotes). Fall back to a short unique id prefix (8 hex chars) — full ids stay
+/// in the database / chip set_id property only.
 QString set_filter_expression(const QString& id, const QString& label)
 {
+  if (!label.isEmpty()) {
+    if (label.contains(QLatin1Char(' ')) || label.contains(QLatin1Char('"'))
+        || label.contains(QLatin1Char('\'')) || label.contains(QLatin1Char('('))
+        || label.contains(QLatin1Char(')'))) {
+      QString esc = label;
+      esc.replace(QLatin1Char('\\'), QStringLiteral("\\\\"));
+      esc.replace(QLatin1Char('"'), QStringLiteral("\\\""));
+      return QStringLiteral("set:\"%1\"").arg(esc);
+    }
+    return QStringLiteral("set:%1").arg(label);
+  }
+  // Unlabeled: short prefix is enough for resolve_set_id (unique ≥8 chars).
+  if (id.size() >= 8) {
+    return QStringLiteral("set:%1").arg(id.left(8));
+  }
   if (!id.isEmpty()) {
     return QStringLiteral("set:%1").arg(id);
   }
-  if (label.isEmpty()) {
-    return {};
-  }
-  if (label.contains(QLatin1Char(' ')) || label.contains(QLatin1Char('"'))
-      || label.contains(QLatin1Char('\''))) {
-    QString esc = label;
-    esc.replace(QLatin1Char('\\'), QStringLiteral("\\\\"));
-    esc.replace(QLatin1Char('"'), QStringLiteral("\\\""));
-    return QStringLiteral("set:\"%1\"").arg(esc);
-  }
-  return QStringLiteral("set:%1").arg(label);
+  return {};
 }
 
 
