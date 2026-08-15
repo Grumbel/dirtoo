@@ -16,6 +16,7 @@ dirtoo-text-thumb [options] <input> <output.png> [size]
   --fg COLOR     text color       (default #000000)
   --bg COLOR     background       (default #ffffff)
   --scale F      glyph scale      (default 0.5; range 0.25–2.0)
+  --ss N         supersample 1–8  (default 4; render at size×N then downscale)
   --size N       same as [size]   (default 128)
 ```
 
@@ -38,6 +39,7 @@ Used when the matching flag is omitted (handy for XDG thumbnailers):
 | `DIRTOO_TEXT_THUMB_FG` | Foreground color |
 | `DIRTOO_TEXT_THUMB_BG` | Background color |
 | `DIRTOO_TEXT_THUMB_SCALE` | Glyph scale |
+| `DIRTOO_TEXT_THUMB_SS` | Supersample factor |
 | `DIRTOO_TEXT_THUMB_SIZE` | Default size if not passed as `%s` |
 
 ## XDG thumbnailer

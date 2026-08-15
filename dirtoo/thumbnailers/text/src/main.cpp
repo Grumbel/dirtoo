@@ -40,6 +40,8 @@ struct Options {
   Rgb bg{255, 255, 255};
   /// Glyph cell scale relative to the full 6×8 cell (1.0 = full, 0.5 = half).
   float scale = 0.5f;
+  /// Supersample factor: render at size×ss then box-filter down (1 = off).
+  int ss = 4;
 };
 
 void usage(const char* argv0)
@@ -53,6 +55,7 @@ void usage(const char* argv0)
       << "  --fg COLOR       Foreground (text) color  (default #000000)\n"
       << "  --bg COLOR       Background color         (default #ffffff)\n"
       << "  --scale F        Glyph scale 0.25–2.0     (default 0.5)\n"
+      << "  --ss N           Supersample factor 1–8    (default 4)\n"
       << "  -h, --help\n"
       << "\n"
       << "COLOR: #rgb, #rrggbb, or R,G,B (0–255).\n"
@@ -61,6 +64,7 @@ void usage(const char* argv0)
       << "  DIRTOO_TEXT_THUMB_FG\n"
       << "  DIRTOO_TEXT_THUMB_BG\n"
       << "  DIRTOO_TEXT_THUMB_SCALE\n"
+      << "  DIRTOO_TEXT_THUMB_SS\n"
       << "  DIRTOO_TEXT_THUMB_SIZE   (if the size argument is omitted)\n"
       << "\n"
       << "XDG thumbnailer: size is passed as %s; customize colors via env or by\n"
@@ -154,6 +158,9 @@ bool parse_args(int argc, char** argv, Options& opt, std::string& err)
   if (const char* v = env_or_null("DIRTOO_TEXT_THUMB_SCALE")) {
     opt.scale = std::strtof(v, nullptr);
   }
+  if (const char* v = env_or_null("DIRTOO_TEXT_THUMB_SS")) {
+    opt.ss = std::atoi(v);
+  }
   if (const char* v = env_or_null("DIRTOO_TEXT_THUMB_SIZE")) {
     opt.size = std::atoi(v);
   }
@@ -196,6 +203,12 @@ bool parse_args(int argc, char** argv, Options& opt, std::string& err)
         return false;
       }
       opt.scale = std::strtof(v, nullptr);
+    } else if (a == "--ss") {
+      const char* v = need("--ss");
+      if (v == nullptr) {
+        return false;
+      }
+      opt.ss = std::atoi(v);
     } else if (a == "--size") {
       const char* v = need("--size");
       if (v == nullptr) {
@@ -222,6 +235,7 @@ bool parse_args(int argc, char** argv, Options& opt, std::string& err)
 
   opt.scale = std::clamp(opt.scale, 0.25f, 2.0f);
   opt.size = std::clamp(opt.size, 32, 1024);
+  opt.ss = std::clamp(opt.ss, 1, 8);
   return true;
 }
 
@@ -318,6 +332,43 @@ void draw_column(std::vector<unsigned char>& rgb, int size, int origin_x, int or
   }
 }
 
+
+/// Box-filter downsample from hi×hi RGB into lo×lo (hi must be lo * factor).
+void downsample_box(const std::vector<unsigned char>& src, int hi,
+                    std::vector<unsigned char>& dst, int lo)
+{
+  const int factor = hi / lo;
+  dst.assign(static_cast<std::size_t>(lo) * static_cast<std::size_t>(lo) * 3, 0);
+  if (factor <= 1) {
+    dst = src;
+    return;
+  }
+  for (int y = 0; y < lo; ++y) {
+    for (int x = 0; x < lo; ++x) {
+      unsigned sum_r = 0, sum_g = 0, sum_b = 0;
+      const int count = factor * factor;
+      for (int dy = 0; dy < factor; ++dy) {
+        for (int dx = 0; dx < factor; ++dx) {
+          const int sx = x * factor + dx;
+          const int sy = y * factor + dy;
+          const std::size_t o =
+              (static_cast<std::size_t>(sy) * static_cast<std::size_t>(hi)
+               + static_cast<std::size_t>(sx))
+              * 3;
+          sum_r += src[o + 0];
+          sum_g += src[o + 1];
+          sum_b += src[o + 2];
+        }
+      }
+      const std::size_t d =
+          (static_cast<std::size_t>(y) * static_cast<std::size_t>(lo) + static_cast<std::size_t>(x)) * 3;
+      dst[d + 0] = static_cast<unsigned char>(sum_r / count);
+      dst[d + 1] = static_cast<unsigned char>(sum_g / count);
+      dst[d + 2] = static_cast<unsigned char>(sum_b / count);
+    }
+  }
+}
+
 } // namespace
 
 int main(int argc, char** argv)
@@ -334,15 +385,20 @@ int main(int argc, char** argv)
 
   try {
     const std::string text = read_text_capped(opt.input);
-    const CellMetrics cell = metrics_for_scale(opt.scale);
     const int size = opt.size;
+    const int ss = opt.ss;
+    const int hi = size * ss;
 
-    const int pad = 2;
-    const int usable_h = std::max(1, size - 2 * pad);
+    // Layout in final-pixel units, then scale geometry by ss for the hi-res buffer.
+    const CellMetrics cell_lo = metrics_for_scale(opt.scale);
+    const CellMetrics cell{cell_lo.cell_w * ss, cell_lo.cell_h * ss};
+
+    const int pad = 2 * ss;
+    const int usable_h = std::max(1, hi - 2 * pad);
     const int max_lines = std::max(1, usable_h / cell.cell_h);
 
     const int col_px = kColChars * cell.cell_w;
-    const int gap_px = 3;
+    const int gap_px = 3 * ss;
 
     const std::size_t per_col = static_cast<std::size_t>(max_lines) * static_cast<std::size_t>(kColChars);
     const std::size_t len = text.size();
@@ -356,13 +412,13 @@ int main(int argc, char** argv)
 
     const int need_w = ncols * col_px + (ncols - 1) * gap_px + 2 * pad;
     int chars_per_line = kColChars;
-    if (need_w > size) {
-      const int avail = size - 2 * pad - (ncols - 1) * gap_px;
+    if (need_w > hi) {
+      const int avail = hi - 2 * pad - (ncols - 1) * gap_px;
       chars_per_line = std::max(8, avail / (ncols * cell.cell_w));
     }
     const int draw_col_px = chars_per_line * cell.cell_w;
     const int total_w = ncols * draw_col_px + (ncols - 1) * gap_px;
-    const int origin_x0 = std::max(0, (size - total_w) / 2);
+    const int origin_x0 = std::max(0, (hi - total_w) / 2);
     const int origin_y0 = pad;
 
     std::vector<std::string> windows[3];
@@ -402,39 +458,41 @@ int main(int argc, char** argv)
       take(2, end_start);
     }
 
-    std::vector<unsigned char> rgb(static_cast<std::size_t>(size) * static_cast<std::size_t>(size) * 3);
-    for (std::size_t i = 0; i < rgb.size(); i += 3) {
-      rgb[i + 0] = opt.bg.r;
-      rgb[i + 1] = opt.bg.g;
-      rgb[i + 2] = opt.bg.b;
+    std::vector<unsigned char> hi_rgb(static_cast<std::size_t>(hi) * static_cast<std::size_t>(hi) * 3);
+    for (std::size_t i = 0; i < hi_rgb.size(); i += 3) {
+      hi_rgb[i + 0] = opt.bg.r;
+      hi_rgb[i + 1] = opt.bg.g;
+      hi_rgb[i + 2] = opt.bg.b;
     }
 
     for (int c = 0; c < ncols; ++c) {
       const int ox = origin_x0 + c * (draw_col_px + gap_px);
-      draw_column(rgb, size, ox, origin_y0, windows[c], max_lines, cell, opt.fg);
+      draw_column(hi_rgb, hi, ox, origin_y0, windows[c], max_lines, cell, opt.fg);
     }
 
     if (ncols > 1) {
-      // Divider: midpoint between fg and bg.
+      // Divider: blend of fg/bg (softens under supersampling).
       const Rgb div{static_cast<unsigned char>((static_cast<int>(opt.fg.r) + opt.bg.r * 4) / 5),
                     static_cast<unsigned char>((static_cast<int>(opt.fg.g) + opt.bg.g * 4) / 5),
                     static_cast<unsigned char>((static_cast<int>(opt.fg.b) + opt.bg.b * 4) / 5)};
       for (int c = 1; c < ncols; ++c) {
         const int x = origin_x0 + c * (draw_col_px + gap_px) - gap_px / 2 - 1;
-        if (x < 0 || x >= size) {
+        if (x < 0 || x >= hi) {
           continue;
         }
-        for (int y = pad; y < size - pad; ++y) {
+        for (int y = pad; y < hi - pad; ++y) {
           const std::size_t o =
-              (static_cast<std::size_t>(y) * static_cast<std::size_t>(size) + static_cast<std::size_t>(x))
+              (static_cast<std::size_t>(y) * static_cast<std::size_t>(hi) + static_cast<std::size_t>(x))
               * 3;
-          rgb[o + 0] = div.r;
-          rgb[o + 1] = div.g;
-          rgb[o + 2] = div.b;
+          hi_rgb[o + 0] = div.r;
+          hi_rgb[o + 1] = div.g;
+          hi_rgb[o + 2] = div.b;
         }
       }
     }
 
+    std::vector<unsigned char> rgb;
+    downsample_box(hi_rgb, hi, rgb, size);
     png_write::write_rgb_file(opt.output, size, rgb);
   } catch (const std::exception& ex) {
     std::cerr << "dirtoo-text-thumb: " << ex.what() << '\n';
