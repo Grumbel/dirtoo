@@ -44,6 +44,15 @@ resolve_set_id(dirtoo::sets::FileSetStore& store, std::string_view query)
   if (query.empty()) {
     return std::nullopt;
   }
+  // Tolerate accidental UI text "Set <idprefix>" from older QuickFilter chips.
+  if (query.size() > 4
+      && (query[0] == 'S' || query[0] == 's') && (query[1] == 'e' || query[1] == 'E')
+      && (query[2] == 't' || query[2] == 'T') && query[3] == ' ') {
+    query.remove_prefix(4);
+    while (!query.empty() && std::isspace(static_cast<unsigned char>(query.front()))) {
+      query.remove_prefix(1);
+    }
+  }
   if (auto by_id = store.get_set(query)) {
     return by_id->id;
   }

@@ -48,11 +48,13 @@
 namespace dirtoo::app {
 namespace {
 
-/// Filter term for a set. Prefer human label (quoted when it has spaces or
-/// quotes). Fall back to a short unique id prefix (8 hex chars) — full ids stay
-/// in the database / chip set_id property only.
-QString set_filter_expression(const QString& id, const QString& label)
+/// Build a filter term for a set.
+/// @p store_label is the FileSetStore label only (may be empty). Never pass the
+/// chip display text ("Set abcd1234") — that is not a resolvable query.
+/// Prefer set:<label> (quoted if needed); otherwise set:<8-char id prefix>.
+QString set_filter_expression(const QString& id, const QString& store_label)
 {
+  const QString label = store_label.trimmed();
   if (!label.isEmpty()) {
     if (label.contains(QLatin1Char(' ')) || label.contains(QLatin1Char('"'))
         || label.contains(QLatin1Char('\'')) || label.contains(QLatin1Char('('))
@@ -64,7 +66,7 @@ QString set_filter_expression(const QString& id, const QString& label)
     }
     return QStringLiteral("set:%1").arg(label);
   }
-  // Unlabeled: short prefix is enough for resolve_set_id (unique ≥8 chars).
+  // No store label: resolve_set_id accepts a unique id prefix (≥8 hex chars).
   if (id.size() >= 8) {
     return QStringLiteral("set:%1").arg(id.left(8));
   }
@@ -746,13 +748,12 @@ void QuickFilterBar::rebuild_from_items(const std::vector<dirtoo::fs::FileInfo>&
       AutoChip c;
       c.group = AutoChip::Group::Set;
       c.set_id = QString::fromStdString(s.id);
-      if (!s.label.empty()) {
-        c.label = QString::fromStdString(s.label);
-      } else {
-        c.label = QStringLiteral("Set %1").arg(QString::fromStdString(s.id.substr(0, 8)));
-      }
-      // Always filter by stable set id so labels with spaces work without quotes.
-      c.expression = set_filter_expression(QString::fromStdString(s.id), c.label);
+      const QString store_label = QString::fromStdString(s.label);
+      // Display text may be synthetic; filter expression uses store label or id only.
+      c.label = !store_label.isEmpty()
+                    ? store_label
+                    : QStringLiteral("Set %1").arg(QString::fromStdString(s.id.substr(0, 8)));
+      c.expression = set_filter_expression(QString::fromStdString(s.id), store_label);
       c.accent = set_paint_detail::color_for_set(s);
       auto_chips_.push_back(std::move(c));
     }
