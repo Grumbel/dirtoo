@@ -294,6 +294,81 @@ QString unwrap_parens(QString t)
   return t;
 }
 
+enum class TermActiveKind { None, Sole, Or, And };
+
+/// Split top-level AND alternatives (paren-aware). Chips insert explicit " AND ".
+QStringList split_and_terms(const QString& expr)
+{
+  QStringList out;
+  QString cur;
+  int depth = 0;
+  const QString s = expr.trimmed();
+  int i = 0;
+  while (i < s.size()) {
+    const QChar ch = s[i];
+    if (ch == QLatin1Char('(')) {
+      ++depth;
+      cur += ch;
+      ++i;
+      continue;
+    }
+    if (ch == QLatin1Char(')')) {
+      depth = std::max(0, depth - 1);
+      cur += ch;
+      ++i;
+      continue;
+    }
+    if (depth == 0) {
+      if ((ch == QLatin1Char('A') || ch == QLatin1Char('a')) && i + 2 < s.size()
+          && (s[i + 1] == QLatin1Char('N') || s[i + 1] == QLatin1Char('n'))
+          && (s[i + 2] == QLatin1Char('D') || s[i + 2] == QLatin1Char('d'))) {
+        const bool before_ok = (i == 0) || s[i - 1].isSpace() || s[i - 1] == QLatin1Char(')');
+        int j = i + 3;
+        const bool after_ok = (j >= s.size()) || s[j].isSpace() || s[j] == QLatin1Char('(');
+        if (before_ok && after_ok) {
+          const QString term = cur.trimmed();
+          if (!term.isEmpty()) {
+            out.push_back(term);
+          }
+          cur.clear();
+          while (j < s.size() && s[j].isSpace()) {
+            ++j;
+          }
+          i = j;
+          continue;
+        }
+      }
+    }
+    cur += ch;
+    ++i;
+  }
+  const QString term = cur.trimmed();
+  if (!term.isEmpty()) {
+    out.push_back(term);
+  }
+  if (out.isEmpty() && !s.isEmpty()) {
+    out.push_back(s);
+  }
+  return out;
+}
+
+bool term_matches_part(const QString& part, const QString& term)
+{
+  if (term.isEmpty() || part.isEmpty()) {
+    return false;
+  }
+  const QString want = unwrap_parens(term);
+  if (unwrap_parens(part) == want || part.trimmed() == term) {
+    return true;
+  }
+  for (const QString& or_part : split_or_terms(part)) {
+    if (unwrap_parens(or_part) == want || or_part.trimmed() == term) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool term_is_active(const QString& active, const QString& term)
 {
   if (term.isEmpty()) {
@@ -303,12 +378,49 @@ bool term_is_active(const QString& active, const QString& term)
     return true;
   }
   const QString want = unwrap_parens(term);
-  for (const QString& part : split_or_terms(active)) {
-    if (unwrap_parens(part) == want || part.trimmed() == term) {
+  for (const QString& and_part : split_and_terms(active)) {
+    if (term_matches_part(and_part, term)) {
+      return true;
+    }
+  }
+  for (const QString& or_part : split_or_terms(active)) {
+    if (unwrap_parens(or_part) == want || or_part.trimmed() == term) {
       return true;
     }
   }
   return false;
+}
+
+TermActiveKind term_active_kind(const QString& active, const QString& term)
+{
+  if (!term_is_active(active, term)) {
+    return TermActiveKind::None;
+  }
+  if (active.trimmed() == term || unwrap_parens(active) == unwrap_parens(term)) {
+    return TermActiveKind::Sole;
+  }
+  const QStringList ands = split_and_terms(active);
+  if (ands.size() > 1) {
+    for (const QString& and_part : ands) {
+      if (term_matches_part(and_part, term)) {
+        return TermActiveKind::And;
+      }
+    }
+  }
+  const QStringList ors = split_or_terms(active);
+  if (ors.size() > 1) {
+    for (const QString& or_part : ors) {
+      if (unwrap_parens(or_part) == unwrap_parens(term) || or_part.trimmed() == term) {
+        return TermActiveKind::Or;
+      }
+    }
+  }
+  return TermActiveKind::Sole;
+}
+
+bool has_top_level_or(const QString& expr)
+{
+  return split_or_terms(expr).size() > 1;
 }
 
 QString or_add_term(const QString& active, const QString& term)
@@ -341,19 +453,83 @@ QString or_remove_term(const QString& active, const QString& term)
   return kept.join(QStringLiteral(" OR "));
 }
 
-QString chip_click_expression(const QString& active, const QString& term, bool shift)
+QString and_add_term(const QString& active, const QString& term)
 {
+  if (term.isEmpty()) {
+    return active;
+  }
+  if (active.trimmed().isEmpty()) {
+    return term;
+  }
+  if (term_is_active(active, term)) {
+    return active.trimmed();
+  }
+  QString left = active.trimmed();
+  if (has_top_level_or(left)
+      && !(left.startsWith(QLatin1Char('(')) && left.endsWith(QLatin1Char(')')))) {
+    left = QStringLiteral("(%1)").arg(left);
+  }
+  return left + QStringLiteral(" AND ") + term;
+}
+
+QString and_remove_term(const QString& active, const QString& term)
+{
+  if (active.trimmed().isEmpty() || term.isEmpty()) {
+    return active.trimmed();
+  }
+  QStringList kept;
+  const QString want = unwrap_parens(term);
+  for (const QString& part : split_and_terms(active)) {
+    if (part.trimmed() == term || unwrap_parens(part) == want) {
+      continue;
+    }
+    if (term_matches_part(part, term) && has_top_level_or(part)) {
+      const QString reduced = or_remove_term(unwrap_parens(part), term);
+      if (!reduced.isEmpty()) {
+        kept.push_back(has_top_level_or(reduced) ? QStringLiteral("(%1)").arg(reduced) : reduced);
+      }
+      continue;
+    }
+    if (term_matches_part(part, term)) {
+      continue;
+    }
+    kept.push_back(part.trimmed());
+  }
+  return kept.join(QStringLiteral(" AND "));
+}
+
+QString chip_click_expression(const QString& active, const QString& term, bool shift, bool ctrl)
+{
+  if (ctrl && !shift) {
+    if (term_is_active(active, term)) {
+      return and_remove_term(active, term);
+    }
+    return and_add_term(active, term);
+  }
   if (shift) {
     if (term_is_active(active, term)) {
       return or_remove_term(active, term);
     }
     return or_add_term(active, term);
   }
-  // Plain click: select only this term (or clear if it was the sole selection).
   if (active.trimmed() == term) {
     return QString();
   }
   return term;
+}
+
+QString checked_border_css(TermActiveKind kind)
+{
+  switch (kind) {
+  case TermActiveKind::Or:
+    return QStringLiteral("border: 3px solid #2563eb;"); // Shift — blue
+  case TermActiveKind::And:
+    return QStringLiteral("border: 3px solid #059669;"); // Ctrl — green
+  case TermActiveKind::Sole:
+  case TermActiveKind::None:
+  default:
+    return QStringLiteral("border: 3px solid palette(text);");
+  }
 }
 
 QuickFilterBar::QuickFilterBar(QWidget* parent)
@@ -586,19 +762,30 @@ void QuickFilterBar::set_active_expression(const QString& expr)
     return;
   }
   active_ = e;
-  // Only update checked state — do not tear down chips on every keystroke.
+  // Update checked state + join-mode border without tearing down chips.
   for (auto* btn : findChildren<QToolButton*>()) {
     const QString bexpr = btn->property("dirtoo_qf_expr").toString();
-    if (!bexpr.isEmpty()) {
-      const bool on = term_is_active(active_, bexpr);
-      if (btn->isChecked() != on) {
-        const QSignalBlocker block(btn);
-        btn->setChecked(on);
-        btn->style()->unpolish(btn);
-        btn->style()->polish(btn);
-        btn->update();
-      }
+    if (bexpr.isEmpty()) {
+      continue;
     }
+    const TermActiveKind kind = term_active_kind(active_, bexpr);
+    const bool on = kind != TermActiveKind::None;
+    const QSignalBlocker block(btn);
+    if (btn->isChecked() != on) {
+      btn->setChecked(on);
+    }
+    // Refresh checked border color for sole / OR / AND.
+    QString css = btn->styleSheet();
+    if (css.contains(QStringLiteral("QToolButton:checked"))) {
+      // Replace any previous 3px border in the checked rule.
+      css.replace(QStringLiteral("border: 3px solid palette(text);"), checked_border_css(kind));
+      css.replace(QStringLiteral("border: 3px solid #2563eb;"), checked_border_css(kind));
+      css.replace(QStringLiteral("border: 3px solid #059669;"), checked_border_css(kind));
+      btn->setStyleSheet(css);
+    }
+    btn->style()->unpolish(btn);
+    btn->style()->polish(btn);
+    btn->update();
   }
 }
 
@@ -678,10 +865,13 @@ QToolButton* QuickFilterBar::make_auto_chip(const AutoChip& chip)
   btn->setCheckable(true);
   btn->setAutoRaise(false); // keep border visible when active
   btn->setProperty("dirtoo_qf_expr", chip.expression);
-  btn->setChecked(term_is_active(active_, chip.expression));
-  btn->setToolTip(chip.expression + QStringLiteral("\nShift+click to OR with current filter"));
-  // Active: thick palette(text) outline + bold. Accent fill alone is ambiguous
-  // when every set chip already has its own color.
+  const TermActiveKind kind = term_active_kind(active_, chip.expression);
+  btn->setChecked(kind != TermActiveKind::None);
+  btn->setToolTip(chip.expression
+                  + QStringLiteral("\nShift+click to OR with current filter")
+                  + QStringLiteral("\nCtrl+click to AND with current filter"));
+  const QString checked_border = checked_border_css(kind);
+  // Join-mode outline: sole (text) / OR (blue) / AND (green).
   if (chip.accent.isValid()) {
     const QColor c = chip.accent;
     const QString css = QStringLiteral(
@@ -694,13 +884,14 @@ QToolButton* QuickFilterBar::make_auto_chip(const AutoChip& chip)
         "}"
         "QToolButton:checked {"
         "  background-color: rgba(%1,%2,%3,200);"
-        "  border: 3px solid palette(text);"
+        "  %4"
         "  padding: 1px 6px;"
         "  font-weight: 800;"
         "}")
                             .arg(c.red())
                             .arg(c.green())
-                            .arg(c.blue());
+                            .arg(c.blue())
+                            .arg(checked_border);
     btn->setStyleSheet(css);
   } else {
     btn->setStyleSheet(QStringLiteral(
@@ -712,15 +903,16 @@ QToolButton* QuickFilterBar::make_auto_chip(const AutoChip& chip)
         "QToolButton:checked {"
         "  background-color: palette(highlight);"
         "  color: palette(highlighted-text);"
-        "  border: 3px solid palette(text);"
+        "  %1"
         "  padding: 1px 6px;"
         "  font-weight: 800;"
-        "}"));
+        "}").arg(checked_border));
   }
-    btn->ensurePolished();
+  btn->ensurePolished();
   connect(btn, &QToolButton::clicked, this, [this, expression = chip.expression](bool /*checked*/) {
     const bool shift = QGuiApplication::keyboardModifiers().testFlag(Qt::ShiftModifier);
-    const QString next = chip_click_expression(active_, expression, shift);
+    const bool ctrl = QGuiApplication::keyboardModifiers().testFlag(Qt::ControlModifier);
+    const QString next = chip_click_expression(active_, expression, shift, ctrl);
     emit filter_requested(next);
   });
   if (chip.group == AutoChip::Group::Set && !chip.set_id.isEmpty()) {
@@ -770,12 +962,33 @@ QToolButton* QuickFilterBar::make_pinned_chip(int pin_index)
     tip += QStringLiteral("\n") + pin.directories.join(QStringLiteral("; "));
   }
   tip += QStringLiteral("\nRight-click for options");
+  tip += QStringLiteral("\nShift+click to OR · Ctrl+click to AND");
   btn->setToolTip(tip);
   btn->setProperty("dirtoo_qf_expr", pin.expression);
-  btn->setChecked(term_is_active(active_, pin.expression));
+  const TermActiveKind pin_kind = term_active_kind(active_, pin.expression);
+  btn->setChecked(pin_kind != TermActiveKind::None);
+  {
+    const QString border = checked_border_css(pin_kind);
+    btn->setStyleSheet(QStringLiteral(
+        "QToolButton {"
+        "  border: 1px solid palette(mid);"
+        "  border-radius: 4px;"
+        "  padding: 3px 8px;"
+        "  font-style: italic;"
+        "}"
+        "QToolButton:checked {"
+        "  background-color: palette(highlight);"
+        "  color: palette(highlighted-text);"
+        "  %1"
+        "  padding: 1px 6px;"
+        "  font-weight: 800;"
+        "  font-style: italic;"
+        "}").arg(border));
+  }
   connect(btn, &QToolButton::clicked, this, [this, expr = pin.expression](bool /*checked*/) {
     const bool shift = QGuiApplication::keyboardModifiers().testFlag(Qt::ShiftModifier);
-    const QString next = chip_click_expression(active_, expr, shift);
+    const bool ctrl = QGuiApplication::keyboardModifiers().testFlag(Qt::ControlModifier);
+    const QString next = chip_click_expression(active_, expr, shift, ctrl);
     emit filter_requested(next);
   });
   btn->setContextMenuPolicy(Qt::CustomContextMenu);
