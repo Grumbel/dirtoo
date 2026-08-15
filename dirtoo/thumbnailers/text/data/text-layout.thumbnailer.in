@@ -1,0 +1,4 @@
+[Thumbnailer Entry]
+TryExec=dirtoo-text-thumb
+Exec=dirtoo-text-thumb %i %o %s
+MimeType=text/plain;text/x-log;text/x-csrc;text/x-c++src;text/x-chdr;text/x-c++hdr;text/x-python;text/x-shellscript;text/html;text/csv;text/markdown;text/x-makefile;application/json;application/xml;application/javascript;application/x-yaml;application/x-php;inode/x-empty;

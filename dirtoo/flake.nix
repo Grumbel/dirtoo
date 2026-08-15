@@ -242,6 +242,21 @@
           };
         };
 
+        text-thumbnailer = pkgs.stdenv.mkDerivation {
+          pname = "dirtoo-text-thumb";
+          inherit version cmakeBuildType;
+          src = srcFor [ ./thumbnailers/text ];
+          dontStrip = true;
+          nativeBuildInputs = with pkgs; [ cmake ninja ];
+          buildInputs = with pkgs; [ zlib ];
+          postUnpack = ''sourceRoot+=/thumbnailers/text'';
+          cmakeFlags = [ versionFlag ];
+          meta = {
+            description = "Text layout thumbnailer (1–3 column start/mid/end preview)";
+            mainProgram = "dirtoo-text-thumb";
+          };
+        };
+
         dirtoo-tools = pkgs.symlinkJoin {
           name = "dirtoo-tools-${version}";
           paths = [
@@ -269,9 +284,10 @@
             dirtoo-archive
             dirtoo
             hilbert-thumbnailer
+            text-thumbnailer
           ];
           meta = {
-            description = "dirtoo meta-package: GUI + all libraries + optional tools (Hilbert thumbnailer, …)";
+            description = "dirtoo meta-package: GUI + all libraries + optional tools (thumbnailers, …)";
             mainProgram = "dirtoo";
           };
         };
@@ -291,7 +307,8 @@
             dirtoo
             dirtoo-tools
             dirtoo-full
-            hilbert-thumbnailer;
+            hilbert-thumbnailer
+            text-thumbnailer;
           default = dirtoo;
           all-libs = pkgs.symlinkJoin {
             name = "dirtoo-all-libs-${version}";
@@ -375,6 +392,7 @@
             echo "  nix build .#dirtoo            # GUI (does not rehash lib sources)"
             echo "  nix build .#dirtoo-tools"
             echo "  nix build .#hilbert-thumbnailer  # standalone binary map thumbs"
+            echo "  nix build .#text-thumbnailer     # text layout thumbs"
             echo "  nix build .#dirtoo-full           # GUI + libs + optional tools"
             echo "  nix build .#all-libs"
             echo "  nix run .#dirtoo"
