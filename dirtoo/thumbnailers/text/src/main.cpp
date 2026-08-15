@@ -92,17 +92,20 @@ std::vector<std::string> wrap_window(const std::string& text, std::size_t begin,
   return lines;
 }
 
-void plot_char(std::vector<unsigned char>& rgb, int size, int px, int py, unsigned char ch)
+void plot_char_half(std::vector<unsigned char>& rgb, int size, int px, int py, unsigned char ch)
 {
+  // Nearest-neighbor half-scale of the 5×7 glyph into a ~3×4 cell.
   const std::uint8_t* g = font5x7::glyph(ch);
-  for (int row = 0; row < font5x7::kH; ++row) {
+  for (int dy = 0; dy < font5x7::kCellHHalf; ++dy) {
+    const int row = std::min(font5x7::kH - 1, (dy * font5x7::kH) / font5x7::kCellHHalf);
     const std::uint8_t bits = g[row];
-    for (int col = 0; col < font5x7::kW; ++col) {
+    for (int dx = 0; dx < font5x7::kCellWHalf; ++dx) {
+      const int col = std::min(font5x7::kW - 1, (dx * font5x7::kW) / font5x7::kCellWHalf);
       if ((bits & (1u << (font5x7::kW - 1 - col))) == 0) {
         continue;
       }
-      const int x = px + col;
-      const int y = py + row;
+      const int x = px + dx;
+      const int y = py + dy;
       if (x < 0 || y < 0 || x >= size || y >= size) {
         continue;
       }
@@ -121,11 +124,11 @@ void draw_column(std::vector<unsigned char>& rgb, int size, int origin_x, int or
 {
   for (int li = 0; li < static_cast<int>(lines.size()) && li < max_lines; ++li) {
     const std::string& line = lines[static_cast<std::size_t>(li)];
-    const int y = origin_y + li * font5x7::kCellH;
+    const int y = origin_y + li * font5x7::kCellHHalf;
     const int n = std::min(static_cast<int>(line.size()), kColChars);
     for (int ci = 0; ci < n; ++ci) {
-      const int x = origin_x + ci * font5x7::kCellW;
-      plot_char(rgb, size, x, y, static_cast<unsigned char>(line[static_cast<std::size_t>(ci)]));
+      const int x = origin_x + ci * font5x7::kCellWHalf;
+      plot_char_half(rgb, size, x, y, static_cast<unsigned char>(line[static_cast<std::size_t>(ci)]));
     }
   }
 }
@@ -159,10 +162,10 @@ int main(int argc, char** argv)
     // How many lines fit vertically with 1px padding.
     const int pad = 2;
     const int usable_h = std::max(1, size - 2 * pad);
-    const int max_lines = std::max(1, usable_h / font5x7::kCellH);
+    const int max_lines = std::max(1, usable_h / font5x7::kCellHHalf);
 
     // Column width in pixels for 80 glyph cells.
-    const int col_px = kColChars * font5x7::kCellW;
+    const int col_px = kColChars * font5x7::kCellWHalf;
     const int gap_px = 3;
 
     // Characters that one full column can show.
@@ -178,7 +181,7 @@ int main(int argc, char** argv)
 
     // Scale: fit ncols columns into the square.
     const int need_w = ncols * col_px + (ncols - 1) * gap_px + 2 * pad;
-    const int need_h = max_lines * font5x7::kCellH + 2 * pad;
+    const int need_h = max_lines * font5x7::kCellHHalf + 2 * pad;
     const float scale = std::min(1.0f, std::min(static_cast<float>(size) / static_cast<float>(need_w),
                                                 static_cast<float>(size) / static_cast<float>(need_h)));
     // We draw in an offscreen at 1:1 glyph then nearest-neighbor scale if needed.
@@ -186,9 +189,9 @@ int main(int argc, char** argv)
     int chars_per_line = kColChars;
     if (need_w > size) {
       const int avail = size - 2 * pad - (ncols - 1) * gap_px;
-      chars_per_line = std::max(8, avail / (ncols * font5x7::kCellW));
+      chars_per_line = std::max(8, avail / (ncols * font5x7::kCellWHalf));
     }
-    const int draw_col_px = chars_per_line * font5x7::kCellW;
+    const int draw_col_px = chars_per_line * font5x7::kCellWHalf;
     const int total_w = ncols * draw_col_px + (ncols - 1) * gap_px;
     const int origin_x0 = std::max(0, (size - total_w) / 2);
     const int origin_y0 = pad;

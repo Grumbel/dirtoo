@@ -11,8 +11,12 @@ namespace font5x7 {
 
 constexpr int kW = 5;
 constexpr int kH = 7;
-constexpr int kCellW = 6; // glyph + 1px gap
+/// Full-resolution cell (unused for thumbs — we paint at half size).
+constexpr int kCellW = 6;
 constexpr int kCellH = 8;
+/// Half-size layout cell: denser columns, still a layout gestalt not readable text.
+constexpr int kCellWHalf = 3; // ~5/2 + gap
+constexpr int kCellHHalf = 4; // ~7/2 + gap
 
 /// Each glyph: 7 rows, low 5 bits used (bit0 = leftmost).
 inline const std::uint8_t* glyph(unsigned char c)

@@ -1,6 +1,6 @@
 # dirtoo-text-thumb
 
-Layout-preview thumbnailer for text files: **white background**, **black** tiny
+Layout-preview thumbnailer for text files: **white background**, **black** half-size (3×4 cell)
 bitmap glyphs, up to **three columns** (~80 characters wide).
 
 | Columns | Content |
