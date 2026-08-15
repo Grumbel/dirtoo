@@ -265,6 +265,10 @@ void MainWindow::on_thumbnail_failed(const fs::Location& location, const QString
   if (thumbs_.try_content_mime_retry(location)) {
     return;
   }
+  // Typed thumbnailer missing/failed → application/octet-stream (Hilbert map, if installed).
+  if (thumbs_.try_octet_stream_fallback(location)) {
+    return;
+  }
 
   if (model_ == nullptr) {
     return;

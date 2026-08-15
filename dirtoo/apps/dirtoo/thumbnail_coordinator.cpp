@@ -46,6 +46,7 @@ void ThumbnailCoordinator::cancel_all()
 {
   thumbnailer_.cancel_all();
   content_mime_retried_.clear();
+  octet_stream_retried_.clear();
   in_flight_ = 0;
 }
 
@@ -53,11 +54,13 @@ void ThumbnailCoordinator::clear_aliases()
 {
   thumb_alias_.clear();
   content_mime_retried_.clear();
+  octet_stream_retried_.clear();
 }
 
 void ThumbnailCoordinator::clear_content_retries()
 {
   content_mime_retried_.clear();
+  octet_stream_retried_.clear();
 }
 
 void ThumbnailCoordinator::request_many(const std::vector<fs::Location>& locs,
@@ -344,6 +347,51 @@ bool ThumbnailCoordinator::try_content_mime_retry(const fs::Location& location)
 
   (void)thumbnail::Thumbnailer::remove_cache_for(location);
   request_many({location}, {content_mime}, /*force=*/true);
+  return true;
+}
+
+bool ThumbnailCoordinator::try_octet_stream_fallback(const fs::Location& location)
+{
+  // Hilbert (and similar) binary-map thumbnailers register for application/octet-stream.
+  // After typed handlers fail, one forced request with that MIME can still paint a tile.
+  std::filesystem::path path;
+  try {
+    path = location.as_path();
+  } catch (...) {
+    return false;
+  }
+  if (path.empty()) {
+    return false;
+  }
+  const QString path_q = QString::fromStdString(path.string());
+  if (octet_stream_retried_.contains(path_q)) {
+    return false;
+  }
+
+  std::error_code ec;
+  if (!std::filesystem::is_regular_file(path, ec) || ec) {
+    return false;
+  }
+
+  // Already asked as octet-stream (e.g. .bin) — another pass will not help.
+  const QString ext_mime = mime_from_extension(path_q);
+  if (ext_mime == QLatin1String("application/octet-stream")
+      || ext_mime.isEmpty()) {
+    // Still try once for empty/unknown extension; skip only pure octet claims.
+    if (ext_mime == QLatin1String("application/octet-stream")) {
+      octet_stream_retried_.insert(path_q);
+      return false;
+    }
+  }
+
+  octet_stream_retried_.insert(path_q);
+  qInfo().noquote() << QStringLiteral(
+      "dirtoo: thumbnail octet-stream fallback for %1 (was %2)")
+                               .arg(path_q, ext_mime.isEmpty() ? QStringLiteral("(unknown)")
+                                                              : ext_mime);
+
+  (void)thumbnail::Thumbnailer::remove_cache_for(location);
+  request_many({location}, {QStringLiteral("application/octet-stream")}, /*force=*/true);
   return true;
 }
 

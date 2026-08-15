@@ -54,6 +54,9 @@ public:
   /// extension guess (e.g. .png that is actually JPEG). Returns true if a retry
   /// was scheduled (caller should not mark the model failed yet).
   bool try_content_mime_retry(const dirtoo::fs::Location& location);
+  /// After typed thumbnailers fail: one application/octet-stream request
+  /// (picks up Hilbert / other binary map thumbnailers if installed).
+  bool try_octet_stream_fallback(const dirtoo::fs::Location& location);
 
   /// Resolve archive-root extract path for a member (MainWindow/ArchiveManager).
   using ExtractedRootFn =
@@ -98,6 +101,7 @@ private:
   DirectoryThumbnailWorker* dir_thumb_worker_ = nullptr;
   /// Absolute paths already re-queued with MatchContent for this session.
   QSet<QString> content_mime_retried_;
+  QSet<QString> octet_stream_retried_;
   /// Approximate outstanding work (request_many + archive extract paths).
   int in_flight_ = 0;
 };
