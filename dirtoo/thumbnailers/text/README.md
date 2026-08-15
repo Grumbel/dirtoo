@@ -20,7 +20,7 @@ dirtoo-text-thumb [options] <input> <output.png> [size]
 
   --font FAMILY      font family              (default: JetBrains Mono)
   --weight NAME      light|regular|medium|bold
-  --font-size N      pixel size before --ss   (default: 6)
+  --font-size F      pixel size before --ss   (default: 6; fractional OK)
   --fg / --bg COLOR  #rgb / #rrggbb / R,G,B
   --ss N             supersample 1–8         (default: 4)
 ```

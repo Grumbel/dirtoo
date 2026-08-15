@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -34,7 +35,10 @@ struct Options {
   QColor fg{0, 0, 0};
   QColor bg{255, 255, 255};
   int ss = 4;
-  int font_size = 6; // pixel size before supersampling
+  // Pixel size before supersampling. Fractional so --size 128 can use e.g. 2.0
+  // while --size 256 uses 4.0; QFont::setPixelSize only takes int, so we round
+  // after multiplying by --ss.
+  double font_size = 6.0;
   QString font_family = QStringLiteral("JetBrains Mono");
   QString font_weight = QStringLiteral("regular");
 };
@@ -51,7 +55,7 @@ void usage(const char* argv0)
       << "  --bg COLOR         Background color          (default #ffffff)\n"
       << "  --font FAMILY      Font family               (default JetBrains Mono)\n"
       << "  --weight NAME      light|regular|medium|bold (default regular)\n"
-      << "  --font-size N      Glyph pixel size          (default 6, before --ss)\n"
+      << "  --font-size F      Glyph pixel size (float)  (default 6, before --ss)\n"
       << "  --ss N             Supersample factor 1–8    (default 4)\n"
       << "  --size N           Thumbnail edge pixels     (default 128)\n"
       << "  -h, --help\n"
@@ -137,7 +141,12 @@ bool parse_args(int argc, char** argv, Options& opt, std::string& err)
     opt.font_weight = QString::fromLocal8Bit(v);
   }
   if (const char* v = env_or_null("DIRTOO_TEXT_THUMB_FONT_SIZE")) {
-    opt.font_size = std::atoi(v);
+    try {
+      opt.font_size = std::stod(v);
+    } catch (...) {
+      err = std::string("invalid DIRTOO_TEXT_THUMB_FONT_SIZE: ") + v;
+      return false;
+    }
   }
   if (const char* v = env_or_null("DIRTOO_TEXT_THUMB_SS")) {
     opt.ss = std::atoi(v);
@@ -189,7 +198,12 @@ bool parse_args(int argc, char** argv, Options& opt, std::string& err)
       if (!v) {
         return false;
       }
-      opt.font_size = std::atoi(v);
+      try {
+        opt.font_size = std::stod(v);
+      } catch (...) {
+        err = "invalid --font-size";
+        return false;
+      }
     } else if (a == "--ss") {
       const char* v = need("--ss");
       if (!v) {
@@ -222,7 +236,13 @@ bool parse_args(int argc, char** argv, Options& opt, std::string& err)
 
   opt.size = std::clamp(opt.size, 32, 1024);
   opt.ss = std::clamp(opt.ss, 1, 8);
-  opt.font_size = std::clamp(opt.font_size, 3, 48);
+  // Allow sub-integer sizes so --size 128 can match the relative density of
+  // --size 256 --font-size 4 via --font-size 2 (or 1.5, etc.). Floor was 3,
+  // which made small thumbs impossible to tune.
+  if (!(opt.font_size > 0.0) || opt.font_size > 48.0) {
+    err = "font-size must be in (0, 48]";
+    return false;
+  }
   return true;
 }
 
@@ -318,8 +338,13 @@ int main(int argc, char** argv)
     const int size = opt.size;
     const int ss = opt.ss;
     const int hi = size * ss;
+    // QFont::setPixelSize is integer-only; round after supersample so a
+    // fractional --font-size (e.g. 2.0 at size 128) still yields a usable
+    // hi-res glyph size.
+    const int pixel_size =
+        std::max(1, static_cast<int>(std::lround(opt.font_size * static_cast<double>(ss))));
 
-    QFont font = make_font(opt, opt.font_size * ss);
+    QFont font = make_font(opt, pixel_size);
     // Fallbacks when JetBrains Mono is not installed.
     {
       QFont f2 = font;
@@ -333,7 +358,7 @@ int main(int argc, char** argv)
           QStringLiteral("monospace"),
       });
       font = f2;
-      font.setPixelSize(opt.font_size * ss);
+      font.setPixelSize(pixel_size);
       font.setWeight(weight_from_name(opt.font_weight));
       font.setFixedPitch(true);
     }
