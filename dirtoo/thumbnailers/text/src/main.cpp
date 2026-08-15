@@ -1,23 +1,21 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// dirtoo-text-thumb — layout-preview thumbnail for text files.
-// FreeType + Fontconfig for family/weight/size; supersampled downscale.
+// dirtoo-text-thumb — layout-preview thumbnail for text files (Qt QPainter).
 
-#include "png_write.hpp"
-
-#include <ft2build.h>
-#include FT_FREETYPE_H
-
-#include <fontconfig/fontconfig.h>
+#include <QColor>
+#include <QFont>
+#include <QFontMetrics>
+#include <QGuiApplication>
+#include <QImage>
+#include <QPainter>
+#include <QString>
+#include <QStringList>
 
 #include <algorithm>
 #include <cctype>
-#include <cmath>
-#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -29,24 +27,16 @@ namespace {
 constexpr int kColChars = 80;
 constexpr std::size_t kMaxBytes = 512u * 1024u;
 
-struct Rgb {
-  unsigned char r = 0;
-  unsigned char g = 0;
-  unsigned char b = 0;
-};
-
 struct Options {
   std::string input;
   std::string output;
   int size = 128;
-  Rgb fg{0, 0, 0};
-  Rgb bg{255, 255, 255};
+  QColor fg{0, 0, 0};
+  QColor bg{255, 255, 255};
   int ss = 4;
-  /// Logical pixel size of the font (before supersampling).
-  int font_size = 6;
-  std::string font_family = "JetBrains Mono";
-  /// light | regular | medium | bold (default regular)
-  std::string font_weight = "regular";
+  int font_size = 6; // pixel size before supersampling
+  QString font_family = QStringLiteral("JetBrains Mono");
+  QString font_weight = QStringLiteral("regular");
 };
 
 void usage(const char* argv0)
@@ -54,7 +44,7 @@ void usage(const char* argv0)
   std::cerr
       << "Usage: " << argv0 << " [options] <input> <output.png> [size]\n"
       << "\n"
-      << "  Text layout thumbnail (1–3 columns of ~80 chars: start/mid/end).\n"
+      << "  Text layout thumbnail via QPainter (1–3 columns: start/mid/end).\n"
       << "\n"
       << "Options:\n"
       << "  --fg COLOR         Foreground (text) color   (default #000000)\n"
@@ -75,24 +65,7 @@ void usage(const char* argv0)
       << "  DIRTOO_TEXT_THUMB_SIZE\n";
 }
 
-bool parse_hex_digit(char c, int& v)
-{
-  if (c >= '0' && c <= '9') {
-    v = c - '0';
-    return true;
-  }
-  if (c >= 'a' && c <= 'f') {
-    v = 10 + (c - 'a');
-    return true;
-  }
-  if (c >= 'A' && c <= 'F') {
-    v = 10 + (c - 'A');
-    return true;
-  }
-  return false;
-}
-
-bool parse_color(std::string_view s, Rgb& out)
+bool parse_color(std::string_view s, QColor& out)
 {
   while (!s.empty() && std::isspace(static_cast<unsigned char>(s.front()))) {
     s.remove_prefix(1);
@@ -104,37 +77,15 @@ bool parse_color(std::string_view s, Rgb& out)
     return false;
   }
   if (s.front() == '#') {
-    s.remove_prefix(1);
-    if (s.size() == 3) {
-      int r = 0, g = 0, b = 0;
-      if (!parse_hex_digit(s[0], r) || !parse_hex_digit(s[1], g) || !parse_hex_digit(s[2], b)) {
-        return false;
-      }
-      out = {static_cast<unsigned char>(r * 17), static_cast<unsigned char>(g * 17),
-             static_cast<unsigned char>(b * 17)};
-      return true;
-    }
-    if (s.size() == 6) {
-      int v[6];
-      for (int i = 0; i < 6; ++i) {
-        if (!parse_hex_digit(s[static_cast<std::size_t>(i)], v[i])) {
-          return false;
-        }
-      }
-      out = {static_cast<unsigned char>((v[0] << 4) | v[1]),
-             static_cast<unsigned char>((v[2] << 4) | v[3]),
-             static_cast<unsigned char>((v[4] << 4) | v[5])};
-      return true;
-    }
-    return false;
+    out = QColor(QString::fromUtf8(s.data(), static_cast<int>(s.size())));
+    return out.isValid();
   }
   int r = 0, g = 0, b = 0;
   if (std::sscanf(std::string(s).c_str(), "%d,%d,%d", &r, &g, &b) != 3) {
     return false;
   }
-  auto clip = [](int x) { return static_cast<unsigned char>(std::clamp(x, 0, 255)); };
-  out = {clip(r), clip(g), clip(b)};
-  return true;
+  out = QColor(std::clamp(r, 0, 255), std::clamp(g, 0, 255), std::clamp(b, 0, 255));
+  return out.isValid();
 }
 
 const char* env_or_null(const char* name)
@@ -143,28 +94,26 @@ const char* env_or_null(const char* name)
   return (v != nullptr && v[0] != '\0') ? v : nullptr;
 }
 
-int fc_weight_from_name(std::string_view w)
+QFont::Weight weight_from_name(const QString& w)
 {
-  std::string lower(w);
-  for (char& c : lower) {
-    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  const QString lower = w.toLower();
+  if (lower == QLatin1String("thin") || lower == QLatin1String("ultralight")) {
+    return QFont::Thin;
   }
-  if (lower == "thin" || lower == "ultralight") {
-    return FC_WEIGHT_THIN;
+  if (lower == QLatin1String("light") || lower == QLatin1String("book")) {
+    return QFont::Light;
   }
-  if (lower == "light" || lower == "book") {
-    return FC_WEIGHT_LIGHT;
+  if (lower == QLatin1String("medium") || lower == QLatin1String("demi")
+      || lower == QLatin1String("semibold")) {
+    return QFont::Medium;
   }
-  if (lower == "medium" || lower == "demi" || lower == "semibold") {
-    return FC_WEIGHT_MEDIUM;
+  if (lower == QLatin1String("bold")) {
+    return QFont::Bold;
   }
-  if (lower == "bold") {
-    return FC_WEIGHT_BOLD;
+  if (lower == QLatin1String("black") || lower == QLatin1String("heavy")) {
+    return QFont::Black;
   }
-  if (lower == "black" || lower == "heavy") {
-    return FC_WEIGHT_BLACK;
-  }
-  return FC_WEIGHT_REGULAR;
+  return QFont::Normal;
 }
 
 bool parse_args(int argc, char** argv, Options& opt, std::string& err)
@@ -182,10 +131,10 @@ bool parse_args(int argc, char** argv, Options& opt, std::string& err)
     }
   }
   if (const char* v = env_or_null("DIRTOO_TEXT_THUMB_FONT")) {
-    opt.font_family = v;
+    opt.font_family = QString::fromLocal8Bit(v);
   }
   if (const char* v = env_or_null("DIRTOO_TEXT_THUMB_WEIGHT")) {
-    opt.font_weight = v;
+    opt.font_weight = QString::fromLocal8Bit(v);
   }
   if (const char* v = env_or_null("DIRTOO_TEXT_THUMB_FONT_SIZE")) {
     opt.font_size = std::atoi(v);
@@ -228,13 +177,13 @@ bool parse_args(int argc, char** argv, Options& opt, std::string& err)
       if (!v) {
         return false;
       }
-      opt.font_family = v;
+      opt.font_family = QString::fromLocal8Bit(v);
     } else if (a == "--weight") {
       const char* v = need("--weight");
       if (!v) {
         return false;
       }
-      opt.font_weight = v;
+      opt.font_weight = QString::fromLocal8Bit(v);
     } else if (a == "--font-size") {
       const char* v = need("--font-size");
       if (!v) {
@@ -308,191 +257,52 @@ std::string read_text_capped(const std::string& path)
   return out;
 }
 
-/// Resolve family+weight to a font file path via Fontconfig.
-std::string resolve_font_file(const std::string& family, const std::string& weight)
+QFont make_font(const Options& opt, int pixel_size)
 {
-  if (!FcInit()) {
-    throw std::runtime_error("fontconfig init failed");
-  }
+  QFont font(opt.font_family);
+  // Prefer listed compact monospace families if the primary is missing.
+  font.setStyleHint(QFont::Monospace);
+  font.setFixedPitch(true);
+  font.setWeight(weight_from_name(opt.font_weight));
+  font.setPixelSize(pixel_size);
+  font.setHintingPreference(QFont::PreferFullHinting);
+  font.setStyleStrategy(static_cast<QFont::StyleStrategy>(QFont::PreferAntialias | QFont::PreferQuality));
+  return font;
+}
 
-  // Prefer an explicit file path if the user passed one.
-  if (family.find('/') != std::string::npos || family.ends_with(".ttf") || family.ends_with(".otf")
-      || family.ends_with(".ttc")) {
-    return family;
-  }
-
-  const int fc_w = fc_weight_from_name(weight);
-  const char* fallbacks[] = {
-      family.c_str(),
-      "JetBrains Mono",
-      "IBM Plex Mono",
-      "DejaVu Sans Mono",
-      "Nimbus Mono PS",
-      "Liberation Mono",
-      "FreeMono",
-      "monospace",
-  };
-
-  for (const char* fam : fallbacks) {
-    FcPattern* pat = FcPatternCreate();
-    FcPatternAddString(pat, FC_FAMILY, reinterpret_cast<const FcChar8*>(fam));
-    FcPatternAddInteger(pat, FC_WEIGHT, fc_w);
-    FcPatternAddString(pat, FC_STYLE, reinterpret_cast<const FcChar8*>("Regular"));
-    FcConfigSubstitute(nullptr, pat, FcMatchPattern);
-    FcDefaultSubstitute(pat);
-
-    FcResult result = FcResultNoMatch;
-    FcPattern* match = FcFontMatch(nullptr, pat, &result);
-    FcPatternDestroy(pat);
-    if (match == nullptr) {
+std::vector<QString> wrap_window(const std::string& text, std::size_t begin, int max_lines,
+                                 int chars_per_line)
+{
+  std::vector<QString> lines;
+  std::size_t i = begin;
+  const std::size_t end = text.size();
+  while (i < end && static_cast<int>(lines.size()) < max_lines) {
+    std::size_t limit = std::min(i + static_cast<std::size_t>(chars_per_line), end);
+    std::size_t nl = text.find('\n', i);
+    if (nl != std::string::npos && nl < limit) {
+      lines.push_back(QString::fromLatin1(text.data() + i, static_cast<int>(nl - i)));
+      i = nl + 1;
       continue;
     }
-    FcChar8* file = nullptr;
-    if (FcPatternGetString(match, FC_FILE, 0, &file) == FcResultMatch && file != nullptr) {
-      std::string path(reinterpret_cast<const char*>(file));
-      FcPatternDestroy(match);
-      return path;
-    }
-    FcPatternDestroy(match);
-  }
-  throw std::runtime_error("no font file found for family '" + family + "'");
-}
-
-struct FontFace {
-  FT_Library library = nullptr;
-  FT_Face face = nullptr;
-  int pixel_size = 6;
-  int cell_w = 4;
-  int cell_h = 8;
-  int ascent = 6;
-
-  FontFace() = default;
-  FontFace(const FontFace&) = delete;
-  FontFace& operator=(const FontFace&) = delete;
-
-  ~FontFace()
-  {
-    if (face) {
-      FT_Done_Face(face);
-    }
-    if (library) {
-      FT_Done_FreeType(library);
+    lines.push_back(QString::fromLatin1(text.data() + i, static_cast<int>(limit - i)));
+    i = limit;
+    if (i < end && text[i] == '\n') {
+      ++i;
     }
   }
-
-  void open(const std::string& path, int px)
-  {
-    if (FT_Init_FreeType(&library) != 0) {
-      throw std::runtime_error("FT_Init_FreeType failed");
-    }
-    if (FT_New_Face(library, path.c_str(), 0, &face) != 0) {
-      throw std::runtime_error("cannot open font: " + path);
-    }
-    pixel_size = px;
-    if (FT_Set_Pixel_Sizes(face, 0, static_cast<FT_UInt>(px)) != 0) {
-      throw std::runtime_error("FT_Set_Pixel_Sizes failed");
-    }
-    // Monospace-ish cell from metrics; fall back to max advance.
-    const int asc = static_cast<int>((face->size->metrics.ascender + 63) >> 6);
-    const int desc = static_cast<int>((-face->size->metrics.descender + 63) >> 6);
-    ascent = std::max(1, asc);
-    cell_h = std::max(2, asc + desc + 1);
-    int adv = static_cast<int>((face->size->metrics.max_advance + 63) >> 6);
-    if (adv <= 0) {
-      adv = static_cast<int>((face->max_advance_width * px) / std::max(1, static_cast<int>(face->units_per_EM)));
-    }
-    cell_w = std::max(2, adv);
-  }
-};
-
-void blend_pixel(std::vector<unsigned char>& rgb, int size, int x, int y, const Rgb& fg,
-                 unsigned char coverage)
-{
-  if (coverage == 0 || x < 0 || y < 0 || x >= size || y >= size) {
-    return;
-  }
-  const std::size_t o =
-      (static_cast<std::size_t>(y) * static_cast<std::size_t>(size) + static_cast<std::size_t>(x)) * 3;
-  const unsigned a = coverage;
-  rgb[o + 0] = static_cast<unsigned char>((fg.r * a + rgb[o + 0] * (255 - a)) / 255);
-  rgb[o + 1] = static_cast<unsigned char>((fg.g * a + rgb[o + 1] * (255 - a)) / 255);
-  rgb[o + 2] = static_cast<unsigned char>((fg.b * a + rgb[o + 2] * (255 - a)) / 255);
-}
-
-void draw_char(FontFace& font, std::vector<unsigned char>& rgb, int size, int pen_x, int baseline_y,
-               unsigned char ch, const Rgb& fg)
-{
-  if (ch < 32 || ch > 126) {
-    ch = '?';
-  }
-  if (FT_Load_Char(font.face, ch, FT_LOAD_RENDER) != 0) {
-    return;
-  }
-  const FT_Bitmap& bm = font.face->glyph->bitmap;
-  const int top = font.face->glyph->bitmap_top;
-  const int left = font.face->glyph->bitmap_left;
-  for (unsigned row = 0; row < bm.rows; ++row) {
-    for (unsigned col = 0; col < bm.width; ++col) {
-      const unsigned char cov = bm.buffer[row * static_cast<unsigned>(bm.pitch) + col];
-      const int x = pen_x + left + static_cast<int>(col);
-      const int y = baseline_y - top + static_cast<int>(row);
-      blend_pixel(rgb, size, x, y, fg, cov);
-    }
-  }
-}
-
-void draw_column(FontFace& font, std::vector<unsigned char>& rgb, int size, int origin_x, int origin_y,
-                 const std::vector<std::string>& lines, int max_lines, const Rgb& fg)
-{
-  for (int li = 0; li < static_cast<int>(lines.size()) && li < max_lines; ++li) {
-    const std::string& line = lines[static_cast<std::size_t>(li)];
-    const int baseline = origin_y + li * font.cell_h + font.ascent;
-    const int n = std::min(static_cast<int>(line.size()), kColChars);
-    for (int ci = 0; ci < n; ++ci) {
-      const int x = origin_x + ci * font.cell_w;
-      draw_char(font, rgb, size, x, baseline, static_cast<unsigned char>(line[static_cast<std::size_t>(ci)]),
-                fg);
-    }
-  }
-}
-
-void downsample_box(const std::vector<unsigned char>& src, int hi, std::vector<unsigned char>& dst,
-                    int lo)
-{
-  const int factor = hi / lo;
-  dst.assign(static_cast<std::size_t>(lo) * static_cast<std::size_t>(lo) * 3, 0);
-  if (factor <= 1) {
-    dst = src;
-    return;
-  }
-  for (int y = 0; y < lo; ++y) {
-    for (int x = 0; x < lo; ++x) {
-      unsigned sum_r = 0, sum_g = 0, sum_b = 0;
-      const int count = factor * factor;
-      for (int dy = 0; dy < factor; ++dy) {
-        for (int dx = 0; dx < factor; ++dx) {
-          const std::size_t o =
-              (static_cast<std::size_t>(y * factor + dy) * static_cast<std::size_t>(hi)
-               + static_cast<std::size_t>(x * factor + dx))
-              * 3;
-          sum_r += src[o + 0];
-          sum_g += src[o + 1];
-          sum_b += src[o + 2];
-        }
-      }
-      const std::size_t d =
-          (static_cast<std::size_t>(y) * static_cast<std::size_t>(lo) + static_cast<std::size_t>(x)) * 3;
-      dst[d + 0] = static_cast<unsigned char>(sum_r / count);
-      dst[d + 1] = static_cast<unsigned char>(sum_g / count);
-      dst[d + 2] = static_cast<unsigned char>(sum_b / count);
-    }
-  }
+  return lines;
 }
 
 } // namespace
 
 int main(int argc, char** argv)
 {
+  // QPainter needs a QGuiApplication (no widgets).
+  qputenv("QT_QPA_PLATFORM", qgetenv("QT_QPA_PLATFORM").isEmpty() ? QByteArray("offscreen")
+                                                                  : qgetenv("QT_QPA_PLATFORM"));
+  QGuiApplication app(argc, argv);
+  QGuiApplication::setApplicationName(QStringLiteral("dirtoo-text-thumb"));
+
   Options opt;
   std::string err;
   if (!parse_args(argc, argv, opt, err)) {
@@ -509,16 +319,34 @@ int main(int argc, char** argv)
     const int ss = opt.ss;
     const int hi = size * ss;
 
-    const std::string font_path = resolve_font_file(opt.font_family, opt.font_weight);
-    FontFace font;
-    // Render at supersampled pixel size for smooth stems.
-    font.open(font_path, opt.font_size * ss);
+    QFont font = make_font(opt, opt.font_size * ss);
+    // Fallbacks when JetBrains Mono is not installed.
+    {
+      QFont f2 = font;
+      f2.setFamilies(QStringList{
+          opt.font_family,
+          QStringLiteral("JetBrains Mono"),
+          QStringLiteral("IBM Plex Mono"),
+          QStringLiteral("DejaVu Sans Mono"),
+          QStringLiteral("Liberation Mono"),
+          QStringLiteral("Nimbus Mono PS"),
+          QStringLiteral("monospace"),
+      });
+      font = f2;
+      font.setPixelSize(opt.font_size * ss);
+      font.setWeight(weight_from_name(opt.font_weight));
+      font.setFixedPitch(true);
+    }
+
+    const QFontMetrics fm(font);
+    const int cell_w = std::max(2, fm.horizontalAdvance(QLatin1Char('M')));
+    const int cell_h = std::max(2, fm.lineSpacing());
 
     const int pad = 2 * ss;
     const int usable_h = std::max(1, hi - 2 * pad);
-    const int max_lines = std::max(1, usable_h / font.cell_h);
+    const int max_lines = std::max(1, usable_h / cell_h);
 
-    const int col_px = kColChars * font.cell_w;
+    const int col_px = kColChars * cell_w;
     const int gap_px = 3 * ss;
 
     const std::size_t per_col =
@@ -536,85 +364,67 @@ int main(int argc, char** argv)
     int chars_per_line = kColChars;
     if (need_w > hi) {
       const int avail = hi - 2 * pad - (ncols - 1) * gap_px;
-      chars_per_line = std::max(8, avail / (ncols * font.cell_w));
+      chars_per_line = std::max(8, avail / (ncols * cell_w));
     }
-    const int draw_col_px = chars_per_line * font.cell_w;
+    const int draw_col_px = chars_per_line * cell_w;
     const int total_w = ncols * draw_col_px + (ncols - 1) * gap_px;
     const int origin_x0 = std::max(0, (hi - total_w) / 2);
     const int origin_y0 = pad;
 
-    std::vector<std::string> windows[3];
-    auto take = [&](int col, std::size_t begin) {
-      std::vector<std::string> lines;
-      std::size_t i = begin;
-      const std::size_t end = text.size();
-      while (i < end && static_cast<int>(lines.size()) < max_lines) {
-        std::size_t limit = std::min(i + static_cast<std::size_t>(chars_per_line), end);
-        std::size_t nl = text.find('\n', i);
-        if (nl != std::string::npos && nl < limit) {
-          lines.push_back(text.substr(i, nl - i));
-          i = nl + 1;
-          continue;
-        }
-        lines.push_back(text.substr(i, limit - i));
-        i = limit;
-        if (i < end && text[i] == '\n') {
-          ++i;
-        }
-      }
-      windows[col] = std::move(lines);
-    };
-
+    std::vector<std::vector<QString>> windows(static_cast<std::size_t>(ncols));
     if (ncols == 1) {
-      take(0, 0);
+      windows[0] = wrap_window(text, 0, max_lines, chars_per_line);
     } else if (ncols == 2) {
-      take(0, 0);
+      windows[0] = wrap_window(text, 0, max_lines, chars_per_line);
       const std::size_t mid = len > per_col ? len - std::min(len, per_col) : len / 2;
-      take(1, mid);
+      windows[1] = wrap_window(text, mid, max_lines, chars_per_line);
     } else {
-      take(0, 0);
+      windows[0] = wrap_window(text, 0, max_lines, chars_per_line);
       const std::size_t mid_start =
           len > per_col ? (len / 2) - std::min(len / 2, per_col / 2) : 0;
-      take(1, mid_start);
+      windows[1] = wrap_window(text, mid_start, max_lines, chars_per_line);
       const std::size_t end_start = len > per_col ? len - std::min(len, per_col) : 0;
-      take(2, end_start);
+      windows[2] = wrap_window(text, end_start, max_lines, chars_per_line);
     }
 
-    std::vector<unsigned char> hi_rgb(static_cast<std::size_t>(hi) * static_cast<std::size_t>(hi) * 3);
-    for (std::size_t i = 0; i < hi_rgb.size(); i += 3) {
-      hi_rgb[i + 0] = opt.bg.r;
-      hi_rgb[i + 1] = opt.bg.g;
-      hi_rgb[i + 2] = opt.bg.b;
-    }
+    QImage hi_img(hi, hi, QImage::Format_RGB32);
+    hi_img.fill(opt.bg);
 
-    for (int c = 0; c < ncols; ++c) {
-      const int ox = origin_x0 + c * (draw_col_px + gap_px);
-      draw_column(font, hi_rgb, hi, ox, origin_y0, windows[c], max_lines, opt.fg);
-    }
+    {
+      QPainter painter(&hi_img);
+      painter.setRenderHint(QPainter::TextAntialiasing, true);
+      painter.setRenderHint(QPainter::Antialiasing, true);
+      painter.setFont(font);
+      painter.setPen(opt.fg);
 
-    if (ncols > 1) {
-      const Rgb div{static_cast<unsigned char>((static_cast<int>(opt.fg.r) + opt.bg.r * 4) / 5),
-                    static_cast<unsigned char>((static_cast<int>(opt.fg.g) + opt.bg.g * 4) / 5),
-                    static_cast<unsigned char>((static_cast<int>(opt.fg.b) + opt.bg.b * 4) / 5)};
-      for (int c = 1; c < ncols; ++c) {
-        const int x = origin_x0 + c * (draw_col_px + gap_px) - gap_px / 2 - 1;
-        if (x < 0 || x >= hi) {
-          continue;
+      for (int c = 0; c < ncols; ++c) {
+        const int ox = origin_x0 + c * (draw_col_px + gap_px);
+        const auto& lines = windows[static_cast<std::size_t>(c)];
+        for (int li = 0; li < static_cast<int>(lines.size()) && li < max_lines; ++li) {
+          const int y = origin_y0 + li * cell_h + fm.ascent();
+          // Crop to column width.
+          const QString clipped = lines[static_cast<std::size_t>(li)].left(chars_per_line);
+          painter.drawText(ox, y, clipped);
         }
-        for (int y = pad; y < hi - pad; ++y) {
-          const std::size_t o =
-              (static_cast<std::size_t>(y) * static_cast<std::size_t>(hi) + static_cast<std::size_t>(x))
-              * 3;
-          hi_rgb[o + 0] = div.r;
-          hi_rgb[o + 1] = div.g;
-          hi_rgb[o + 2] = div.b;
+      }
+
+      if (ncols > 1) {
+        QColor div = opt.fg;
+        div.setAlpha(40);
+        painter.setPen(QPen(div, std::max(1, ss / 2)));
+        for (int c = 1; c < ncols; ++c) {
+          const int x = origin_x0 + c * (draw_col_px + gap_px) - gap_px / 2;
+          painter.drawLine(x, pad, x, hi - pad);
         }
       }
     }
 
-    std::vector<unsigned char> rgb;
-    downsample_box(hi_rgb, hi, rgb, size);
-    png_write::write_rgb_file(opt.output, size, rgb);
+    const QImage out = (ss == 1) ? hi_img
+                                 : hi_img.scaled(size, size, Qt::IgnoreAspectRatio,
+                                                 Qt::SmoothTransformation);
+    if (!out.save(QString::fromStdString(opt.output), "PNG")) {
+      throw std::runtime_error("failed to write PNG: " + opt.output);
+    }
   } catch (const std::exception& ex) {
     std::cerr << "dirtoo-text-thumb: " << ex.what() << '\n';
     return 1;

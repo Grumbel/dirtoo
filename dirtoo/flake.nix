@@ -247,9 +247,9 @@
           inherit version cmakeBuildType;
           src = srcFor [ ./thumbnailers/text ];
           dontStrip = true;
-          nativeBuildInputs = with pkgs; [ cmake ninja pkg-config ];
-          buildInputs = with pkgs; [ zlib freetype fontconfig ];
-          # Compact mono defaults available to Fontconfig at runtime.
+          nativeBuildInputs = with pkgs; [ cmake ninja pkg-config qt6.wrapQtAppsHook ];
+          buildInputs = with pkgs; [ qt6.qtbase ];
+          # Compact mono defaults for QFont resolution at runtime.
           propagatedUserEnvPkgs = with pkgs; [
             jetbrains-mono
             ibm-plex
@@ -258,7 +258,7 @@
           postUnpack = ''sourceRoot+=/thumbnailers/text'';
           cmakeFlags = [ versionFlag ];
           meta = {
-            description = "Text layout thumbnailer (FreeType; 1–3 column start/mid/end)";
+            description = "Text layout thumbnailer (QPainter; 1–3 column start/mid/end)";
             mainProgram = "dirtoo-text-thumb";
           };
         };
