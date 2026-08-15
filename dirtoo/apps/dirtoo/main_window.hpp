@@ -243,6 +243,8 @@ private:
   void update_busy_indicator(const QString& activity = {});
   void set_clipboard(ClipboardMode mode);
   void request_thumbnails_for_visible();
+  void flush_viewport_thumbnails();
+  void schedule_thumb_status_refresh();
   void cancel_all_thumbnails();
   void clear_thumb_aliases();
   void request_thumbnails_for_paths(const std::vector<dirtoo::fs::Location>& locs,
@@ -339,6 +341,10 @@ private:
   QTimer* watcher_reload_timer_ = nullptr;
   /// Debounces filter textChanged so each keystroke does not refilter/rebuild.
   QTimer* filter_apply_timer_ = nullptr;
+  /// Coalesces scroll-driven thumbnail requests (must not stack singleShots).
+  QTimer* thumb_viewport_timer_ = nullptr;
+  QTimer* thumb_status_timer_ = nullptr;
+  int last_thumb_viewport_first_ = -1;
   QStackedWidget* view_stack_ = nullptr;
   QTreeView* tree_view_ = nullptr;
   QListView* icon_view_ = nullptr; // List view (and fallback if no Graphics)

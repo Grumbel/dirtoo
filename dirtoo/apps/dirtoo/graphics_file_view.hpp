@@ -171,6 +171,9 @@ private:
   QGraphicsScene* scene_ = nullptr;
   /// Sparse: nullptr for rows outside the viewport window.
   std::vector<GraphicsFileItem*> items_;
+  /// Last materialized window [live_first_, live_last_) for O(window) updates.
+  int live_first_ = 0;
+  int live_last_ = 0;
   /// Precomputed top-left of each row's tile (group-aware).
   std::vector<QPointF> slot_pos_;
   std::vector<QSize> slot_tile_size_;

@@ -61,11 +61,8 @@ GraphicsFileView::GraphicsFileView(QWidget* parent)
   setFocusPolicy(Qt::StrongFocus);
 
   connect(scene_, &QGraphicsScene::selectionChanged, this, &GraphicsFileView::on_scene_selection_changed);
-  if (verticalScrollBar() != nullptr) {
-    connect(verticalScrollBar(), &QScrollBar::valueChanged, this, [this](int) {
-      update_visible_window();
-    });
-  }
+  // scrollContentsBy() drives update_visible_window; do not also connect
+  // valueChanged (that doubled materialize/dematerialize work per wheel step).
 }
 
 GraphicsFileView::~GraphicsFileView()
@@ -427,13 +424,11 @@ void GraphicsFileView::update_visible_window()
   const int last = lo; // exclusive
 
   suppress_selection_signal_ = true;
-  // Snapshot selection from live items into the persistent set.
-  for (auto* item : items_) {
-    if (item != nullptr && item->isSelected()) {
-      selected_row_set_.insert(item->row());
-    }
-  }
-  for (int r = 0; r < rows; ++r) {
+
+  // O(previous window + new window) — never walk all directory rows on scroll.
+  const int demin = std::max(0, std::min(live_first_, first));
+  const int demax = std::min(rows, std::max(live_last_, last));
+  for (int r = demin; r < demax; ++r) {
     const bool want = r >= first && r < last;
     auto*& item = items_[static_cast<std::size_t>(r)];
     if (!want) {
@@ -465,6 +460,8 @@ void GraphicsFileView::update_visible_window()
     }
     item->setPos(slot_pos_[static_cast<std::size_t>(r)]);
   }
+  live_first_ = first;
+  live_last_ = last;
   suppress_selection_signal_ = false;
   emit visible_window_changed();
 }
@@ -474,6 +471,8 @@ void GraphicsFileView::rebuild_items()
   clear_all_items();
   selected_row_set_.clear();
   selection_anchor_row_ = -1;
+  live_first_ = 0;
+  live_last_ = 0;
   if (model_ == nullptr) {
     scene_->setSceneRect(QRectF());
     return;

@@ -9,6 +9,7 @@
 #include "dirtoo/thumbnail/thumbnailer.hpp"
 #include "dirtoo/filter/media_meta_cache.hpp"
 #include <QDebug>
+#include <QTimer>
 #include <QSet>
 #include <algorithm>
 #include <functional>
@@ -102,133 +103,124 @@ void MainWindow::schedule_directory_thumbnails_low_priority()
 
 void MainWindow::request_thumbnails_for_visible()
 {
-  // Debounce rapid refresh/scroll storms (generation-safe via singleShot capturing this).
-  // Slightly longer than a single wheel tick so flings coalesce into one request.
-  QTimer::singleShot(120, this, [this] {
-    const auto& visible = collection_.visible_items();
-    if (visible.empty()) {
-      return;
-    }
-    // Lost D-Bus Ready/Error leaves Pending forever; re-queue after 60s idle.
-    if (model_ != nullptr) {
-      model_->clear_stale_pending_thumbnails(60000);
-    }
+  // Coalesce with a single restartable timer. QTimer::singleShot stacked one
+  // lambda per scroll event; during a fling hundreds of cancel_all+request
+  // jobs ran after the fact and scrolling got progressively worse.
+  if (thumb_viewport_timer_ == nullptr) {
+    thumb_viewport_timer_ = new QTimer(this);
+    thumb_viewport_timer_->setSingleShot(true);
+    connect(thumb_viewport_timer_, &QTimer::timeout, this, &MainWindow::flush_viewport_thumbnails);
+  }
+  thumb_viewport_timer_->start(120);
+}
 
-    // Prefer true viewport row ranges from layout / view geometry. Do not use
-    // scene()->items(): that only reports *materialized* sparse tiles and
-    // diverges from on-screen slots after resize. Truncating to the lowest
-    // indices then dropped the newly exposed high-index rows.
-    std::vector<int> rows;
-    bool from_viewport = false;
-    if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr) {
-      rows = graphics_view_->viewport_model_rows();
-      from_viewport = !rows.empty();
-    } else if (QAbstractItemView* view = current_view()) {
-      const QRect vp = view->viewport()->rect();
-      // List mode is multi-column (top-to-bottom, then left-to-right). Sampling
-      // only x=4 missed every column after the first when the window is wide.
-      // Detail is single-column; still sample a few x positions for safety.
-      QSet<int> row_set;
-      int step_y = 24;
-      int step_x = vp.width(); // one column by default (Detail)
-      if (view_mode_ == ViewMode::List && icon_view_ != nullptr) {
-        const QSize grid = icon_view_->gridSize();
-        step_x = std::max(48, grid.width() > 0 ? grid.width() : 180);
-        step_y = std::max(16, grid.height() > 0 ? grid.height() : 24);
-      } else {
-        const int hint = view->sizeHintForRow(0);
-        step_y = std::max(8, hint > 0 ? hint : 24);
-        step_x = std::max(64, vp.width() / 4);
-      }
-      for (int x = 4; x < vp.width() + step_x; x += step_x) {
-        const int sx = std::min(x, std::max(0, vp.width() - 4));
-        for (int y = 4; y < vp.height() + step_y; y += step_y) {
-          const int sy = std::min(y, std::max(0, vp.height() - 4));
-          const QModelIndex idx = view->indexAt(QPoint(sx, sy));
-          if (idx.isValid()) {
-            row_set.insert(idx.row());
-          }
+void MainWindow::schedule_thumb_status_refresh()
+{
+  if (thumb_status_timer_ == nullptr) {
+    thumb_status_timer_ = new QTimer(this);
+    thumb_status_timer_->setSingleShot(true);
+    connect(thumb_status_timer_, &QTimer::timeout, this, &MainWindow::update_status_selection);
+  }
+  if (!thumb_status_timer_->isActive()) {
+    thumb_status_timer_->start(100);
+  }
+}
+
+void MainWindow::flush_viewport_thumbnails()
+{
+  const auto& visible = collection_.visible_items();
+  if (visible.empty()) {
+    return;
+  }
+  if (model_ != nullptr) {
+    model_->clear_stale_pending_thumbnails(60000);
+  }
+
+  std::vector<int> rows;
+  bool from_viewport = false;
+  if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr) {
+    rows = graphics_view_->viewport_model_rows();
+    from_viewport = !rows.empty();
+  } else if (QAbstractItemView* view = current_view()) {
+    const QRect vp = view->viewport()->rect();
+    QSet<int> row_set;
+    int step_y = 24;
+    int step_x = vp.width();
+    if (view_mode_ == ViewMode::List && icon_view_ != nullptr) {
+      const QSize grid = icon_view_->gridSize();
+      step_x = std::max(48, grid.width() > 0 ? grid.width() : 180);
+      step_y = std::max(16, grid.height() > 0 ? grid.height() : 24);
+    } else {
+      const int hint = view->sizeHintForRow(0);
+      step_y = std::max(8, hint > 0 ? hint : 24);
+      step_x = std::max(64, vp.width() / 4);
+    }
+    for (int x = 4; x < vp.width() + step_x; x += step_x) {
+      const int sx = std::min(x, std::max(0, vp.width() - 4));
+      for (int y = 4; y < vp.height() + step_y; y += step_y) {
+        const int sy = std::min(y, std::max(0, vp.height() - 4));
+        const QModelIndex idx = view->indexAt(QPoint(sx, sy));
+        if (idx.isValid()) {
+          row_set.insert(idx.row());
         }
-      }
-      if (row_set.isEmpty()) {
-        const QModelIndex top = view->indexAt(vp.topLeft() + QPoint(4, 4));
-        const QModelIndex bot = view->indexAt(vp.bottomRight() - QPoint(4, 4));
-        if (top.isValid()) {
-          row_set.insert(top.row());
-        }
-        if (bot.isValid()) {
-          row_set.insert(bot.row());
-        }
-      }
-      if (!row_set.isEmpty()) {
-        int first = *std::min_element(row_set.begin(), row_set.end());
-        int last = *std::max_element(row_set.begin(), row_set.end());
-        first = std::max(0, first - 4);
-        last = std::min(model_->rowCount() - 1, last + 8);
-        // List mode row indices are not contiguous on screen (columns interleave
-        // in model order). Prefer the actual set plus a small pad of neighbours.
-        if (view_mode_ == ViewMode::List) {
-          QSet<int> expanded = row_set;
-          for (int r : row_set) {
-            for (int d = -2; d <= 2; ++d) {
-              const int rr = r + d;
-              if (rr >= 0 && rr < model_->rowCount()) {
-                expanded.insert(rr);
-              }
-            }
-          }
-          rows.assign(expanded.begin(), expanded.end());
-          std::sort(rows.begin(), rows.end());
-        } else {
-          for (int r = first; r <= last; ++r) {
-            rows.push_back(r);
-          }
-        }
-        from_viewport = !rows.empty();
       }
     }
-
-    // Cap viewport batches tightly: large scroll flings used to queue hundreds of
-    // Thumbnailer1 jobs and leave Pending marks for rows that scrolled away.
-    constexpr int kMaxFallback = 48;
-    constexpr int kMaxViewport = 64;
-    if (rows.empty()) {
-      const int n = std::min(static_cast<int>(visible.size()), kMaxFallback);
-      rows.reserve(static_cast<std::size_t>(n));
-      for (int r = 0; r < n; ++r) {
-        rows.push_back(r);
+    if (row_set.isEmpty()) {
+      const QModelIndex top = view->indexAt(vp.topLeft() + QPoint(4, 4));
+      const QModelIndex bot = view->indexAt(vp.bottomLeft() + QPoint(4, -4));
+      if (top.isValid()) {
+        row_set.insert(top.row());
       }
-    } else if (!from_viewport && static_cast<int>(rows.size()) > kMaxFallback) {
-      rows.resize(static_cast<std::size_t>(kMaxFallback));
-    } else if (from_viewport && static_cast<int>(rows.size()) > kMaxViewport) {
-      const int mid = static_cast<int>(rows.size()) / 2;
-      const int half = kMaxViewport / 2;
-      int begin = std::max(0, mid - half);
-      int end = std::min(static_cast<int>(rows.size()), begin + kMaxViewport);
-      begin = std::max(0, end - kMaxViewport);
-      rows = std::vector<int>(rows.begin() + begin, rows.begin() + end);
+      if (bot.isValid()) {
+        row_set.insert(bot.row());
+      }
     }
+    rows.assign(row_set.begin(), row_set.end());
+    std::sort(rows.begin(), rows.end());
+    from_viewport = !rows.empty();
+  }
 
-    // Drop D-Bus backlog from previous scroll positions. Ready icons stay in the
-    // model; clear *all* Pending so request_rows can re-queue the current
-    // viewport (it skips paths already marked Pending/Ready).
+  constexpr int kMaxFallback = 48;
+  constexpr int kMaxViewport = 64;
+  if (rows.empty()) {
+    const int n = std::min(static_cast<int>(visible.size()), kMaxFallback);
+    rows.reserve(static_cast<std::size_t>(n));
+    for (int r = 0; r < n; ++r) {
+      rows.push_back(r);
+    }
+  } else if (!from_viewport && static_cast<int>(rows.size()) > kMaxFallback) {
+    rows.resize(static_cast<std::size_t>(kMaxFallback));
+  } else if (from_viewport && static_cast<int>(rows.size()) > kMaxViewport) {
+    const int mid = static_cast<int>(rows.size()) / 2;
+    const int half = kMaxViewport / 2;
+    int begin = std::max(0, mid - half);
+    int end = std::min(static_cast<int>(rows.size()), begin + kMaxViewport);
+    begin = std::max(0, end - kMaxViewport);
+    rows = std::vector<int>(rows.begin() + begin, rows.begin() + end);
+  }
+
+  const int first = rows.empty() ? -1 : rows.front();
+  // Only tear down the D-Bus queue when the viewport jumped; small steps just
+  // request missing tiles so Ready icons and in-flight work are not churned.
+  const bool jumped = last_thumb_viewport_first_ < 0
+                      || std::abs(first - last_thumb_viewport_first_) > (kMaxViewport / 2);
+  if (jumped) {
     thumbs_.cancel_all();
     if (model_ != nullptr) {
       model_->clear_pending_thumbnails();
     }
+  }
+  last_thumb_viewport_first_ = first;
 
-    const bool need_dir = thumbs_.request_rows(
-        visible, rows, model_,
-        [this](const fs::Location& archive_root) -> std::optional<std::filesystem::path> {
-          return archive_manager_.extracted_root(archive_root);
-        });
-    if (need_dir) {
-      schedule_directory_thumbnails_low_priority();
-    }
-    // Re-assert the ActivityMonitor task after cancel_all/clear_pending so we do
-    // not sit on Idle until the first Ready/Failed signal arrives.
-    update_status_selection();
-  });
+  const bool need_dir = thumbs_.request_rows(
+      visible, rows, model_,
+      [this](const fs::Location& archive_root) -> std::optional<std::filesystem::path> {
+        return archive_manager_.extracted_root(archive_root);
+      });
+  if (need_dir) {
+    schedule_directory_thumbnails_low_priority();
+  }
+  schedule_thumb_status_refresh();
 }
 
 void MainWindow::on_thumbnail_ready(const fs::Location& location, const QString& path)
@@ -246,9 +238,8 @@ void MainWindow::on_thumbnail_ready(const fs::Location& location, const QString&
   }
   if (model_ != nullptr) {
     model_->set_thumbnail(key, QIcon(pix));
-    // Always refresh so the last pending → ready transition clears the
-    // ActivityMonitor "Thumbnails" task (previously skipped when pending hit 0).
-    update_status_selection();
+    // Throttle: full status rebuild is expensive during scroll through large dirs.
+    schedule_thumb_status_refresh();
   }
 }
 
@@ -287,8 +278,7 @@ void MainWindow::on_thumbnail_failed(const fs::Location& location, const QString
   } else {
     model_->clear_thumbnail(key);
   }
-  // Always refresh so finishing the last pending item clears ActivityMonitor.
-  update_status_selection();
+  schedule_thumb_status_refresh();
 }
 
 void MainWindow::on_reload_thumbnails()
