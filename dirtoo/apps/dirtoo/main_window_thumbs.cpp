@@ -180,8 +180,14 @@ void MainWindow::flush_viewport_thumbnails()
     from_viewport = !rows.empty();
   }
 
+  // Fallback (no view geometry): only the head of the list.
   constexpr int kMaxFallback = 48;
-  constexpr int kMaxViewport = 64;
+  // Viewport rows from GraphicsFileView are already limited to the on-screen
+  // window (+ margin). Do not take a middle slice — that dropped the last tiles
+  // on a full page until the user scrolled further (regressed "honor window").
+  // Soft safety cap for pathological cases (tiny tiles / huge monitors).
+  constexpr int kMaxViewportHard = 256;
+  constexpr int kJumpThreshold = 32;
   if (rows.empty()) {
     const int n = std::min(static_cast<int>(visible.size()), kMaxFallback);
     rows.reserve(static_cast<std::size_t>(n));
@@ -190,20 +196,26 @@ void MainWindow::flush_viewport_thumbnails()
     }
   } else if (!from_viewport && static_cast<int>(rows.size()) > kMaxFallback) {
     rows.resize(static_cast<std::size_t>(kMaxFallback));
-  } else if (from_viewport && static_cast<int>(rows.size()) > kMaxViewport) {
-    const int mid = static_cast<int>(rows.size()) / 2;
-    const int half = kMaxViewport / 2;
-    int begin = std::max(0, mid - half);
-    int end = std::min(static_cast<int>(rows.size()), begin + kMaxViewport);
-    begin = std::max(0, end - kMaxViewport);
-    rows = std::vector<int>(rows.begin() + begin, rows.begin() + end);
+  } else if (from_viewport && static_cast<int>(rows.size()) > kMaxViewportHard) {
+    // Keep top and bottom of the window (never a middle-only slice).
+    std::vector<int> kept;
+    kept.reserve(static_cast<std::size_t>(kMaxViewportHard));
+    const int n = static_cast<int>(rows.size());
+    const int half = kMaxViewportHard / 2;
+    for (int i = 0; i < half; ++i) {
+      kept.push_back(rows[static_cast<std::size_t>(i)]);
+    }
+    for (int i = std::max(half, n - half); i < n; ++i) {
+      kept.push_back(rows[static_cast<std::size_t>(i)]);
+    }
+    rows = std::move(kept);
   }
 
   const int first = rows.empty() ? -1 : rows.front();
   // Only tear down the D-Bus queue when the viewport jumped; small steps just
   // request missing tiles so Ready icons and in-flight work are not churned.
   const bool jumped = last_thumb_viewport_first_ < 0
-                      || std::abs(first - last_thumb_viewport_first_) > (kMaxViewport / 2);
+                      || std::abs(first - last_thumb_viewport_first_) > kJumpThreshold;
   if (jumped) {
     thumbs_.cancel_all();
     if (model_ != nullptr) {
