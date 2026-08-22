@@ -408,6 +408,12 @@
             echo "  nix build .#dirtoo-full           # GUI + libs + optional tools"
             echo "  nix build .#all-libs"
             echo "  nix run .#dirtoo"
+            echo ""
+            echo "Manual cmake under this shell uses find_package(dirtoo-fs) from the"
+            echo "flake package, but prefers in-tree headers under libs/*/include."
+            echo "After changing FileInfo/Location, either:"
+            echo "  nix build .#dirtoo-fs && # re-enter nix develop"
+            echo "or rely on the app compiling in-tree file_info.cpp + location.cpp."
           '';
         };
       });

@@ -54,10 +54,14 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/libs/dirtoo-tags/src/file_set_store.cpp")
     "${CMAKE_SOURCE_DIR}/libs/dirtoo-tags/src/file_set_store.cpp")
 endif()
 # Location::from_set / set_query — same stale-package problem as FileSetStore.
-if(EXISTS "${CMAKE_SOURCE_DIR}/libs/dirtoo-fs/src/location.cpp")
-  target_sources(dirtoo-tests PRIVATE
-    "${CMAKE_SOURCE_DIR}/libs/dirtoo-fs/src/location.cpp")
-endif()
+# Match app: in-tree file_info.cpp + location.cpp so FileInfo ABI matches headers.
+foreach(_fs_src location.cpp file_info.cpp)
+  if(EXISTS "${CMAKE_SOURCE_DIR}/libs/dirtoo-fs/src/${_fs_src}")
+    target_sources(dirtoo-tests PRIVATE
+      "${CMAKE_SOURCE_DIR}/libs/dirtoo-fs/src/${_fs_src}")
+  endif()
+endforeach()
+
 
 target_link_libraries(dirtoo-tests
   PRIVATE

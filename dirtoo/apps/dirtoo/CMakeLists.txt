@@ -181,11 +181,17 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/libs/dirtoo-tags/src/file_set_store.cpp")
   target_sources(dirtoo-app PRIVATE
     "${CMAKE_SOURCE_DIR}/libs/dirtoo-tags/src/file_set_store.cpp")
 endif()
-# Location::from_set / set_query when installed dirtoo-fs is older than headers.
-if(EXISTS "${CMAKE_SOURCE_DIR}/libs/dirtoo-fs/src/location.cpp")
-  target_sources(dirtoo-app PRIVATE
-    "${CMAKE_SOURCE_DIR}/libs/dirtoo-fs/src/location.cpp")
-endif()
+# dirtoo-fs sources when installed package lags the checkout.
+# Headers alone are not enough: FileInfo/Location layout must match the .cpp that
+# implements from_directory_entry — otherwise returning FileInfo by value smashes
+# the stack canary (Debug + nix develop vs nix run). Compile both translation
+# units into the app; the linker will prefer these over the static archive.
+foreach(_fs_src location.cpp file_info.cpp)
+  if(EXISTS "${CMAKE_SOURCE_DIR}/libs/dirtoo-fs/src/${_fs_src}")
+    target_sources(dirtoo-app PRIVATE
+      "${CMAKE_SOURCE_DIR}/libs/dirtoo-fs/src/${_fs_src}")
+  endif()
+endforeach()
 
 target_link_libraries(dirtoo-app
   PRIVATE
