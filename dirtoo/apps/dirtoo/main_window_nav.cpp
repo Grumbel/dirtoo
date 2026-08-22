@@ -8,6 +8,7 @@
 #include "location_icons.hpp"
 #include <QMenu>
 #include <QAbstractScrollArea>
+#include <QStackedWidget>
 #include <QScrollBar>
 #include <algorithm>
 #include <QCursor>
