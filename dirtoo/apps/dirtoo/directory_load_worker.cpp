@@ -26,7 +26,8 @@ void DirectoryLoadWorker::load(const QString& path, quint64 generation)
   cancel_generation_.store(generation, std::memory_order_relaxed);
 
   try {
-    const auto dir_path = std::filesystem::path{path.toStdString()};
+    const auto dir_path = std::filesystem::path{
+        path.toUtf8().constData()};  // UTF-8, not local 8-bit
     std::vector<fs::FileInfo> items;
     items.reserve(256);
     std::error_code ec;
@@ -40,7 +41,14 @@ void DirectoryLoadWorker::load(const QString& path, quint64 generation)
       if (cancel_generation_.load(std::memory_order_relaxed) != generation) {
         return; // superseded
       }
-      items.push_back(fs::FileInfo::from_directory_entry(entry));
+      try {
+        items.push_back(fs::FileInfo::from_directory_entry(entry));
+      } catch (const std::exception&) {
+        // Skip entries that throw (vanished files, unsupported metadata); keep listing.
+        continue;
+      } catch (...) {
+        continue;
+      }
       ++seen;
       // Keep the UI informed on slow media without flooding the event queue.
       if ((seen % 32) == 0) {

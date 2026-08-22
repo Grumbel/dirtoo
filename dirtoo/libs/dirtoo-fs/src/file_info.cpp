@@ -5,6 +5,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <ctime>
 #include <system_error>
 
 #if !defined(_WIN32)
@@ -15,64 +16,54 @@
 namespace dirtoo::fs {
 namespace {
 
-#if !defined(_WIN32)
-[[nodiscard]] std::chrono::system_clock::time_point timespec_to_sys(const struct timespec& ts)
+[[nodiscard]] std::chrono::system_clock::time_point sys_from_unix(std::time_t sec)
 {
-  using namespace std::chrono;
-  auto tp = system_clock::time_point{seconds{ts.tv_sec}};
-  if (ts.tv_nsec > 0) {
-    tp += duration_cast<system_clock::duration>(nanoseconds{ts.tv_nsec});
-  }
-  return tp;
+  // Whole seconds only — avoids timespec/nsec edge cases and mixed-duration math.
+  return std::chrono::system_clock::from_time_t(sec);
 }
-#endif
 
 } // namespace
 
 #if !defined(_WIN32)
 void FileInfo::apply_posix_stat(const struct stat& st)
 {
-  is_symlink_ = S_ISLNK(st.st_mode);
-  is_directory_ = S_ISDIR(st.st_mode);
-  is_regular_file_ = S_ISREG(st.st_mode);
+  is_symlink_ = S_ISLNK(st.st_mode) != 0;
+  is_directory_ = S_ISDIR(st.st_mode) != 0;
+  is_regular_file_ = S_ISREG(st.st_mode) != 0;
   size_ = static_cast<std::uint64_t>(st.st_size >= 0 ? st.st_size : 0);
   permissions_ = static_cast<std::filesystem::perms>(st.st_mode & 07777);
 
+  // Prefer st_mtim.tv_sec when available; fall back to st_mtime.
 #  if defined(__APPLE__)
-  atime_ = timespec_to_sys(st.st_atimespec);
-  ctime_ = timespec_to_sys(st.st_ctimespec);
-  has_atime_ = true;
-  has_ctime_ = true;
-  birthtime_ = timespec_to_sys(st.st_birthtimespec);
-  has_birthtime_ = st.st_birthtimespec.tv_sec != 0;
-  try {
-    const auto sys = timespec_to_sys(st.st_mtimespec);
-    mtime_ = std::chrono::clock_cast<std::filesystem::file_time_type::clock>(sys);
-  } catch (...) {
+  const std::time_t msec = st.st_mtimespec.tv_sec;
+  const std::time_t asec = st.st_atimespec.tv_sec;
+  const std::time_t csec = st.st_ctimespec.tv_sec;
+  const std::time_t bsec = st.st_birthtimespec.tv_sec;
+  has_birthtime_ = bsec != 0;
+  if (has_birthtime_) {
+    birthtime_ = sys_from_unix(bsec);
   }
 #  elif defined(__FreeBSD__)
-  atime_ = timespec_to_sys(st.st_atim);
-  ctime_ = timespec_to_sys(st.st_ctim);
-  has_atime_ = true;
-  has_ctime_ = true;
-  birthtime_ = timespec_to_sys(st.st_birthtim);
-  has_birthtime_ = st.st_birthtim.tv_sec != 0;
-  try {
-    const auto sys = timespec_to_sys(st.st_mtim);
-    mtime_ = std::chrono::clock_cast<std::filesystem::file_time_type::clock>(sys);
-  } catch (...) {
+  const std::time_t msec = st.st_mtim.tv_sec;
+  const std::time_t asec = st.st_atim.tv_sec;
+  const std::time_t csec = st.st_ctim.tv_sec;
+  const std::time_t bsec = st.st_birthtim.tv_sec;
+  has_birthtime_ = bsec != 0;
+  if (has_birthtime_) {
+    birthtime_ = sys_from_unix(bsec);
   }
 #  else
-  atime_ = timespec_to_sys(st.st_atim);
-  ctime_ = timespec_to_sys(st.st_ctim);
+  // Linux / generic POSIX.1-2008
+  const std::time_t msec = st.st_mtim.tv_sec;
+  const std::time_t asec = st.st_atim.tv_sec;
+  const std::time_t csec = st.st_ctim.tv_sec;
+#  endif
+
+  set_mtime_unix(static_cast<std::int64_t>(msec));
+  atime_ = sys_from_unix(asec);
+  ctime_ = sys_from_unix(csec);
   has_atime_ = true;
   has_ctime_ = true;
-  try {
-    const auto sys = timespec_to_sys(st.st_mtim);
-    mtime_ = std::chrono::clock_cast<std::filesystem::file_time_type::clock>(sys);
-  } catch (...) {
-  }
-#  endif
 }
 #endif
 
@@ -84,22 +75,26 @@ void FileInfo::fill_posix_times_from_path(const std::filesystem::path& path)
     return;
   }
 #  if defined(__APPLE__)
-  atime_ = timespec_to_sys(st.st_atimespec);
-  ctime_ = timespec_to_sys(st.st_ctimespec);
+  atime_ = sys_from_unix(st.st_atimespec.tv_sec);
+  ctime_ = sys_from_unix(st.st_ctimespec.tv_sec);
   has_atime_ = true;
   has_ctime_ = true;
-  birthtime_ = timespec_to_sys(st.st_birthtimespec);
-  has_birthtime_ = st.st_birthtimespec.tv_sec != 0;
+  if (st.st_birthtimespec.tv_sec != 0) {
+    birthtime_ = sys_from_unix(st.st_birthtimespec.tv_sec);
+    has_birthtime_ = true;
+  }
 #  elif defined(__FreeBSD__)
-  atime_ = timespec_to_sys(st.st_atim);
-  ctime_ = timespec_to_sys(st.st_ctim);
+  atime_ = sys_from_unix(st.st_atim.tv_sec);
+  ctime_ = sys_from_unix(st.st_ctim.tv_sec);
   has_atime_ = true;
   has_ctime_ = true;
-  birthtime_ = timespec_to_sys(st.st_birthtim);
-  has_birthtime_ = st.st_birthtim.tv_sec != 0;
+  if (st.st_birthtim.tv_sec != 0) {
+    birthtime_ = sys_from_unix(st.st_birthtim.tv_sec);
+    has_birthtime_ = true;
+  }
 #  else
-  atime_ = timespec_to_sys(st.st_atim);
-  ctime_ = timespec_to_sys(st.st_ctim);
+  atime_ = sys_from_unix(st.st_atim.tv_sec);
+  ctime_ = sys_from_unix(st.st_ctim.tv_sec);
   has_atime_ = true;
   has_ctime_ = true;
 #  endif
@@ -139,7 +134,12 @@ FileInfo FileInfo::from_path(const std::filesystem::path& path)
       info.size_ = static_cast<std::uint64_t>(sz);
     }
   }
-  info.mtime_ = std::filesystem::last_write_time(path, ec);
+  {
+    const auto ft = std::filesystem::last_write_time(path, ec);
+    if (!ec) {
+      info.mtime_ = ft;
+    }
+  }
   info.fill_posix_times_from_path(path);
   return info;
 }
@@ -176,9 +176,15 @@ void FileInfo::set_mtime_unix(std::int64_t sec)
     return;
   }
   try {
-    const auto sys = std::chrono::system_clock::time_point{std::chrono::seconds{sec}};
+    const auto sys = std::chrono::system_clock::from_time_t(static_cast<std::time_t>(sec));
+#if defined(__cpp_lib_chrono) && (__cpp_lib_chrono >= 201907L)
+    // C++20: file_clock ↔ system_clock
+    mtime_ = std::chrono::file_clock::from_sys(sys);
+#else
     mtime_ = std::chrono::clock_cast<std::filesystem::file_time_type::clock>(sys);
+#endif
   } catch (...) {
+    // Leave default mtime on conversion failure.
   }
 }
 
@@ -206,16 +212,17 @@ std::string FileInfo::extension() const
 FileInfo FileInfo::from_directory_entry(const std::filesystem::directory_entry& entry)
 {
   FileInfo info;
+  // Copy path once; avoid re-entering directory_entry APIs for metadata.
   const std::filesystem::path path = entry.path();
   info.path_ = path;
-  // Parent was already normalized when the user navigated; avoid weakly_canonical
-  // (extra stats) on every child during large listings.
   info.location_ = Location::from_path_unchecked(path);
-  info.display_name_ = path.filename().string();
+  try {
+    info.display_name_ = path.filename().string();
+  } catch (...) {
+    info.display_name_.clear();
+  }
 
 #if !defined(_WIN32)
-  // Single lstat for type/size/times — fewer stack frames than the previous
-  // read_size_bytes + last_write_time + fill_posix_times_from_path sequence.
   struct stat st {};
   if (::lstat(path.c_str(), &st) == 0) {
     info.apply_posix_stat(st);
@@ -223,12 +230,12 @@ FileInfo FileInfo::from_directory_entry(const std::filesystem::directory_entry& 
   }
 #endif
 
+  // Fallback when lstat fails (e.g. vanished entry): best-effort via std::filesystem.
   std::error_code ec;
   const auto status = entry.symlink_status(ec);
   if (ec) {
     return info;
   }
-
   info.is_symlink_ = std::filesystem::is_symlink(status);
   info.is_directory_ = std::filesystem::is_directory(status);
   info.is_regular_file_ = std::filesystem::is_regular_file(status);
@@ -239,7 +246,12 @@ FileInfo FileInfo::from_directory_entry(const std::filesystem::directory_entry& 
       info.size_ = static_cast<std::uint64_t>(sz);
     }
   }
-  info.mtime_ = entry.last_write_time(ec);
+  {
+    const auto ft = entry.last_write_time(ec);
+    if (!ec) {
+      info.mtime_ = ft;
+    }
+  }
   info.fill_posix_times_from_path(path);
   return info;
 }
