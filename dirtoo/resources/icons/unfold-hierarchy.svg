@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <!-- Recursive / unfold: root folder with nested children -->
+  <path d="M3 6.5 h6 l1.5 2 H21 v10.5 H3 Z" fill="#e5a50a" stroke="#c64600" stroke-width="1.2" stroke-linejoin="round"/>
+  <!-- nested folder cards -->
+  <rect x="6" y="11" width="7" height="5.5" rx="1" fill="#f6d32d" stroke="#c64600" stroke-width="0.9"/>
+  <rect x="11" y="13.5" width="8" height="5.5" rx="1" fill="#ffe28a" stroke="#c64600" stroke-width="0.9"/>
+  <!-- expand chevrons -->
+  <path d="M7.5 9.2 L9.2 10.8 L10.9 9.2" fill="none" stroke="#8c3b00" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

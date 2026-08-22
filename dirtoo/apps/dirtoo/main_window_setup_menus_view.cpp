@@ -180,7 +180,7 @@ void MainWindow::setup_view_menu()
     act->setShortcuts({QKeySequence(QStringLiteral("Ctrl+F")), QKeySequence(Qt::Key_F3)});
   }
   {
-    auto* act = view_menu->addAction(theme_icon("view-list-tree", "folder"),
+    auto* act = view_menu->addAction(theme_icon("unfold-hierarchy", "view-list-tree"),
                                      QStringLiteral("Unfold Hierarchy"), this,
                                      &MainWindow::on_unfold_hierarchy);
     act->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+U")));

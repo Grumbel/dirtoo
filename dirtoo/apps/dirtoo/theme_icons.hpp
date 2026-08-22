@@ -29,7 +29,9 @@ inline QIcon theme_icon(const char* name, const char* fallback = nullptr)
       {QStringLiteral("view-hidden"), QStringLiteral("view-hidden.svg")},
       {QStringLiteral("view-filter"), QStringLiteral("view-filter.svg")},
       {QStringLiteral("view-sidetree"), QStringLiteral("view-sidebar.svg")},
-      {QStringLiteral("view-list-tree"), QStringLiteral("view-sidebar.svg")},
+      {QStringLiteral("view-list-tree"), QStringLiteral("view-list-tree.svg")},
+      {QStringLiteral("group-by"), QStringLiteral("group-by.svg")},
+      {QStringLiteral("unfold-hierarchy"), QStringLiteral("unfold-hierarchy.svg")},
       // Relative-size icons mode (was incorrectly sharing icon-detail-more).
       {QStringLiteral("view-relative"), QStringLiteral("view-relative.svg")},
       {QStringLiteral("zoom-fit-best"), QStringLiteral("view-relative.svg")},

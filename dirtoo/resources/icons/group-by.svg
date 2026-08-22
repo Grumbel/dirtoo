@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <!-- Group by: three labeled clusters -->
+  <rect x="2" y="3" width="9" height="7" rx="1.5" fill="#1c71d8"/>
+  <rect x="13" y="3" width="9" height="7" rx="1.5" fill="#3584e4"/>
+  <rect x="2" y="13" width="20" height="8" rx="1.5" fill="#62a0ea"/>
+  <rect x="4" y="5" width="5" height="1.6" rx="0.5" fill="#dbeafe"/>
+  <rect x="15" y="5" width="5" height="1.6" rx="0.5" fill="#dbeafe"/>
+  <rect x="4" y="15.5" width="8" height="1.6" rx="0.5" fill="#eff6ff"/>
+  <rect x="4" y="18" width="5" height="1.6" rx="0.5" fill="#eff6ff" opacity="0.85"/>
+</svg>

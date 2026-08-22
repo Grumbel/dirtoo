@@ -252,6 +252,9 @@ install(FILES
   ${CMAKE_SOURCE_DIR}/resources/icons/list-remove.svg
   ${CMAKE_SOURCE_DIR}/resources/icons/view-detail.svg
   ${CMAKE_SOURCE_DIR}/resources/icons/view-filter.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/view-list-tree.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/group-by.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/unfold-hierarchy.svg
   ${CMAKE_SOURCE_DIR}/resources/icons/view-hidden.svg
   ${CMAKE_SOURCE_DIR}/resources/icons/view-icons.svg
   ${CMAKE_SOURCE_DIR}/resources/icons/view-relative.svg

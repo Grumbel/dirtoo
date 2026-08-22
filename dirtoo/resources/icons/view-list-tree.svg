@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <!-- Tree structure (distinct from sidebar panel) -->
+  <circle cx="6" cy="5" r="2.2" fill="#26a269"/>
+  <circle cx="6" cy="12" r="2.2" fill="#33d17a"/>
+  <circle cx="6" cy="19" r="2.2" fill="#26a269"/>
+  <line x1="6" y1="7.2" x2="6" y2="9.8" stroke="#1a5e3a" stroke-width="1.6"/>
+  <line x1="6" y1="14.2" x2="6" y2="16.8" stroke="#1a5e3a" stroke-width="1.6"/>
+  <line x1="8.2" y1="12" x2="12" y2="12" stroke="#1a5e3a" stroke-width="1.6"/>
+  <line x1="8.2" y1="19" x2="12" y2="19" stroke="#1a5e3a" stroke-width="1.6"/>
+  <rect x="12" y="10" width="9" height="4" rx="1" fill="#8ff0a4"/>
+  <rect x="12" y="17" width="7" height="4" rx="1" fill="#57e389"/>
+</svg>

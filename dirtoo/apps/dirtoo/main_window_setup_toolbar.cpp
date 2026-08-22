@@ -163,7 +163,7 @@ void MainWindow::setup_toolbar()
   {
   group_toolbar_btn_ = new QToolButton(toolbar);
   auto* group_btn = group_toolbar_btn_;
-  group_btn->setIcon(theme_icon("view-list-tree", "view-list"));
+  group_btn->setIcon(theme_icon("group-by", "view-list-tree"));
   group_btn->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
   group_btn->setText(QStringLiteral("None"));
   group_btn->setToolTip(QStringLiteral("Group by"));
@@ -216,7 +216,7 @@ void MainWindow::setup_toolbar()
   }
 
   {
-    auto* act = toolbar->addAction(theme_icon("view-list-tree", "folder"),
+    auto* act = toolbar->addAction(theme_icon("unfold-hierarchy", "view-list-tree"),
                                    QStringLiteral("Unfold Hierarchy"));
     act->setToolTip(
         QStringLiteral("Show all files under this directory, grouped by folder "
