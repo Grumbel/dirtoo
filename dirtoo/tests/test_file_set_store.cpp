@@ -94,10 +94,11 @@ TEST_CASE("FileSetStore membership exclusive (one set per file)", "[sets]")
   CHECK(in_clip2.front().id == b->id);
 
   const auto members_a = store.members(a->id);
-  REQUIRE(members_a.size() == 2);
+  REQUIRE(members_a.size() == 1);
+  CHECK(members_a.front().path_key == "/media/clip1.mp4");
 
   REQUIRE(store.remove_member(a->id, "/media/clip1.mp4", &err));
-  CHECK(store.member_count(a->id) == 1);
+  CHECK(store.member_count(a->id) == 0);
   CHECK_FALSE(store.contains(a->id, "/media/clip1.mp4"));
 
   // still.png keeps sha
