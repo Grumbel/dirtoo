@@ -35,6 +35,8 @@ protected:
   void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) override;
   void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
   void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
+  void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
+  void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
 
 private:
   FileListModel* model_ = nullptr;
@@ -42,6 +44,7 @@ private:
   int row_ = -1;
   QSize tile_size_{128, 160};
   bool drop_target_ = false;
+  QString hover_tag_;
 };
 
 } // namespace dirtoo::app

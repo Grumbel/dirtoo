@@ -121,6 +121,8 @@ public:
   void notify_tag_chip_clicked(const QString& tag_name);
   void notify_tag_chip_menu_requested(const QString& tag_name, const QPoint& global_pos,
                                      const QModelIndex& index);
+  /// Hit-test tag chip under view coordinates; empty if none.
+  [[nodiscard]] QString tag_chip_at_view_pos(const QPoint& view_pos) const;
 
 signals:
   void activated(const QModelIndex& index);

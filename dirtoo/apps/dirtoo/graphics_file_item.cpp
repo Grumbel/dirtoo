@@ -15,8 +15,10 @@
 #include <QFileIconProvider>
 #include <QGraphicsSceneContextMenuEvent>
 #include <QGraphicsSceneMouseEvent>
+#include <QGraphicsSceneHoverEvent>
 #include <QMetaObject>
 #include <QDebug>
+#include <QCursor>
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 
@@ -300,7 +302,7 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
     }
 
     if (fi != nullptr) {
-      paint_tag_chips(painter, thumb, fi->path());
+      paint_tag_chips(painter, thumb, fi->path(), hover_tag_);
     }
 
     // Type sticker: bottom-right (Python paint_metadata / SharedPixmaps).
@@ -412,22 +414,12 @@ void GraphicsFileItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
   // Left-button: tag chip click filters by that tag; otherwise selection is owned
   // by GraphicsFileView (deferred multi-select drag, Ctrl/Shift range).
   if (event->button() == Qt::LeftButton) {
+    // Usually handled in GraphicsFileView::mousePressEvent; keep as fallback.
     if (view_ != nullptr && model_ != nullptr && row_ >= 0) {
       const fs::FileInfo* fi = model_->file_at(row_);
       if (fi != nullptr && !fi->is_directory()) {
-        constexpr int kLineH = 16;
-        constexpr int kCaptionPad = 4;
-        constexpr int kMargin = 1;
-        const int text_rows = model_->icon_text_rows();
-        const int caption_h = text_rows > 0 ? (kCaptionPad + text_rows * kLineH) : 0;
-        const int band_h = std::max(16, tile_size_.height() - caption_h);
-        const int band_w = tile_size_.width();
-        int icon_side = std::min(band_w - 2 * kMargin, band_h - 2 * kMargin);
-        icon_side = std::max(16, icon_side);
-        QRect thumb(0, 0, icon_side, icon_side);
-        thumb.moveCenter(QPoint(band_w / 2, band_h / 2));
-        const QPoint local = event->pos().toPoint();
-        const QString tag = tag_chip_at(thumb, fi->path(), local);
+        const QRect thumb = tile_thumb_rect(tile_size_, model_->icon_text_rows());
+        const QString tag = tag_chip_at(thumb, fi->path(), event->pos().toPoint());
         if (!tag.isEmpty()) {
           view_->notify_tag_chip_clicked(tag);
           event->accept();
@@ -443,24 +435,13 @@ void GraphicsFileItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
 void GraphicsFileItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 {
+  // Primary routing is GraphicsFileView::contextMenuEvent; keep as fallback.
   if (view_ != nullptr) {
-    // Prefer tag-chip menu when the cursor is over a chip.
     if (model_ != nullptr && row_ >= 0) {
       const fs::FileInfo* fi = model_->file_at(row_);
       if (fi != nullptr && !fi->is_directory()) {
-        constexpr int kLineH = 16;
-        constexpr int kCaptionPad = 4;
-        constexpr int kMargin = 1;
-        const int text_rows = model_->icon_text_rows();
-        const int caption_h = text_rows > 0 ? (kCaptionPad + text_rows * kLineH) : 0;
-        const int band_h = std::max(16, tile_size_.height() - caption_h);
-        const int band_w = tile_size_.width();
-        int icon_side = std::min(band_w - 2 * kMargin, band_h - 2 * kMargin);
-        icon_side = std::max(16, icon_side);
-        QRect thumb(0, 0, icon_side, icon_side);
-        thumb.moveCenter(QPoint(band_w / 2, band_h / 2));
-        const QPoint local = event->pos().toPoint();
-        const QString tag = tag_chip_at(thumb, fi->path(), local);
+        const QRect thumb = tile_thumb_rect(tile_size_, model_->icon_text_rows());
+        const QString tag = tag_chip_at(thumb, fi->path(), event->pos().toPoint());
         if (!tag.isEmpty()) {
           view_->notify_tag_chip_menu_requested(tag, event->screenPos(), model_index());
           event->accept();
@@ -476,6 +457,38 @@ void GraphicsFileItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     return;
   }
   QGraphicsItem::contextMenuEvent(event);
+}
+
+void GraphicsFileItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
+{
+  QString tag;
+  if (model_ != nullptr && row_ >= 0) {
+    const fs::FileInfo* fi = model_->file_at(row_);
+    if (fi != nullptr && !fi->is_directory()) {
+      const QRect thumb = tile_thumb_rect(tile_size_, model_->icon_text_rows());
+      tag = tag_chip_at(thumb, fi->path(), event->pos().toPoint());
+    }
+  }
+  if (tag != hover_tag_) {
+    hover_tag_ = tag;
+    update();
+  }
+  if (!tag.isEmpty()) {
+    setCursor(Qt::PointingHandCursor);
+  } else {
+    unsetCursor();
+  }
+  QGraphicsItem::hoverMoveEvent(event);
+}
+
+void GraphicsFileItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
+{
+  if (!hover_tag_.isEmpty()) {
+    hover_tag_.clear();
+    update();
+  }
+  unsetCursor();
+  QGraphicsItem::hoverLeaveEvent(event);
 }
 
 } // namespace dirtoo::app

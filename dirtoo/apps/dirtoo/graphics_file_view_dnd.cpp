@@ -6,6 +6,7 @@
 
 #include "file_list_model.hpp"
 #include "graphics_file_item.hpp"
+#include "tag_paint.hpp"
 #include "drag_action_overlay.hpp"
 
 #include <QContextMenuEvent>
@@ -61,6 +62,14 @@ void GraphicsFileView::mouseReleaseEvent(QMouseEvent* event)
 
 void GraphicsFileView::contextMenuEvent(QContextMenuEvent* event)
 {
+  // Tag chip under cursor → chip menu (not the file context menu).
+  const QString tag = tag_chip_at_view_pos(event->pos());
+  if (!tag.isEmpty()) {
+    const auto idx = index_at(event->pos());
+    notify_tag_chip_menu_requested(tag, event->globalPos(), idx);
+    event->accept();
+    return;
+  }
   const auto idx = index_at(event->pos());
   // Keep multi-selection when right-clicking an already-selected tile.
   if (idx.isValid() && !selected_row_set_.contains(idx.row())) {
@@ -96,6 +105,15 @@ void GraphicsFileView::mousePressEvent(QMouseEvent* event)
     return;
   }
   if (event->button() == Qt::LeftButton) {
+    // Tag chip click filters by tag; do not start selection/drag.
+    {
+      const QString tag = tag_chip_at_view_pos(event->pos());
+      if (!tag.isEmpty()) {
+        notify_tag_chip_clicked(tag);
+        event->accept();
+        return;
+      }
+    }
     drag_start_pos_ = event->pos();
     // Item press → item drag (no rubber-band). Empty background → rubber-band select.
     if (auto* gfi = qgraphicsitem_cast<GraphicsFileItem*>(itemAt(event->pos()))) {

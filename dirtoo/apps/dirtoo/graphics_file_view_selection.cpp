@@ -27,6 +27,7 @@
 #include <QEvent>
 
 #include <algorithm>
+#include "tag_paint.hpp"
 
 namespace dirtoo::app {
 
@@ -84,6 +85,24 @@ void GraphicsFileView::notify_tag_chip_clicked(const QString& tag_name)
   if (!tag_name.isEmpty()) {
     emit tag_chip_clicked(tag_name);
   }
+}
+
+QString GraphicsFileView::tag_chip_at_view_pos(const QPoint& view_pos) const
+{
+  auto* gfi = qgraphicsitem_cast<GraphicsFileItem*>(itemAt(view_pos));
+  if (gfi == nullptr || model_ == nullptr) {
+    return {};
+  }
+  const int row = gfi->row();
+  const fs::FileInfo* fi = model_->file_at(row);
+  if (fi == nullptr || fi->is_directory()) {
+    return {};
+  }
+  const QRect thumb = tile_thumb_rect(gfi->tile_size(), model_->icon_text_rows());
+  // Map view → item local coordinates.
+  const QPointF scene_pt = mapToScene(view_pos);
+  const QPoint local = gfi->mapFromScene(scene_pt).toPoint();
+  return tag_chip_at(thumb, fi->path(), local);
 }
 
 void GraphicsFileView::notify_tag_chip_menu_requested(const QString& tag_name,

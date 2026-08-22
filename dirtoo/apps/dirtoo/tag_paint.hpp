@@ -12,8 +12,10 @@
 #include <QFontMetrics>
 #include <QIcon>
 #include <QPainter>
+#include <QPainterPath>
 #include <QPixmap>
 #include <QRect>
+#include <QSize>
 #include <QString>
 
 #include <algorithm>
@@ -164,9 +166,25 @@ inline QPixmap load_tag_badge_pixmap(const QString& badge, int size)
   return {};
 }
 
+/// Thumbnail square inside an icon tile (same math as GraphicsFileItem / FileItemDelegate).
+inline QRect tile_thumb_rect(const QSize& tile_size, int text_rows)
+{
+  constexpr int kLineH = 16;
+  constexpr int kCaptionPad = 4;
+  constexpr int kMargin = 1;
+  const int caption_h = text_rows > 0 ? (kCaptionPad + text_rows * kLineH) : 0;
+  const int band_h = std::max(16, tile_size.height() - caption_h);
+  const int band_w = tile_size.width();
+  int icon_side = std::min(band_w - 2 * kMargin, band_h - 2 * kMargin);
+  icon_side = std::max(16, icon_side);
+  QRect thumb(0, 0, icon_side, icon_side);
+  thumb.moveCenter(QPoint(band_w / 2, band_h / 2));
+  return thumb;
+}
+
 /// Layout metrics shared by paint_tag_chips and tag_chip_at so hit-testing
 /// cannot drift from painting. Chips stack vertically upward from above the
-/// bottom-left meta row (Width×Height / duration).
+/// bottom-left meta row (Width×Height / duration), flush-left like bookmarks.
 struct TagChipLayout {
   QFont font;
   QFontMetrics fm{QFont{}};
@@ -176,6 +194,7 @@ struct TagChipLayout {
   int icon_sz = 0;
   int max_text = 0;
   int left = 0;
+  int max_right = 0;
   int bottom_y = 0;  // top of the bottom-most chip
   int min_top = 0;   // stop stacking above this y
 };
@@ -190,9 +209,10 @@ inline TagChipLayout make_tag_chip_layout(const QRect& thumb, const QFont& base_
   L.gap_y = 2;
   L.h = L.fm.height() + 2;
   L.icon_sz = std::max(10, L.h - 2);
-  // Prefer wider chips than the old 1/3 width horizontal layout.
-  L.max_text = std::max(24, thumb.width() - 4 - L.pad_x * 2 - L.icon_sz - 2);
-  L.left = thumb.left() + 2;
+  // Bookmark style: hang slightly past the left edge of the thumbnail.
+  L.left = thumb.left() - 2;
+  L.max_right = thumb.right() - 2;
+  L.max_text = std::max(24, L.max_right - L.left - L.pad_x * 2 - L.icon_sz - 2);
   const int bottom_meta_reserve = L.h + 6;
   L.bottom_y = thumb.bottom() - L.h - 2 - bottom_meta_reserve;
   L.min_top = thumb.top() + 2;
@@ -205,9 +225,10 @@ inline int chip_width_for(const TagChipLayout& L, const QString& text, bool has_
   return L.fm.horizontalAdvance(text) + L.pad_x * 2 + icon_w;
 }
 
-/// Draw tag chips stacked vertically near the bottom-left of the thumbnail,
-/// above the meta row. Uses label + color (+ optional badge image) from TagDef.
-inline void paint_tag_chips(QPainter* painter, const QRect& thumb, const std::filesystem::path& path)
+/// Draw tag chips stacked vertically, flush-left on the thumbnail (bookmark look).
+/// @p hovered_tag highlights the matching chip (stable name) when non-empty.
+inline void paint_tag_chips(QPainter* painter, const QRect& thumb, const std::filesystem::path& path,
+                            const QString& hovered_tag = {})
 {
   if (painter == nullptr || thumb.isEmpty()) {
     return;
@@ -217,6 +238,7 @@ inline void paint_tag_chips(QPainter* painter, const QRect& thumb, const std::fi
     return;
   }
   painter->save();
+  painter->setRenderHint(QPainter::Antialiasing, true);
   const TagChipLayout L = make_tag_chip_layout(thumb, painter->font());
   painter->setFont(L.font);
   int y = L.bottom_y;
@@ -230,21 +252,41 @@ inline void paint_tag_chips(QPainter* painter, const QRect& thumb, const std::fi
     if (L.fm.horizontalAdvance(text) > L.max_text) {
       text = L.fm.elidedText(text, Qt::ElideRight, L.max_text);
     }
-    const int w = std::min(chip_width_for(L, text, has_icon), thumb.right() - 2 - L.left);
+    const int w = std::min(chip_width_for(L, text, has_icon), L.max_right - L.left);
     if (w <= 0) {
       break;
     }
     const QRect badge(L.left, y, w, L.h);
+    const bool hovered = !hovered_tag.isEmpty() && chip.name == hovered_tag;
+    QColor fill = chip.color;
+    if (hovered) {
+      fill = fill.lighter(125);
+    }
+    // Bookmark shape: square on the left (stuck to edge), rounded on the right.
+    QPainterPath path_shape;
+    const qreal r = 3.0;
+    path_shape.moveTo(badge.left(), badge.top());
+    path_shape.lineTo(badge.right() - r, badge.top());
+    path_shape.quadTo(badge.right(), badge.top(), badge.right(), badge.top() + r);
+    path_shape.lineTo(badge.right(), badge.bottom() - r);
+    path_shape.quadTo(badge.right(), badge.bottom(), badge.right() - r, badge.bottom());
+    path_shape.lineTo(badge.left(), badge.bottom());
+    path_shape.closeSubpath();
     painter->setPen(Qt::NoPen);
-    painter->setBrush(chip.color);
-    painter->drawRoundedRect(badge, 2, 2);
+    painter->setBrush(fill);
+    painter->drawPath(path_shape);
+    if (hovered) {
+      painter->setPen(QPen(QColor(255, 255, 255, 220), 1.5));
+      painter->setBrush(Qt::NoBrush);
+      painter->drawPath(path_shape);
+    }
     int text_left = L.left + L.pad_x;
     if (has_icon) {
       const int iy = y + (L.h - L.icon_sz) / 2;
       painter->drawPixmap(text_left, iy, icon);
       text_left += L.icon_sz + 2;
     }
-    const int lum = (chip.color.red() * 299 + chip.color.green() * 587 + chip.color.blue() * 114) / 1000;
+    const int lum = (fill.red() * 299 + fill.green() * 587 + fill.blue() * 114) / 1000;
     painter->setPen(lum > 140 ? QColor(20, 20, 20) : QColor(250, 250, 250));
     painter->drawText(QRect(text_left, y, badge.right() - text_left - L.pad_x + 1, L.h),
                       Qt::AlignVCenter | Qt::AlignLeft, text);
@@ -256,9 +298,10 @@ inline void paint_tag_chips(QPainter* painter, const QRect& thumb, const std::fi
 
 /// Hit-test tag chips in the same layout as paint_tag_chips. Returns the stable
 /// tag name (with namespace) of the chip under `pos`, or empty if none.
+/// @p pos is in the same coordinate system as @p thumb (item/tile local).
 inline QString tag_chip_at(const QRect& thumb, const std::filesystem::path& path, const QPoint& pos)
 {
-  if (thumb.isEmpty() || !thumb.contains(pos)) {
+  if (thumb.isEmpty()) {
     return {};
   }
   const auto chips = tag_paint_detail::chips_for_path(path);
@@ -278,12 +321,13 @@ inline QString tag_chip_at(const QRect& thumb, const std::filesystem::path& path
     if (L.fm.horizontalAdvance(text) > L.max_text) {
       text = L.fm.elidedText(text, Qt::ElideRight, L.max_text);
     }
-    const int w = std::min(chip_width_for(L, text, has_icon), thumb.right() - 2 - L.left);
+    const int w = std::min(chip_width_for(L, text, has_icon), L.max_right - L.left);
     if (w <= 0) {
       break;
     }
+    // Inflate slightly for easier clicking.
     const QRect badge(L.left, y, w, L.h);
-    if (badge.contains(pos)) {
+    if (badge.adjusted(-1, -1, 1, 1).contains(pos)) {
       return chip.name;
     }
     y -= L.h + L.gap_y;
