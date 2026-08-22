@@ -27,6 +27,10 @@ namespace dirtoo::fs {
 ///   tag://work
 ///   tag://game:doom
 ///   tag://foo,bar
+/// Optional listing modifiers (history / shareable URLs):
+///   file:///path?filter=*.png
+///   file:///path?search=foo
+///   file:///path?filter=tag:work&search=readme
 class Location {
 public:
   Location() = default;
@@ -63,6 +67,17 @@ public:
   /// Set id or label key. Only meaningful if is_set().
   [[nodiscard]] std::string set_query() const;
 
+  /// In-directory filter expression (empty = none). Encoded as ?filter= in as_url().
+  [[nodiscard]] const std::string& filter_query() const noexcept { return filter_; }
+  /// Recursive search expression (empty = none). Encoded as ?search= in as_url().
+  [[nodiscard]] const std::string& search_query() const noexcept { return search_; }
+
+  /// Copy with filter/search replaced (other fields unchanged).
+  [[nodiscard]] Location with_filter(std::string_view filter) const;
+  [[nodiscard]] Location with_search(std::string_view search) const;
+  [[nodiscard]] Location with_filter_and_search(std::string_view filter,
+                                                 std::string_view search) const;
+
   [[nodiscard]] Location parent() const;
   [[nodiscard]] Location join(std::string_view child) const;
 
@@ -80,6 +95,8 @@ private:
   std::string protocol_{"file"};
   std::filesystem::path path_;
   std::filesystem::path entry_;
+  std::string filter_;
+  std::string search_;
 };
 
 /// Heuristic: common archive extensions (zip, tar, 7z, rar, …).

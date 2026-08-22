@@ -34,8 +34,13 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
   search_session_.active = false;
   search_session_.results.clear();
   filter_search_.set_search_visible(false);
-  // Reset filter on directory change unless Pin Filter is active.
-  if (!filter_pinned_ && !filter_search_.filter_text().isEmpty()) {
+
+  const bool has_loc_filter = !location.filter_query().empty();
+  const bool has_loc_search = !location.search_query().empty();
+
+  // Reset filter on directory change unless Pin Filter is active or the
+  // incoming location carries ?filter=.
+  if (!has_loc_filter && !filter_pinned_ && !filter_search_.filter_text().isEmpty()) {
     if (auto* edit = filter_search_.filter_edit()) {
       edit->blockSignals(true);
       edit->clear();
@@ -50,6 +55,12 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
 
   nav_history_.push(location, record_history);
   update_history_actions();
+
+  // Apply ?filter= / ?search= after chrome is synced (search starts after load
+  // for file locations; filter can apply immediately).
+  if (has_loc_filter || has_loc_search) {
+    apply_location_queries(location);
+  }
 
   if (location_.is_tag()) {
     // Virtual tag collection — no directory watcher, no disk list worker.

@@ -86,7 +86,9 @@ QString location_display_path(const fs::Location& loc)
   if (loc.empty()) {
     return QString();
   }
-  if (loc.is_archive() || loc.is_tag() || loc.is_set()) {
+  // Include ?filter=&search= so titles/history match the addressable URL.
+  if (loc.is_archive() || loc.is_tag() || loc.is_set()
+      || !loc.filter_query().empty() || !loc.search_query().empty()) {
     return QString::fromStdString(loc.as_url());
   }
   return QString::fromStdString(loc.as_path().string());

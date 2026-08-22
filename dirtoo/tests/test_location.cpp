@@ -170,3 +170,28 @@ TEST_CASE("Location set:// protocol", "[location]")
   REQUIRE(human.is_set());
   REQUIRE(human.set_query() == "refs");
 }
+
+TEST_CASE("Location filter/search query params", "[location]")
+{
+  auto base = dirtoo::fs::Location::from_path("/tmp/dirtoo-test-loc");
+  auto with_f = base.with_filter("*.png");
+  REQUIRE(with_f.filter_query() == "*.png");
+  REQUIRE(with_f.search_query().empty());
+  REQUIRE(with_f.as_url().find("filter=") != std::string::npos);
+
+  const auto round = dirtoo::fs::Location::from_url(with_f.as_url());
+  REQUIRE(round.filter_query() == "*.png");
+  REQUIRE(round.as_path() == with_f.as_path());
+
+  auto both = base.with_filter_and_search("tag:work", "readme");
+  REQUIRE(both.filter_query() == "tag:work");
+  REQUIRE(both.search_query() == "readme");
+  const auto round2 = dirtoo::fs::Location::from_url(both.as_url());
+  REQUIRE(round2.filter_query() == "tag:work");
+  REQUIRE(round2.search_query() == "readme");
+
+  // Parent drops listing modifiers.
+  const auto par = both.parent();
+  REQUIRE(par.filter_query().empty());
+  REQUIRE(par.search_query().empty());
+}

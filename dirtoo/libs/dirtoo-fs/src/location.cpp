@@ -86,6 +86,93 @@ std::string percent_decode(std::string_view in)
   return out;
 }
 
+/// Encode a query parameter value (?filter= / ?search=).
+std::string percent_encode_query(const std::string& value)
+{
+  static constexpr char kHex[] = "0123456789ABCDEF";
+  std::string out;
+  out.reserve(value.size() + 8);
+  for (unsigned char uc : value) {
+    const char c = static_cast<char>(uc);
+    const bool unreserved =
+        (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')
+        || c == '-' || c == '.' || c == '_' || c == '~';
+    if (unreserved) {
+      out += c;
+    } else {
+      out += '%';
+      out += kHex[uc >> 4];
+      out += kHex[uc & 0x0F];
+    }
+  }
+  return out;
+}
+
+/// Split optional ?filter=&search= suffix. Returns path-without-query.
+std::string strip_and_parse_query(std::string_view url, std::string* filter, std::string* search)
+{
+  if (filter != nullptr) {
+    filter->clear();
+  }
+  if (search != nullptr) {
+    search->clear();
+  }
+  // Query starts at the last '?' so archive "file:///x.zip//archive:a?b" still works
+  // only when intentionally used as query (rare). Prefer first '?' after scheme body.
+  const auto qpos = url.find('?');
+  if (qpos == std::string_view::npos) {
+    return std::string{url};
+  }
+  const std::string_view base = url.substr(0, qpos);
+  const std::string_view query = url.substr(qpos + 1);
+  auto take_param = [&](std::string_view key, std::string* dest) {
+    if (dest == nullptr) {
+      return;
+    }
+    std::size_t start = 0;
+    while (start < query.size()) {
+      auto amp = query.find('&', start);
+      if (amp == std::string_view::npos) {
+        amp = query.size();
+      }
+      const auto part = query.substr(start, amp - start);
+      const auto eq = part.find('=');
+      const auto k = eq == std::string_view::npos ? part : part.substr(0, eq);
+      const auto v = eq == std::string_view::npos ? std::string_view{} : part.substr(eq + 1);
+      if (k == key) {
+        *dest = percent_decode(v);
+        return;
+      }
+      start = amp + 1;
+    }
+  };
+  take_param("filter", filter);
+  take_param("search", search);
+  return std::string{base};
+}
+
+std::string append_query(std::string url, const std::string& filter, const std::string& search)
+{
+  if (filter.empty() && search.empty()) {
+    return url;
+  }
+  url += '?';
+  bool first = true;
+  if (!filter.empty()) {
+    url += "filter=";
+    url += percent_encode_query(filter);
+    first = false;
+  }
+  if (!search.empty()) {
+    if (!first) {
+      url += '&';
+    }
+    url += "search=";
+    url += percent_encode_query(search);
+  }
+  return url;
+}
+
 } // namespace
 
 bool looks_like_archive(const std::filesystem::path& path)
@@ -165,53 +252,55 @@ Location Location::from_set(std::string_view set_id_or_label)
 
 Location Location::from_url(std::string_view url)
 {
+  std::string filter;
+  std::string search;
+  const std::string stripped = strip_and_parse_query(url, &filter, &search);
+  url = stripped;
+
+  Location loc;
   if (url.starts_with("tag://")) {
-    return from_tag(percent_decode(std::string{url.substr(6)}));
-  }
-  if (url.starts_with("set://")) {
-    return from_set(percent_decode(std::string{url.substr(6)}));
-  }
-  // Python-style archive: file:///path/to.zip//archive or file:///path/to.zip//archive:entry
-  // Legacy JAR-style:     archive:///path/to.zip!/entry
-  if (url.starts_with("file://")) {
+    loc = from_tag(percent_decode(std::string{url.substr(6)}));
+  } else if (url.starts_with("set://")) {
+    loc = from_set(percent_decode(std::string{url.substr(6)}));
+  } else if (url.starts_with("file://")) {
     std::string rest{url.substr(7)};
-    // Split on "//" payload separators (Python Location payloads).
     const auto payload_sep = rest.find("//");
     if (payload_sep != std::string::npos) {
       const std::string abspath = percent_decode(rest.substr(0, payload_sep));
-      std::string payload = rest.substr(payload_sep + 2); // e.g. "archive" or "archive:docs/a"
-      // Nested payloads are rare; take the first.
+      std::string payload = rest.substr(payload_sep + 2);
       const auto next = payload.find("//");
       if (next != std::string::npos) {
         payload = payload.substr(0, next);
       }
       const auto colon = payload.find(':');
-      std::string prot =
-          colon == std::string::npos ? payload : payload.substr(0, colon);
-      std::string entry =
-          colon == std::string::npos ? std::string{} : percent_decode(payload.substr(colon + 1));
-      for (char& c : prot) {
-        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+      const std::string kind = (colon == std::string::npos) ? payload : payload.substr(0, colon);
+      const std::string entry =
+          (colon == std::string::npos) ? std::string{} : percent_decode(payload.substr(colon + 1));
+      if (kind == "archive") {
+        loc = from_archive(std::filesystem::path{abspath}, std::filesystem::path{entry});
+      } else {
+        loc = from_path(std::filesystem::path{abspath});
       }
-      if (prot == "archive") {
-        return from_archive(std::filesystem::path{abspath}, std::filesystem::path{entry});
-      }
-      // Unknown payload: treat as plain file path to the archive container.
-      return from_path(std::filesystem::path{abspath});
+    } else {
+      loc = from_path(std::filesystem::path{percent_decode(rest)});
     }
-    return from_path(std::filesystem::path{percent_decode(rest)});
-  }
-  if (url.starts_with("archive://")) {
-    // Backward-compatible JAR-inspired form: archive:///abs/file.zip!/inner
+  } else if (url.starts_with("archive://")) {
     std::string rest{percent_decode(url.substr(10))};
     const auto bang = rest.find("!/");
     if (bang == std::string::npos) {
-      return from_archive(std::filesystem::path{rest}, {});
+      loc = from_archive(std::filesystem::path{rest}, {});
+    } else {
+      loc = from_archive(std::filesystem::path{rest.substr(0, bang)},
+                         std::filesystem::path{rest.substr(bang + 2)});
     }
-    return from_archive(std::filesystem::path{rest.substr(0, bang)},
-                        std::filesystem::path{rest.substr(bang + 2)});
+  } else {
+    throw std::invalid_argument("unsupported URL scheme");
   }
-  throw std::invalid_argument("unsupported URL scheme");
+
+  if (!filter.empty() || !search.empty()) {
+    loc = loc.with_filter_and_search(filter, search);
+  }
+  return loc;
 }
 
 Location Location::from_human(std::string_view text)
@@ -227,31 +316,57 @@ Location Location::from_human(std::string_view text)
   if (text.find("//archive") != std::string_view::npos) {
     return from_url(std::string("file://") + std::string{text});
   }
+  // Bare path may still carry ?filter=&search= (typed in the location bar).
+  if (text.find('?') != std::string_view::npos) {
+    return from_url(std::string("file://") + std::string{text});
+  }
   return from_path(std::filesystem::path{std::string{text}});
 }
 
 std::string Location::as_url() const
 {
+  std::string out;
   if (protocol_ == "tag") {
-    return "tag://" + percent_encode_path(path_.generic_string());
-  }
-  if (protocol_ == "set") {
-    return "set://" + percent_encode_path(path_.generic_string());
-  }
-  // Prefer Python-style URLs so the location bar matches dirtoo-py:
-  //   file:///path/to.zip//archive
-  //   file:///path/to.zip//archive:docs/readme.txt
-  if (protocol_ == "archive") {
-    std::string out = "file://";
+    out = "tag://" + percent_encode_path(path_.generic_string());
+  } else if (protocol_ == "set") {
+    out = "set://" + percent_encode_path(path_.generic_string());
+  } else if (protocol_ == "archive") {
+    // Prefer Python-style URLs so the location bar matches dirtoo-py:
+    //   file:///path/to.zip//archive
+    //   file:///path/to.zip//archive:docs/readme.txt
+    out = "file://";
     out += percent_encode_path(path_.string());
     out += "//archive";
     if (!entry_.empty()) {
       out += ':';
       out += percent_encode_path(entry_.generic_string());
     }
-    return out;
+  } else {
+    out = "file://" + percent_encode_path(path_.string());
   }
-  return "file://" + percent_encode_path(path_.string());
+  return append_query(std::move(out), filter_, search_);
+}
+
+Location Location::with_filter(std::string_view filter) const
+{
+  Location loc = *this;
+  loc.filter_ = std::string{filter};
+  return loc;
+}
+
+Location Location::with_search(std::string_view search) const
+{
+  Location loc = *this;
+  loc.search_ = std::string{search};
+  return loc;
+}
+
+Location Location::with_filter_and_search(std::string_view filter, std::string_view search) const
+{
+  Location loc = *this;
+  loc.filter_ = std::string{filter};
+  loc.search_ = std::string{search};
+  return loc;
 }
 
 std::filesystem::path Location::as_path() const
