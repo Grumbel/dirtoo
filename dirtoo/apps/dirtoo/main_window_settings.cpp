@@ -372,10 +372,10 @@ void MainWindow::show_tag_chip_menu(const QString& tag_name, const QPoint& globa
   const QString display = local.isEmpty() ? tag : local;
 
   QMenu menu(this);
-  QAction* remove_act = menu.addAction(QStringLiteral("Remove tag "%1"").arg(display));
-  QAction* filter_act = menu.addAction(QStringLiteral("Filter for tag "%1"").arg(display));
+  QAction* remove_act = menu.addAction(QStringLiteral("Remove tag \"%1\"").arg(display));
+  QAction* filter_act = menu.addAction(QStringLiteral("Filter for tag \"%1\"").arg(display));
   QAction* show_all_act =
-      menu.addAction(QStringLiteral("Show all files with tag "%1"").arg(display));
+      menu.addAction(QStringLiteral("Show all files with tag \"%1\"").arg(display));
   show_all_act->setToolTip(
       QStringLiteral("Open tag:// listing of every known path for this tag"));
 
