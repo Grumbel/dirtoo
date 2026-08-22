@@ -7,6 +7,9 @@
 #include "location_menu_helpers.hpp"
 #include "location_icons.hpp"
 #include <QMenu>
+#include <QAbstractScrollArea>
+#include <QScrollBar>
+#include <algorithm>
 #include <QCursor>
 
 #include "archive_listing.hpp"
@@ -53,7 +56,10 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
   location_chrome_.set_location(location_);
   update_window_title();
 
-  nav_history_.push(location, record_history);
+  if (record_history) {
+    nav_history_.push(location, true, capture_view_scroll());
+    pending_nav_scroll_.reset();
+  }
   update_history_actions();
 
   // Apply ?filter= / ?search= after chrome is synced (search starts after load
@@ -175,15 +181,19 @@ void MainWindow::on_go_home()
 
 void MainWindow::on_go_back()
 {
-  if (const auto loc = nav_history_.go_back()) {
-    open_location(*loc, false);
+  nav_history_.update_current_scroll(capture_view_scroll());
+  if (const auto entry = nav_history_.go_back()) {
+    pending_nav_scroll_ = entry->scroll_y;
+    open_location(entry->location, false);
   }
 }
 
 void MainWindow::on_go_forward()
 {
-  if (const auto loc = nav_history_.go_forward()) {
-    open_location(*loc, false);
+  nav_history_.update_current_scroll(capture_view_scroll());
+  if (const auto entry = nav_history_.go_forward()) {
+    pending_nav_scroll_ = entry->scroll_y;
+    open_location(entry->location, false);
   }
 }
 
@@ -196,12 +206,14 @@ void MainWindow::on_back_history_menu(const QPoint& pos)
   }
   QMenu menu(this);
   for (int i = cur - 1; i >= 0; --i) {
-    const fs::Location& loc = stack[static_cast<std::size_t>(i)];
+    const fs::Location& loc = stack[static_cast<std::size_t>(i)].location;
     auto* act = menu.addAction(icon_for_location(loc), location_menu_label(loc));
     const int idx = i;
     connect(act, &QAction::triggered, this, [this, idx] {
+      nav_history_.update_current_scroll(capture_view_scroll());
       if (const auto jumped = nav_history_.go_to_index(idx)) {
-        open_location(*jumped, false);
+        pending_nav_scroll_ = jumped->scroll_y;
+        open_location(jumped->location, false);
       }
     });
   }
@@ -221,12 +233,14 @@ void MainWindow::on_forward_history_menu(const QPoint& pos)
   }
   QMenu menu(this);
   for (int i = cur + 1; i < static_cast<int>(stack.size()); ++i) {
-    const fs::Location& loc = stack[static_cast<std::size_t>(i)];
+    const fs::Location& loc = stack[static_cast<std::size_t>(i)].location;
     auto* act = menu.addAction(icon_for_location(loc), location_menu_label(loc));
     const int idx = i;
     connect(act, &QAction::triggered, this, [this, idx] {
+      nav_history_.update_current_scroll(capture_view_scroll());
       if (const auto jumped = nav_history_.go_to_index(idx)) {
-        open_location(*jumped, false);
+        pending_nav_scroll_ = jumped->scroll_y;
+        open_location(jumped->location, false);
       }
     });
   }
@@ -414,5 +428,55 @@ void MainWindow::apply_watcher_upserts(std::vector<fs::FileInfo> infos,
   schedule_directory_thumbnails_low_priority();
 }
 
+
+
+int MainWindow::capture_view_scroll() const
+{
+  QWidget* w = nullptr;
+  if (view_stack_ != nullptr) {
+    w = view_stack_->currentWidget();
+  }
+  if (w == nullptr) {
+    return 0;
+  }
+  // QAbstractItemView / QGraphicsView both expose verticalScrollBar().
+  if (auto* scroll_area = qobject_cast<QAbstractScrollArea*>(w)) {
+    if (QScrollBar* sb = scroll_area->verticalScrollBar()) {
+      return sb->value();
+    }
+  }
+  return 0;
+}
+
+void MainWindow::restore_view_scroll(int scroll_y)
+{
+  QWidget* w = nullptr;
+  if (view_stack_ != nullptr) {
+    w = view_stack_->currentWidget();
+  }
+  if (w == nullptr) {
+    return;
+  }
+  if (auto* scroll_area = qobject_cast<QAbstractScrollArea*>(w)) {
+    if (QScrollBar* sb = scroll_area->verticalScrollBar()) {
+      const int y = std::clamp(scroll_y, sb->minimum(), sb->maximum());
+      sb->setValue(y);
+    }
+  }
+}
+
+void MainWindow::apply_pending_nav_scroll()
+{
+  if (!pending_nav_scroll_.has_value()) {
+    return;
+  }
+  const int y = *pending_nav_scroll_;
+  // Defer until after layout/relayout so scrollbar maximum is correct.
+  // Keep pending until a later pass (sort/filter) can re-apply when the
+  // range grows; cleared when a new history entry is recorded.
+  QTimer::singleShot(0, this, [this, y] {
+    restore_view_scroll(y);
+  });
+}
 
 } // namespace dirtoo::app

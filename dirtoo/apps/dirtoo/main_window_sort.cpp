@@ -48,6 +48,11 @@ void MainWindow::on_sort_finished(quint64 generation, std::vector<fs::FileInfo> 
   refresh_list_preserving_selection();
   set_status(QStringLiteral("%1 items").arg(collection_.visible_items().size()));
   request_thumbnails_for_visible();
+  if (pending_nav_scroll_.has_value()) {
+    apply_pending_nav_scroll();
+    // Sort is the last layout for a normal directory load.
+    pending_nav_scroll_.reset();
+  }
 }
 
 void MainWindow::apply_sort_key(collection::SortKey key, bool toggle_if_same)

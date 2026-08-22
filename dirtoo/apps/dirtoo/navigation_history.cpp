@@ -7,21 +7,32 @@
 
 namespace dirtoo::app {
 
-void NavigationHistory::push(const fs::Location& location, bool record)
+void NavigationHistory::push(const fs::Location& location, bool record, int leaving_scroll_y)
 {
   if (!record) {
     return;
   }
+  if (index_ >= 0 && index_ < static_cast<int>(stack_.size())) {
+    stack_[static_cast<std::size_t>(index_)].scroll_y = leaving_scroll_y;
+  }
   if (index_ >= 0 && index_ + 1 < static_cast<int>(stack_.size())) {
     stack_.erase(stack_.begin() + index_ + 1, stack_.end());
   }
-  if (stack_.empty() || stack_.back().as_url() != location.as_url()) {
-    stack_.push_back(location);
+  if (stack_.empty() || stack_.back().location.as_url() != location.as_url()) {
+    stack_.push_back(NavigationEntry{location, 0});
     index_ = static_cast<int>(stack_.size()) - 1;
   } else {
     index_ = static_cast<int>(stack_.size()) - 1;
+    // Re-visiting the same URL as the tip: keep existing scroll snapshot.
   }
   remember_unique(location);
+}
+
+void NavigationHistory::update_current_scroll(int scroll_y)
+{
+  if (index_ >= 0 && index_ < static_cast<int>(stack_.size())) {
+    stack_[static_cast<std::size_t>(index_)].scroll_y = scroll_y;
+  }
 }
 
 bool NavigationHistory::can_go_back() const noexcept
@@ -34,7 +45,7 @@ bool NavigationHistory::can_go_forward() const noexcept
   return index_ >= 0 && index_ + 1 < static_cast<int>(stack_.size());
 }
 
-std::optional<fs::Location> NavigationHistory::go_back()
+std::optional<NavigationEntry> NavigationHistory::go_back()
 {
   if (!can_go_back()) {
     return std::nullopt;
@@ -43,7 +54,7 @@ std::optional<fs::Location> NavigationHistory::go_back()
   return stack_[static_cast<std::size_t>(index_)];
 }
 
-std::optional<fs::Location> NavigationHistory::go_forward()
+std::optional<NavigationEntry> NavigationHistory::go_forward()
 {
   if (!can_go_forward()) {
     return std::nullopt;
@@ -52,7 +63,7 @@ std::optional<fs::Location> NavigationHistory::go_forward()
   return stack_[static_cast<std::size_t>(index_)];
 }
 
-std::optional<fs::Location> NavigationHistory::go_to_index(int index)
+std::optional<NavigationEntry> NavigationHistory::go_to_index(int index)
 {
   if (index < 0 || index >= static_cast<int>(stack_.size())) {
     return std::nullopt;
@@ -78,14 +89,13 @@ void NavigationHistory::clear()
 
 void NavigationHistory::remember_unique(const fs::Location& location)
 {
+  const auto url = location.as_url();
   unique_.erase(std::remove_if(unique_.begin(), unique_.end(),
-                               [&](const fs::Location& loc) {
-                                 return loc.as_url() == location.as_url();
-                               }),
+                               [&](const fs::Location& l) { return l.as_url() == url; }),
                 unique_.end());
   unique_.push_back(location);
   if (unique_.size() > kUniqueCap) {
-    unique_.erase(unique_.begin());
+    unique_.erase(unique_.begin(), unique_.end() - static_cast<std::ptrdiff_t>(kUniqueCap));
   }
 }
 

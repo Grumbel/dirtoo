@@ -479,6 +479,7 @@ void MainWindow::load_tag_location_listing()
   collection_.set_items(std::move(items));
   filter_search_.set_filter_text({});
   refresh_list();
+  apply_pending_nav_scroll();
   request_thumbnails_for_visible();
 
   ActivityMonitor::instance().clear_task(QStringLiteral("tag-view"));
@@ -719,6 +720,7 @@ void MainWindow::load_set_location_listing()
   collection_.set_items(std::move(items));
   filter_search_.set_filter_text({});
   refresh_list();
+  apply_pending_nav_scroll();
   request_thumbnails_for_visible();
 
   ActivityMonitor::instance().clear_task(QStringLiteral("set-view"));

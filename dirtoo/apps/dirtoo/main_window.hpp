@@ -15,6 +15,8 @@
 #include "bookmarks.hpp"
 #include "file_list_model.hpp"
 #include "navigation_history.hpp"
+
+#include <optional>
 #include "search_controller.hpp"
 #include "transfer_controller.hpp"
 #include "devices_controller.hpp"
@@ -239,6 +241,10 @@ private:
   void restore_selection_by_paths(const QStringList& paths, const QString& priority_path);
   void ensure_row_visible(int row);
   void update_history_actions();
+  [[nodiscard]] int capture_view_scroll() const;
+  void restore_view_scroll(int scroll_y);
+  void apply_pending_nav_scroll();
+
   void update_edit_actions();
   void update_status_selection();
   void update_filter_chrome(bool filtered);
@@ -302,6 +308,9 @@ private:
 
   TransferController transfer_controller_;
   NavigationHistory nav_history_;
+  /// Scroll to apply after the next listing finishes (back/forward).
+  std::optional<int> pending_nav_scroll_;
+
 
   /// Tracks current sort for toolbar label / header toggle (mirrors collection SortKey).
   collection::SortKey sort_key_ = collection::SortKey::Name;

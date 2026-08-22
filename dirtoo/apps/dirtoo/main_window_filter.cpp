@@ -225,6 +225,7 @@ void MainWindow::on_filter_finished(quint64 generation, std::vector<dirtoo::fs::
   collection_.sorter().sort(visible);
   collection_.replace_visible(std::move(visible), parse_ok);
   refresh_list();
+  apply_pending_nav_scroll();
   request_thumbnails_for_visible();
   if (!parse_ok && message_area_ != nullptr) {
     message_area_->show_info(QStringLiteral("Filter parse issue — using substring fallback"));
@@ -511,7 +512,8 @@ void MainWindow::record_location_query_history()
   location_ = next;
   location_chrome_.set_location(location_);
   update_window_title();
-  nav_history_.push(location_, true);
+  nav_history_.push(location_, true, capture_view_scroll());
+  pending_nav_scroll_.reset();
   update_history_actions();
 }
 

@@ -75,6 +75,7 @@ void MainWindow::reload_directory(bool soft)
       }
     }
     refresh_list();
+    apply_pending_nav_scroll();
     request_thumbnails_for_visible();
   rebuild_quick_filters();
     return;
@@ -196,6 +197,7 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
   // unsorted→sorted double flicker. Hard navigation still paints ASAP.
   if (!soft) {
     refresh_list();
+    apply_pending_nav_scroll();
   }
   set_status(QStringLiteral("%1 items").arg(
       soft ? dir_session_.known_paths.size() : collection_.visible_items().size()));
