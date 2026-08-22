@@ -11,6 +11,10 @@
 #include <string>
 #include <vector>
 
+#if !defined(_WIN32)
+struct stat;
+#endif
+
 namespace dirtoo::fs {
 
 class FileInfo {
@@ -55,6 +59,9 @@ public:
 
 private:
   void fill_posix_times_from_path(const std::filesystem::path& path);
+#if !defined(_WIN32)
+  void apply_posix_stat(const struct stat& st);
+#endif
 
   Location location_;
   std::filesystem::path path_;
