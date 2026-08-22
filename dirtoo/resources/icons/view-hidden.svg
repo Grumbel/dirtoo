@@ -1,8 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-  <!-- eye -->
-  <path fill="none" stroke="#2e3436" stroke-width="1.8" stroke-linecap="round"
-        d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/>
-  <circle cx="12" cy="12" r="2.8" fill="#2e3436"/>
-  <!-- slash -->
-  <line x1="4" y1="20" x2="20" y2="4" stroke="#2e3436" stroke-width="2" stroke-linecap="round"/>
+  <!-- Show/hide hidden files: eye with slash -->
+  <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z" fill="none" stroke="#5e5c64" stroke-width="1.7"/>
+  <circle cx="12" cy="12" r="3.2" fill="#9a9996"/>
+  <circle cx="12" cy="12" r="1.4" fill="#f6f5f4"/>
+  <line x1="5" y1="19" x2="19" y2="5" stroke="#e01b24" stroke-width="2" stroke-linecap="round"/>
 </svg>

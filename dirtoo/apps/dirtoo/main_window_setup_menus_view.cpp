@@ -196,7 +196,7 @@ void MainWindow::setup_view_menu()
     act->setShortcut(QKeySequence::ZoomOut);
   }
   {
-    auto* act = view_menu->addAction(theme_icon("zoom-fit-best"), QStringLiteral("Crop Thumbnails"));
+    auto* act = view_menu->addAction(theme_icon("crop-thumbnails"), QStringLiteral("Crop Thumbnails"));
     act->setCheckable(true);
     act->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_0));
     connect(act, &QAction::toggled, this, [this](bool on) {
@@ -213,12 +213,12 @@ void MainWindow::setup_view_menu()
     }
   }
   {
-    auto* act = view_menu->addAction(theme_icon("list-add"), QStringLiteral("More Icon Details"), this,
+    auto* act = view_menu->addAction(theme_icon("icon-detail-more", "list-add"), QStringLiteral("More Icon Details"), this,
                                      &MainWindow::on_more_icon_details);
     act->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+=")));
   }
   {
-    auto* act = view_menu->addAction(theme_icon("list-remove"), QStringLiteral("Less Icon Details"), this,
+    auto* act = view_menu->addAction(theme_icon("icon-detail-less", "list-remove"), QStringLiteral("Less Icon Details"), this,
                                      &MainWindow::on_less_icon_details);
     act->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+-")));
   }

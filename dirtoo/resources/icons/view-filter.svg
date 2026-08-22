@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <!-- Filter funnel (distinct from hidden-eye) -->
+  <path d="M4 5 h16 l-5.5 7.5 v5.5 l-5 2.5 v-8 z" fill="#813d9c" stroke="#613583" stroke-width="1" stroke-linejoin="round"/>
+  <path d="M9.5 12.5 h5" stroke="#f6f5f4" stroke-width="1.4" stroke-linecap="round" opacity="0.85"/>
+</svg>

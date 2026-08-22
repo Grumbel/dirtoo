@@ -230,7 +230,7 @@ void MainWindow::setup_toolbar()
   toolbar->addSeparator();
   // View modes: Icons, List (Win95-style), Detail
   icons_act_ = toolbar->addAction(theme_icon("view-grid", "view-list-icons"), QStringLiteral("Icons"));
-  relative_icons_act_ = toolbar->addAction(theme_icon("zoom-fit-best", "view-grid"),
+  relative_icons_act_ = toolbar->addAction(theme_icon("view-relative", "view-grid"),
                                            QStringLiteral("Relative Icons"));
   relative_icons_act_->setToolTip(
       QStringLiteral("Icons view with tile size scaled by file size (log₂ of bytes). "
@@ -259,9 +259,9 @@ void MainWindow::setup_toolbar()
   toolbar->addAction(theme_icon("zoom-in"), QStringLiteral("Zoom +"), this, &MainWindow::on_zoom_in);
   toolbar->addAction(theme_icon("zoom-out"), QStringLiteral("Zoom −"), this, &MainWindow::on_zoom_out);
   toolbar->addSeparator();
-  toolbar->addAction(theme_icon("zoom-fit-best", "list-add"), QStringLiteral("More detail"), this,
+  toolbar->addAction(theme_icon("icon-detail-more", "list-add"), QStringLiteral("More detail"), this,
                    &MainWindow::on_more_icon_details);
-  toolbar->addAction(theme_icon("zoom-original", "list-remove"), QStringLiteral("Less detail"), this,
+  toolbar->addAction(theme_icon("icon-detail-less", "list-remove"), QStringLiteral("Less detail"), this,
                    &MainWindow::on_less_icon_details);
   toolbar->addSeparator();
   {

@@ -21,20 +21,28 @@ namespace dirtoo::app {
 inline QIcon theme_icon(const char* name, const char* fallback = nullptr)
 {
   static const QHash<QString, QString> kBundled{
+      // View modes — each has its own glyph + color.
       {QStringLiteral("view-grid"), QStringLiteral("view-icons.svg")},
       {QStringLiteral("view-list-icons"), QStringLiteral("view-icons.svg")},
       {QStringLiteral("view-list"), QStringLiteral("view-small-icons.svg")},
       {QStringLiteral("view-list-details"), QStringLiteral("view-detail.svg")},
       {QStringLiteral("view-hidden"), QStringLiteral("view-hidden.svg")},
-      {QStringLiteral("view-filter"), QStringLiteral("view-hidden.svg")},
+      {QStringLiteral("view-filter"), QStringLiteral("view-filter.svg")},
       {QStringLiteral("view-sidetree"), QStringLiteral("view-sidebar.svg")},
       {QStringLiteral("view-list-tree"), QStringLiteral("view-sidebar.svg")},
+      // Relative-size icons mode (was incorrectly sharing icon-detail-more).
+      {QStringLiteral("view-relative"), QStringLiteral("view-relative.svg")},
+      {QStringLiteral("zoom-fit-best"), QStringLiteral("view-relative.svg")},
+      // Caption density (more / less detail).
+      {QStringLiteral("icon-detail-more"), QStringLiteral("icon-detail-more.svg")},
+      {QStringLiteral("icon-detail-less"), QStringLiteral("icon-detail-less.svg")},
+      // Distinct list-add / list-remove (no longer share detail glyphs).
+      {QStringLiteral("list-add"), QStringLiteral("list-add.svg")},
+      {QStringLiteral("list-remove"), QStringLiteral("list-remove.svg")},
+      // Zoom + crop.
       {QStringLiteral("zoom-in"), QStringLiteral("zoom-in.svg")},
       {QStringLiteral("zoom-out"), QStringLiteral("zoom-out.svg")},
-      {QStringLiteral("zoom-fit-best"), QStringLiteral("icon-detail-more.svg")},
-      {QStringLiteral("list-add"), QStringLiteral("icon-detail-more.svg")},
       {QStringLiteral("zoom-original"), QStringLiteral("icon-detail-less.svg")},
-      {QStringLiteral("list-remove"), QStringLiteral("icon-detail-less.svg")},
       {QStringLiteral("crop-thumbnails"), QStringLiteral("crop-thumbnails.svg")},
   };
 

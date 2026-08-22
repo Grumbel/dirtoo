@@ -248,13 +248,28 @@ install(FILES
   ${CMAKE_SOURCE_DIR}/resources/icons/crop-thumbnails.svg
   ${CMAKE_SOURCE_DIR}/resources/icons/icon-detail-less.svg
   ${CMAKE_SOURCE_DIR}/resources/icons/icon-detail-more.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/list-add.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/list-remove.svg
   ${CMAKE_SOURCE_DIR}/resources/icons/view-detail.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/view-filter.svg
   ${CMAKE_SOURCE_DIR}/resources/icons/view-hidden.svg
   ${CMAKE_SOURCE_DIR}/resources/icons/view-icons.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/view-relative.svg
   ${CMAKE_SOURCE_DIR}/resources/icons/view-sidebar.svg
   ${CMAKE_SOURCE_DIR}/resources/icons/view-small-icons.svg
   ${CMAKE_SOURCE_DIR}/resources/icons/zoom-in.svg
   ${CMAKE_SOURCE_DIR}/resources/icons/zoom-out.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/badge-image.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/badge-video.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/badge-loading.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/badge-error.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/badge-locked.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/badge-new.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/dnd-copy.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/dnd-move.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/dnd-link.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/dnd-none.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/dnd-ask.svg
   DESTINATION share/dirtoo/icons
 )
 

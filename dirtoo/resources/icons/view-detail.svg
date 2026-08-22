@@ -1,7 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-  <rect x="3" y="4" width="18" height="2.5" rx="1" fill="#2e3436"/>
-  <rect x="3" y="9" width="18" height="2.5" rx="1" fill="#2e3436"/>
-  <rect x="3" y="14" width="18" height="2.5" rx="1" fill="#2e3436"/>
-  <rect x="3" y="19" width="12" height="2.5" rx="1" fill="#2e3436"/>
-  <rect x="15" y="4" width="1.5" height="17.5" fill="#2e3436" opacity="0.35"/>
+  <!-- Detail / table rows -->
+  <rect x="3" y="3" width="18" height="4" rx="1" fill="#9141ac"/>
+  <rect x="3" y="10" width="18" height="4" rx="1" fill="#c061cb"/>
+  <rect x="3" y="17" width="18" height="4" rx="1" fill="#9141ac"/>
+  <rect x="5" y="4" width="3" height="2" rx="0.5" fill="#f6f5f4" opacity="0.9"/>
+  <rect x="5" y="11" width="3" height="2" rx="0.5" fill="#f6f5f4" opacity="0.9"/>
+  <rect x="5" y="18" width="3" height="2" rx="0.5" fill="#f6f5f4" opacity="0.9"/>
 </svg>
