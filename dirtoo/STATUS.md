@@ -55,6 +55,7 @@ GPL-3.0-or-later (SPDX headers on sources).
   Commit count is always `self.revCount` (Nix has no `dirtyRevCount`).
 - GUI: Help → About and `dirtoo --version`.
 - CLI tools: `--version` / `-V`.
+- Local cmake monorepo: `DIRTOO_IN_TREE_LIBS` (default ON when `libs/` exists) builds libraries from source; flake package builds use `find_package` only.
 - Release: drop `-dev`, commit `VERSION`, tag `vX.Y.Z` matching the file with a `v` prefix.
 
 

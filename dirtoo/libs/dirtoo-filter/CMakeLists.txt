@@ -44,8 +44,12 @@ target_include_directories(dirtoo-filter PUBLIC
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 find_package(SQLite3 REQUIRED)
-find_package(dirtoo-hash REQUIRED CONFIG)
-find_package(dirtoo-tags REQUIRED CONFIG)
+if(NOT TARGET dirtoo-hash::dirtoo-hash)
+  find_package(dirtoo-hash REQUIRED CONFIG)
+endif()
+if(NOT TARGET dirtoo-tags::dirtoo-tags)
+  find_package(dirtoo-tags REQUIRED CONFIG)
+endif()
 target_link_libraries(dirtoo-filter PRIVATE SQLite3::SQLite3 dirtoo-hash::dirtoo-hash dirtoo-tags::dirtoo-tags)
 target_compile_features(dirtoo-filter PUBLIC cxx_std_23)
 target_compile_options(dirtoo-filter PRIVATE

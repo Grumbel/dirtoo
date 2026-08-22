@@ -158,41 +158,6 @@ target_compile_definitions(dirtoo-app PRIVATE
 
 find_package(SQLite3 REQUIRED)
 
-
-# In-tree lib headers (sets / Location set://) must win over stale find_package installs.
-# In-tree .cpp units below supply Location::from_set / FileSetStore when the
-# installed packages lag the checkout (headers alone are not enough).
-set(_dirtoo_in_tree_lib_incs "")
-foreach(_inc
-    "${CMAKE_SOURCE_DIR}/libs/dirtoo-tags/include"
-    "${CMAKE_SOURCE_DIR}/libs/dirtoo-fs/include"
-    "${CMAKE_SOURCE_DIR}/libs/dirtoo-filter/include"
-    "${CMAKE_SOURCE_DIR}/libs/dirtoo-hash/include")
-  if(EXISTS "${_inc}")
-    list(APPEND _dirtoo_in_tree_lib_incs "${_inc}")
-  endif()
-endforeach()
-
-if(_dirtoo_in_tree_lib_incs)
-  target_include_directories(dirtoo-app BEFORE PRIVATE ${_dirtoo_in_tree_lib_incs})
-endif()
-# Compile FileSetStore into the app when the package install lacks it (same checkout).
-if(EXISTS "${CMAKE_SOURCE_DIR}/libs/dirtoo-tags/src/file_set_store.cpp")
-  target_sources(dirtoo-app PRIVATE
-    "${CMAKE_SOURCE_DIR}/libs/dirtoo-tags/src/file_set_store.cpp")
-endif()
-# dirtoo-fs sources when installed package lags the checkout.
-# Headers alone are not enough: FileInfo/Location layout must match the .cpp that
-# implements from_directory_entry — otherwise returning FileInfo by value smashes
-# the stack canary (Debug + nix develop vs nix run). Compile both translation
-# units into the app; the linker will prefer these over the static archive.
-foreach(_fs_src location.cpp file_info.cpp)
-  if(EXISTS "${CMAKE_SOURCE_DIR}/libs/dirtoo-fs/src/${_fs_src}")
-    target_sources(dirtoo-app PRIVATE
-      "${CMAKE_SOURCE_DIR}/libs/dirtoo-fs/src/${_fs_src}")
-  endif()
-endforeach()
-
 target_link_libraries(dirtoo-app
   PRIVATE
     dirtoo_warnings

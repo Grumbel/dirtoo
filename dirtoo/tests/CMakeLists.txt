@@ -35,32 +35,6 @@ target_include_directories(dirtoo-tests PRIVATE
   ${CMAKE_SOURCE_DIR}/apps/dirtoo
 )
 
-# Prefer in-tree lib headers over stale find_package installs (BEFORE = first on path).
-set(_dirtoo_in_tree_lib_incs "")
-foreach(_inc
-    "${CMAKE_SOURCE_DIR}/libs/dirtoo-tags/include"
-    "${CMAKE_SOURCE_DIR}/libs/dirtoo-fs/include"
-    "${CMAKE_SOURCE_DIR}/libs/dirtoo-filter/include"
-    "${CMAKE_SOURCE_DIR}/libs/dirtoo-hash/include")
-  if(EXISTS "${_inc}")
-    list(APPEND _dirtoo_in_tree_lib_incs "${_inc}")
-  endif()
-endforeach()
-if(_dirtoo_in_tree_lib_incs)
-  target_include_directories(dirtoo-tests BEFORE PRIVATE ${_dirtoo_in_tree_lib_incs})
-endif()
-if(EXISTS "${CMAKE_SOURCE_DIR}/libs/dirtoo-tags/src/file_set_store.cpp")
-  target_sources(dirtoo-tests PRIVATE
-    "${CMAKE_SOURCE_DIR}/libs/dirtoo-tags/src/file_set_store.cpp")
-endif()
-# Location::from_set / set_query — same stale-package problem as FileSetStore.
-# Match app: in-tree file_info.cpp + location.cpp so FileInfo ABI matches headers.
-foreach(_fs_src location.cpp file_info.cpp)
-  if(EXISTS "${CMAKE_SOURCE_DIR}/libs/dirtoo-fs/src/${_fs_src}")
-    target_sources(dirtoo-tests PRIVATE
-      "${CMAKE_SOURCE_DIR}/libs/dirtoo-fs/src/${_fs_src}")
-  endif()
-endforeach()
 
 
 target_link_libraries(dirtoo-tests

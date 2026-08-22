@@ -37,22 +37,45 @@ option(DIRTOO_BUILD_TESTS "Build unit tests" ON)
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets DBus Concurrent Svg)
 qt_standard_project_setup()
 
-find_package(dirops REQUIRED CONFIG)
-find_package(dirtoo-fs REQUIRED CONFIG)
-find_package(dirtoo-filter REQUIRED CONFIG)
-find_package(dirtoo-collection REQUIRED CONFIG)
-find_package(dirtoo-watcher REQUIRED CONFIG)
-find_package(dirtoo-thumbnail REQUIRED CONFIG)
-find_package(dirtoo-archive REQUIRED CONFIG)
-find_package(dirtoo-hash REQUIRED CONFIG)
-find_package(dirtoo-tags REQUIRED CONFIG)
+# ---------------------------------------------------------------------------
+# Libraries: either build from this checkout (monorepo / nix develop) or
+# consume prebuilt packages (flake package src has no libs/).
+# Mixing in-tree headers with a stale find_package archive causes ABI breaks
+# (e.g. FileInfo stack-canary crashes). One or the other — never both.
+# ---------------------------------------------------------------------------
+set(_dirtoo_default_in_tree OFF)
+if(EXISTS "${CMAKE_SOURCE_DIR}/libs/dirtoo-fs/CMakeLists.txt")
+  set(_dirtoo_default_in_tree ON)
+endif()
+option(DIRTOO_IN_TREE_LIBS
+  "Build libs/ from this source tree instead of find_package"
+  ${_dirtoo_default_in_tree})
 
-# Sanity: FileSetStore / set:// need matching lib packages (or in-tree libs/).
-if(NOT EXISTS "${CMAKE_SOURCE_DIR}/libs/dirtoo-tags/include/dirtoo/sets/file_set_store.hpp")
-  # Rely on installed dirtoo-tags; cannot check easily here.
-  message(STATUS "dirtoo: in-tree FileSetStore header not found — using find_package(dirtoo-tags)")
+if(DIRTOO_IN_TREE_LIBS)
+  message(STATUS "dirtoo: DIRTOO_IN_TREE_LIBS=ON — building libraries from libs/")
+  # Dependency order (targets must exist before dependents link them).
+  # Disable dirops CLI tools here; top-level DIRTOO_BUILD_TOOLS owns tools/.
+  set(DIROPS_BUILD_TOOLS OFF CACHE BOOL "Build dt-* CLI tools" FORCE)
+  add_subdirectory(libs/dirtoo-fs)
+  add_subdirectory(libs/dirops)
+  add_subdirectory(libs/dirtoo-hash)
+  add_subdirectory(libs/dirtoo-tags)
+  add_subdirectory(libs/dirtoo-filter)
+  add_subdirectory(libs/dirtoo-collection)
+  add_subdirectory(libs/dirtoo-watcher)
+  add_subdirectory(libs/dirtoo-thumbnail)
+  add_subdirectory(libs/dirtoo-archive)
 else()
-  message(STATUS "dirtoo: in-tree FileSetStore headers available under libs/dirtoo-tags/include")
+  message(STATUS "dirtoo: DIRTOO_IN_TREE_LIBS=OFF — find_package for libraries")
+  find_package(dirops REQUIRED CONFIG)
+  find_package(dirtoo-fs REQUIRED CONFIG)
+  find_package(dirtoo-filter REQUIRED CONFIG)
+  find_package(dirtoo-collection REQUIRED CONFIG)
+  find_package(dirtoo-watcher REQUIRED CONFIG)
+  find_package(dirtoo-thumbnail REQUIRED CONFIG)
+  find_package(dirtoo-archive REQUIRED CONFIG)
+  find_package(dirtoo-hash REQUIRED CONFIG)
+  find_package(dirtoo-tags REQUIRED CONFIG)
 endif()
 
 add_compile_definitions(DIRTOO_VERSION="${PROJECT_VERSION_FULL}")

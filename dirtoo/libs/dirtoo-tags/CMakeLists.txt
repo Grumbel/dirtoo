@@ -23,7 +23,9 @@ include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
 find_package(SQLite3 REQUIRED)
-find_package(dirtoo-hash REQUIRED CONFIG)
+if(NOT TARGET dirtoo-hash::dirtoo-hash)
+  find_package(dirtoo-hash REQUIRED CONFIG)
+endif()
 
 add_library(dirtoo-tags
   include/dirtoo/tags/tag_def.hpp

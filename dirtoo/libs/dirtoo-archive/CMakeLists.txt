@@ -23,7 +23,9 @@ include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
 find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(dirtoo-fs REQUIRED CONFIG)
+if(NOT TARGET dirtoo-fs::dirtoo-fs)
+  find_package(dirtoo-fs REQUIRED CONFIG)
+endif()
 find_package(LibArchive REQUIRED)
 qt_standard_project_setup()
 
