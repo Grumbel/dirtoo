@@ -48,9 +48,11 @@ GPL-3.0-or-later (SPDX headers on sources).
 - CMake reads `VERSION` → `PROJECT_VERSION_FULL` and defines `DIRTOO_VERSION`.
 - Packaging may pass `-DPROJECT_VERSION_FULL=...`. The flake builds:
 
-      `{VERSION}.{revCount}+g{shortRev}`
+      `{VERSION}.{revCount}+g{shortRev-or-dirtyShortRev}`
 
-  e.g. `0.2.0-dev.1509+g2fdf60f` (`self.revCount` + `self.shortRev`).
+  e.g. clean `0.2.0-dev.1509+g2fdf60f`, dirty `0.2.0-dev.1509+g2fdf60f-dirty`.
+  Uses `self.dirtyShortRev` when the tree is dirty, else `self.shortRev`.
+  Commit count is always `self.revCount` (Nix has no `dirtyRevCount`).
 - GUI: Help → About and `dirtoo --version`.
 - CLI tools: `--version` / `-V`.
 - Release: drop `-dev`, commit `VERSION`, tag `vX.Y.Z` matching the file with a `v` prefix.

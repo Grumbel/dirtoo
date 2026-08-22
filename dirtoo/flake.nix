@@ -14,7 +14,13 @@
         pkgs = nixpkgs.legacyPackages.${system};
         lib = pkgs.lib;
         versionBase = lib.strings.removeSuffix "\n" (builtins.readFile ./VERSION);
-        gitRev = self.shortRev or self.dirtyShortRev or "dirty";
+        # Flake source attrs (Nix):
+        #   shortRev       — clean tree only
+        #   dirtyShortRev  — dirty tree (short hash, often with -dirty suffix)
+        #   revCount       — commit count to HEAD (no separate dirtyRevCount)
+        # Prefer dirtyShortRev first so uncommitted work never falls through to
+        # the literal "dirty" token (which became the useless +gdirty label).
+        gitRev = self.dirtyShortRev or self.shortRev or "unknown";
         # SemVer-ish: 0.2.0-dev.1509+g2fdf60f  (VERSION + .revCount + +g shortRev)
         revCount = toString (self.revCount or 0);
         version = "${versionBase}.${revCount}+g${gitRev}";
