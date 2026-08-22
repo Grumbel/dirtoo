@@ -79,6 +79,12 @@ public:
   ~MainWindow() override;
 
   void open_location(const fs::Location& location, bool record_history = true);
+  /// Push history when filter/search change (same directory, new ?query).
+  void record_location_query_history();
+  /// Apply ?filter= / ?search= from a location into the chrome + workers.
+  void apply_location_queries(const fs::Location& loc);
+  /// Group-by-directory header clicked → navigate to that path.
+  void on_group_header_activated(const QString& dir_path);
 
   /// Open an independent MainWindow (Qt::WA_DeleteOnClose).
   static MainWindow* open_new_window(const fs::Location& location);

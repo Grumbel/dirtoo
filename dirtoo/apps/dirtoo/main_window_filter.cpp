@@ -154,11 +154,13 @@ void MainWindow::apply_filter_from_edit()
     if (set_membership::pure_set_query(expr).has_value()
         || set_membership::pure_set_or_queries(expr).has_value()) {
       apply_filter_expression_sync(text);
+      record_location_query_history();
       return;
     }
   }
   if (filter_expression_needs_content_io(text)) {
     request_async_filter(/*keep_previous_visible=*/true);
+    record_location_query_history();
     return;
   }
   collection_.set_name_filter(text.toStdString());
@@ -177,6 +179,7 @@ void MainWindow::apply_filter_from_edit()
   } else {
     set_status(QStringLiteral("%1 items").arg(collection_.visible_items().size()));
   }
+  record_location_query_history();
 }
 
 void MainWindow::request_async_filter(bool keep_previous_visible)
@@ -300,6 +303,7 @@ void MainWindow::on_search_submitted()
     message_area_->show_info(QStringLiteral("Recursive search: %1").arg(expr));
   }
   search_controller_.start(root, expr, show_hidden, /*max_depth=*/-1);
+  record_location_query_history();
 }
 
 void MainWindow::on_unfold_hierarchy()
@@ -487,5 +491,83 @@ void MainWindow::on_clear_filter()
   }
 }
 
+
+
+void MainWindow::record_location_query_history()
+{
+  if (location_.empty()) {
+    return;
+  }
+  const std::string filter = filter_search_.filter_text().toStdString();
+  // Only persist search in the URL while a recursive search session is active
+  // (or the location already carried one that we are restoring).
+  const std::string search =
+      search_session_.active ? filter_search_.search_text().trimmed().toStdString()
+                             : std::string{};
+  const auto next = location_.with_filter_and_search(filter, search);
+  if (next == location_) {
+    return;
+  }
+  location_ = next;
+  location_chrome_.set_location(location_);
+  update_window_title();
+  nav_history_.push(location_, true);
+  update_history_actions();
+}
+
+void MainWindow::apply_location_queries(const fs::Location& loc)
+{
+  const QString filter = QString::fromStdString(loc.filter_query());
+  const QString search = QString::fromStdString(loc.search_query());
+
+  if (!filter.isEmpty()) {
+    if (filter_search_.filter_text() != filter) {
+      filter_search_.set_filter_text(filter);
+    }
+    filter_search_.set_filter_visible(true);
+    // Apply without recording history again (open_location already pushed).
+    const QString text = filter;
+    if (set_membership::pure_set_query(text.toStdString()).has_value()
+        || set_membership::pure_set_or_queries(text.toStdString()).has_value()
+        || filter_expression_needs_content_io(text)) {
+      apply_filter_expression_sync(text);
+    } else {
+      collection_.set_name_filter(text.toStdString());
+      refresh_list();
+    }
+    update_filter_chrome(true);
+  }
+
+  if (!search.isEmpty()) {
+    filter_search_.set_search_visible(true);
+    filter_search_.set_search_text(search);
+    // Defer start so directory load / tag load can finish first.
+    QTimer::singleShot(0, this, [this, search] {
+      if (filter_search_.search_text().trimmed() != search) {
+        return;
+      }
+      on_search_submitted();
+    });
+  }
+}
+
+void MainWindow::on_group_header_activated(const QString& dir_path)
+{
+  const QString path = dir_path.trimmed();
+  if (path.isEmpty() || path == QLatin1String("/") ) {
+    if (path == QLatin1String("/")) {
+      open_location(fs::Location::from_path("/"), true);
+    }
+    return;
+  }
+  // Only navigate for real directory paths (Group by Directory labels).
+  const std::filesystem::path p{path.toStdString()};
+  std::error_code ec;
+  if (!std::filesystem::is_directory(p, ec)) {
+    set_status(QStringLiteral("Not a directory: %1").arg(path));
+    return;
+  }
+  open_location(fs::Location::from_path(p), true);
+}
 
 } // namespace dirtoo::app

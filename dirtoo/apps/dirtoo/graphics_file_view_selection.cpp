@@ -28,6 +28,8 @@
 
 #include <algorithm>
 #include "tag_paint.hpp"
+#include "group_header_paint.hpp"
+#include "file_list_model.hpp"
 
 namespace dirtoo::app {
 
@@ -103,6 +105,38 @@ QString GraphicsFileView::tag_chip_at_view_pos(const QPoint& view_pos) const
   const QPointF scene_pt = mapToScene(view_pos);
   const QPoint local = gfi->mapFromScene(scene_pt).toPoint();
   return tag_chip_at(thumb, fi->path(), local);
+}
+
+
+QString GraphicsFileView::group_header_at_view_pos(const QPoint& view_pos) const
+{
+  if (model_ == nullptr || slot_pos_.empty()) {
+    return {};
+  }
+  const int band_h = group_header_height(QFontMetrics(font()));
+  if (band_h <= 0) {
+    return {};
+  }
+  const QPointF scene_pt = mapToScene(view_pos);
+  const QPointF top_left = mapToScene(0, 0);
+  const qreal left = top_left.x();
+  const int vp_w = viewport() != nullptr ? viewport()->width() : 0;
+  for (int i = 0; i < static_cast<int>(slot_pos_.size()); ++i) {
+    const QModelIndex idx = model_->index(i, 0);
+    if (!idx.data(IsGroupStartRole).toBool()) {
+      continue;
+    }
+    const QString label = idx.data(GroupLabelRole).toString();
+    if (label.isEmpty()) {
+      continue;
+    }
+    const qreal item_y = slot_pos_[static_cast<std::size_t>(i)].y();
+    const QRectF header_scene(left, item_y - band_h, vp_w, band_h);
+    if (header_scene.contains(scene_pt)) {
+      return label;
+    }
+  }
+  return {};
 }
 
 void GraphicsFileView::notify_tag_chip_menu_requested(const QString& tag_name,

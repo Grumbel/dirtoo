@@ -105,6 +105,15 @@ void GraphicsFileView::mousePressEvent(QMouseEvent* event)
     return;
   }
   if (event->button() == Qt::LeftButton) {
+    // Group-by-directory headers navigate to that folder.
+    {
+      const QString header = group_header_at_view_pos(event->pos());
+      if (!header.isEmpty()) {
+        emit group_header_clicked(header);
+        event->accept();
+        return;
+      }
+    }
     // Tag chip click filters by tag; do not start selection/drag.
     {
       const QString tag = tag_chip_at_view_pos(event->pos());

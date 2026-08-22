@@ -33,6 +33,7 @@ signals:
   /// Right-click on a tag chip (global_pos for popup; index is the file tile).
   void tag_chip_menu_requested(const QString& tag_name, const QPoint& global_pos,
                                const QModelIndex& index);
+  void group_header_clicked(const QString& label);
 
 private:
   [[nodiscard]] QRect thumb_rect_for(const QStyleOptionViewItem& option,

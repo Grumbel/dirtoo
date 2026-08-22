@@ -548,6 +548,19 @@ bool FileItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model,
       && model_ != nullptr && index.isValid()) {
     const auto* me = static_cast<QMouseEvent*>(event);
     if (me->button() == Qt::LeftButton) {
+      // Group section header above the first item of a group.
+      if (index.data(IsGroupStartRole).toBool()) {
+        const QString label = index.data(GroupLabelRole).toString();
+        if (!label.isEmpty()) {
+          const int header_h = group_header_height(option.fontMetrics);
+          QRect header_rect = option.rect;
+          header_rect.setHeight(header_h);
+          if (header_rect.contains(me->pos())) {
+            emit group_header_clicked(label);
+            return true;
+          }
+        }
+      }
       const QRect thumb = thumb_rect_for(option, index);
       if (!thumb.isEmpty()) {
         if (const auto* fi = model_->file_at(index.row());

@@ -149,6 +149,7 @@ void MainWindow::setup_central_ui()
       filter_search_.set_filter_visible(true);
     });
     connect(del, &FileItemDelegate::tag_chip_menu_requested, this, &MainWindow::show_tag_chip_menu);
+    connect(del, &FileItemDelegate::group_header_clicked, this, &MainWindow::on_group_header_activated);
   }
   connect(tree_view_, &QTreeView::activated, this, &MainWindow::on_item_activated);
   tree_view_->viewport()->installEventFilter(this);
@@ -178,6 +179,7 @@ void MainWindow::setup_central_ui()
       filter_search_.set_filter_visible(true);
     });
     connect(del, &FileItemDelegate::tag_chip_menu_requested, this, &MainWindow::show_tag_chip_menu);
+    connect(del, &FileItemDelegate::group_header_clicked, this, &MainWindow::on_group_header_activated);
   }
   icon_view_->setWordWrap(true);
   icon_view_->setSelectionMode(QAbstractItemView::ExtendedSelection);
@@ -218,6 +220,8 @@ void MainWindow::setup_central_ui()
   });
   connect(graphics_view_, &GraphicsFileView::tag_chip_menu_requested, this,
           &MainWindow::show_tag_chip_menu);
+  connect(graphics_view_, &GraphicsFileView::group_header_clicked, this,
+          &MainWindow::on_group_header_activated);
   connect(graphics_view_, &GraphicsFileView::context_menu_requested, this,
         [this](const QPoint& global_pos, const QModelIndex&) {
           on_context_menu(graphics_view_->mapFromGlobal(global_pos));

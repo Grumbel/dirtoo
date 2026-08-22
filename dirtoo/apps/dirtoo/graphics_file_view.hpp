@@ -123,12 +123,15 @@ public:
                                      const QModelIndex& index);
   /// Hit-test tag chip under view coordinates; empty if none.
   [[nodiscard]] QString tag_chip_at_view_pos(const QPoint& view_pos) const;
+  /// Group section header under view coordinates (label text), or empty.
+  [[nodiscard]] QString group_header_at_view_pos(const QPoint& view_pos) const;
 
 signals:
   void activated(const QModelIndex& index);
   void middle_clicked(const QModelIndex& index);
   void context_menu_requested(const QPoint& global_pos, const QModelIndex& index);
   void tag_chip_clicked(const QString& tag_name);
+  void group_header_clicked(const QString& label);
   void tag_chip_menu_requested(const QString& tag_name, const QPoint& global_pos,
                               const QModelIndex& index);
   void selection_changed();
