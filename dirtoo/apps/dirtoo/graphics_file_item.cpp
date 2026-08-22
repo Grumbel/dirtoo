@@ -444,6 +444,30 @@ void GraphicsFileItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 void GraphicsFileItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 {
   if (view_ != nullptr) {
+    // Prefer tag-chip menu when the cursor is over a chip.
+    if (model_ != nullptr && row_ >= 0) {
+      const fs::FileInfo* fi = model_->file_at(row_);
+      if (fi != nullptr && !fi->is_directory()) {
+        constexpr int kLineH = 16;
+        constexpr int kCaptionPad = 4;
+        constexpr int kMargin = 1;
+        const int text_rows = model_->icon_text_rows();
+        const int caption_h = text_rows > 0 ? (kCaptionPad + text_rows * kLineH) : 0;
+        const int band_h = std::max(16, tile_size_.height() - caption_h);
+        const int band_w = tile_size_.width();
+        int icon_side = std::min(band_w - 2 * kMargin, band_h - 2 * kMargin);
+        icon_side = std::max(16, icon_side);
+        QRect thumb(0, 0, icon_side, icon_side);
+        thumb.moveCenter(QPoint(band_w / 2, band_h / 2));
+        const QPoint local = event->pos().toPoint();
+        const QString tag = tag_chip_at(thumb, fi->path(), local);
+        if (!tag.isEmpty()) {
+          view_->notify_tag_chip_menu_requested(tag, event->screenPos(), model_index());
+          event->accept();
+          return;
+        }
+      }
+    }
     if (!isSelected()) {
       view_->select_row(row_, true);
     }

@@ -28,6 +28,9 @@ public:
   /// Filter selection, prompt for tags, enqueue job (non-modal).
   void tag_files(std::vector<dirtoo::fs::FileInfo> selection);
 
+  /// Apply known tags without a dialog (e.g. right-click "Remove tag" on a chip).
+  void apply_tags(std::vector<dirtoo::fs::FileInfo> files, QStringList tags, TagJob::Mode mode);
+
 signals:
   void status_message(const QString& text, int timeout_ms = 5000);
   void tags_applied(int tagged);

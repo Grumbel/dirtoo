@@ -23,6 +23,7 @@
 #include <QFileInfo>
 #include <QApplication>
 #include <QMessageBox>
+#include <QMenu>
 #include <QStatusBar>
 #include <QLineEdit>
 #include "size_format.hpp"
@@ -356,6 +357,56 @@ void MainWindow::open_tag_collection(const QString& tag_name)
     return;
   }
   open_location(fs::Location::from_tag(key.toStdString()), true);
+}
+
+void MainWindow::show_tag_chip_menu(const QString& tag_name, const QPoint& global_pos,
+                                    const QModelIndex& index)
+{
+  const QString tag = tag_name.trimmed();
+  if (tag.isEmpty()) {
+    return;
+  }
+  // Prefer local name for display; keep full name for filter/tag:// and remove.
+  const QString local = QString::fromStdString(
+      dirtoo::tags::local_tag_name(tag.toStdString()));
+  const QString display = local.isEmpty() ? tag : local;
+
+  QMenu menu(this);
+  QAction* remove_act = menu.addAction(QStringLiteral("Remove tag "%1"").arg(display));
+  QAction* filter_act = menu.addAction(QStringLiteral("Filter for tag "%1"").arg(display));
+  QAction* show_all_act =
+      menu.addAction(QStringLiteral("Show all files with tag "%1"").arg(display));
+  show_all_act->setToolTip(
+      QStringLiteral("Open tag:// listing of every known path for this tag"));
+
+  QAction* chosen = menu.exec(global_pos);
+  if (chosen == nullptr) {
+    return;
+  }
+  if (chosen == filter_act) {
+    const QString expr = QStringLiteral("tag:%1").arg(tag);
+    if (filter_search_.filter_text() != expr) {
+      filter_search_.set_filter_text(expr);
+      filter_search_.set_filter_visible(true);
+    }
+    return;
+  }
+  if (chosen == show_all_act) {
+    open_tag_collection(tag);
+    return;
+  }
+  if (chosen == remove_act) {
+    std::vector<dirtoo::fs::FileInfo> files;
+    if (index.isValid() && model_ != nullptr) {
+      if (const auto* fi = model_->file_at(index.row()); fi != nullptr) {
+        files.push_back(*fi);
+      }
+    }
+    if (files.empty()) {
+      return;
+    }
+    tag_.apply_tags(std::move(files), QStringList{tag}, TagJob::Mode::Remove);
+  }
 }
 
 void MainWindow::load_tag_location_listing()

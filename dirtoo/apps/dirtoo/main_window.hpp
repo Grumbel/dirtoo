@@ -179,6 +179,9 @@ private slots:
   void stop_search();
   /// List all known paths for a tag (virtual tag:// session, like search results).
   void open_tag_collection(const QString& tag_name);
+  /// Context menu for a tag chip on a file tile (remove / filter / show all).
+  void show_tag_chip_menu(const QString& tag_name, const QPoint& global_pos,
+                         const QModelIndex& index);
   void load_tag_location_listing();
   void load_set_location_listing();
   void create_set_from_selection();

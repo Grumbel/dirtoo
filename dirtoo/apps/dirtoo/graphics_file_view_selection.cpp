@@ -86,6 +86,15 @@ void GraphicsFileView::notify_tag_chip_clicked(const QString& tag_name)
   }
 }
 
+void GraphicsFileView::notify_tag_chip_menu_requested(const QString& tag_name,
+                                                      const QPoint& global_pos,
+                                                      const QModelIndex& index)
+{
+  if (!tag_name.isEmpty()) {
+    emit tag_chip_menu_requested(tag_name, global_pos, index);
+  }
+}
+
 void GraphicsFileView::select_all()
 {
   selected_row_set_.clear();

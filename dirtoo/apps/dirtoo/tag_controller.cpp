@@ -394,6 +394,33 @@ void TagController::tag_files(std::vector<dirtoo::fs::FileInfo> selection)
   enqueue_job(std::move(pending));
 }
 
+void TagController::apply_tags(std::vector<dirtoo::fs::FileInfo> files, QStringList tags,
+                               TagJob::Mode mode)
+{
+  if (files.empty() || tags.isEmpty()) {
+    return;
+  }
+  std::vector<dirtoo::fs::FileInfo> filtered;
+  filtered.reserve(files.size());
+  for (auto& fi : files) {
+    if (!fi.is_regular_file()) {
+      continue;
+    }
+    if (fi.path().empty() && !fi.location().is_archive()) {
+      continue;
+    }
+    filtered.push_back(std::move(fi));
+  }
+  if (filtered.empty()) {
+    return;
+  }
+  Pending pending;
+  pending.files = std::move(filtered);
+  pending.tags = std::move(tags);
+  pending.mode = mode;
+  enqueue_job(std::move(pending));
+}
+
 void TagController::enqueue_job(Pending pending)
 {
   const int n = static_cast<int>(pending.files.size());

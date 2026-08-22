@@ -4,11 +4,13 @@
 #include "main_window_common.hpp"
 
 #include "file_context_menu.hpp"
+#include "tag_paint.hpp"
 #include "clipboard.hpp"
 #include "properties_dialog.hpp"
 #include "open_with.hpp"
 
 #include <QPoint>
+#include <QStyleOptionViewItem>
 
 namespace dirtoo::app {
 
@@ -44,6 +46,33 @@ void MainWindow::on_context_menu(const QPoint& pos)
       view->selectionModel()->select(
           under, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
       view->setCurrentIndex(under);
+    }
+  }
+
+  // Tag chip under cursor → chip menu instead of the file/directory menu.
+  // Graphics path already routes via GraphicsFileItem::contextMenuEvent.
+  if (!graphics && under.isValid() && model_ != nullptr && view != nullptr) {
+    if (const auto* fi = model_->file_at(under.row());
+        fi != nullptr && !fi->is_directory()) {
+      // Rebuild thumb rect the same way as FileItemDelegate::thumb_rect_for.
+      QStyleOptionViewItem opt;
+      opt.initFrom(view);
+      opt.rect = view->visualRect(under);
+      opt.index = under;
+      const int text_rows = model_->icon_style_active() ? model_->icon_text_rows() : 0;
+      const int caption_budget = text_rows > 0 ? (4 + text_rows * 16) : 0;
+      const int margin = 1;
+      const int band_h = std::max(16, opt.rect.height() - caption_budget);
+      int icon_side = std::min(opt.rect.width() - 2 * margin, band_h - 2 * margin);
+      icon_side = std::max(16, icon_side);
+      QRect thumb(0, 0, icon_side, icon_side);
+      thumb.moveCenter(QPoint(opt.rect.center().x(), opt.rect.top() + band_h / 2));
+      const QPoint vp = view->viewport()->mapFrom(view, pos);
+      const QString tag = tag_chip_at(thumb, fi->path(), vp);
+      if (!tag.isEmpty()) {
+        show_tag_chip_menu(tag, view->mapToGlobal(pos), under);
+        return;
+      }
     }
   }
 
