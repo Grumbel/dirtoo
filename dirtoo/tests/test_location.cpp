@@ -202,3 +202,36 @@ TEST_CASE("Location filter/search query params", "[location]")
   REQUIRE(joined.search_query().empty());
   REQUIRE(joined.as_path() == both.as_path() / "subdir");
 }
+
+TEST_CASE("Location path trailing slash normalization", "[location]")
+{
+  const auto a = dirtoo::fs::Location::from_path("/tmp/dirtoo-norm-a");
+  const auto b = dirtoo::fs::Location::from_path("/tmp/dirtoo-norm-a/");
+  const auto c = dirtoo::fs::Location::from_path("/tmp/dirtoo-norm-a/.");
+  REQUIRE(a.as_path() == b.as_path());
+  REQUIRE(a.as_path() == c.as_path());
+  REQUIRE(a.as_url() == b.as_url());
+  REQUIRE(a.as_url() == c.as_url());
+  REQUIRE(a == b);
+  REQUIRE(a == c);
+
+  // Root keeps a single slash form.
+  const auto root = dirtoo::fs::Location::from_path("/");
+  const auto root2 = dirtoo::fs::Location::from_path("///");
+  REQUIRE(root.as_path() == "/");
+  REQUIRE(root2.as_path() == "/");
+
+  const auto human = dirtoo::fs::Location::from_human("/tmp/dirtoo-norm-a/");
+  REQUIRE(human.as_path() == a.as_path());
+  REQUIRE(human.as_url() == a.as_url());
+
+  const auto unchecked = dirtoo::fs::Location::from_path_unchecked("/tmp/dirtoo-norm-a/");
+  REQUIRE(unchecked.as_path() == a.as_path());
+
+  // Archive entry trailing slash collapses.
+  const auto ar = dirtoo::fs::Location::from_archive("/tmp/demo.zip", "docs/");
+  REQUIRE(ar.entry_path() == "docs");
+  const auto ar2 = dirtoo::fs::Location::from_archive("/tmp/demo.zip", "docs");
+  REQUIRE(ar.entry_path() == ar2.entry_path());
+  REQUIRE(ar.as_url() == ar2.as_url());
+}

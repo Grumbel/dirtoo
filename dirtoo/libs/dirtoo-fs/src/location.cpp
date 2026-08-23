@@ -10,20 +10,42 @@
 namespace dirtoo::fs {
 namespace {
 
+/// Collapse `.` / `..` and drop a trailing directory separator so
+/// `/path/foo` and `/path/foo/` are the same Location key (bookmarks, history).
+/// Root `/` keeps its separator. Does not touch the filesystem (no canonical).
 std::filesystem::path normalize_file_path(std::filesystem::path path)
 {
   if (!path.is_absolute()) {
     std::error_code ec;
     path = std::filesystem::absolute(path, ec);
-    if (ec) {
-      // Keep best-effort path; callers still navigate with the string they typed.
-      return path.lexically_normal();
-    }
+    // On failure keep the best-effort path; still normalize lexically below.
   }
   // Do not call weakly_canonical: it follows the filesystem and can block
   // indefinitely on hung NFS/SMB mounts (GUI navigate path). Lexical cleanup
   // is enough for Location keys; listing uses the path as given.
-  return path.lexically_normal();
+  path = path.lexically_normal();
+  // lexically_normal() preserves a trailing slash as an empty filename
+  // (`/path/foo/` → has_filename() == false). Strip that form except at root.
+  if (path != path.root_path() && !path.has_filename()) {
+    path = path.parent_path();
+  }
+  return path;
+}
+
+/// Normalize an archive entry path: lexical clean, no trailing slash, empty for root.
+std::filesystem::path normalize_entry_path(std::filesystem::path entry)
+{
+  entry = entry.lexically_normal();
+  if (entry.empty() || entry == "." || entry == "/") {
+    return {};
+  }
+  if (!entry.has_filename()) {
+    entry = entry.parent_path();
+  }
+  if (entry == "." || entry == "/") {
+    return {};
+  }
+  return entry;
 }
 
 bool is_hex_digit(char c)
@@ -217,13 +239,18 @@ Location Location::from_path(const std::filesystem::path& path)
 
 Location Location::from_path_unchecked(std::filesystem::path path)
 {
+  // Still strip trailing separators so listing-built locations match from_path.
+  path = path.lexically_normal();
+  if (path != path.root_path() && !path.has_filename()) {
+    path = path.parent_path();
+  }
   return Location{"file", std::move(path), {}};
 }
 
 Location Location::from_archive(const std::filesystem::path& archive_file,
                                 const std::filesystem::path& entry)
 {
-  return Location{"archive", normalize_file_path(archive_file), entry.lexically_normal()};
+  return Location{"archive", normalize_file_path(archive_file), normalize_entry_path(entry)};
 }
 
 Location Location::from_tag(std::string_view tag_name)
