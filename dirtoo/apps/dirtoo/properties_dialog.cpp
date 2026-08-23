@@ -10,19 +10,21 @@
 #include <QFileInfo>
 #include <QPixmap>
 #include <QFileIconProvider>
+#include <QIcon>
 #include "dirtoo/thumbnail/thumbnailer.hpp"
 
 #include <QCheckBox>
+#include <QCursor>
 #include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QHBoxLayout>
 #include <QDateTime>
 #include <QGroupBox>
 #include <QLabel>
-#include <QLocale>
 #include <QMessageBox>
 #include <QMimeDatabase>
 #include <QPushButton>
+#include <QSizePolicy>
 #include <QVBoxLayout>
 
 #include <grp.h>
@@ -34,15 +36,44 @@
 namespace dirtoo::app {
 namespace {
 
+/// Compact local timestamp with numeric UTC offset (avoids long zone names).
 QString format_epoch(std::time_t t)
 {
   if (t <= 0) {
     return QStringLiteral("—");
   }
   const QDateTime dt = QDateTime::fromSecsSinceEpoch(static_cast<qint64>(t));
-  return QLocale::system().toString(dt, QLocale::LongFormat);
+  const int off = dt.offsetFromUtc();
+  const int abs_off = off < 0 ? -off : off;
+  const QChar sign = off < 0 ? QLatin1Char('-') : QLatin1Char('+');
+  return dt.toString(QStringLiteral("yyyy-MM-dd HH:mm:ss"))
+         + QStringLiteral(" UTC") + sign
+         + QStringLiteral("%1").arg(abs_off / 3600, 2, 10, QLatin1Char('0'))
+         + QStringLiteral("%1").arg((abs_off % 3600) / 60, 2, 10, QLatin1Char('0'));
 }
 
+/// Read-only value that still allows select + copy (Ctrl+C / context menu).
+QLabel* make_value_label(const QString& text, QWidget* parent, bool word_wrap = false)
+{
+  auto* lbl = new QLabel(text, parent);
+  lbl->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
+  lbl->setCursor(Qt::IBeamCursor);
+  lbl->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  lbl->setMinimumWidth(200);
+  if (word_wrap) {
+    lbl->setWordWrap(true);
+  }
+  return lbl;
+}
+
+void configure_form(QFormLayout* form)
+{
+  form->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
+  form->setRowWrapPolicy(QFormLayout::DontWrapRows);
+  form->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
+  form->setHorizontalSpacing(12);
+  form->setVerticalSpacing(8);
+}
 
 QPixmap properties_thumbnail(const fs::FileInfo& fi)
 {
@@ -50,7 +81,6 @@ QPixmap properties_thumbnail(const fs::FileInfo& fi)
     return {};
   }
   const auto loc = fi.location();
-  // Prefer freedesktop large cache if already generated.
   const QString cached =
       thumbnail::Thumbnailer::cache_path_for(loc, QStringLiteral("large"));
   if (QFileInfo::exists(cached)) {
@@ -67,7 +97,6 @@ QPixmap properties_thumbnail(const fs::FileInfo& fi)
       return pm.scaled(128, 128, Qt::KeepAspectRatio, Qt::SmoothTransformation);
     }
   }
-  // Fallback: system file icon.
   static QFileIconProvider provider;
   const QIcon icon = provider.icon(QFileInfo(QString::fromStdString(fi.path().string())));
   return icon.pixmap(128, 128);
@@ -144,6 +173,7 @@ PermissionsEditor* add_permissions(QVBoxLayout* outer, mode_t mode, bool editabl
 
   auto* box = new QGroupBox(QStringLiteral("Permissions"), parent);
   auto* grid = new QFormLayout(box);
+  configure_form(grid);
 
   auto add_row = [&](const QString& title, mode_t r, mode_t w, mode_t x, int base) {
     auto* row = new QHBoxLayout();
@@ -156,6 +186,7 @@ PermissionsEditor* add_permissions(QVBoxLayout* outer, mode_t mode, bool editabl
     row->addWidget(br);
     row->addWidget(bw);
     row->addWidget(bx);
+    row->addStretch(1);
     grid->addRow(title, row);
   };
 
@@ -173,16 +204,19 @@ PermissionsEditor* add_permissions(QVBoxLayout* outer, mode_t mode, bool editabl
   special_row->addWidget(su);
   special_row->addWidget(sg);
   special_row->addWidget(st);
+  special_row->addStretch(1);
   grid->addRow(QStringLiteral("Special:"), special_row);
 
-  editor->octal_label =
-      new QLabel(QStringLiteral("%1").arg(mode & 07777, 4, 8, QLatin1Char('0')), parent);
-  grid->addRow(QStringLiteral("Mode:"), editor->octal_label);
+  editor->octal_label = make_value_label(
+      QStringLiteral("%1").arg(editor->original, 4, 8, QLatin1Char('0')), parent);
+  grid->addRow(QStringLiteral("Mode (octal):"), editor->octal_label);
 
   if (editable) {
     for (const auto& b : editor->bits) {
       if (b.box != nullptr) {
-        QObject::connect(b.box, &QCheckBox::toggled, box, [editor](bool) { editor->refresh_octal(); });
+        QObject::connect(b.box, &QCheckBox::toggled, parent, [editor](bool) {
+          editor->refresh_octal();
+        });
       }
     }
   }
@@ -202,9 +236,14 @@ void show_properties_dialog(QWidget* parent, const std::vector<fs::FileInfo>& it
   QDialog dialog(parent);
   dialog.setWindowTitle(items.size() == 1 ? QStringLiteral("Properties")
                                           : QStringLiteral("Properties (%1 items)").arg(items.size()));
-  dialog.setMinimumWidth(460);
+  dialog.setMinimumSize(520, 440);
+  dialog.resize(560, 520);
+  dialog.setSizeGripEnabled(true);
 
   auto* layout = new QVBoxLayout(&dialog);
+  layout->setSpacing(10);
+  layout->setContentsMargins(12, 12, 12, 12);
+
   PermissionsEditor* perm_editor = nullptr;
   std::filesystem::path chmod_path;
   bool can_edit_perms = false;
@@ -213,12 +252,12 @@ void show_properties_dialog(QWidget* parent, const std::vector<fs::FileInfo>& it
     const auto& fi = items.front();
     const auto path = fi.path();
 
-    // Archive / synthetic entries have no real mode to chmod.
     can_edit_perms = !fi.is_synthetic() && !fi.location().is_archive();
     chmod_path = path;
 
     auto* general = new QGroupBox(QStringLiteral("General"), &dialog);
     auto* form = new QFormLayout(general);
+    configure_form(form);
 
     {
       const QPixmap thumb = properties_thumbnail(fi);
@@ -234,42 +273,44 @@ void show_properties_dialog(QWidget* parent, const std::vector<fs::FileInfo>& it
       form->addRow(QStringLiteral("Preview:"), thumb_lbl);
     }
 
-    auto* name_lbl = new QLabel(QString::fromStdString(fi.basename()), &dialog);
-    name_lbl->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    form->addRow(QStringLiteral("Name:"), name_lbl);
-    auto* loc_lbl = new QLabel(QString::fromStdString(path.parent_path().string()), &dialog);
-    loc_lbl->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    loc_lbl->setWordWrap(true);
-    form->addRow(QStringLiteral("Location:"), loc_lbl);
-    form->addRow(QStringLiteral("Type:"), new QLabel(type_of(fi), &dialog));
+    form->addRow(QStringLiteral("Name:"),
+                 make_value_label(QString::fromStdString(fi.basename()), &dialog));
+    form->addRow(QStringLiteral("Location:"),
+                 make_value_label(QString::fromStdString(path.parent_path().string()), &dialog,
+                                  /*word_wrap=*/true));
+    form->addRow(QStringLiteral("Type:"), make_value_label(type_of(fi), &dialog));
 
     QMimeDatabase mime_db;
     const auto mime = mime_db.mimeTypeForFile(QString::fromStdString(path.string()));
-    form->addRow(QStringLiteral("MIME type:"), new QLabel(mime.name(), &dialog));
+    form->addRow(QStringLiteral("MIME type:"), make_value_label(mime.name(), &dialog));
 
     if (fi.is_regular_file() || fi.is_symlink()) {
       form->addRow(QStringLiteral("Size:"),
-                   new QLabel(format_byte_size(fi.size()), &dialog));
+                   make_value_label(format_byte_size(fi.size()), &dialog));
     }
-    auto* full_lbl = new QLabel(QString::fromStdString(path.string()), &dialog);
-    full_lbl->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    full_lbl->setWordWrap(true);
-    form->addRow(QStringLiteral("Full path:"), full_lbl);
+    form->addRow(QStringLiteral("Full path:"),
+                 make_value_label(QString::fromStdString(path.string()), &dialog,
+                                  /*word_wrap=*/true));
     layout->addWidget(general);
 
     struct ::stat st {};
     if (::stat(path.c_str(), &st) == 0) {
       auto* ownership = new QGroupBox(QStringLiteral("Ownership"), &dialog);
       auto* oform = new QFormLayout(ownership);
-      oform->addRow(QStringLiteral("User:"), new QLabel(user_name(st.st_uid), &dialog));
-      oform->addRow(QStringLiteral("Group:"), new QLabel(group_name(st.st_gid), &dialog));
+      configure_form(oform);
+      oform->addRow(QStringLiteral("User:"), make_value_label(user_name(st.st_uid), &dialog));
+      oform->addRow(QStringLiteral("Group:"), make_value_label(group_name(st.st_gid), &dialog));
       layout->addWidget(ownership);
 
       auto* times = new QGroupBox(QStringLiteral("Timestamps"), &dialog);
       auto* tform = new QFormLayout(times);
-      tform->addRow(QStringLiteral("Accessed:"), new QLabel(format_epoch(st.st_atime), &dialog));
-      tform->addRow(QStringLiteral("Modified:"), new QLabel(format_epoch(st.st_mtime), &dialog));
-      tform->addRow(QStringLiteral("Changed:"), new QLabel(format_epoch(st.st_ctime), &dialog));
+      configure_form(tform);
+      tform->addRow(QStringLiteral("Accessed:"),
+                    make_value_label(format_epoch(st.st_atime), &dialog));
+      tform->addRow(QStringLiteral("Modified:"),
+                    make_value_label(format_epoch(st.st_mtime), &dialog));
+      tform->addRow(QStringLiteral("Changed:"),
+                    make_value_label(format_epoch(st.st_ctime), &dialog));
       layout->addWidget(times);
 
       perm_editor = add_permissions(layout, st.st_mode, can_edit_perms, &dialog);
@@ -281,38 +322,40 @@ void show_properties_dialog(QWidget* parent, const std::vector<fs::FileInfo>& it
     if (const auto meta = filter::MediaMetaCache::instance().try_get(path)) {
       auto* media = new QGroupBox(QStringLiteral("Media / document"), &dialog);
       auto* mform = new QFormLayout(media);
+      configure_form(mform);
       bool any = false;
       if (meta->width && meta->height) {
         mform->addRow(QStringLiteral("Dimensions:"),
-                      new QLabel(QStringLiteral("%1 × %2").arg(*meta->width).arg(*meta->height),
-                                 &dialog));
+                      make_value_label(QStringLiteral("%1 × %2")
+                                           .arg(*meta->width)
+                                           .arg(*meta->height),
+                                       &dialog));
         any = true;
       }
       if (meta->duration_ms && *meta->duration_ms > 0) {
-        const auto ms = *meta->duration_ms;
-        const int secs = static_cast<int>(ms / 1000);
+        const int secs = static_cast<int>(*meta->duration_ms / 1000);
         mform->addRow(QStringLiteral("Duration:"),
-                      new QLabel(QStringLiteral("%1:%2:%3")
-                                     .arg(secs / 3600, 2, 10, QLatin1Char('0'))
-                                     .arg((secs % 3600) / 60, 2, 10, QLatin1Char('0'))
-                                     .arg(secs % 60, 2, 10, QLatin1Char('0')),
-                                 &dialog));
+                      make_value_label(QStringLiteral("%1:%2:%3")
+                                           .arg(secs / 3600, 2, 10, QLatin1Char('0'))
+                                           .arg((secs % 3600) / 60, 2, 10, QLatin1Char('0'))
+                                           .arg(secs % 60, 2, 10, QLatin1Char('0')),
+                                       &dialog));
         any = true;
       }
       if (meta->framerate && *meta->framerate > 0.0) {
         mform->addRow(QStringLiteral("Frame rate:"),
-                      new QLabel(QStringLiteral("%1 fps").arg(*meta->framerate, 0, 'g', 3),
-                                 &dialog));
+                      make_value_label(QStringLiteral("%1 fps").arg(*meta->framerate, 0, 'g', 3),
+                                       &dialog));
         any = true;
       }
       if (meta->pages && *meta->pages > 0) {
         mform->addRow(QStringLiteral("Pages:"),
-                      new QLabel(QString::number(*meta->pages), &dialog));
+                      make_value_label(QString::number(*meta->pages), &dialog));
         any = true;
       }
       if (meta->file_count && *meta->file_count > 0) {
         mform->addRow(QStringLiteral("Archive files:"),
-                      new QLabel(QString::number(*meta->file_count), &dialog));
+                      make_value_label(QString::number(*meta->file_count), &dialog));
         any = true;
       }
       if (any) {
@@ -334,17 +377,18 @@ void show_properties_dialog(QWidget* parent, const std::vector<fs::FileInfo>& it
       }
     }
     auto* form = new QFormLayout();
-    form->addRow(QStringLiteral("Items:"), new QLabel(QString::number(items.size()), &dialog));
-    form->addRow(QStringLiteral("Files:"), new QLabel(QString::number(files), &dialog));
-    form->addRow(QStringLiteral("Folders:"), new QLabel(QString::number(dirs), &dialog));
+    configure_form(form);
+    form->addRow(QStringLiteral("Items:"),
+                 make_value_label(QString::number(items.size()), &dialog));
+    form->addRow(QStringLiteral("Files:"), make_value_label(QString::number(files), &dialog));
+    form->addRow(QStringLiteral("Folders:"), make_value_label(QString::number(dirs), &dialog));
     form->addRow(QStringLiteral("Total size:"),
-                 new QLabel(format_byte_size(total_size), &dialog));
+                 make_value_label(format_byte_size(total_size), &dialog));
     layout->addLayout(form);
   }
 
   QDialogButtonBox* buttons = nullptr;
   if (can_edit_perms && perm_editor != nullptr) {
-    // GNOME order: Cancel left, OK right (style hint installs GnomeLayout).
     buttons = new QDialogButtonBox(QDialogButtonBox::Cancel | QDialogButtonBox::Ok, &dialog);
     QObject::connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
     QObject::connect(buttons, &QDialogButtonBox::accepted, &dialog, [&] {
