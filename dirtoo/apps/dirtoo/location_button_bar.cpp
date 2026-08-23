@@ -93,6 +93,43 @@ namespace {
   return a.as_path() == b.as_path();
 }
 
+/// True when \p ancestor is the same place as \p tip, or a path parent of it
+/// (file path / archive entry). Used to keep the filter chip after go-up.
+[[nodiscard]] bool is_path_ancestor_or_same(const fs::Location& ancestor, const fs::Location& tip)
+{
+  if (ancestor.is_tag() || ancestor.is_set() || tip.is_tag() || tip.is_set()) {
+    return false;
+  }
+  if (ancestor.is_archive() != tip.is_archive()) {
+    return false;
+  }
+  if (ancestor.is_archive()) {
+    if (ancestor.as_path() != tip.as_path()) {
+      return false;
+    }
+    const auto a = ancestor.entry_path().lexically_normal().generic_string();
+    const auto t = tip.entry_path().lexically_normal().generic_string();
+    if (a == t) {
+      return true;
+    }
+    if (a.empty()) {
+      return true; // archive root is ancestor of any entry
+    }
+    return t.size() > a.size() && t.compare(0, a.size(), a) == 0
+           && (t[a.size()] == '/');
+  }
+  const auto a = ancestor.as_path().lexically_normal().generic_string();
+  const auto t = tip.as_path().lexically_normal().generic_string();
+  if (a == t) {
+    return true;
+  }
+  if (a == "/" ) {
+    return t.starts_with('/');
+  }
+  return t.size() > a.size() && t.compare(0, a.size(), a) == 0
+         && (t[a.size()] == '/');
+}
+
 [[nodiscard]] QString path_tooltip_for(const fs::Location& loc)
 {
   if (loc.is_archive()) {
@@ -157,9 +194,46 @@ void LocationButtonBar::update_current_highlight()
   }
 }
 
+void LocationButtonBar::update_query_tip(const fs::Location& location)
+{
+  const bool has_query =
+      !location.filter_query().empty() || !location.search_query().empty();
+  if (has_query) {
+    query_tip_ = location;
+    return;
+  }
+  // No query on the incoming location: keep the tip only while browsing its
+  // path ancestors (same as deeper breadcrumb segments after go-up). Leaving
+  // into an unrelated or deeper path drops the tip.
+  if (query_tip_.empty()) {
+    return;
+  }
+  const bool tip_has_query =
+      !query_tip_.filter_query().empty() || !query_tip_.search_query().empty();
+  if (!tip_has_query) {
+    query_tip_ = {};
+    return;
+  }
+  if (is_path_ancestor_or_same(location, query_tip_)) {
+    return; // still on the tip path or above it
+  }
+  query_tip_ = {};
+}
+
+void LocationButtonBar::clear_query_tip()
+{
+  query_tip_ = {};
+  if (query_btn_ != nullptr) {
+    layout_->removeWidget(query_btn_);
+    query_btn_->deleteLater();
+    query_btn_ = nullptr;
+  }
+}
+
 void LocationButtonBar::set_location(const fs::Location& location)
 {
   location_ = location;
+  update_query_tip(location);
 
   if (index_of_path(location) >= 0) {
     update_current_highlight();
@@ -249,9 +323,16 @@ LocationButtonBar::segments_for(const fs::Location& location) const
 
 void LocationButtonBar::sync_query_indicator()
 {
-  const bool has_filter = !location_.filter_query().empty();
-  const bool has_search = !location_.search_query().empty();
+  // Prefer the live location query; otherwise the remembered tip after go-up.
+  const fs::Location& src =
+      (!location_.filter_query().empty() || !location_.search_query().empty())
+          ? location_
+          : query_tip_;
+  const bool has_filter = !src.filter_query().empty();
+  const bool has_search = !src.search_query().empty();
   const bool need = has_filter || has_search;
+  const bool query_is_current =
+      !location_.filter_query().empty() || !location_.search_query().empty();
 
   if (!need) {
     if (query_btn_ != nullptr) {
@@ -270,7 +351,12 @@ void LocationButtonBar::sync_query_indicator()
     query_btn_->setStyleSheet(QStringLiteral("QPushButton { padding: 3px 4px; }"));
     query_btn_->setIconSize(QSize(16, 16));
     connect(query_btn_, &QPushButton::clicked, this, [this] {
-      emit location_activated(location_);
+      // Activate the tip (may be query_tip_ after go-up).
+      const fs::Location go =
+          (!location_.filter_query().empty() || !location_.search_query().empty())
+              ? location_
+              : query_tip_;
+      emit location_activated(go);
       emit query_indicator_activated();
     });
     int stretch_at = layout_->count() - 1;
@@ -280,13 +366,12 @@ void LocationButtonBar::sync_query_indicator()
     layout_->insertWidget(stretch_at, query_btn_);
   }
 
-  // Visible label: filter expression (and search if both are set).
   QString label;
   if (has_filter) {
-    label = QString::fromStdString(location_.filter_query());
+    label = QString::fromStdString(src.filter_query());
   }
   if (has_search) {
-    const QString s = QString::fromStdString(location_.search_query());
+    const QString s = QString::fromStdString(src.search_query());
     label = label.isEmpty() ? s : (label + QStringLiteral(" · ") + s);
   }
   constexpr int kMaxLabelChars = 32;
@@ -304,16 +389,21 @@ void LocationButtonBar::sync_query_indicator()
   QStringList tip_parts;
   if (has_filter) {
     tip_parts << QStringLiteral("Filter: %1")
-                     .arg(QString::fromStdString(location_.filter_query()));
+                     .arg(QString::fromStdString(src.filter_query()));
   }
   if (has_search) {
     tip_parts << QStringLiteral("Search: %1")
-                     .arg(QString::fromStdString(location_.search_query()));
+                     .arg(QString::fromStdString(src.search_query()));
   }
-  tip_parts << QStringLiteral("Click to show filter bar");
-  query_btn_->setToolTip(tip_parts.join(QStringLiteral("\n")));
+  if (query_is_current) {
+    tip_parts << QStringLiteral("Click to show filter bar");
+  } else {
+    tip_parts << QStringLiteral("Click to restore this filter");
+  }
+  query_btn_->setToolTip(tip_parts.join(QStringLiteral("
+")));
   query_btn_->setAccessibleName(QStringLiteral("Active filter or search: %1").arg(label));
-  query_btn_->setDown(true);
+  query_btn_->setDown(query_is_current);
   query_btn_->show();
 }
 

@@ -510,6 +510,10 @@ void MainWindow::record_location_query_history()
     return;
   }
   location_ = next;
+  // Explicit empty filter/search drops the breadcrumb query tip; go-up keeps it.
+  if (filter.empty() && search.empty()) {
+    location_chrome_.clear_query_tip();
+  }
   location_chrome_.set_location(location_);
   update_window_title();
   nav_history_.push(location_, true, capture_view_scroll());

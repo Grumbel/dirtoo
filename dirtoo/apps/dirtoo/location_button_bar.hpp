@@ -25,7 +25,8 @@ class SegmentButton;
 /// again without rebuilding the trail — same behaviour as the Python LocationButtonBar.
 ///
 /// When the location carries ?filter= / ?search=, a trailing filter indicator
-/// is shown (not a path segment).
+/// is shown (not a path segment). Like deeper path segments, that chip stays
+/// visible after go-up so the user can jump back to the filtered view.
 class LocationButtonBar : public QWidget {
   Q_OBJECT
 
@@ -33,6 +34,8 @@ public:
   explicit LocationButtonBar(QWidget* parent = nullptr);
 
   void set_location(const fs::Location& location);
+  /// Drop the remembered filter/search tip (explicit clear of the filter bar).
+  void clear_query_tip();
   [[nodiscard]] fs::Location location() const { return location_; }
 
 signals:
@@ -52,11 +55,15 @@ private:
   void rebuild();
   void update_current_highlight();
   void sync_query_indicator();
+  void update_query_tip(const fs::Location& location);
   [[nodiscard]] int index_of_path(const fs::Location& location) const;
   [[nodiscard]] std::vector<std::pair<QString, fs::Location>> segments_for(const fs::Location& location) const;
   void wire_button(SegmentButton* btn);
 
   fs::Location location_;
+  /// Last filtered/searched location kept as a forward tip while browsing
+  /// ancestors of its path (mirrors deeper path segments after go-up).
+  fs::Location query_tip_;
   QHBoxLayout* layout_ = nullptr;
   std::vector<SegmentButton*> buttons_;
   /// Trailing filter/search chip (not a path segment); may be null.

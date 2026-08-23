@@ -38,6 +38,8 @@ public:
 
   /// Sync breadcrumb + line-edit text from the current navigation location.
   void set_location(const dirtoo::fs::Location& location);
+  /// Drop remembered filter/search chip (explicit filter clear).
+  void clear_query_tip();
 
   [[nodiscard]] PathCompletionService& path_completion() { return path_completion_; }
   [[nodiscard]] QLineEdit* edit() const { return edit_; }

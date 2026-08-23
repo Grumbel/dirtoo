@@ -122,6 +122,14 @@ void LocationChrome::set_location(const dirtoo::fs::Location& location)
   show_buttons();
 }
 
+void LocationChrome::clear_query_tip()
+{
+  if (buttons_ != nullptr) {
+    buttons_->clear_query_tip();
+  }
+}
+
+
 bool LocationChrome::line_edit_visible() const
 {
   return edit_ != nullptr && edit_->isVisible();
