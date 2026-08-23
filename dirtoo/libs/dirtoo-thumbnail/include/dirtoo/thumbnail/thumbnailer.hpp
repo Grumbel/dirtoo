@@ -32,6 +32,11 @@ public:
   /// and fail/). Returns true if any file was removed.
   static bool remove_cache_for(const fs::Location& location);
 
+  /// True if a cache PNG exists and still matches the source mtime/size
+  /// (Freedesktop Thumb::MTime / Thumb::Size, with mtime fallback).
+  [[nodiscard]] static bool cache_is_fresh(const fs::Location& location,
+                                           const QString& flavor = QStringLiteral("large"));
+
   /// Queue thumbnail generation. Emits thumbnail_ready or thumbnail_failed.
   /// If @p force is true, remove existing cache files first so the generator
   /// rebuilds from the source (e.g. after changing the thumbnailer backend).
@@ -55,11 +60,13 @@ private slots:
 
 private:
   void connect_signals();
+  [[nodiscard]] bool ensure_service();
   void emit_from_cache_or_fail(const fs::Location& location, const QString& flavor,
                                const QString& reason);
 
   QDBusInterface* iface_ = nullptr;
   bool service_available_ = false;
+  bool signals_connected_ = false;
 
   // handle -> list of locations queued under that handle
   std::unordered_map<uint, std::vector<fs::Location>> pending_;

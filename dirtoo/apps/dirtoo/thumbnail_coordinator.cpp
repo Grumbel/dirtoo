@@ -94,7 +94,8 @@ bool ThumbnailCoordinator::request_rows(const std::vector<fs::FileInfo>& visible
       // by the caller via schedule_directory_thumbnails_low_priority().
       const QString cache =
           thumbnail::Thumbnailer::cache_path_for(fi.location(), QStringLiteral("large"));
-      if (QFile::exists(cache) && model != nullptr) {
+      if (thumbnail::Thumbnailer::cache_is_fresh(fi.location(), QStringLiteral("large"))
+          && model != nullptr) {
         model->set_thumbnail(QString::fromStdString(fi.path().string()), QIcon(cache));
       } else {
         any_dir_without_cache = true;

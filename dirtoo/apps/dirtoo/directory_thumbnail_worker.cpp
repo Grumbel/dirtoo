@@ -324,6 +324,12 @@ void DirectoryThumbnailWorker::generate(const QStringList& directory_paths)
     }
     const auto loc = fs::Location::from_path(std::filesystem::path{path.toStdString()});
     const QString out = thumbnail::Thumbnailer::cache_path_for(loc, QStringLiteral("large"));
+    // Reuse montage when the directory mtime still matches the cache.
+    if (thumbnail::Thumbnailer::cache_is_fresh(loc, QStringLiteral("large"))) {
+      ++ok;
+      emit thumbnail_ready(loc, out);
+      continue;
+    }
     const QString error = build_montage(path, out);
     if (error.isEmpty()) {
       ++ok;
