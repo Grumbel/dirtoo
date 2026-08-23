@@ -339,7 +339,7 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
                              model_->ui_colors().symlink_accent_qcolor());
 
   // Captions: basename in normal text color; size/date in gray (dirtoo-py).
-  // Long names wrap to a second line when the tile budget allows, else elide.
+  // Basename is single-line elided so size/date keep their caption rows.
   if (!text.isEmpty() && caption_h > 0) {
     QRect text_rect = br.toRect().adjusted(4, thumb.bottom() + 2, -4, -2);
     // Set color wash behind name/size/date (not on the thumbnail).
@@ -352,33 +352,17 @@ void GraphicsFileItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* 
     QStringList parts = text.split(QLatin1Char('\n'));
     QStringList paint_lines;
     if (!parts.isEmpty()) {
-      const QString name = parts.front();
-      const bool can_wrap = text_rows >= 1 && text_rect.width() > 24
-                            && fm.horizontalAdvance(name) > text_rect.width();
-      if (can_wrap) {
-        int brk = name.size() / 2;
-        for (int i = brk; i < name.size() && i < brk + 12; ++i) {
-          const QChar ch = name[i];
-          if (ch == QLatin1Char('-') || ch == QLatin1Char('_') || ch == QLatin1Char('.')
-              || ch == QLatin1Char(' ')) {
-            brk = i + 1;
-            break;
-          }
-        }
-        brk = std::clamp(brk, 1, static_cast<int>(name.size()) - 1);
-        paint_lines << name.left(brk);
-        paint_lines << name.mid(brk);
-      } else {
-        paint_lines << name;
-      }
+      // One line for the basename (elided); remaining caption rows are for
+      // size/date. Wrapping the name used to steal those rows and drop the date.
+      paint_lines << parts.front();
       for (int i = 1; i < parts.size(); ++i) {
         paint_lines << parts[i];
       }
     }
-    const int name_line_count = (paint_lines.size() >= 2 && parts.size() == 1) ? 2 : 1;
+    const int name_line_count = 1;
     int y = text_rect.top();
     int drawn = 0;
-    const int budget = std::max(text_rows, name_line_count + std::max(0, text_rows - 1));
+    const int budget = text_rows;
     for (const QString& line : paint_lines) {
       if (y + fm.height() > text_rect.bottom() || drawn >= budget) {
         break;
