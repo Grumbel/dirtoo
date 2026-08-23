@@ -83,7 +83,7 @@ ship as a separate flake package.
 
 ## Nix
 
-From the `dirtoo/` flake:
+From the repository flake:
 
 ```bash
 nix build .#hilbert-thumbnailer

@@ -1,6 +1,6 @@
 # TODO — dirtoo C++ port
 
-Python reference: `dirtoo-py/`. Active code: `dirtoo/`.
+Python reference: https://github.com/Grumbel/dirtoo-py.git — Active code: this repository.
 
 ---
 
@@ -549,7 +549,7 @@ thumbnail work. `dirops` remains Qt-free.
 2. Surface **disks / partitions / mounts** via **UDisks2** D-Bus (not only `$HOME` paths).
 3. **Toolbar/menu control** to show/hide the tree sidebar (persisted).
 
-Python reference: experimental `dirtoo-py/experiments/udisks/` (`udisksqt.py`); main GUI does **not** ship a production tree+volumes UI — C++ can design cleanly rather than clone incomplete experiment code.
+Python reference: experimental `experiments/udisks/` (`udisksqt.py`) in [dirtoo-py](https://github.com/Grumbel/dirtoo-py.git); main GUI does **not** ship a production tree+volumes UI — C++ can design cleanly rather than clone incomplete experiment code.
 
 ### Architecture sketch
 
@@ -749,7 +749,7 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
 ## Working process
 
 - Suggest a detailed commit message after each change series.
-- Keep `dirtoo-py/` as reference only.
+- Keep [dirtoo-py](https://github.com/Grumbel/dirtoo-py.git) as reference only (external repo).
 - Prefer small, reviewable commits; do not bulk-reformat unrelated code.
 - When fixing freezes, measure with directories of 10k+ entries.
 - **Always update `TODO.md` and `AGENTS.md`** when closing/opening items or
@@ -762,7 +762,7 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
 - [x] Home/End should jump to the top/bottom of the file view
 - [x] type-ahead in the file view should jump to a file matching the name, currently does nothing
 - [x] folders with thumbnails should still be recognizable as folders,
-      use them as background for a normal folder icon, see dirtoo-py/.
+      use them as background for a normal folder icon, see dirtoo-py (external).
       (folder emblem overlaid on directory montages)
 - [x] a dedicated reload button to reload a folder, inotify can't
       always be dependend up on or isn't available sometimes
@@ -781,12 +781,12 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
 - [x] right click menu should follow normal conventions, currently looks very unorganized
       (grouped Open / Clipboard / Edit / Create / Thumbnails sections)
 - [x] proper mime-type handling is missing, no "Open With...", no
-      default mime-apps listed in context menu, see dirtoo-py/
+      default mime-apps listed in context menu, see dirtoo-py 
       (Open with submenu from mimeapps.list + desktop files; Other Application…)
-- [x] the chunky button in the LocationBar in dirtoo-py/ looked
+- [x] the chunky button in the LocationBar in dirtoo-py  looked
       better, "Location:" label didn't hurd either.
 - [x] filters should reset when changing directories, unless Pin filter is active
-- [x] the Location syntax of dirtoo-py/ was better than the new JAR inspired one
+- [x] the Location syntax of dirtoo-py  was better than the new JAR inspired one
       (as_url uses file://…//archive[:entry]; JAR archive://…!/… still accepted)
 - [x] filecount (recursive here) isn't displayed for archives
       (archive directory child counts from index; disk archives via media meta)
@@ -845,7 +845,7 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
        clear to system icon without sticker)
 - [x] 16:56:18.357 [warning] QGraphicsView::dragLeaveEvent: drag leave received before drag enter
       (track drag_entered_; only forward leave to QGraphicsView after accept)
-- [x] ensure that filter language has all the dirtoo-py features, e.g. type:video
+- [x] ensure that filter language has all the Python prototype features, e.g. type:video
       (type:video|image|archive|audio via extension regex; help text updated)
 - [x] file size doesn't show for archives
       (bsdtar/tar -tvf + unzip -l parsers populate ArchiveEntry.size)
@@ -855,7 +855,7 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
 - [x] implement mount and eject for udisks
       (UDisksClient::mount/unmount/eject + DevicesController context menu;
        async D-Bus; already in Phases 4–5)
-- [x] give icons for hidden files a different background color, see dirtoo-py/
+- [x] give icons for hidden files a different background color, see dirtoo-py 
       (IsHiddenRole; muted gray tile bg + dimmed foreground in Detail/List/
        Icons/Graphics when basename starts with '.')
 - [x] indicate when files are opened/closed (if that information comes
@@ -1068,7 +1068,7 @@ for MVP parity; pick when polishing tagging / large-library workflows.
 ## Audit findings (2026-08-13)
 
 Full file inventory + notes: **`AUDIT.md`** (section *Full source inventory + audit pass (2026-08-13)*).  
-~234 `.cpp`/`.hpp` files under `dirtoo/`. Tip reviewed: post–quick-hash / non-modal tag.
+~234 `.cpp`/`.hpp` files in this repository. Tip reviewed: post–quick-hash / non-modal tag.
 
 ### Bugs / risks (do these)
 

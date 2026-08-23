@@ -3,14 +3,11 @@
 ## Project Overview
 
 **dirtoo** is a Qt-based graphical file manager and a collection of
-directory/file utilities. The original implementation is Python 3 +
-PyQt6 (~20k lines under `dirtoo-py/`). This repository is the **C++23 /
-Qt6** port (CMake, Nix flake).
-
-| Path | Role |
-|------|------|
-| `dirtoo-py/` | Frozen Python reference (behavior only; do not “fix” bugs) |
-| `dirtoo/` | Active C++23 codebase |
+directory/file utilities. This repository is the **C++23 / Qt6**
+implementation (CMake, Nix flake). The older Python 3 + PyQt6 prototype
+lives in a separate repository
+([Grumbel/dirtoo-py](https://github.com/Grumbel/dirtoo-py.git)); use it as
+a **behavioral reference only** (do not “fix” its bugs).
 
 License: **GPL-3.0-or-later**. Every source file must use REUSE-style
 SPDX headers:
@@ -36,7 +33,7 @@ SPDX headers:
    embed low-level copy/move logic.
 4. **Clean design over hacks**. Prefer correct abstractions. Document
    workarounds. Prefer debug logging when stuck.
-5. Ignore most CLI utilities under `dirtoo-py/.../programs/` unless useful
+5. Ignore most CLI utilities in the Python prototype’s `programs/` unless useful
    for testing C++ libraries.
 
 Large-directory mitigations (cheap listing, filter worker, Graphics item reuse, viewport thumbs, soft watcher reload), DnD/Link, and core parity features are in place. See **`TODO.md`** for residual polish and **`AUDIT.md`** for the full file inventory and parity matrix. Explicit out-of-scope items include archive write, remote VFS, and full Python `programs/*`.
@@ -79,10 +76,10 @@ one rename” design exists.
 | `thumbnail/` | D-Bus thumbnailer | `dirtoo-thumbnail` |
 | `archive/` | archive browse | `dirtoo-archive` (read-only) |
 
-### C++ tree (`dirtoo/`)
+### C++ tree (repository root)
 
 ```
-dirtoo/
+.
   CMakeLists.txt
   flake.nix
   README.md
@@ -171,7 +168,7 @@ fix defects, or close/open work items:
 ## Build & environment
 
 - Primary build: **CMake** + Ninja.
-- Dev shell / packaging: **Nix flake** (`dirtoo/flake.nix`).
+- Dev shell / packaging: **Nix flake** (`flake.nix`).
 - Target for development: **Linux** (inotify, freedesktop thumbnailer, XDG).
   Keep platform-specific code isolated.
 
@@ -205,7 +202,7 @@ Local non-Nix builds still use the monorepo top-level `CMakeLists.txt` with
 
 ## Dependencies & Nix flake (no optional fallbacks)
 
-Build and run via the **Nix flake** (`dirtoo/flake.nix`). Flake inputs pin
+Build and run via the **Nix flake** (`flake.nix`). Flake inputs pin
 the full dependency set (Qt6, libarchive, sqlite, ffmpeg tools as needed, …).
 
 **Do not add runtime “try tool A then tool B” fallbacks** for libraries or
@@ -226,10 +223,11 @@ degrade gracefully; that is not the same as dual-stacking two
 implementations of the same library capability.
 
 
-## Working with the Python tree
+## Working with the Python reference (external)
 
-- `dirtoo-py/` is a **behavioral reference**, not something to extend.
-- When unsure about UX, read `src/dirtoo/fileview/` or `gui/`.
+- The Python prototype ([dirtoo-py](https://github.com/Grumbel/dirtoo-py.git)) is a
+  **behavioral reference**, not something to extend in this repo.
+- When unsure about UX, read `fileview/` or `gui/` in that repository.
 - CLI programs in `programs/` are mostly out of scope; only port helpers
   that validate C++ libraries (`dt-move`, `dt-copy`, `dt-filter`, …).
 
@@ -259,7 +257,7 @@ implementations of the same library capability.
 | Archive write / remote VFS / programs/* | **out of scope** |
 
 Priority residual queue and parity matrix: **`TODO.md`** (see *Session notes 2026-08-12*).  
-User-facing overview: **`dirtoo/README.md`**.
+User-facing overview: **`README.md`**.
 
 ---
 

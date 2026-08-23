@@ -1,8 +1,8 @@
 # dirtoo C++ port — status
 
 ## Layout
-- `dirtoo-py/` — original Python/Qt reference (do not “fix” its bugs)
-- `dirtoo/` — C++23 / Qt6 rewrite
+- This repository — C++23 / Qt6 application, libraries, and `dt-*` tools
+- Python prototype (reference only): https://github.com/Grumbel/dirtoo-py.git
 
 ## Modules
 | Library | Purpose |
@@ -30,7 +30,6 @@ See repo root **`TODO.md`** session notes for open polish items.
 
 ## Build
 ```bash
-cd dirtoo
 nix develop   # or install Qt6 + CMake + Ninja + libarchive tools
 cmake -B build -G Ninja
 cmake --build build

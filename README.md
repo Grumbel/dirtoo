@@ -161,7 +161,7 @@ GUI binary; use `--help` or the installed man pages.
 | `AGENTS.md` / `TODO.md` | Contributor rules and open work |
 
 The older **Python prototype** lives in a separate repository:
-[Grumbel/dirtoo-py](https://github.com/Grumbel/dirtoo-py/). It is a behavioral
+[Grumbel/dirtoo-py](https://github.com/Grumbel/dirtoo-py.git). It is a behavioral
 reference only—not part of this build.
 
 ---

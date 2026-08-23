@@ -2,8 +2,8 @@
 
 This document describes the architecture of **dirtoo**, a modular Qt6 file
 manager and filesystem toolkit written in **C++23**. The original Python/PyQt6
-application under `dirtoo-py/` is a **behavioral reference** only; the active
-codebase is the `dirtoo/` tree.
+prototype ([dirtoo-py](https://github.com/Grumbel/dirtoo-py.git)) is a
+**behavioral reference** only; the active codebase is this repository.
 
 License: **GPL-3.0-or-later** (REUSE SPDX headers on every source file).
 
@@ -29,7 +29,7 @@ License: **GPL-3.0-or-later** (REUSE SPDX headers on every source file).
 ## 2. Repository layout
 
 ```
-dirtoo/                    # Active C++ codebase
+.(repository root)         # Active C++ codebase
   CMakeLists.txt
   flake.nix
   README.md
@@ -50,7 +50,7 @@ dirtoo/                    # Active C++ codebase
   tests/                   # Catch2 unit tests
   resources/               # Icons, badges, DnD cursors, desktop/metainfo
 
-dirtoo-py/                 # Frozen Python reference (behavior only)
+# Python prototype: https://github.com/Grumbel/dirtoo-py.git (external)
 ```
 
 Build: CMake 3.25+, C++23, Qt6 (Core, Gui, Widgets, DBus as needed). Optional
@@ -316,9 +316,9 @@ belongs on a worker.
 
 ---
 
-## 6. Comparison with dirtoo-py
+## 6. Comparison with the Python prototype
 
-| Area | Python (`dirtoo-py`) | C++ (`dirtoo`) |
+| Area | Python ([dirtoo-py](https://github.com/Grumbel/dirtoo-py.git)) | C++ (this repo) |
 |------|----------------------|----------------|
 | Main canvas | Single **`FileView`** (`QGraphicsView`) for ICON / SMALLICON / DETAIL | **Three** widgets: Tree, List, Graphics |
 | Item rendering | **`FileItem`** + **`FileItemRenderer`** switched by `FileItemStyle` | Delegate (detail/small) **or** `GraphicsFileItem` (icons) |
