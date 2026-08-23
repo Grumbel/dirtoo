@@ -190,13 +190,11 @@ TEST_CASE("Location filter/search query params", "[location]")
   REQUIRE(round2.filter_query() == "tag:work");
   REQUIRE(round2.search_query() == "readme");
 
-  // Parent first leaves the filter/search tip (same path, no modifiers).
+  // Parent is the path parent and drops listing modifiers (bar keeps a tip).
   const auto par = both.parent();
   REQUIRE(par.filter_query().empty());
   REQUIRE(par.search_query().empty());
-  REQUIRE(par.as_path() == both.as_path());
-  const auto par2 = par.parent();
-  REQUIRE(par2.as_path() == both.as_path().parent_path());
+  REQUIRE(par.as_path() == both.as_path().parent_path());
 
   // join() leaves the query tip (child path has no filter/search).
   const auto joined = both.join("subdir");

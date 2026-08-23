@@ -398,14 +398,9 @@ Location Location::parent() const
   if (protocol_ == "tag" || protocol_ == "set") {
     return {};
   }
-  // Filter/search act like a trailing breadcrumb tip: go-up first leaves the
-  // query (same path, no modifiers), then a second go-up moves to the path parent.
-  if (!filter_.empty() || !search_.empty()) {
-    Location same = *this;
-    same.filter_.clear();
-    same.search_.clear();
-    return same;
-  }
+  // Path parent only — ?filter= / ?search= are listing modifiers, not a path
+  // level. The location bar keeps a remembered query tip so go-up still leaves
+  // the filter chip for forward navigation (see LocationButtonBar).
   if (protocol_ == "archive") {
     if (entry_.empty() || entry_ == "." || entry_ == "/") {
       // Leave archive → parent directory of the archive file.
