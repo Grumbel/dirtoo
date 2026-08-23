@@ -269,12 +269,6 @@ void LocationButtonBar::sync_query_indicator()
     query_btn_->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
     query_btn_->setStyleSheet(QStringLiteral("QPushButton { padding: 3px 4px; }"));
     query_btn_->setIconSize(QSize(16, 16));
-    const QIcon icon = theme_icon("view-filter", "edit-find");
-    if (!icon.isNull()) {
-      query_btn_->setIcon(icon);
-    } else {
-      query_btn_->setText(QStringLiteral("⌕"));
-    }
     connect(query_btn_, &QPushButton::clicked, this, [this] {
       emit location_activated(location_);
       emit query_indicator_activated();
@@ -284,6 +278,27 @@ void LocationButtonBar::sync_query_indicator()
       stretch_at = 0;
     }
     layout_->insertWidget(stretch_at, query_btn_);
+  }
+
+  // Visible label: filter expression (and search if both are set).
+  QString label;
+  if (has_filter) {
+    label = QString::fromStdString(location_.filter_query());
+  }
+  if (has_search) {
+    const QString s = QString::fromStdString(location_.search_query());
+    label = label.isEmpty() ? s : (label + QStringLiteral(" · ") + s);
+  }
+  constexpr int kMaxLabelChars = 32;
+  QString shown = label;
+  if (shown.size() > kMaxLabelChars) {
+    shown = shown.left(kMaxLabelChars - 1) + QChar(0x2026);
+  }
+  query_btn_->setText(shown);
+
+  const QIcon icon = theme_icon("view-filter", "edit-find");
+  if (!icon.isNull()) {
+    query_btn_->setIcon(icon);
   }
 
   QStringList tip_parts;
@@ -297,7 +312,8 @@ void LocationButtonBar::sync_query_indicator()
   }
   tip_parts << QStringLiteral("Click to show filter bar");
   query_btn_->setToolTip(tip_parts.join(QStringLiteral("\n")));
-  query_btn_->setAccessibleName(QStringLiteral("Active filter or search"));
+  query_btn_->setAccessibleName(QStringLiteral("Active filter or search: %1").arg(label));
+  query_btn_->setDown(true);
   query_btn_->show();
 }
 
