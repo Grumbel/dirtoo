@@ -400,8 +400,7 @@ void LocationButtonBar::sync_query_indicator()
   } else {
     tip_parts << QStringLiteral("Click to restore this filter");
   }
-  query_btn_->setToolTip(tip_parts.join(QStringLiteral("
-")));
+  query_btn_->setToolTip(tip_parts.join(QStringLiteral("\n")));
   query_btn_->setAccessibleName(QStringLiteral("Active filter or search: %1").arg(label));
   query_btn_->setDown(query_is_current);
   query_btn_->show();
