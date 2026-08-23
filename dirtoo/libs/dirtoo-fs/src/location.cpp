@@ -398,28 +398,30 @@ Location Location::parent() const
   if (protocol_ == "tag" || protocol_ == "set") {
     return {};
   }
-  Location result;
+  // Filter/search act like a trailing breadcrumb tip: go-up first leaves the
+  // query (same path, no modifiers), then a second go-up moves to the path parent.
+  if (!filter_.empty() || !search_.empty()) {
+    Location same = *this;
+    same.filter_.clear();
+    same.search_.clear();
+    return same;
+  }
   if (protocol_ == "archive") {
     if (entry_.empty() || entry_ == "." || entry_ == "/") {
       // Leave archive → parent directory of the archive file.
-      result = from_path(path_.parent_path());
-    } else {
-      auto parent_entry = entry_.parent_path();
-      if (parent_entry == ".") {
-        parent_entry.clear();
-      }
-      result = from_archive(path_, parent_entry);
+      return from_path(path_.parent_path());
     }
-  } else if (path_.has_parent_path() && path_ != path_.root_path()) {
-    result = from_path(path_.parent_path());
-  } else {
-    result = from_path(path_.root_path().empty() ? std::filesystem::path{"/"} : path_.root_path());
+    auto parent_entry = entry_.parent_path();
+    if (parent_entry == ".") {
+      parent_entry.clear();
+    }
+    return from_archive(path_, parent_entry);
   }
-  // Listing modifiers travel with the location so go-up / join keep the
-  // active filter or search (same as pin-filter, encoded on the URL).
-  result.filter_ = filter_;
-  result.search_ = search_;
-  return result;
+
+  if (path_.has_parent_path() && path_ != path_.root_path()) {
+    return from_path(path_.parent_path());
+  }
+  return from_path(path_.root_path().empty() ? std::filesystem::path{"/"} : path_.root_path());
 }
 
 Location Location::join(std::string_view child) const
@@ -428,15 +430,11 @@ Location Location::join(std::string_view child) const
     (void)child;
     return *this;
   }
-  Location result;
+  // Entering a child leaves the filter/search tip (path segments only).
   if (protocol_ == "archive") {
-    result = from_archive(path_, entry_ / std::filesystem::path{std::string{child}});
-  } else {
-    result = from_path(path_ / std::filesystem::path{std::string{child}});
+    return from_archive(path_, entry_ / std::filesystem::path{std::string{child}});
   }
-  result.filter_ = filter_;
-  result.search_ = search_;
-  return result;
+  return from_path(path_ / std::filesystem::path{std::string{child}});
 }
 
 std::string Location::basename() const

@@ -190,14 +190,17 @@ TEST_CASE("Location filter/search query params", "[location]")
   REQUIRE(round2.filter_query() == "tag:work");
   REQUIRE(round2.search_query() == "readme");
 
-  // Parent keeps listing modifiers so go-up retains the filter chip.
+  // Parent first leaves the filter/search tip (same path, no modifiers).
   const auto par = both.parent();
-  REQUIRE(par.filter_query() == "tag:work");
-  REQUIRE(par.search_query() == "readme");
-  REQUIRE(par.as_path() == both.as_path().parent_path());
+  REQUIRE(par.filter_query().empty());
+  REQUIRE(par.search_query().empty());
+  REQUIRE(par.as_path() == both.as_path());
+  const auto par2 = par.parent();
+  REQUIRE(par2.as_path() == both.as_path().parent_path());
 
+  // join() leaves the query tip (child path has no filter/search).
   const auto joined = both.join("subdir");
-  REQUIRE(joined.filter_query() == "tag:work");
-  REQUIRE(joined.search_query() == "readme");
+  REQUIRE(joined.filter_query().empty());
+  REQUIRE(joined.search_query().empty());
   REQUIRE(joined.as_path() == both.as_path() / "subdir");
 }

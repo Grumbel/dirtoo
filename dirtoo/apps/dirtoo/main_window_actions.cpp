@@ -80,8 +80,7 @@ void MainWindow::on_item_activated(const QModelIndex& index)
   }
 
   if (fi.is_directory()) {
-    // join() preserves ?filter= / ?search= so the filter chip stays when
-    // descending into a subdirectory (same as go-parent).
+    // join() leaves any ?filter= / ?search= tip (path segments only).
     if (location_.is_archive() || location_.is_file()) {
       open_location(location_.join(fi.basename()));
     } else {
