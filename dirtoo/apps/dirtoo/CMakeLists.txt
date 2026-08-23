@@ -221,6 +221,8 @@ install(FILES
   ${CMAKE_SOURCE_DIR}/resources/icons/icon-detail-more.svg
   ${CMAKE_SOURCE_DIR}/resources/icons/list-add.svg
   ${CMAKE_SOURCE_DIR}/resources/icons/list-remove.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/bookmark-new.svg
+  ${CMAKE_SOURCE_DIR}/resources/icons/bookmark-remove.svg
   ${CMAKE_SOURCE_DIR}/resources/icons/view-detail.svg
   ${CMAKE_SOURCE_DIR}/resources/icons/view-filter.svg
   ${CMAKE_SOURCE_DIR}/resources/icons/view-list-tree.svg

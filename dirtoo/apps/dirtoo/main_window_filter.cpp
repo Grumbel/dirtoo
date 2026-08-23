@@ -515,6 +515,7 @@ void MainWindow::record_location_query_history()
     location_chrome_.clear_query_tip();
   }
   location_chrome_.set_location(location_);
+  location_chrome_.set_bookmarked(!location_.empty() && bookmarks_.contains(location_));
   update_window_title();
   nav_history_.push(location_, true, capture_view_scroll());
   pending_nav_scroll_.reset();

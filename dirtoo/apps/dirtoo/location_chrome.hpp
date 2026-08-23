@@ -13,6 +13,7 @@
 #include <QUrl>
 
 class QWidget;
+class QToolButton;
 
 namespace dirtoo::app {
 
@@ -41,9 +42,13 @@ public:
   /// Drop remembered filter/search chip (explicit filter clear).
   void clear_query_tip();
 
+  /// Update the trailing bookmark button (icon + tooltip) for the current path.
+  void set_bookmarked(bool bookmarked);
+
   [[nodiscard]] PathCompletionService& path_completion() { return path_completion_; }
   [[nodiscard]] QLineEdit* edit() const { return edit_; }
   [[nodiscard]] LocationButtonBar* buttons() const { return buttons_; }
+  [[nodiscard]] QToolButton* bookmark_button() const { return bookmark_btn_; }
   [[nodiscard]] QWidget* host() const { return host_; }
   [[nodiscard]] bool line_edit_visible() const;
 
@@ -54,12 +59,15 @@ signals:
   void urls_dropped(const dirtoo::fs::Location& target, const QList<QUrl>& urls,
                     Qt::DropAction action);
   void query_indicator_activated();
+  void bookmark_clicked();
 
 private:
   PathCompletionService path_completion_{this};
   QWidget* host_ = nullptr;
   QLineEdit* edit_ = nullptr;
   LocationButtonBar* buttons_ = nullptr;
+  QToolButton* bookmark_btn_ = nullptr;
+  bool bookmarked_ = false;
 };
 
 } // namespace dirtoo::app

@@ -109,6 +109,7 @@ void MainWindow::on_toggle_bookmark()
     }
   }
   set_status(now ? QStringLiteral("Bookmarked") : QStringLiteral("Bookmark removed"));
+  location_chrome_.set_bookmarked(now);
   rebuild_sidebar_places();
 }
 

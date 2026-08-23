@@ -55,6 +55,7 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
   }
   location_ = location;
   location_chrome_.set_location(location_);
+  location_chrome_.set_bookmarked(!location_.empty() && bookmarks_.contains(location_));
   update_window_title();
 
   if (record_history) {

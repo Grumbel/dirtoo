@@ -4,8 +4,11 @@
 #include "location_chrome.hpp"
 
 #include "location_button_bar.hpp"
+#include "theme_icons.hpp"
 
 #include <QHBoxLayout>
+#include <QToolButton>
+#include <QSize>
 #include <QLabel>
 #include <QVBoxLayout>
 
@@ -61,6 +64,15 @@ QWidget* LocationChrome::create_bar(QWidget* parent)
   });
   edit_->hide();
   breadcrumb_layout->addWidget(edit_, 1);
+
+  bookmark_btn_ = new QToolButton(breadcrumb_row);
+  bookmark_btn_->setAutoRaise(true);
+  bookmark_btn_->setIconSize(QSize(20, 20));
+  bookmark_btn_->setFocusPolicy(Qt::NoFocus);
+  bookmark_btn_->setToolButtonStyle(Qt::ToolButtonIconOnly);
+  connect(bookmark_btn_, &QToolButton::clicked, this, &LocationChrome::bookmark_clicked);
+  breadcrumb_layout->addWidget(bookmark_btn_, 0, Qt::AlignVCenter);
+  set_bookmarked(false);
 
   loc_layout->addWidget(breadcrumb_row);
   return host_;
@@ -129,6 +141,23 @@ void LocationChrome::clear_query_tip()
   }
 }
 
+
+void LocationChrome::set_bookmarked(bool bookmarked)
+{
+  bookmarked_ = bookmarked;
+  if (bookmark_btn_ == nullptr) {
+    return;
+  }
+  if (bookmarked) {
+    bookmark_btn_->setIcon(theme_icon("bookmark-remove", "starred"));
+    bookmark_btn_->setToolTip(QStringLiteral("Remove bookmark for this location (Ctrl+D)"));
+    bookmark_btn_->setAccessibleName(QStringLiteral("Remove bookmark"));
+  } else {
+    bookmark_btn_->setIcon(theme_icon("bookmark-new", "non-starred"));
+    bookmark_btn_->setToolTip(QStringLiteral("Bookmark this location (Ctrl+D)"));
+    bookmark_btn_->setAccessibleName(QStringLiteral("Add bookmark"));
+  }
+}
 
 bool LocationChrome::line_edit_visible() const
 {

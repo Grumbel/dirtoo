@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <!-- Outline bookmark — not yet bookmarked -->
+  <path d="M6.5 3.5
+           C 5.7 3.5 5 4.2 5 5
+           L 5 20.5
+           L 12 15.8
+           L 19 20.5
+           L 19 5
+           C 19 4.2 18.3 3.5 17.5 3.5
+           Z"
+        fill="none" stroke="#1c71d8" stroke-width="1.8" stroke-linejoin="round"/>
+</svg>

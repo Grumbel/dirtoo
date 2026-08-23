@@ -41,6 +41,8 @@ inline QIcon theme_icon(const char* name, const char* fallback = nullptr)
       // Distinct list-add / list-remove (no longer share detail glyphs).
       {QStringLiteral("list-add"), QStringLiteral("list-add.svg")},
       {QStringLiteral("list-remove"), QStringLiteral("list-remove.svg")},
+      {QStringLiteral("bookmark-new"), QStringLiteral("bookmark-new.svg")},
+      {QStringLiteral("bookmark-remove"), QStringLiteral("bookmark-remove.svg")},
       // Zoom + crop.
       {QStringLiteral("zoom-in"), QStringLiteral("zoom-in.svg")},
       {QStringLiteral("zoom-out"), QStringLiteral("zoom-out.svg")},
