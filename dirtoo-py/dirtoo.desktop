@@ -1,9 +1,0 @@
-[Desktop Entry]
-Name=dirtoo
-Comment=Browse the filesystem with the file manager
-GenericName=File Manager
-Exec=dirtoo %U
-Icon=dirtoo
-Terminal=false
-StartupNotify=true
-Type=Application

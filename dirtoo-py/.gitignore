@@ -1,8 +1,0 @@
-*~
-.mypy_cache/
-/.pylint/
-/build/
-/dirtoo.egg-info/
-/dist/
-/result
-__pycache__/
