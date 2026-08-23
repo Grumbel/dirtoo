@@ -41,6 +41,8 @@ QWidget* LocationChrome::create_bar(QWidget* parent)
     focus_line_edit(Qt::MouseFocusReason);
   });
   connect(buttons_, &LocationButtonBar::urls_dropped, this, &LocationChrome::urls_dropped);
+  connect(buttons_, &LocationButtonBar::query_indicator_activated, this,
+          &LocationChrome::query_indicator_activated);
 
   edit_ = new QLineEdit(breadcrumb_row);
   edit_->setPlaceholderText(QStringLiteral("Location"));

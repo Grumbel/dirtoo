@@ -51,6 +51,7 @@ signals:
   void path_entered(const QString& text);
   void urls_dropped(const dirtoo::fs::Location& target, const QList<QUrl>& urls,
                     Qt::DropAction action);
+  void query_indicator_activated();
 
 private:
   PathCompletionService path_completion_{this};

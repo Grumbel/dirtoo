@@ -23,6 +23,9 @@ class SegmentButton;
 /// When the new location is already present as a segment (navigating up to an
 /// ancestor), deeper segment buttons stay visible so the user can jump forward
 /// again without rebuilding the trail — same behaviour as the Python LocationButtonBar.
+///
+/// When the location carries ?filter= / ?search=, a trailing filter indicator
+/// is shown (not a path segment).
 class LocationButtonBar : public QWidget {
   Q_OBJECT
 
@@ -36,6 +39,8 @@ signals:
   void location_activated(const dirtoo::fs::Location& location);
   void location_activated_new_window(const dirtoo::fs::Location& location);
   void edit_requested();
+  /// User clicked the filter/search indicator — show/focus filter chrome.
+  void query_indicator_activated();
   /// Files dropped onto a breadcrumb segment (target directory location).
   void urls_dropped(const dirtoo::fs::Location& target, const QList<QUrl>& urls,
                     Qt::DropAction action);
@@ -46,13 +51,16 @@ protected:
 private:
   void rebuild();
   void update_current_highlight();
-  [[nodiscard]] int index_of_location(const fs::Location& location) const;
+  void sync_query_indicator();
+  [[nodiscard]] int index_of_path(const fs::Location& location) const;
   [[nodiscard]] std::vector<std::pair<QString, fs::Location>> segments_for(const fs::Location& location) const;
   void wire_button(SegmentButton* btn);
 
   fs::Location location_;
   QHBoxLayout* layout_ = nullptr;
   std::vector<SegmentButton*> buttons_;
+  /// Trailing filter/search chip (not a path segment); may be null.
+  QPushButton* query_btn_ = nullptr;
 };
 
 } // namespace dirtoo::app

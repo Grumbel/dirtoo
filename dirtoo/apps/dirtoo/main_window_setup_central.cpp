@@ -78,6 +78,8 @@ void MainWindow::setup_central_ui()
           &MainWindow::on_breadcrumb_location_new_window);
   connect(&location_chrome_, &LocationChrome::path_entered, this, &MainWindow::on_location_entered);
   connect(&location_chrome_, &LocationChrome::urls_dropped, this, &MainWindow::on_breadcrumb_drop);
+  connect(&location_chrome_, &LocationChrome::query_indicator_activated, this,
+          &MainWindow::on_focus_filter);
   layout->addWidget(location_stack_host_);
   }
 
