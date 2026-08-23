@@ -1,64 +1,92 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- dirtoo: folder + eye — bold shapes for 16px, gradients for larger sizes -->
+<!-- dirtoo: amber folder + blue eye — readable at 16px, detailed at larger sizes -->
 <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
   <defs>
     <linearGradient id="tab" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#ffe8a3"/>
-      <stop offset="100%" stop-color="#f0c000"/>
+      <stop offset="0%" stop-color="#fff3c4"/>
+      <stop offset="55%" stop-color="#ffcc33"/>
+      <stop offset="100%" stop-color="#e09b00"/>
     </linearGradient>
-    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#f6d32d"/>
-      <stop offset="50%" stop-color="#e5a50a"/>
-      <stop offset="100%" stop-color="#c64600"/>
+    <linearGradient id="body" x1="0" y1="0" x2="0.15" y2="1">
+      <stop offset="0%" stop-color="#ffd54a"/>
+      <stop offset="35%" stop-color="#f5a623"/>
+      <stop offset="70%" stop-color="#e07800"/>
+      <stop offset="100%" stop-color="#b34a00"/>
     </linearGradient>
-    <radialGradient id="iris" cx="36%" cy="32%" r="70%">
-      <stop offset="0%" stop-color="#b6d4fa"/>
-      <stop offset="40%" stop-color="#3584e4"/>
-      <stop offset="100%" stop-color="#1a5fb4"/>
+    <linearGradient id="bodySide" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.28"/>
+      <stop offset="40%" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.12"/>
+    </linearGradient>
+    <radialGradient id="iris" cx="38%" cy="30%" r="72%">
+      <stop offset="0%" stop-color="#d6ebff"/>
+      <stop offset="25%" stop-color="#62a0ef"/>
+      <stop offset="55%" stop-color="#1c71d8"/>
+      <stop offset="100%" stop-color="#0a3d8f"/>
+    </radialGradient>
+    <radialGradient id="scleraShade" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="70%" stop-color="#f0f4f8"/>
+      <stop offset="100%" stop-color="#c8d0da"/>
     </radialGradient>
   </defs>
 
-  <!-- Drop shadow (simple ellipse, no SVG filters — portable) -->
-  <ellipse cx="66" cy="116" rx="44" ry="6" fill="#000000" opacity="0.18"/>
+  <!-- Soft ground shadow -->
+  <ellipse cx="66" cy="117" rx="46" ry="7" fill="#3d2000" opacity="0.22"/>
 
   <!-- Folder tab -->
-  <path d="M 16 32
-           C 16 28 18 26 22 26
-           L 50 26
-           L 58 34
-           L 106 34
-           C 110 34 112 36 112 40
-           L 112 46
-           L 16 46
+  <path d="M 18 30
+           C 18 26 20 24 24 24
+           L 52 24
+           L 60 34
+           L 104 34
+           C 108 34 110 36 110 40
+           L 110 48
+           L 18 48
            Z"
-        fill="url(#tab)" stroke="#6b2d00" stroke-width="3" stroke-linejoin="round"/>
+        fill="url(#tab)" stroke="#7a3a00" stroke-width="2.5" stroke-linejoin="round"/>
 
   <!-- Folder body -->
-  <path d="M 12 44
-           C 12 40 14 38 18 38
-           L 110 38
-           C 114 38 116 40 116 44
-           L 110 110
-           C 109 114 106 116 102 116
-           L 26 116
-           C 22 116 19 114 18 110
+  <path d="M 14 46
+           C 14 42 16 40 20 40
+           L 108 40
+           C 112 40 114 42 114 46
+           L 108 108
+           C 107 112 104 114 100 114
+           L 28 114
+           C 24 114 21 112 20 108
            Z"
-        fill="url(#body)" stroke="#4a1c00" stroke-width="3" stroke-linejoin="round"/>
+        fill="url(#body)" stroke="#5c2800" stroke-width="2.5" stroke-linejoin="round"/>
 
-  <!-- Top highlight on body -->
-  <path d="M 20 46 L 108 46 L 104 68 L 24 68 Z" fill="#ffffff" opacity="0.22"/>
+  <!-- Left highlight strip on body -->
+  <path d="M 22 48 L 48 48 L 44 104 L 26 104 Z" fill="url(#bodySide)"/>
 
-  <!-- Sclera -->
-  <ellipse cx="64" cy="78" rx="36" ry="24"
-           fill="#ffffff" stroke="#1e293b" stroke-width="3"/>
+  <!-- Top rim shine -->
+  <path d="M 22 48 L 106 48 L 103 58 L 25 58 Z" fill="#ffffff" opacity="0.35"/>
 
-  <!-- Iris -->
-  <circle cx="64" cy="78" r="15" fill="url(#iris)" stroke="#0b3d91" stroke-width="1.5"/>
+  <!-- Inner pocket shade (depth) -->
+  <path d="M 26 62 L 102 62 L 98 104 L 30 104 Z" fill="#8a3d00" opacity="0.18"/>
+
+  <!-- Eye sclera -->
+  <ellipse cx="64" cy="80" rx="34" ry="22"
+           fill="url(#scleraShade)" stroke="#1a2332" stroke-width="2.5"/>
+
+  <!-- Iris ring (outer) -->
+  <circle cx="64" cy="80" r="16.5" fill="url(#iris)" stroke="#062a66" stroke-width="1.2"/>
+
+  <!-- Iris texture rings -->
+  <circle cx="64" cy="80" r="12.5" fill="none" stroke="#0b4ea8" stroke-width="0.8" opacity="0.55"/>
+  <circle cx="64" cy="80" r="9" fill="none" stroke="#7eb6f5" stroke-width="0.7" opacity="0.45"/>
 
   <!-- Pupil -->
-  <circle cx="64" cy="78" r="7" fill="#0b1220"/>
+  <circle cx="64" cy="80" r="6.5" fill="#050a12"/>
 
-  <!-- Catchlights (read as “eye” even at 16px when iris is blue) -->
-  <circle cx="58" cy="72" r="3.5" fill="#ffffff" opacity="0.95"/>
-  <circle cx="71" cy="82" r="1.6" fill="#ffffff" opacity="0.55"/>
+  <!-- Primary catchlight -->
+  <circle cx="58" cy="74" r="3.8" fill="#ffffff" opacity="0.95"/>
+  <!-- Secondary catchlight -->
+  <circle cx="70" cy="84" r="1.8" fill="#ffffff" opacity="0.55"/>
+
+  <!-- Subtle eyelid hint (upper) -->
+  <path d="M 32 72 Q 64 58 96 72" fill="none" stroke="#1a2332" stroke-width="1.4"
+        stroke-linecap="round" opacity="0.35"/>
 </svg>
