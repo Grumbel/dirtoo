@@ -398,22 +398,28 @@ Location Location::parent() const
   if (protocol_ == "tag" || protocol_ == "set") {
     return {};
   }
+  Location result;
   if (protocol_ == "archive") {
     if (entry_.empty() || entry_ == "." || entry_ == "/") {
       // Leave archive → parent directory of the archive file.
-      return from_path(path_.parent_path());
+      result = from_path(path_.parent_path());
+    } else {
+      auto parent_entry = entry_.parent_path();
+      if (parent_entry == ".") {
+        parent_entry.clear();
+      }
+      result = from_archive(path_, parent_entry);
     }
-    auto parent_entry = entry_.parent_path();
-    if (parent_entry == ".") {
-      parent_entry.clear();
-    }
-    return from_archive(path_, parent_entry);
+  } else if (path_.has_parent_path() && path_ != path_.root_path()) {
+    result = from_path(path_.parent_path());
+  } else {
+    result = from_path(path_.root_path().empty() ? std::filesystem::path{"/"} : path_.root_path());
   }
-
-  if (path_.has_parent_path() && path_ != path_.root_path()) {
-    return from_path(path_.parent_path());
-  }
-  return from_path(path_.root_path().empty() ? std::filesystem::path{"/"} : path_.root_path());
+  // Listing modifiers travel with the location so go-up / join keep the
+  // active filter or search (same as pin-filter, encoded on the URL).
+  result.filter_ = filter_;
+  result.search_ = search_;
+  return result;
 }
 
 Location Location::join(std::string_view child) const
@@ -422,10 +428,15 @@ Location Location::join(std::string_view child) const
     (void)child;
     return *this;
   }
+  Location result;
   if (protocol_ == "archive") {
-    return from_archive(path_, entry_ / std::filesystem::path{std::string{child}});
+    result = from_archive(path_, entry_ / std::filesystem::path{std::string{child}});
+  } else {
+    result = from_path(path_ / std::filesystem::path{std::string{child}});
   }
-  return from_path(path_ / std::filesystem::path{std::string{child}});
+  result.filter_ = filter_;
+  result.search_ = search_;
+  return result;
 }
 
 std::string Location::basename() const

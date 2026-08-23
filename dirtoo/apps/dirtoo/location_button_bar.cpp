@@ -222,6 +222,14 @@ LocationButtonBar::segments_for(const fs::Location& location) const
                           fs::Location::from_archive(archive_file, acc));
       }
     }
+    // Carry active filter/search onto every breadcrumb segment so clicking a
+    // parent keeps the same listing modifiers (filter icon "resists").
+    if (!location.filter_query().empty() || !location.search_query().empty()) {
+      for (auto& [label, loc] : segs) {
+        (void)label;
+        loc = loc.with_filter_and_search(location.filter_query(), location.search_query());
+      }
+    }
     return segs;
   }
 
@@ -243,6 +251,12 @@ LocationButtonBar::segments_for(const fs::Location& location) const
       label = QString::fromStdString(p.filename().string());
     }
     segs.emplace_back(label, fs::Location::from_path(p));
+  }
+  if (!location.filter_query().empty() || !location.search_query().empty()) {
+    for (auto& [label, loc] : segs) {
+      (void)label;
+      loc = loc.with_filter_and_search(location.filter_query(), location.search_query());
+    }
   }
   return segs;
 }
