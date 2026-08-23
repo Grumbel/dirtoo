@@ -142,11 +142,18 @@ int LocationButtonBar::index_of_path(const fs::Location& location) const
 
 void LocationButtonBar::update_current_highlight()
 {
+  const bool query_is_tip =
+      !location_.filter_query().empty() || !location_.search_query().empty();
   for (SegmentButton* btn : buttons_) {
     if (btn == nullptr) {
       continue;
     }
-    btn->set_current(same_filesystem_path(btn->location(), location_));
+    // With an active filter/search the trailing query chip is the breadcrumb tip;
+    // do not mark the directory segment as current.
+    btn->set_current(!query_is_tip && same_filesystem_path(btn->location(), location_));
+  }
+  if (query_btn_ != nullptr) {
+    query_btn_->setDown(query_is_tip);
   }
 }
 
@@ -346,7 +353,9 @@ void LocationButtonBar::rebuild()
       }
       btn->setAccessibleName(label);
     }
-    btn->set_current(same_filesystem_path(loc, location_));
+    const bool query_is_tip =
+        !location_.filter_query().empty() || !location_.search_query().empty();
+    btn->set_current(!query_is_tip && same_filesystem_path(loc, location_));
     wire_button(btn);
     layout_->addWidget(btn);
     buttons_.push_back(btn);
