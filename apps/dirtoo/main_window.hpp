@@ -159,6 +159,7 @@ private slots:
   void on_reload_thumbnails();
   void on_compute_folder_sizes();
   void on_fs_tree_scan_progress(quint64 generation, quint64 nodes_seen, QString current_path);
+  void on_fs_tree_scan_partial(quint64 generation, quint64 nodes_ready);
   void on_fs_tree_scan_finished(quint64 generation, QString path_key, quint64 total_size, int state);
   void on_fs_tree_scan_failed(quint64 generation, QString error);
   void on_prepare_thumbnails();
@@ -308,6 +309,7 @@ private:
   FsTreeScanWorker* fs_tree_worker_ = nullptr;
   quint64 fs_tree_scan_generation_ = 0;
   QString fs_tree_activity_job_id_;
+  QTimer* fs_tree_partial_refresh_timer_ = nullptr;
   watcher::DirectoryWatcher watcher_;
   archive::ArchiveManager archive_manager_;
   ArchiveListing archive_listing_;

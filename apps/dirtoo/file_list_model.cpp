@@ -324,9 +324,12 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
         return {};
       }
       // Cache lookup only — never scan on the GUI thread.
+      // Prefer progressive entry index (filled as nodes complete mid-scan).
+      if (const auto sz = app_fs_tree_cache().entry_total_size(fi->path())) {
+        return format_size(*sz, false);
+      }
       const auto root = app_fs_tree_cache().snapshot(fi->path().parent_path());
       if (!root) {
-        // Maybe scanned this directory as a root itself.
         const auto self = app_fs_tree_cache().snapshot(fi->path());
         if (!self) {
           return {};
@@ -338,7 +341,6 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
           return format_size(ch->total_size(), false);
         }
       }
-      // Path key mismatch (symlink/canonical): try basename match among dirs.
       const auto name = fi->basename();
       for (const auto& ch : root->children()) {
         if (ch && ch->is_directory() && ch->name() == name) {

@@ -177,3 +177,24 @@ TEST_CASE("scan_tree single file root", "[tree]")
   CHECK(node->total_size() == 3);
   CHECK(node->children().empty());
 }
+
+TEST_CASE("FsTreeCache entry_total_size filled during scan", "[tree]")
+{
+  TempDir tmp;
+  write_file(tmp.path / "a.txt", "hello");
+  fs::create_directory(tmp.path / "sub");
+  write_file(tmp.path / "sub" / "b.txt", "xy");
+
+  FsTreeCache cache;
+  cache.scan(tmp.path);
+  const auto root_sz = cache.entry_total_size(tmp.path);
+  REQUIRE(root_sz);
+  CHECK(*root_sz == 7);
+  const auto sub_sz = cache.entry_total_size(tmp.path / "sub");
+  REQUIRE(sub_sz);
+  CHECK(*sub_sz == 2);
+  const auto file_sz = cache.entry_total_size(tmp.path / "a.txt");
+  REQUIRE(file_sz);
+  CHECK(*file_sz == 5);
+}
+

@@ -34,6 +34,8 @@ public slots:
 
 signals:
   void progress(quint64 generation, quint64 nodes_seen, QString current_path);
+  /// Progressive sizes published; UI may refresh Contents column (throttled).
+  void partial(quint64 generation, quint64 nodes_ready);
   /// Scan finished; snapshot is in `app_fs_tree_cache()` under @p path_key.
   void finished(quint64 generation, QString path_key, quint64 total_size, int state);
   void failed(quint64 generation, QString error);

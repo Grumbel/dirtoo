@@ -120,10 +120,16 @@ void recompute_total_from_children(FsTreeNode& node)
 
 std::shared_ptr<const FsTreeNode>
 scan_tree(const std::filesystem::path& root, const ScanOptions& options,
-          const std::atomic_bool* cancel, ScanProgressFn progress)
+          const std::atomic_bool* cancel, ScanCallbacks callbacks)
 {
   auto root_node = std::make_shared<FsTreeNode>();
   fill_from_path(*root_node, root);
+
+  auto notify_ready = [&](const FsTreeNode& n) {
+    if (callbacks.node_ready && n.state() == FsTreeNodeState::Complete) {
+      callbacks.node_ready(n.path(), n.total_size(), n.kind());
+    }
+  };
 
   if (root_node->state() == FsTreeNodeState::Failed) {
     return root_node;
@@ -138,10 +144,12 @@ scan_tree(const std::filesystem::path& root, const ScanOptions& options,
         root_node->set_kind(FsTreeNodeKind::Directory);
       } else {
         root_node->set_state(FsTreeNodeState::Complete);
+        notify_ready(*root_node);
         return root_node;
       }
     } else {
       root_node->set_state(FsTreeNodeState::Complete);
+      notify_ready(*root_node);
       return root_node;
     }
   }
@@ -154,8 +162,8 @@ scan_tree(const std::filesystem::path& root, const ScanOptions& options,
   q.push(BuildNode{root_node, nullptr, 0, 0});
 
   std::uint64_t nodes_seen = 1;
-  if (progress) {
-    progress(nodes_seen, root);
+  if (callbacks.progress) {
+    callbacks.progress(nodes_seen, root);
   }
 
   // Track build nodes by raw pointer for pending_dir_children updates.
@@ -188,6 +196,7 @@ scan_tree(const std::filesystem::path& root, const ScanOptions& options,
     if (options.max_depth && bn.depth >= *options.max_depth) {
       dir.set_state(FsTreeNodeState::Complete);
       dir.set_total_size(dir.own_size());
+      notify_ready(dir);
       continue;
     }
 
@@ -223,8 +232,8 @@ scan_tree(const std::filesystem::path& root, const ScanOptions& options,
       auto child = std::make_shared<FsTreeNode>();
       fill_from_path(*child, entry.path());
       ++nodes_seen;
-      if (progress) {
-        progress(nodes_seen, child->path());
+      if (callbacks.progress) {
+        callbacks.progress(nodes_seen, child->path());
       }
 
       // Mount boundary
@@ -233,6 +242,7 @@ scan_tree(const std::filesystem::path& root, const ScanOptions& options,
         child->set_state(FsTreeNodeState::Complete);
         child->set_total_size(child->own_size());
         dir.add_child(child);
+        notify_ready(*child);
         continue;
       }
 
@@ -252,6 +262,7 @@ scan_tree(const std::filesystem::path& root, const ScanOptions& options,
         child->set_state(FsTreeNodeState::Complete);
         child->set_total_size(child->own_size());
         dir.add_child(child);
+        notify_ready(*child);
       }
     }
 
@@ -268,6 +279,7 @@ scan_tree(const std::filesystem::path& root, const ScanOptions& options,
     if (child_dirs.empty()) {
       dir.set_state(FsTreeNodeState::Complete);
       recompute_total_from_children(dir);
+      notify_ready(dir);
     } else {
       dir.set_state(FsTreeNodeState::Partial);
       for (auto& cd : child_dirs) {
@@ -303,6 +315,9 @@ scan_tree(const std::filesystem::path& root, const ScanOptions& options,
       } else {
         n.set_state(FsTreeNodeState::Complete);
       }
+    }
+    if (n.state() == FsTreeNodeState::Complete) {
+      notify_ready(n);
     }
   }
 

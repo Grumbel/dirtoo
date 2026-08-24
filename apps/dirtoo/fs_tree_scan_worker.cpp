@@ -50,8 +50,10 @@ void FsTreeScanWorker::scan(const QString& path, quint64 generation, bool includ
     }
 
     std::atomic_bool cancel_flag{false};
-    auto progress_fn = [this, generation, &cancel_flag](std::uint64_t nodes_seen,
-                                                        const std::filesystem::path& current) {
+    std::uint64_t nodes_ready = 0;
+    dirtoo::tree::ScanCallbacks cb;
+    cb.progress = [this, generation, &cancel_flag](std::uint64_t nodes_seen,
+                                                   const std::filesystem::path& current) {
       if (cancel_generation_.load(std::memory_order_relaxed) != generation) {
         cancel_flag.store(true, std::memory_order_relaxed);
         return;
@@ -59,8 +61,19 @@ void FsTreeScanWorker::scan(const QString& path, quint64 generation, bool includ
       emit progress(generation, nodes_seen,
                     QString::fromUtf8(current.u8string().c_str()));
     };
+    cb.node_ready = [this, generation, &nodes_ready](const std::filesystem::path&,
+                                                     std::uint64_t, dirtoo::tree::FsTreeNodeKind) {
+      if (cancel_generation_.load(std::memory_order_relaxed) != generation) {
+        return;
+      }
+      ++nodes_ready;
+      // Throttle UI: every 16 completed nodes (dirs finalize late; still useful).
+      if (nodes_ready == 1 || (nodes_ready % 16) == 0) {
+        emit partial(generation, nodes_ready);
+      }
+    };
 
-    auto tree = app_fs_tree_cache().scan(root, opts, &cancel_flag, progress_fn);
+    auto tree = app_fs_tree_cache().scan(root, opts, &cancel_flag, std::move(cb));
 
     if (cancel_generation_.load(std::memory_order_relaxed) != generation) {
       return;

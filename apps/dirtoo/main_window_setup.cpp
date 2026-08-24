@@ -7,6 +7,7 @@
 
 #include <QDebug>
 #include <QThread>
+#include <QTimer>
 
 #include "badge_icons.hpp"
 #include "location_icons.hpp"
@@ -96,6 +97,7 @@ void MainWindow::setup_background_workers()
   connect(fs_tree_thread_, &QThread::finished, fs_tree_worker_, &QObject::deleteLater);
   fs_tree_thread_->start();
   connect(fs_tree_worker_, &FsTreeScanWorker::progress, this, &MainWindow::on_fs_tree_scan_progress);
+  connect(fs_tree_worker_, &FsTreeScanWorker::partial, this, &MainWindow::on_fs_tree_scan_partial);
   connect(fs_tree_worker_, &FsTreeScanWorker::finished, this, &MainWindow::on_fs_tree_scan_finished);
   connect(fs_tree_worker_, &FsTreeScanWorker::failed, this, &MainWindow::on_fs_tree_scan_failed);
 

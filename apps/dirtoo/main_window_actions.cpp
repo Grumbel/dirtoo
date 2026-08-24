@@ -659,6 +659,29 @@ void MainWindow::on_compute_folder_sizes()
                             Q_ARG(bool, show_hidden), Q_ARG(bool, false), Q_ARG(int, -1));
 }
 
+
+void MainWindow::on_fs_tree_scan_partial(quint64 generation, quint64 nodes_ready)
+{
+  if (generation != fs_tree_scan_generation_) {
+    return;
+  }
+  Q_UNUSED(nodes_ready);
+  // Coalesce rapid partials into one model refresh.
+  if (fs_tree_partial_refresh_timer_ == nullptr) {
+    fs_tree_partial_refresh_timer_ = new QTimer(this);
+    fs_tree_partial_refresh_timer_->setSingleShot(true);
+    fs_tree_partial_refresh_timer_->setInterval(200);
+    connect(fs_tree_partial_refresh_timer_, &QTimer::timeout, this, [this] {
+      if (model_ != nullptr) {
+        model_->refresh();
+      }
+    });
+  }
+  if (!fs_tree_partial_refresh_timer_->isActive()) {
+    fs_tree_partial_refresh_timer_->start();
+  }
+}
+
 void MainWindow::on_fs_tree_scan_progress(quint64 generation, quint64 nodes_seen,
                                          QString current_path)
 {

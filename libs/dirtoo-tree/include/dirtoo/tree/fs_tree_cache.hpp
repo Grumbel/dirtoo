@@ -7,6 +7,7 @@
 #include "dirtoo/tree/scan_tree.hpp"
 
 #include <atomic>
+#include <cstdint>
 #include <filesystem>
 #include <memory>
 #include <mutex>
@@ -19,8 +20,8 @@ namespace dirtoo::tree {
 /// In-memory hierarchical filesystem tree cache (process-wide style usage).
 ///
 /// Thread-safe snapshot/invalidate. Scans are synchronous on the caller thread
-/// (run from a worker thread in the GUI). No SQLite in phase 1 — durable tier
-/// comes later without changing this API surface much.
+/// (run from a worker thread in the GUI). Holds full root snapshots and a
+/// progressive path→total_size index filled as nodes complete mid-scan.
 class FsTreeCache {
 public:
   FsTreeCache() = default;
@@ -34,16 +35,23 @@ public:
   [[nodiscard]] std::shared_ptr<const FsTreeNode>
   snapshot(const std::filesystem::path& root) const;
 
-  /// Scan (or rescan) @p root and store the result. Returns the new snapshot.
-  /// @p cancel is checked during the walk.
+  /// Progressive size for any path observed during a scan (files or directories).
+  [[nodiscard]] std::optional<std::uint64_t>
+  entry_total_size(const std::filesystem::path& path) const;
+
+  /// Record a finalized node size (called from scan node_ready / tests).
+  void set_entry_total_size(const std::filesystem::path& path, std::uint64_t total_size);
+
+  /// Scan (or rescan) @p root and store the result. Publishes entry sizes as
+  /// nodes complete when callbacks include node_ready (wired by default).
   std::shared_ptr<const FsTreeNode>
   scan(const std::filesystem::path& root, const ScanOptions& options = {},
-       const std::atomic_bool* cancel = nullptr, ScanProgressFn progress = {});
+       const std::atomic_bool* cancel = nullptr, ScanCallbacks callbacks = {});
 
-  /// Drop one root (exact key).
+  /// Drop one root snapshot and size-index entries under that path.
   void invalidate(const std::filesystem::path& root);
 
-  /// Drop every cached root whose path is @p root or under it.
+  /// Drop every cached root whose path is @p root or under it; prune size index.
   void invalidate_subtree(const std::filesystem::path& root);
 
   void clear();
@@ -53,6 +61,7 @@ public:
 private:
   mutable std::mutex mutex_;
   std::unordered_map<std::string, std::shared_ptr<const FsTreeNode>> roots_;
+  std::unordered_map<std::string, std::uint64_t> entry_sizes_;
 };
 
 } // namespace dirtoo::tree
