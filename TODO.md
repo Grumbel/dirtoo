@@ -1108,43 +1108,78 @@ Full file inventory + notes: **`AUDIT.md`** (section *Full source inventory + au
 - [x] **C4 — Tests** — `hash_file` / `hash_file_quick` + TagStore smoke + DirectoryLoadWorker list/cancel/next-gen; filter `checksummed`/`tagged` partly covered.
 
 
-### Filesystem tree cache + Treemap view (planned)
+### Filesystem tree cache (general service) + Treemap consumer (planned)
 
-**Problem.** `ViewMode::RelativeIcons` scales Graphics tiles by `log2(FileInfo::size())`.
-Directory `st_size` is not recursive content size, so the view does not show
-what actually consumes disk. A flow of differently scaled tiles is a weak
-substitute for a real space map (WinDirStat / KDirStat / baobab). Computing
-recursive sizes on demand on the GUI or even on a one-shot worker still
-re-walks trees, freezes or stalls on large/slow volumes, and does nothing to
-help navigation on cold network mounts.
+**Mindset.** Build a **general hierarchical filesystem index** — structure plus
+cheap metadata — as a reusable service. The treemap is one consumer, not the
+design centre. Other consumers (folder contents size, cold network-drive
+warm-up, optional Detail columns, future disk-usage tools) must fit without
+bending the cache toward painting rectangles.
 
-**Goal.** Introduce a **cached hierarchical filesystem index** (structure +
-aggregated sizes + light metadata), fully async and invalidatable. Build a
-**treemap view** on top of that cache (nested rectangles ∝ size, thumbnails
-when available). The same cache should later warm listings for slow drives and
-feed optional “folder contents size” columns without re-walking.
+**Problem.** `ViewMode::RelativeIcons` scales Graphics tiles by
+`log2(FileInfo::size())`. Directory `st_size` is not recursive content size, so
+the view does not show what consumes disk. Computing recursive sizes ad hoc
+re-walks trees, stalls on large or slow volumes, and does nothing for
+navigation while a network mount is still spinning up.
+
+**Goal.** An async, invalidatable **FsTreeCache** (working name) that holds
+directory trees and per-node metadata obtained from ordinary listing/`lstat`
+work. Publish immutable snapshots to consumers. A **treemap view** sits on top
+later; the cache must already be useful without it.
 
 **Non-goals (v1).** Remote VFS protocols, archive-as-tree in the cache, writing
-into the tree, live animated kinetic layout.
+into the tree, live animated layout, replacing one-level `DirectoryLoadWorker`
+for normal browsing.
 
 #### Design principles
 
-1. **No filesystem I/O on the GUI thread** (existing rule). Scan, stat, and
-   aggregation run in workers; the UI consumes immutable snapshots.
-2. **Separate from one-level `DirectoryLoadWorker` / `FileCollection`.** The
-   listing pipeline stays shallow and fast for normal browsing. The tree cache
-   is hierarchical, longer-lived, and size-aggregated.
-3. **Partial results are first-class.** Nodes can be `Pending` / `Partial` /
-   `Complete` / `Failed`. Treemap and size columns render what is known and
-   show progress for the rest.
-4. **Invalidation is explicit.** Directory mtime/size stamps, watcher events on
-   registered roots, and user Refresh. No silent “always trust RAM forever.”
-5. **Clean library boundary.** Prefer a focused library (e.g. `dirtoo-tree` or
-   an extension of `dirtoo-fs`) with Qt-free core types + a thin Qt worker
-   adapter in the app, matching `dirops` / hash store patterns.
-6. **No hacks around RelativeIcons.** Treat RelativeIcons as a stopgap; the
-   treemap is the proper size visualization. Do not pile more log-scale tweaks
-   onto the flow layout.
+1. **General service first.** API is “scan / snapshot / invalidate / progress”,
+   not “layout for treemap”. Consumers subscribe to snapshots; they do not own
+   the scan policy.
+2. **No filesystem I/O on the GUI thread.** Scan, stat, and aggregation run in
+   workers; UI and other callers only see snapshots.
+3. **Separate from one-level listing.** `DirectoryLoadWorker` / `FileCollection`
+   stay shallow and fast. The tree cache is hierarchical, longer-lived, and
+   size-aggregated.
+4. **Partial results are first-class.** Nodes: `Pending` / `Partial` /
+   `Complete` / `Failed`. Consumers render what is known.
+5. **Invalidation is explicit.** Directory mtime/size stamps, watcher hooks on
+   registered roots, user Refresh. No silent “trust RAM forever.”
+6. **Cheap metadata in, heavy data out.** Cache what a normal listing/stat
+   already provides. Do **not** duplicate ChecksumStore, TagStore,
+   MediaMetaCache, or XDG thumbnails.
+7. **Clean library boundary.** Prefer a focused library (e.g. `dirtoo-tree` or
+   a clear extension of `dirtoo-fs`) with Qt-free core types + a thin Qt worker
+   adapter in the app.
+8. **No hacks around RelativeIcons.** Treemap (or any size map) is the proper
+   visualization; do not pile more log-scale tweaks onto the flow layout.
+
+#### What to store per node
+
+Align with `FileInfo` / directory-entry status — almost free at scan time:
+
+| Field | Role |
+|-------|------|
+| path key, name, parent | Structure, navigation |
+| kind (file / dir / symlink / other) | Policy + UI |
+| `own_size` / `total_size` | Aggregation; size-aware consumers |
+| mtime | Invalidation + display |
+| mode / permissions | Badges, read-only cues without re-stat |
+| optional: `st_dev` | Stay on one mount (`du -x`-style) |
+| optional: atime/ctime/birth | Parity with Detail if already statted |
+| scan state | Partial UI |
+
+**Out of scope for this cache:** digests, tags, media duration/dimensions,
+thumbnail paths or pixels.
+
+#### Persistence (SQLite) — later, not required for v1
+
+- **Phase 1:** in-memory tree only (fast snapshots, partial updates).
+- **Later:** optional SQLite under `$XDG_CACHE_HOME/dirtoo/fstree/` as a
+  **durable tier** for completed or checkpointed subtrees (restart + cold
+  network mounts). Same validity idea as ChecksumStore (path + stamps).
+- SQLite is not the hot path for interactive layout; the in-memory snapshot is.
+- Batch writes; WAL; do not block the scan loop on per-row commits.
 
 #### Core data model (sketch)
 
@@ -1155,86 +1190,88 @@ FsTreeNode
   kind (file | directory | symlink | other)
   own_size          // regular file byte size; 0 for pure dirs
   total_size        // own_size + sum(children.total_size) when known
-  mtime / mode bits (optional, for invalidation + display)
+  mtime / mode      // invalidation + display
+  optional st_dev
   state             // Pending | Partial | Complete | Failed
   children[]        // directories only; files are leaves
 ```
 
-Snapshots handed to the UI are immutable (shared_ptr to const root or
-copy-on-write). Mutations happen only on the worker side, then publish a new
-snapshot.
+Snapshots handed to consumers are immutable (`shared_ptr` to const root or
+copy-on-write). Mutations stay on the worker side.
 
 #### Cache service API (sketch)
 
 - `request_scan(Location root, ScanOptions)` — depth limit, follow_symlinks
-  policy (default: do not follow), cancellation token, priority.
+  (default: do not), cancel token, priority.
 - `snapshot(Location) -> shared_ptr<const FsTreeNode>` — may be partial.
 - `invalidate(Location)` / `invalidate_subtree`.
-- Signals (Qt adapter): `subtree_updated`, `scan_progress`, `scan_finished`.
-- Optional **disk persistence** under `$XDG_CACHE_HOME/dirtoo/fstree/` (SQLite
-  or compact binary), keyed by canonical path + root stamp, so cold network
-  mounts can show last-known sizes while a rescan runs.
-
-Process-wide singleton (like checksum/tag stores) is appropriate; multiple
-windows share scans.
+- Progress / completion notifications (Qt adapter: signals).
+- Process-wide service so multiple windows share scans (like hash/tag stores).
 
 #### Scan worker behaviour
 
 - Prefer **breadth-first** or **priority queue** so shallow levels fill first
-  (treemap usable early).
+  (any consumer can use early partial data).
 - Aggregate sizes **bottom-up** as children complete.
-- Cap concurrent directory iterators; respect cancel + generation counters
-  (same pattern as `DirectoryLoadWorker`).
-- Do not block on thumbnail or media probes; sizes only.
-- Symlinks: record as leaves with target metadata if cheap; do not descend by
-  default (cycles / cross-device surprises).
+- Cap concurrent directory iterators; cancel + generation counters (same
+  pattern as `DirectoryLoadWorker`).
+- Do not block on thumbnail or media probes.
+- Symlinks: leaves by default; do not descend (cycles / cross-device).
 
-#### Treemap view (on top of cache)
+#### Example consumers (non-exhaustive)
+
+| Consumer | Needs from cache |
+|----------|------------------|
+| Treemap view | Hierarchy + `total_size` + kind; thumbs from existing pipeline |
+| Detail “Contents size” column | `total_size` for directory rows |
+| Activity / status | Scan progress |
+| Network / slow volume UX | Last-known snapshot while rescan runs (with disk tier) |
+| Future CLI (`dt-du`-style) | Same library, no GUI |
+
+#### Treemap view (one consumer, later phase)
 
 | Piece | Role |
 |-------|------|
-| `ViewMode::Treemap` | New mode; menu/toolbar next to Icons / Relative Size |
-| Layout | Squarified treemap (Bruls et al.) over `FsTreeNode` children; pure C++ algorithm, unit-tested with fixed sizes |
-| Paint | Leaf rects: thumbnail if ready (crop/letterbox into rect), else type-tinted fill; directory frames with padding; labels when area ≥ threshold |
-| Interaction | Click file → select / open; click directory → navigate or zoom-in treemap; tooltip path + size + % of parent |
-| Model | Dedicated hierarchy model over cache snapshot — **not** flat `FileListModel` |
-| Thumbs | Reuse `ThumbnailCoordinator` / Thumbnailer1 for visible large rects only |
+| `ViewMode::Treemap` | Menu/toolbar alongside Icons |
+| Layout | Squarified (Bruls et al.); pure C++; unit-tested |
+| Paint | Thumbnail if ready, else type tint; dir frames; labels when large enough |
+| Interaction | File select/open; directory navigate or zoom; tooltip path/size/% |
+| Model | Hierarchy over cache snapshot — **not** flat `FileListModel` |
+| Thumbs | Existing `ThumbnailCoordinator` for large visible rects only |
 
-RelativeIcons remains until treemap is usable; then demote or remove the menu
-entry so there is one clear “by size” visualization.
+RelativeIcons remains until a real size map exists; then demote or remove it.
 
 #### Phased delivery
 
 | Phase | Deliverable | Notes |
 |-------|-------------|--------|
-| **0** | This plan in `TODO.md` | No code yet |
-| **1** | `FsTreeNode` + in-memory cache + async scan worker + Catch tests | Temp-dir trees; cancel; partial snapshots |
-| **2** | GUI wiring without treemap | Background “Compute folder sizes”; optional Detail column from cache; ActivityMonitor progress; Refresh invalidates |
-| **3** | Optional on-disk cache | Stamp invalidation; helps network drives |
-| **4** | Squarified layout + `TreemapView` | Thumbnails when available; navigation |
-| **5** | Polish | Zoom stack, filter interaction policy, supersede RelativeIcons |
+| **0** | Plan in `TODO.md` | Done; refined for general-service framing |
+| **1** | `FsTreeNode` + in-memory cache + async scan + Catch tests | No SQLite yet; no treemap UI |
+| **2** | GUI wiring without treemap | Background folder sizes; optional Detail column; ActivityMonitor; Refresh invalidates |
+| **3** | Optional on-disk (SQLite) tier | Stamp invalidation; helps network drives / restart |
+| **4** | Squarified layout + `TreemapView` | Thumbnails when available |
+| **5** | Polish | Zoom stack; filter policy; supersede RelativeIcons |
 
 #### Why this order
 
-Cache first solves the real bottleneck (recursive size + repeated walks) and
-unblocks other UI (size column, network warm-up). Treemap is a presentation
-layer; building it before the cache would force ad-hoc walking and repeat the
-RelativeIcons mistake.
+The cache is the reusable piece and removes repeated walks. Treemap is
+presentation. Building a view before the service would hard-wire walking into
+the GUI again (the RelativeIcons mistake).
 
 #### Relation to existing freezes
 
 Listing, filter, and thumbnail mitigations stay as they are. The tree cache
-must not reintroduce GUI-thread walks. Watcher soft-reload of the **one-level**
-collection stays independent; optionally feed invalidate() when the current
+must not reintroduce GUI-thread walks. Watcher soft-reload of the one-level
+collection stays independent; optionally call `invalidate()` when the current
 root’s children change.
 
-#### Open decisions (resolve in phase 1 design notes)
+#### Open decisions (resolve in phase 1)
 
 - New flake/CMake library vs `dirtoo-fs` extension (lean toward separate
-  `dirtoo-tree` if the surface grows beyond nodes + scan).
-- Symlink and mount-point policy defaults.
-- Whether Detail “Contents size” is on by default or opt-in.
-- Treemap zoom-in vs immediate `open_location` on directory click.
+  `dirtoo-tree` if the surface grows).
+- Symlink and mount-point defaults.
+- Whether Detail “Contents size” is default or opt-in.
+- Treemap: zoom-in vs immediate `open_location` on directory click.
 
 ---
 
