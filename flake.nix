@@ -74,6 +74,17 @@
           cmakeFlags = [ versionFlag ];
           meta.description = "dirtoo Location / FileInfo library";
         };
+        dirtoo-tree = pkgs.stdenv.mkDerivation {
+          pname = "dirtoo-tree";
+          inherit version cmakeBuildType;
+          src = srcFor [ ./libs/dirtoo-tree ];
+          dontStrip = true;
+          nativeBuildInputs = with pkgs; [ cmake ninja ];
+          postUnpack = ''sourceRoot+=/libs/dirtoo-tree'';
+          cmakeFlags = [ versionFlag ];
+          meta.description = "dirtoo hierarchical filesystem tree cache (scan + sizes)";
+        };
+
 
         dirtoo-hash = pkgs.stdenv.mkDerivation {
           pname = "dirtoo-hash";
@@ -186,6 +197,7 @@
           buildInputs = [
             dirops
             dirtoo-fs
+            dirtoo-tree
             dirtoo-hash
             dirtoo-tags
             dirtoo-filter
@@ -287,6 +299,7 @@
           paths = [
             dirops
             dirtoo-fs
+            dirtoo-tree
             dirtoo-hash
             dirtoo-tags
             dirtoo-filter
@@ -309,6 +322,7 @@
           inherit
             dirops
             dirtoo-fs
+            dirtoo-tree
             dirtoo-hash
             dirtoo-tags
             dirtoo-filter
@@ -327,6 +341,7 @@
             paths = [
               dirops
               dirtoo-fs
+              dirtoo-tree
               dirtoo-hash
               dirtoo-tags
               dirtoo-filter

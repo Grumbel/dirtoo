@@ -27,6 +27,7 @@ add_executable(dirtoo-tests
   test_tag_store.cpp
   test_file_set_store.cpp
   test_directory_load_worker.cpp
+  test_fs_tree.cpp
   ${CMAKE_SOURCE_DIR}/apps/dirtoo/clipboard.cpp
   ${CMAKE_SOURCE_DIR}/apps/dirtoo/directory_load_worker.cpp
 )
@@ -40,6 +41,7 @@ target_include_directories(dirtoo-tests PRIVATE
 target_link_libraries(dirtoo-tests
   PRIVATE
     dirtoo-fs::dirtoo-fs
+    dirtoo-tree::dirtoo-tree
     dirops::dirops
     dirtoo-collection::dirtoo-collection
     dirtoo-archive::dirtoo-archive
