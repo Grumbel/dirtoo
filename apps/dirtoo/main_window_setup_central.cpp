@@ -1,3 +1,5 @@
+#include "treemap_view.hpp"
+#include "size_format.hpp"
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -240,6 +242,19 @@ void MainWindow::setup_central_ui()
   connect(graphics_view_->horizontalScrollBar(), &QScrollBar::valueChanged, this,
         [this](int) { request_thumbnails_for_visible(); });
   view_stack_->addWidget(graphics_view_);
+
+  treemap_view_ = new TreemapView(view_stack_);
+  connect(treemap_view_, &TreemapView::path_activated, this, [this](const QString& path) {
+    try {
+      open_location(fs::Location::from_path(std::filesystem::path{path.toStdString()}));
+    } catch (const std::exception& ex) {
+      set_status(QString::fromUtf8(ex.what()));
+    }
+  });
+  connect(treemap_view_, &TreemapView::path_hovered, this, [this](const QString& path, quint64 total) {
+    set_status(QStringLiteral("%1 — %2").arg(path, format_byte_size(total)));
+  });
+  view_stack_->addWidget(treemap_view_);
 
   apply_icon_zoom();
 

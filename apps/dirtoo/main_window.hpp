@@ -60,6 +60,7 @@ class QListWidget;
 class QLabel;
 class QListView;
 class GraphicsFileView;
+class TreemapView;
 class QLabel;
 class QAction;
 class QStackedWidget;
@@ -220,6 +221,8 @@ private slots:
   void on_view_detail();
   void on_view_icons();
   void on_view_relative_icons();
+  void on_view_treemap();
+  void refresh_treemap_from_cache();
   void on_view_small_icons();
   void on_zoom_in();
   void on_zoom_out();
@@ -378,7 +381,8 @@ private:
   QStackedWidget* view_stack_ = nullptr;
   QTreeView* tree_view_ = nullptr;
   QListView* icon_view_ = nullptr; // List view (and fallback if no Graphics)
-  GraphicsFileView* graphics_view_ = nullptr; // Icons Graphics View
+  GraphicsFileView* graphics_view_ = nullptr;
+  TreemapView* treemap_view_ = nullptr; // Icons Graphics View
   /// Left side of the status bar: current filename / transient messages.
   QLabel* status_label_ = nullptr;
   /// Busy indicator (loading badge) shown while background IO / workers run.
@@ -393,6 +397,7 @@ private:
   QAction* detail_act_ = nullptr;
   QAction* icons_act_ = nullptr;
   QAction* relative_icons_act_ = nullptr;
+  QAction* treemap_act_ = nullptr;
   QAction* small_icons_act_ = nullptr;
   QToolButton* sort_toolbar_btn_ = nullptr;
   QToolButton* group_toolbar_btn_ = nullptr;

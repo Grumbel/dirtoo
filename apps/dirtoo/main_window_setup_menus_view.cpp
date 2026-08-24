@@ -37,6 +37,7 @@ void MainWindow::setup_view_menu()
   auto* view_menu = menuBar()->addMenu(QStringLiteral("&View"));
   view_menu->addAction(icons_act_);
   view_menu->addAction(relative_icons_act_);
+  view_menu->addAction(treemap_act_);
   view_menu->addAction(small_icons_act_);
   view_menu->addAction(detail_act_);
   view_menu->addSeparator();

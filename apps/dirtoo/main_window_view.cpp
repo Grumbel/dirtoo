@@ -161,6 +161,14 @@ void MainWindow::set_view_mode(ViewMode mode)
     apply_icon_zoom();
     apply_detail_column_visibility();
     request_thumbnails_for_visible();
+  } else if (mode == ViewMode::Treemap) {
+    if (treemap_view_ != nullptr) {
+      view_stack_->setCurrentWidget(treemap_view_);
+    }
+    if (treemap_act_ != nullptr) {
+      treemap_act_->setChecked(true);
+    }
+    refresh_treemap_from_cache();
   } else if (mode == ViewMode::List) {
     if (model_ != nullptr) {
       model_->set_icon_style(false);
@@ -208,6 +216,35 @@ void MainWindow::on_view_detail()
 void MainWindow::on_view_icons()
 {
   set_view_mode(ViewMode::Icons);
+}
+
+
+void MainWindow::on_view_treemap()
+{
+  set_view_mode(ViewMode::Treemap);
+  set_status(QStringLiteral("Treemap — folder sizes from FsTreeCache"));
+}
+
+void MainWindow::refresh_treemap_from_cache()
+{
+  if (treemap_view_ == nullptr) {
+    return;
+  }
+  if (location_.empty() || location_.is_tag() || location_.is_set()) {
+    treemap_view_->clear();
+    return;
+  }
+  const auto path = location_.as_path();
+  auto snap = app_fs_tree_cache().snapshot(path);
+  if (!snap) {
+    treemap_view_->clear();
+    // Kick a background scan if none is running; view will refresh on finish.
+    if (fs_tree_worker_ != nullptr && !fs_tree_worker_->isRunning()) {
+      on_compute_folder_sizes();
+    }
+    return;
+  }
+  treemap_view_->set_root(std::move(snap));
 }
 
 void MainWindow::on_view_relative_icons()

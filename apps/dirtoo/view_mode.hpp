@@ -10,6 +10,7 @@ enum class ViewMode {
   Icons,
   List, // List view: icon+name rows in columns (Win95 Explorer List)
   RelativeIcons, // Icons view; tile size scales with file size (log)
+  Treemap,       // Squarified folder sizes (FsTreeCache)
 };
 
 } // namespace dirtoo::app

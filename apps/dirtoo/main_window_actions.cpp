@@ -720,6 +720,9 @@ void MainWindow::on_fs_tree_scan_finished(quint64 generation, QString path_key,
   if (model_ != nullptr) {
     model_->refresh();
   }
+  if (view_mode_ == ViewMode::Treemap) {
+    refresh_treemap_from_cache();
+  }
 }
 
 void MainWindow::on_fs_tree_scan_failed(quint64 generation, QString error)

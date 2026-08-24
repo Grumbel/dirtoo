@@ -134,6 +134,7 @@ qt_add_executable(dirtoo-app
   path_completion_worker.hpp
   directory_load_worker.cpp
   fs_tree_scan_worker.cpp
+  treemap_view.cpp
   directory_load_worker.hpp
   sort_worker.cpp
   sort_worker.hpp

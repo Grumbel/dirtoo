@@ -230,6 +230,10 @@ void MainWindow::setup_toolbar()
   toolbar->addSeparator();
   // View modes: Icons, List (Win95-style), Detail
   icons_act_ = toolbar->addAction(theme_icon("view-grid", "view-list-icons"), QStringLiteral("Icons"));
+  treemap_act_ = toolbar->addAction(theme_icon("view-statistics", "view-grid"),
+                                   QStringLiteral("Treemap"));
+  treemap_act_->setToolTip(QStringLiteral("Treemap — folder sizes"));
+  treemap_act_->setStatusTip(QStringLiteral("Squarified treemap of recursive folder sizes"));
   relative_icons_act_ = toolbar->addAction(theme_icon("view-relative", "view-grid"),
                                            QStringLiteral("Relative Icons"));
   relative_icons_act_->setToolTip(
@@ -243,15 +247,18 @@ void MainWindow::setup_toolbar()
   detail_act_->setCheckable(true);
   icons_act_->setCheckable(true);
   relative_icons_act_->setCheckable(true);
+  treemap_act_->setCheckable(true);
   small_icons_act_->setCheckable(true);
   auto* view_group = new QActionGroup(this);
   view_group->addAction(icons_act_);
   view_group->addAction(relative_icons_act_);
+  view_group->addAction(treemap_act_);
   view_group->addAction(small_icons_act_);
   view_group->addAction(detail_act_);
   connect(detail_act_, &QAction::triggered, this, &MainWindow::on_view_detail);
   connect(icons_act_, &QAction::triggered, this, &MainWindow::on_view_icons);
   connect(relative_icons_act_, &QAction::triggered, this, &MainWindow::on_view_relative_icons);
+  connect(treemap_act_, &QAction::triggered, this, &MainWindow::on_view_treemap);
   connect(small_icons_act_, &QAction::triggered, this, &MainWindow::on_view_small_icons);
   detail_act_->setChecked(true);
 
