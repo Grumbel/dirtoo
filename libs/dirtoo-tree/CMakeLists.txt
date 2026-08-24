@@ -25,9 +25,11 @@ include(CMakePackageConfigHelpers)
 add_library(dirtoo-tree
   include/dirtoo/tree/fs_tree_node.hpp
   include/dirtoo/tree/scan_tree.hpp
+  include/dirtoo/tree/treemap_layout.hpp
   include/dirtoo/tree/fs_tree_cache.hpp
   src/scan_tree.cpp
   src/fs_tree_cache.cpp
+  src/treemap_layout.cpp
 )
 add_library(dirtoo::tree ALIAS dirtoo-tree)
 add_library(dirtoo-tree::dirtoo-tree ALIAS dirtoo-tree)

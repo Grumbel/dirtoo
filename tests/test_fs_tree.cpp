@@ -2,9 +2,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "dirtoo/tree/fs_tree_cache.hpp"
+#include <algorithm>
 #include "dirtoo/tree/scan_tree.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
+
+using Catch::Approx;
 
 #include <atomic>
 #include <chrono>
@@ -198,3 +202,48 @@ TEST_CASE("FsTreeCache entry_total_size filled during scan", "[tree]")
   CHECK(*file_sz == 5);
 }
 
+
+#include "dirtoo/tree/treemap_layout.hpp"
+
+TEST_CASE("layout_squarified empty / zero weights", "[tree][treemap]")
+{
+  using namespace dirtoo::tree;
+  CHECK(layout_squarified({}, TreemapRect{0, 0, 100, 100}).empty());
+  CHECK(layout_squarified({{"a", 0}, {"b", -1}}, TreemapRect{0, 0, 100, 100}).empty());
+  CHECK(layout_squarified({{"a", 1}}, TreemapRect{0, 0, 0, 10}).empty());
+}
+
+TEST_CASE("layout_squarified single fills bounds", "[tree][treemap]")
+{
+  using namespace dirtoo::tree;
+  const auto cells = layout_squarified({{"only", 42}}, TreemapRect{10, 20, 100, 50});
+  REQUIRE(cells.size() == 1);
+  CHECK(cells[0].id == "only");
+  CHECK(cells[0].rect.x == Approx(10));
+  CHECK(cells[0].rect.y == Approx(20));
+  CHECK(cells[0].rect.w == Approx(100));
+  CHECK(cells[0].rect.h == Approx(50));
+}
+
+TEST_CASE("layout_squarified areas proportional", "[tree][treemap]")
+{
+  using namespace dirtoo::tree;
+  const TreemapRect bounds{0, 0, 100, 100};
+  const auto cells = layout_squarified(
+      {{"a", 1}, {"b", 1}, {"c", 2}}, bounds);
+  REQUIRE(cells.size() == 3);
+  double area_sum = 0;
+  double weight_sum = 0;
+  for (const auto& c : cells) {
+    area_sum += c.rect.area();
+    weight_sum += c.weight;
+  }
+  CHECK(area_sum == Approx(bounds.area()).margin(1e-6));
+  // Scaled weights sum to area.
+  CHECK(weight_sum == Approx(bounds.area()).margin(1e-6));
+  // Largest id should be c.
+  auto it = std::find_if(cells.begin(), cells.end(),
+                         [](const TreemapCell& c) { return c.id == "c"; });
+  REQUIRE(it != cells.end());
+  CHECK(it->rect.area() == Approx(50).margin(1e-3));
+}
