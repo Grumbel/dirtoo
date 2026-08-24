@@ -48,6 +48,7 @@ void MainWindow::setup_view_menu()
     };
     static constexpr ColOpt kCols[] = {
         {"size", "Size"},
+        {"contents", "Contents"},
         {"width", "Width"},
         {"height", "Height"},
         {"dimensions", "Dimensions"},
@@ -66,7 +67,7 @@ void MainWindow::setup_view_menu()
       const QString key = QString::fromUtf8(c.key);
       const bool default_off = key == QLatin1String("width") || key == QLatin1String("height")
                                || key == QLatin1String("accessed") || key == QLatin1String("changed")
-                               || key == QLatin1String("birth");
+                               || key == QLatin1String("birth") || key == QLatin1String("contents");
       act->setChecked(detail_columns_.contains(key)
                       || (detail_columns_.isEmpty() && !default_off));
       connect(act, &QAction::toggled, this, [this, key](bool on) {

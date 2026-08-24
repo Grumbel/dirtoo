@@ -5,6 +5,7 @@
 #include "archive_member_cache.hpp"
 #include "dirtoo/filter/media_meta_cache.hpp"
 #include "size_format.hpp"
+#include "fs_tree_scan_worker.hpp"
 
 #include <chrono>
 #include <cstdlib>
@@ -318,6 +319,34 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
         return QStringLiteral("%1 · %2 items").arg(bytes).arg(it.value());
       }
       return format_size(fi->size(), false);
+    case FileListColumn::ContentsSize: {
+      if (!fi->is_directory()) {
+        return {};
+      }
+      // Cache lookup only — never scan on the GUI thread.
+      const auto root = app_fs_tree_cache().snapshot(fi->path().parent_path());
+      if (!root) {
+        // Maybe scanned this directory as a root itself.
+        const auto self = app_fs_tree_cache().snapshot(fi->path());
+        if (!self) {
+          return {};
+        }
+        return format_size(self->total_size(), false);
+      }
+      for (const auto& ch : root->children()) {
+        if (ch && ch->path() == fi->path()) {
+          return format_size(ch->total_size(), false);
+        }
+      }
+      // Path key mismatch (symlink/canonical): try basename match among dirs.
+      const auto name = fi->basename();
+      for (const auto& ch : root->children()) {
+        if (ch && ch->is_directory() && ch->name() == name) {
+          return format_size(ch->total_size(), false);
+        }
+      }
+      return {};
+    }
     case FileListColumn::Width:
     case FileListColumn::Height:
     case FileListColumn::Dimensions:
@@ -426,7 +455,8 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
 
   if (role == Qt::TextAlignmentRole) {
     const auto col = static_cast<FileListColumn>(index.column());
-    if (col == FileListColumn::Size || col == FileListColumn::Width || col == FileListColumn::Height
+    if (col == FileListColumn::Size || col == FileListColumn::ContentsSize
+        || col == FileListColumn::Width || col == FileListColumn::Height
         || col == FileListColumn::AspectRatio || col == FileListColumn::Framerate
         || col == FileListColumn::Duration) {
       return static_cast<int>(Qt::AlignRight | Qt::AlignVCenter);
@@ -558,6 +588,8 @@ QVariant FileListModel::headerData(int section, Qt::Orientation orientation, int
     return QStringLiteral("Name");
   case FileListColumn::Size:
     return QStringLiteral("Size");
+  case FileListColumn::ContentsSize:
+    return QStringLiteral("Contents");
   case FileListColumn::Width:
     return QStringLiteral("Width");
   case FileListColumn::Height:

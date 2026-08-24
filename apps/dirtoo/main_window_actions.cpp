@@ -694,6 +694,9 @@ void MainWindow::on_fs_tree_scan_finished(quint64 generation, QString path_key,
     note = QStringLiteral(" (incomplete)");
   }
   set_status(QStringLiteral("Folder total: %1%2").arg(format_byte_size(total_size), note));
+  if (model_ != nullptr) {
+    model_->refresh();
+  }
 }
 
 void MainWindow::on_fs_tree_scan_failed(quint64 generation, QString error)

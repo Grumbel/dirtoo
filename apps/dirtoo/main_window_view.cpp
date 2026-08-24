@@ -245,11 +245,13 @@ void MainWindow::apply_detail_column_visibility()
           && QLatin1String(key) != QLatin1String("height")
           && QLatin1String(key) != QLatin1String("accessed")
           && QLatin1String(key) != QLatin1String("changed")
-          && QLatin1String(key) != QLatin1String("birth");
+          && QLatin1String(key) != QLatin1String("birth")
+          && QLatin1String(key) != QLatin1String("contents");
     }
     return detail_columns_.contains(QLatin1String(key));
   };
   tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Size), !visible("size"));
+  tree_view_->setColumnHidden(static_cast<int>(FileListColumn::ContentsSize), !visible("contents"));
   tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Width), !visible("width"));
   tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Height), !visible("height"));
   tree_view_->setColumnHidden(static_cast<int>(FileListColumn::Dimensions), !visible("dimensions"));

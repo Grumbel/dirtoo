@@ -20,6 +20,7 @@ namespace dirtoo::app {
 enum class FileListColumn {
   Name = 0,
   Size,
+  ContentsSize, ///< recursive folder total from FsTreeCache (empty if unknown)
   Width,        ///< media width (px)
   Height,       ///< media height (px)
   Dimensions,   ///< width×height

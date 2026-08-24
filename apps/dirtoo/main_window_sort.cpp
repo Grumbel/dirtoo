@@ -169,6 +169,7 @@ void MainWindow::on_header_clicked(int section)
     key = SortKey::Name;
     break;
   case FileListColumn::Size:
+  case FileListColumn::ContentsSize:
     key = SortKey::Size;
     break;
   case FileListColumn::Width:
