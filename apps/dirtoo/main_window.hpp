@@ -72,6 +72,8 @@ class QToolButton;
 
 namespace dirtoo::app {
 
+class FsTreeScanWorker;
+
 
 class MainWindow : public QMainWindow {
   Q_OBJECT
@@ -155,6 +157,10 @@ private slots:
   void on_tag_selected();
   void on_tag_manager();
   void on_reload_thumbnails();
+  void on_compute_folder_sizes();
+  void on_fs_tree_scan_progress(quint64 generation, quint64 nodes_seen, QString current_path);
+  void on_fs_tree_scan_finished(quint64 generation, QString path_key, quint64 total_size, int state);
+  void on_fs_tree_scan_failed(quint64 generation, QString error);
   void on_prepare_thumbnails();
   void on_make_directory_thumbnails();
   void apply_settings(const AppSettings& settings);
@@ -298,6 +304,10 @@ private:
   ThumbnailCoordinator thumbs_{this};
   LocationChrome location_chrome_{this};
   ListPipelineWorkers list_workers_{this};
+  QThread* fs_tree_thread_ = nullptr;
+  FsTreeScanWorker* fs_tree_worker_ = nullptr;
+  quint64 fs_tree_scan_generation_ = 0;
+  QString fs_tree_activity_job_id_;
   watcher::DirectoryWatcher watcher_;
   archive::ArchiveManager archive_manager_;
   ArchiveListing archive_listing_;

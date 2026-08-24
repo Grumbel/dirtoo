@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include "fs_tree_scan_worker.hpp"
+#include "activity_monitor.hpp"
+#include "size_format.hpp"
 #include <QTimer>
 #include "activity_monitor.hpp"
 #include "archive_member_cache.hpp"
@@ -623,6 +626,86 @@ void MainWindow::on_mark_selection_unopened()
   }
   opened_files_store().mark_unopened(paths);
   set_status(QStringLiteral("Marked %1 file(s) as unopened").arg(paths.size()));
+}
+
+
+
+void MainWindow::on_compute_folder_sizes()
+{
+  if (location_.is_archive() || location_.is_tag()) {
+    set_status(QStringLiteral("Folder size scan is only available for ordinary directories"));
+    return;
+  }
+  if (fs_tree_worker_ == nullptr) {
+    return;
+  }
+  fs_tree_worker_->cancel();
+  if (!fs_tree_activity_job_id_.isEmpty()) {
+    ActivityMonitor::instance().end_job(fs_tree_activity_job_id_);
+    fs_tree_activity_job_id_.clear();
+  }
+
+  const auto path = location_.as_path();
+  const QString path_q = QString::fromUtf8(path.u8string().c_str());
+  const quint64 gen = ++fs_tree_scan_generation_;
+  const bool show_hidden = (show_hidden_act_ != nullptr) ? show_hidden_act_->isChecked() : true;
+
+  fs_tree_activity_job_id_ = ActivityMonitor::instance().begin_job(
+      QStringLiteral("fs-tree"), QStringLiteral("Scanning folder sizes…"));
+  set_status(QStringLiteral("Scanning folder sizes…"));
+
+  QMetaObject::invokeMethod(fs_tree_worker_, "scan", Qt::QueuedConnection,
+                            Q_ARG(QString, path_q), Q_ARG(quint64, gen),
+                            Q_ARG(bool, show_hidden), Q_ARG(bool, false), Q_ARG(int, -1));
+}
+
+void MainWindow::on_fs_tree_scan_progress(quint64 generation, quint64 nodes_seen,
+                                         QString current_path)
+{
+  if (generation != fs_tree_scan_generation_) {
+    return;
+  }
+  const QString label =
+      QStringLiteral("Scanning folder sizes… %1 entries").arg(nodes_seen);
+  if (!fs_tree_activity_job_id_.isEmpty()) {
+    ActivityMonitor::instance().update_job(fs_tree_activity_job_id_, label, -1, -1);
+  }
+  // Keep status light — path can be long on network drives.
+  Q_UNUSED(current_path);
+}
+
+void MainWindow::on_fs_tree_scan_finished(quint64 generation, QString path_key,
+                                         quint64 total_size, int state)
+{
+  if (generation != fs_tree_scan_generation_) {
+    return;
+  }
+  if (!fs_tree_activity_job_id_.isEmpty()) {
+    ActivityMonitor::instance().end_job(fs_tree_activity_job_id_);
+    fs_tree_activity_job_id_.clear();
+  }
+  Q_UNUSED(path_key);
+  using dirtoo::tree::FsTreeNodeState;
+  const auto st = static_cast<FsTreeNodeState>(state);
+  QString note;
+  if (st == FsTreeNodeState::Partial) {
+    note = QStringLiteral(" (partial)");
+  } else if (st == FsTreeNodeState::Failed) {
+    note = QStringLiteral(" (incomplete)");
+  }
+  set_status(QStringLiteral("Folder total: %1%2").arg(format_byte_size(total_size), note));
+}
+
+void MainWindow::on_fs_tree_scan_failed(quint64 generation, QString error)
+{
+  if (generation != fs_tree_scan_generation_) {
+    return;
+  }
+  if (!fs_tree_activity_job_id_.isEmpty()) {
+    ActivityMonitor::instance().end_job(fs_tree_activity_job_id_);
+    fs_tree_activity_job_id_.clear();
+  }
+  set_status(QStringLiteral("Folder size scan failed: %1").arg(error));
 }
 
 } // namespace dirtoo::app

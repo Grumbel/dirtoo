@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include "fs_tree_scan_worker.hpp"
 #include "tag_paint.hpp"
 
 #include <QDebug>
+#include <QThread>
 
 #include "badge_icons.hpp"
 #include "location_icons.hpp"
@@ -87,6 +89,16 @@ void MainWindow::setup_background_workers()
   });
 
   list_workers_.setup();
+
+  fs_tree_worker_ = new FsTreeScanWorker;
+  fs_tree_thread_ = new QThread(this);
+  fs_tree_worker_->moveToThread(fs_tree_thread_);
+  connect(fs_tree_thread_, &QThread::finished, fs_tree_worker_, &QObject::deleteLater);
+  fs_tree_thread_->start();
+  connect(fs_tree_worker_, &FsTreeScanWorker::progress, this, &MainWindow::on_fs_tree_scan_progress);
+  connect(fs_tree_worker_, &FsTreeScanWorker::finished, this, &MainWindow::on_fs_tree_scan_finished);
+  connect(fs_tree_worker_, &FsTreeScanWorker::failed, this, &MainWindow::on_fs_tree_scan_failed);
+
   connect(list_workers_.dir_load(), &DirectoryLoadWorker::loaded, this, &MainWindow::on_directory_loaded);
   connect(list_workers_.dir_load(), &DirectoryLoadWorker::failed, this, &MainWindow::on_directory_load_failed);
   connect(list_workers_.dir_load(), &DirectoryLoadWorker::progress, this,

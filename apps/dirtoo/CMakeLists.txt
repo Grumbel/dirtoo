@@ -133,6 +133,7 @@ qt_add_executable(dirtoo-app
   view_zoom.cpp
   path_completion_worker.hpp
   directory_load_worker.cpp
+  fs_tree_scan_worker.cpp
   directory_load_worker.hpp
   sort_worker.cpp
   sort_worker.hpp
@@ -162,6 +163,7 @@ target_link_libraries(dirtoo-app
   PRIVATE
     dirtoo_warnings
     dirtoo::fs
+    dirtoo::tree
     dirtoo::collection
     dirtoo::filter
     dirtoo::watcher

@@ -1246,7 +1246,7 @@ RelativeIcons remains until a real size map exists; then demote or remove it.
 | Phase | Deliverable | Notes |
 |-------|-------------|--------|
 | **0** | Plan in `TODO.md` | Done; refined for general-service framing |
-| **1** | `FsTreeNode` + in-memory cache + scan + Catch tests | **In progress** — `libs/dirtoo-tree`: node, `scan_tree` (BFS), `FsTreeCache`; tests in `test_fs_tree.cpp`. Sync scan (call from worker). No SQLite; no treemap UI |
+| **1** | `FsTreeNode` + in-memory cache + scan + Catch tests | **Mostly done** — lib + tests; `FsTreeScanWorker` + Tools → Compute Folder Sizes + ActivityMonitor; Refresh invalidates. Still open: Detail contents-size column, async partial snapshot publish mid-scan |
 | **2** | GUI wiring without treemap | Background folder sizes; optional Detail column; ActivityMonitor; Refresh invalidates |
 | **3** | Optional on-disk (SQLite) tier | Stamp invalidation; helps network drives / restart |
 | **4** | Squarified layout + `TreemapView` | Thumbnails when available |

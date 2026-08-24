@@ -3,6 +3,8 @@
 
 #include "main_window_common.hpp"
 #include "activity_monitor.hpp"
+#include "fs_tree_scan_worker.hpp"
+#include "size_format.hpp"
 
 #include "badge_icons.hpp"
 #include "location_icons.hpp"
@@ -122,6 +124,17 @@ MainWindow::~MainWindow()
   transfer_controller_.shutdown();
   search_controller_.stop();
   list_workers_.shutdown();
+  if (fs_tree_worker_ != nullptr) {
+    fs_tree_worker_->cancel();
+  }
+  if (fs_tree_thread_ != nullptr) {
+    fs_tree_thread_->quit();
+    fs_tree_thread_->wait(5000);
+  }
+  if (!fs_tree_activity_job_id_.isEmpty()) {
+    ActivityMonitor::instance().end_job(fs_tree_activity_job_id_);
+    fs_tree_activity_job_id_.clear();
+  }
   shutdown_thumbnail_workers();
 }
 
@@ -233,6 +246,9 @@ void MainWindow::closeEvent(QCloseEvent* event)
 
 void MainWindow::on_refresh()
 {
+  if (!location_.is_archive() && !location_.is_tag()) {
+    app_fs_tree_cache().invalidate(location_.as_path());
+  }
   on_directory_changed();
   set_status(QStringLiteral("Refreshed"));
 }

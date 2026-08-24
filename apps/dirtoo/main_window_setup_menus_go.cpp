@@ -55,6 +55,8 @@ void MainWindow::setup_go_help_menus()
   connect(recent_opens_menu_, &QMenu::aboutToShow, this, &MainWindow::on_rebuild_recent_opens_menu);
 
   auto* tools_menu = menuBar()->addMenu(QStringLiteral("&Tools"));
+  tools_menu->addAction(theme_icon("drive-harddisk", "disk-usage"), QStringLiteral("Compute Folder Sizes"),
+                        this, &MainWindow::on_compute_folder_sizes);
   tools_menu->addAction(theme_icon("document-properties"), QStringLiteral("Checksums…"),
                         this, &MainWindow::on_checksums);
   {
