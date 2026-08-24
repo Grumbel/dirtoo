@@ -173,6 +173,13 @@ void MainWindow::on_location_entered(const QString& text)
 
 void MainWindow::on_go_parent()
 {
+  // Location bar treats ?filter= / ?search= as the tip segment. Parent should
+  // strip that tip first (stay on the same path) before walking the filesystem.
+  if (!location_.filter_query().empty() || !location_.search_query().empty()) {
+    location_chrome_.clear_query_tip();
+    open_location(location_.with_filter_and_search({}, {}));
+    return;
+  }
   open_location(location_.parent());
 }
 
