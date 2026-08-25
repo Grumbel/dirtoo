@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include "treemap_view.hpp"
+#include "fs_tree_scan_worker.hpp"
 #include "view_zoom.hpp"
 
 #include "file_item_delegate.hpp"

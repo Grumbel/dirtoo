@@ -111,7 +111,7 @@ constexpr const char* kInterface = "org.freedesktop.thumbnails.Thumbnailer1";
 Thumbnailer::Thumbnailer(QObject* parent)
     : QObject(parent)
 {
-  ensure_service();
+  (void)ensure_service();
 }
 
 Thumbnailer::~Thumbnailer() = default;
