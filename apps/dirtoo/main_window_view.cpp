@@ -245,6 +245,8 @@ void MainWindow::refresh_treemap_from_cache()
     return;
   }
   treemap_view_->set_root(std::move(snap));
+  // Reuse listing thumbnail pipeline for file/dir cells.
+  request_thumbnails_for_visible();
 }
 
 void MainWindow::on_view_relative_icons()
