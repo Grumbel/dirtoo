@@ -8,6 +8,22 @@
 namespace dirtoo::tree {
 namespace {
 
+
+void index_directory_nodes(
+    std::unordered_map<std::string, std::shared_ptr<const FsTreeNode>>& roots,
+    const std::shared_ptr<const FsTreeNode>& node)
+{
+  if (!node) {
+    return;
+  }
+  if (node->is_directory()) {
+    roots[FsTreeCache::path_key(node->path())] = node;
+  }
+  for (const auto& ch : node->children()) {
+    index_directory_nodes(roots, ch);
+  }
+}
+
 [[nodiscard]] bool path_is_under_or_equal(const std::string& key, const std::string& prefix)
 {
   if (key == prefix) {
@@ -82,10 +98,11 @@ FsTreeCache::scan(const std::filesystem::path& root, const ScanOptions& options,
   };
 
   auto tree = scan_tree(root, options, cancel, std::move(cb));
-  const auto key = path_key(root);
   {
     std::lock_guard lock(mutex_);
-    roots_[key] = tree;
+    // Index every directory in the snapshot so snapshot(path) works for
+    // drill-down without a separate scan per folder.
+    index_directory_nodes(roots_, tree);
   }
   return tree;
 }

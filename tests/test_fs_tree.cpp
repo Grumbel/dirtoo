@@ -247,3 +247,19 @@ TEST_CASE("layout_squarified areas proportional", "[tree][treemap]")
   REQUIRE(it != cells.end());
   CHECK(it->rect.area() == Approx(50).margin(1e-3));
 }
+
+
+TEST_CASE("FsTreeCache indexes nested directories for snapshot", "[tree]")
+{
+  TempDir tmp;
+  fs::create_directory(tmp.path / "sub");
+  write_file(tmp.path / "sub" / "b.txt", "xy");
+  write_file(tmp.path / "a.txt", "hello");
+
+  FsTreeCache cache;
+  cache.scan(tmp.path);
+  const auto sub = cache.snapshot(tmp.path / "sub");
+  REQUIRE(sub);
+  CHECK(sub->total_size() == 2);
+  CHECK(sub->is_directory());
+}

@@ -382,7 +382,7 @@ private:
   QTreeView* tree_view_ = nullptr;
   QListView* icon_view_ = nullptr; // List view (and fallback if no Graphics)
   GraphicsFileView* graphics_view_ = nullptr;
-  TreemapView* treemap_view_ = nullptr; // Icons Graphics View
+  TreemapView* treemap_view_ = nullptr;
   /// Left side of the status bar: current filename / transient messages.
   QLabel* status_label_ = nullptr;
   /// Busy indicator (loading badge) shown while background IO / workers run.

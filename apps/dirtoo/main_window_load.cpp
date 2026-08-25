@@ -139,6 +139,9 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
   }
   ActivityMonitor::instance().clear_task(QStringLiteral("dir-load"));
   update_busy_indicator({});
+  if (view_mode_ == ViewMode::Treemap) {
+    refresh_treemap_from_cache();
+  }
   // "New" badge: paths that appeared since we last listed this location.
   // Keep marks across soft watcher reloads (Python keeps _new until the item
   // is gone / the directory is left). Only clear when navigating away.
