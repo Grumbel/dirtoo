@@ -79,7 +79,9 @@
           inherit version cmakeBuildType;
           src = srcFor [ ./libs/dirtoo-tree ];
           dontStrip = true;
-          nativeBuildInputs = with pkgs; [ cmake ninja ];
+          nativeBuildInputs = with pkgs; [ cmake ninja pkg-config ];
+          buildInputs = with pkgs; [ sqlite ];
+          propagatedBuildInputs = with pkgs; [ sqlite ];
           postUnpack = ''sourceRoot+=/libs/dirtoo-tree'';
           cmakeFlags = [ versionFlag ];
           meta.description = "dirtoo hierarchical filesystem tree cache (scan + sizes)";

@@ -5,6 +5,7 @@
 
 #include "dirtoo/tree/fs_tree_node.hpp"
 #include "dirtoo/tree/scan_tree.hpp"
+#include "dirtoo/tree/fs_tree_size_store.hpp"
 
 #include <atomic>
 #include <cstdint>
@@ -58,10 +59,15 @@ public:
 
   [[nodiscard]] std::size_t size() const;
 
+  /// Optional durable size index (not owned). load_persisted() fills entry sizes.
+  void set_size_store(FsTreeSizeStore* store);
+  void load_persisted_sizes();
+
 private:
   mutable std::mutex mutex_;
   std::unordered_map<std::string, std::shared_ptr<const FsTreeNode>> roots_;
   std::unordered_map<std::string, std::uint64_t> entry_sizes_;
+  FsTreeSizeStore* size_store_ = nullptr; // non-owning
 };
 
 } // namespace dirtoo::tree

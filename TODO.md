@@ -1248,7 +1248,7 @@ RelativeIcons remains until a real size map exists; then demote or remove it.
 | **0** | Plan in `TODO.md` | Done; refined for general-service framing |
 | **1** | `FsTreeNode` + in-memory cache + scan + Catch tests | **Done** — lib + tests; worker; Contents column; progressive `entry_total_size` index mid-scan with throttled UI refresh |
 | **2** | GUI wiring without treemap | Background folder sizes; optional Detail column; ActivityMonitor; Refresh invalidates |
-| **3** | Optional on-disk (SQLite) tier | Stamp invalidation; helps network drives / restart |
+| **3** | Optional SQLite durability | **Partial** — `FsTreeSizeStore` path→total_size SQLite; full tree shape still in-memory only |
 | **4** | Treemap view (thumbnails preferred) | **Mostly done** — layout + TreemapView + nested index + optional thumbnails from FileListModel cache |
 | **5** | Polish | Zoom stack; filter policy; supersede RelativeIcons |
 

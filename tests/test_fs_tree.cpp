@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "dirtoo/tree/fs_tree_cache.hpp"
+#include "dirtoo/tree/fs_tree_size_store.hpp"
 #include <algorithm>
 #include "dirtoo/tree/scan_tree.hpp"
 
@@ -262,4 +263,46 @@ TEST_CASE("FsTreeCache indexes nested directories for snapshot", "[tree]")
   REQUIRE(sub);
   CHECK(sub->total_size() == 2);
   CHECK(sub->is_directory());
+}
+
+
+TEST_CASE("FsTreeSizeStore round-trip", "[tree][sqlite]")
+{
+  TempDir tmp;
+  const auto db = tmp.path / "sizes.sqlite";
+  {
+    dirtoo::tree::FsTreeSizeStore store;
+    REQUIRE(store.open(db));
+    store.upsert("/a", 10);
+    store.upsert("/a/b", 3);
+    auto v = store.get("/a");
+    REQUIRE(v);
+    CHECK(*v == 10);
+  }
+  {
+    dirtoo::tree::FsTreeSizeStore store;
+    REQUIRE(store.open(db));
+    auto v = store.get("/a/b");
+    REQUIRE(v);
+    CHECK(*v == 3);
+    store.erase_under("/a");
+    CHECK_FALSE(store.get("/a"));
+    CHECK_FALSE(store.get("/a/b"));
+  }
+}
+
+TEST_CASE("FsTreeCache load_persisted_sizes", "[tree][sqlite]")
+{
+  TempDir tmp;
+  const auto db = tmp.path / "sizes2.sqlite";
+  dirtoo::tree::FsTreeSizeStore store;
+  REQUIRE(store.open(db));
+  store.upsert(FsTreeCache::path_key(tmp.path / "x"), 42);
+
+  FsTreeCache cache;
+  cache.set_size_store(&store);
+  cache.load_persisted_sizes();
+  auto v = cache.entry_total_size(tmp.path / "x");
+  REQUIRE(v);
+  CHECK(*v == 42);
 }

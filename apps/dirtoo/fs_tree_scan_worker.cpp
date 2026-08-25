@@ -3,6 +3,8 @@
 
 #include "fs_tree_scan_worker.hpp"
 
+#include "dirtoo/tree/fs_tree_size_store.hpp"
+
 #include <exception>
 #include <filesystem>
 #include <mutex>
@@ -12,6 +14,7 @@ namespace {
 
 std::mutex g_cache_mutex;
 dirtoo::tree::FsTreeCache* g_cache = nullptr;
+dirtoo::tree::FsTreeSizeStore* g_size_store = nullptr;
 
 } // namespace
 
@@ -20,6 +23,11 @@ dirtoo::tree::FsTreeCache& app_fs_tree_cache()
   std::lock_guard lock(g_cache_mutex);
   if (g_cache == nullptr) {
     g_cache = new dirtoo::tree::FsTreeCache();
+    g_size_store = new dirtoo::tree::FsTreeSizeStore();
+    if (g_size_store->open(dirtoo::tree::FsTreeSizeStore::default_db_path())) {
+      g_cache->set_size_store(g_size_store);
+      g_cache->load_persisted_sizes();
+    }
   }
   return *g_cache;
 }

@@ -27,9 +27,11 @@ add_library(dirtoo-tree
   include/dirtoo/tree/scan_tree.hpp
   include/dirtoo/tree/treemap_layout.hpp
   include/dirtoo/tree/fs_tree_cache.hpp
+  include/dirtoo/tree/fs_tree_size_store.hpp
   src/scan_tree.cpp
   src/fs_tree_cache.cpp
   src/treemap_layout.cpp
+  src/fs_tree_size_store.cpp
 )
 add_library(dirtoo::tree ALIAS dirtoo-tree)
 add_library(dirtoo-tree::dirtoo-tree ALIAS dirtoo-tree)
@@ -38,6 +40,8 @@ target_include_directories(dirtoo-tree PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
+find_package(SQLite3 REQUIRED)
+target_link_libraries(dirtoo-tree PUBLIC SQLite3::SQLite3)
 target_compile_features(dirtoo-tree PUBLIC cxx_std_23)
 target_compile_options(dirtoo-tree PRIVATE
   $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic>

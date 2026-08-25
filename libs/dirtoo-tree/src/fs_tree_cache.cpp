@@ -77,8 +77,15 @@ FsTreeCache::entry_total_size(const std::filesystem::path& path) const
 void FsTreeCache::set_entry_total_size(const std::filesystem::path& path, std::uint64_t total_size)
 {
   const auto key = path_key(path);
-  std::lock_guard lock(mutex_);
-  entry_sizes_[key] = total_size;
+  FsTreeSizeStore* store = nullptr;
+  {
+    std::lock_guard lock(mutex_);
+    entry_sizes_[key] = total_size;
+    store = size_store_;
+  }
+  if (store != nullptr && store->is_open()) {
+    store->upsert(key, total_size);
+  }
 }
 
 std::shared_ptr<const FsTreeNode>
@@ -110,48 +117,93 @@ FsTreeCache::scan(const std::filesystem::path& root, const ScanOptions& options,
 void FsTreeCache::invalidate(const std::filesystem::path& root)
 {
   const auto key = path_key(root);
-  std::lock_guard lock(mutex_);
-  roots_.erase(key);
-  for (auto it = entry_sizes_.begin(); it != entry_sizes_.end();) {
-    if (path_is_under_or_equal(it->first, key)) {
-      it = entry_sizes_.erase(it);
-    } else {
-      ++it;
+  FsTreeSizeStore* store = nullptr;
+  {
+    std::lock_guard lock(mutex_);
+    roots_.erase(key);
+    for (auto it = entry_sizes_.begin(); it != entry_sizes_.end();) {
+      if (path_is_under_or_equal(it->first, key)) {
+        it = entry_sizes_.erase(it);
+      } else {
+        ++it;
+      }
     }
+    store = size_store_;
+  }
+  if (store != nullptr && store->is_open()) {
+    store->erase_under(key);
   }
 }
 
 void FsTreeCache::invalidate_subtree(const std::filesystem::path& root)
 {
   const auto prefix = path_key(root);
-  std::lock_guard lock(mutex_);
-  for (auto it = roots_.begin(); it != roots_.end();) {
-    if (path_is_under_or_equal(it->first, prefix)) {
-      it = roots_.erase(it);
-    } else {
-      ++it;
+  FsTreeSizeStore* store = nullptr;
+  {
+    std::lock_guard lock(mutex_);
+    for (auto it = roots_.begin(); it != roots_.end();) {
+      if (path_is_under_or_equal(it->first, prefix)) {
+        it = roots_.erase(it);
+      } else {
+        ++it;
+      }
     }
+    for (auto it = entry_sizes_.begin(); it != entry_sizes_.end();) {
+      if (path_is_under_or_equal(it->first, prefix)) {
+        it = entry_sizes_.erase(it);
+      } else {
+        ++it;
+      }
+    }
+    store = size_store_;
   }
-  for (auto it = entry_sizes_.begin(); it != entry_sizes_.end();) {
-    if (path_is_under_or_equal(it->first, prefix)) {
-      it = entry_sizes_.erase(it);
-    } else {
-      ++it;
-    }
+  if (store != nullptr && store->is_open()) {
+    store->erase_under(prefix);
   }
 }
 
 void FsTreeCache::clear()
 {
-  std::lock_guard lock(mutex_);
-  roots_.clear();
-  entry_sizes_.clear();
+  FsTreeSizeStore* store = nullptr;
+  {
+    std::lock_guard lock(mutex_);
+    roots_.clear();
+    entry_sizes_.clear();
+    store = size_store_;
+  }
+  if (store != nullptr && store->is_open()) {
+    store->clear();
+  }
 }
 
 std::size_t FsTreeCache::size() const
 {
   std::lock_guard lock(mutex_);
   return roots_.size();
+}
+
+void FsTreeCache::set_size_store(FsTreeSizeStore* store)
+{
+  std::lock_guard lock(mutex_);
+  size_store_ = store;
+}
+
+void FsTreeCache::load_persisted_sizes()
+{
+  std::unordered_map<std::string, std::uint64_t> loaded;
+  FsTreeSizeStore* store = nullptr;
+  {
+    std::lock_guard lock(mutex_);
+    store = size_store_;
+  }
+  if (store == nullptr || !store->is_open()) {
+    return;
+  }
+  store->load_all(loaded);
+  std::lock_guard lock(mutex_);
+  for (auto& [k, v] : loaded) {
+    entry_sizes_.insert_or_assign(std::move(k), v);
+  }
 }
 
 } // namespace dirtoo::tree
