@@ -241,7 +241,8 @@ void MainWindow::refresh_treemap_from_cache()
   if (!snap) {
     treemap_view_->clear();
     // Kick a background scan if none is running; view will refresh on finish.
-    if (fs_tree_worker_ != nullptr && !fs_tree_worker_->isRunning()) {
+    // Worker lives on a long-lived QThread; track in-flight via activity job id.
+    if (fs_tree_worker_ != nullptr && fs_tree_activity_job_id_.isEmpty()) {
       on_compute_folder_sizes();
     }
     return;

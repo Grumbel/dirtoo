@@ -11,6 +11,7 @@
 
 #include "file_list_model.hpp"
 #include "graphics_file_view.hpp"
+#include "treemap_view.hpp"
 #include "graphics_file_item.hpp"
 #include "directory_tree_model.hpp"
 #include "leap_widget.hpp"
