@@ -43,6 +43,7 @@
 #include "transfer_dialog.hpp"
 #include "transfer_worker.hpp"
 #include "graphics_file_view.hpp"
+#include "treemap_view.hpp"
 
 #include <QMainWindow>
 class QListWidgetItem;
@@ -60,7 +61,6 @@ class QListWidget;
 class QLabel;
 class QListView;
 class GraphicsFileView;
-class TreemapView;
 class QLabel;
 class QAction;
 class QStackedWidget;
