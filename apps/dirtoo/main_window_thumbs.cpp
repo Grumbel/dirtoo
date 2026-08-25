@@ -138,7 +138,15 @@ void MainWindow::flush_viewport_thumbnails()
 
   std::vector<int> rows;
   bool from_viewport = false;
-  if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr) {
+  if (view_mode_ == ViewMode::Treemap) {
+    // Not an item-view: request thumbs for the full visible listing (one dir
+    // level — same paths as treemap cells when the list is unfiltered).
+    rows.resize(visible.size());
+    for (std::size_t i = 0; i < visible.size(); ++i) {
+      rows[i] = static_cast<int>(i);
+    }
+    from_viewport = !rows.empty();
+  } else if (view_mode_ == ViewMode::Icons && graphics_view_ != nullptr) {
     rows = graphics_view_->viewport_model_rows();
     from_viewport = !rows.empty();
   } else if (QAbstractItemView* view = current_view()) {
@@ -249,8 +257,11 @@ void MainWindow::on_thumbnail_ready(const fs::Location& location, const QString&
     key = it.value();
   }
   if (model_ != nullptr) {
-    model_->set_thumbnail(key, QIcon(pix));
-    // Throttle: full status rebuild is expensive during scroll through large dirs.
+      model_->set_thumbnail(key, QIcon(pix));
+  if (view_mode_ == ViewMode::Treemap && treemap_view_ != nullptr) {
+    treemap_view_->update();
+  }
+  // Throttle: full status rebuild is expensive during scroll through large dirs.
     schedule_thumb_status_refresh();
   }
 }
