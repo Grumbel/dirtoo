@@ -148,6 +148,12 @@ void TreemapView::paintEvent(QPaintEvent* event)
     if (i == hover_index_) {
       fill = fill.lighter(120);
     }
+    const bool is_dir = cell.node && cell.node->is_directory();
+    // Folders: cooler tint so they read as containers next to file cells.
+    if (is_dir) {
+      fill = QColor::fromHsv(fill.hue(), qMin(255, fill.saturation() + 20),
+                             qMax(0, fill.value() - 25));
+    }
     p.fillRect(rf, fill);
 
     // Prefer a cached thumbnail when the cell is large enough.
@@ -162,22 +168,55 @@ void TreemapView::paintEvent(QPaintEvent* event)
           const int oy = static_cast<int>((scaled.height() - target.height()) / 2);
           p.drawPixmap(rf.toRect(), scaled, QRect(ox, oy, target.width(), target.height()));
           // Dim overlay so label stays readable.
-          p.fillRect(rf, QColor(0, 0, 0, 60));
+          p.fillRect(rf, QColor(0, 0, 0, is_dir ? 80 : 60));
         }
       }
     }
 
-    p.setPen(QPen(palette().color(QPalette::Window), 1));
-    p.drawRect(rf.adjusted(0, 0, -0.5, -0.5));
+    // Border: thicker / accent for directories.
+    if (is_dir) {
+      p.setPen(QPen(QColor(255, 255, 255, 200), 2));
+    } else {
+      p.setPen(QPen(palette().color(QPalette::Window), 1));
+    }
+    p.drawRect(rf.adjusted(0.5, 0.5, -0.5, -0.5));
+
+    // Folder tab badge (top-left) — readable without relying on emoji fonts.
+    if (is_dir && rf.width() >= 28 && rf.height() >= 20) {
+      const qreal tab_w = qMin(22.0, rf.width() * 0.35);
+      const qreal tab_h = 8.0;
+      QPainterPath tab;
+      tab.moveTo(rf.left() + 2, rf.top() + tab_h);
+      tab.lineTo(rf.left() + 2, rf.top() + 2);
+      tab.lineTo(rf.left() + tab_w * 0.55, rf.top() + 2);
+      tab.lineTo(rf.left() + tab_w * 0.7, rf.top() + tab_h * 0.45);
+      tab.lineTo(rf.left() + tab_w, rf.top() + tab_h * 0.45);
+      tab.lineTo(rf.left() + tab_w, rf.top() + tab_h);
+      tab.closeSubpath();
+      p.setPen(Qt::NoPen);
+      p.setBrush(QColor(255, 255, 255, 210));
+      p.drawPath(tab);
+      p.setBrush(Qt::NoBrush);
+    }
 
     if (rf.width() >= 40 && rf.height() >= 18 && cell.node) {
       const QString name = QString::fromStdString(cell.node->name());
       const QString size = format_byte_size(cell.node->total_size());
-      const QString label = name + QLatin1Char('\n') + size;
-      p.setPen(QColor(255, 255, 255));
-      // Shadow for contrast on bright thumbs.
+      QString label;
+      if (is_dir) {
+        const quint64 nfiles = cell.node->file_count();
+        const QString count =
+            nfiles == 1 ? QStringLiteral("1 file") : QStringLiteral("%1 files").arg(nfiles);
+        // Folder mark + name / size / recursive file count
+        label = QStringLiteral("%1\n%2 · %3").arg(name, size, count);
+        if (rf.height() < 48) {
+          label = QStringLiteral("%1\n%2").arg(name, size);
+        }
+      } else {
+        label = name + QLatin1Char('\n') + size;
+      }
+      const QRectF text_r = rf.adjusted(4, 3, -4, -3);
       p.setPen(QColor(0, 0, 0, 180));
-      const QRectF text_r = rf.adjusted(3, 2, -3, -2);
       p.drawText(text_r.translated(1, 1), Qt::AlignTop | Qt::AlignLeft | Qt::TextWordWrap, label);
       p.setPen(QColor(255, 255, 255));
       p.drawText(text_r, Qt::AlignTop | Qt::AlignLeft | Qt::TextWordWrap, label);

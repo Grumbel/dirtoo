@@ -50,6 +50,8 @@ public:
   [[nodiscard]] std::uint64_t own_size() const noexcept { return own_size_; }
   /// Aggregated size: own_size + sum of children totals (when known).
   [[nodiscard]] std::uint64_t total_size() const noexcept { return total_size_; }
+  /// Recursive regular-file count (files=1; directories sum children).
+  [[nodiscard]] std::uint64_t file_count() const noexcept { return file_count_; }
 
   [[nodiscard]] std::filesystem::file_time_type mtime() const noexcept { return mtime_; }
   [[nodiscard]] std::filesystem::perms permissions() const noexcept { return permissions_; }
@@ -73,6 +75,7 @@ public:
   void set_state(FsTreeNodeState s) { state_ = s; }
   void set_own_size(std::uint64_t s) { own_size_ = s; }
   void set_total_size(std::uint64_t s) { total_size_ = s; }
+  void set_file_count(std::uint64_t n) { file_count_ = n; }
   void set_mtime(std::filesystem::file_time_type t) { mtime_ = t; }
   void set_permissions(std::filesystem::perms p) { permissions_ = p; }
   void set_device_id(std::uint64_t id)
@@ -90,6 +93,7 @@ private:
   FsTreeNodeState state_ = FsTreeNodeState::Pending;
   std::uint64_t own_size_ = 0;
   std::uint64_t total_size_ = 0;
+  std::uint64_t file_count_ = 0;
   std::filesystem::file_time_type mtime_{};
   std::filesystem::perms permissions_{};
   std::uint64_t device_id_ = 0;

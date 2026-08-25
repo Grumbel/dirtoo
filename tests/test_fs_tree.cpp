@@ -306,3 +306,28 @@ TEST_CASE("FsTreeCache load_persisted_sizes", "[tree][sqlite]")
   REQUIRE(v);
   CHECK(*v == 42);
 }
+
+
+TEST_CASE("scan_tree aggregates recursive file_count", "[tree]")
+{
+  TempDir tmp;
+  write_file(tmp.path / "a.txt", "hello");
+  fs::create_directory(tmp.path / "sub");
+  write_file(tmp.path / "sub" / "b.txt", "xy");
+  write_file(tmp.path / "sub" / "c.txt", "z");
+  auto root = scan_tree(tmp.path);
+  REQUIRE(root);
+  CHECK(root->file_count() == 3);
+  REQUIRE(root->children().size() >= 2);
+  bool found_sub = false;
+  for (const auto& ch : root->children()) {
+    if (ch && ch->is_directory() && ch->name() == "sub") {
+      found_sub = true;
+      CHECK(ch->file_count() == 2);
+    }
+    if (ch && ch->is_file() && ch->name() == "a.txt") {
+      CHECK(ch->file_count() == 1);
+    }
+  }
+  CHECK(found_sub);
+}

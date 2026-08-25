@@ -99,6 +99,9 @@ void fill_from_path(FsTreeNode& node, const std::filesystem::path& path)
     }
   }
   node.set_total_size(node.own_size());
+  if (node.kind() == FsTreeNodeKind::File) {
+    node.set_file_count(1);
+  }
   const auto ft = std::filesystem::last_write_time(path, ec);
   if (!ec) {
     node.set_mtime(ft);
@@ -108,12 +111,15 @@ void fill_from_path(FsTreeNode& node, const std::filesystem::path& path)
 void recompute_total_from_children(FsTreeNode& node)
 {
   std::uint64_t sum = node.own_size();
+  std::uint64_t files = 0;
   for (const auto& ch : node.children()) {
     if (ch) {
       sum += ch->total_size();
+      files += ch->file_count();
     }
   }
   node.set_total_size(sum);
+  node.set_file_count(files);
 }
 
 } // namespace
@@ -144,6 +150,9 @@ scan_tree(const std::filesystem::path& root, const ScanOptions& options,
         root_node->set_kind(FsTreeNodeKind::Directory);
       } else {
         root_node->set_state(FsTreeNodeState::Complete);
+        if (root_node->kind() == FsTreeNodeKind::File) {
+          root_node->set_file_count(1);
+        }
         notify_ready(*root_node);
         return root_node;
       }
@@ -241,6 +250,9 @@ scan_tree(const std::filesystem::path& root, const ScanOptions& options,
           && child->device_id() != *root_dev && child->kind() == FsTreeNodeKind::Directory) {
         child->set_state(FsTreeNodeState::Complete);
         child->set_total_size(child->own_size());
+        if (child->kind() == FsTreeNodeKind::File) {
+          child->set_file_count(1);
+        }
         dir.add_child(child);
         notify_ready(*child);
         continue;
@@ -261,6 +273,9 @@ scan_tree(const std::filesystem::path& root, const ScanOptions& options,
       } else {
         child->set_state(FsTreeNodeState::Complete);
         child->set_total_size(child->own_size());
+        if (child->kind() == FsTreeNodeKind::File) {
+          child->set_file_count(1);
+        }
         dir.add_child(child);
         notify_ready(*child);
       }
