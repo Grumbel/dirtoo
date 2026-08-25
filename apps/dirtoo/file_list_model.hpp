@@ -100,6 +100,8 @@ public:
   void clear_launch_flash();
 
   [[nodiscard]] ThumbnailStatus thumbnail_status(const QString& path) const;
+  /// Cached thumbnail icon for @p path (null icon if none).
+  [[nodiscard]] QIcon thumbnail_icon(const QString& path) const;
   /// Counts of thumbnail states among paths currently tracked (visible requests).
   struct ThumbnailCounts {
     int pending = 0;

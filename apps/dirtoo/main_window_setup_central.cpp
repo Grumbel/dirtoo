@@ -244,6 +244,12 @@ void MainWindow::setup_central_ui()
   view_stack_->addWidget(graphics_view_);
 
   treemap_view_ = new TreemapView(view_stack_);
+  treemap_view_->set_thumbnail_model(model_);
+  connect(model_, &FileListModel::dataChanged, treemap_view_, [this] {
+    if (view_mode_ == ViewMode::Treemap && treemap_view_ != nullptr) {
+      treemap_view_->update();
+    }
+  });
   connect(treemap_view_, &TreemapView::path_activated, this, [this](const QString& path) {
     try {
       open_location(fs::Location::from_path(std::filesystem::path{path.toStdString()}));

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "treemap_view.hpp"
+#include "file_list_model.hpp"
 
 #include "size_format.hpp"
 
@@ -47,6 +48,12 @@ void TreemapView::clear()
   root_.reset();
   cells_.clear();
   hover_index_ = -1;
+  update();
+}
+
+void TreemapView::set_thumbnail_model(FileListModel* model)
+{
+  thumb_model_ = model;
   update();
 }
 
@@ -142,6 +149,24 @@ void TreemapView::paintEvent(QPaintEvent* event)
       fill = fill.lighter(120);
     }
     p.fillRect(rf, fill);
+
+    // Prefer a cached thumbnail when the cell is large enough.
+    if (thumb_model_ != nullptr && rf.width() >= 48 && rf.height() >= 48) {
+      const QIcon icon = thumb_model_->thumbnail_icon(path);
+      if (!icon.isNull()) {
+        const QPixmap pm = icon.pixmap(QSize(static_cast<int>(rf.width()), static_cast<int>(rf.height())));
+        if (!pm.isNull()) {
+          const QSize target(static_cast<int>(rf.width()), static_cast<int>(rf.height()));
+          const QPixmap scaled = pm.scaled(target, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+          const int ox = static_cast<int>((scaled.width() - target.width()) / 2);
+          const int oy = static_cast<int>((scaled.height() - target.height()) / 2);
+          p.drawPixmap(rf.toRect(), scaled, QRect(ox, oy, target.width(), target.height()));
+          // Dim overlay so label stays readable.
+          p.fillRect(rf, QColor(0, 0, 0, 60));
+        }
+      }
+    }
+
     p.setPen(QPen(palette().color(QPalette::Window), 1));
     p.drawRect(rf.adjusted(0, 0, -0.5, -0.5));
 
@@ -149,8 +174,12 @@ void TreemapView::paintEvent(QPaintEvent* event)
       const QString name = QString::fromStdString(cell.node->name());
       const QString size = format_byte_size(cell.node->total_size());
       const QString label = name + QLatin1Char('\n') + size;
-      p.setPen(palette().color(QPalette::Text));
+      p.setPen(QColor(255, 255, 255));
+      // Shadow for contrast on bright thumbs.
+      p.setPen(QColor(0, 0, 0, 180));
       const QRectF text_r = rf.adjusted(3, 2, -3, -2);
+      p.drawText(text_r.translated(1, 1), Qt::AlignTop | Qt::AlignLeft | Qt::TextWordWrap, label);
+      p.setPen(QColor(255, 255, 255));
       p.drawText(text_r, Qt::AlignTop | Qt::AlignLeft | Qt::TextWordWrap, label);
     }
   }

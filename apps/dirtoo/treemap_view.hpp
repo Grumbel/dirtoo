@@ -14,6 +14,8 @@
 
 namespace dirtoo::app {
 
+class FileListModel;
+
 /// Squarified treemap of one FsTreeNode level (children as cells).
 ///
 /// Uses sizes from the tree snapshot only — no filesystem I/O on the GUI thread.
@@ -26,6 +28,8 @@ public:
   /// Show children of @p root. Null clears the view.
   void set_root(std::shared_ptr<const dirtoo::tree::FsTreeNode> root);
   void clear();
+  /// Optional: use model thumbnail cache when painting large cells.
+  void set_thumbnail_model(FileListModel* model);
 
   [[nodiscard]] std::shared_ptr<const dirtoo::tree::FsTreeNode> root() const { return root_; }
 
@@ -52,6 +56,7 @@ private:
   std::shared_ptr<const dirtoo::tree::FsTreeNode> root_;
   std::vector<Cell> cells_;
   int hover_index_ = -1;
+  FileListModel* thumb_model_ = nullptr;
 };
 
 } // namespace dirtoo::app

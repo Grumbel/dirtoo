@@ -764,3 +764,8 @@ std::vector<fs::FileInfo> FileListModel::files_at(const QModelIndexList& indexes
 }
 
 } // namespace dirtoo::app
+
+QIcon FileListModel::thumbnail_icon(const QString& path) const
+{
+  return thumbnails_.value(path);
+}
