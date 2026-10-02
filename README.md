@@ -127,12 +127,22 @@ ctest --test-dir build
 cmake --install build    # binaries + man pages
 ```
 
-With Nix:
+With Nix (recommended for development):
 
 ```bash
 nix develop
-cmake -B build -G Ninja && cmake --build build
+dirtoo-run [path]       # configure if needed, build incrementally, start the GUI
+dirtoo-build            # just build (extra args → cmake --build)
+dirtoo-test [-R name]   # build + ctest (offscreen Qt)
+dirtoo-run-gdb [path]   # build + run under gdb (quits on clean exit)
+dirtoo-configure [-D…]  # (re)configure explicitly
 ```
+
+The shell builds the whole checkout — libraries included, via
+`add_subdirectory` — in one incremental Debug build under
+`~/.cache/dirtoo/build-debug` (override with `DIRTOO_BUILD_DIR` /
+`DIRTOO_BUILD_TYPE`). The build tree's `bin/` (GUI + `dt-*` tools) is on
+`PATH`. Entering the shell never builds the per-library flake packages.
 
 `nix build` builds the package without running tests. `nix flake check` runs
 the unit tests using the already-built binary when it is in the store.

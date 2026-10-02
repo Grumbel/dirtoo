@@ -318,6 +318,164 @@
             mainProgram = "dirtoo";
           };
         };
+
+        # --- Development shell ----------------------------------------------
+        # Deliberately NOT `inputsFrom = [ dirtoo ]`: that pulls in every
+        # library derivation, so entering the shell with a dirty tree rebuilt
+        # all of libs/ in the Nix store. The shell only provides toolchain +
+        # third-party deps; the dirtoo-* scripts build the whole checkout
+        # (libs via add_subdirectory, DIRTOO_IN_TREE_LIBS=ON) incrementally in
+        # an out-of-tree build dir. The per-library packages above stay for
+        # `nix build` / other consumers.
+        devDeps = with pkgs; [
+          cmake ninja pkg-config
+          qt6.qtbase qt6.qtsvg qt6.qttools
+          libarchive sqlite openssl catch2_3
+        ];
+        # Runtime tools the packaged GUI propagates (archive/media helpers).
+        devRuntime = with pkgs; [ unzip gnutar p7zip ffmpeg ];
+        devTools = with pkgs; [ gdb clang-tools ];
+
+        # Same plugin path the wrapQtAppsHook wrapper gives `nix run .#dirtoo`;
+        # the unwrapped build-tree binary needs it for platform/svg plugins.
+        devQtPluginPath = lib.concatMapStringsSep ":"
+          (p: "${p}/${pkgs.qt6.qtbase.qtPluginPrefix}")
+          [ pkgs.qt6.qtbase pkgs.qt6.qtsvg ];
+
+        # Changes when any toolchain/dependency store path changes (nixpkgs
+        # bump, GC'd compiler, …). The scripts compare it with the build dir's
+        # stamp and re-run CMake from a fresh cache instead of building against
+        # stale /nix/store paths baked into CMakeCache.txt.
+        devEnvFingerprint = builtins.hashString "sha256"
+          (lib.concatMapStringsSep "\n" toString
+            (devDeps ++ [ pkgs.stdenv.cc ]));
+
+        devPreamble = ''
+          set -euo pipefail
+          if [ -z "''${DIRTOO_SOURCE:-}" ]; then
+            echo "error: DIRTOO_SOURCE is not set — run this inside 'nix develop' in a dirtoo checkout" >&2
+            exit 1
+          fi
+          if [ ! -f "$DIRTOO_SOURCE/CMakeLists.txt" ] || [ ! -d "$DIRTOO_SOURCE/libs" ]; then
+            echo "error: DIRTOO_SOURCE=$DIRTOO_SOURCE is not a dirtoo checkout" >&2
+            exit 1
+          fi
+          build_type="''${DIRTOO_BUILD_TYPE:-Debug}"
+          build_dir="''${DIRTOO_BUILD_DIR:?DIRTOO_BUILD_DIR is not set}"
+          stamp="$build_dir/.dirtoo-dev-env"
+          fingerprint="${devEnvFingerprint}"
+
+          dirtoo_configure() {
+            mkdir -p "$build_dir"
+            # Fresh cache when the Nix env changed: cached compiler/Qt paths
+            # would otherwise point at an old store generation.
+            if [ -f "$build_dir/CMakeCache.txt" ] \
+               && [ "$(cat "$stamp" 2>/dev/null || true)" != "$fingerprint" ]; then
+              echo "dirtoo: dev environment changed — reconfiguring from a fresh CMake cache"
+              rm -rf "$build_dir/CMakeCache.txt" "$build_dir/CMakeFiles"
+            fi
+            cmake -S "$DIRTOO_SOURCE" -B "$build_dir" -G Ninja \
+              -DCMAKE_BUILD_TYPE="$build_type" \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+              -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="$build_dir/bin" \
+              -DDIRTOO_IN_TREE_LIBS=ON \
+              -DDIRTOO_BUILD_APP=ON \
+              -DDIRTOO_BUILD_TOOLS=ON \
+              -DDIRTOO_BUILD_TESTS=ON \
+              "$@"
+            echo "$fingerprint" > "$stamp"
+          }
+
+          dirtoo_ensure_configured() {
+            # Reconfigure when never configured, configured for another
+            # checkout, or the Nix environment changed since.
+            local cached_src=""
+            if [ -f "$build_dir/CMakeCache.txt" ]; then
+              cached_src="$(sed -n 's/^CMAKE_HOME_DIRECTORY:INTERNAL=//p' "$build_dir/CMakeCache.txt")"
+            fi
+            if [ ! -f "$build_dir/build.ninja" ] \
+               || [ "$cached_src" != "$DIRTOO_SOURCE" ] \
+               || [ "$(cat "$stamp" 2>/dev/null || true)" != "$fingerprint" ]; then
+              if [ -n "$cached_src" ] && [ "$cached_src" != "$DIRTOO_SOURCE" ]; then
+                echo "dirtoo: build dir belonged to $cached_src — starting fresh"
+                rm -rf "$build_dir/CMakeCache.txt" "$build_dir/CMakeFiles"
+              fi
+              dirtoo_configure
+            fi
+          }
+
+          dirtoo_build() {
+            dirtoo_ensure_configured
+            cmake --build "$build_dir" "$@"
+          }
+        '';
+
+        devScript = name: body: pkgs.writeShellScriptBin name ''
+          ${devPreamble}
+          ${body}
+        '';
+
+        devScripts = [
+          (devScript "dirtoo-configure" ''
+            # Extra args go to cmake, e.g. dirtoo-configure -DCMAKE_CXX_FLAGS=-O1
+            dirtoo_configure "$@"
+          '')
+          (devScript "dirtoo-build" ''
+            # Extra args go to `cmake --build`, e.g. dirtoo-build --target dt-filter
+            dirtoo_build "$@"
+          '')
+          (devScript "dirtoo-run" ''
+            # Build, then run the GUI from the build tree with any args.
+            dirtoo_build
+            exec "$build_dir/bin/dirtoo" "$@"
+          '')
+          (devScript "dirtoo-run-gdb" ''
+            # Build, then run under gdb: starts immediately, quits on a clean
+            # exit, stays in the session on a crash or non-zero exit.
+            dirtoo_build
+            gdb_script="$(mktemp)"
+            trap 'rm -f "$gdb_script"' EXIT
+            cat > "$gdb_script" <<'GDB'
+          set pagination off
+          set confirm off
+          run
+          if !$_isvoid($_exitcode) && $_exitcode == 0
+            quit
+          end
+          GDB
+            gdb -q -x "$gdb_script" --args "$build_dir/bin/dirtoo" "$@"
+          '')
+          (devScript "dirtoo-test" ''
+            # Build, then run ctest; extra args go to ctest (e.g. -R FileInfo).
+            dirtoo_build
+            QT_QPA_PLATFORM="''${QT_QPA_PLATFORM:-offscreen}" \
+              ctest --test-dir "$build_dir" --output-on-failure -j"$(nproc)" "$@"
+          '')
+        ];
+
+        devShell = pkgs.mkShell {
+          packages = devDeps ++ devRuntime ++ devTools ++ devScripts;
+          shellHook = ''
+            if [ -z "''${DIRTOO_SOURCE:-}" ]; then
+              # Walk up to the checkout root (works from any subdirectory).
+              _d="$PWD"
+              while [ "$_d" != "/" ] && [ ! -f "$_d/libs/dirtoo-fs/CMakeLists.txt" ]; do
+                _d="$(dirname "$_d")"
+              done
+              [ -f "$_d/libs/dirtoo-fs/CMakeLists.txt" ] && export DIRTOO_SOURCE="$_d"
+              unset _d
+            fi
+            export DIRTOO_BUILD_TYPE="''${DIRTOO_BUILD_TYPE:-Debug}"
+            export DIRTOO_BUILD_DIR="''${DIRTOO_BUILD_DIR:-''${XDG_CACHE_HOME:-$HOME/.cache}/dirtoo/build-''${DIRTOO_BUILD_TYPE,,}}"
+            export QT_PLUGIN_PATH="${devQtPluginPath}''${QT_PLUGIN_PATH:+:$QT_PLUGIN_PATH}"
+            # dt-* tools and the GUI from the build tree.
+            export PATH="$DIRTOO_BUILD_DIR/bin:$PATH"
+
+            echo "dirtoo devShell (''${DIRTOO_BUILD_TYPE}, build dir: $DIRTOO_BUILD_DIR)"
+            echo "  dirtoo-configure | dirtoo-build | dirtoo-run | dirtoo-run-gdb | dirtoo-test"
+            echo "  packages: nix build .#dirtoo / .#dirtoo-full / .#<lib>  (see flake.nix)"
+          '';
+        };
       in
       {
         packages = {
@@ -391,45 +549,6 @@
           };
         };
 
-        devShells.default = pkgs.mkShell {
-          packages = with pkgs; [
-            cmake ninja pkg-config gcc
-            qt6.qtbase qt6.qtsvg qt6.qttools
-            libarchive unzip gnutar p7zip catch2_3
-            sqlite ffmpeg
-            gdb clang-tools
-          ];
-          inputsFrom = [ dirtoo ];
-          shellHook = ''
-            echo "dirtoo devShell"
-            echo "  version:    ${version}"
-            echo "  system:     ${system}"
-            echo "  rev:        ${gitRev}"
-            echo "  revCount:   ${revCount}"
-            echo "  build type: ${cmakeBuildType} (dontStrip on packages)"
-            echo ""
-            echo "Independent flake packages (scoped sources — edit one lib, rebuild only it + dependents):"
-            echo "  nix build .#dirops"
-            echo "  nix build .#dirtoo-fs"
-            echo "  nix build .#dirtoo-hash"
-            echo "  nix build .#dirtoo-tags"
-            echo "  nix build .#dirtoo-filter"
-            echo "  nix build .#dirtoo-collection"
-            echo "  nix build .#dirtoo-watcher"
-            echo "  nix build .#dirtoo-thumbnail"
-            echo "  nix build .#dirtoo-archive"
-            echo "  nix build .#dirtoo            # GUI (does not rehash lib sources)"
-            echo "  nix build .#dirtoo-tools"
-            echo "  nix build .#hilbert-thumbnailer  # standalone binary map thumbs"
-            echo "  nix build .#text-thumbnailer     # text layout thumbs"
-            echo "  nix build .#dirtoo-full           # GUI + libs + optional tools"
-            echo "  nix build .#all-libs"
-            echo "  nix run .#dirtoo"
-            echo ""
-            echo "Manual cmake (full checkout): DIRTOO_IN_TREE_LIBS defaults ON and builds"
-            echo "libs/ from source — same ABI as headers. Flake package builds leave"
-            echo "libs/ out of src and use find_package instead."
-          '';
-        };
+        devShells.default = devShell;
       });
 }

@@ -185,6 +185,35 @@ fix defects, or close/open work items:
 - Target for development: **Linux** (inotify, freedesktop thumbnailer, XDG).
   Keep platform-specific code isolated.
 
+### Development loop (`nix develop`)
+
+The dev shell provides toolchain + third-party deps + env only; it does
+**not** depend on the per-library flake packages (no `inputsFrom = [ dirtoo ]`),
+so entering it never rebuilds `libs/` in the Nix store. Scripts on `PATH`
+drive one out-of-tree build of the whole checkout (`DIRTOO_IN_TREE_LIBS=ON`:
+every `libs/*` via `add_subdirectory`):
+
+| Command | Does |
+|---------|------|
+| `dirtoo-configure [-D…]` | CMake configure (Debug by default, tools + tests on, executables in `<build>/bin`) |
+| `dirtoo-build [args]` | configure if needed, then `cmake --build` |
+| `dirtoo-run [args]` | build, then start the GUI from the build tree |
+| `dirtoo-run-gdb [args]` | build, run under gdb; quits on clean exit, keeps the session on failure |
+| `dirtoo-test [ctest args]` | build, then `ctest` (offscreen Qt) |
+
+- `DIRTOO_SOURCE` (checkout root, found from any subdirectory),
+  `DIRTOO_BUILD_TYPE` (default `Debug`) and `DIRTOO_BUILD_DIR` (default
+  `~/.cache/dirtoo/build-<type>`) are set by the shell hook; scripts refuse to
+  run without `DIRTOO_SOURCE`.
+- The build reconfigures from a fresh CMake cache when the Nix environment
+  changed (fingerprint of dependency store paths) or the build dir belonged to
+  another checkout — never compile against stale `/nix/store` paths.
+- `QT_PLUGIN_PATH` mirrors what the `wrapQtAppsHook` wrapper of `nix run
+  .#dirtoo` sets, so the unwrapped build-tree binary finds its plugins.
+- `<build>/bin` is on `PATH` (GUI + `dt-*` tools).
+- Packages (`nix build`) stay RelWithDebInfo; the per-library outputs below
+  remain for reproducible builds and other consumers.
+
 
 ---
 
@@ -210,8 +239,10 @@ Each library is a **separate flake output** with a **scoped source fileset**
 | `.#all-libs` | symlinkJoin of libraries |
 | `.#dirtoo-tools` | CLI aggregate |
 
-Local non-Nix builds still use the monorepo top-level `CMakeLists.txt` with
-`find_package` on preinstalled or prefix-built libs.
+Local non-Nix builds use the monorepo top-level `CMakeLists.txt`; in a full
+checkout `DIRTOO_IN_TREE_LIBS` defaults ON (libs built from source), with
+`-DDIRTOO_IN_TREE_LIBS=OFF` falling back to `find_package` on preinstalled or
+prefix-built libs (that is what the `.#dirtoo` package does).
 
 ## Dependencies & Nix flake (no optional fallbacks)
 
