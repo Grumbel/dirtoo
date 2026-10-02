@@ -138,7 +138,8 @@ QString category_for_item(const dirtoo::fs::FileInfo& fi, QMimeDatabase& db)
     return QStringLiteral("archive");
   }
   const QString name = QString::fromStdString(fi.basename());
-  const QMimeType mt = db.mimeTypeForFile(name, QMimeDatabase::MatchExtension);
+  // Name glob only: mimeTypesForFileName never stats a (relative) name.
+  const QMimeType mt = db.mimeTypesForFileName(name).value(0);
   if (!mt.isValid()) {
     return {};
   }

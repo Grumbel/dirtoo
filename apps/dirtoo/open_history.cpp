@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "open_history.hpp"
+#include "file_icons.hpp"
 
 #include "opened_files_store.hpp"
 
@@ -10,7 +11,6 @@
 #include <QAbstractItemView>
 #include <QDialog>
 #include <QDialogButtonBox>
-#include <QFileIconProvider>
 #include <QFileInfo>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -112,12 +112,8 @@ QIcon app_icon_for(const OpenHistoryEntry& e)
 
 QIcon file_icon_for(const QString& path)
 {
-  QFileIconProvider provider;
-  const QFileInfo fi(path);
-  if (fi.isDir()) {
-    return provider.icon(QFileIconProvider::Folder);
-  }
-  return provider.icon(fi);
+  // Name-based: history paths may sit on unplugged/slow drives — never stat.
+  return file_type_icon(std::filesystem::path{path.toStdString()}, false);
 }
 
 void reopen_entry(const OpenHistoryEntry& e)
@@ -144,8 +140,8 @@ void reopen_entry(const OpenHistoryEntry& e)
     return;
   }
   if (e.app_id == QLatin1String("default") || e.app_id.isEmpty()) {
-    for (const auto& p : paths) {
-      open_default(p);
+    for (const auto& t : open_targets_from(paths)) {
+      open_default(t);
     }
     return;
   }
@@ -155,14 +151,15 @@ void reopen_entry(const OpenHistoryEntry& e)
   app.name = e.app_name;
   app.icon = e.app_icon;
   // Resolve exec from .desktop again.
-  const auto defaults = default_apps_for_paths(paths);
+  const auto targets = open_targets_from(paths);
+  const auto defaults = default_apps_for_paths(targets);
   for (const DesktopApp& a : defaults) {
     if (a.id == e.app_id) {
       launch_desktop_app(a, paths);
       return;
     }
   }
-  const auto all = associated_apps_for_paths(paths);
+  const auto all = associated_apps_for_paths(targets);
   for (const DesktopApp& a : all) {
     if (a.id == e.app_id) {
       launch_desktop_app(a, paths);
@@ -170,8 +167,8 @@ void reopen_entry(const OpenHistoryEntry& e)
     }
   }
   // Fall back to default handler(s).
-  for (const auto& p : paths) {
-    open_default(p);
+  for (const auto& t : targets) {
+    open_default(t);
   }
 }
 
@@ -444,12 +441,14 @@ void show_open_history_dialog(QWidget* parent,
                      if (!e || e->paths.isEmpty()) {
                        return;
                      }
-                     const QFileInfo fi(e->paths.front());
-                     const QString dir = fi.isDir() ? fi.absoluteFilePath() : fi.absolutePath();
+                     // History records opened files: their folder is the
+                     // parent (lexical — the drive may be slow or gone).
+                     const auto dir =
+                         std::filesystem::path{e->paths.front().toStdString()}.parent_path();
                      if (on_go_to_folder) {
-                       on_go_to_folder(dir);
+                       on_go_to_folder(QString::fromStdString(dir.string()));
                      } else {
-                       open_default(std::filesystem::path{dir.toStdString()});
+                       open_default(OpenTarget{dir, true});
                      }
                    });
   QObject::connect(clear_btn, &QPushButton::clicked, dialog, [refill, dialog] {

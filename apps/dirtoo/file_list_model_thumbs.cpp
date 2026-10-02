@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "file_list_model.hpp"
+#include "async_io.hpp"
+#include "file_icons.hpp"
 #include "opened_files_store.hpp"
 #include <QDateTime>
 #include <QSet>
@@ -10,26 +12,13 @@
 #include <QPainter>
 #include <QPen>
 #include <algorithm>
-#include <QFileIconProvider>
-#include <QFileInfo>
 #include <QMetaObject>
-#include <QThreadPool>
 #include <QTimer>
 
 #include <filesystem>
 #include <system_error>
 
 namespace dirtoo::app {
-
-namespace {
-
-QFileIconProvider& icon_provider()
-{
-  static QFileIconProvider provider;
-  return provider;
-}
-
-} // namespace
 
 void FileListModel::set_thumbnail(const QString& path, const QIcon& icon)
 {
@@ -305,22 +294,20 @@ void FileListModel::request_child_count(const QString& path)
   child_counts_.insert(path, -1);
   // Offload readdir to a worker thread; never run on the GUI thread.
   const QString path_copy = path;
-  QThreadPool::globalInstance()->start([this, path_copy] {
-    qint64 n = 0;
-    std::error_code ec;
-    const auto opts = std::filesystem::directory_options::skip_permission_denied;
-    for (const auto& entry :
-         std::filesystem::directory_iterator(path_copy.toStdString(), opts, ec)) {
-      (void)entry;
-      if (ec) {
-        ec.clear();
-        continue;
-      }
-      ++n;
-    }
-    QMetaObject::invokeMethod(this, "on_child_count_ready", Qt::QueuedConnection,
-                              Q_ARG(QString, path_copy), Q_ARG(qint64, n));
-  });
+  run_io(
+      this,
+      [path_copy] {
+        qint64 n = 0;
+        std::error_code ec;
+        const auto opts = std::filesystem::directory_options::skip_permission_denied;
+        // increment(ec): operator++ would throw on a mid-listing I/O error.
+        for (std::filesystem::directory_iterator it(path_copy.toStdString(), opts, ec), end;
+             !ec && it != end; it.increment(ec)) {
+          ++n;
+        }
+        return n;
+      },
+      [this, path_copy](qint64 n) { on_child_count_ready(path_copy, n); });
 }
 
 void FileListModel::on_child_count_ready(const QString& path, qint64 count)
@@ -429,13 +416,9 @@ QIcon FileListModel::icon_for(const fs::FileInfo& fi) const
     // Thumbnail path: symlink emblem is painted by paint_tile_status_overlays.
     return it.value();
   }
-  QIcon base;
-  if (fi.is_synthetic()) {
-    base = icon_provider().icon(fi.is_directory() ? QFileIconProvider::Folder
-                                                  : QFileIconProvider::File);
-  } else {
-    base = icon_provider().icon(QFileInfo(path));
-  }
+  // Name/type only — QFileIconProvider::icon(QFileInfo) would stat (and maybe
+  // content-sniff) every painted row on the GUI thread.
+  const QIcon base = file_type_icon(fi);
   if (!fi.is_symlink() || base.isNull()) {
     return base;
   }

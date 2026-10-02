@@ -13,11 +13,17 @@ namespace dirtoo::app {
 /// type → wrong/no generator. Prefer extension for bulk/fast paths; use content
 /// when correctness matters or after a generator failure.
 
-/// Extension only (no disk read). Suitable for large listings / first thumb guess.
+/// File name glob only — never touches the disk (no stat, no read), so it is
+/// safe on the GUI thread. Directories cannot be told apart by name; callers
+/// that know the entry type should use mime_for_entry().
 [[nodiscard]] QString mime_from_extension(const QString& path);
 [[nodiscard]] QString mime_from_extension(const std::filesystem::path& path);
 
-/// Content magic (reads file). Use off the GUI thread or for single-file paths.
+/// Like mime_from_extension() but returns inode/directory when the caller
+/// already knows (from FileInfo) that the entry is a directory. No disk I/O.
+[[nodiscard]] QString mime_for_entry(const std::filesystem::path& path, bool is_directory);
+
+/// Content magic (stats and reads the file). Worker threads only.
 [[nodiscard]] QString mime_from_content(const QString& path);
 [[nodiscard]] QString mime_from_content(const std::filesystem::path& path);
 

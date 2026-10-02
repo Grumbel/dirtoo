@@ -39,10 +39,8 @@ QString paths_label(const QStringList& paths)
 
 QString parent_dir_of(const QString& path)
 {
-  const QFileInfo fi(path);
-  if (fi.exists()) {
-    return fi.isDir() ? fi.absoluteFilePath() : fi.absolutePath();
-  }
+  // Lexical only: logged paths may be on slow, unplugged or hung drives, and
+  // the parent folder shows the affected entry (file or directory) anyway.
   const auto p = std::filesystem::path{path.toStdString()}.parent_path();
   return QString::fromStdString(p.string());
 }

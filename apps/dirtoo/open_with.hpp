@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "dirtoo/fs/file_info.hpp"
+
 #include <QString>
 #include <QStringList>
 #include <QWidget>
@@ -22,7 +24,19 @@ struct DesktopApp {
 };
 
 /// Open path with the desktop default application.
-bool open_default(const std::filesystem::path& path);
+/// A path plus the type already known from the listing, so MIME lookup for
+/// application menus never has to stat or read the file on the GUI thread.
+struct OpenTarget {
+  std::filesystem::path path;
+  bool is_directory = false;
+};
+
+[[nodiscard]] std::vector<OpenTarget> open_targets_from(const std::vector<fs::FileInfo>& files);
+/// For paths of unknown type (e.g. history entries): treated as files.
+[[nodiscard]] std::vector<OpenTarget>
+open_targets_from(const std::vector<std::filesystem::path>& paths);
+
+bool open_default(const OpenTarget& target);
 
 /// Open directory in a terminal emulator (xdg heuristics).
 bool open_in_terminal(const std::filesystem::path& directory);
@@ -41,16 +55,16 @@ bool launch_desktop_app(const DesktopApp& app, const std::vector<std::filesystem
 
 /// Intersection of default apps across selected paths' MIME types.
 [[nodiscard]] std::vector<DesktopApp>
-default_apps_for_paths(const std::vector<std::filesystem::path>& paths);
+default_apps_for_paths(const std::vector<OpenTarget>& targets);
 
 /// Intersection of all associated apps across selected paths' MIME types.
 [[nodiscard]] std::vector<DesktopApp>
-associated_apps_for_paths(const std::vector<std::filesystem::path>& paths);
+associated_apps_for_paths(const std::vector<OpenTarget>& targets);
 
 /// Add top-level "Open With <App>" actions for default handlers (Python ItemContextMenu).
-void add_default_open_actions(QMenu* menu, const std::vector<std::filesystem::path>& paths);
+void add_default_open_actions(QMenu* menu, const std::vector<OpenTarget>& targets);
 
 /// Populate an "Open with…" submenu (other apps + custom command).
-void populate_open_with_menu(QMenu* menu, const std::vector<std::filesystem::path>& paths);
+void populate_open_with_menu(QMenu* menu, const std::vector<OpenTarget>& targets);
 
 } // namespace dirtoo::app

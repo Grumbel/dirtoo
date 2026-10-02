@@ -251,34 +251,35 @@ QStringList expand_exec(const QString& exec, const std::vector<std::filesystem::
   return out;
 }
 
-QString mime_for_path(const std::filesystem::path& p, bool allow_content)
-{
-  // Large multi-select: extension only (content I/O freezes the context menu).
-  // Single path: MatchDefault so wrong extensions still get the right apps.
-  if (allow_content) {
-    return mime_from_default(p);
-  }
-  return mime_from_extension(p);
-}
-
 /// Cap how many paths we inspect for MIME/app intersection. Beyond this we only
 /// sample; common case is select-all of one type (unique MIME stays small).
 constexpr std::size_t kOpenWithPathSample = 64;
 
-[[nodiscard]] std::vector<QString> unique_mimes_for_paths(const std::vector<std::filesystem::path>& paths)
+[[nodiscard]] std::vector<QString> unique_mimes_for_paths(const std::vector<OpenTarget>& targets)
 {
   QSet<QString> seen;
   std::vector<QString> out;
-  const std::size_t n = std::min(paths.size(), kOpenWithPathSample);
+  const std::size_t n = std::min(targets.size(), kOpenWithPathSample);
   out.reserve(n);
-  const bool allow_content = paths.size() == 1;
   for (std::size_t i = 0; i < n; ++i) {
-    const QString mime = mime_for_path(paths[i], allow_content);
+    // Name + listing type only: content sniffing here would block the GUI
+    // (context menu, double-click) on slow drives.
+    const QString mime = mime_for_entry(targets[i].path, targets[i].is_directory);
     if (seen.contains(mime)) {
       continue;
     }
     seen.insert(mime);
     out.push_back(mime);
+  }
+  return out;
+}
+
+[[nodiscard]] std::vector<std::filesystem::path> paths_of(const std::vector<OpenTarget>& targets)
+{
+  std::vector<std::filesystem::path> out;
+  out.reserve(targets.size());
+  for (const auto& t : targets) {
+    out.push_back(t.path);
   }
   return out;
 }
@@ -306,8 +307,29 @@ std::vector<DesktopApp> intersect_apps(const std::vector<std::vector<DesktopApp>
 
 } // namespace
 
-bool open_default(const std::filesystem::path& path)
+std::vector<OpenTarget> open_targets_from(const std::vector<fs::FileInfo>& files)
 {
+  std::vector<OpenTarget> out;
+  out.reserve(files.size());
+  for (const auto& fi : files) {
+    out.push_back(OpenTarget{fi.path(), fi.is_directory() || fi.symlink_target_is_directory()});
+  }
+  return out;
+}
+
+std::vector<OpenTarget> open_targets_from(const std::vector<std::filesystem::path>& paths)
+{
+  std::vector<OpenTarget> out;
+  out.reserve(paths.size());
+  for (const auto& p : paths) {
+    out.push_back(OpenTarget{p, false});
+  }
+  return out;
+}
+
+bool open_default(const OpenTarget& target)
+{
+  const std::filesystem::path& path = target.path;
   // Optional Preferences override: fixed desktop application id.
   const AppSettings settings = load_settings();
   const QString preferred_id = settings.default_open_desktop_id.trimmed();
@@ -315,7 +337,7 @@ bool open_default(const std::filesystem::path& path)
     DesktopApp preferred = parse_desktop_file(find_desktop_file(preferred_id));
     if (preferred.exec.isEmpty()) {
       // Try MIME association lists in case the id is listed without a full parse path.
-      for (const auto& a : associated_apps_for_paths({path})) {
+      for (const auto& a : associated_apps_for_paths({target})) {
         if (a.id == preferred_id) {
           preferred = a;
           break;
@@ -334,7 +356,7 @@ bool open_default(const std::filesystem::path& path)
     QString app_id = QStringLiteral("default");
     QString app_name = QStringLiteral("Default application");
     QString app_icon;
-    const auto defaults = default_apps_for_paths({path});
+    const auto defaults = default_apps_for_paths({target});
     if (!defaults.empty()) {
       app_id = defaults.front().id;
       app_name = defaults.front().name;
@@ -446,12 +468,12 @@ bool launch_desktop_app(const DesktopApp& app, const std::vector<std::filesystem
   return ok;
 }
 
-std::vector<DesktopApp> default_apps_for_paths(const std::vector<std::filesystem::path>& paths)
+std::vector<DesktopApp> default_apps_for_paths(const std::vector<OpenTarget>& targets)
 {
-  if (paths.empty()) {
+  if (targets.empty()) {
     return {};
   }
-  const auto mimes = unique_mimes_for_paths(paths);
+  const auto mimes = unique_mimes_for_paths(targets);
   std::vector<std::vector<DesktopApp>> sets;
   sets.reserve(mimes.size());
   for (const QString& mime : mimes) {
@@ -460,12 +482,12 @@ std::vector<DesktopApp> default_apps_for_paths(const std::vector<std::filesystem
   return intersect_apps(sets);
 }
 
-std::vector<DesktopApp> associated_apps_for_paths(const std::vector<std::filesystem::path>& paths)
+std::vector<DesktopApp> associated_apps_for_paths(const std::vector<OpenTarget>& targets)
 {
-  if (paths.empty()) {
+  if (targets.empty()) {
     return {};
   }
-  const auto mimes = unique_mimes_for_paths(paths);
+  const auto mimes = unique_mimes_for_paths(targets);
   std::vector<std::vector<DesktopApp>> sets;
   sets.reserve(mimes.size());
   for (const QString& mime : mimes) {
@@ -474,12 +496,13 @@ std::vector<DesktopApp> associated_apps_for_paths(const std::vector<std::filesys
   return intersect_apps(sets);
 }
 
-void add_default_open_actions(QMenu* menu, const std::vector<std::filesystem::path>& paths)
+void add_default_open_actions(QMenu* menu, const std::vector<OpenTarget>& targets)
 {
-  if (menu == nullptr || paths.empty()) {
+  if (menu == nullptr || targets.empty()) {
     return;
   }
-  const auto defaults = default_apps_for_paths(paths);
+  const auto paths = paths_of(targets);
+  const auto defaults = default_apps_for_paths(targets);
   if (defaults.empty()) {
     auto* none = menu->addAction(QStringLiteral("No applications available"));
     none->setEnabled(false);
@@ -498,11 +521,12 @@ void add_default_open_actions(QMenu* menu, const std::vector<std::filesystem::pa
   }
 }
 
-void populate_open_with_menu(QMenu* menu, const std::vector<std::filesystem::path>& paths)
+void populate_open_with_menu(QMenu* menu, const std::vector<OpenTarget>& targets)
 {
-  if (menu == nullptr || paths.empty()) {
+  if (menu == nullptr || targets.empty()) {
     return;
   }
+  const auto paths = paths_of(targets);
   // Defer MIME/desktop scanning until the submenu is opened so a right-click on
   // a huge selection stays responsive (defaults still built on first show).
   // Note: do not use Qt::UniqueConnection with a lambda — Qt does not support
@@ -511,19 +535,19 @@ void populate_open_with_menu(QMenu* menu, const std::vector<std::filesystem::pat
   auto* placeholder = menu->addAction(QStringLiteral("…"));
   placeholder->setEnabled(false);
 
-  QObject::connect(menu, &QMenu::aboutToShow, menu, [menu, paths] {
+  QObject::connect(menu, &QMenu::aboutToShow, menu, [menu, targets, paths] {
     if (menu->property("dirtoo_open_with_filled").toBool()) {
       return;
     }
     menu->setProperty("dirtoo_open_with_filled", true);
     menu->clear();
 
-    const auto defaults = default_apps_for_paths(paths);
+    const auto defaults = default_apps_for_paths(targets);
     QSet<QString> default_ids;
     for (const DesktopApp& a : defaults) {
       default_ids.insert(a.id);
     }
-    const auto all = associated_apps_for_paths(paths);
+    const auto all = associated_apps_for_paths(targets);
     std::vector<DesktopApp> others;
     for (const DesktopApp& a : all) {
       if (!default_ids.contains(a.id)) {

@@ -252,17 +252,12 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
   if (role == Qt::ToolTipRole) {
     QString tip = QString::fromStdString(fi->path().string());
     if (fi->is_symlink()) {
-      std::error_code ec;
-      const auto target = std::filesystem::read_symlink(fi->path(), ec);
-      if (!ec) {
+      // Target captured at listing time (worker thread) — no readlink here.
+      if (!fi->symlink_target().empty()) {
         tip += QStringLiteral("\n→ ");
-        tip += QString::fromStdString(target.string());
-        std::error_code ec2;
-        // exists() follows the symlink; false ⇒ dangling.
-        if (!std::filesystem::exists(fi->path(), ec2)) {
-          tip += QStringLiteral("\n(broken symlink)");
-        }
-      } else {
+        tip += QString::fromStdString(fi->symlink_target().string());
+      }
+      if (fi->is_broken_symlink()) {
         tip += QStringLiteral("\n(broken symlink)");
       }
     }

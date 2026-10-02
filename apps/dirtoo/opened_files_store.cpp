@@ -40,11 +40,9 @@ QString OpenedFilesStore::normalize(const QString& path)
   if (path.isEmpty()) {
     return {};
   }
-  const QFileInfo fi(path);
-  if (fi.exists()) {
-    return fi.absoluteFilePath();
-  }
-  // Still normalize as path text so marks survive temporary missing files.
+  // Lexical only — is_opened() runs from the model's paint path, so this must
+  // never stat (absoluteFilePath() does not resolve symlinks either, so the
+  // result is the same as the old exists() branch for absolute paths).
   const QString cleaned = QDir::cleanPath(path);
   if (QDir::isAbsolutePath(cleaned)) {
     return cleaned;

@@ -3,6 +3,10 @@
 
 qt_add_executable(dirtoo-app
   main.cpp
+  async_io.cpp
+  async_io.hpp
+  file_icons.cpp
+  file_icons.hpp
   main_window.cpp
   main_window.hpp
   main_window_setup.cpp

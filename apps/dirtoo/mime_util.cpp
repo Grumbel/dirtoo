@@ -31,14 +31,18 @@ QString mime_from_extension(const QString& path)
   if (path.isEmpty()) {
     return QStringLiteral("application/octet-stream");
   }
+  // Glob match on the name only (mimeTypesForFileName never opens or stats).
+  return name_or_octet(mime_db().mimeTypesForFileName(path).value(0));
+}
+
+QString mime_for_entry(const std::filesystem::path& path, bool is_directory)
+{
   // Directories have no useful extension; without this Open With never sees
   // apps that declare MimeType=inode/directory (or mimeapps.list entries).
-  const QFileInfo fi(path);
-  if (fi.isDir()) {
+  if (is_directory) {
     return QStringLiteral("inode/directory");
   }
-  // Full path (or at least a name with extension) — not basename-only.
-  return name_or_octet(mime_db().mimeTypeForFile(path, QMimeDatabase::MatchExtension));
+  return mime_from_extension(path);
 }
 
 QString mime_from_extension(const std::filesystem::path& path)

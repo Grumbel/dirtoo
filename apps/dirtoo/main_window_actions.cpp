@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+
+#include "async_io.hpp"
 #include "fs_tree_scan_worker.hpp"
 #include "activity_monitor.hpp"
 #include "size_format.hpp"
@@ -44,22 +46,19 @@ void MainWindow::on_item_activated(const QModelIndex& index)
   const fs::FileInfo fi = *fi_ptr;
 
   // Symlinks: FileInfo uses symlink_status, so a link to a directory is not
-  // is_directory(). Resolve the target (follow) and navigate or open it.
+  // is_directory(). Use the target type captured at listing time (worker
+  // thread); if it changed since, open_location / the launcher reports it.
   if (fi.is_symlink() && !location_.is_archive()) {
-    std::error_code ec;
-    const auto target_status = std::filesystem::status(fi.path(), ec);
-    if (ec) {
+    if (fi.is_broken_symlink()) {
       const QString msg =
-          QStringLiteral("Broken symlink: %1 (%2)")
-              .arg(QString::fromStdString(fi.basename()),
-                   QString::fromStdString(ec.message()));
+          QStringLiteral("Broken symlink: %1").arg(QString::fromStdString(fi.basename()));
       set_status(msg);
       if (message_area_ != nullptr) {
         message_area_->show_error(msg);
       }
       return;
     }
-    if (std::filesystem::is_directory(target_status)) {
+    if (fi.symlink_target_is_directory()) {
       // Prefer the path through the symlink so the location bar shows the link path.
       open_location(fs::Location::from_path(fi.path()));
       return;
@@ -68,7 +67,7 @@ void MainWindow::on_item_activated(const QModelIndex& index)
       open_location(fs::Location::from_archive(fi.path(), {}));
       return;
     }
-    if (!open_default(fi.path())) {
+    if (!open_default(OpenTarget{fi.path(), false})) {
       const QString msg = QStringLiteral("Could not open %1")
                               .arg(QString::fromStdString(fi.basename()));
       set_status(msg);
@@ -95,29 +94,37 @@ void MainWindow::on_item_activated(const QModelIndex& index)
     const auto member = location_.entry_path().empty()
                             ? std::filesystem::path{fi.basename()}
                             : location_.entry_path() / fi.basename();
+    const auto archive_file = location_.as_path();
     const auto cache_root = archive_member_cache_root("dirtoo-open");
-    const auto dest = archive_member_dest_dir(cache_root, location_.as_path());
-    auto extracted = ensure_archive_member_extracted(location_.as_path(), member, dest);
-    if (!extracted) {
-      QMessageBox::warning(this, QStringLiteral("Archive"),
-                           QStringLiteral("Could not extract %1 from the archive.")
-                               .arg(QString::fromStdString(fi.basename())));
-      return;
-    }
-    if (fs::looks_like_archive(*extracted)) {
-      open_location(fs::Location::from_archive(*extracted, {}));
-    } else {
-      if (open_default(*extracted)) {
-        if (model_ != nullptr) {
-          model_->flash_launch(QString::fromStdString(fi.path().string()));
-        }
-        set_status(QStringLiteral("Opening %1…").arg(QString::fromStdString(fi.basename())));
-      }
-    }
+    const auto dest = archive_member_dest_dir(cache_root, archive_file);
+    const QString name = QString::fromStdString(fi.basename());
+    const QString model_key = QString::fromStdString(fi.path().string());
+    // Reads the archive (possibly on a slow drive) — extract off the GUI thread.
+    set_status(QStringLiteral("Extracting %1…").arg(name));
+    run_io(
+        this,
+        [archive_file, member, dest] {
+          return ensure_archive_member_extracted(archive_file, member, dest);
+        },
+        [this, name, model_key](std::optional<std::filesystem::path> extracted) {
+          if (!extracted) {
+            QMessageBox::warning(this, QStringLiteral("Archive"),
+                                 QStringLiteral("Could not extract %1 from the archive.").arg(name));
+            return;
+          }
+          if (fs::looks_like_archive(*extracted)) {
+            open_location(fs::Location::from_archive(*extracted, {}));
+          } else if (open_default(OpenTarget{*extracted, false})) {
+            if (model_ != nullptr) {
+              model_->flash_launch(model_key);
+            }
+            set_status(QStringLiteral("Opening %1…").arg(name));
+          }
+        });
   } else if (fs::looks_like_archive(fi.path())) {
     open_location(fs::Location::from_archive(fi.path(), {}));
   } else {
-    if (!open_default(fi.path())) {
+    if (!open_default(OpenTarget{fi.path(), false})) {
       const QString msg = QStringLiteral("Could not open %1")
                               .arg(QString::fromStdString(fi.basename()));
       set_status(msg);
@@ -414,17 +421,13 @@ void MainWindow::update_status_selection()
     const auto& fi = selected.front();
     QString left = QString::fromStdString(fi.path().string());
     if (fi.is_symlink()) {
-      std::error_code ec;
-      const auto target = std::filesystem::read_symlink(fi.path(), ec);
-      if (!ec) {
+      // Captured at listing time — selection changes must not readlink/stat.
+      if (!fi.symlink_target().empty()) {
         left += QStringLiteral(" → ");
-        left += QString::fromStdString(target.string());
-        std::error_code ec2;
-        if (!std::filesystem::exists(fi.path(), ec2)) {
-          left += QStringLiteral(" (broken)");
-        }
-      } else {
-        left += QStringLiteral(" (broken symlink)");
+        left += QString::fromStdString(fi.symlink_target().string());
+      }
+      if (fi.is_broken_symlink()) {
+        left += QStringLiteral(" (broken)");
       }
     }
     set_status(left);
@@ -490,9 +493,10 @@ void MainWindow::on_open_with()
     paths.push_back(fi.path());
   }
   // Prefer a listed default app when available; otherwise prompt for a command.
-  // Single primary path: MatchDefault so misnamed files (JPEG as .png) open correctly.
-  const QString mime = paths.size() == 1 ? mime_from_default(paths.front())
-                                         : mime_from_extension(paths.front());
+  // MIME from name + listing type: content sniffing would block the GUI thread.
+  const auto& primary = selected.front();
+  const QString mime =
+      mime_for_entry(primary.path(), primary.is_directory() || primary.symlink_target_is_directory());
   const auto apps = apps_for_mime(mime);
   if (!apps.empty()) {
     if (launch_desktop_app(apps.front(), paths)) {
