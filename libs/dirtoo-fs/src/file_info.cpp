@@ -67,6 +67,22 @@ void FileInfo::apply_posix_stat(const struct stat& st)
 }
 #endif
 
+void FileInfo::fill_symlink_target(const std::filesystem::path& path)
+{
+  if (!is_symlink_) {
+    return;
+  }
+  std::error_code ec;
+  auto target = std::filesystem::read_symlink(path, ec);
+  if (!ec) {
+    symlink_target_ = std::move(target);
+  }
+  // status() follows the link; failure means dangling (or unreadable) target.
+  const auto st = std::filesystem::status(path, ec);
+  is_broken_symlink_ = ec || !std::filesystem::exists(st);
+  symlink_target_is_directory_ = !is_broken_symlink_ && std::filesystem::is_directory(st);
+}
+
 void FileInfo::fill_posix_times_from_path(const std::filesystem::path& path)
 {
 #if !defined(_WIN32)
@@ -114,6 +130,7 @@ FileInfo FileInfo::from_path(const std::filesystem::path& path)
   struct stat st {};
   if (::lstat(path.c_str(), &st) == 0) {
     info.apply_posix_stat(st);
+    info.fill_symlink_target(path);
     return info;
   }
 #endif
@@ -141,6 +158,7 @@ FileInfo FileInfo::from_path(const std::filesystem::path& path)
     }
   }
   info.fill_posix_times_from_path(path);
+  info.fill_symlink_target(path);
   return info;
 }
 
@@ -226,6 +244,7 @@ FileInfo FileInfo::from_directory_entry(const std::filesystem::directory_entry& 
   struct stat st {};
   if (::lstat(path.c_str(), &st) == 0) {
     info.apply_posix_stat(st);
+    info.fill_symlink_target(path);
     return info;
   }
 #endif
@@ -253,6 +272,7 @@ FileInfo FileInfo::from_directory_entry(const std::filesystem::directory_entry& 
     }
   }
   info.fill_posix_times_from_path(path);
+  info.fill_symlink_target(path);
   return info;
 }
 

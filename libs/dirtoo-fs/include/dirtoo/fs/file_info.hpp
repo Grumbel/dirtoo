@@ -55,10 +55,26 @@ public:
   [[nodiscard]] bool is_symlink() const noexcept { return is_symlink_; }
   [[nodiscard]] bool is_synthetic() const noexcept { return is_synthetic_; }
 
+  /// Link text as stored in the symlink (readlink); empty for non-symlinks.
+  /// Captured when the entry is built (worker thread) so the GUI never has to
+  /// readlink/stat to describe a link.
+  [[nodiscard]] const std::filesystem::path& symlink_target() const noexcept
+  {
+    return symlink_target_;
+  }
+  /// Symlink whose target did not resolve when the entry was built.
+  [[nodiscard]] bool is_broken_symlink() const noexcept { return is_broken_symlink_; }
+  /// Symlink that resolved to a directory when the entry was built.
+  [[nodiscard]] bool symlink_target_is_directory() const noexcept
+  {
+    return symlink_target_is_directory_;
+  }
+
   [[nodiscard]] std::filesystem::perms permissions() const noexcept { return permissions_; }
 
 private:
   void fill_posix_times_from_path(const std::filesystem::path& path);
+  void fill_symlink_target(const std::filesystem::path& path);
 #if !defined(_WIN32)
   void apply_posix_stat(const struct stat& st);
 #endif
@@ -78,6 +94,9 @@ private:
   bool is_regular_file_ = false;
   bool is_symlink_ = false;
   bool is_synthetic_ = false;
+  bool is_broken_symlink_ = false;
+  bool symlink_target_is_directory_ = false;
+  std::filesystem::path symlink_target_;
   std::filesystem::perms permissions_{};
 };
 

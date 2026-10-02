@@ -18,6 +18,7 @@ endif()
 
 add_executable(dirtoo-tests
   test_location.cpp
+  test_file_info.cpp
   test_dirops.cpp
   test_collection.cpp
   test_clipboard_text.cpp
