@@ -266,8 +266,10 @@ Repository: https://github.com/Grumbel/dirtoo.git
 - Make every coherent change a **separate commit**. Prefer small, reviewable
   commits; do not bulk-reformat unrelated code in the same commit as a
   functional change.
-- After each coherent series, leave a **detailed suggested commit message**
-  (subject ≤ ~72 chars, body explaining why and what).
+- After each coherent series, write a **detailed commit message** (subject
+  ≤ ~72 chars, body explaining why and what). Agents with direct repository
+  access (Claude Code) commit it themselves; agents without it (Grok Web)
+  leave it as a suggestion and hand off via bundle (see below).
 - Update documentation (`README.md`, man pages, `NEWS`, `TODO.md`, `AGENTS.md`, …) in the same series
   when user-visible behaviour or build requirements change.
 
@@ -292,10 +294,14 @@ maintainer. AI identity goes **only** in a message trailer.
 |-------|--------|
 | Author name | `Ingo Ruhnke` |
 | Author email | `grumbel@gmail.com` |
-| Trailer | `Co-authored-by: Grok <grok@x.ai>` |
+| Trailer (Grok) | `Co-authored-by: Grok <grok@x.ai>` |
+| Trailer (Claude) | `Co-Authored-By: Claude <noreply@anthropic.com>` (with the actual model name) |
 
-**Forbidden:** `agent@…`, `SuperTux Agent`, `grok@x.ai` (or any AI address) as
-`user.name` / `user.email` / author / committer.
+Use the trailer of the agent that actually produced the change.
+
+**Forbidden:** `agent@…`, `SuperTux Agent`, `grok@x.ai`,
+`noreply@anthropic.com` (or any AI address) as `user.name` / `user.email` /
+author / committer.
 
 Use one-shot `-c` overrides so a machine global config cannot override this:
 
@@ -314,8 +320,16 @@ EOF
 `git log -1 --format='%an <%ae>%n%cn <%ce>%n%B'` must show Ingo as author and
 committer, and the Co-authored-by trailer in the body.
 
-### Handoff: git bundle only
-Agent handoffs use **`git bundle` + `git pull` only**.
+### Claude Code: commit directly
+Claude Code runs inside the maintainer's working tree and **commits directly**
+to the current branch (author/committer and trailer as above). It must **not**
+produce `git bundle` handoffs; the bundle workflow below does not apply to it.
+Pushing still requires an explicit request from the human.
+
+### Handoff: git bundle only (Grok Web only)
+This section applies **only to Grok Web**, which has no direct access to the
+maintainer's repository. Grok Web handoffs use **`git bundle` + `git pull`
+only**.
 
 **Forbidden for handoffs (never suggest, never use):**
 - `git fetch` (of a handoff bundle or as a substitute for stacking)
