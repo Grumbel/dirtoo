@@ -37,6 +37,7 @@ public:
   explicit UDisksClient(QObject* parent = nullptr);
   ~UDisksClient() override;
 
+  /// Re-enumerate volumes asynchronously; emits volumes_changed when done.
   void refresh();
 
   /// Async Filesystem.Mount. Emits operation_finished; on success refreshes volumes.
@@ -61,11 +62,14 @@ private slots:
 
 private:
   void connect_object_manager();
+  void start_eject(const QString& object_path, const QString& drive_path);
 
   QVector<VolumeInfo> volumes_;
   bool available_ = false;
   bool signals_connected_ = false;
   QTimer* refresh_debounce_ = nullptr;
+  bool refresh_in_flight_ = false;
+  bool refresh_again_ = false;
 };
 
 } // namespace dirtoo::app

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "udisks_client.hpp"
+#include "async_io.hpp"
 
 #include <algorithm>
 
@@ -148,6 +149,96 @@ VolumeInfo read_block(const QString& object_path)
   return v;
 }
 
+struct UDisksScan {
+  bool available = false;
+  QString message; ///< diagnostic for qInfo (empty when fine)
+  QVector<VolumeInfo> volumes;
+};
+
+/// Blocking UDisks2 enumeration — worker threads only.
+UDisksScan scan_volumes()
+{
+  UDisksScan scan;
+
+  QDBusInterface manager(kService, QStringLiteral("/org/freedesktop/UDisks2/Manager"),
+                         QStringLiteral("org.freedesktop.UDisks2.Manager"),
+                         QDBusConnection::systemBus());
+  if (!manager.isValid()) {
+    scan.message = QStringLiteral("udisks: Manager unavailable: %1")
+                       .arg(manager.lastError().message());
+    return scan;
+  }
+
+  QDBusMessage call = manager.call(QStringLiteral("GetBlockDevices"), QVariantMap{});
+  if (call.type() == QDBusMessage::ErrorMessage) {
+    scan.message = QStringLiteral("udisks: GetBlockDevices failed: %1")
+                       .arg(call.errorMessage());
+    return scan;
+  }
+  scan.available = true;
+
+  if (call.arguments().isEmpty()) {
+    return scan;
+  }
+
+  QList<QDBusObjectPath> paths;
+  const QVariant arg0 = call.arguments().at(0);
+  if (arg0.canConvert<QDBusArgument>()) {
+    const QDBusArgument a = arg0.value<QDBusArgument>();
+    a.beginArray();
+    while (!a.atEnd()) {
+      QDBusObjectPath p;
+      a >> p;
+      paths.append(p);
+    }
+    a.endArray();
+  } else {
+    const QVariantList list = arg0.toList();
+    for (const QVariant& item : list) {
+      if (item.canConvert<QDBusObjectPath>()) {
+        paths.append(item.value<QDBusObjectPath>());
+      } else {
+        paths.append(QDBusObjectPath(item.toString()));
+      }
+    }
+  }
+
+  for (const QDBusObjectPath& op : paths) {
+    VolumeInfo v = read_block(op.path());
+    if (!v.has_filesystem) {
+      continue;
+    }
+    // Prefer showing mounted volumes and removable/unmounted media; skip quiet
+    // system-only unmounted partitions (HintSystem + not removable + not mounted).
+    const bool hint_system =
+        props_get(v.object_path, kBlockIface, QStringLiteral("HintSystem")).toBool();
+    if (!v.mounted && hint_system && !v.removable && !v.ejectable) {
+      continue;
+    }
+    scan.volumes.push_back(std::move(v));
+  }
+
+  // Mounted first, then label.
+  std::sort(scan.volumes.begin(), scan.volumes.end(), [](const VolumeInfo& a, const VolumeInfo& b) {
+    if (a.mounted != b.mounted) {
+      return a.mounted && !b.mounted;
+    }
+    return a.label.localeAwareCompare(b.label) < 0;
+  });
+  return scan;
+}
+
+/// Fire a UDisks2 method taking a{sv} options without blocking: unlike
+/// QDBusInterface, a raw message does no synchronous introspection first.
+QDBusPendingCall async_udisks_call(const QString& object_path, const char* iface,
+                                   const QString& method)
+{
+  QDBusMessage msg = QDBusMessage::createMethodCall(kService, object_path,
+                                                    QString::fromLatin1(iface), method);
+  msg << QVariantMap{};
+  return QDBusConnection::systemBus().asyncCall(msg);
+}
+
 } // namespace
 
 UDisksClient::UDisksClient(QObject* parent)
@@ -195,80 +286,29 @@ void UDisksClient::schedule_refresh()
 
 void UDisksClient::refresh()
 {
-  volumes_.clear();
-  available_ = false;
-
-  QDBusInterface manager(kService, QStringLiteral("/org/freedesktop/UDisks2/Manager"),
-                         QStringLiteral("org.freedesktop.UDisks2.Manager"),
-                         QDBusConnection::systemBus());
-  if (!manager.isValid()) {
-    qInfo().noquote() << QStringLiteral("udisks: Manager unavailable: %1")
-                             .arg(manager.lastError().message());
-    emit volumes_changed();
+  // Every property read is a synchronous system-bus round trip, and udisksd
+  // may stall while probing a slow device — scan on the I/O pool.
+  if (refresh_in_flight_) {
+    refresh_again_ = true;
     return;
   }
-
-  QDBusMessage call = manager.call(QStringLiteral("GetBlockDevices"), QVariantMap{});
-  if (call.type() == QDBusMessage::ErrorMessage) {
-    qInfo().noquote() << QStringLiteral("udisks: GetBlockDevices failed: %1")
-                             .arg(call.errorMessage());
+  refresh_in_flight_ = true;
+  run_io(this, [] { return scan_volumes(); }, [this](UDisksScan scan) {
+    refresh_in_flight_ = false;
+    if (!scan.message.isEmpty()) {
+      qInfo().noquote() << scan.message;
+    }
+    available_ = scan.available;
+    volumes_ = std::move(scan.volumes);
+    if (available_) {
+      connect_object_manager();
+    }
     emit volumes_changed();
-    return;
-  }
-  available_ = true;
-  connect_object_manager();
-
-  if (call.arguments().isEmpty()) {
-    emit volumes_changed();
-    return;
-  }
-
-  QList<QDBusObjectPath> paths;
-  const QVariant arg0 = call.arguments().at(0);
-  if (arg0.canConvert<QDBusArgument>()) {
-    const QDBusArgument a = arg0.value<QDBusArgument>();
-    a.beginArray();
-    while (!a.atEnd()) {
-      QDBusObjectPath p;
-      a >> p;
-      paths.append(p);
+    if (refresh_again_) {
+      refresh_again_ = false;
+      refresh();
     }
-    a.endArray();
-  } else {
-    const QVariantList list = arg0.toList();
-    for (const QVariant& item : list) {
-      if (item.canConvert<QDBusObjectPath>()) {
-        paths.append(item.value<QDBusObjectPath>());
-      } else {
-        paths.append(QDBusObjectPath(item.toString()));
-      }
-    }
-  }
-
-  for (const QDBusObjectPath& op : paths) {
-    VolumeInfo v = read_block(op.path());
-    if (!v.has_filesystem) {
-      continue;
-    }
-    // Prefer showing mounted volumes and removable/unmounted media; skip quiet
-    // system-only unmounted partitions (HintSystem + not removable + not mounted).
-    const bool hint_system =
-        props_get(v.object_path, kBlockIface, QStringLiteral("HintSystem")).toBool();
-    if (!v.mounted && hint_system && !v.removable && !v.ejectable) {
-      continue;
-    }
-    volumes_.push_back(std::move(v));
-  }
-
-  // Mounted first, then label.
-  std::sort(volumes_.begin(), volumes_.end(), [](const VolumeInfo& a, const VolumeInfo& b) {
-    if (a.mounted != b.mounted) {
-      return a.mounted && !b.mounted;
-    }
-    return a.label.localeAwareCompare(b.label) < 0;
   });
-
-  emit volumes_changed();
 }
 
 VolumeInfo UDisksClient::volume_for_path(const QString& object_path) const
@@ -287,14 +327,8 @@ void UDisksClient::mount(const QString& object_path)
     emit operation_finished(object_path, false, QStringLiteral("empty object path"));
     return;
   }
-  QDBusInterface fs(kService, object_path, QString::fromLatin1(kFsIface),
-                    QDBusConnection::systemBus());
-  if (!fs.isValid()) {
-    emit operation_finished(object_path, false, fs.lastError().message());
-    return;
-  }
   // Mount(a{sv} options) → s mount_path
-  QDBusPendingCall pending = fs.asyncCall(QStringLiteral("Mount"), QVariantMap{});
+  QDBusPendingCall pending = async_udisks_call(object_path, kFsIface, QStringLiteral("Mount"));
   auto* watcher = new QDBusPendingCallWatcher(pending, this);
   connect(watcher, &QDBusPendingCallWatcher::finished, this,
           [this, object_path](QDBusPendingCallWatcher* w) {
@@ -315,13 +349,7 @@ void UDisksClient::unmount(const QString& object_path)
     emit operation_finished(object_path, false, QStringLiteral("empty object path"));
     return;
   }
-  QDBusInterface fs(kService, object_path, QString::fromLatin1(kFsIface),
-                    QDBusConnection::systemBus());
-  if (!fs.isValid()) {
-    emit operation_finished(object_path, false, fs.lastError().message());
-    return;
-  }
-  QDBusPendingCall pending = fs.asyncCall(QStringLiteral("Unmount"), QVariantMap{});
+  QDBusPendingCall pending = async_udisks_call(object_path, kFsIface, QStringLiteral("Unmount"));
   auto* watcher = new QDBusPendingCallWatcher(pending, this);
   connect(watcher, &QDBusPendingCallWatcher::finished, this,
           [this, object_path](QDBusPendingCallWatcher* w) {
@@ -338,23 +366,28 @@ void UDisksClient::unmount(const QString& object_path)
 
 void UDisksClient::eject(const QString& object_path)
 {
-  VolumeInfo v = volume_for_path(object_path);
-  if (v.drive_path.isEmpty()) {
-    // Re-read drive path in case volume list is stale.
-    v.drive_path =
-        object_path_from_variant(props_get(object_path, kBlockIface, QStringLiteral("Drive")));
+  const VolumeInfo v = volume_for_path(object_path);
+  if (!v.drive_path.isEmpty()) {
+    start_eject(object_path, v.drive_path);
+    return;
   }
-  if (v.drive_path.isEmpty() || v.drive_path == QLatin1String("/")) {
+  // Re-read drive path in case volume list is stale (sync D-Bus → I/O pool).
+  run_io(
+      this,
+      [object_path] {
+        return object_path_from_variant(
+            props_get(object_path, kBlockIface, QStringLiteral("Drive")));
+      },
+      [this, object_path](const QString& drive_path) { start_eject(object_path, drive_path); });
+}
+
+void UDisksClient::start_eject(const QString& object_path, const QString& drive_path)
+{
+  if (drive_path.isEmpty() || drive_path == QLatin1String("/")) {
     emit operation_finished(object_path, false, QStringLiteral("no ejectable drive"));
     return;
   }
-  QDBusInterface drive(kService, v.drive_path, QString::fromLatin1(kDriveIface),
-                       QDBusConnection::systemBus());
-  if (!drive.isValid()) {
-    emit operation_finished(object_path, false, drive.lastError().message());
-    return;
-  }
-  QDBusPendingCall pending = drive.asyncCall(QStringLiteral("Eject"), QVariantMap{});
+  QDBusPendingCall pending = async_udisks_call(drive_path, kDriveIface, QStringLiteral("Eject"));
   auto* watcher = new QDBusPendingCallWatcher(pending, this);
   connect(watcher, &QDBusPendingCallWatcher::finished, this,
           [this, object_path](QDBusPendingCallWatcher* w) {
