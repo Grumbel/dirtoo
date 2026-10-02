@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "checksum_dialog.hpp"
+#include "async_io.hpp"
 #include "activity_monitor.hpp"
 #include "app_settings.hpp"
 #include "hash_service.hpp"
@@ -246,17 +247,30 @@ ChecksumDialog::ChecksumDialog(QStringList paths, QWidget* parent)
   connect(cancel_btn_, &QPushButton::clicked, this, &ChecksumDialog::cancel_job);
   connect(clear_btn, &QPushButton::clicked, this, &ChecksumDialog::clear_cache_entries);
 
-  // Default start respects Preferences hash policy for large files.
+  // Default start respects Preferences hash policy for large files. Sizing
+  // the selection stats every path (slow drives) — on the I/O pool; the job
+  // starts when the count is known.
   const AppSettings settings = load_settings();
   const qint64 threshold =
       static_cast<qint64>(std::max(1, settings.hash_large_mib)) * 1024 * 1024;
-  int large_count = 0;
-  for (const QString& p : paths_) {
-    const QFileInfo fi(p);
-    if (fi.isFile() && fi.size() >= threshold) {
-      ++large_count;
-    }
-  }
+  run_io(
+      this,
+      [paths = paths_, threshold] {
+        int large_count = 0;
+        for (const QString& p : paths) {
+          const QFileInfo fi(p);
+          if (fi.isFile() && fi.size() >= threshold) {
+            ++large_count;
+          }
+        }
+        return large_count;
+      },
+      [this](int large_count) { start_with_policy(large_count); });
+}
+
+void ChecksumDialog::start_with_policy(int large_count)
+{
+  const AppSettings settings = load_settings();
   const QString policy = settings.hash_policy.toLower();
   if (large_count > 0 && policy == QLatin1String("quick")) {
     start_job(false, false, true);

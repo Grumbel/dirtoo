@@ -720,15 +720,9 @@ void QuickFilterBar::rebuild_from_items(const std::vector<dirtoo::fs::FileInfo>&
               break;
             }
           }
-          if (!hit) {
-            std::error_code ec;
-            if (std::filesystem::equivalent(mp.parent_path(),
-                                            std::filesystem::path{current_directory_.toStdString()},
-                                            ec)
-                && !ec) {
-              hit = true;
-            }
-          }
+          // Lexical path forms only. An equivalent() fallback here stat'ed
+          // the parent of every member of every set on the GUI thread —
+          // members may sit on slow or unplugged drives.
           if (hit) {
             sets_seen.insert(QString::fromStdString(s.id), s);
             break;

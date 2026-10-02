@@ -32,8 +32,9 @@ public:
   explicit ArchiveManager(QObject* parent = nullptr);
   explicit ArchiveManager(std::filesystem::path cache_root, QObject* parent = nullptr);
 
-  /// Ensure archive contents are available. Emits ready/failed asynchronously
-  /// if extraction is required; may emit ready immediately on cache hit.
+  /// Ensure archive contents are available. Always asynchronous (no
+  /// filesystem I/O on the calling thread): emits extraction_started, then
+  /// extraction_ready (cache hit or after extracting) or extraction_failed.
   void open(const fs::Location& archive_location);
 
   /// Local directory containing the fully extracted archive tree (archive root).
@@ -60,9 +61,10 @@ private:
     QString error;
   };
 
-  [[nodiscard]] std::filesystem::path cache_dir_for(const std::filesystem::path& archive_file) const;
-  void start_extract(const fs::Location& archive_location, Entry& entry);
-  void finish_ok(const fs::Location& archive_location);
+  /// Stats @p archive_file (mtime/size stamp) — worker thread only.
+  [[nodiscard]] static std::filesystem::path cache_dir_for(const std::filesystem::path& cache_root,
+                                                           const std::filesystem::path& archive_file);
+  void finish_ok(const fs::Location& archive_location, const std::filesystem::path& cache_dir);
   void finish_fail(const fs::Location& archive_location, const QString& message);
 
   std::filesystem::path cache_root_;

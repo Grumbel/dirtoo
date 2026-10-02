@@ -238,25 +238,24 @@ void ThumbnailCoordinator::request_rows(const std::vector<fs::FileInfo>& visible
         // Extract single member off the GUI thread, then ask Thumbnailer1.
         const QString key = model_key;
         const QString mime_copy = mime;
-        (void)QtConcurrent::run([this, archive_file, member, key, mime_copy, dest_dir, model]() {
-          auto extracted = ensure_archive_member_extracted(archive_file, member, dest_dir);
-          const bool ok = extracted.has_value();
-          const std::filesystem::path out_path = ok ? *extracted : std::filesystem::path{};
-          QMetaObject::invokeMethod(
-              this,
-              [this, ok, out_path, key, mime_copy, model]() {
-                if (!ok) {
-                  if (model != nullptr) {
-                    model->set_thumbnail_failed(key);
-                  }
-                  return;
+        QPointer<FileListModel> model_guard(model);
+        run_io(
+            this,
+            [archive_file, member, dest_dir] {
+              return ensure_archive_member_extracted(archive_file, member, dest_dir);
+            },
+            [this, key, mime_copy, model_guard](std::optional<std::filesystem::path> extracted) {
+              if (!extracted) {
+                if (model_guard) {
+                  model_guard->set_thumbnail_failed(key);
                 }
-                const QString real_path = QString::fromStdString(out_path.string());
-                thumb_alias_.insert(real_path, key);
-                request_one(fs::Location::from_path(out_path), mime_copy);
-              },
-              Qt::QueuedConnection);
-        });
+                return;
+              }
+              const std::filesystem::path out_path = *extracted;
+              const QString real_path = QString::fromStdString(out_path.string());
+              thumb_alias_.insert(real_path, key);
+              request_one(fs::Location::from_path(out_path), mime_copy);
+            });
         continue;
       }
       const QString real_path = QString::fromStdString(real.string());
@@ -422,26 +421,25 @@ int ThumbnailCoordinator::force_regenerate(const std::vector<fs::FileInfo>& targ
       } else if (!member.empty()) {
         const QString key = path;
         const QString mime_copy = mime;
-        (void)QtConcurrent::run([this, archive_file, member, key, mime_copy, dest_dir, model]() {
-          auto extracted = ensure_archive_member_extracted(archive_file, member, dest_dir);
-          const bool ok = extracted.has_value();
-          const std::filesystem::path out_path = ok ? *extracted : std::filesystem::path{};
-          QMetaObject::invokeMethod(
-              this,
-              [this, ok, out_path, key, mime_copy, model]() {
-                if (!ok) {
-                  if (model != nullptr) {
-                    model->set_thumbnail_failed(key);
-                  }
-                  return;
+        QPointer<FileListModel> model_guard(model);
+        run_io(
+            this,
+            [archive_file, member, dest_dir] {
+              return ensure_archive_member_extracted(archive_file, member, dest_dir);
+            },
+            [this, key, mime_copy, model_guard](std::optional<std::filesystem::path> extracted) {
+              if (!extracted) {
+                if (model_guard) {
+                  model_guard->set_thumbnail_failed(key);
                 }
-                const QString real_path = QString::fromStdString(out_path.string());
-                thumb_alias_.insert(real_path, key);
-                (void)thumbnail::Thumbnailer::remove_cache_for(fs::Location::from_path(out_path));
-                request_many({fs::Location::from_path(out_path)}, {mime_copy}, /*force=*/true);
-              },
-              Qt::QueuedConnection);
-        });
+                return;
+              }
+              const std::filesystem::path out_path = *extracted;
+              const QString real_path = QString::fromStdString(out_path.string());
+              thumb_alias_.insert(real_path, key);
+              (void)thumbnail::Thumbnailer::remove_cache_for(fs::Location::from_path(out_path));
+              request_many({fs::Location::from_path(out_path)}, {mime_copy}, /*force=*/true);
+            });
       } else {
         model->set_thumbnail_failed(path);
       }

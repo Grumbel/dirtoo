@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "directory_tree_model.hpp"
+#include "async_io.hpp"
 
 #include <QFileIconProvider>
 #include <QFont>
@@ -23,9 +24,6 @@ QStringList list_subdirectories(const QString& path, bool show_hidden)
   namespace fs = std::filesystem;
   std::error_code ec;
   const fs::path dir{path.toStdString()};
-  if (!fs::is_directory(dir, ec) || ec) {
-    return out;
-  }
   for (fs::directory_iterator it(dir, fs::directory_options::skip_permission_denied, ec), end;
        !ec && it != end; it.increment(ec)) {
     std::error_code st;
@@ -263,13 +261,26 @@ void DirectoryTreeModel::fetchMore(const QModelIndex& parent)
   const QString path = n->path;
   const bool hidden = show_hidden_;
 
-  (void)QtConcurrent::run([this, n, path, hidden, gen]() {
-    const QStringList children = list_subdirectories(path, hidden);
-    QMetaObject::invokeMethod(
-        this,
-        [this, n, children, gen]() { apply_children(n, children, gen); },
-        Qt::QueuedConnection);
-  });
+  run_io(
+      this, [path, hidden] { return list_subdirectories(path, hidden); },
+      [this, gen](const QStringList& children) {
+        apply_children(find_pending_fetch(gen), children, gen);
+      });
+}
+
+DirectoryTreeModel::Node* DirectoryTreeModel::find_pending_fetch(std::uint64_t generation)
+{
+  QVector<Node*> stack{&root_};
+  while (!stack.isEmpty()) {
+    Node* n = stack.takeLast();
+    if (n->loading && n->fetch_generation == generation) {
+      return n;
+    }
+    for (Node* c : n->children) {
+      stack.push_back(c);
+    }
+  }
+  return nullptr;
 }
 
 void DirectoryTreeModel::apply_children(Node* parent, const QStringList& child_paths,
@@ -346,10 +357,13 @@ QModelIndex DirectoryTreeModel::ensure_path_visible(const QString& path)
   if (path.isEmpty()) {
     return {};
   }
-  namespace fs = std::filesystem;
-  std::error_code ec;
-  const fs::path target = fs::weakly_canonical(fs::path(path.toStdString()), ec);
-  const QString want = QString::fromStdString(ec ? path.toStdString() : target.string());
+  // Lexical normalization only: weakly_canonical() stats every component and
+  // blocks on slow/hung mounts. Locations are lexically normalized too.
+  auto target = std::filesystem::path(path.toStdString()).lexically_normal();
+  if (target != target.root_path() && !target.has_filename()) {
+    target = target.parent_path();
+  }
+  const QString want = QString::fromStdString(target.string());
 
   // Find the deepest root that is a prefix of want.
   Node* root_match = nullptr;
@@ -439,13 +453,11 @@ void DirectoryTreeModel::refresh_if_loaded(const QString& path)
   const QString p = n->path;
   const bool hidden = show_hidden_;
 
-  (void)QtConcurrent::run([this, n, p, hidden, gen]() {
-    const QStringList children = list_subdirectories(p, hidden);
-    QMetaObject::invokeMethod(
-        this,
-        [this, n, children, gen]() { apply_refreshed_children(n, children, gen); },
-        Qt::QueuedConnection);
-  });
+  run_io(
+      this, [p, hidden] { return list_subdirectories(p, hidden); },
+      [this, gen](const QStringList& children) {
+        apply_refreshed_children(find_pending_fetch(gen), children, gen);
+      });
 }
 
 void DirectoryTreeModel::apply_refreshed_children(Node* parent, const QStringList& child_paths,

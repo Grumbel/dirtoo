@@ -39,6 +39,8 @@ private slots:
 
 private:
   void start_job(bool refresh, bool cached_only, bool quick = false);
+  /// Initial job per Preferences hash policy, once the large-file count is known.
+  void start_with_policy(int large_count);
   void stop_worker();
 
   QStringList paths_;

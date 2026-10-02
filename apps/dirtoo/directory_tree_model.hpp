@@ -66,6 +66,10 @@ private:
   };
 
   Node* node_from_index(const QModelIndex& index) const;
+  /// Node currently waiting for fetch @p generation (generations are unique),
+  /// or nullptr if it was removed meanwhile. Async listings resolve their
+  /// target through this instead of holding a Node* across the worker call.
+  Node* find_pending_fetch(std::uint64_t generation);
   QModelIndex index_from_node(Node* node, int column = 0) const;
   void clear_tree();
   void apply_children(Node* parent, const QStringList& child_paths, std::uint64_t generation);

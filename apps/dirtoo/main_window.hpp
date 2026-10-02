@@ -321,6 +321,8 @@ private:
   ArchiveListing archive_listing_;
   /// Bumped when starting an async archive TOC load; stale results ignored.
   quint64 archive_index_generation_ = 0;
+  /// Bumped per tag:// / set:// listing; stale async results are dropped.
+  quint64 virtual_listing_generation_ = 0;
   DirectorySession dir_session_;
   FileListModel* model_ = nullptr;
 

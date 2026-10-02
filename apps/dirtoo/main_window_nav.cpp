@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+
+#include "async_io.hpp"
 #include "mime_util.hpp"
 #include "activity_monitor.hpp"
 #include "location_menu_helpers.hpp"
@@ -75,6 +77,9 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
     stop_search();
     search_session_.active = false;
     watcher_.stop();
+    // Async load: do not leave the previous folder's entries actionable meanwhile.
+    collection_.clear();
+    refresh_list();
     load_tag_location_listing();
     if (auto* view = current_view()) {
       view->setFocus(Qt::OtherFocusReason);
@@ -86,6 +91,9 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
     stop_search();
     search_session_.active = false;
     watcher_.stop();
+    // Async load: do not leave the previous folder's entries actionable meanwhile.
+    collection_.clear();
+    refresh_list();
     load_set_location_listing();
     if (auto* view = current_view()) {
       view->setFocus(Qt::OtherFocusReason);
@@ -108,13 +116,22 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
       ActivityMonitor::instance().set_task(QStringLiteral("archive-index"),
                                            QStringLiteral("Indexing archive…"), -1, -1);
       update_busy_indicator(QStringLiteral("Indexing archive…"));
-      (void)QtConcurrent::run([this, path, gen]() {
-        ArchiveListing listed;
-        std::string list_err;
-        const bool ok = listed.load(path, &list_err);
-        QMetaObject::invokeMethod(
-            this,
-            [this, path, gen, ok, list_err, listing = std::move(listed)]() mutable {
+      struct Indexed {
+        ArchiveListing listing;
+        std::string error;
+        bool ok = false;
+      };
+      run_io(
+          this,
+          [path] {
+            Indexed r;
+            r.ok = r.listing.load(path, &r.error);
+            return r;
+          },
+          [this, path, gen](Indexed indexed) {
+              const bool ok = indexed.ok;
+              const std::string& list_err = indexed.error;
+              auto& listing = indexed.listing;
               if (gen != archive_index_generation_ || location_.as_path() != path) {
                 return; // navigated away
               }
@@ -135,9 +152,7 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
                 }
                 archive_manager_.open(location_);
               }
-            },
-            Qt::QueuedConnection);
-      });
+          });
     }
   } else {
     // List first so status/activity can show “Loading…” before anything that may
@@ -364,22 +379,24 @@ void MainWindow::on_entries_changed(const QStringList& created, const QStringLis
   }
 
   const QStringList created_copy = created;
-  QThreadPool::globalInstance()->start([this, upsert_paths, created_copy] {
-    std::vector<fs::FileInfo> infos;
-    infos.reserve(static_cast<std::size_t>(upsert_paths.size()));
-    for (const QString& path : upsert_paths) {
-      std::error_code ec;
-      const std::filesystem::path p{path.toStdString()};
-      if (!std::filesystem::exists(p, ec) || ec) {
-        continue;
-      }
-      infos.push_back(fs::FileInfo::from_path(p));
-    }
-    QMetaObject::invokeMethod(
-        this, "apply_watcher_upserts", Qt::QueuedConnection,
-        Q_ARG(std::vector<dirtoo::fs::FileInfo>, infos),
-        Q_ARG(QStringList, created_copy));
-  });
+  run_io(
+      this,
+      [upsert_paths] {
+        std::vector<fs::FileInfo> infos;
+        infos.reserve(static_cast<std::size_t>(upsert_paths.size()));
+        for (const QString& path : upsert_paths) {
+          std::error_code ec;
+          const std::filesystem::path p{path.toStdString()};
+          if (!std::filesystem::exists(std::filesystem::symlink_status(p, ec)) || ec) {
+            continue;
+          }
+          infos.push_back(fs::FileInfo::from_path(p));
+        }
+        return infos;
+      },
+      [this, created_copy](std::vector<fs::FileInfo> infos) {
+        apply_watcher_upserts(std::move(infos), created_copy);
+      });
 }
 
 void MainWindow::apply_watcher_upserts(std::vector<fs::FileInfo> infos,

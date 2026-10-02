@@ -564,10 +564,10 @@ void MainWindow::on_group_header_activated(const QString& dir_path)
     }
     return;
   }
-  // Only navigate for real directory paths (Group by Directory labels).
+  // Group by Directory labels are parent directories of listed entries; no
+  // is_directory() check here (GUI thread) — the async load reports errors.
   const std::filesystem::path p{path.toStdString()};
-  std::error_code ec;
-  if (!std::filesystem::is_directory(p, ec)) {
+  if (!p.is_absolute()) {
     set_status(QStringLiteral("Not a directory: %1").arg(path));
     return;
   }

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+
+#include "async_io.hpp"
 #include <QColor>
 #include "tag_manager_dialog.hpp"
 #include "tag_paint.hpp"
@@ -409,6 +411,42 @@ void MainWindow::show_tag_chip_menu(const QString& tag_name, const QPoint& globa
   }
 }
 
+namespace {
+
+struct ResolvedMembers {
+  std::vector<dirtoo::fs::FileInfo> items;
+  int missing = 0;
+};
+
+/// Build FileInfos for stored member paths (tag/set views). Stats every path,
+/// possibly on several slow or unplugged drives — I/O pool only.
+ResolvedMembers resolve_member_paths(const std::vector<std::string>& path_strs)
+{
+  ResolvedMembers out;
+  out.items.reserve(path_strs.size());
+  for (const auto& path_str : path_strs) {
+    if (path_str.find("://") != std::string::npos) {
+      try {
+        auto loc = dirtoo::fs::Location::from_url(path_str);
+        out.items.push_back(dirtoo::fs::FileInfo::from_location(loc));
+      } catch (...) {
+        ++out.missing;
+      }
+      continue;
+    }
+    std::error_code ec;
+    const std::filesystem::path p{path_str};
+    if (!std::filesystem::exists(p, ec) || ec) {
+      ++out.missing;
+      continue;
+    }
+    out.items.push_back(dirtoo::fs::FileInfo::from_path(p));
+  }
+  return out;
+}
+
+} // namespace
+
 void MainWindow::load_tag_location_listing()
 {
   if (!location_.is_tag()) {
@@ -425,70 +463,73 @@ void MainWindow::load_tag_location_listing()
   ActivityMonitor::instance().set_task(QStringLiteral("tag-view"),
                                        QStringLiteral("Loading tag:%1…").arg(key), -1, -1);
 
-  dirtoo::tags::TagStore store;
-  std::string err;
-  if (!store.open(dirtoo::tags::TagStore::default_path(), &err)) {
-    ActivityMonitor::instance().clear_task(QStringLiteral("tag-view"));
-    QMessageBox::warning(this, QStringLiteral("Tags"),
-                         QStringLiteral("Cannot open tags database:\n%1")
-                             .arg(QString::fromStdString(err)));
-    return;
-  }
-
-  // tag://a,b → union of files matching any listed tag name.
-  QStringList parts = key.split(QLatin1Char(','), Qt::SkipEmptyParts);
-  std::vector<dirtoo::fs::FileInfo> items;
-  std::set<std::string> seen;
-  int missing = 0;
-  for (QString part : parts) {
-    part = part.trimmed();
-    if (part.isEmpty()) {
-      continue;
-    }
-    const auto tagged = store.files_for_tag(part.toStdString());
-    for (const auto& tf : tagged) {
-      for (const auto& path_str : tf.paths) {
-        if (!seen.insert(path_str).second) {
-          continue;
+  // tag://a,b → union of files matching any listed tag name. The database
+  // query and the per-path stat both run on the I/O pool.
+  const QStringList parts = key.split(QLatin1Char(','), Qt::SkipEmptyParts);
+  const fs::Location requested = location_;
+  const quint64 gen = ++virtual_listing_generation_;
+  struct TagListing {
+    QString error;
+    ResolvedMembers members;
+  };
+  run_io(
+      this,
+      [parts] {
+        TagListing out;
+        dirtoo::tags::TagStore store;
+        std::string err;
+        if (!store.open(dirtoo::tags::TagStore::default_path(), &err)) {
+          out.error = QString::fromStdString(err);
+          return out;
         }
-        if (path_str.find("://") != std::string::npos) {
-          try {
-            auto loc = dirtoo::fs::Location::from_url(path_str);
-            items.push_back(dirtoo::fs::FileInfo::from_location(loc));
-          } catch (...) {
-            ++missing;
+        std::vector<std::string> paths;
+        std::set<std::string> seen;
+        for (QString part : parts) {
+          part = part.trimmed();
+          if (part.isEmpty()) {
+            continue;
           }
-          continue;
+          for (const auto& tf : store.files_for_tag(part.toStdString())) {
+            for (const auto& path_str : tf.paths) {
+              if (seen.insert(path_str).second) {
+                paths.push_back(path_str);
+              }
+            }
+          }
         }
-        std::error_code ec;
-        const std::filesystem::path p{path_str};
-        if (!std::filesystem::exists(p, ec) || ec) {
-          ++missing;
-          continue;
+        out.members = resolve_member_paths(paths);
+        return out;
+      },
+      [this, key, requested, gen](TagListing listing) {
+        if (gen != virtual_listing_generation_ || location_ != requested) {
+          return; // navigated away meanwhile
         }
-        items.push_back(dirtoo::fs::FileInfo::from_path(p));
-      }
-    }
-  }
+        ActivityMonitor::instance().clear_task(QStringLiteral("tag-view"));
+        if (!listing.error.isEmpty()) {
+          QMessageBox::warning(this, QStringLiteral("Tags"),
+                               QStringLiteral("Cannot open tags database:\n%1").arg(listing.error));
+          return;
+        }
 
-  // Not a recursive search session — tag Location itself blocks disk reload/watcher.
-  search_session_.active = false;
-  search_session_.results.clear();
-  search_session_.batch.clear();
+        // Not a recursive search session — tag Location itself blocks disk reload/watcher.
+        search_session_.active = false;
+        search_session_.results.clear();
+        search_session_.batch.clear();
 
-  collection_.set_items(std::move(items));
-  filter_search_.set_filter_text({});
-  refresh_list();
-  apply_pending_nav_scroll();
-  request_thumbnails_for_visible();
+        collection_.set_items(std::move(listing.members.items));
+        filter_search_.set_filter_text({});
+        refresh_list();
+        apply_pending_nav_scroll();
+        request_thumbnails_for_visible();
 
-  ActivityMonitor::instance().clear_task(QStringLiteral("tag-view"));
-  QString msg =
-      QStringLiteral("%1 file(s) with tag:%2").arg(collection_.visible_items().size()).arg(key);
-  if (missing > 0) {
-    msg += QStringLiteral(" (%1 missing path(s) skipped)").arg(missing);
-  }
-  set_status(msg);
+        QString msg = QStringLiteral("%1 file(s) with tag:%2")
+                          .arg(collection_.visible_items().size())
+                          .arg(key);
+        if (listing.members.missing > 0) {
+          msg += QStringLiteral(" (%1 missing path(s) skipped)").arg(listing.members.missing);
+        }
+        set_status(msg);
+      });
 }
 
 void MainWindow::apply_settings(const AppSettings& s)
@@ -688,51 +729,44 @@ void MainWindow::load_set_location_listing()
   }
 
   file_sets_.set_last_set_id(QString::fromStdString(resolved->id));
-  const auto members = file_sets_.store().members(resolved->id);
-  std::vector<dirtoo::fs::FileInfo> items;
-  items.reserve(members.size());
-  int missing = 0;
-  for (const auto& m : members) {
-    const std::string& path_str = m.path_key;
-    if (path_str.find("://") != std::string::npos) {
-      try {
-        auto loc = dirtoo::fs::Location::from_url(path_str);
-        items.push_back(dirtoo::fs::FileInfo::from_location(loc));
-      } catch (...) {
-        ++missing;
-      }
-      continue;
-    }
-    std::error_code ec;
-    const std::filesystem::path p{path_str};
-    if (!std::filesystem::exists(p, ec) || ec) {
-      ++missing;
-      continue;
-    }
-    items.push_back(dirtoo::fs::FileInfo::from_path(p));
+  // Member list from the (local) set database; stat'ing the members — which
+  // may live on slow or unplugged drives — happens on the I/O pool.
+  std::vector<std::string> paths;
+  for (const auto& m : file_sets_.store().members(resolved->id)) {
+    paths.push_back(m.path_key);
   }
-
-  search_session_.active = false;
-  search_session_.results.clear();
-  search_session_.batch.clear();
-
-  const int shown = static_cast<int>(items.size());
-  collection_.set_items(std::move(items));
-  filter_search_.set_filter_text({});
-  refresh_list();
-  apply_pending_nav_scroll();
-  request_thumbnails_for_visible();
-
-  ActivityMonitor::instance().clear_task(QStringLiteral("set-view"));
   const QString label = resolved->label.empty()
                             ? QString::fromStdString(resolved->id.substr(0, 8))
                             : QString::fromStdString(resolved->label);
-  set_status(QStringLiteral("Set “%1”: %2 file%3%4")
-                 .arg(label)
-                 .arg(shown)
-                 .arg(shown == 1 ? QString() : QStringLiteral("s"))
-                 .arg(missing > 0 ? QStringLiteral(" (%1 missing)").arg(missing) : QString()),
-             5000);
+  const fs::Location requested = location_;
+  const quint64 gen = ++virtual_listing_generation_;
+  run_io(
+      this, [paths] { return resolve_member_paths(paths); },
+      [this, label, requested, gen](ResolvedMembers members) {
+        if (gen != virtual_listing_generation_ || location_ != requested) {
+          return; // navigated away meanwhile
+        }
+        search_session_.active = false;
+        search_session_.results.clear();
+        search_session_.batch.clear();
+
+        const int shown = static_cast<int>(members.items.size());
+        collection_.set_items(std::move(members.items));
+        filter_search_.set_filter_text({});
+        refresh_list();
+        apply_pending_nav_scroll();
+        request_thumbnails_for_visible();
+
+        ActivityMonitor::instance().clear_task(QStringLiteral("set-view"));
+        set_status(QStringLiteral("Set “%1”: %2 file%3%4")
+                       .arg(label)
+                       .arg(shown)
+                       .arg(shown == 1 ? QString() : QStringLiteral("s"))
+                       .arg(members.missing > 0
+                                ? QStringLiteral(" (%1 missing)").arg(members.missing)
+                                : QString()),
+                   5000);
+      });
 }
 
 
