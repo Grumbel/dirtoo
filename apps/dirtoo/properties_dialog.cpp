@@ -7,10 +7,13 @@
 
 #include "dirtoo/filter/media_meta_cache.hpp"
 #include "dirops/ops.hpp"
+#include "async_io.hpp"
+#include "file_icons.hpp"
+#include "mime_util.hpp"
 #include <QFileInfo>
 #include <QPixmap>
-#include <QFileIconProvider>
 #include <QIcon>
+#include <QPointer>
 #include "dirtoo/thumbnail/thumbnailer.hpp"
 
 #include <QCheckBox>
@@ -97,9 +100,7 @@ QPixmap properties_thumbnail(const fs::FileInfo& fi)
       return pm.scaled(128, 128, Qt::KeepAspectRatio, Qt::SmoothTransformation);
     }
   }
-  static QFileIconProvider provider;
-  const QIcon icon = provider.icon(QFileInfo(QString::fromStdString(fi.path().string())));
-  return icon.pixmap(128, 128);
+  return file_type_icon(fi).pixmap(128, 128);
 }
 
 QString type_of(const fs::FileInfo& fi)
@@ -127,6 +128,30 @@ QString group_name(gid_t gid)
     return QString::fromLocal8Bit(gr->gr_name);
   }
   return QString::number(gid);
+}
+
+/// Everything the single-item dialog needs from the filesystem / NSS, gathered
+/// on a worker thread: stat, content MIME (reads the file) and user/group names
+/// (getpwuid/getgrgid may query LDAP/NIS over the network).
+struct PropertiesProbe {
+  bool have_stat = false;
+  struct ::stat st {};
+  QString mime;
+  QString user;
+  QString group;
+};
+
+PropertiesProbe probe_properties(const std::filesystem::path& path)
+{
+  PropertiesProbe probe;
+  QMimeDatabase mime_db;
+  probe.mime = mime_db.mimeTypeForFile(QString::fromStdString(path.string())).name();
+  if (::stat(path.c_str(), &probe.st) == 0) {
+    probe.have_stat = true;
+    probe.user = user_name(probe.st.st_uid);
+    probe.group = group_name(probe.st.st_gid);
+  }
+  return probe;
 }
 
 struct PermBits {
@@ -227,12 +252,11 @@ PermissionsEditor* add_permissions(QVBoxLayout* outer, mode_t mode, bool editabl
 
 } // namespace
 
-void show_properties_dialog(QWidget* parent, const std::vector<fs::FileInfo>& items)
-{
-  if (items.empty()) {
-    return;
-  }
+namespace {
 
+void exec_properties_dialog(QWidget* parent, const std::vector<fs::FileInfo>& items,
+                            const PropertiesProbe& probe)
+{
   QDialog dialog(parent);
   dialog.setWindowTitle(items.size() == 1 ? QStringLiteral("Properties")
                                           : QStringLiteral("Properties (%1 items)").arg(items.size()));
@@ -280,9 +304,7 @@ void show_properties_dialog(QWidget* parent, const std::vector<fs::FileInfo>& it
                                   /*word_wrap=*/true));
     form->addRow(QStringLiteral("Type:"), make_value_label(type_of(fi), &dialog));
 
-    QMimeDatabase mime_db;
-    const auto mime = mime_db.mimeTypeForFile(QString::fromStdString(path.string()));
-    form->addRow(QStringLiteral("MIME type:"), make_value_label(mime.name(), &dialog));
+    form->addRow(QStringLiteral("MIME type:"), make_value_label(probe.mime, &dialog));
 
     if (fi.is_regular_file() || fi.is_symlink()) {
       form->addRow(QStringLiteral("Size:"),
@@ -293,13 +315,13 @@ void show_properties_dialog(QWidget* parent, const std::vector<fs::FileInfo>& it
                                   /*word_wrap=*/true));
     layout->addWidget(general);
 
-    struct ::stat st {};
-    if (::stat(path.c_str(), &st) == 0) {
+    if (probe.have_stat) {
+      const struct ::stat& st = probe.st;
       auto* ownership = new QGroupBox(QStringLiteral("Ownership"), &dialog);
       auto* oform = new QFormLayout(ownership);
       configure_form(oform);
-      oform->addRow(QStringLiteral("User:"), make_value_label(user_name(st.st_uid), &dialog));
-      oform->addRow(QStringLiteral("Group:"), make_value_label(group_name(st.st_gid), &dialog));
+      oform->addRow(QStringLiteral("User:"), make_value_label(probe.user, &dialog));
+      oform->addRow(QStringLiteral("Group:"), make_value_label(probe.group, &dialog));
       layout->addWidget(ownership);
 
       auto* times = new QGroupBox(QStringLiteral("Timestamps"), &dialog);
@@ -397,18 +419,25 @@ void show_properties_dialog(QWidget* parent, const std::vector<fs::FileInfo>& it
         dialog.accept();
         return;
       }
-      auto result = dirops::set_permissions(chmod_path, static_cast<std::uint32_t>(new_mode));
-      if (!result) {
-        operations_history().record_simple(
-            OperationKind::Permissions, {chmod_path}, chmod_path, false,
-            QString::fromStdString(result.error().to_string()));
-        QMessageBox::warning(&dialog, QStringLiteral("Permissions"),
-                             QString::fromStdString(result.error().to_string()));
-        return;
-      }
-      operations_history().record_simple(OperationKind::Permissions, {chmod_path}, chmod_path,
-                                         true);
+      // chmod may block on a slow drive: close the dialog now, apply on the I/O
+      // pool, and report a failure afterwards. The continuation is bound to
+      // qApp so the operations history is written even if the window closes.
       dialog.accept();
+      const auto target = chmod_path;
+      QPointer<QWidget> report_parent(dialog.parentWidget());
+      run_io(
+          qApp,
+          [target, new_mode] {
+            auto result = dirops::set_permissions(target, static_cast<std::uint32_t>(new_mode));
+            return result ? QString() : QString::fromStdString(result.error().to_string());
+          },
+          [target, report_parent](const QString& error) {
+            operations_history().record_simple(OperationKind::Permissions, {target}, target,
+                                               error.isEmpty(), error);
+            if (!error.isEmpty()) {
+              QMessageBox::warning(report_parent.data(), QStringLiteral("Permissions"), error);
+            }
+          });
     });
   } else {
     buttons = new QDialogButtonBox(QDialogButtonBox::Close, &dialog);
@@ -419,6 +448,39 @@ void show_properties_dialog(QWidget* parent, const std::vector<fs::FileInfo>& it
 
   dialog.exec();
   delete perm_editor;
+}
+
+} // namespace
+
+void show_properties_dialog(QWidget* parent, const std::vector<fs::FileInfo>& items)
+{
+  if (items.empty()) {
+    return;
+  }
+  const auto& fi = items.front();
+  if (items.size() != 1) {
+    // Multi-select summary: everything comes from FileInfo.
+    exec_properties_dialog(parent, items, PropertiesProbe{});
+    return;
+  }
+  if (fi.location().is_archive()) {
+    // Archive member: nothing on disk to stat; MIME from the name.
+    PropertiesProbe probe;
+    probe.mime = mime_from_extension(fi.location().entry_path());
+    exec_properties_dialog(parent, items, probe);
+    return;
+  }
+  // Single file (incl. search hits, which are synthetic but real paths): stat / sniff / NSS lookups off the GUI thread; the
+  // dialog opens when they return (dropped if the parent window is gone).
+  const auto path = fi.path();
+  QPointer<QWidget> guard(parent);
+  run_io(
+      parent, [path] { return probe_properties(path); },
+      [guard, items](const PropertiesProbe& probe) {
+        if (guard) {
+          exec_properties_dialog(guard.data(), items, probe);
+        }
+      });
 }
 
 } // namespace dirtoo::app

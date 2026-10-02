@@ -240,7 +240,7 @@ private slots:
   void on_transfer_item_started(int index, int total, const QString& path);
   void on_transfer_byte_progress(quint64 done, quint64 total, const QString& path);
   void on_transfer_conflict(const QString& destination_name, const QString& source_path,
-                            const QString& destination_path);
+                            const QString& destination_path, dirtoo::app::ConflictProbe probe);
   void on_transfer_finished(TransferSummary summary);
 
 private:
@@ -267,6 +267,9 @@ private:
   /// Show/hide the status-bar busy indicator and set its tooltip.
   void update_busy_indicator(const QString& activity = {});
   void set_clipboard(ClipboardMode mode);
+  /// Common tail of an async mutation (main_window_ops.cpp): show @p error
+  /// (if any) under @p title and reload the listing.
+  void finish_simple_mutation(const QString& title, const QString& error);
   void request_thumbnails_for_visible();
   void flush_viewport_thumbnails();
   void schedule_thumb_status_refresh();

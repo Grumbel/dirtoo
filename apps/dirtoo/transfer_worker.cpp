@@ -13,6 +13,7 @@ TransferWorker::TransferWorker(QObject* parent)
   qRegisterMetaType<TransferSummary>("dirtoo::app::TransferSummary");
   qRegisterMetaType<TransferRequest>("dirtoo::app::TransferRequest");
   qRegisterMetaType<dirops::ConflictPolicy>("dirops::ConflictPolicy");
+  qRegisterMetaType<ConflictProbe>("dirtoo::app::ConflictProbe");
 }
 
 void TransferWorker::cancel()
@@ -84,8 +85,10 @@ dirops::ConflictPolicy TransferWorker::wait_for_conflict_policy(
     conflict_pending_ = true;
     conflict_accepted_ = false;
   }
+  // Stat here (worker thread) so the dialog does no I/O on the GUI thread.
   emit conflict_required(dest_name, QString::fromStdString(source.string()),
-                         QString::fromStdString(destination.string()));
+                         QString::fromStdString(destination.string()),
+                         probe_conflict(source, destination));
 
   std::unique_lock lock(conflict_mutex_);
   conflict_cv_.wait(lock, [this] {

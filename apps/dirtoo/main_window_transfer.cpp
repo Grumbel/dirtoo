@@ -3,6 +3,8 @@
 
 #include "main_window_common.hpp"
 
+#include "async_io.hpp"
+
 #include "archive_member_cache.hpp"
 #include "clipboard.hpp"
 #include "conflict_dialog.hpp"
@@ -57,7 +59,7 @@ void MainWindow::on_transfer_byte_progress(quint64 done, quint64 total, const QS
 }
 
 void MainWindow::on_transfer_conflict(const QString& destination_name, const QString& source_path,
-                                      const QString& destination_path)
+                                      const QString& destination_path, ConflictProbe probe)
 {
   // Runs on UI thread (QueuedConnection from worker signal).
   qInfo().noquote() << QStringLiteral("transfer conflict: %1 (src=%2 dest=%3)")
@@ -69,7 +71,7 @@ void MainWindow::on_transfer_conflict(const QString& destination_name, const QSt
   }
   const auto chosen = ask_conflict_policy(
       this, destination_name, std::filesystem::path{source_path.toStdString()},
-      std::filesystem::path{destination_path.toStdString()});
+      std::filesystem::path{destination_path.toStdString()}, probe);
   if (!chosen) {
     transfer_controller_.resolve_conflict(dirops::ConflictPolicy::Fail, false, false);
   } else {
@@ -137,10 +139,10 @@ void MainWindow::on_transfer_finished(TransferSummary summary)
       oi.source = QString::fromStdString(it.source.string());
       oi.destination = QString::fromStdString(it.destination.string());
       oi.skipped = it.skipped;
-      e.items.push_back(std::move(oi));
       if (!oi.destination.isEmpty()) {
         e.destinations << oi.destination;
       }
+      e.items.push_back(std::move(oi));
     }
     operations_history().record(std::move(e));
   }
@@ -156,13 +158,14 @@ void MainWindow::begin_transfer_from_urls(const QList<QUrl>& urls, Qt::DropActio
     return;
   }
 
-  // Collect plain paths and archive members that still need materialization.
-  std::vector<std::filesystem::path> ready;
-  struct PendingMember {
+  // Collect plain paths and archive members (pure lookups — no I/O here).
+  struct MemberSource {
     std::filesystem::path archive_file;
     std::filesystem::path member;
+    std::filesystem::path extracted_candidate; ///< from an already extracted archive, if any
   };
-  std::vector<PendingMember> pending;
+  std::vector<std::filesystem::path> plain;
+  std::vector<MemberSource> members;
   bool any_from_archive = false;
 
   for (const QUrl& url : urls) {
@@ -174,25 +177,21 @@ void MainWindow::begin_transfer_from_urls(const QList<QUrl>& urls, Qt::DropActio
       any_from_archive = true;
       if (loc->entry_path().empty()) {
         // Drag of the archive root → the archive file itself.
-        ready.push_back(loc->as_path());
+        plain.push_back(loc->as_path());
         continue;
       }
+      MemberSource m{loc->as_path(), loc->entry_path(), {}};
       const fs::Location archive_root = fs::Location::from_archive(loc->as_path(), {});
       if (const auto root = archive_manager_.extracted_root(archive_root)) {
-        const auto real = *root / loc->entry_path();
-        std::error_code ec;
-        if (std::filesystem::exists(real, ec) && !ec) {
-          ready.push_back(real);
-          continue;
-        }
+        m.extracted_candidate = *root / loc->entry_path();
       }
-      pending.push_back(PendingMember{loc->as_path(), loc->entry_path()});
+      members.push_back(std::move(m));
       continue;
     }
-    ready.push_back(loc->as_path());
+    plain.push_back(loc->as_path());
   }
 
-  if (ready.empty() && pending.empty()) {
+  if (plain.empty() && members.empty()) {
     set_status(QStringLiteral("Drop ignored (no usable paths)"));
     return;
   }
@@ -200,90 +199,113 @@ void MainWindow::begin_transfer_from_urls(const QList<QUrl>& urls, Qt::DropActio
   // Archive members are read-only sources: never Move/Link out of the archive.
   const Qt::DropAction effective =
       any_from_archive && action != Qt::CopyAction ? Qt::CopyAction : action;
+  const bool link = effective == Qt::LinkAction;
 
-  auto finish = [this, dest_dir, effective](std::vector<std::filesystem::path> sources) {
-    // Refuse dropping a selection into itself / a selected folder.
-    {
-      const auto dest_path = dest_dir.lexically_normal();
-      for (const auto& src : sources) {
-        std::error_code ec;
-        if (std::filesystem::equivalent(src, dest_path, ec)) {
-          set_status(QStringLiteral("Cannot drop an item onto itself"));
-          return;
-        }
-        if (std::filesystem::is_directory(src, ec)) {
-          const auto rel = dest_path.lexically_relative(src.lexically_normal());
-          if (!rel.empty() && *rel.begin() != "..") {
-            set_status(QStringLiteral("Cannot drop into a selected folder"));
-            return;
-          }
-        }
-      }
-    }
-
-    if (effective == Qt::LinkAction) {
-      int ok = 0;
-      int fail = 0;
-      for (const auto& src : sources) {
-        const auto link = dest_dir / src.filename();
-        auto result = dirops::create_symlink(src, link);
-        if (result) {
-          ++ok;
-          operations_history().record_simple(OperationKind::Symlink, {src}, link, true);
-        } else {
-          ++fail;
-          operations_history().record_simple(OperationKind::Symlink, {src}, link, false,
-                                             QString::fromStdString(result.error().to_string()));
-        }
-      }
-      set_status(QStringLiteral("Linked %1 (%2 failed)").arg(ok).arg(fail));
-      on_directory_changed();
-      return;
-    }
-
-    TransferRequest req;
-    req.mode = (effective == Qt::MoveAction) ? ClipboardMode::Cut : ClipboardMode::Copy;
-    req.destination_directory = dest_dir;
-    for (const auto& src : sources) {
-      const auto target = req.destination_directory / src.filename();
-      if (src == req.destination_directory || src == target) {
-        continue;
-      }
-      req.sources.push_back(src);
-    }
-    if (req.sources.empty()) {
-      set_status(QStringLiteral("Drop ignored (invalid targets)"));
-      return;
-    }
-    start_transfer(req);
+  struct LinkOutcome {
+    std::filesystem::path source;
+    std::filesystem::path link;
+    QString error; ///< empty on success
+  };
+  struct DropPlan {
+    std::vector<std::filesystem::path> sources;
+    QString refusal; ///< non-empty: abort with this status message
+    bool linked = false;
+    std::vector<LinkOutcome> links;
   };
 
-  if (pending.empty()) {
-    finish(std::move(ready));
-    return;
+  if (!members.empty()) {
+    set_status(QStringLiteral("Extracting %1 archive member(s)…").arg(members.size()));
   }
-
-  set_status(QStringLiteral("Extracting %1 archive member(s)…").arg(pending.size()));
   const auto cache_root = archive_member_cache_root("dirtoo-archive-drop");
-  (void)QtConcurrent::run([this, pending, ready, cache_root, finish]() mutable {
-    for (const auto& p : pending) {
-      const auto dest = archive_member_dest_dir(cache_root, p.archive_file);
-      if (auto extracted =
-              ensure_archive_member_extracted(p.archive_file, p.member, dest)) {
-        ready.push_back(*extracted);
-      }
-    }
-    QMetaObject::invokeMethod(
-        this,
-        [this, ready = std::move(ready), finish]() mutable {
-          if (ready.empty()) {
-            set_status(QStringLiteral("Failed to extract archive member(s) for drop"));
-            return;
+  // Extraction, the drop-onto-itself checks and symlink creation all touch
+  // (possibly slow) drives — run them on the I/O pool.
+  run_io(
+      this,
+      [plain, members, dest_dir, link, cache_root]() mutable {
+        DropPlan plan;
+        plan.sources = std::move(plain);
+        for (const auto& m : members) {
+          std::error_code ec;
+          if (!m.extracted_candidate.empty() && std::filesystem::exists(m.extracted_candidate, ec)
+              && !ec) {
+            plan.sources.push_back(m.extracted_candidate);
+            continue;
           }
-          finish(std::move(ready));
-        },
-        Qt::QueuedConnection);
-  });
+          const auto dest = archive_member_dest_dir(cache_root, m.archive_file);
+          if (auto extracted = ensure_archive_member_extracted(m.archive_file, m.member, dest)) {
+            plan.sources.push_back(*extracted);
+          }
+        }
+        if (plan.sources.empty()) {
+          plan.refusal = QStringLiteral("Failed to extract archive member(s) for drop");
+          return plan;
+        }
+
+        // Refuse dropping a selection into itself / a selected folder.
+        const auto dest_path = dest_dir.lexically_normal();
+        for (const auto& src : plan.sources) {
+          std::error_code ec;
+          if (std::filesystem::equivalent(src, dest_path, ec)) {
+            plan.refusal = QStringLiteral("Cannot drop an item onto itself");
+            return plan;
+          }
+          if (std::filesystem::is_directory(src, ec)) {
+            const auto rel = dest_path.lexically_relative(src.lexically_normal());
+            if (!rel.empty() && *rel.begin() != "..") {
+              plan.refusal = QStringLiteral("Cannot drop into a selected folder");
+              return plan;
+            }
+          }
+        }
+
+        if (link) {
+          plan.linked = true;
+          for (const auto& src : plan.sources) {
+            const auto target = dest_dir / src.filename();
+            auto result = dirops::create_symlink(src, target);
+            plan.links.push_back(LinkOutcome{
+                src, target,
+                result ? QString() : QString::fromStdString(result.error().to_string())});
+          }
+        }
+        return plan;
+      },
+      [this, effective, dest_dir](DropPlan plan) {
+        if (!plan.refusal.isEmpty()) {
+          set_status(plan.refusal);
+          return;
+        }
+        if (plan.linked) {
+          // History is GUI-thread state — record here, not on the worker.
+          int ok = 0;
+          for (const auto& l : plan.links) {
+            operations_history().record_simple(OperationKind::Symlink, {l.source}, l.link,
+                                               l.error.isEmpty(), l.error);
+            ok += l.error.isEmpty() ? 1 : 0;
+          }
+          set_status(QStringLiteral("Linked %1 (%2 failed)")
+                         .arg(ok)
+                         .arg(static_cast<int>(plan.links.size()) - ok));
+          on_directory_changed();
+          return;
+        }
+
+        TransferRequest req;
+        req.mode = (effective == Qt::MoveAction) ? ClipboardMode::Cut : ClipboardMode::Copy;
+        req.destination_directory = dest_dir;
+        for (const auto& src : plan.sources) {
+          const auto target = req.destination_directory / src.filename();
+          if (src == req.destination_directory || src == target) {
+            continue;
+          }
+          req.sources.push_back(src);
+        }
+        if (req.sources.empty()) {
+          set_status(QStringLiteral("Drop ignored (invalid targets)"));
+          return;
+        }
+        start_transfer(req);
+      });
 }
 
 void MainWindow::on_urls_dropped_to(const QList<QUrl>& urls, Qt::DropAction action,

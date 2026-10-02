@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "conflict_dialog.hpp"
+#include "file_icons.hpp"
 
 #include <filesystem>
 #include "size_format.hpp"
@@ -12,8 +13,6 @@
 #include <QCheckBox>
 #include <QDialog>
 #include <QDialogButtonBox>
-#include <QFileIconProvider>
-#include <QFileInfo>
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -51,7 +50,7 @@ QString format_mtime(const std::filesystem::file_time_type& ftp)
 }
 
 /// Prefer freedesktop thumbnail cache; fall back to theme/file icon.
-QPixmap thumbnail_for(const std::filesystem::path& path, int edge = 96)
+QPixmap thumbnail_for(const std::filesystem::path& path, bool is_directory, int edge = 96)
 {
   if (path.empty()) {
     return {};
@@ -72,33 +71,26 @@ QPixmap thumbnail_for(const std::filesystem::path& path, int edge = 96)
     }
   } catch (...) {
   }
-  QFileIconProvider provider;
-  const QIcon icon = provider.icon(QFileInfo(QString::fromStdString(path.string())));
-  return icon.pixmap(edge, edge);
+  return file_type_icon(path, is_directory).pixmap(edge, edge);
 }
 
 void fill_file_info(QFormLayout* form, const std::filesystem::path& path, const QString& fallback_name,
-                    QLabel* thumb_label)
+                    const ConflictEntryInfo& info, QLabel* thumb_label)
 {
   QString name = fallback_name;
   QString size = QStringLiteral("—");
   QString mtime = QStringLiteral("—");
   if (!path.empty()) {
     name = QString::fromStdString(path.filename().string());
-    std::error_code ec;
-    if (std::filesystem::exists(path, ec) && !ec) {
-      const auto sz = std::filesystem::file_size(path, ec);
-      if (!ec) {
-        size = format_size(static_cast<std::uint64_t>(sz));
-      }
-      const auto mt = std::filesystem::last_write_time(path, ec);
-      if (!ec) {
-        mtime = format_mtime(mt);
-      }
-    }
+  }
+  if (info.size) {
+    size = format_size(*info.size);
+  }
+  if (info.mtime) {
+    mtime = format_mtime(*info.mtime);
   }
   if (thumb_label != nullptr) {
-    const QPixmap pm = thumbnail_for(path);
+    const QPixmap pm = thumbnail_for(path, info.is_directory);
     if (!pm.isNull()) {
       thumb_label->setPixmap(pm);
     } else {
@@ -118,7 +110,8 @@ void fill_file_info(QFormLayout* form, const std::filesystem::path& path, const 
 std::optional<ConflictDecision> ask_conflict_policy(QWidget* parent,
                                                     const QString& destination_name,
                                                     const std::filesystem::path& source_path,
-                                                    const std::filesystem::path& destination_path)
+                                                    const std::filesystem::path& destination_path,
+                                                    const ConflictProbe& probe)
 {
   QDialog dialog(parent);
   dialog.setWindowTitle(QStringLiteral("Confirm to replace files"));
@@ -127,11 +120,7 @@ std::optional<ConflictDecision> ask_conflict_policy(QWidget* parent,
 
   auto* layout = new QVBoxLayout(&dialog);
 
-  std::error_code dest_ec;
-  const bool dest_is_dir =
-      !destination_path.empty()
-      && std::filesystem::is_directory(destination_path, dest_ec)
-      && !dest_ec;
+  const bool dest_is_dir = probe.destination.is_directory;
 
   // Header must not call a folder a "file" — Replace is disabled for directories.
   auto* header = new QLabel(&dialog);
@@ -166,7 +155,7 @@ std::optional<ConflictDecision> ask_conflict_policy(QWidget* parent,
   auto* source_row = new QHBoxLayout(source_box);
   auto* source_thumb = new QLabel(source_box);
   auto* source_form = new QFormLayout();
-  fill_file_info(source_form, source_path, destination_name, source_thumb);
+  fill_file_info(source_form, source_path, destination_name, probe.source, source_thumb);
   source_row->addWidget(source_thumb);
   source_row->addLayout(source_form, 1);
   layout->addWidget(source_box);
@@ -175,7 +164,7 @@ std::optional<ConflictDecision> ask_conflict_policy(QWidget* parent,
   auto* dest_row = new QHBoxLayout(dest_box);
   auto* dest_thumb = new QLabel(dest_box);
   auto* dest_form = new QFormLayout();
-  fill_file_info(dest_form, destination_path, destination_name, dest_thumb);
+  fill_file_info(dest_form, destination_path, destination_name, probe.destination, dest_thumb);
   dest_row->addWidget(dest_thumb);
   dest_row->addLayout(dest_form, 1);
   layout->addWidget(dest_box);

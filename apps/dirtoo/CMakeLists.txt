@@ -7,6 +7,8 @@ qt_add_executable(dirtoo-app
   async_io.hpp
   file_icons.cpp
   file_icons.hpp
+  conflict_probe.cpp
+  conflict_probe.hpp
   main_window.cpp
   main_window.hpp
   main_window_setup.cpp

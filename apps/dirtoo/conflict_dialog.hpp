@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "conflict_probe.hpp"
 #include "dirops/ops.hpp"
 
 #include <QString>
@@ -21,10 +22,14 @@ struct ConflictDecision {
 
 /// Ask how to resolve a name conflict. Pass source/dest paths when known for size/mtime.
 /// Returns nullopt if the user cancels.
+/// Modal Replace/Rename/Skip prompt. Performs no filesystem I/O itself (beyond
+/// reading cached thumbnails from the local XDG cache): sizes, times and the
+/// folder check come from @p probe, gathered beforehand on a worker thread.
 [[nodiscard]] std::optional<ConflictDecision> ask_conflict_policy(
     QWidget* parent,
     const QString& destination_name,
-    const std::filesystem::path& source_path = {},
-    const std::filesystem::path& destination_path = {});
+    const std::filesystem::path& source_path,
+    const std::filesystem::path& destination_path,
+    const ConflictProbe& probe);
 
 } // namespace dirtoo::app

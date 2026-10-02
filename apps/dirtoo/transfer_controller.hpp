@@ -41,8 +41,9 @@ public:
 signals:
   void item_started(int index, int total, const QString& path);
   void byte_progress(quint64 done, quint64 total, const QString& path);
+  /// @p probe: source/destination metadata stat'ed on the worker thread.
   void conflict_required(const QString& destination_name, const QString& source_path,
-                         const QString& destination_path);
+                         const QString& destination_path, dirtoo::app::ConflictProbe probe);
   void finished(TransferSummary summary);
   void log_line(const QString& line);
 
