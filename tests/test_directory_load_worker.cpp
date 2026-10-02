@@ -13,6 +13,7 @@
 #include <filesystem>
 #include <fstream>
 #include <thread>
+#include <unistd.h>
 #include <vector>
 
 namespace fs = std::filesystem;
@@ -22,7 +23,9 @@ namespace {
 
 fs::path make_temp_dir_with_files(int count)
 {
-  const auto dir = fs::temp_directory_path() / "dirtoo-load-worker-test";
+  // Per-process name: ctest runs each test case as its own process, in parallel.
+  const auto dir =
+      fs::temp_directory_path() / ("dirtoo-load-worker-test-" + std::to_string(::getpid()));
   std::error_code ec;
   fs::remove_all(dir, ec);
   fs::create_directories(dir);
