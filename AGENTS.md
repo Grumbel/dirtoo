@@ -137,7 +137,20 @@ workers, signals/slots, and the media meta cache. Bounded content reads
 belong on a worker thread, not in `FileCollection::rebuild_visible` on the
 UI thread.
 
-Prior GUI-thread I/O violations have mitigations (see `TODO.md`). Residual risks: full directory rescan on watch (soft), no list virtualization, non-content filters still apply on the UI thread, Tag Manager / QuickFilter auto-tag scan may open SQLite on the GUI (bounded; no hashing).
+The target includes slow USB and network drives that may take 30 s+ to
+answer, so this extends to **every** single `stat` / `exists` / `readlink` /
+`rename` / `remove` and to content MIME sniffing. For one-off calls use
+`run_io(context, work, done)` from `apps/dirtoo/async_io.hpp` (dedicated
+`dirtoo-io` pool; `done` is dropped if `context` died); file mutations go
+through `run_mutation()` in `main_window_ops.cpp`. Describe entries from
+`FileInfo` (it carries symlink target / broken / target-is-dir) rather than
+re-stat'ing; get icons from `file_type_icon()` and MIME from
+`mime_from_extension` / `mime_for_entry` (name only), never
+`QFileIconProvider::icon(QFileInfo)` or `MatchDefault`/`MatchContent` on the
+GUI thread. Never capture a raw `this` in `QtConcurrent::run` /
+`QThreadPool` lambdas.
+
+Prior GUI-thread I/O violations have mitigations (see `TODO.md`, section 5). Residual risks: full directory rescan on watch (soft), no list virtualization, non-content filters still apply on the UI thread, Tag Manager / QuickFilter auto-tag scan may open SQLite on the GUI (bounded; local; no hashing), drag from an archive to external apps extracts synchronously.
 
 ### Git commit messages
 
@@ -252,6 +265,7 @@ implementations of the same library capability.
 | QuickFilter bar + pinned filters (scoped) | **done** (rebuild-on-keystroke polish open) |
 | Filter inclusive ranges (`lo-hi` / `lo..hi`) | **done** |
 | Reload Thumbnails force-regenerate | **done** (archive unextracted edge open) |
+| Slow-drive responsiveness (no GUI-thread FS/D-Bus I/O) | **done** (audit 2026-10-02; DnD-from-archive residual) |
 | Detail virtualization / inotify per-entry | **open** (optional) |
 | MainWindow gravity | **in progress** (R1–R6 chrome/controllers; ops/nav still large) |
 | Archive write / remote VFS / programs/* | **out of scope** |

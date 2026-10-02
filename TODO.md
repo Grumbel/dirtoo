@@ -34,8 +34,9 @@ Source audit: **`AUDIT.md`** (inventory + deep review passes 2–2h, 2026-08).
       meta badges keep original look; full **Colors** tab tracked below.
 
 - [x] **Content-MIME thumbnail retry** — extension first for Thumbnailer1; on
-      failure, one `MatchContent` re-queue when magic differs (JPEG-as-.png);
-      shared `mime_util`; Open With uses MatchDefault for single-file.
+      failure, one `MatchContent` re-queue when magic differs (JPEG-as-.png),
+      decided on the I/O pool; shared `mime_util`; Open With uses name + listing
+      type (no content sniffing on the GUI thread).
 
 - [x] **Opened / unopened visualization** — separate `OpenedFilesStore` (not OpenHistory);
       toolbar + View “Show Opened State”; teal edge/tint; context Mark as Opened/Unopened;
@@ -154,6 +155,46 @@ tints, badges, and indicators.
 | Charset predicate limited | **Documented** (ascii / utf-8 / latin1) |
 | Content filters on GUI thread | **Mitigated** via `FilterWorker` |
 | Inclusive numeric ranges | **Done** — `lo-hi` / `lo..hi` (duration unit inheritance) |
+
+### 5. Slow drives: GUI-thread I/O (audit 2026-10-02)
+
+Target: USB / network drives that take 30 s+ to answer must never freeze the
+window. Rule: GUI code touches the filesystem only through `run_io()`
+(`apps/dirtoo/async_io.hpp`, dedicated `dirtoo-io` pool) or a worker object.
+
+| GUI-thread I/O found | Status |
+|----------------------|--------|
+| Per-row icon via `QFileIconProvider::icon(QFileInfo)` (stat + content sniff in paint) | **Fixed** — `file_type_icon()` (name glob + FileInfo type, cached per MIME) |
+| Symlink tooltip / status bar / context menu / activation (`read_symlink`, `status`) | **Fixed** — target + broken/dir flags captured in `FileInfo` at listing time |
+| `mime_from_extension` stat'ed for directories; Open With content sniffing | **Fixed** — name-only; `OpenTarget{path,is_directory}` API |
+| `OpenedFilesStore::normalize` (paint path), history "go to folder" stats | **Fixed** — lexical |
+| mkdir / new file / rename / swap / delete / paste-link + `exists()` conflict checks | **Fixed** — `run_mutation()`; history recorded via qApp continuation |
+| Conflict dialog stat'ed source/destination | **Fixed** — `ConflictProbe` gathered on worker (TransferWorker sends it) |
+| New Folder → Replace on an existing folder deleted the tree (no dest path given to dialog) | **Fixed** |
+| DnD: `exists` / `equivalent` / `is_directory`, Link drop symlinks, member extract | **Fixed** — one worker step |
+| Properties: stat, content MIME, `getpwuid` (NSS/LDAP), chmod | **Fixed** — probe before open; chmod async after OK |
+| Thumbnailer1: source stats + sync D-Bus `Queue`/introspection | **Fixed** — `Thumbnailer` on own thread, lazy D-Bus connect |
+| Directory montage freshness / thumbnail MIME retry content sniff | **Fixed** — I/O pool; `directory_montages_needed()` |
+| tag:// / set:// views stat every member | **Fixed** — I/O pool + generation guard |
+| Sidebar `weakly_canonical` per navigation; Node* held across async fetch | **Fixed** — lexical; node resolved by fetch generation |
+| QuickFilter `equivalent()` per set member | **Fixed** — removed (lexical forms only) |
+| Archive member activation extract; `ArchiveManager::open` archive stat | **Fixed** — worker; manager posts back via qApp + QPointer |
+| UDisks2 enumeration (sync system-bus calls per device) | **Fixed** — I/O pool; Mount/Unmount/Eject without introspection |
+| Checksum dialog large-file count; group-header `is_directory` | **Fixed** |
+| Raw-`this` `QtConcurrent` / global-pool lambdas (use-after-free if window closes mid-I/O) | **Fixed** — `run_io` (`QFuture::then(context, …)`) |
+
+Residual (accepted / open):
+
+- [ ] Drag *from an archive* to external apps: `FileListModel::mimeData`
+      extracts members synchronously (DnD needs the URLs at drag start).
+- Local-only I/O still on the GUI thread: thumbnail PNG loads / cache
+  deletes in `~/.cache/thumbnails`, local SQLite (tags / sets / checksums
+  for chips and QuickFilter), `QDir::exists` on XDG user dirs in `$HOME`
+  for the sidebar.
+- The `dirtoo-io` pool has 16 threads: with that many calls hung on a dead
+  mount, further operations queue (the GUI stays responsive).
+- Worker threads stuck in uninterruptible I/O at shutdown are detached, so
+  exit may still wait for the kernel.
 
 ---
 
@@ -492,11 +533,17 @@ smells, and gaps worth scheduling. Not every item is a user-visible crash.
 ## Architecture notes (must keep)
 
 **GUI thread must not perform filesystem or network I/O** for listings,
-metadata probes, bulk transfers, or **content-filter evaluation**.
+metadata probes, bulk transfers, or **content-filter evaluation** — and not
+even a single `stat` / `exists` / `readlink` / `rename`: paths may live on
+drives that take 30 s+ to answer.
 
 Use workers (`DirectoryLoadWorker`, `SortWorker`, `FilterWorker`, search,
 transfer, `DirectoryThumbnailWorker`), `MediaMetaCache`, and viewport-scoped
-thumbnail work. `dirops` remains Qt-free.
+thumbnail work; for one-off calls use `run_io(context, work, done)`
+(`async_io.hpp`), which drops `done` if `context` is gone. Never capture a raw
+`this` in `QtConcurrent::run` / `QThreadPool` lambdas. Describe entries from
+`FileInfo` (incl. symlink target data) instead of re-stat'ing. `dirops`
+remains Qt-free.
 
 ### View tech
 
@@ -509,7 +556,7 @@ thumbnail work. `dirops` remains Qt-free.
 ### Architecture violation status
 
 1. ~~Content predicates on GUI thread~~ → `FilterWorker`
-2. ~~mime probing on GUI thread~~ → avoided
+2. ~~mime probing on GUI thread~~ → avoided (icons/Open With name-based, 2026-10)
 3. ~~Watcher without debounce~~ → 200ms + soft reload
 4. ~~Graphics mass allocation~~ → item reuse + softer refresh
 
