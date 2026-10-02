@@ -111,7 +111,9 @@ constexpr const char* kInterface = "org.freedesktop.thumbnails.Thumbnailer1";
 Thumbnailer::Thumbnailer(QObject* parent)
     : QObject(parent)
 {
-  (void)ensure_service();
+  // Service activation (startService + QDBusInterface introspection) blocks
+  // until the bus answers; it is deferred to the first request, which runs on
+  // whatever thread the owner moved this object to.
 }
 
 Thumbnailer::~Thumbnailer() = default;

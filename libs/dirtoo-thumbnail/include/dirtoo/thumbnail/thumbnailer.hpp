@@ -17,6 +17,11 @@ namespace dirtoo::thumbnail {
 
 /// Client for org.freedesktop.thumbnails.Thumbnailer1.
 /// Falls back to reading an existing cache file when the service is unavailable.
+///
+/// Threading: request()/request_many()/cancel_all() stat the source files and
+/// make synchronous D-Bus calls, so GUI code should move the object to a worker
+/// thread and invoke them there (signals are then delivered queued). The D-Bus
+/// connection is established lazily on the first request.
 class Thumbnailer : public QObject {
   Q_OBJECT
 

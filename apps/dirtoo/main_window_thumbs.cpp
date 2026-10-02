@@ -48,6 +48,8 @@ void MainWindow::wire_thumbnail_services()
 {
   thumbs_.wire_ready_failed(this, &MainWindow::on_thumbnail_ready,
                             &MainWindow::on_thumbnail_failed);
+  connect(&thumbs_, &ThumbnailCoordinator::directory_montages_needed, this,
+          &MainWindow::schedule_directory_thumbnails_low_priority);
 }
 
 void MainWindow::shutdown_thumbnail_workers()
@@ -232,14 +234,11 @@ void MainWindow::flush_viewport_thumbnails()
   }
   last_thumb_viewport_first_ = first;
 
-  const bool need_dir = thumbs_.request_rows(
+  thumbs_.request_rows(
       visible, rows, model_,
       [this](const fs::Location& archive_root) -> std::optional<std::filesystem::path> {
         return archive_manager_.extracted_root(archive_root);
       });
-  if (need_dir) {
-    schedule_directory_thumbnails_low_priority();
-  }
   schedule_thumb_status_refresh();
 }
 
@@ -272,15 +271,7 @@ void MainWindow::on_thumbnail_failed(const fs::Location& location, const QString
   if (const auto it = thumbs_.aliases().constFind(key); it != thumbs_.aliases().cend()) {
     key = it.value();
   }
-  // Extension was wrong (e.g. .png that is JPEG): one content-MIME re-queue.
-  if (thumbs_.try_content_mime_retry(location)) {
-    return;
-  }
-  // Typed thumbnailer missing/failed → application/octet-stream (Hilbert map, if installed).
-  if (thumbs_.try_octet_stream_fallback(location)) {
-    return;
-  }
-
+  // Content-MIME / octet-stream re-tries already happened in ThumbnailCoordinator.
   if (model_ == nullptr) {
     return;
   }
@@ -434,14 +425,11 @@ void MainWindow::on_prepare_thumbnails()
     for (int i = start; i < end; ++i) {
       rows.push_back(i);
     }
-    const bool need_dir = thumbs_.request_rows(
+    thumbs_.request_rows(
         items_now, rows, model_,
         [this](const fs::Location& archive_root) -> std::optional<std::filesystem::path> {
           return archive_manager_.extracted_root(archive_root);
         });
-    if (need_dir) {
-      schedule_directory_thumbnails_low_priority();
-    }
     set_status(QStringLiteral("Preparing thumbnails %1/%2…").arg(end).arg(total));
     update_status_selection();
     QTimer::singleShot(30, this, [queue_chunk, end] { (*queue_chunk)(end); });

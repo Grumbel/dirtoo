@@ -389,14 +389,11 @@ void MainWindow::flush_search_batch()
     for (int i = 0; i < count; ++i) {
       rows.push_back(first_new + i);
     }
-    const bool need_dir = thumbs_.request_rows(
+    thumbs_.request_rows(
         collection_.visible_items(), rows, model_,
         [this](const fs::Location& archive_root) -> std::optional<std::filesystem::path> {
           return archive_manager_.extracted_root(archive_root);
         });
-    if (need_dir) {
-      schedule_directory_thumbnails_low_priority();
-    }
   }
   request_thumbnails_for_visible();
 }
