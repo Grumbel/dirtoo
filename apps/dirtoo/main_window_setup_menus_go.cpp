@@ -4,6 +4,7 @@
 #include "main_window_common.hpp"
 #include "activity_dialog.hpp"
 #include "history_menu.hpp"
+#include <QTimer>
 
 #include "badge_icons.hpp"
 #include "location_icons.hpp"
@@ -53,6 +54,10 @@ void MainWindow::setup_go_help_menus()
 
   recent_opens_menu_ = menuBar()->addMenu(QStringLiteral("Recently &Opened"));
   connect(recent_opens_menu_, &QMenu::aboutToShow, this, &MainWindow::on_rebuild_recent_opens_menu);
+  // Build once while idle after startup: the first QIcon::fromTheme lookups of
+  // the recorded app icons scan the icon themes (~100 ms with many
+  // XDG_DATA_DIRS); afterwards Qt's cache makes every rebuild ~0 ms.
+  QTimer::singleShot(3000, this, &MainWindow::on_rebuild_recent_opens_menu);
 
   auto* tools_menu = menuBar()->addMenu(QStringLiteral("&Tools"));
   tools_menu->addAction(theme_icon("drive-harddisk", "disk-usage"), QStringLiteral("Compute Folder Sizes"),

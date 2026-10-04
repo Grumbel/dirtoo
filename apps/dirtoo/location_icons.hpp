@@ -14,7 +14,12 @@
 namespace dirtoo::app {
 
 /// Icon for a location in History / Bookmarks menus: cached thumbnail when
-/// present, otherwise the system folder/file icon (or archive package icon).
+/// present, otherwise the folder (or archive package) icon.
+///
+/// Never stats the location itself — history entries may sit on slow,
+/// unplugged or hung drives, and menus must open instantly. Only the local
+/// XDG thumbnail cache is probed; availability of the location is checked in
+/// the background by PathAvailability.
 inline QIcon icon_for_location(const fs::Location& loc)
 {
   if (loc.is_archive()) {
@@ -25,24 +30,20 @@ inline QIcon icon_for_location(const fs::Location& loc)
     return QIcon::fromTheme(QStringLiteral("folder"));
   }
 
-  const QString large =
-      thumbnail::Thumbnailer::cache_path_for(loc, QStringLiteral("large"));
-  if (QFileInfo::exists(large)) {
-    return QIcon(large);
-  }
-  const QString normal =
-      thumbnail::Thumbnailer::cache_path_for(loc, QStringLiteral("normal"));
-  if (QFileInfo::exists(normal)) {
-    return QIcon(normal);
+  if (loc.is_file()) {
+    const QString large = thumbnail::Thumbnailer::cache_path_for(loc, QStringLiteral("large"));
+    if (QFileInfo::exists(large)) {
+      return QIcon(large);
+    }
+    const QString normal = thumbnail::Thumbnailer::cache_path_for(loc, QStringLiteral("normal"));
+    if (QFileInfo::exists(normal)) {
+      return QIcon(normal);
+    }
   }
 
-  QFileIconProvider provider;
-  const QFileInfo fi(QString::fromStdString(loc.as_path().string()));
-  if (fi.isDir() || !fi.exists()) {
-    // Non-existent paths still show as folders in history (navigated dirs).
-    return provider.icon(QFileIconProvider::Folder);
-  }
-  return provider.icon(fi);
+  // Navigated locations are directories (tag:// / set:// views included).
+  static const QIcon folder = QFileIconProvider().icon(QFileIconProvider::Folder);
+  return folder;
 }
 
 } // namespace dirtoo::app

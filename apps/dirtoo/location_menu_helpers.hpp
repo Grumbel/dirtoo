@@ -5,6 +5,7 @@
 
 #include "history_menu.hpp"
 #include "location_icons.hpp"
+#include "path_availability.hpp"
 #include "theme_icons.hpp"
 
 #include "dirtoo/fs/location.hpp"
@@ -38,6 +39,7 @@ inline void add_location_menu_entries(
   }
   for (const auto& loc : locations) {
     auto* act = menu->addAction(icon_for_location(loc), location_menu_label(loc));
+    PathAvailability::instance().track(act, loc);
     QObject::connect(act, &QAction::triggered, context, [menu, loc, open, open_new_window] {
       if (menu != nullptr && menu->middle_pressed()) {
         if (open_new_window) {

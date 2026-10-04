@@ -4,6 +4,7 @@
 #include "main_window_common.hpp"
 
 #include "async_io.hpp"
+#include "path_availability.hpp"
 #include "mime_util.hpp"
 #include "activity_monitor.hpp"
 #include "location_menu_helpers.hpp"
@@ -232,6 +233,7 @@ void MainWindow::on_back_history_menu(const QPoint& pos)
   for (int i = cur - 1; i >= 0; --i) {
     const fs::Location& loc = stack[static_cast<std::size_t>(i)].location;
     auto* act = menu.addAction(icon_for_location(loc), location_menu_label(loc));
+    PathAvailability::instance().track(act, loc);
     const int idx = i;
     connect(act, &QAction::triggered, this, [this, idx] {
       nav_history_.update_current_scroll(capture_view_scroll());
@@ -259,6 +261,7 @@ void MainWindow::on_forward_history_menu(const QPoint& pos)
   for (int i = cur + 1; i < static_cast<int>(stack.size()); ++i) {
     const fs::Location& loc = stack[static_cast<std::size_t>(i)].location;
     auto* act = menu.addAction(icon_for_location(loc), location_menu_label(loc));
+    PathAvailability::instance().track(act, loc);
     const int idx = i;
     connect(act, &QAction::triggered, this, [this, idx] {
       nav_history_.update_current_scroll(capture_view_scroll());

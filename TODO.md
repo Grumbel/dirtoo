@@ -181,6 +181,8 @@ window. Rule: GUI code touches the filesystem only through `run_io()`
 | Archive member activation extract; `ArchiveManager::open` archive stat | **Fixed** — worker; manager posts back via qApp + QPointer |
 | UDisks2 enumeration (sync system-bus calls per device) | **Fixed** — I/O pool; Mount/Unmount/Eject without introspection |
 | Checksum dialog large-file count; group-header `is_directory` | **Fixed** |
+| History / Bookmarks / back-forward menus: `icon_for_location` stat'ed every entry | **Fixed** — no stat; `PathAvailability` disables missing entries after the menu opened (cached, no re-queue while a check hangs) |
+| Recently Opened: first-open icon theme lookups (~100 ms) | **Fixed** — menu pre-built while idle after startup; entries with all files gone get disabled in the background |
 | Raw-`this` `QtConcurrent` / global-pool lambdas (use-after-free if window closes mid-I/O) | **Fixed** — `run_io` (`QFuture::then(context, …)`) |
 
 Residual (accepted / open):

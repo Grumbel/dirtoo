@@ -6,6 +6,7 @@
 #include "location_menu_helpers.hpp"
 #include "open_history.hpp"
 #include "history_menu.hpp"
+#include <QElapsedTimer>
 
 namespace dirtoo::app {
 
@@ -55,8 +56,40 @@ void MainWindow::on_parent_new_window()
   open_new_window(location_.parent());
 }
 
+namespace {
+
+/// Menus rebuilt on aboutToShow must be instant; report slow builds.
+class MenuBuildTimer {
+public:
+  explicit MenuBuildTimer(const char* name)
+      : name_(name)
+  {
+    timer_.start();
+  }
+  ~MenuBuildTimer()
+  {
+    const qint64 ms = timer_.elapsed();
+    if (ms >= 50) {
+      qWarning().noquote() << QStringLiteral("dirtoo: %1 menu took %2 ms to build")
+                                  .arg(QLatin1String(name_))
+                                  .arg(ms);
+    } else {
+      qDebug().noquote() << QStringLiteral("%1 menu built in %2 ms")
+                                .arg(QLatin1String(name_))
+                                .arg(ms);
+    }
+  }
+
+private:
+  const char* name_;
+  QElapsedTimer timer_;
+};
+
+} // namespace
+
 void MainWindow::on_rebuild_history_menu()
 {
+  const MenuBuildTimer timing("History");
   if (history_menu_ == nullptr) {
     return;
   }
@@ -82,6 +115,7 @@ void MainWindow::on_rebuild_history_menu()
 
 void MainWindow::on_rebuild_recent_opens_menu()
 {
+  const MenuBuildTimer timing("Recently Opened");
   if (recent_opens_menu_ == nullptr) {
     return;
   }
@@ -115,6 +149,7 @@ void MainWindow::on_toggle_bookmark()
 
 void MainWindow::on_rebuild_bookmarks_menu()
 {
+  const MenuBuildTimer timing("Bookmarks");
   if (bookmarks_menu_ == nullptr) {
     return;
   }

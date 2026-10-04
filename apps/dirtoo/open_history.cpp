@@ -3,6 +3,7 @@
 
 #include "open_history.hpp"
 #include "file_icons.hpp"
+#include "path_availability.hpp"
 
 #include "opened_files_store.hpp"
 
@@ -324,6 +325,12 @@ void populate_recent_opens_menu(QMenu* menu, int limit)
                                       files_label(e.paths));
     auto* act = menu->addAction(app_icon_for(e), label);
     act->setToolTip(e.paths.join(QStringLiteral("\n")));
+    // Opens instantly; disabled later if every file of the entry is gone.
+    std::vector<std::filesystem::path> files;
+    for (const QString& p : e.paths) {
+      files.emplace_back(p.toStdString());
+    }
+    PathAvailability::instance().track(act, files);
     QObject::connect(act, &QAction::triggered, menu, [e] { reopen_entry(e); });
   }
 }
