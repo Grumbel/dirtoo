@@ -95,8 +95,8 @@ Conventions:
 
 | ID | Sev | Verified | Issue |
 |----|-----|----------|-------|
-| G1 | M | read | `Sorter::compare` rebuilds `numeric_sort_key(to_lower(basename))` (vector + strings) **twice per comparison**: O(n log n) allocations. Precompute keys once per sort (decorate–sort–undecorate); large directories sort noticeably slower than necessary. |
-| G2 | L | read | `numeric_sort_key` overflows `uint64` for digit runs longer than 19 digits and wraps silently → wrong order. Compare long runs as strings (strip leading zeros, compare length then text). |
+| G1 | M | read | `Sorter::compare` rebuilds `numeric_sort_key(to_lower(basename))` (vector + strings) **twice per comparison**: O(n log n) allocations. Precompute keys once per sort (decorate–sort–undecorate); large directories sort noticeably slower than necessary. **Fixed in `6ad5f6c9`.** |
+| G2 | L | read | `numeric_sort_key` overflows `uint64` for digit runs longer than 19 digits and wraps silently → wrong order. Compare long runs as strings (strip leading zeros, compare length then text). **Fixed in `6ad5f6c9`.** |
 | G3 | L | read | Name sorting lower-cases ASCII only and compares raw bytes: non-ASCII names sort by UTF-8 byte order (`Ärger` after `zebra`). Use `QCollator` (ICU) or `strxfrm`-style keys. |
 | G4 | L | read | `SortKey::Type` is identical to `SortKey::Extension`. Either differentiate (MIME category) or drop. |
 | G5 | M | unverified | Media sort keys (`Width`, `Duration`, …) read the memory cache only; items without metadata sort as 0. Check that the view re-sorts when `MediaMetaCache` fills in (`notify_row_changed` only regroups for Duration). |
