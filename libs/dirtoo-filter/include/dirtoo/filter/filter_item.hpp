@@ -18,6 +18,9 @@ struct FilterItem {
   std::filesystem::path path;
   /// Unix epoch seconds when known (search / collection fill this).
   std::optional<std::int64_t> mtime_sec;
+  /// Unix epoch nanoseconds when known (exact; mtime_sec is its floor).
+  /// Used to validate cached checksums/tags against the file's current version.
+  std::optional<std::int64_t> mtime_ns = std::nullopt;
 };
 
 } // namespace dirtoo::filter

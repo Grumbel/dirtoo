@@ -36,6 +36,7 @@ void FileInfo::apply_posix_stat(const struct stat& st)
   // Prefer st_mtim.tv_sec when available; fall back to st_mtime.
 #  if defined(__APPLE__)
   const std::time_t msec = st.st_mtimespec.tv_sec;
+  const long mnsec = st.st_mtimespec.tv_nsec;
   const std::time_t asec = st.st_atimespec.tv_sec;
   const std::time_t csec = st.st_ctimespec.tv_sec;
   const std::time_t bsec = st.st_birthtimespec.tv_sec;
@@ -45,6 +46,7 @@ void FileInfo::apply_posix_stat(const struct stat& st)
   }
 #  elif defined(__FreeBSD__)
   const std::time_t msec = st.st_mtim.tv_sec;
+  const long mnsec = st.st_mtim.tv_nsec;
   const std::time_t asec = st.st_atim.tv_sec;
   const std::time_t csec = st.st_ctim.tv_sec;
   const std::time_t bsec = st.st_birthtim.tv_sec;
@@ -55,11 +57,13 @@ void FileInfo::apply_posix_stat(const struct stat& st)
 #  else
   // Linux / generic POSIX.1-2008
   const std::time_t msec = st.st_mtim.tv_sec;
+  const long mnsec = st.st_mtim.tv_nsec;
   const std::time_t asec = st.st_atim.tv_sec;
   const std::time_t csec = st.st_ctim.tv_sec;
 #  endif
 
-  set_mtime_unix(static_cast<std::int64_t>(msec));
+  set_mtime_unix_ns(static_cast<std::int64_t>(msec) * 1'000'000'000LL +
+                    static_cast<std::int64_t>(mnsec));
   atime_ = sys_from_unix(asec);
   ctime_ = sys_from_unix(csec);
   has_atime_ = true;
@@ -155,6 +159,7 @@ FileInfo FileInfo::from_path(const std::filesystem::path& path)
     const auto ft = std::filesystem::last_write_time(path, ec);
     if (!ec) {
       info.mtime_ = ft;
+      info.has_mtime_ = true;
     }
   }
   info.fill_posix_times_from_path(path);
@@ -191,19 +196,27 @@ FileInfo FileInfo::synthetic(Location location, std::string display_name, bool i
 void FileInfo::set_mtime_unix(std::int64_t sec)
 {
   if (sec <= 0) {
-    return;
+    return;  // callers pass -1 for "unknown"
   }
-  try {
-    const auto sys = std::chrono::system_clock::from_time_t(static_cast<std::time_t>(sec));
-#if defined(__cpp_lib_chrono) && (__cpp_lib_chrono >= 201907L)
-    // C++20: file_clock ↔ system_clock
-    mtime_ = std::chrono::file_clock::from_sys(sys);
-#else
-    mtime_ = std::chrono::clock_cast<std::filesystem::file_time_type::clock>(sys);
-#endif
-  } catch (...) {
-    // Leave default mtime on conversion failure.
+  set_mtime_unix_ns(sec * 1'000'000'000LL);
+}
+
+void FileInfo::set_mtime_unix_ns(std::int64_t ns)
+{
+  const std::chrono::system_clock::time_point sys{
+      std::chrono::duration_cast<std::chrono::system_clock::duration>(
+          std::chrono::nanoseconds{ns})};
+  mtime_ = std::chrono::file_clock::from_sys(sys);
+  has_mtime_ = true;
+}
+
+std::optional<std::int64_t> FileInfo::mtime_unix_ns() const noexcept
+{
+  if (!has_mtime_) {
+    return std::nullopt;
   }
+  const auto sys = std::chrono::file_clock::to_sys(mtime_);
+  return std::chrono::duration_cast<std::chrono::nanoseconds>(sys.time_since_epoch()).count();
 }
 
 std::string FileInfo::basename() const
@@ -269,6 +282,7 @@ FileInfo FileInfo::from_directory_entry(const std::filesystem::directory_entry& 
     const auto ft = entry.last_write_time(ec);
     if (!ec) {
       info.mtime_ = ft;
+      info.has_mtime_ = true;
     }
   }
   info.fill_posix_times_from_path(path);

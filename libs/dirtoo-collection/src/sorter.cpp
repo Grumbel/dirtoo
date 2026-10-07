@@ -199,7 +199,10 @@ int compare_keyed(SortKey key, bool directories_first, const fs::FileInfo& a,
   case SortKey::Type:  // same ordering as Extension for now (REVIEW G4)
     return then_name(three_way(ka.ext, kb.ext));
   case SortKey::Modified:
-    return then_name(three_way(a.mtime(), b.mtime()));
+    // Entries without a time (archive members, ...) sort before every real
+    // time instead of after all of them as a year-2174 "newest".
+    return then_name(three_way(a.mtime_unix_ns().value_or(INT64_MIN),
+                               b.mtime_unix_ns().value_or(INT64_MIN)));
   case SortKey::Width:
     return then_name(three_way(ka.media.w, kb.media.w));
   case SortKey::Height:

@@ -8,6 +8,7 @@
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -29,8 +30,13 @@ public:
                                           bool is_directory, std::uint64_t size = 0);
 
   /// Set mtime from Unix epoch seconds (search worker already has this from dirent).
-  /// No-op when sec <= 0. Keeps the entry synthetic (no extra stat).
+  /// No-op when sec <= 0 (the search worker passes -1 for "unknown"). Keeps the
+  /// entry synthetic (no extra stat).
   void set_mtime_unix(std::int64_t sec);
+
+  /// Set mtime from Unix epoch nanoseconds. Any value, including 0 and
+  /// negative (before 1970), is a real time.
+  void set_mtime_unix_ns(std::int64_t ns);
 
   [[nodiscard]] const Location& location() const noexcept { return location_; }
   [[nodiscard]] const std::filesystem::path& path() const noexcept { return path_; }
@@ -39,7 +45,13 @@ public:
   [[nodiscard]] std::string extension() const;
 
   [[nodiscard]] std::uint64_t size() const noexcept { return size_; }
+  /// The modification time, valid only if has_mtime(); otherwise it is the
+  /// default file_time_type, which is NOT "no time" but a date in the year 2174.
   [[nodiscard]] std::filesystem::file_time_type mtime() const noexcept { return mtime_; }
+  /// False for synthetic entries (archive members, ...) and failed stats.
+  [[nodiscard]] bool has_mtime() const noexcept { return has_mtime_; }
+  /// mtime as nanoseconds since the Unix epoch (st_mtim precision); nullopt if unknown.
+  [[nodiscard]] std::optional<std::int64_t> mtime_unix_ns() const noexcept;
 
   /// POSIX atime / ctime / birth (creation) as system_clock time points.
   /// Zero epoch means "unknown / not available" (synthetic entries, failed stat).
@@ -84,6 +96,7 @@ private:
   std::string display_name_;
   std::uint64_t size_ = 0;
   std::filesystem::file_time_type mtime_{};
+  bool has_mtime_ = false;
   std::chrono::system_clock::time_point atime_{};
   std::chrono::system_clock::time_point ctime_{};
   std::chrono::system_clock::time_point birthtime_{};

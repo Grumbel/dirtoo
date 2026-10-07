@@ -42,22 +42,22 @@ QString format_sys_time(std::chrono::system_clock::time_point tp)
 {
   const auto secs =
       std::chrono::duration_cast<std::chrono::seconds>(tp.time_since_epoch()).count();
-  if (secs <= 0) {
-    return {};
-  }
+  // Callers decide what "unknown" is (has_mtime/has_atime); 0 and 1 are real
+  // times (SOURCE_DATE_EPOCH=0 archives, /nix/store files are stamped 1).
   const QDateTime dt = QDateTime::fromSecsSinceEpoch(static_cast<qint64>(secs));
   // Human-friendly ISO local date/time: "2011-12-21 16:14"
   return dt.toString(QStringLiteral("yyyy-MM-dd HH:mm"));
 }
 
-QString format_mtime(std::filesystem::file_time_type mtime)
+QString format_mtime(const fs::FileInfo& fi)
 {
-  try {
-    const auto sys = std::chrono::clock_cast<std::chrono::system_clock>(mtime);
-    return format_sys_time(sys);
-  } catch (...) {
-    return {};
+  const auto ns = fi.mtime_unix_ns();
+  if (!ns) {
+    return {};  // archive members etc.: unknown, not "2174-01-01"
   }
+  return format_sys_time(std::chrono::system_clock::time_point{
+      std::chrono::duration_cast<std::chrono::system_clock::duration>(
+          std::chrono::nanoseconds{*ns})});
 }
 
 QString type_label(const fs::FileInfo& fi)
@@ -289,7 +289,7 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
         caption += format_size(fi->size(), fi->is_directory());
       }
       if (icon_detail_level_ > 3) {
-        const QString mtime = format_mtime(fi->mtime());
+        const QString mtime = format_mtime(*fi);
         if (!mtime.isEmpty()) {
           caption += QLatin1Char('\n');
           caption += mtime;
@@ -436,7 +436,7 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
       return QStringLiteral("%1:%2").arg(m).arg(s, 2, 10, QLatin1Char('0'));
     }
     case FileListColumn::Modified:
-      return format_mtime(fi->mtime());
+      return format_mtime(*fi);
     case FileListColumn::Accessed:
       return fi->has_atime() ? format_sys_time(fi->atime()) : QString{};
     case FileListColumn::Changed:
@@ -528,14 +528,12 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
     if (prev == nullptr) {
       return QVariant::fromValue(static_cast<qint64>(0));
     }
-    try {
-      const auto a = std::chrono::clock_cast<std::chrono::system_clock>(prev->mtime());
-      const auto b = std::chrono::clock_cast<std::chrono::system_clock>(fi->mtime());
-      const auto secs = std::chrono::duration_cast<std::chrono::seconds>(a - b).count();
-      return QVariant::fromValue(static_cast<qint64>(std::llabs(secs)));
-    } catch (...) {
+    const auto a = prev->mtime_unix_ns();
+    const auto b = fi->mtime_unix_ns();
+    if (!a || !b) {
       return QVariant::fromValue(static_cast<qint64>(0));
     }
+    return QVariant::fromValue(static_cast<qint64>(std::llabs((*a - *b) / 1'000'000'000LL)));
   }
 
   if (role == AccessDeniedRole || role == IsUnreadableRole) {

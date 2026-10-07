@@ -34,12 +34,11 @@ namespace detail {
 
 [[nodiscard]] inline std::optional<std::int64_t> mtime_epoch_sec(const fs::FileInfo& fi)
 {
-  try {
-    const auto sctp = std::chrono::clock_cast<std::chrono::system_clock>(fi.mtime());
-    return std::chrono::duration_cast<std::chrono::seconds>(sctp.time_since_epoch()).count();
-  } catch (...) {
+  const auto ns = fi.mtime_unix_ns();  // nullopt for entries without a time
+  if (!ns) {
     return std::nullopt;
   }
+  return *ns >= 0 ? *ns / 1'000'000'000LL : -((-*ns + 999'999'999LL) / 1'000'000'000LL);
 }
 
 [[nodiscard]] inline std::string format_local_ymd(std::int64_t secs)

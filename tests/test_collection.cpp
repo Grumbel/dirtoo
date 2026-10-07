@@ -8,6 +8,9 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <fcntl.h>
+#include <sys/stat.h>
+
 #include <filesystem>
 #include <fstream>
 
@@ -338,5 +341,33 @@ TEST_CASE("random sort is stable until reshuffled", "[collection][sort]")
   auto third = items;
   sorter.sort(third);
   CHECK(names(other) != names(third));
+  fs::remove_all(dir);
+}
+
+TEST_CASE("sort by modified uses sub-second times and puts unknown times first", "[collection][sort]")
+{
+  const auto dir = fs::temp_directory_path() / "dirtoo-collection-mtime-sort";
+  fs::remove_all(dir);
+  fs::create_directories(dir);
+  // Same second; names are in the opposite order of the times.
+  const timespec older[2] = {{1577934245, 100000000}, {1577934245, 100000000}};
+  const timespec newer[2] = {{1577934245, 900000000}, {1577934245, 900000000}};
+  std::ofstream(dir / "z_old") << "x";
+  std::ofstream(dir / "a_new") << "x";
+  REQUIRE(::utimensat(AT_FDCWD, (dir / "z_old").c_str(), older, 0) == 0);
+  REQUIRE(::utimensat(AT_FDCWD, (dir / "a_new").c_str(), newer, 0) == 0);
+
+  auto items = dirtoo::fs::list_directory(dirtoo::fs::Location::from_path(dir));
+  items.push_back(dirtoo::fs::FileInfo::synthetic(
+      dirtoo::fs::Location::from_archive("/tmp/x.zip", "member"), "member", false, 1));
+
+  dirtoo::collection::Sorter sorter;
+  sorter.set_key(dirtoo::collection::SortKey::Modified);
+  sorter.set_directories_first(false);
+  sorter.sort(items);
+  REQUIRE(items.size() == 3);
+  CHECK(items[0].basename() == "member");  // no time: before all real times, not "year 2174"
+  CHECK(items[1].basename() == "z_old");
+  CHECK(items[2].basename() == "a_new");
   fs::remove_all(dir);
 }

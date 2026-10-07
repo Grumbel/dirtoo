@@ -31,12 +31,9 @@ filter::FilterItem to_filter_item(const fs::FileInfo& fi)
       .path = fi.path(),
       .mtime_sec = std::nullopt,
   };
-  try {
-    const auto sctp = std::chrono::clock_cast<std::chrono::system_clock>(fi.mtime());
-    item.mtime_sec =
-        std::chrono::duration_cast<std::chrono::seconds>(sctp.time_since_epoch()).count();
-  } catch (...) {
-    // synthetic / unset mtime
+  if (const auto ns = fi.mtime_unix_ns()) {  // unset for synthetic entries
+    item.mtime_ns = *ns;
+    item.mtime_sec = *ns >= 0 ? *ns / 1'000'000'000LL : -((-*ns + 999'999'999LL) / 1'000'000'000LL);
   }
   return item;
 }
