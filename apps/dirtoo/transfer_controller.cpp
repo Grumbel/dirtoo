@@ -22,6 +22,7 @@ TransferController::TransferController(QObject* parent)
   connect(worker_, &TransferWorker::item_started, this, &TransferController::item_started);
   connect(worker_, &TransferWorker::byte_progress, this, &TransferController::byte_progress);
   connect(worker_, &TransferWorker::conflict_required, this, &TransferController::conflict_required);
+  connect(worker_, &TransferWorker::item_failed, this, &TransferController::item_failed);
   connect(worker_, &TransferWorker::finished, this, [this](TransferSummary summary) {
     busy_ = false;
     emit finished(summary);
@@ -88,6 +89,13 @@ void TransferController::start(QWidget* dialog_parent, const TransferRequest& re
 
   QMetaObject::invokeMethod(worker_, [this, request] { worker_->run(request); },
                             Qt::QueuedConnection);
+}
+
+void TransferController::resolve_error(TransferErrorAction action)
+{
+  if (worker_ != nullptr) {
+    worker_->resolve_error(action);
+  }
 }
 
 void TransferController::resolve_conflict(dirops::ConflictPolicy policy, bool apply,

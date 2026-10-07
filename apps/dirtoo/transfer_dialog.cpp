@@ -128,7 +128,8 @@ void TransferDialog::append_log(const QString& line)
   }
 }
 
-void TransferDialog::mark_finished(bool cancelled, const QString& error)
+void TransferDialog::mark_finished(bool cancelled, const QString& error,
+                                   const QStringList& item_failures)
 {
   ui_timer_->stop();
   update_time_label();
@@ -145,12 +146,20 @@ void TransferDialog::mark_finished(bool cancelled, const QString& error)
   } else if (cancelled) {
     title_label_->setText(QStringLiteral("<big>Transfer cancelled</big>"));
     append_log(QStringLiteral("Cancelled by user"));
+  } else if (!item_failures.isEmpty()) {
+    title_label_->setText(QStringLiteral("<big>Transfer finished with errors</big>"));
+    file_label_->setText(QStringLiteral("%1 item(s) failed").arg(item_failures.size()));
+    for (const QString& f : item_failures) {
+      append_log(QStringLiteral("Failed: %1").arg(f));
+    }
+    bar_->setRange(0, 100);
+    bar_->setValue(100);
   } else {
     title_label_->setText(QStringLiteral("<big>Transfer complete</big>"));
     bar_->setRange(0, 100);
     bar_->setValue(100);
   }
-  if (close_when_finished() && error.isEmpty() && !cancelled) {
+  if (close_when_finished() && error.isEmpty() && !cancelled && item_failures.isEmpty()) {
     accept();
   }
 }

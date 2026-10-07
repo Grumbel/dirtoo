@@ -22,6 +22,7 @@ add_executable(dirtoo-tests
   test_thread_util.cpp
   test_archive_listing.cpp
   test_sort_worker.cpp
+  test_transfer_worker.cpp
   test_filter.cpp
   test_hash.cpp
   test_tag_store.cpp

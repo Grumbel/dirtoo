@@ -44,11 +44,14 @@ signals:
   /// @p probe: source/destination metadata stat'ed on the worker thread.
   void conflict_required(const QString& destination_name, const QString& source_path,
                          const QString& destination_path, dirtoo::app::ConflictProbe probe);
+  void item_failed(const QString& source_path, const QString& message, int remaining);
   void finished(TransferSummary summary);
   void log_line(const QString& line);
 
 public slots:
   void resolve_conflict(dirops::ConflictPolicy policy, bool apply, bool apply_to_all);
+  /// Answer an item_failed() prompt (direct call: the worker thread is blocked on it).
+  void resolve_error(TransferErrorAction action);
 
 private:
   QThread* thread_ = nullptr;  ///< owned by this; detached by shutdown() if stuck

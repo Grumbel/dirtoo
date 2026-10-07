@@ -14,6 +14,7 @@ TransferWorker::TransferWorker(QObject* parent)
   qRegisterMetaType<TransferRequest>("dirtoo::app::TransferRequest");
   qRegisterMetaType<dirops::ConflictPolicy>("dirops::ConflictPolicy");
   qRegisterMetaType<ConflictProbe>("dirtoo::app::ConflictProbe");
+  qRegisterMetaType<TransferErrorAction>("dirtoo::app::TransferErrorAction");
 }
 
 void TransferWorker::cancel()
@@ -32,7 +33,15 @@ void TransferWorker::cancel()
       conflict_pending_ = false;
     }
   }
+  {
+    std::lock_guard lock(error_mutex_);
+    if (error_pending_) {
+      error_answer_ = TransferErrorAction::Abort;
+      error_pending_ = false;
+    }
+  }
   conflict_cv_.notify_all();
+  error_cv_.notify_all();
   pause_cv_.notify_all();
 }
 
@@ -76,6 +85,39 @@ void TransferWorker::resolve_conflict(dirops::ConflictPolicy policy, bool accept
     }
   }
   conflict_cv_.notify_all();
+}
+
+void TransferWorker::resolve_error(TransferErrorAction action)
+{
+  {
+    std::lock_guard lock(error_mutex_);
+    error_answer_ = action;
+    error_pending_ = false;
+    if (action == TransferErrorAction::SkipAll) {
+      error_skip_all_ = true;
+    }
+  }
+  error_cv_.notify_all();
+}
+
+TransferErrorAction TransferWorker::wait_for_error_action(const QString& source,
+                                                          const QString& message, int remaining)
+{
+  {
+    std::lock_guard lock(error_mutex_);
+    if (error_skip_all_) {
+      return TransferErrorAction::Skip;
+    }
+    error_pending_ = true;
+  }
+  emit item_failed(source, message, remaining);
+
+  std::unique_lock lock(error_mutex_);
+  error_cv_.wait(lock, [this] { return !error_pending_ || cancel_requested_.load(); });
+  if (cancel_requested_.load()) {
+    return TransferErrorAction::Abort;
+  }
+  return error_answer_;
 }
 
 dirops::ConflictPolicy TransferWorker::wait_for_conflict_policy(
@@ -123,6 +165,11 @@ void TransferWorker::run(TransferRequest request)
     std::lock_guard lock(conflict_mutex_);
     conflict_have_sticky_ = false;
   }
+  {
+    std::lock_guard lock(error_mutex_);
+    error_skip_all_ = false;
+    error_pending_ = false;
+  }
   TransferSummary summary;
   summary.mode = request.mode;
   summary.destination_directory = request.destination_directory;
@@ -160,58 +207,96 @@ void TransferWorker::run(TransferRequest request)
                       .arg(QString::fromStdString(src.string())));
 
     const auto dest = request.destination_directory / src.filename();
+    const QString name = QString::fromStdString(src.filename().string());
 
-    dirops::Options opt;
-    opt.is_cancelled = [this] {
-      wait_while_paused();
-      return cancel_requested_.load();
-    };
-    opt.on_progress = [this](std::uint64_t done, std::uint64_t tot,
-                             const std::filesystem::path& p) {
-      emit byte_progress(static_cast<quint64>(done), static_cast<quint64>(tot),
-                         QString::fromStdString(p.string()));
-    };
+    // One item, retried as often as the user asks. The whole body (conflict
+    // check included) is inside the loop: a failed attempt may have left a
+    // partial destination behind, which must be seen as a conflict next time.
+    enum class Outcome { Done, Cancelled, Failed, Abort };
+    Outcome outcome = Outcome::Done;
+    QString failure;
+    dirops::OpResult result;
 
-    // Moving into the folder the item already lives in changes nothing.
-    std::error_code same_ec;
-    const bool move_in_place =
-        request.mode == ClipboardMode::Cut
-        && std::filesystem::equivalent(src.parent_path(), request.destination_directory, same_ec)
-        && !same_ec;
+    for (;;) {
+      dirops::Options opt;
+      opt.is_cancelled = [this] {
+        wait_while_paused();
+        return cancel_requested_.load();
+      };
+      opt.on_progress = [this](std::uint64_t done, std::uint64_t tot,
+                               const std::filesystem::path& p) {
+        emit byte_progress(static_cast<quint64>(done), static_cast<quint64>(tot),
+                           QString::fromStdString(p.string()));
+      };
 
-    // symlink_status: a dangling symlink at the destination is still a clash.
-    std::error_code dest_ec;
-    if (!move_in_place
-        && std::filesystem::exists(std::filesystem::symlink_status(dest, dest_ec))) {
-      bool user_cancelled = false;
-      opt.conflict = wait_for_conflict_policy(
-          QString::fromStdString(dest.filename().string()), src, dest, &user_cancelled);
-      if (user_cancelled || cancel_requested_.load()) {
-        summary.cancelled = true;
-        emit log_line(QStringLiteral("Cancelled during conflict resolution"));
+      // Moving into the folder the item already lives in changes nothing.
+      std::error_code same_ec;
+      const bool move_in_place =
+          request.mode == ClipboardMode::Cut
+          && std::filesystem::equivalent(src.parent_path(), request.destination_directory, same_ec)
+          && !same_ec;
+
+      // symlink_status: a dangling symlink at the destination is still a clash.
+      std::error_code dest_ec;
+      if (!move_in_place
+          && std::filesystem::exists(std::filesystem::symlink_status(dest, dest_ec))) {
+        bool user_cancelled = false;
+        opt.conflict = wait_for_conflict_policy(
+            QString::fromStdString(dest.filename().string()), src, dest, &user_cancelled);
+        if (user_cancelled || cancel_requested_.load()) {
+          emit log_line(QStringLiteral("Cancelled during conflict resolution"));
+          outcome = Outcome::Cancelled;
+          break;
+        }
+        emit log_line(QStringLiteral("Conflict on %1 → policy applied")
+                          .arg(QString::fromStdString(dest.filename().string())));
+      }
+
+      if (request.mode == ClipboardMode::Cut) {
+        result = dirops::move_path(src, request.destination_directory, opt);
+      } else {
+        result = dirops::copy_path(src, request.destination_directory, opt);
+      }
+
+      if (result) {
+        outcome = result->cancelled ? Outcome::Cancelled : Outcome::Done;
         break;
       }
-      emit log_line(QStringLiteral("Conflict on %1 → policy applied")
-                        .arg(QString::fromStdString(dest.filename().string())));
-    }
 
-    dirops::OpResult result;
-    if (request.mode == ClipboardMode::Cut) {
-      result = dirops::move_path(src, request.destination_directory, opt);
-    } else {
-      result = dirops::copy_path(src, request.destination_directory, opt);
-    }
-
-    if (!result) {
-      summary.error = QString::fromStdString(result.error().to_string());
-      emit log_line(QStringLiteral("Error: %1").arg(summary.error));
+      failure = QString::fromStdString(result.error().to_string());
+      emit log_line(QStringLiteral("Error: %1").arg(failure));
+      const int remaining = total - i - 1;
+      switch (wait_for_error_action(QString::fromStdString(src.string()), failure, remaining)) {
+      case TransferErrorAction::Retry:
+        emit log_line(QStringLiteral("Retrying %1").arg(name));
+        continue;
+      case TransferErrorAction::Skip:
+      case TransferErrorAction::SkipAll:
+        outcome = Outcome::Failed;
+        break;
+      case TransferErrorAction::Abort:
+        outcome = Outcome::Abort;
+        break;
+      }
       break;
     }
-    if (result->cancelled) {
+
+    if (outcome == Outcome::Cancelled) {
       summary.cancelled = true;
       emit log_line(QStringLiteral("Cancelled"));
       break;
     }
+    if (outcome == Outcome::Abort) {
+      summary.error = failure;
+      break;
+    }
+    if (outcome == Outcome::Failed) {
+      ++summary.failed;
+      summary.failures << QStringLiteral("%1: %2").arg(name, failure);
+      emit log_line(QStringLiteral("Skipped %1 after an error").arg(name));
+      continue;
+    }
+
     if (!result->items.empty()) {
       for (const auto& it : result->items) {
         TransferItemResult tir;
@@ -226,9 +311,9 @@ void TransferWorker::run(TransferRequest request)
         }
       }
       if (result->items.front().skipped) {
-        emit log_line(QStringLiteral("Skipped %1").arg(QString::fromStdString(src.filename().string())));
+        emit log_line(QStringLiteral("Skipped %1").arg(name));
       } else {
-        emit log_line(QStringLiteral("Done %1").arg(QString::fromStdString(src.filename().string())));
+        emit log_line(QStringLiteral("Done %1").arg(name));
       }
     } else {
       TransferItemResult tir;
@@ -237,14 +322,15 @@ void TransferWorker::run(TransferRequest request)
       tir.skipped = false;
       summary.items.push_back(std::move(tir));
       ++summary.completed;
-      emit log_line(QStringLiteral("Done %1").arg(QString::fromStdString(src.filename().string())));
+      emit log_line(QStringLiteral("Done %1").arg(name));
     }
   }
 
   if (!summary.cancelled && summary.error.isEmpty()) {
-    emit log_line(QStringLiteral("Finished: %1 done, %2 skipped")
+    emit log_line(QStringLiteral("Finished: %1 done, %2 skipped, %3 failed")
                       .arg(summary.completed)
-                      .arg(summary.skipped));
+                      .arg(summary.skipped)
+                      .arg(summary.failed));
   }
   emit finished(summary);
 }

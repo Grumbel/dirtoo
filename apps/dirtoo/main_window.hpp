@@ -245,6 +245,7 @@ private slots:
 
   void on_transfer_item_started(int index, int total, const QString& path);
   void on_transfer_byte_progress(quint64 done, quint64 total, const QString& path);
+  void on_transfer_item_failed(const QString& source_path, const QString& message, int remaining);
   void on_transfer_conflict(const QString& destination_name, const QString& source_path,
                             const QString& destination_path, dirtoo::app::ConflictProbe probe);
   void on_transfer_finished(TransferSummary summary);

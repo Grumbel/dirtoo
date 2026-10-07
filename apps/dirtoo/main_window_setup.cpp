@@ -46,6 +46,8 @@ void MainWindow::setup_background_workers()
           &MainWindow::on_transfer_byte_progress);
   connect(&transfer_controller_, &TransferController::conflict_required, this,
           &MainWindow::on_transfer_conflict);
+  connect(&transfer_controller_, &TransferController::item_failed, this,
+          &MainWindow::on_transfer_item_failed);
   connect(&transfer_controller_, &TransferController::finished, this,
           &MainWindow::on_transfer_finished);
   connect(&transfer_controller_, &TransferController::log_line, this, [this](const QString& line) {

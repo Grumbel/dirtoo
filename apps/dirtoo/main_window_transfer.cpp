@@ -81,11 +81,53 @@ void MainWindow::on_transfer_conflict(const QString& destination_name, const QSt
   }
 }
 
+void MainWindow::on_transfer_item_failed(const QString& source_path, const QString& message,
+                                         int remaining)
+{
+  // UI thread. The worker is blocked until resolve_error() is called, so call
+  // it directly (a queued call to the worker would never run).
+  qWarning().noquote() << QStringLiteral("transfer item failed: %1: %2").arg(source_path, message);
+  if (transfer_controller_.worker() == nullptr) {
+    return;
+  }
+  QWidget* parent = transfer_controller_.dialog() != nullptr
+                        ? static_cast<QWidget*>(transfer_controller_.dialog())
+                        : static_cast<QWidget*>(this);
+  QMessageBox box(QMessageBox::Warning, QStringLiteral("Transfer error"),
+                  QStringLiteral("Could not transfer “%1”.")
+                      .arg(QString::fromStdString(
+                          std::filesystem::path{source_path.toStdString()}.filename().string())),
+                  QMessageBox::NoButton, parent);
+  box.setInformativeText(message);
+  // GNOME order: dismissive on the left, the suggested action on the right.
+  auto* abort_btn = box.addButton(QStringLiteral("Abort"), QMessageBox::RejectRole);
+  QPushButton* skip_all_btn = nullptr;
+  if (remaining > 0) {
+    skip_all_btn = box.addButton(QStringLiteral("Skip All"), QMessageBox::ActionRole);
+  }
+  auto* skip_btn = box.addButton(QStringLiteral("Skip"), QMessageBox::ActionRole);
+  auto* retry_btn = box.addButton(QStringLiteral("Retry"), QMessageBox::AcceptRole);
+  box.setDefaultButton(retry_btn);
+  box.setEscapeButton(abort_btn);
+  box.exec();
+
+  TransferErrorAction action = TransferErrorAction::Abort;
+  if (box.clickedButton() == retry_btn) {
+    action = TransferErrorAction::Retry;
+  } else if (box.clickedButton() == skip_btn) {
+    action = TransferErrorAction::Skip;
+  } else if (skip_all_btn != nullptr && box.clickedButton() == skip_all_btn) {
+    action = TransferErrorAction::SkipAll;
+  }
+  transfer_controller_.resolve_error(action);
+}
+
 void MainWindow::on_transfer_finished(TransferSummary summary)
 {
-  qInfo().noquote() << QStringLiteral("transfer finished: done=%1 skipped=%2 cancelled=%3 error=%4")
+  qInfo().noquote() << QStringLiteral("transfer finished: done=%1 skipped=%2 failed=%3 cancelled=%4 error=%5")
                            .arg(summary.completed)
                            .arg(summary.skipped)
+                           .arg(summary.failed)
                            .arg(summary.cancelled)
                            .arg(summary.error.isEmpty() ? QStringLiteral("-") : summary.error);
 
@@ -93,7 +135,8 @@ void MainWindow::on_transfer_finished(TransferSummary summary)
   update_busy_indicator(status_label_ != nullptr ? status_label_->text() : QString());
 
   if (transfer_controller_.dialog() != nullptr) {
-    transfer_controller_.dialog()->mark_finished(summary.cancelled, summary.error);
+    transfer_controller_.dialog()->mark_finished(summary.cancelled, summary.error,
+                                                 summary.failures);
   } else if (!summary.error.isEmpty()) {
     QMessageBox::warning(this, QStringLiteral("Transfer"), summary.error);
     qWarning().noquote() << QStringLiteral("transfer error: %1").arg(summary.error);
@@ -101,7 +144,7 @@ void MainWindow::on_transfer_finished(TransferSummary summary)
 
   // Keep the clipboard after an error or cancel so the rest can be retried.
   if (transfer_controller_.last_mode() == ClipboardMode::Cut && summary.completed > 0
-      && !summary.cancelled && summary.error.isEmpty()) {
+      && !summary.cancelled && summary.error.isEmpty() && summary.failed == 0) {
     QApplication::clipboard()->clear();
   }
 
@@ -112,22 +155,38 @@ void MainWindow::on_transfer_finished(TransferSummary summary)
   } else if (!summary.error.isEmpty()) {
     set_status(summary.error);
   } else {
-    set_status(QStringLiteral("Transfer: %1 done, %2 skipped")
-                               .arg(summary.completed)
-                               .arg(summary.skipped));
+    set_status(summary.failed > 0
+                   ? QStringLiteral("Transfer: %1 done, %2 skipped, %3 failed")
+                         .arg(summary.completed)
+                         .arg(summary.skipped)
+                         .arg(summary.failed)
+                   : QStringLiteral("Transfer: %1 done, %2 skipped")
+                         .arg(summary.completed)
+                         .arg(summary.skipped));
   }
 
   {
     OperationHistoryEntry e;
     e.when = QDateTime::currentDateTime();
     e.kind = summary.mode == ClipboardMode::Cut ? OperationKind::Move : OperationKind::Copy;
+    const bool had_failures = summary.failed > 0;
     e.outcome = summary.cancelled ? QStringLiteral("cancelled")
-                : (!summary.error.isEmpty() ? QStringLiteral("failed")
-                   : (summary.skipped > 0 && summary.completed > 0 ? QStringLiteral("partial")
-                                                                   : QStringLiteral("success")));
-    e.detail = summary.error.isEmpty()
-                   ? QStringLiteral("%1 done, %2 skipped").arg(summary.completed).arg(summary.skipped)
-                   : summary.error;
+                : (!summary.error.isEmpty() || (had_failures && summary.completed == 0)
+                       ? QStringLiteral("failed")
+                       : ((summary.skipped > 0 || had_failures) && summary.completed > 0
+                              ? QStringLiteral("partial")
+                              : QStringLiteral("success")));
+    e.detail = !summary.error.isEmpty()
+                   ? summary.error
+                   : (had_failures
+                          ? QStringLiteral("%1 done, %2 skipped, %3 failed: %4")
+                                .arg(summary.completed)
+                                .arg(summary.skipped)
+                                .arg(summary.failed)
+                                .arg(summary.failures.join(QStringLiteral("; ")))
+                          : QStringLiteral("%1 done, %2 skipped")
+                                .arg(summary.completed)
+                                .arg(summary.skipped));
     e.completed = summary.completed;
     e.skipped = summary.skipped;
     e.destination = QString::fromStdString(summary.destination_directory.string());

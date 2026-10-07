@@ -19,6 +19,10 @@ add_library(dirtoo-app-core STATIC
   archive_listing.hpp
   sort_worker.cpp
   sort_worker.hpp
+  transfer_worker.cpp
+  transfer_worker.hpp
+  conflict_probe.cpp
+  conflict_probe.hpp
 )
 target_include_directories(dirtoo-app-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(dirtoo-app-core
@@ -31,8 +35,6 @@ qt_add_executable(dirtoo-app
   async_io.hpp
   file_icons.cpp
   file_icons.hpp
-  conflict_probe.cpp
-  conflict_probe.hpp
   path_availability.cpp
   path_availability.hpp
   main_window.cpp
@@ -83,8 +85,6 @@ qt_add_executable(dirtoo-app
   conflict_dialog.hpp
   transfer_dialog.cpp
   transfer_dialog.hpp
-  transfer_worker.cpp
-  transfer_worker.hpp
   transfer_controller.cpp
   transfer_controller.hpp
   devices_controller.cpp

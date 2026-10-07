@@ -30,7 +30,10 @@ public:
   void set_progress(std::uint64_t done, std::uint64_t total);
   void set_item_progress(int current_item, int total_items);
   void append_log(const QString& line);
-  void mark_finished(bool cancelled, const QString& error = {});
+  /// @p item_failures: items that were skipped after an error (the transfer
+  /// itself finished).
+  void mark_finished(bool cancelled, const QString& error = {},
+                     const QStringList& item_failures = {});
 
   [[nodiscard]] bool is_cancelled() const noexcept { return cancelled_.load(); }
   [[nodiscard]] bool close_when_finished() const;
