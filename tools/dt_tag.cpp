@@ -126,14 +126,17 @@ int main(int argc, char** argv)
   auto resolve = [&](const std::string& p) -> std::optional<std::int64_t> {
     const std::string key = path_key(p);
     std::string e;
-    if (auto id = tags.resolve_path(checksums, key, &e)) {
+    // The cached checksum must still describe the file as it is now: an edited
+    // file would otherwise be tagged with the hash of its old content.
+    const auto stamp = dirtoo::hash::stat_stamp(fs::path{key});
+    if (auto id = tags.resolve_path(checksums, key, stamp, &e)) {
       return id;
     }
     if (hash_if_needed) {
       dirtoo::hash::HashError herr;
       if (checksums.ensure(fs::path{key}, key, false, &herr)) {
         e.clear();
-        return tags.resolve_path(checksums, key, &e);
+        return tags.resolve_path(checksums, key, dirtoo::hash::stat_stamp(fs::path{key}), &e);
       }
       std::cerr << key << ": " << herr.message << '\n';
       return std::nullopt;
@@ -206,9 +209,12 @@ int main(int argc, char** argv)
     int rc = 0;
     for (const auto& p : args) {
       const std::string key = path_key(p);
-      auto digests = checksums.get(key);
+      const auto stamp = dirtoo::hash::stat_stamp(fs::path{key});
+      auto digests = stamp ? checksums.get_if_valid(key, stamp->size, stamp->mtime_ns)
+                           : checksums.get(key);
       if (!digests) {
-        std::cerr << key << ": checksum unknown; run dt-checksum first\n";
+        std::cerr << key << (checksums.get(key) ? ": checksum is stale (the file changed); run dt-checksum\n"
+                                                : ": checksum unknown; run dt-checksum first\n");
         rc = 1;
         continue;
       }

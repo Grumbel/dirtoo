@@ -423,13 +423,15 @@ TagStore::ensure_file_sha256(std::string_view sha256, std::string_view path_key,
 
 std::optional<std::int64_t>
 TagStore::resolve_path(const dirtoo::hash::ChecksumStore& checksums, std::string_view path_key,
-                       std::string* error)
+                       const std::optional<dirtoo::hash::FileStamp>& stamp, std::string* error)
 {
-  auto digests = checksums.get(std::string(path_key));
+  auto digests = stamp ? checksums.get_if_valid(path_key, stamp->size, stamp->mtime_ns)
+                       : checksums.get(path_key);
   if (!digests) {
-    // try absolute normalization already expected from caller
     if (error) {
-      *error = "checksum unknown; run dt-checksum first";
+      *error = stamp && checksums.get(path_key)
+                   ? "checksum is stale (the file changed); hash it again"
+                   : "checksum unknown; run dt-checksum first";
     }
     return std::nullopt;
   }
@@ -534,12 +536,13 @@ std::vector<std::string> TagStore::tags_for_sha256(std::string_view sha256) cons
   return tags_for_file(*id);
 }
 
-std::vector<std::string> TagStore::tags_for_path(const dirtoo::hash::ChecksumStore& checksums,
-                                                std::string_view path_key) const
+std::vector<std::string>
+TagStore::tags_for_path(const dirtoo::hash::ChecksumStore& checksums, std::string_view path_key,
+                        const std::optional<dirtoo::hash::FileStamp>& stamp) const
 {
-  std::string err;
-  // resolve_path is non-const (may upsert); use const path via checksums only
-  auto digests = checksums.get(std::string(path_key));
+  // resolve_path is non-const (it may upsert); read through the checksums only.
+  auto digests = stamp ? checksums.get_if_valid(path_key, stamp->size, stamp->mtime_ns)
+                       : checksums.get(path_key);
   if (!digests) {
     return {};
   }

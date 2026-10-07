@@ -50,6 +50,8 @@ FilterItem make_item(const std::filesystem::directory_entry& entry)
     const auto sctp = std::chrono::clock_cast<std::chrono::system_clock>(ft);
     item.mtime_sec =
         std::chrono::duration_cast<std::chrono::seconds>(sctp.time_since_epoch()).count();
+    item.mtime_ns =
+        std::chrono::duration_cast<std::chrono::nanoseconds>(sctp.time_since_epoch()).count();
   }
   return item;
 }

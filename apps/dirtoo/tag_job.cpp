@@ -126,7 +126,9 @@ public slots:
 
       std::string e;
       auto id = hashes.with_store(
-          [&](dirtoo::hash::ChecksumStore& store) { return tags.resolve_path(store, key, &e); });
+          [&](dirtoo::hash::ChecksumStore& store) { // ensure_full() above just refreshed this row: trust it.
+        return tags.resolve_path(store, key, std::nullopt, &e);
+      });
       if (!id) {
         ++skipped;
         problems << QStringLiteral("%1: %2").arg(display, QString::fromStdString(e));

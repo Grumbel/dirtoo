@@ -88,11 +88,16 @@ HashService::ensure_full(const std::filesystem::path& path, std::string_view pat
   return digests;
 }
 
-std::optional<dirtoo::hash::FileDigests> HashService::get_full(std::string_view path_key)
+std::optional<dirtoo::hash::FileDigests>
+HashService::get_full(std::string_view path_key,
+                      const std::optional<dirtoo::hash::FileStamp>& stamp)
 {
   std::lock_guard lock(mu_);
   if (!store_.is_open()) {
     return std::nullopt;
+  }
+  if (stamp) {
+    return store_.get_if_valid(path_key, stamp->size, stamp->mtime_ns);
   }
   return store_.get(path_key);
 }

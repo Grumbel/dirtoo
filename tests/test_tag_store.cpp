@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "dirtoo/hash/checksum_store.hpp"
 #include "dirtoo/tags/tag_store.hpp"
 #include "dirtoo/tags/tag_def.hpp"
 
@@ -9,6 +10,7 @@
 #include <atomic>
 #include <chrono>
 #include <filesystem>
+#include <fstream>
 #include <string>
 #include <thread>
 #include <vector>
@@ -300,4 +302,55 @@ TEST_CASE("TagStore database is private and enforces foreign keys", "[tags][safe
   CHECK(store.count_files_for_tag("cascade") == 0);
   CHECK(store.tags_for_file(*id).empty());
   remove_db_sidecars(path);
+}
+
+TEST_CASE("tags follow the file content, not a stale checksum row", "[tags][stale]")
+{
+  namespace hs = dirtoo::hash;
+  const auto dir = fs::temp_directory_path() / "dirtoo-tagstore-stale";
+  fs::remove_all(dir);
+  fs::create_directories(dir);
+  const auto file = dir / "doc.txt";
+  { std::ofstream(file) << "version one"; }
+  const std::string key = file.string();
+
+  const auto tags_db = temp_db_path("stale");
+  remove_db_sidecars(tags_db);
+  TagStore tags;
+  hs::ChecksumStore checksums;
+  std::string err;
+  REQUIRE(tags.open(tags_db, &err));
+  REQUIRE(checksums.open(dir / "checksums.sqlite", &err));
+
+  // Hash + tag version one.
+  REQUIRE(checksums.ensure(file, key, false, nullptr));
+  auto stamp1 = hs::stat_stamp(file);
+  auto id = tags.resolve_path(checksums, key, stamp1, &err);
+  REQUIRE(id);
+  REQUIRE(tags.add_tag_to_file(*id, "draft", &err));
+  CHECK(tags.tags_for_path(checksums, key, stamp1) == std::vector<std::string>{"draft"});
+
+  // Edit the file (different size and time). The cache row is now stale.
+  { std::ofstream(file) << "version two, longer"; }
+  const auto stamp2 = hs::stat_stamp(file);
+  REQUIRE(stamp2);
+  CHECK_FALSE(stamp1 == stamp2);
+
+  // Validated lookups no longer report the old content's tags...
+  CHECK(tags.tags_for_path(checksums, key, stamp2).empty());
+  // ...and tagging by path refuses to attach to the old hash.
+  err.clear();
+  CHECK_FALSE(tags.resolve_path(checksums, key, stamp2, &err).has_value());
+  CHECK(err.find("stale") != std::string::npos);
+  // (Without a stamp the row is trusted - the documented behaviour for archive members.)
+  CHECK(tags.tags_for_path(checksums, key) == std::vector<std::string>{"draft"});
+
+  // After re-hashing, the new content is a different file with no tags yet.
+  REQUIRE(checksums.ensure(file, key, false, nullptr));
+  auto id2 = tags.resolve_path(checksums, key, hs::stat_stamp(file), &err);
+  REQUIRE(id2);
+  CHECK(*id2 != *id);
+  CHECK(tags.tags_for_path(checksums, key, hs::stat_stamp(file)).empty());
+  fs::remove_all(dir);
+  remove_db_sidecars(tags_db);
 }

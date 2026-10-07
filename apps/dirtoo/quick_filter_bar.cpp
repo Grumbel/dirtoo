@@ -603,7 +603,11 @@ void QuickFilterBar::rebuild_from_items(const std::vector<dirtoo::fs::FileInfo>&
       const auto abs = std::filesystem::absolute(fi.path(), ec);
       key = ec ? fi.path().string() : abs.lexically_normal().string();
     }
-    if (auto dig = hashes.get_full(key)) {
+    std::optional<dirtoo::hash::FileStamp> stamp;
+    if (!fi.is_synthetic() && !fi.location().is_archive() && fi.mtime_unix_ns()) {
+      stamp = dirtoo::hash::FileStamp{fi.size(), fi.mtime_unix_ns()};
+    }
+    if (auto dig = hashes.get_full(key, stamp)) {
       for (const auto& t : tag_store.tags_for_sha256(dig->sha256_hex)) {
         tags_seen.insert(QString::fromStdString(t));
         if (tags_seen.size() >= 24) {

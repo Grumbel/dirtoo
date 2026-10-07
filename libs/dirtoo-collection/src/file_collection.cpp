@@ -32,7 +32,11 @@ filter::FilterItem to_filter_item(const fs::FileInfo& fi)
       .mtime_sec = std::nullopt,
   };
   if (const auto ns = fi.mtime_unix_ns()) {  // unset for synthetic entries
-    item.mtime_ns = *ns;
+    // Synthetic entries (search hits, archive members) carry at best a
+    // whole-second time: it must not be compared with a stored exact one.
+    if (!fi.is_synthetic()) {
+      item.mtime_ns = *ns;
+    }
     item.mtime_sec = *ns >= 0 ? *ns / 1'000'000'000LL : -((-*ns + 999'999'999LL) / 1'000'000'000LL);
   }
   return item;

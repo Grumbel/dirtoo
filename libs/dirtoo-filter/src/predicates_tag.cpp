@@ -6,6 +6,7 @@
 #include "dirtoo/filter/predicates.hpp"
 
 #include "dirtoo/hash/checksum_store.hpp"
+#include "dirtoo/hash/file_stamp.hpp"
 #include "dirtoo/tags/tag_store.hpp"
 
 #include <cctype>
@@ -61,7 +62,14 @@ struct TagLookup {
     if (!open) {
       return {};
     }
-    return tags.tags_for_path(checksums, path_key(item));
+    // The collection fills mtime_ns for real files: validate the cached
+    // checksum against the file's current version, so an edited file does not
+    // keep matching the tags of its old content.
+    std::optional<dirtoo::hash::FileStamp> stamp;
+    if (!item.is_directory && item.mtime_ns) {
+      stamp = dirtoo::hash::FileStamp{item.size, item.mtime_ns};
+    }
+    return tags.tags_for_path(checksums, path_key(item), stamp);
   }
 
   [[nodiscard]] bool has_checksum(const FilterItem& item) const

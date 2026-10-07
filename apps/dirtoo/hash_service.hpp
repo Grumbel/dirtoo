@@ -4,6 +4,7 @@
 #pragma once
 
 #include "dirtoo/hash/checksum_store.hpp"
+#include "dirtoo/hash/file_stamp.hpp"
 #include "dirtoo/hash/digests.hpp"
 #include "dirtoo/hash/hash_file.hpp"
 
@@ -38,7 +39,11 @@ public:
               dirtoo::hash::HashError* error = nullptr,
               const dirtoo::hash::HashOptions& hash_options = {});
 
-  [[nodiscard]] std::optional<dirtoo::hash::FileDigests> get_full(std::string_view path_key);
+  /// Cached digests; with @p stamp only if the row still matches the file's
+  /// current size/mtime (a stale row would describe the file's old content).
+  [[nodiscard]] std::optional<dirtoo::hash::FileDigests>
+  get_full(std::string_view path_key,
+           const std::optional<dirtoo::hash::FileStamp>& stamp = std::nullopt);
 
   void put_full(std::string_view path_key, const dirtoo::hash::FileDigests& digests);
 

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "dirtoo/hash/file_stamp.hpp"
 #include "dirtoo/tags/tag_def.hpp"
 
 #include <cstdint>
@@ -67,8 +68,16 @@ public:
                      std::string* error = nullptr);
 
   /// Resolve path via ChecksumStore only (no hashing). nullopt if checksum unknown.
+  ///
+  /// Tags belong to the file *content* (its sha256); a path only leads there
+  /// through the checksum cache. That cache row describes the file as it was
+  /// when hashed, so after an edit it still names the OLD content. Pass the
+  /// file's current @p stamp (size + mtime) to ignore a stale row; without a
+  /// stamp the row is trusted (archive members and search hits have no
+  /// reliable stamp, and the GUI tagging job has just refreshed the row).
   [[nodiscard]] std::optional<std::int64_t>
   resolve_path(const dirtoo::hash::ChecksumStore& checksums, std::string_view path_key,
+               const std::optional<dirtoo::hash::FileStamp>& stamp = std::nullopt,
                std::string* error = nullptr);
 
   // --- tagging ---
@@ -78,8 +87,11 @@ public:
 
   [[nodiscard]] std::vector<std::string> tags_for_file(std::int64_t file_id) const;
   [[nodiscard]] std::vector<std::string> tags_for_sha256(std::string_view sha256) const;
-  [[nodiscard]] std::vector<std::string> tags_for_path(const dirtoo::hash::ChecksumStore& checksums,
-                                                      std::string_view path_key) const;
+  /// Tags of the file at @p path_key; a stale checksum row (see resolve_path)
+  /// yields no tags instead of the tags of the file's previous content.
+  [[nodiscard]] std::vector<std::string>
+  tags_for_path(const dirtoo::hash::ChecksumStore& checksums, std::string_view path_key,
+                const std::optional<dirtoo::hash::FileStamp>& stamp = std::nullopt) const;
 
   [[nodiscard]] std::vector<TaggedFile> files_for_tag(std::string_view tag_name) const;
   /// Cheap COUNT(*) of files with this tag (no path expansion).

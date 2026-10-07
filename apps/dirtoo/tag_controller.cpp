@@ -93,8 +93,15 @@ QStringList tags_on_selection(const std::vector<dirtoo::fs::FileInfo>& files)
   }
   std::set<std::string> all;
   for (const auto& fi : files) {
+    // Validate the cached checksum against the file's version from the listing,
+    // so an edited file does not keep showing its old content's tags. Synthetic
+    // entries (archive members, search hits) have no exact stamp: trust the cache.
+    std::optional<dirtoo::hash::FileStamp> stamp;
+    if (!fi.is_synthetic() && !fi.location().is_archive() && fi.mtime_unix_ns()) {
+      stamp = dirtoo::hash::FileStamp{fi.size(), fi.mtime_unix_ns()};
+    }
     const auto names = hashes.with_store([&](dirtoo::hash::ChecksumStore& store) {
-      return tags.tags_for_path(store, path_key_for(fi));
+      return tags.tags_for_path(store, path_key_for(fi), stamp);
     });
     for (const auto& name : names) {
       all.insert(name);
