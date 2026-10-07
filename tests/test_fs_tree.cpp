@@ -246,7 +246,8 @@ TEST_CASE("layout_squarified areas proportional", "[tree][treemap]")
   auto it = std::find_if(cells.begin(), cells.end(),
                          [](const TreemapCell& c) { return c.id == "c"; });
   REQUIRE(it != cells.end());
-  CHECK(it->rect.area() == Approx(50).margin(1e-3));
+  // c carries half the total weight (2 of 4).
+  CHECK(it->rect.area() == Approx(bounds.area() / 2).margin(1e-3));
 }
 
 
