@@ -36,7 +36,7 @@ Conventions:
 | B1 | M | read | `unique_path()` + create is check-then-act; another process can take the name in between. Fix by creating with `O_EXCL`/`mkdir` and retrying with the next suffix inside dirops instead of probing first. |
 | B2 | L | read | `swap_names` cannot roll back if the final rename fails; the error names the temp path that holds the original. A journal or retry would be better. |
 | B3 | H | read | **Delete is permanent** (`remove_all` after a confirmation dialog). No trash (freedesktop `trash-spec`), no undo. Probably the biggest safety gap for a file manager. Needs a design decision (trash vs. permanent as separate commands). **Fixed in `33b60c2d`.** |
-| B4 | M | read | `TransferWorker` stops at the first failed item; the remaining items are neither tried nor reported as untouched. Options: continue and collect errors, or ask (Skip/Retry/Abort). |
+| B4 | M | read | `TransferWorker` stops at the first failed item; the remaining items are neither tried nor reported as untouched. Options: continue and collect errors, or ask (Skip/Retry/Abort). **Fixed in `c2f9bc1f`.** |
 | B5 | L | read | Paste-as-Link in the folder of the source fails with "already exists" instead of picking a free name (`x (2)` / Python's "Link to x"). Use `ConflictPolicy::Rename` or ask. |
 | B6 | M | read | `TransferController::shutdown()` waits 5 s for the worker thread; if a copy is blocked on a slow drive the `QThread` is then destroyed while running (Qt aborts). Detach like `ThumbnailCoordinator::stop_thread` does. **Fixed in `c233c0fb`.** |
 | B7 | L | read | `copy_regular_file` streams with `ofstream` in 256 KiB chunks: no `copy_file_range`/reflink, no sparse-file handling, ownership/xattrs not preserved, no fsync. Fine for now; matters for large media copies. |
@@ -130,7 +130,7 @@ Conventions:
 
 | ID | Sev | Verified | Issue |
 |----|-----|----------|-------|
-| I1 | M | read | No tests for the GUI layer: `TransferWorker` (pause/cancel/conflict flow), `MainWindow` ops, `FileListModel`, `GraphicsFileView`. At least `TransferWorker` (it is a plain `QObject`) can be tested headless; the pause/resume race fixed in this review has no regression test. |
+| I1 | M | read | No tests for the GUI layer: `TransferWorker` (pause/cancel/conflict flow), `MainWindow` ops, `FileListModel`, `GraphicsFileView`. At least `TransferWorker` (it is a plain `QObject`) can be tested headless; the pause/resume race fixed in this review has no regression test. *Partly addressed:* `TransferWorker` (error prompts) and `SortWorker`, `PathCompletionWorker`, `ArchiveListing`, `stop_thread` now have headless tests; `MainWindow`, the views and the pause/resume path are still untested. |
 | I2 | L | read | Watcher tests wait on real inotify with polling (`pump_until`, 3 s). Fine locally; may flake on loaded CI. Consider a longer timeout or `QSignalSpy`. |
 | I3 | L | read | Cross-device `dirops` tests skip when `/dev/shm` is on the same filesystem as `$TMPDIR`; CI should guarantee a second filesystem (or the tests give a false sense of coverage). |
 | I4 | L | read | `count_archive_files` (libarchive file counting in `media_probe.cpp`) was only checked manually with `dt-mediainfo`; add a unit test with a generated tar/zip. |
