@@ -305,6 +305,17 @@ void MainWindow::on_mkdir()
               MutationResult r2;
               auto target = dest;
               if (overwrite) {
+                // remove_path is recursive: never let "Replace" wipe a tree.
+                std::error_code lec;
+                const auto st = std::filesystem::symlink_status(dest, lec);
+                if (std::filesystem::is_directory(st)) {
+                  MutationStep refused;
+                  refused.kind = OperationKind::Delete;
+                  refused.sources = {dest};
+                  refused.error = QStringLiteral("Refusing to replace a folder with a new folder");
+                  r2.steps.push_back(std::move(refused));
+                  return r2;
+                }
                 r2.steps.push_back(
                     make_step(OperationKind::Delete, {dest}, {}, dirops::remove_path(dest)));
                 if (!r2.steps.back().ok) {

@@ -33,8 +33,9 @@ std::optional<QString> ask_item_name(QWidget* parent, const QString& title, cons
   layout->addWidget(buttons);
 
   auto update_ok = [edit, ok] {
-    const QString t = edit->text();
-    ok->setEnabled(!t.isEmpty() && !t.contains(QLatin1Char('/')));
+    const QString t = edit->text().trimmed();
+    ok->setEnabled(!t.isEmpty() && !t.contains(QLatin1Char('/'))
+                   && t != QLatin1String(".") && t != QLatin1String(".."));
   };
   update_ok();
   QObject::connect(edit, &QLineEdit::textChanged, &dialog, update_ok);

@@ -98,7 +98,9 @@ void MainWindow::on_transfer_finished(TransferSummary summary)
     qWarning().noquote() << QStringLiteral("transfer error: %1").arg(summary.error);
   }
 
-  if (transfer_controller_.last_mode() == ClipboardMode::Cut && summary.completed > 0 && !summary.cancelled) {
+  // Keep the clipboard after an error or cancel so the rest can be retried.
+  if (transfer_controller_.last_mode() == ClipboardMode::Cut && summary.completed > 0
+      && !summary.cancelled && summary.error.isEmpty()) {
     QApplication::clipboard()->clear();
   }
 

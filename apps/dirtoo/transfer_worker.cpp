@@ -18,8 +18,13 @@ TransferWorker::TransferWorker(QObject* parent)
 
 void TransferWorker::cancel()
 {
-  cancel_requested_.store(true);
-  pause_requested_.store(false);
+  {
+    // Under pause_mutex_ so a waiter between its predicate check and wait()
+    // cannot miss the notification below.
+    std::lock_guard lock(pause_mutex_);
+    cancel_requested_.store(true);
+    pause_requested_.store(false);
+  }
   {
     std::lock_guard lock(conflict_mutex_);
     if (conflict_pending_) {
@@ -39,7 +44,10 @@ void TransferWorker::pause()
 
 void TransferWorker::resume()
 {
-  pause_requested_.store(false);
+  {
+    std::lock_guard lock(pause_mutex_);
+    pause_requested_.store(false);
+  }
   pause_cv_.notify_all();
   emit log_line(QStringLiteral("Resumed"));
 }
@@ -123,6 +131,19 @@ void TransferWorker::run(TransferRequest request)
   emit log_line(request.mode == ClipboardMode::Cut ? QStringLiteral("Starting move…")
                                                    : QStringLiteral("Starting copy…"));
 
+  {
+    std::error_code dir_ec;
+    if (!std::filesystem::is_directory(request.destination_directory, dir_ec)) {
+      // dirops would otherwise treat the missing directory as the target
+      // file name and copy the first source onto that path.
+      summary.error = QStringLiteral("Destination is not a directory: %1")
+                          .arg(QString::fromStdString(request.destination_directory.string()));
+      emit log_line(QStringLiteral("Error: %1").arg(summary.error));
+      emit finished(summary);
+      return;
+    }
+  }
+
   const int total = static_cast<int>(request.sources.size());
   for (int i = 0; i < total; ++i) {
     wait_while_paused();
@@ -151,7 +172,17 @@ void TransferWorker::run(TransferRequest request)
                          QString::fromStdString(p.string()));
     };
 
-    if (std::filesystem::exists(dest)) {
+    // Moving into the folder the item already lives in changes nothing.
+    std::error_code same_ec;
+    const bool move_in_place =
+        request.mode == ClipboardMode::Cut
+        && std::filesystem::equivalent(src.parent_path(), request.destination_directory, same_ec)
+        && !same_ec;
+
+    // symlink_status: a dangling symlink at the destination is still a clash.
+    std::error_code dest_ec;
+    if (!move_in_place
+        && std::filesystem::exists(std::filesystem::symlink_status(dest, dest_ec))) {
       bool user_cancelled = false;
       opt.conflict = wait_for_conflict_policy(
           QString::fromStdString(dest.filename().string()), src, dest, &user_cancelled);
