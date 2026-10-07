@@ -148,8 +148,12 @@ std::optional<TagDef> TagStore::ensure_tag(std::string_view name, std::string* e
     return existing;
   }
   sqlite3_stmt* stmt = nullptr;
+  // OR IGNORE: another connection (parallel TagJob, CLI) may create the same
+  // tag between the lookup above and this insert; the re-read below then
+  // returns its row instead of failing on the UNIQUE constraint.
   constexpr const char* sql =
-      "INSERT INTO tag_defs(name, label, color, badge, created) VALUES(?1,?2,'','',?3)";
+      "INSERT OR IGNORE INTO tag_defs(name, label, color, badge, created) "
+      "VALUES(?1,?2,'','',?3)";
   if (sqlite3_prepare_v2(static_cast<sqlite3*>(db_), sql, -1, &stmt, nullptr) != SQLITE_OK) {
     if (error) {
       *error = sqlite3_errmsg(static_cast<sqlite3*>(db_));
@@ -372,8 +376,30 @@ TagStore::ensure_file_sha256(std::string_view sha256, std::string_view path_key,
     return std::nullopt;
   }
   sqlite3_stmt* stmt = nullptr;
+  // INSERT OR IGNORE then SELECT: concurrent writers racing on a new hash
+  // must all end up with the same row id instead of one failing on UNIQUE.
+  constexpr const char* ins = "INSERT OR IGNORE INTO files(sha256) VALUES(?1)";
+  if (sqlite3_prepare_v2(static_cast<sqlite3*>(db_), ins, -1, &stmt, nullptr) != SQLITE_OK) {
+    if (error) {
+      *error = sqlite3_errmsg(static_cast<sqlite3*>(db_));
+    }
+    return std::nullopt;
+  }
+  sqlite3_bind_text(stmt, 1, sha256.data(), static_cast<int>(sha256.size()), SQLITE_TRANSIENT);
+  if (sqlite3_step(stmt) != SQLITE_DONE) {
+    if (error) {
+      *error = sqlite3_errmsg(static_cast<sqlite3*>(db_));
+    }
+    sqlite3_finalize(stmt);
+    return std::nullopt;
+  }
+  sqlite3_finalize(stmt);
+
   constexpr const char* sel = "SELECT id FROM files WHERE sha256 = ?1";
   if (sqlite3_prepare_v2(static_cast<sqlite3*>(db_), sel, -1, &stmt, nullptr) != SQLITE_OK) {
+    if (error) {
+      *error = sqlite3_errmsg(static_cast<sqlite3*>(db_));
+    }
     return std::nullopt;
   }
   sqlite3_bind_text(stmt, 1, sha256.data(), static_cast<int>(sha256.size()), SQLITE_TRANSIENT);
@@ -382,25 +408,11 @@ TagStore::ensure_file_sha256(std::string_view sha256, std::string_view path_key,
     id = sqlite3_column_int64(stmt, 0);
   }
   sqlite3_finalize(stmt);
-
   if (!id) {
-    constexpr const char* ins = "INSERT INTO files(sha256) VALUES(?1)";
-    if (sqlite3_prepare_v2(static_cast<sqlite3*>(db_), ins, -1, &stmt, nullptr) != SQLITE_OK) {
-      if (error) {
-        *error = sqlite3_errmsg(static_cast<sqlite3*>(db_));
-      }
-      return std::nullopt;
+    if (error) {
+      *error = "files row vanished after insert";
     }
-    sqlite3_bind_text(stmt, 1, sha256.data(), static_cast<int>(sha256.size()), SQLITE_TRANSIENT);
-    if (sqlite3_step(stmt) != SQLITE_DONE) {
-      if (error) {
-        *error = sqlite3_errmsg(static_cast<sqlite3*>(db_));
-      }
-      sqlite3_finalize(stmt);
-      return std::nullopt;
-    }
-    id = static_cast<std::int64_t>(sqlite3_last_insert_rowid(static_cast<sqlite3*>(db_)));
-    sqlite3_finalize(stmt);
+    return std::nullopt;
   }
 
   if (!path_key.empty() && id) {
@@ -413,7 +425,9 @@ TagStore::ensure_file_sha256(std::string_view sha256, std::string_view path_key,
                         SQLITE_TRANSIENT);
       sqlite3_bind_int64(stmt, 2, *id);
       sqlite3_bind_int64(stmt, 3, now);
-      sqlite3_step(stmt);
+      if (sqlite3_step(stmt) != SQLITE_DONE && error) {
+        *error = sqlite3_errmsg(static_cast<sqlite3*>(db_));
+      }
       sqlite3_finalize(stmt);
     }
   }

@@ -47,6 +47,12 @@ std::string column_text(sqlite3_stmt* stmt, int col)
   return p != nullptr ? std::string{p} : std::string{};
 }
 
+/// Run a statement without results (savepoints, ...).
+bool exec_sql(void* db, const char* sql)
+{
+  return sqlite3_exec(static_cast<sqlite3*>(db), sql, nullptr, nullptr, nullptr) == SQLITE_OK;
+}
+
 /// Bind TEXT; empty string_view often has data()==nullptr, which SQLite treats as NULL.
 void bind_text(sqlite3_stmt* stmt, int idx, std::string_view sv)
 {
@@ -377,6 +383,19 @@ bool FileSetStore::add_member(std::string_view set_id, std::string_view path_key
     }
     return false;
   }
+  // The delete below and the insert must succeed or fail together: otherwise
+  // a failed insert (unknown set, locked db) silently drops the file from the
+  // set it was already in. A savepoint also nests inside add_members().
+  if (!exec_sql(db_, "SAVEPOINT add_member")) {
+    if (error != nullptr) {
+      *error = sqlite3_errmsg(static_cast<sqlite3*>(db_));
+    }
+    return false;
+  }
+  auto rollback = [this] {
+    exec_sql(db_, "ROLLBACK TO add_member");
+    exec_sql(db_, "RELEASE add_member");
+  };
   // One set per file: drop any existing membership for this path first.
   {
     sqlite3_stmt* del = nullptr;
@@ -395,6 +414,7 @@ bool FileSetStore::add_member(std::string_view set_id, std::string_view path_key
     if (error != nullptr) {
       *error = sqlite3_errmsg(static_cast<sqlite3*>(db_));
     }
+    rollback();
     return false;
   }
   bind_text(stmt, 1, set_id);
@@ -406,6 +426,7 @@ bool FileSetStore::add_member(std::string_view set_id, std::string_view path_key
     if (error != nullptr) {
       *error = sqlite3_errmsg(static_cast<sqlite3*>(db_));
     }
+    rollback();
     return false;
   }
   // Touch updated_at.
@@ -417,6 +438,7 @@ bool FileSetStore::add_member(std::string_view set_id, std::string_view path_key
     sqlite3_step(touch);
     sqlite3_finalize(touch);
   }
+  exec_sql(db_, "RELEASE add_member");
   return true;
 }
 
@@ -455,17 +477,23 @@ int FileSetStore::add_members(std::string_view set_id, const std::vector<std::st
                               std::string* error)
 {
   int n = 0;
+  // One transaction for the whole batch: thousands of auto-committed
+  // statements are slow, and a crash should not leave a half-applied batch.
+  const bool in_txn = exec_sql(db_, "SAVEPOINT add_members");
   for (const auto& pk : path_keys) {
     if (pk.empty()) {
       continue;
     }
     const bool already = contains(set_id, pk);
     if (!add_member(set_id, pk, {}, error)) {
-      return n;
+      break;
     }
     if (!already) {
       ++n;
     }
+  }
+  if (in_txn) {
+    exec_sql(db_, "RELEASE add_members");  // keep what was added before a failure
   }
   return n;
 }

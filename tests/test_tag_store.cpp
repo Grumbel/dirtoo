@@ -232,3 +232,51 @@ TEST_CASE("TagStore concurrent open smoke (WAL)", "[tags][concurrent]")
 
   remove_db_sidecars(path);
 }
+
+TEST_CASE("TagStore concurrent first-use of the same tag and file succeeds everywhere",
+          "[tags][concurrency]")
+{
+  // Several TagJobs (separate connections) tag the same new file with the
+  // same new tag at once. Check-then-insert used to lose the UNIQUE race.
+  const std::string sha(64, 'a');
+  for (int round = 0; round < 20; ++round) {
+    const auto path = temp_db_path("race-" + std::to_string(round));
+    remove_db_sidecars(path);
+    {
+      TagStore init;
+      REQUIRE(init.open(path));
+    }
+
+    constexpr int kThreads = 6;
+    std::atomic<int> ready{0};
+    std::atomic<int> failures{0};
+    std::vector<std::thread> threads;
+    for (int t = 0; t < kThreads; ++t) {
+      threads.emplace_back([&] {
+        TagStore store;
+        std::string err;
+        if (!store.open(path, &err)) {
+          ++failures;
+          return;
+        }
+        ++ready;
+        while (ready.load() < kThreads) {
+          std::this_thread::yield();
+        }
+        const auto id = store.ensure_file_sha256(sha, "/tmp/x", &err);
+        if (!id || !store.add_tag_to_file(*id, "shared", &err)) {
+          ++failures;
+        }
+      });
+    }
+    for (auto& th : threads) {
+      th.join();
+    }
+    CHECK(failures.load() == 0);
+
+    TagStore check;
+    REQUIRE(check.open(path));
+    CHECK(check.count_files_for_tag("shared") == 1);
+    remove_db_sidecars(path);
+  }
+}

@@ -192,3 +192,24 @@ TEST_CASE("pure_set_query accepts quoted labels with spaces", "[sets][filter]")
   REQUIRE_FALSE(pure_set_query("set:\"foo").has_value());
   REQUIRE_FALSE(pure_set_query("png").has_value());
 }
+
+TEST_CASE("FileSetStore failed add_member keeps the previous membership", "[sets]")
+{
+  const auto path = temp_db_path("atomic-move");
+  remove_db_sidecars(path);
+
+  FileSetStore store;
+  std::string err;
+  REQUIRE(store.open(path, &err));
+  auto a = store.create_set("takes", {}, &err);
+  REQUIRE(a);
+  REQUIRE(store.add_member(a->id, "/media/clip.mp4", {}, &err));
+
+  // Moving into a set that does not exist must fail without dropping the
+  // file from the set it is already in.
+  CHECK_FALSE(store.add_member("no-such-set", "/media/clip.mp4", {}, &err));
+  CHECK(store.contains(a->id, "/media/clip.mp4"));
+  CHECK(store.member_count(a->id) == 1);
+
+  remove_db_sidecars(path);
+}
