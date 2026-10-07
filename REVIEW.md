@@ -41,6 +41,11 @@ Conventions:
 | B6 | M | read | `TransferController::shutdown()` waits 5 s for the worker thread; if a copy is blocked on a slow drive the `QThread` is then destroyed while running (Qt aborts). Detach like `ThumbnailCoordinator::stop_thread` does. |
 | B7 | L | read | `copy_regular_file` streams with `ofstream` in 256 KiB chunks: no `copy_file_range`/reflink, no sparse-file handling, ownership/xattrs not preserved, no fsync. Fine for now; matters for large media copies. |
 | B8 | L | read | Cross-device `move_path` of a directory is "copy then `remove_all`": a source file modified during the copy is lost, and symlinks/special files are copied/refused rather than moved. Acceptable, but worth documenting in `ops.hpp`. |
+| B9 | H | repro | `dirops::remove_path` / `dt-rm` have `rm -rf` semantics with **no root/`.`/`..` guard**. `dt-rm .` in a directory deleted all its contents and *then* reported "remove failed (Invalid argument)" (reproduced in a scratch dir); `dt-rm /` would start wiping the system. GNU `rm` refuses `/`, `.` and `..` up front. Refuse empty path, root, and paths whose last component is `.`/`..` in the library. |
+| B10 | M | read | Drops: `MainWindow::on_urls_dropped_to` checks read-only and archive locations but not `location_allows_filesystem_mutations()` (tag://, set://). With an empty `Location::as_path()` the destination is an empty path; since `562a6b4c` the transfer now fails with "Destination is not a directory", but the drop should be refused up front with a clear message like paste does. |
+| B11 | M | read | `FileListModel::mimeData()` (drag start) **extracts archive members synchronously on the GUI thread** (`ensure_archive_member_extracted`) so external apps get real files. Known residual in `AGENTS.md`; a large member freezes the UI at the start of a drag. Idea: provide the URL lazily (`QMimeData` subclass with `retrieveData`) or extract in the background and start the drag when ready. |
+| B12 | L | read | `begin_transfer_from_urls`: archive members that fail to extract are skipped silently; the drop proceeds with the remaining ones and only refuses when *all* fail. Report the failed members. |
+| B13 | L | read | `GraphicsFileView::dragMoveEvent` loops over every entry of `items_` (sparse vector of size N) on **every mouse move** to update the drop-target highlight. Track the previously highlighted item instead. |
 
 ## C. Archives
 
@@ -51,6 +56,8 @@ Conventions:
 | C3 | L | read | `ARCHIVE_EXTRACT_PERM` keeps archive directory modes; a directory stored as `000` becomes un-browsable and `remove_all` of the cache dir may fail. Mask dirs with at least `u+rwx` after extraction. |
 | C4 | L | read | `extract_member_libarchive` does not pass `ARCHIVE_EXTRACT_SECURE_SYMLINKS` (full extraction does). Low risk (single entry) but inconsistent. Note: libarchive's symlink check also looks at the destination prefix; verify it is happy with a symlinked `~/.cache` before adding it. |
 | C5 | L | read | Archive entries with absolute or `..` names are **skipped silently** on extraction (and listed as normal entries in `list_archive_entries`). Surface a warning to the user. |
+| C6 | M | read | `MainWindow::reload_directory` (GUI thread) calls `ArchiveListing::refresh_if_stale`: a `stat` of the archive plus, when the stamp changed, a **synchronous full TOC read** (`list_archive_entries`). Violates the GUI-I/O rule on slow drives and for big archives; the initial load is async, the reload path is not. |
+| C7 | M | read | `ArchiveListing::child_counts_for` is O(directories × entries) with a `std::set<std::string>` and string copies per entry, run on the GUI thread on every archive reload. 200k entries × 2k folders ≈ 400M string operations. Build one pass over the entries into a `parent → children` map. |
 
 ## D. dirtoo-fs / FileInfo
 
@@ -59,6 +66,7 @@ Conventions:
 | D1 | M | read | `FileInfo` keeps whole-second mtimes (`sys_from_unix(tv_sec)`), dropping nanoseconds. Files created within the same second sort unstably by time and "newer than" comparisons are coarse. Keep `tv_nsec`. |
 | D2 | L | read | `set_mtime_unix(sec <= 0)` is ignored, so a real mtime of exactly 0 (or before 1970) is shown as "unknown". Use an explicit `has_mtime` flag. |
 | D3 | L | read | `FileInfo::from_path`/`from_directory_entry` use `try/catch (...)` around name conversion: silent catches contradict the "log, don't paper over" rule. |
+| D4 | M | repro | `Location::from_url` mis-parses valid URLs: `file:///tmp/a//b` → `/tmp/a` (the part after `//` is taken as the Python-style archive payload and dropped); `file://localhost/home/x` → resolved **relative to the cwd**; `file:/tmp/x` → relative path `file:/tmp/x`; an unencoded `?` starts a query. Affects URLs from outside (bookmarks files, typed locations, other apps, CLI). Drops mostly use `QUrl::toLocalFile()`, but `location_from_drop_url` still switches to `from_url` on any path containing the substring `//archive`. Parse with a real URL parser, accept the `localhost` authority and the single-slash form, and give the archive payload an unambiguous marker. |
 
 ## E. dirtoo-hash / dirtoo-tags (SQLite stores)
 
@@ -109,6 +117,8 @@ Conventions:
 | H6 | L | read | `ThumbnailCoordinator::in_flight_` accounting depends on "every request ends in exactly one ready/failed signal"; `cancel_all()` zeroes it while late signals still arrive (guarded by `> 0`). A per-request id would be more robust. |
 | H7 | L | read | `DirectoryLoadWorker::cancel()` invalidates the generation with `cur ^ ~0`, which could in theory collide with a later real generation. Use a separate "cancelled generation" atomic. |
 | H8 | L | read | `Cut` leaves the clipboard (and the sources) untouched when a transfer ends partially; the next paste may fail on already-moved items. Track per-item state in the clipboard payload. |
+| H9 | M | read | `MainWindow::reload_directory` runs `QCoreApplication::processEvents(ExcludeUserInputEvents)` inside the slot "to let the empty list paint": a nested event loop in the middle of navigation state changes. Timers, watcher ticks and queued worker results can re-enter `reload_directory`/`open_location` before the first call finishes. Use a queued continuation (`QTimer::singleShot(0, …)`) instead. |
+| H10 | L | read | `on_directory_load_failed` only shows the error. If the current directory is deleted or its drive is unplugged, the user stays in an empty view (and every watcher event repeats the error); no automatic fallback to the nearest existing parent. |
 
 ## I. Tests
 
@@ -120,14 +130,43 @@ Conventions:
 | I4 | L | read | `count_archive_files` (libarchive file counting in `media_probe.cpp`) was only checked manually with `dt-mediainfo`; add a unit test with a generated tar/zip. |
 | I5 | L | read | No tests for `Sorter` ordering edge cases (natural sort, ties, descending with directories first) or `FileCollection::merge_items`. |
 
+## K. Thumbnails (`libs/dirtoo-thumbnail`)
+
+| ID | Sev | Verified | Issue |
+|----|-----|----------|-------|
+| K1 | M | read | `Thumbnailer::on_ready/on_error/on_finished` ignore the request `handle` (`(void)handle`) and connect to the service's signals bus-wide, so thumbnails requested by *other applications* are delivered as ours. `ThumbnailCoordinator::in_flight_` is decremented for them (busy indicator ends early) and the model is updated for locations nobody asked for. Filter on `pending_` handles. |
+| K2 | L | read | The freedesktop `thumbnails/fail/` cache is only deleted on force-regenerate, never consulted: files that always fail are retried every session, plus the MIME-retry/octet-stream fallbacks in the coordinator. |
+| K3 | L | read | `cache_matches_source` reads up to 2 MiB of the cached PNG **twice** (`Thumb::MTime`, then `Thumb::Size`) per check, for every visible item. Read the text chunks once (or use `QImageReader::text`). |
+| K4 | L | read | `from_url` failures are swallowed with `catch (...)` (`on_ready`, `on_error`); a malformed URI from the service disappears without a log line. |
+
+## L. App data persistence
+
+| ID | Sev | Verified | Issue |
+|----|-----|----------|-------|
+| L1 | M | read | `Bookmarks::write_all` and `OpenHistory::save` write with `std::ofstream(path, trunc)` and never check the result. A full disk or a crash mid-write truncates the file and **loses all bookmarks/history**. `OpenedFilesStore::save` uses tmp+rename (good) but on a rename error it *removes the existing file first* and retries. Add one shared atomic-write helper (`QSaveFile`, or tmp + fsync + rename) and use it everywhere. |
+| L2 | L | read | `Bookmarks::contains/append/remove` re-read the whole file on every call (GUI thread) and do read-modify-write, so two dirtoo windows can overwrite each other's bookmarks. |
+| L3 | L | read | `OpenedFilesStore` keeps an unbounded set of every opened path and rewrites the whole file on save. |
+
+## M. Open With / launching programs
+
+| ID | Sev | Verified | Issue |
+|----|-----|----------|-------|
+| M1 | M | repro | `parse_desktop_file` reads `Name`/`Exec`/`Icon` through `QSettings` (IniFormat), which treats commas as list separators; `value().toString()` of a multi-element list is an **empty string**. Reproduced: `Name=Foo, Bar` and `Exec=env A=1,2 foo %F` both read back as empty, so `apps_from_ids` drops such applications from "Open With" silently. Parse `.desktop` files with a small dedicated reader (or `QSettings::setIniCodec`-free raw line parsing), which also gives `Name[locale]`, `Terminal`, `Path`, `TryExec`. |
+| M2 | M | read | `desktop_ids_from_desktop_mimetypes` constructs a `QSettings` for **every** `.desktop` file in all XDG data dirs on each call; it is called from the GUI thread (`main_window_actions.cpp:500`, `open_history.cpp`) when the context/Open-With menu is built. Hundreds of files of synchronous I/O per right-click. Build the MIME → apps index once on a worker (and refresh on directory change). |
+| M3 | L | read | `expand_exec` deviates from the Desktop Entry spec: `%%` not handled, `%u/%U` get plain paths not URLs, `%i` is dropped instead of expanding to `--icon <Icon>`, paths are appended when the `Exec` has no field code (should not), `Terminal=true`, `Path=` and `TryExec=` are ignored, and `QProcess::splitCommand` applies shell-ish rules rather than the spec's quoting rules. |
+| M4 | L | read | `open_with_command_dialog` splits the typed command on spaces (no quotes), so programs in paths with spaces cannot be used. |
+| M5 | L | read | The "open terminal here" action tries a hard-coded list of terminals in order (a runtime fallback chain), using `bash -lc` for xterm. Honour `$TERMINAL`/`x-terminal-emulator`/the desktop's preferred terminal, or make it a preference. |
+| M6 | L | unverified | Programs started with `QProcess::startDetached` inherit the environment of the (Nix-wrapped) dirtoo process, including `QT_PLUGIN_PATH`/`XDG_DATA_DIRS` from `wrapQtAppsHook` and the dev shell. Launched Qt apps may load dirtoo's plugins. Consider restoring the original environment for children. |
+
 ## J. Not reviewed yet
 
-`tools/` (dt-* CLIs), `thumbnailers/`, `libs/dirtoo-thumbnail` (D-Bus client),
-`libs/dirtoo-tree` (only its test was touched), `man/`, `resources/`, and in
-`apps/dirtoo`: preferences, properties, bookmarks/history stores, devices/UDisks,
-location bar and completion, QuickFilter, Tag Manager, the DnD code
-(`graphics_file_view_dnd.cpp`, drag-from-archive extraction), sidebar, and
-`main_window_nav/_load.cpp` (only skimmed).
+`tools/` except `dt_rm`, `thumbnailers/`, `libs/dirtoo-tree` (only its test was
+touched), `man/`, `resources/`, and in `apps/dirtoo`: preferences, properties,
+devices/UDisks, location bar and completion, QuickFilter, Tag Manager, sidebar,
+the treemap view, `main_window_nav.cpp`, `file_item_delegate`, and the settings code. `open_with.cpp`
+has been read (section M). Reviewed in the second pass: DnD, `main_window_load`,
+`libs/dirtoo-thumbnail`, `Location` URL parsing, persistence of
+bookmarks/history.
 
 ---
 

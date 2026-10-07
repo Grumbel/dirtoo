@@ -302,7 +302,7 @@ implementations of the same library capability.
 | Archive write / remote VFS / programs/* | **out of scope** |
 
 Priority residual queue and parity matrix: **`TODO.md`** (see *Session notes 2026-08-12*).  
-Open code-review findings (IDs A1…I5, severity, how each was verified): **`REVIEW.md`**.  
+Open code-review findings (IDs A1…M6, severity, how each was verified): **`REVIEW.md`**.  
 User-facing overview: **`README.md`**.
 
 ---
