@@ -218,6 +218,32 @@ every `libs/*` via `add_subdirectory`):
 ---
 
 
+### Tests and CI
+
+- Unit tests live in `tests/` (Catch2, one `dirtoo-tests` binary). App code
+  that tests need (clipboard, directory loading, `.desktop` parsing, atomic
+  writes, path completion, archive listing, sort worker, `stop_thread`)
+  lives in the static library **`dirtoo-app-core`** (`apps/dirtoo/CMakeLists.txt`);
+  put new testable, GUI-independent app code there rather than compiling
+  app sources into the tests. A file in `dirtoo-app-core` must **not** also
+  be listed in the `dirtoo-app` target (AUTOMOC would generate the same moc
+  code twice).
+- `.github/workflows/ci.yml` runs `nix flake check` plus an ASan + UBSan
+  build of the whole tree. To reproduce the sanitizer job locally:
+  `DIRTOO_BUILD_DIR=~/.cache/dirtoo/build-asan dirtoo-configure
+  -DCMAKE_CXX_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer -O1'
+  -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address,undefined
+  -DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=address,undefined` then `dirtoo-test`.
+  ThreadSanitizer is not used (Qt/libstdc++ are not instrumented → noise).
+- Never iterate directories with `for (… : directory_iterator(dir, opts, ec))`:
+  `operator++` throws on I/O errors. Use the iterator + `increment(ec)` form.
+- Stop worker threads with `stop_thread()` (`thread_util.hpp`), never a bare
+  `quit(); wait();` followed by destroying the `QThread`.
+- Persist user data with `write_file_atomic()` (`atomic_write.hpp`) and open
+  SQLite databases with `dirtoo::hash::open_database()`.
+
+---
+
 ### Flake packages (incremental)
 
 Each library is a **separate flake output** with a **scoped source fileset**

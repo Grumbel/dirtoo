@@ -4,9 +4,10 @@ Python reference: https://github.com/Grumbel/dirtoo-py.git — Active code: this
 
 ---
 
-**Code review backlog (2026-10-07):** open issues from the full review — build, dirops,
+**Code review backlog (2026-10-07):** issues from the full review — build, dirops,
 archive, stores, filter, collection, GUI perf — are tracked with IDs in
-[`REVIEW.md`](REVIEW.md). Reference them as `REVIEW <id>` in commits.
+[`REVIEW.md`](REVIEW.md); rows marked *Fixed in `<sha>`* are done, the rest are
+open. Reference them as `REVIEW <id>` in commits.
 
 ---
 
