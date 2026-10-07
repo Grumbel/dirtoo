@@ -225,3 +225,65 @@ TEST_CASE("FileCollection group by session gaps", "[collection][group]")
   REQUIRE_FALSE(col.is_group_start_at(1));
   (void)kSessionGapThreshold;
 }
+
+namespace {
+
+std::vector<std::string> sorted_names(std::vector<std::string> names, bool ascending = true,
+                                      dirtoo::collection::SortKey key =
+                                          dirtoo::collection::SortKey::Name)
+{
+  const auto dir = fs::temp_directory_path() / "dirtoo-collection-sorted";
+  fs::remove_all(dir);
+  fs::create_directories(dir);
+  for (const auto& n : names) {
+    std::ofstream(dir / n) << n;  // size = name length
+  }
+  auto items = dirtoo::fs::list_directory(dirtoo::fs::Location::from_path(dir));
+  dirtoo::collection::Sorter sorter;
+  sorter.set_key(key);
+  sorter.set_ascending(ascending);
+  sorter.sort(items);
+  std::vector<std::string> out;
+  for (const auto& fi : items) {
+    out.push_back(fi.basename());
+  }
+  fs::remove_all(dir);
+  return out;
+}
+
+} // namespace
+
+TEST_CASE("natural sort orders long digit runs numerically", "[collection][sort]")
+{
+  // 2^64 + 1 wraps to 1 in a uint64 and used to sort before "f2".
+  const auto out = sorted_names({"f18446744073709551617.txt", "f3.txt", "f2.txt",
+                                 "f99999999999999999999999.txt", "f10.txt"});
+  const std::vector<std::string> want = {"f2.txt", "f3.txt", "f10.txt",
+                                         "f18446744073709551617.txt",
+                                         "f99999999999999999999999.txt"};
+  CHECK(out == want);
+}
+
+TEST_CASE("natural sort ignores leading zeros for order but stays deterministic", "[collection][sort]")
+{
+  const auto a = sorted_names({"x007", "x7", "x10", "x08"});
+  // 7 == 007 numerically; both before 08 (8) and 10.
+  REQUIRE(a.size() == 4);
+  CHECK(a[2] == "x08");
+  CHECK(a[3] == "x10");
+  CHECK(((a[0] == "x007" && a[1] == "x7") || (a[0] == "x7" && a[1] == "x007")));
+  // Same input, same order every time.
+  CHECK(sorted_names({"x007", "x7", "x10", "x08"}) == a);
+}
+
+TEST_CASE("sort descending and by size keep name tie-breaks", "[collection][sort]")
+{
+  using dirtoo::collection::SortKey;
+  // "a","b","c" have equal size 1; "dd" is 2.
+  CHECK(sorted_names({"c", "dd", "a", "b"}, true, SortKey::Size)
+        == std::vector<std::string>{"a", "b", "c", "dd"});
+  CHECK(sorted_names({"c", "dd", "a", "b"}, false, SortKey::Size)
+        == std::vector<std::string>{"dd", "c", "b", "a"});
+  CHECK(sorted_names({"b10", "b2", "B1"}, false)
+        == std::vector<std::string>{"b10", "b2", "B1"});
+}

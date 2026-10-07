@@ -5,7 +5,9 @@
 
 #include "dirtoo/fs/file_info.hpp"
 
+#include <cstdint>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace dirtoo::collection {
@@ -31,8 +33,10 @@ enum class SortKey {
 /// Alternating string/number segments; used for Name sorting.
 struct NaturalPiece {
   bool is_number = false;
-  std::string text;
-  std::uint64_t number = 0;
+  std::string text;      ///< text segment; for numbers: the digits as written
+  std::string digits;    ///< numbers only: digits without leading zeros ("0" for zero)
+  std::uint64_t number = 0;  ///< numeric value, saturating at UINT64_MAX (informational;
+                             ///< ordering uses `digits`, which has no overflow)
 };
 
 [[nodiscard]] std::vector<NaturalPiece> numeric_sort_key(std::string_view text);

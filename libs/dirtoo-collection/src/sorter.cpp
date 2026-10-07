@@ -34,11 +34,13 @@ int cmp_natural(const std::vector<NaturalPiece>& a, const std::vector<NaturalPie
       return 1;
     }
     if (a[i].is_number) {
-      if (a[i].number < b[i].number) {
-        return -1;
+      // Compare as digit strings (no leading zeros): longer = bigger, then
+      // lexicographic. A uint64 would silently wrap for 20+ digit runs.
+      if (a[i].digits.size() != b[i].digits.size()) {
+        return a[i].digits.size() < b[i].digits.size() ? -1 : 1;
       }
-      if (a[i].number > b[i].number) {
-        return 1;
+      if (const int c = a[i].digits.compare(b[i].digits); c != 0) {
+        return c < 0 ? -1 : 1;
       }
     } else {
       if (a[i].text < b[i].text) {
@@ -96,10 +98,26 @@ std::vector<NaturalPiece> numeric_sort_key(std::string_view text)
       NaturalPiece p;
       p.is_number = true;
       std::uint64_t n = 0;
+      bool saturated = false;
+      const std::size_t begin = i;
       while (i < text.size() && std::isdigit(static_cast<unsigned char>(text[i]))) {
-        n = n * 10 + static_cast<std::uint64_t>(text[i] - '0');
+        const auto d = static_cast<std::uint64_t>(text[i] - '0');
+        if (!saturated) {
+          if (n > (UINT64_MAX - d) / 10) {
+            saturated = true;
+            n = UINT64_MAX;
+          } else {
+            n = n * 10 + d;
+          }
+        }
         ++i;
       }
+      p.text.assign(text.substr(begin, i - begin));
+      std::size_t nz = 0;
+      while (nz + 1 < p.text.size() && p.text[nz] == '0') {
+        ++nz;
+      }
+      p.digits = p.text.substr(nz);
       p.number = n;
       out.push_back(std::move(p));
     } else {
@@ -115,149 +133,105 @@ std::vector<NaturalPiece> numeric_sort_key(std::string_view text)
   return out;
 }
 
-int Sorter::compare(const fs::FileInfo& a, const fs::FileInfo& b) const
+namespace {
+
+/// Everything that is expensive to derive from a FileInfo and needed on every
+/// comparison, computed once per item per sort (n instead of n·log n times).
+struct SortKeys {
+  std::vector<NaturalPiece> name;  ///< natural key of the lower-cased basename
+  std::string ext;                 ///< lower-cased extension
+  MediaDims media;                 ///< only filled for media sort keys
+};
+
+bool is_media_key(SortKey k)
 {
-  if (directories_first_) {
-    if (a.is_directory() != b.is_directory()) {
-      return a.is_directory() ? -1 : 1;
-    }
+  switch (k) {
+  case SortKey::Width:
+  case SortKey::Height:
+  case SortKey::Resolution:
+  case SortKey::AspectRatio:
+  case SortKey::Duration:
+  case SortKey::Framerate:
+    return true;
+  default:
+    return false;
   }
+}
 
-  auto by_name = [](const fs::FileInfo& x, const fs::FileInfo& y) {
-    return cmp_natural(numeric_sort_key(to_lower(x.basename())),
-                       numeric_sort_key(to_lower(y.basename())));
-  };
+SortKeys make_keys(const fs::FileInfo& fi, SortKey key)
+{
+  SortKeys k;
+  k.name = numeric_sort_key(to_lower(fi.basename()));
+  if (key == SortKey::Extension || key == SortKey::Type) {
+    k.ext = to_lower(fi.extension());
+  }
+  if (is_media_key(key)) {
+    k.media = media_of(fi);
+  }
+  return k;
+}
 
-  switch (key_) {
+template <typename T>
+int three_way(const T& a, const T& b)
+{
+  return a < b ? -1 : (b < a ? 1 : 0);
+}
+
+} // namespace
+
+namespace {
+
+int compare_keyed(SortKey key, bool directories_first, const fs::FileInfo& a,
+                  const fs::FileInfo& b, const SortKeys& ka, const SortKeys& kb)
+{
+  if (directories_first && a.is_directory() != b.is_directory()) {
+    return a.is_directory() ? -1 : 1;
+  }
+  const auto by_name = [&] { return cmp_natural(ka.name, kb.name); };
+  const auto then_name = [&](int c) { return c != 0 ? c : by_name(); };
+
+  switch (key) {
   case SortKey::Name:
-    return by_name(a, b);
-  case SortKey::Size: {
-    if (a.size() < b.size()) {
-      return -1;
-    }
-    if (a.size() > b.size()) {
-      return 1;
-    }
-    return by_name(a, b);
-  }
-  case SortKey::Extension: {
-    const auto ea = to_lower(a.extension());
-    const auto eb = to_lower(b.extension());
-    if (ea < eb) {
-      return -1;
-    }
-    if (ea > eb) {
-      return 1;
-    }
-    return by_name(a, b);
-  }
-  case SortKey::Modified: {
-    if (a.mtime() < b.mtime()) {
-      return -1;
-    }
-    if (a.mtime() > b.mtime()) {
-      return 1;
-    }
-    return by_name(a, b);
-  }
-  case SortKey::Type: {
-    // Same as extension for files; directories first already handled
-    const auto ea = to_lower(a.extension());
-    const auto eb = to_lower(b.extension());
-    if (ea < eb) {
-      return -1;
-    }
-    if (ea > eb) {
-      return 1;
-    }
-    return by_name(a, b);
-  }
-  case SortKey::Width: {
-    const auto ma = media_of(a);
-    const auto mb = media_of(b);
-    if (ma.w < mb.w) {
-      return -1;
-    }
-    if (ma.w > mb.w) {
-      return 1;
-    }
-    return by_name(a, b);
-  }
-  case SortKey::Height: {
-    const auto ma = media_of(a);
-    const auto mb = media_of(b);
-    if (ma.h < mb.h) {
-      return -1;
-    }
-    if (ma.h > mb.h) {
-      return 1;
-    }
-    return by_name(a, b);
-  }
-  case SortKey::Resolution: {
-    const auto ma = media_of(a);
-    const auto mb = media_of(b);
-    const auto ra = static_cast<std::uint64_t>(ma.w) * ma.h;
-    const auto rb = static_cast<std::uint64_t>(mb.w) * mb.h;
-    if (ra < rb) {
-      return -1;
-    }
-    if (ra > rb) {
-      return 1;
-    }
-    return by_name(a, b);
-  }
+    return by_name();
+  case SortKey::Size:
+    return then_name(three_way(a.size(), b.size()));
+  case SortKey::Extension:
+  case SortKey::Type:  // same ordering as Extension for now (REVIEW G4)
+    return then_name(three_way(ka.ext, kb.ext));
+  case SortKey::Modified:
+    return then_name(three_way(a.mtime(), b.mtime()));
+  case SortKey::Width:
+    return then_name(three_way(ka.media.w, kb.media.w));
+  case SortKey::Height:
+    return then_name(three_way(ka.media.h, kb.media.h));
+  case SortKey::Resolution:
+    return then_name(three_way(static_cast<std::uint64_t>(ka.media.w) * ka.media.h,
+                               static_cast<std::uint64_t>(kb.media.w) * kb.media.h));
   case SortKey::AspectRatio: {
-    const auto ma = media_of(a);
-    const auto mb = media_of(b);
-    const double aa = ma.h == 0 ? 0.0 : static_cast<double>(ma.w) / static_cast<double>(ma.h);
-    const double ab = mb.h == 0 ? 0.0 : static_cast<double>(mb.w) / static_cast<double>(mb.h);
-    if (aa < ab) {
-      return -1;
-    }
-    if (aa > ab) {
-      return 1;
-    }
-    return by_name(a, b);
+    const double aa = ka.media.h == 0 ? 0.0 : static_cast<double>(ka.media.w) / ka.media.h;
+    const double ab = kb.media.h == 0 ? 0.0 : static_cast<double>(kb.media.w) / kb.media.h;
+    return then_name(three_way(aa, ab));
   }
-  case SortKey::Duration: {
-    const auto ma = media_of(a);
-    const auto mb = media_of(b);
-    if (ma.duration_ms < mb.duration_ms) {
-      return -1;
-    }
-    if (ma.duration_ms > mb.duration_ms) {
-      return 1;
-    }
-    return by_name(a, b);
-  }
-  case SortKey::Framerate: {
-    const auto ma = media_of(a);
-    const auto mb = media_of(b);
-    if (ma.fps < mb.fps) {
-      return -1;
-    }
-    if (ma.fps > mb.fps) {
-      return 1;
-    }
-    return by_name(a, b);
-  }
+  case SortKey::Duration:
+    return then_name(three_way(ka.media.duration_ms, kb.media.duration_ms));
+  case SortKey::Framerate:
+    return then_name(three_way(ka.media.fps, kb.media.fps));
   case SortKey::Permissions: {
     using Per = std::filesystem::perms;
-    const auto pa = static_cast<unsigned>(a.permissions() & Per::mask);
-    const auto pb = static_cast<unsigned>(b.permissions() & Per::mask);
-    if (pa < pb) {
-      return -1;
-    }
-    if (pa > pb) {
-      return 1;
-    }
-    return by_name(a, b);
+    return then_name(three_way(static_cast<unsigned>(a.permissions() & Per::mask),
+                               static_cast<unsigned>(b.permissions() & Per::mask)));
   }
   case SortKey::Random:
     return 0; // handled in sort()
   }
-  return by_name(a, b);
+  return by_name();
+}
+
+} // namespace
+
+int Sorter::compare(const fs::FileInfo& a, const fs::FileInfo& b) const
+{
+  return compare_keyed(key_, directories_first_, a, b, make_keys(a, key_), make_keys(b, key_));
 }
 
 void Sorter::sort(std::vector<fs::FileInfo>& items) const
@@ -272,17 +246,35 @@ void Sorter::sort(std::vector<fs::FileInfo>& items) const
     return;
   }
 
-  std::stable_sort(items.begin(), items.end(), [this](const fs::FileInfo& a, const fs::FileInfo& b) {
-    const int c = compare(a, b);
+  // Decorate–sort–undecorate: derive the expensive keys once per item, sort
+  // an index permutation, then move the items into place.
+  const std::size_t n = items.size();
+  std::vector<SortKeys> keys;
+  keys.reserve(n);
+  for (const auto& fi : items) {
+    keys.push_back(make_keys(fi, key_));
+  }
+  std::vector<std::size_t> order(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    order[i] = i;
+  }
+  std::stable_sort(order.begin(), order.end(), [&](std::size_t x, std::size_t y) {
+    const int c = compare_keyed(key_, directories_first_, items[x], items[y], keys[x], keys[y]);
     if (ascending_) {
       return c < 0;
     }
     // Reverse payload but keep directories first if enabled
-    if (directories_first_ && a.is_directory() != b.is_directory()) {
-      return a.is_directory();
+    if (directories_first_ && items[x].is_directory() != items[y].is_directory()) {
+      return items[x].is_directory();
     }
     return c > 0;
   });
+  std::vector<fs::FileInfo> sorted;
+  sorted.reserve(n);
+  for (const std::size_t i : order) {
+    sorted.push_back(std::move(items[i]));
+  }
+  items = std::move(sorted);
 }
 
 } // namespace dirtoo::collection
