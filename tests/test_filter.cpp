@@ -581,3 +581,12 @@ TEST_CASE("search_directory counts an unreadable root as an error", "[filter][se
   std::filesystem::permissions(dir / "locked", std::filesystem::perms::owner_all);
   std::filesystem::remove_all(dir);
 }
+
+TEST_CASE("filter error hints at quoting when an argument starts with a parenthesis",
+          "[filter]")
+{
+  auto r = parse_filter("cre:(a|b)*c");
+  REQUIRE_FALSE(r);
+  CHECK(r.error().message.find("quote") != std::string::npos);
+  REQUIRE(parse_filter("cre:\"(a|b)*c\""));
+}

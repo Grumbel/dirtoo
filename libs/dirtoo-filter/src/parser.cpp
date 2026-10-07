@@ -313,8 +313,12 @@ private:
         return std::unexpected(ParseError{"unknown command '" + head + "'", pos_});
       }
       if (std::dynamic_pointer_cast<InvalidMatch>(match) != nullptr) {
-        return std::unexpected(
-            ParseError{"invalid argument for '" + head + "': '" + arg + "'", pos_});
+        std::string msg = "invalid argument for '" + head + "': '" + arg + "'";
+        if (arg.empty() && peek() == '(') {
+          // An unquoted argument ends at '(' so grouping works.
+          msg += " (quote arguments that contain parentheses: " + head + ":\"…\")";
+        }
+        return std::unexpected(ParseError{std::move(msg), pos_});
       }
       return match;
     }
