@@ -1,6 +1,18 @@
 # SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+# Pieces shared with the unit tests, compiled once.
+add_library(dirtoo-app-core STATIC
+  clipboard.cpp
+  clipboard.hpp
+  directory_load_worker.cpp
+  directory_load_worker.hpp
+)
+target_include_directories(dirtoo-app-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(dirtoo-app-core
+  PUBLIC dirtoo::fs dirtoo::dirops Qt6::Core Qt6::Gui Qt6::Concurrent
+  PRIVATE dirtoo_warnings)
+
 qt_add_executable(dirtoo-app
   main.cpp
   async_io.cpp
@@ -55,7 +67,6 @@ qt_add_executable(dirtoo-app
   graphics_file_view.hpp
   graphics_file_item.cpp
   graphics_file_item.hpp
-  clipboard.cpp
   clipboard.hpp
   conflict_dialog.cpp
   conflict_dialog.hpp
@@ -140,7 +151,6 @@ qt_add_executable(dirtoo-app
   activity_indicator.cpp
   view_zoom.cpp
   path_completion_worker.hpp
-  directory_load_worker.cpp
   fs_tree_scan_worker.cpp
   treemap_view.cpp
   directory_load_worker.hpp
@@ -162,15 +172,20 @@ set_target_properties(dirtoo-app PROPERTIES OUTPUT_NAME dirtoo)
 
 # Plain filesystem icons (no Qt resource embedding).
 # Build tree: resources/icons; install: share/dirtoo/icons.
-target_compile_definitions(dirtoo-app PRIVATE
-  "DIRTOO_ICON_DIR=\"${CMAKE_SOURCE_DIR}/resources/icons\""
-)
+# Only for in-tree dev builds: a packaged build must not embed the (store)
+# source path; it finds the icons via <prefix>/share/dirtoo/icons.
+if(DIRTOO_IN_TREE_LIBS)
+  target_compile_definitions(dirtoo-app PRIVATE
+    "DIRTOO_ICON_DIR=\"${CMAKE_SOURCE_DIR}/resources/icons\""
+  )
+endif()
 
 find_package(SQLite3 REQUIRED)
 
 target_link_libraries(dirtoo-app
   PRIVATE
     dirtoo_warnings
+    dirtoo-app-core
     dirtoo::fs
     dirtoo::tree
     dirtoo::collection
