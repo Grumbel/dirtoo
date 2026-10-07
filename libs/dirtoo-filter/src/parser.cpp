@@ -42,6 +42,17 @@ public:
 private:
   std::string_view in_;
   std::size_t pos_ = 0;
+  int depth_ = 0;
+
+  /// Recursion guard: "((((…" or "-----…" must not overflow the stack.
+  static constexpr int kMaxDepth = 128;
+  struct DepthGuard {
+    explicit DepthGuard(int& d) : d_(d) { ++d_; }
+    ~DepthGuard() { --d_; }
+    DepthGuard(const DepthGuard&) = delete;
+    DepthGuard& operator=(const DepthGuard&) = delete;
+    int& d_;
+  };
 
   [[nodiscard]] bool eof() const { return pos_ >= in_.size(); }
   [[nodiscard]] char peek() const { return eof() ? '\0' : in_[pos_]; }
@@ -149,6 +160,10 @@ private:
 
   std::expected<MatchFuncPtr, ParseError> parse_unary()
   {
+    const DepthGuard guard(depth_);
+    if (depth_ > kMaxDepth) {
+      return std::unexpected(ParseError{"expression nested too deeply", pos_});
+    }
     skip_ws();
     if (peek() == '-' || peek() == '^') {
       get();
@@ -172,6 +187,10 @@ private:
   {
     skip_ws();
     if (peek() == '(') {
+      const DepthGuard guard(depth_);
+      if (depth_ > kMaxDepth) {
+        return std::unexpected(ParseError{"expression nested too deeply", pos_});
+      }
       get();
       auto inner = parse_or();
       if (!inner) {
@@ -289,7 +308,15 @@ private:
       if (head.empty()) {
         return std::unexpected(ParseError{"empty command name", pos_});
       }
-      return command_to_match(head, arg);
+      auto match = command_to_match(head, arg);
+      if (match == nullptr) {
+        return std::unexpected(ParseError{"unknown command '" + head + "'", pos_});
+      }
+      if (std::dynamic_pointer_cast<InvalidMatch>(match) != nullptr) {
+        return std::unexpected(
+            ParseError{"invalid argument for '" + head + "': '" + arg + "'", pos_});
+      }
+      return match;
     }
 
     if (head.empty()) {
@@ -409,8 +436,7 @@ private:
     if (c == "weekday" || c == "wday") {
       return make_weekday(arg);
     }
-    // Unknown command → never match (visible failure)
-    return std::make_shared<AlwaysFalse>();
+    return nullptr; // unknown command
   }
 };
 

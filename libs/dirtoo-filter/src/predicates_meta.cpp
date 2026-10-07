@@ -240,7 +240,7 @@ MatchFuncPtr make_length(std::string argument)
       const auto hi = static_cast<std::size_t>(std::stoull(std::string{rng->second}));
       return std::make_shared<LengthMatch>(lo, hi);
     } catch (...) {
-      return std::make_shared<AlwaysFalse>();
+      return std::make_shared<InvalidMatch>();
     }
   }
   const auto [op, rest] = split_len_cmp(argument);
@@ -249,13 +249,13 @@ MatchFuncPtr make_length(std::string argument)
     trimmed.remove_prefix(1);
   }
   if (trimmed.empty()) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   try {
     const auto value = static_cast<std::size_t>(std::stoull(std::string{trimmed}));
     return std::make_shared<LengthMatch>(op, value);
   } catch (...) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
 }
 
@@ -268,7 +268,7 @@ MatchFuncPtr make_date(std::string argument)
     argument.pop_back();
   }
   if (argument.empty()) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   if (lower_copy(argument) == "today") {
     std::time_t now = std::time(nullptr);
@@ -286,7 +286,7 @@ MatchFuncPtr make_date(std::string argument)
   const auto [op, rest] = split_len_cmp(argument);
   const auto key = parse_date_key(rest);
   if (!key) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   return std::make_shared<DateOpMatch>(op, *key);
 }
@@ -448,7 +448,7 @@ MatchFuncPtr make_time(std::string argument)
   const auto [op, rest] = split_len_cmp(argument);
   const auto tod = parse_time_of_day(rest);
   if (!tod) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   return std::make_shared<TimeOpMatch>(op, *tod);
 }
@@ -458,7 +458,7 @@ MatchFuncPtr make_weekday(std::string argument)
   const auto [op, rest] = split_len_cmp(argument);
   const auto wd = parse_weekday(rest);
   if (!wd) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   return std::make_shared<WeekdayMatch>(op, *wd);
 }

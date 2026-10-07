@@ -236,7 +236,7 @@ MatchFuncPtr make_set(std::string_view arg)
     query.pop_back();
   }
   if (query.empty()) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   return std::make_shared<SetNameMatch>(std::move(query));
 }
@@ -250,7 +250,7 @@ MatchFuncPtr make_in_set(std::string_view arg)
   if (a == "no" || a == "false" || a == "0" || a == "none") {
     return std::make_shared<InSetMatch>(false);
   }
-  return std::make_shared<AlwaysFalse>();
+  return std::make_shared<InvalidMatch>();
 }
 
 } // namespace dirtoo::filter

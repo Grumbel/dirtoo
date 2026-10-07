@@ -143,7 +143,7 @@ MatchFuncPtr make_fuzzy(std::string argument, bool case_sensitive)
   }
 
   if (needle.empty()) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   if (n < 1) {
     n = 1;

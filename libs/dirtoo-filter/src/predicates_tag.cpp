@@ -159,13 +159,13 @@ MatchFuncPtr make_tag(std::string_view tag_name)
   std::string norm = dirtoo::tags::normalize_tag_name(raw);
   if (norm.empty() && !raw.empty()) {
     // normalize rejected the name
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   if (glob) {
     norm.push_back('*');
   }
   if (norm.empty()) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   return std::make_shared<TagNameMatch>(std::move(norm));
 }
@@ -185,7 +185,7 @@ MatchFuncPtr make_tagged(std::string_view arg)
   if (a.empty()) {
     return std::make_shared<TaggedMatch>(true);
   }
-  return std::make_shared<AlwaysFalse>();
+  return std::make_shared<InvalidMatch>();
 }
 
 MatchFuncPtr make_checksummed(std::string_view arg)
@@ -203,7 +203,7 @@ MatchFuncPtr make_checksummed(std::string_view arg)
   if (a == "quick" || a == "sample") {
     return std::make_shared<ChecksummedMatch>(true, ChecksummedMatch::Kind::Quick);
   }
-  return std::make_shared<AlwaysFalse>();
+  return std::make_shared<InvalidMatch>();
 }
 
 

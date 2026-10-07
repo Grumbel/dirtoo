@@ -119,7 +119,7 @@ MatchFuncPtr make_random(std::string argument)
     const double p = std::stod(argument);
     return std::make_shared<RandomMatch>(p);
   } catch (...) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
 }
 
@@ -129,7 +129,7 @@ MatchFuncPtr make_charset(std::string argument)
     argument.erase(argument.begin());
   }
   if (argument.empty()) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   return std::make_shared<CharsetMatch>(std::move(argument));
 }
@@ -406,7 +406,7 @@ MatchFuncPtr make_pages(std::string argument)
       const double hi = std::stod(std::string{rng->second});
       return std::make_shared<PagesMatch>(lo, hi);
     } catch (...) {
-      return std::make_shared<AlwaysFalse>();
+      return std::make_shared<InvalidMatch>();
     }
   }
   const auto [op, rest] = split_len_cmp(argument);
@@ -415,13 +415,13 @@ MatchFuncPtr make_pages(std::string argument)
     trimmed.remove_prefix(1);
   }
   if (trimmed.empty()) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   try {
     const double v = std::stod(std::string{trimmed});
     return std::make_shared<PagesMatch>(op, v);
   } catch (...) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
 }
 
@@ -433,7 +433,7 @@ MatchFuncPtr make_filecount(std::string argument)
       const double hi = std::stod(std::string{rng->second});
       return std::make_shared<FileCountMatch>(lo, hi);
     } catch (...) {
-      return std::make_shared<AlwaysFalse>();
+      return std::make_shared<InvalidMatch>();
     }
   }
   const auto [op, rest] = split_len_cmp(argument);
@@ -442,13 +442,13 @@ MatchFuncPtr make_filecount(std::string argument)
     trimmed.remove_prefix(1);
   }
   if (trimmed.empty()) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   try {
     const double v = std::stod(std::string{trimmed});
     return std::make_shared<FileCountMatch>(op, v);
   } catch (...) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
 }
 

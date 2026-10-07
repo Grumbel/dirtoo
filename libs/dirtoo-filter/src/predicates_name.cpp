@@ -248,7 +248,7 @@ MatchFuncPtr make_regex(std::string pattern, bool case_sensitive)
                        : (std::regex::ECMAScript | std::regex::icase);
     return std::make_shared<RegexMatch>(std::regex(pattern, flags));
   } catch (const std::regex_error&) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
 }
 
@@ -276,7 +276,7 @@ MatchFuncPtr make_type(std::string argument)
   if (a == "audio" || a == "audios" || a == "sound") {
     return make_regex(R"(\.(mp3|flac|ogg|opus|wav|m4a|aac|wma)$)", false);
   }
-  return std::make_shared<AlwaysFalse>();
+  return std::make_shared<InvalidMatch>();
 }
 
 MatchFuncPtr make_size(std::string argument)
@@ -290,7 +290,7 @@ MatchFuncPtr make_size(std::string argument)
     arg.pop_back();
   }
   if (arg.empty()) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
 
   // Range: 10K-2M or 10K..2M (inclusive)
@@ -302,7 +302,7 @@ MatchFuncPtr make_size(std::string argument)
       const auto b = std::max(*lo, *hi);
       return std::make_shared<SizeMatch>(SizeMatch::Op::Range, a, b);
     }
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
 
   SizeMatch::Op op = SizeMatch::Op::Eq;
@@ -332,7 +332,7 @@ MatchFuncPtr make_size(std::string argument)
   }
   const auto val = parse_size_token(rest);
   if (!val) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   return std::make_shared<SizeMatch>(op, *val);
 }

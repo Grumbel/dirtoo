@@ -28,6 +28,12 @@ public:
   bool matches(const FilterItem&) const override { return false; }
 };
 
+/// Returned by predicate factories for a malformed argument (bad regex,
+/// unparsable number, unknown value, ...). It never matches; parse_filter()
+/// turns it into a ParseError so typos are reported instead of silently
+/// matching nothing (or, under negation, everything).
+class InvalidMatch : public AlwaysFalse {};
+
 class AndMatch : public MatchFunc {
 public:
   explicit AndMatch(std::vector<MatchFuncPtr> parts)

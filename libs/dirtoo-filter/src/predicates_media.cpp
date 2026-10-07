@@ -301,12 +301,12 @@ MatchFuncPtr make_width(std::string argument)
     if (lo && hi) {
       return std::make_shared<NumericRangeMatch>(NumericRangeMatch::Kind::Width, *lo, *hi);
     }
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   const auto [op, rest] = split_cmp(argument);
   const auto val = parse_number_arg(rest);
   if (!val) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   return std::make_shared<WidthMatch>(op, *val);
 }
@@ -319,12 +319,12 @@ MatchFuncPtr make_height(std::string argument)
     if (lo && hi) {
       return std::make_shared<NumericRangeMatch>(NumericRangeMatch::Kind::Height, *lo, *hi);
     }
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   const auto [op, rest] = split_cmp(argument);
   const auto val = parse_number_arg(rest);
   if (!val) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   return std::make_shared<HeightMatch>(op, *val);
 }
@@ -361,7 +361,7 @@ MatchFuncPtr make_aspect(std::string argument)
   const auto [op, rest] = split_cmp(argument);
   const auto val = parse_aspect_value(rest);
   if (!val) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   return std::make_shared<AspectMatch>(op, *val);
 }
@@ -428,12 +428,12 @@ MatchFuncPtr make_duration(std::string argument)
     if (lo && hi) {
       return std::make_shared<DurationMatch>(*lo, *hi);
     }
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   const auto [op, rest] = split_cmp(argument);
   const auto secs = parse_duration_seconds(rest);
   if (!secs) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   return std::make_shared<DurationMatch>(op, *secs);
 }
@@ -446,12 +446,12 @@ MatchFuncPtr make_framerate(std::string argument)
     if (lo && hi) {
       return std::make_shared<NumericRangeMatch>(NumericRangeMatch::Kind::Framerate, *lo, *hi);
     }
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   const auto [op, rest] = split_cmp(argument);
   const auto val = parse_number_arg(rest);
   if (!val) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   return std::make_shared<FramerateMatch>(op, *val);
 }

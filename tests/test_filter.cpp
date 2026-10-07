@@ -433,9 +433,33 @@ TEST_CASE("filter tag namespace and glob parse", "[filter][tag]")
   REQUIRE(local);
   auto glob = parse_filter("tag:location-*");
   REQUIRE(glob);
-  // Invalid characters still rejected → AlwaysFalse but parse still returns a matcher
+  // Invalid characters are a parse error, not a silently empty match.
   auto bad = parse_filter("tag:!!!");
-  REQUIRE(bad);
+  REQUIRE_FALSE(bad);
+}
+
+TEST_CASE("filter reports bad arguments and unknown commands", "[filter]")
+{
+  for (const char* expr : {"size:abc", "size:", "re:[", "width:wide", "type:bogus",
+                           "frobnicate:1", "tagged:maybe", "random:x", "pages:", "cre:(",
+                           "-size:abc"}) {
+    INFO(expr);
+    auto r = parse_filter(expr);
+    REQUIRE_FALSE(r);
+    REQUIRE_FALSE(r.error().message.empty());
+  }
+  // Valid forms still parse.
+  for (const char* expr : {"size:>1M", "re:^a", "type:video", "width:>=1920", "random:0.5"}) {
+    INFO(expr);
+    REQUIRE(parse_filter(expr));
+  }
+}
+
+TEST_CASE("filter rejects absurd nesting without overflowing the stack", "[filter]")
+{
+  REQUIRE_FALSE(parse_filter(std::string(100000, '(') + "a" + std::string(100000, ')')));
+  REQUIRE_FALSE(parse_filter(std::string(100000, '-') + "a"));
+  REQUIRE(parse_filter("((((a))))"));
 }
 
 TEST_CASE("normalize_tag_name keeps hyphen and colon namespace", "[tags]")
@@ -492,3 +516,40 @@ TEST_CASE("checksummed:yes|no parses", "[filter]")
   REQUIRE_NOTHROW(dirtoo::filter::parse_filter("hashed:yes"));
 }
 
+
+TEST_CASE("containsre handles large single-line files without overflowing the stack",
+          "[filter][content]")
+{
+  const auto dir = std::filesystem::temp_directory_path() / "dirtoo-test-containsre-big";
+  std::filesystem::remove_all(dir);
+  std::filesystem::create_directories(dir);
+  const auto big = dir / "big.txt";
+  {
+    std::ofstream out(big, std::ios::binary);
+    out << std::string(200 * 1024, 'a');
+  }
+  FilterItem item{.name = "big.txt", .size = 0, .is_directory = false, .path = big, .mtime_sec = 0};
+
+  // "^a*" matches immediately but recurses once per character: over a whole
+  // 64 KiB chunk that used to overflow the stack.
+  auto m = parse_filter("Cre:\"^a*\"");
+  REQUIRE(m);
+  REQUIRE((*m)->matches(item));
+
+  // ^ must anchor to the real start of the text, not to every search window.
+  m = parse_filter("Cre:\"^b\"");
+  REQUIRE(m);
+  REQUIRE_FALSE((*m)->matches(item));
+
+  // A match straddling a window boundary (4096) is still found.
+  {
+    std::string body(20000, 'a');
+    body.replace(4093, 6, "NEEDLE");
+    std::ofstream out(big, std::ios::binary | std::ios::trunc);
+    out << body;
+  }
+  m = parse_filter("Cre:NEEDLE");
+  REQUIRE(m);
+  REQUIRE((*m)->matches(item));
+  std::filesystem::remove_all(dir);
+}
