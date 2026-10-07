@@ -73,6 +73,11 @@ void MainWindow::schedule_directory_thumbnails_low_priority()
       if (!fi.is_directory() || fi.path().empty()) {
         continue;
       }
+      // A folder inside an archive has no filesystem path (fi.path() is the
+      // archive URL), so a montage can never be built for it.
+      if (fi.location().is_archive()) {
+        continue;
+      }
       const QString path = QString::fromStdString(fi.path().string());
       const QString cache =
           thumbnail::Thumbnailer::cache_path_for(fi.location(), QStringLiteral("large"));

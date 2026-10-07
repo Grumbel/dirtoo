@@ -186,6 +186,9 @@ void ThumbnailCoordinator::request_rows(const std::vector<fs::FileInfo>& visible
     }
     const auto& fi = visible[static_cast<std::size_t>(r)];
     if (fi.is_directory()) {
+      if (fi.location().is_archive()) {
+        continue;  // no filesystem path to build a montage from (see main_window_thumbs.cpp)
+      }
       // Use an existing XDG/cache montage if still fresh; auto-generate is
       // deferred by the receiver of directory_montages_needed(). Freshness
       // compares against the directory's mtime → stat → I/O pool.
@@ -362,6 +365,9 @@ int ThumbnailCoordinator::force_regenerate(const std::vector<fs::FileInfo>& targ
     const QString path = QString::fromStdString(fi.path().string());
 
     if (fi.is_directory()) {
+      if (fi.location().is_archive()) {
+        continue;  // folders inside archives have no filesystem path
+      }
       (void)thumbnail::Thumbnailer::remove_cache_for(fi.location());
       // Synthetic search hits still have real paths; allow montage rebuild.
       if (!path.isEmpty()) {

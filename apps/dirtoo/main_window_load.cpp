@@ -161,8 +161,10 @@ void MainWindow::reload_directory(bool soft)
     }
     collection_.clear();
     refresh_list();
-    // Let the empty list + status/busy paint before a slow volume stalls later work.
-    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+    // No nested event loop here (a processEvents() "so the empty list paints"
+    // would let timers, watcher ticks and other navigations re-enter this
+    // function half way through). Everything below only posts queued calls to
+    // the worker, so the GUI repaints as soon as we return.
   }
 
   if (list_workers_.dir_load() == nullptr) {
