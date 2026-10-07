@@ -86,7 +86,7 @@ Conventions:
 |----|-----|----------|-------|
 | F1 | M | read | Catastrophic-backtracking patterns (`(a+)+b`) still hang a worker thread for minutes; `std::regex` has no match limit/timeout. The proper fix is a different engine (RE2, or PCRE2 with match limits) as a new flake dependency, or running content matching with a deadline. |
 | F2 | L | read | Content-regex windows (4 KiB, 1 KiB overlap): a match longer than the overlap that straddles a window boundary can be missed. Documented in the commit, not in the user help. |
-| F3 | L | repro | Unquoted `(` ends a command argument (`cre:(a|b)*c` → "invalid argument for 'cre': ''"). The error should hint at quoting (`cre:"(a|b)*c"`). **Fixed in `6a44153d`.** |
+| F3 | L | repro | Unquoted `(` ends a command argument (`cre:(a|b)*c` → "invalid argument for 'cre': ''"). The error should hint at quoting (`cre:"(a|b)*c"`). **Fixed in `a5ad6ccf`.** |
 | F4 | L | read | `filter_help_text()` / `filter_help_html()` do not mention quoting rules or that bad arguments are now errors. |
 | F5 | M | read | Content predicates (`contains*`) re-read up to 1 MiB of every file on every filter change; there is no per-file result cache keyed by (path, mtime, size, expression). Typing in the filter box on a big directory re-reads everything. |
 | F6 | L | read | `lookup_media()` in `predicates_detail.hpp` falls back to `resolve_media_cached` synchronously ("CLI / non-GUI"). Make sure no GUI call path reaches it (the `AGENTS.md` GUI-I/O rule). |
@@ -138,7 +138,7 @@ Conventions:
 
 | ID | Sev | Verified | Issue |
 |----|-----|----------|-------|
-| K1 | M | read | `Thumbnailer::on_ready/on_error/on_finished` ignore the request `handle` (`(void)handle`) and connect to the service's signals bus-wide, so thumbnails requested by *other applications* are delivered as ours. `ThumbnailCoordinator::in_flight_` is decremented for them (busy indicator ends early) and the model is updated for locations nobody asked for. Filter on `pending_` handles. **Fixed in `6a44153d`.** |
+| K1 | M | read | `Thumbnailer::on_ready/on_error/on_finished` ignore the request `handle` (`(void)handle`) and connect to the service's signals bus-wide, so thumbnails requested by *other applications* are delivered as ours. `ThumbnailCoordinator::in_flight_` is decremented for them (busy indicator ends early) and the model is updated for locations nobody asked for. Filter on `pending_` handles. **Fixed in `3fd41840`.** |
 | K2 | L | read | The freedesktop `thumbnails/fail/` cache is only deleted on force-regenerate, never consulted: files that always fail are retried every session, plus the MIME-retry/octet-stream fallbacks in the coordinator. |
 | K3 | L | read | `cache_matches_source` reads up to 2 MiB of the cached PNG **twice** (`Thumb::MTime`, then `Thumb::Size`) per check, for every visible item. Read the text chunks once (or use `QImageReader::text`). |
 | K4 | L | read | `from_url` failures are swallowed with `catch (...)` (`on_ready`, `on_error`); a malformed URI from the service disappears without a log line. |
