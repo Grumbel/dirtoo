@@ -29,8 +29,10 @@ target_link_libraries(dirtoo-app-core
   PUBLIC dirtoo::fs dirtoo::archive dirtoo::collection dirtoo::dirops Qt6::Core Qt6::Gui Qt6::Concurrent
   PRIVATE dirtoo_warnings)
 
-qt_add_executable(dirtoo-app
-  main.cpp
+# The GUI proper, as a library so that headless tests can instantiate the real
+# model and views (QT_QPA_PLATFORM=offscreen). main.cpp is the only source of
+# the executable.
+qt_add_library(dirtoo-app-gui STATIC
   async_io.cpp
   async_io.hpp
   file_icons.cpp
@@ -174,6 +176,7 @@ qt_add_executable(dirtoo-app
   icon_tile_paint.hpp
 )
 
+qt_add_executable(dirtoo-app main.cpp)
 set_target_properties(dirtoo-app PROPERTIES OUTPUT_NAME dirtoo)
 
 # Plain filesystem icons (no Qt resource embedding).
@@ -181,16 +184,15 @@ set_target_properties(dirtoo-app PROPERTIES OUTPUT_NAME dirtoo)
 # Only for in-tree dev builds: a packaged build must not embed the (store)
 # source path; it finds the icons via <prefix>/share/dirtoo/icons.
 if(DIRTOO_IN_TREE_LIBS)
-  target_compile_definitions(dirtoo-app PRIVATE
+  target_compile_definitions(dirtoo-app-gui PUBLIC
     "DIRTOO_ICON_DIR=\"${CMAKE_SOURCE_DIR}/resources/icons\""
   )
 endif()
 
 find_package(SQLite3 REQUIRED)
 
-target_link_libraries(dirtoo-app
-  PRIVATE
-    dirtoo_warnings
+target_link_libraries(dirtoo-app-gui
+  PUBLIC
     dirtoo-app-core
     dirtoo::fs
     dirtoo::tree
@@ -209,7 +211,12 @@ target_link_libraries(dirtoo-app
     Qt6::DBus
     Qt6::Svg
     SQLite3::SQLite3
+  PRIVATE
+    dirtoo_warnings
 )
+target_include_directories(dirtoo-app-gui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+target_link_libraries(dirtoo-app PRIVATE dirtoo-app-gui dirtoo_warnings)
 
 install(TARGETS dirtoo-app RUNTIME DESTINATION bin)
 

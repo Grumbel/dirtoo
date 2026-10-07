@@ -225,9 +225,14 @@ every `libs/*` via `add_subdirectory`):
   writes, path completion, archive listing, sort worker, `stop_thread`)
   lives in the static library **`dirtoo-app-core`** (`apps/dirtoo/CMakeLists.txt`);
   put new testable, GUI-independent app code there rather than compiling
-  app sources into the tests. A file in `dirtoo-app-core` must **not** also
-  be listed in the `dirtoo-app` target (AUTOMOC would generate the same moc
-  code twice).
+  app sources into the tests. The whole GUI except `main.cpp` is the static
+  library **`dirtoo-app-gui`** (the `dirtoo` executable is `main.cpp` plus that
+  library), so headless tests (`QT_QPA_PLATFORM=offscreen`, set by
+  `catch_discover_tests`) can instantiate the real `FileListModel` /
+  `GraphicsFileView` - see `tests/test_gui_scaling.cpp`, which compares a
+  small and a 100x larger directory so an O(n)-per-event regression fails
+  on any machine. A source file must be listed in exactly one of the two
+  libraries (AUTOMOC would generate the same moc code twice).
 - `.github/workflows/ci.yml` runs `nix flake check` plus an ASan + UBSan
   build of the whole tree. To reproduce the sanitizer job locally:
   `DIRTOO_BUILD_DIR=~/.cache/dirtoo/build-asan dirtoo-configure

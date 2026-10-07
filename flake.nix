@@ -243,6 +243,10 @@
           meta.description = "Run dirtoo-tests from the built package";
         } ''
           set -eu
+          # The GUI tests (file views, models) run headless.
+          export QT_QPA_PLATFORM=offscreen
+          export HOME="$TMPDIR"
+          export XDG_RUNTIME_DIR="$TMPDIR"
           echo "dirtoo-tests-check: running ${dirtoo}/libexec/dirtoo/dirtoo-tests"
           ${dirtoo}/libexec/dirtoo/dirtoo-tests --reporter console
           touch "$out"

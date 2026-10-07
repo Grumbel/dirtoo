@@ -23,6 +23,7 @@ add_executable(dirtoo-tests
   test_archive_listing.cpp
   test_sort_worker.cpp
   test_transfer_worker.cpp
+  test_gui_scaling.cpp
   test_filter.cpp
   test_hash.cpp
   test_tag_store.cpp
@@ -33,7 +34,9 @@ add_executable(dirtoo-tests
 
 target_link_libraries(dirtoo-tests
   PRIVATE
+    dirtoo-app-gui
     dirtoo-app-core
+    Qt6::Widgets
     dirtoo-fs::dirtoo-fs
     dirtoo-tree::dirtoo-tree
     dirops::dirops
@@ -64,7 +67,8 @@ endforeach()
 
 include(CTest)
 include(Catch)
-catch_discover_tests(dirtoo-tests)
+# GUI tests (test_gui_scaling.cpp) need a platform plugin that works without a display.
+catch_discover_tests(dirtoo-tests PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
 # Installed so `nix flake check` can run tests against the built package
 # without rebuilding (dirtoo package installs the binary; checks run it).

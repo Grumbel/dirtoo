@@ -317,7 +317,18 @@ void GraphicsFileView::drawForeground(QPainter* painter, const QRectF& rect)
   const int vp_w = viewport()->width();
   const QPointF top_left = mapToScene(0, 0);
   const qreal left = top_left.x();
-  for (int i = 0; i < static_cast<int>(slot_pos_.size()); ++i) {
+  // Slot y is non-decreasing and a header sits just above its group's first
+  // slot: only slots with rect.top() <= y <= rect.bottom() + band_h can have a
+  // header that intersects `rect`. Binary-search the start instead of testing
+  // every slot of the directory on every paint.
+  const auto first_slot = std::partition_point(
+      slot_pos_.begin(), slot_pos_.end(),
+      [&](const QPointF& p) { return p.y() < rect.top(); });
+  const int first = static_cast<int>(first_slot - slot_pos_.begin());
+  for (int i = first; i < static_cast<int>(slot_pos_.size()); ++i) {
+    if (slot_pos_[static_cast<std::size_t>(i)].y() > rect.bottom() + band_h) {
+      break;
+    }
     const QModelIndex idx = model_->index(i, 0);
     if (!idx.data(IsGroupStartRole).toBool()) {
       continue;
@@ -561,7 +572,11 @@ void GraphicsFileView::on_scene_selection_changed()
   // Merge live item selection with rows that remain selected off-window.
   QSet<int> live_selected;
   QSet<int> live_rows;
-  for (auto* item : items_) {
+  // Tiles exist only inside the live window: do not walk the whole directory.
+  const int live_lo = std::max(0, live_first_);
+  const int live_hi = std::min(static_cast<int>(items_.size()), live_last_);
+  for (int r = live_lo; r < live_hi; ++r) {
+    auto* item = items_[static_cast<std::size_t>(r)];
     if (item == nullptr || item->scene() == nullptr) {
       continue;
     }

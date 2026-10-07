@@ -176,6 +176,13 @@ private slots:
   void on_child_count_ready(const QString& path, qint64 count);
 
 private:
+  /// Row of the visible entry whose path is @p path, or -1. O(1) after an
+  /// O(n) index build per layout change (thumbnail results arrive one by one;
+  /// a linear scan with a QString per row made every one of them O(n)).
+  [[nodiscard]] int row_for_path(const QString& path) const;
+
+  mutable QHash<QString, int> row_by_path_;
+  mutable int row_index_size_ = -1; ///< visible size the index was built for; -1 = invalid
   [[nodiscard]] QIcon icon_for(const fs::FileInfo& fi) const;
   void emit_path_changed(const QString& path);
 

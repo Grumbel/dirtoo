@@ -83,6 +83,48 @@ QString type_label(const fs::FileInfo& fi)
 FileListModel::FileListModel(QObject* parent)
     : QAbstractTableModel(parent)
 {
+  // Any change of the row set or order invalidates the path -> row index. The
+  // lookup also verifies what it finds, so a change that slips past these
+  // signals cannot produce a wrong row, only a rebuild.
+  const auto invalidate = [this] { row_index_size_ = -1; };
+  connect(this, &QAbstractItemModel::modelReset, this, invalidate);
+  connect(this, &QAbstractItemModel::layoutChanged, this, invalidate);
+  connect(this, &QAbstractItemModel::rowsInserted, this, invalidate);
+  connect(this, &QAbstractItemModel::rowsRemoved, this, invalidate);
+  connect(this, &QAbstractItemModel::rowsMoved, this, invalidate);
+}
+
+int FileListModel::row_for_path(const QString& path) const
+{
+  if (collection_ == nullptr) {
+    return -1;
+  }
+  const auto& visible = collection_->visible_items();
+  const int n = static_cast<int>(visible.size());
+  auto matches = [&](int row) {
+    return row >= 0 && row < n
+           && QString::fromStdString(visible[static_cast<std::size_t>(row)].path().string()) == path;
+  };
+  auto build = [&] {
+    row_by_path_.clear();
+    row_by_path_.reserve(n);
+    // Reverse, so that with duplicate paths (search results) the first row wins.
+    for (int row = n - 1; row >= 0; --row) {
+      row_by_path_.insert(QString::fromStdString(visible[static_cast<std::size_t>(row)].path().string()),
+                          row);
+    }
+    row_index_size_ = n;
+  };
+
+  if (row_index_size_ != n) {
+    build();
+  }
+  auto it = row_by_path_.constFind(path);
+  if (it != row_by_path_.constEnd() && !matches(*it)) {
+    build();  // the order changed without us hearing about it
+    it = row_by_path_.constFind(path);
+  }
+  return it != row_by_path_.constEnd() ? *it : -1;
 }
 
 void FileListModel::set_collection(collection::FileCollection* collection)
@@ -123,19 +165,16 @@ void FileListModel::emit_path_changed(const QString& path)
   if (collection_ == nullptr) {
     return;
   }
-  const auto& visible = collection_->visible_items();
-  for (int row = 0; row < static_cast<int>(visible.size()); ++row) {
-    if (QString::fromStdString(visible[static_cast<std::size_t>(row)].path().string()) == path) {
-      const QModelIndex left = index(row, 0);
-      const QModelIndex right =
-          index(row, static_cast<int>(FileListColumn::Count) - 1);
-      emit dataChanged(left, right,
-                       {Qt::DecorationRole, Qt::DisplayRole, Qt::ToolTipRole, ThumbnailStatusRole,
-                        IsNewRole, AccessDeniedRole, IsUnreadableRole, IsUnwritableRole,
-                        ChildCountRole, LaunchFlashRole, IsOpenedRole});
-      break;
-    }
+  const int row = row_for_path(path);
+  if (row < 0) {
+    return;
   }
+  const QModelIndex left = index(row, 0);
+  const QModelIndex right = index(row, static_cast<int>(FileListColumn::Count) - 1);
+  emit dataChanged(left, right,
+                   {Qt::DecorationRole, Qt::DisplayRole, Qt::ToolTipRole, ThumbnailStatusRole,
+                    IsNewRole, AccessDeniedRole, IsUnreadableRole, IsUnwritableRole,
+                    ChildCountRole, LaunchFlashRole, IsOpenedRole});
 }
 
 void FileListModel::notify_row_changed(int row)
