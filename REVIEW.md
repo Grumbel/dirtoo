@@ -72,7 +72,7 @@ Conventions:
 
 | ID | Sev | Verified | Issue |
 |----|-----|----------|-------|
-| E1 | H | read | **Tag lookups ignore staleness.** `TagStore::tags_for_path` and `resolve_path` use `ChecksumStore::get()` without checking size/mtime, so after a file is edited it keeps the tags of its *old* content, and tagging a changed file attaches the tag to the old hash. Needs `get_if_valid` with the file's current size/mtime, which must be supplied by the caller (no stat on the GUI thread) — see E2 for the unit mismatch. |
+| E1 | M | read | **Tag lookups ignore staleness.** `TagStore::tags_for_path` (used by the tag filter, the GUI tag chips and QuickFilter via `tags_for_sha256`) and `resolve_path` use `ChecksumStore::get()` without checking size/mtime, so after a file is edited it keeps showing the tags of its *old* content. `dt-tag` calls `resolve_path` **before** hashing, so on a modified file with a cached row it attaches the tag to the old hash (the GUI `TagJob` is fine: it runs `ensure_full`, which revalidates, first). Fix: use `get_if_valid` with the file's current size/mtime supplied by the caller (no stat on the GUI thread) and make `dt-tag` call `ensure` first — see E2 for the unit mismatch. (Corrected 2026-10-07: first version of this entry overstated the GUI tagging impact.) |
 | E2 | M | read | The stored `mtime_ns` is `file_time_type::time_since_epoch().count()`: libstdc++'s file clock has a non-Unix epoch (I believe 2174, not verified) and an unspecified unit. The filter/collection use whole Unix seconds, so the two cannot be compared. Store Unix nanoseconds (`clock_cast<system_clock>`); this invalidates the existing cache once. Touches `checksum_store.cpp`, `hash_file.cpp`, `apps/dirtoo/hash_service.cpp`. |
 | E3 | M | read | `ChecksumStore::put/remove` ignore SQLite errors (e.g. `SQLITE_BUSY` after the 5 s timeout). A lost write looks like success. Return `bool`/`std::expected` and log. |
 | E4 | L | read | Nothing prunes the stores: moved/deleted files stay in `checksums` and `paths`, so `paths_for_hash` can return paths that no longer exist (ghost duplicates), and `files` rows without tags accumulate. Add a vacuum/prune command (and a GUI action or periodic job). |
@@ -119,6 +119,10 @@ Conventions:
 | H8 | L | read | `Cut` leaves the clipboard (and the sources) untouched when a transfer ends partially; the next paste may fail on already-moved items. Track per-item state in the clipboard payload. |
 | H9 | M | read | `MainWindow::reload_directory` runs `QCoreApplication::processEvents(ExcludeUserInputEvents)` inside the slot "to let the empty list paint": a nested event loop in the middle of navigation state changes. Timers, watcher ticks and queued worker results can re-enter `reload_directory`/`open_location` before the first call finishes. Use a queued continuation (`QTimer::singleShot(0, …)`) instead. |
 | H10 | L | read | `on_directory_load_failed` only shows the error. If the current directory is deleted or its drive is unplugged, the user stays in an empty view (and every watcher event repeats the error); no automatic fallback to the nearest existing parent. |
+| H11 | M | read | `rebuild_quick_filters()` → `QuickFilterBar::rebuild_from_items` runs on the GUI thread after **every** directory load, including watcher-driven soft reloads: it opens `TagStore` and `FileSetStore` (directory creation, `PRAGMA journal_mode=WAL`, `CREATE TABLE IF NOT EXISTS`), scans up to 2 000 items (`std::filesystem::absolute`, MIME category, one `tags_for_sha256` query pair each). In a directory where a file is being written continuously this repeats every few hundred ms. Known residual in `AGENTS.md`; move to a worker and keep the stores open. The "first 24 tags seen" chip selection also depends on scan order. |
+| H12 | M | read | **Path-completion cancellation does not work.** `PathCompletionWorker::complete` sets `active_id_` when it *starts*, so a running scan never sees a newer request (queued behind it on the same thread). Typing quickly in a slow or huge directory stacks full scans (one `stat` per entry), each finishing before the next starts. Set the "latest id" atomic from the service at request time. |
+| H13 | M | read | **`~` completion probably never shows anything:** the worker expands `~/fo` to `/home/user/fo` and returns absolute candidates, but the `QCompleter` filters (`MatchStartsWith`) against the text the user typed (`~/fo`); `on_completions_ready` ignores the `longest` prefix and does not map candidates back to the `~` form. |
+| H14 | L | read | `open_location` updates `location_`, history and clears the old listing before knowing that the target exists/is a directory; a typo blanks the current view and pushes a bad entry onto the history (the failure only arrives later via `directory_load_failed`). Typing a path to a *file* shows "not a directory" instead of opening it. Probe asynchronously first, then switch. |
 
 ## I. Tests
 
@@ -158,15 +162,48 @@ Conventions:
 | M5 | L | read | The "open terminal here" action tries a hard-coded list of terminals in order (a runtime fallback chain), using `bash -lc` for xterm. Honour `$TERMINAL`/`x-terminal-emulator`/the desktop's preferred terminal, or make it a preference. |
 | M6 | L | unverified | Programs started with `QProcess::startDetached` inherit the environment of the (Nix-wrapped) dirtoo process, including `QT_PLUGIN_PATH`/`XDG_DATA_DIRS` from `wrapQtAppsHook` and the dev shell. Launched Qt apps may load dirtoo's plugins. Consider restoring the original environment for children. |
 
+## N. Cross-cutting patterns
+
+| ID | Sev | Verified | Issue |
+|----|-----|----------|-------|
+| N1 | M | read | **Throwing `directory_iterator` range-for.** `for (auto& e : std::filesystem::directory_iterator(dir, opts, ec))` only protects the *constructor*: `operator++` throws `filesystem_error` on I/O errors (drive pulled, directory removed mid-scan), and a failed construction is silently an empty loop. Same pattern as the bug fixed in `00080e2a`, still present in: `path_completion_worker.cpp:118` (worker thread → `std::terminate`), `archive_member_cache.cpp:57,125`, `libs/dirtoo-filter/src/search.cpp:79` (the `max_depth == 0` branch; open failure is not even counted in `stats.errors`), and `libs/dirtoo-watcher/src/directory_watcher.cpp:74` (`directory_fingerprint`; the exception is swallowed by the `QtConcurrent` future, so the posted continuation never runs and **`poll_in_flight` stays true forever — the poll fallback silently dies**). Use the explicit iterator + `increment(ec)` form and check `ec` after the loop. |
+| N2 | M | read | **Worker-thread shutdown is inconsistent.** `ThumbnailCoordinator::stop_thread` detaches a thread that is stuck on I/O (correct: destroying a running `QThread` aborts). `TransferController::shutdown` (5 s), `PathCompletionService::shutdown` (2 s), `TagJob::~TagJob` (5 s) and the `DirectoryLoadWorker`/filter/sort worker threads wait and then let the parent destroy a possibly still-running `QThread` → abort on exit when a mount is hung. One shared `stop_thread()` helper should be used everywhere. |
+
+## S. Recursive search (`libs/dirtoo-filter/src/search.cpp`)
+
+| ID | Sev | Verified | Issue |
+|----|-----|----------|-------|
+| S1 | M | read | In the recursive branch a failing `increment(ec)` turns the iterator into `end()`, so the loop just ends: the search "finishes" with partial results and `stats.errors` is not incremented (the `if (ec)` inside the loop is unreachable for that case). The GUI cannot tell a complete search from a truncated one. |
+| S2 | L | read | No mount-point/`-xdev` guard: a recursive search from `/` or `$HOME` descends into `/proc`, `/sys`, network and FUSE mounts, which can hang for minutes. Add an option (default: stay on one filesystem, or skip known pseudo/remote filesystems like the watcher's `is_remote_filesystem`). |
+| S3 | L | read | `SearchWorker::start` has no `try/catch`; any exception from the library (`filesystem_error`, `bad_alloc`) terminates the application instead of ending the search with an error. |
+
+## U. Devices (UDisks2, `apps/dirtoo/udisks_client.cpp`)
+
+| ID | Sev | Verified | Issue |
+|----|-----|----------|-------|
+| U1 | M | read | `scan_volumes` makes **N+1 synchronous D-Bus round trips**: a new `QDBusInterface` per `Properties.Get` (≈ 12 properties per block device plus 4 per drive plus `HintSystem`, each constructing an interface object). A machine with 40–60 block devices (loop devices, partitions) means hundreds of calls per refresh. Use `ObjectManager.GetManagedObjects()` once (all interfaces and properties in one reply). |
+| U2 | M | read | The client subscribes to `PropertiesChanged` for **every** UDisks object (`path = ""`) and each signal schedules a full rescan (debounced to 250 ms). Drive statistics/SMART/size updates therefore retrigger the N+1 scan continuously. Filter on the interfaces/properties that matter (`MountPoints`, `Size`, `Drive`), or update incrementally from `InterfacesAdded/Removed` and the changed properties. |
+| U3 | L | unverified | Loop devices (snap/appimage mounts) are listed as volumes unless `HintIgnore` is set; the sidebar can get cluttered on such systems. |
+
+## T. Thumbnailer programs (`thumbnailers/`)
+
+| ID | Sev | Verified | Issue |
+|----|-----|----------|-------|
+| T1 | L | read | `dirtoo-hilbert-thumb` describes itself as rendering "the whole file" (and its `.thumbnailer` comment says the same) but `read_file_capped` reads only the first 16 MiB; larger files are silently shown truncated. State it, or sample across the file. |
+| T2 | L | read | `dirtoo-text-thumb` builds lines with `QString::fromLatin1`, so UTF-8 text renders as mojibake (`Ã¤`). Decode with `QStringDecoder`/UTF-8 and fall back to Latin-1. |
+| T3 | L | read | Both thumbnailers claim broad MIME types (`application/octet-stream`, …) and run on untrusted files with no sandbox/resource limits (no `RLIMIT_AS`/`RLIMIT_CPU`). Fine for toys; document or add limits before shipping as defaults. |
+
 ## J. Not reviewed yet
 
-`tools/` except `dt_rm`, `thumbnailers/`, `libs/dirtoo-tree` (only its test was
-touched), `man/`, `resources/`, and in `apps/dirtoo`: preferences, properties,
-devices/UDisks, location bar and completion, QuickFilter, Tag Manager, sidebar,
-the treemap view, `main_window_nav.cpp`, `file_item_delegate`, and the settings code. `open_with.cpp`
-has been read (section M). Reviewed in the second pass: DnD, `main_window_load`,
-`libs/dirtoo-thumbnail`, `Location` URL parsing, persistence of
-bookmarks/history.
+`tools/` except `dt_rm` (and a skim of `dt_tag`), `libs/dirtoo-tree` (only its
+test was touched), `man/`, `resources/`, and in `apps/dirtoo`: preferences and
+settings, properties dialog, location bar rendering (`location_button_bar`),
+Tag Manager UI, sidebar, treemap view, `file_item_delegate`, `graphics_file_item`,
+`main_window_sort/_filter/_view/_events/_settings`, `hash_service`.
+Reviewed in the later passes: DnD, `main_window_load`/`_nav` (the first 200
+lines), `libs/dirtoo-thumbnail`, `Location` URL parsing, persistence of
+bookmarks/history, `open_with.cpp` (section M), UDisks, path completion,
+`TagJob`, QuickFilter (the scan part), recursive search, `thumbnailers/`.
 
 ---
 
