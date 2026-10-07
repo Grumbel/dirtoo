@@ -68,8 +68,14 @@ void MainWindow::setup_edit_menu()
     act->setShortcut(QKeySequence(Qt::Key_F2));
   }
   {
-    auto* act = edit_menu->addAction(theme_icon("edit-delete"), QStringLiteral("Delete…"), this, &MainWindow::on_delete_selected);
+    auto* act = edit_menu->addAction(theme_icon("user-trash", "edit-delete"), QStringLiteral("Move to Trash"), this, &MainWindow::on_delete_selected);
     act->setShortcut(QKeySequence::Delete);
+    act->setStatusTip(QStringLiteral("Move the selection to the trash (can be restored)"));
+  }
+  {
+    auto* act = edit_menu->addAction(theme_icon("edit-delete"), QStringLiteral("Delete Permanently…"), this, &MainWindow::on_delete_permanently);
+    act->setShortcut(QKeySequence(Qt::SHIFT | Qt::Key_Delete));
+    act->setStatusTip(QStringLiteral("Delete the selection without using the trash"));
   }
   {
     auto* act = edit_menu->addAction(theme_icon("object-flip-horizontal", "edit-copy"), QStringLiteral("Swap Names"), this, &MainWindow::on_swap_names);

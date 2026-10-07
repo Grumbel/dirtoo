@@ -26,7 +26,8 @@ struct FileContextMenuCallbacks {
   std::function<void()> select_all;
   std::function<void()> cut;
   std::function<void()> copy;
-  std::function<void()> delete_selected;
+  std::function<void()> delete_selected;      ///< move to trash
+  std::function<void()> delete_permanently;
   std::function<void()> rename_selected;
   std::function<void()> properties_selected;
   std::function<void()> checksums_selected;

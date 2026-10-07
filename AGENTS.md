@@ -307,13 +307,14 @@ implementations of the same library capability.
 
 | Area | State |
 |------|--------|
-| dirops + CLI tools | **done** (`create_file` / `create_symlink` / swap) |
+| dirops + CLI tools | **done** (`create_file` / `create_symlink` / swap); **Trash** per freedesktop.org spec 1.0 (`dirops/trash.hpp`, `dt-trash`) |
 | Main window, nav, bookmarks, history | **done** (nav no longer double-loads via watcher) |
 | Filter DSL + recursive search + `dt-filter` | **done**; content filters via `FilterWorker` |
 | Detail / Icons (Graphics) / Small icons | **improved** — Graphics viewport-windowed + selection persistence |
 | Thumbnails + media badges + meta cache | **improved** — viewport batch; directory montages |
 | Clipboard transfers + conflict/transfer dialogs | **done** including Link paste |
 | Preferences, properties, about, rename/new folder/file | **done** |
+| Delete → trash (Delete), permanent delete (Shift+Delete), Trash dialog (Go → Trash…: restore / delete / empty) | **done** — dialog not yet exercised interactively |
 | Archives read-only | **done** |
 | DnD | **done** — modifiers, folder drop, nested-drop guard |
 | Select All / Swap Names / Full Paths / Time Gaps | **done** (Graphics Select All = all rows) |

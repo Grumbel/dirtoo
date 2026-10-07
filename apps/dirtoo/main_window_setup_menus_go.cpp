@@ -43,6 +43,7 @@ void MainWindow::setup_go_help_menus()
   go_menu->addAction(theme_icon("go-up"), QStringLiteral("Parent"), this, &MainWindow::on_go_parent);
   go_menu->addAction(theme_icon("window-new"), QStringLiteral("Parent in New Window"), this, &MainWindow::on_parent_new_window);
   go_menu->addAction(theme_icon("go-home"), QStringLiteral("Home"), this, &MainWindow::on_go_home);
+  go_menu->addAction(theme_icon("user-trash"), QStringLiteral("Trash…"), this, &MainWindow::on_show_trash);
 
   bookmarks_menu_ = new HistoryMenu(QStringLiteral("&Bookmarks"), this);
   menuBar()->addMenu(bookmarks_menu_);

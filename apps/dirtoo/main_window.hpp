@@ -141,7 +141,10 @@ private slots:
   void on_swap_names();
   void on_toggle_show_abspath(bool checked);
   void on_rename_selected();
-  void on_delete_selected();
+  void on_delete_selected();           ///< move to trash (default)
+  void on_delete_permanently();        ///< with confirmation
+  void delete_paths_permanently(const std::vector<std::filesystem::path>& paths);
+  void on_show_trash();
   void on_properties();
   void on_refresh();
   void on_open_with();

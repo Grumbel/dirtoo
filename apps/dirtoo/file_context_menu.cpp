@@ -166,7 +166,12 @@ void exec_item_context_menu(QWidget* parent, const QPoint& global_pos,
   });
   menu.addSeparator();
   if (cb.delete_selected) {
-    menu.addAction(theme_icon("edit-delete"), QStringLiteral("Delete…"), parent, cb.delete_selected);
+    menu.addAction(theme_icon("user-trash", "edit-delete"), QStringLiteral("Move to Trash"), parent,
+                   cb.delete_selected);
+  }
+  if (cb.delete_permanently) {
+    menu.addAction(theme_icon("edit-delete"), QStringLiteral("Delete Permanently…"), parent,
+                   cb.delete_permanently);
   }
   menu.addSeparator();
   if (cb.rename_selected) {

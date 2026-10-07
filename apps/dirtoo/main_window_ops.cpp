@@ -12,6 +12,8 @@
 #include "activity_monitor.hpp"
 #include "async_io.hpp"
 #include "dirops/ops.hpp"
+#include "dirops/trash.hpp"
+#include "trash_dialog.hpp"
 #include "dirops/util.hpp"
 #include <QMimeData>
 #include <QPointer>
@@ -467,29 +469,99 @@ void MainWindow::on_rename_selected()
 
 void MainWindow::on_delete_selected()
 {
+  // "Delete" moves to the trash (freedesktop.org Trash spec): reversible, so
+  // no confirmation. Shift+Delete / "Delete Permanently…" is on_delete_permanently().
   if (!ensure_mutations_allowed()) {
     return;
   }
-
   if (!location_allows_filesystem_mutations(location_)) {
     set_status(QStringLiteral("Read-only: cannot modify this location"));
     return;
   }
-
   const auto selected = selected_fileinfos();
   if (selected.empty()) {
     return;
   }
+  const auto paths = paths_from_fileinfos(selected);
+  set_status(QStringLiteral("Moving %1 item(s) to the trash…").arg(paths.size()));
+  run_mutation(
+      this, QStringLiteral("Moving %1 item(s) to the trash…").arg(paths.size()),
+      [paths] {
+        MutationResult r;
+        for (const auto& p : paths) {
+          auto entry = dirops::trash_entry(p);
+          MutationStep step;
+          step.kind = OperationKind::Trash;
+          step.sources = {p};
+          step.ok = entry.has_value();
+          if (entry) {
+            step.destination = entry->stored_path();
+          } else {
+            step.error = QString::fromStdString(entry.error().to_string());
+          }
+          r.steps.push_back(std::move(step));
+        }
+        return r;
+      },
+      [paths](MainWindow* self, const MutationResult& r) {
+        if (self == nullptr) {
+          return;
+        }
+        std::vector<std::filesystem::path> failed;
+        QString first_error;
+        for (const auto& st : r.steps) {
+          if (!st.ok) {
+            failed.push_back(st.sources.front());
+            if (first_error.isEmpty()) {
+              first_error = st.error;
+            }
+          }
+        }
+        self->on_directory_changed();
+        if (failed.empty()) {
+          self->set_status(QStringLiteral("Moved %1 item(s) to the trash").arg(paths.size()));
+          return;
+        }
+        // E.g. a filesystem without a usable trash directory. Never delete
+        // silently: ask.
+        const auto answer = QMessageBox::question(
+            self, QStringLiteral("Move to Trash"),
+            QStringLiteral("%1 item(s) could not be moved to the trash:\n%2\n\n"
+                           "Delete them permanently instead?")
+                .arg(failed.size())
+                .arg(first_error));
+        if (answer == QMessageBox::Yes) {
+          self->delete_paths_permanently(failed);
+        }
+      });
+}
 
-  const QString msg = selected.size() == 1
-                          ? QStringLiteral("Delete “%1”?")
-                                .arg(QString::fromStdString(selected.front().basename()))
-                          : QStringLiteral("Delete %1 items?").arg(selected.size());
-  if (QMessageBox::question(this, QStringLiteral("Delete"), msg) != QMessageBox::Yes) {
+void MainWindow::on_delete_permanently()
+{
+  if (!ensure_mutations_allowed()) {
     return;
   }
+  if (!location_allows_filesystem_mutations(location_)) {
+    set_status(QStringLiteral("Read-only: cannot modify this location"));
+    return;
+  }
+  const auto selected = selected_fileinfos();
+  if (selected.empty()) {
+    return;
+  }
+  const QString msg = selected.size() == 1
+                          ? QStringLiteral("Permanently delete “%1”?\nThis cannot be undone.")
+                                .arg(QString::fromStdString(selected.front().basename()))
+                          : QStringLiteral("Permanently delete %1 items?\nThis cannot be undone.")
+                                .arg(selected.size());
+  if (QMessageBox::question(this, QStringLiteral("Delete Permanently"), msg) != QMessageBox::Yes) {
+    return;
+  }
+  delete_paths_permanently(paths_from_fileinfos(selected));
+}
 
-  const auto paths = paths_from_fileinfos(selected);
+void MainWindow::delete_paths_permanently(const std::vector<std::filesystem::path>& paths)
+{
   set_status(QStringLiteral("Deleting %1 item(s)…").arg(paths.size()));
   run_mutation(
       this, QStringLiteral("Deleting %1 item(s)…").arg(paths.size()),
@@ -508,6 +580,14 @@ void MainWindow::on_delete_selected()
           self->finish_simple_mutation(QStringLiteral("Delete"), r.first_error());
         }
       });
+}
+
+void MainWindow::on_show_trash()
+{
+  auto* dialog = new TrashDialog(this);
+  dialog->setAttribute(Qt::WA_DeleteOnClose);
+  connect(dialog, &TrashDialog::filesystem_changed, this, &MainWindow::on_directory_changed);
+  dialog->show();
 }
 
 void MainWindow::finish_simple_mutation(const QString& title, const QString& error)

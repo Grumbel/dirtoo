@@ -98,7 +98,8 @@ Writing into archives, remote filesystems (SMB, SFTP, …), and a full undo stac
 | **Alt+Left** / **Alt+Right** | History back / forward |
 | **Ctrl+L** | Focus location bar |
 | **Ctrl+C** / **X** / **V** | Copy / Cut / Paste |
-| **Delete** | Delete selection |
+| **Delete** | Move selection to the trash (freedesktop.org Trash spec; restore from *Go → Trash…*) |
+| **Shift+Delete** | Delete selection permanently (asks first) |
 | **Ctrl++** / **Ctrl+-** | Zoom icons |
 | **Ctrl+N** | New window |
 | **Ctrl+Shift+R** | Toggle read-only mode |
@@ -157,7 +158,7 @@ GUI binary; use `--help` or the installed man pages.
 | Path | Purpose |
 |------|---------|
 | `apps/dirtoo/` | Qt6 GUI |
-| `libs/dirops/` | Copy / move / rename / delete / mkdir |
+| `libs/dirops/` | Copy / move / rename / delete / mkdir / trash (freedesktop.org Trash spec) |
 | `libs/dirtoo-fs/` | Locations, file info, listing |
 | `libs/dirtoo-collection/` | Sort, filter, group |
 | `libs/dirtoo-filter/` | Filter language + media metadata |

@@ -18,7 +18,9 @@ enum class OperationKind {
   Copy,
   Move,
   Rename,
-  Delete,
+  Delete,   ///< permanent deletion
+  Trash,    ///< moved to the freedesktop.org trash
+  Restore,  ///< moved back out of the trash
   Mkdir,
   Mkfile,
   Symlink,

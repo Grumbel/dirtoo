@@ -129,6 +129,10 @@ QString operation_kind_label(OperationKind kind)
     return QStringLiteral("Rename");
   case OperationKind::Delete:
     return QStringLiteral("Delete");
+  case OperationKind::Trash:
+    return QStringLiteral("Move to trash");
+  case OperationKind::Restore:
+    return QStringLiteral("Restore from trash");
   case OperationKind::Mkdir:
     return QStringLiteral("New folder");
   case OperationKind::Mkfile:
@@ -156,6 +160,10 @@ QString operation_kind_to_string(OperationKind kind)
     return QStringLiteral("rename");
   case OperationKind::Delete:
     return QStringLiteral("delete");
+  case OperationKind::Trash:
+    return QStringLiteral("trash");
+  case OperationKind::Restore:
+    return QStringLiteral("restore");
   case OperationKind::Mkdir:
     return QStringLiteral("mkdir");
   case OperationKind::Mkfile:
@@ -186,6 +194,12 @@ OperationKind operation_kind_from_string(const QString& s)
   }
   if (k == QLatin1String("delete")) {
     return OperationKind::Delete;
+  }
+  if (k == QLatin1String("trash")) {
+    return OperationKind::Trash;
+  }
+  if (k == QLatin1String("restore")) {
+    return OperationKind::Restore;
   }
   if (k == QLatin1String("mkdir")) {
     return OperationKind::Mkdir;
