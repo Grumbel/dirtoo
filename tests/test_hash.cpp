@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "dirtoo/hash/checksum_store.hpp"
 #include "dirtoo/hash/hash_file.hpp"
 
 #include <catch2/catch_test_macros.hpp>
@@ -182,4 +183,34 @@ TEST_CASE("hash_file_quick cancel during sample", "[hash][quick]")
   const auto d = hash_file_quick(path, qopts, &err);
   REQUIRE_FALSE(d);
   CHECK(err.message == "cancelled");
+}
+
+TEST_CASE("databases are created private and report failed writes", "[hash][safety]")
+{
+  namespace fs = std::filesystem;
+  const auto dir = fs::temp_directory_path() / "dirtoo-test-db-perms";
+  fs::remove_all(dir);
+  const auto db = dir / "sub" / "checksums.sqlite";
+
+  dirtoo::hash::ChecksumStore store;
+  std::string err;
+  REQUIRE(store.open(db, &err));
+  const auto perms = fs::status(db).permissions();
+  CHECK((perms & (fs::perms::group_all | fs::perms::others_all)) == fs::perms::none);
+  CHECK((perms & fs::perms::owner_read) != fs::perms::none);
+
+  dirtoo::hash::FileDigests d;
+  d.size = 1;
+  d.sha256_hex = std::string(64, 'a');
+  CHECK(store.put("/tmp/x", d, &err));
+  CHECK(store.remove("/tmp/x", &err));
+
+  // A closed store must say so instead of pretending the write worked.
+  dirtoo::hash::ChecksumStore closed;
+  err.clear();
+  CHECK_FALSE(closed.put("/tmp/x", d, &err));
+  CHECK_FALSE(err.empty());
+  CHECK_FALSE(closed.remove("/tmp/x"));
+  CHECK_FALSE(closed.put_quick("/tmp/x", d));
+  fs::remove_all(dir);
 }

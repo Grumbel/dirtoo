@@ -4,6 +4,7 @@
 #include "dirtoo/tags/tag_store.hpp"
 
 #include "dirtoo/hash/checksum_store.hpp"
+#include "dirtoo/hash/sqlite_open.hpp"
 
 #include <sqlite3.h>
 
@@ -85,25 +86,11 @@ bool TagStore::open(std::filesystem::path db_path, std::string* error)
 {
   close();
   path_ = std::move(db_path);
-  if (auto parent = path_.parent_path(); !parent.empty()) {
-    std::error_code ec;
-    std::filesystem::create_directories(parent, ec);
-  }
-  sqlite3* raw = nullptr;
-  if (sqlite3_open(path_.string().c_str(), &raw) != SQLITE_OK) {
-    if (error) {
-      *error = raw ? sqlite3_errmsg(raw) : "sqlite3_open failed";
-    }
-    if (raw) {
-      sqlite3_close(raw);
-    }
+  // Foreign keys are required: tag/file deletion relies on ON DELETE CASCADE.
+  sqlite3* raw = dirtoo::hash::open_database(path_, /*foreign_keys=*/true, error);
+  if (raw == nullptr) {
     return false;
   }
-  sqlite3_exec(raw, "PRAGMA foreign_keys = ON", nullptr, nullptr, nullptr);
-  // Concurrent TagJobs / UI + workers: wait instead of SQLITE_BUSY; WAL helps readers.
-  sqlite3_exec(raw, "PRAGMA busy_timeout=5000", nullptr, nullptr, nullptr);
-  sqlite3_exec(raw, "PRAGMA journal_mode=WAL", nullptr, nullptr, nullptr);
-  sqlite3_exec(raw, "PRAGMA synchronous=NORMAL", nullptr, nullptr, nullptr);
   db_ = raw;
   if (!ensure_schema(error)) {
     close();

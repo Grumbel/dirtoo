@@ -280,3 +280,24 @@ TEST_CASE("TagStore concurrent first-use of the same tag and file succeeds every
     remove_db_sidecars(path);
   }
 }
+
+TEST_CASE("TagStore database is private and enforces foreign keys", "[tags][safety]")
+{
+  const auto path = temp_db_path("perms");
+  remove_db_sidecars(path);
+  TagStore store;
+  std::string err;
+  REQUIRE(store.open(path, &err));
+  const auto perms = fs::status(path).permissions();
+  CHECK((perms & (fs::perms::group_all | fs::perms::others_all)) == fs::perms::none);
+
+  // ON DELETE CASCADE must work: deleting a tag removes its file_tags rows.
+  auto id = store.ensure_file_sha256(std::string(64, 'b'), "/tmp/y", &err);
+  REQUIRE(id);
+  REQUIRE(store.add_tag_to_file(*id, "cascade", &err));
+  REQUIRE(store.count_files_for_tag("cascade") == 1);
+  REQUIRE(store.delete_tag("cascade", &err));
+  CHECK(store.count_files_for_tag("cascade") == 0);
+  CHECK(store.tags_for_file(*id).empty());
+  remove_db_sidecars(path);
+}

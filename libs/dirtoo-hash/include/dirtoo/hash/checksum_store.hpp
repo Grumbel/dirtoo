@@ -42,8 +42,10 @@ public:
   /// Unconditional lookup (may be stale).
   [[nodiscard]] std::optional<FileDigests> get(std::string_view path_key) const;
 
-  void put(std::string_view path_key, const FileDigests& digests);
-  void remove(std::string_view path_key);
+  /// Store / delete a row. Return false (and fill @p error, and log to stderr)
+  /// when SQLite refuses, e.g. SQLITE_BUSY after the 5 s timeout or a full disk.
+  bool put(std::string_view path_key, const FileDigests& digests, std::string* error = nullptr);
+  bool remove(std::string_view path_key, std::string* error = nullptr);
 
   /// Paths known for a given digest (algo: "sha256"|"md5"|"sha1"|"crc32").
   [[nodiscard]] std::vector<std::string>
@@ -60,7 +62,7 @@ public:
   [[nodiscard]] static std::string quick_key(std::string_view path_key);
 
   [[nodiscard]] std::optional<FileDigests> get_quick(std::string_view path_key) const;
-  void put_quick(std::string_view path_key, const FileDigests& digests);
+  bool put_quick(std::string_view path_key, const FileDigests& digests, std::string* error = nullptr);
 
   /// Full SHA-256 present (64 hex). Ignores quick samples.
   [[nodiscard]] bool has_full(std::string_view path_key) const;
@@ -69,6 +71,7 @@ public:
 
 private:
   bool ensure_schema(std::string* error);
+  bool report_db_error(std::string* error, const char* what) const;
   void* db_ = nullptr; // sqlite3*
   std::filesystem::path path_;
 };

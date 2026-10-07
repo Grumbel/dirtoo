@@ -213,3 +213,24 @@ TEST_CASE("FileSetStore failed add_member keeps the previous membership", "[sets
 
   remove_db_sidecars(path);
 }
+
+TEST_CASE("FileSetStore database is private and waits on a locked database", "[sets][safety]")
+{
+  const auto path = temp_db_path("perms-busy");
+  remove_db_sidecars(path);
+  FileSetStore a;
+  std::string err;
+  REQUIRE(a.open(path, &err));
+  const auto perms = fs::status(path).permissions();
+  CHECK((perms & (fs::perms::group_all | fs::perms::others_all)) == fs::perms::none);
+
+  // A second connection must be able to write while the first is idle
+  // (busy_timeout is set, WAL allows concurrent readers/writers in turn).
+  FileSetStore b;
+  REQUIRE(b.open(path, &err));
+  auto set = a.create_set("shared", {}, &err);
+  REQUIRE(set);
+  REQUIRE(b.add_member(set->id, "/media/z.mp4", {}, &err));
+  CHECK(a.contains(set->id, "/media/z.mp4"));
+  remove_db_sidecars(path);
+}

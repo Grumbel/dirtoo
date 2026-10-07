@@ -3,9 +3,11 @@
 
 #include "dirtoo/hash/checksum_store.hpp"
 #include "dirtoo/hash/hash_file.hpp"
+#include "dirtoo/hash/sqlite_open.hpp"
 
 #include <sqlite3.h>
 
+#include <cstdio>
 #include <cstdlib>
 #include <ctime>
 
@@ -50,6 +52,16 @@ FileDigests row_to_digests(sqlite3_stmt* stmt)
 }
 
 } // namespace
+
+bool ChecksumStore::report_db_error(std::string* error, const char* what) const
+{
+  const char* msg = db_ != nullptr ? sqlite3_errmsg(static_cast<sqlite3*>(db_)) : "no database";
+  std::fprintf(stderr, "dirtoo: checksum store %s failed: %s\n", what, msg);
+  if (error != nullptr) {
+    *error = msg;
+  }
+  return false;
+}
 
 ChecksumStore::ChecksumStore(std::filesystem::path db_path)
 {
@@ -98,23 +110,10 @@ bool ChecksumStore::open(std::filesystem::path db_path, std::string* error)
 {
   close();
   path_ = std::move(db_path);
-  if (auto parent = path_.parent_path(); !parent.empty()) {
-    std::error_code ec;
-    std::filesystem::create_directories(parent, ec);
-  }
-  sqlite3* raw = nullptr;
-  if (sqlite3_open(path_.string().c_str(), &raw) != SQLITE_OK) {
-    if (error) {
-      *error = raw ? sqlite3_errmsg(raw) : "sqlite3_open failed";
-    }
-    if (raw) {
-      sqlite3_close(raw);
-    }
+  sqlite3* raw = open_database(path_, /*foreign_keys=*/false, error);
+  if (raw == nullptr) {
     return false;
   }
-  sqlite3_exec(raw, "PRAGMA busy_timeout=5000", nullptr, nullptr, nullptr);
-  sqlite3_exec(raw, "PRAGMA journal_mode=WAL", nullptr, nullptr, nullptr);
-  sqlite3_exec(raw, "PRAGMA synchronous=NORMAL", nullptr, nullptr, nullptr);
   db_ = raw;
   if (!ensure_schema(error)) {
     close();
@@ -186,10 +185,14 @@ ChecksumStore::get_if_valid(std::string_view path_key, std::uint64_t size,
   return cached;
 }
 
-void ChecksumStore::put(std::string_view path_key, const FileDigests& digests)
+bool ChecksumStore::put(std::string_view path_key, const FileDigests& digests,
+                        std::string* error)
 {
   if (db_ == nullptr) {
-    return;
+    if (error != nullptr) {
+      *error = "checksum store not open";
+    }
+    return false;
   }
   sqlite3_stmt* stmt = nullptr;
   constexpr const char* sql =
@@ -200,7 +203,7 @@ void ChecksumStore::put(std::string_view path_key, const FileDigests& digests)
       "md5=excluded.md5, sha1=excluded.sha1, sha256=excluded.sha256, "
       "last_hashed=excluded.last_hashed";
   if (sqlite3_prepare_v2(static_cast<sqlite3*>(db_), sql, -1, &stmt, nullptr) != SQLITE_OK) {
-    return;
+    return report_db_error(error, "prepare put");
   }
   const auto now = static_cast<std::int64_t>(std::time(nullptr));
   sqlite3_bind_text(stmt, 1, path_key.data(), static_cast<int>(path_key.size()), SQLITE_TRANSIENT);
@@ -215,23 +218,28 @@ void ChecksumStore::put(std::string_view path_key, const FileDigests& digests)
   sqlite3_bind_text(stmt, 6, digests.sha1_hex.c_str(), -1, SQLITE_TRANSIENT);
   sqlite3_bind_text(stmt, 7, digests.sha256_hex.c_str(), -1, SQLITE_TRANSIENT);
   sqlite3_bind_int64(stmt, 8, now);
-  sqlite3_step(stmt);
+  const int rc = sqlite3_step(stmt);
   sqlite3_finalize(stmt);
+  return rc == SQLITE_DONE ? true : report_db_error(error, "put");
 }
 
-void ChecksumStore::remove(std::string_view path_key)
+bool ChecksumStore::remove(std::string_view path_key, std::string* error)
 {
   if (db_ == nullptr) {
-    return;
+    if (error != nullptr) {
+      *error = "checksum store not open";
+    }
+    return false;
   }
   sqlite3_stmt* stmt = nullptr;
   constexpr const char* sql = "DELETE FROM checksums WHERE path = ?1";
   if (sqlite3_prepare_v2(static_cast<sqlite3*>(db_), sql, -1, &stmt, nullptr) != SQLITE_OK) {
-    return;
+    return report_db_error(error, "prepare remove");
   }
   sqlite3_bind_text(stmt, 1, path_key.data(), static_cast<int>(path_key.size()), SQLITE_TRANSIENT);
-  sqlite3_step(stmt);
+  const int rc = sqlite3_step(stmt);
   sqlite3_finalize(stmt);
+  return rc == SQLITE_DONE ? true : report_db_error(error, "remove");
 }
 
 std::vector<std::string>
@@ -318,9 +326,10 @@ std::optional<FileDigests> ChecksumStore::get_quick(std::string_view path_key) c
   return get(quick_key(path_key));
 }
 
-void ChecksumStore::put_quick(std::string_view path_key, const FileDigests& digests)
+bool ChecksumStore::put_quick(std::string_view path_key, const FileDigests& digests,
+                              std::string* error)
 {
-  put(quick_key(path_key), digests);
+  return put(quick_key(path_key), digests, error);
 }
 
 bool ChecksumStore::has_full(std::string_view path_key) const

@@ -29,8 +29,10 @@ add_library(dirtoo-hash
   include/dirtoo/hash/digests.hpp
   include/dirtoo/hash/hash_file.hpp
   include/dirtoo/hash/checksum_store.hpp
+  include/dirtoo/hash/sqlite_open.hpp
   src/hash_file.cpp
   src/checksum_store.cpp
+  src/sqlite_open.cpp
 )
 add_library(dirtoo::hash ALIAS dirtoo-hash)
 add_library(dirtoo-hash::dirtoo-hash ALIAS dirtoo-hash)

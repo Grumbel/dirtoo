@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "dirtoo/sets/file_set_store.hpp"
+#include "dirtoo/hash/sqlite_open.hpp"
 
 #include <sqlite3.h>
 
@@ -138,23 +139,11 @@ bool FileSetStore::open(std::filesystem::path db_path, std::string* error)
 {
   close();
   path_ = std::move(db_path);
-  if (path_.has_parent_path()) {
-    std::error_code ec;
-    std::filesystem::create_directories(path_.parent_path(), ec);
-  }
-  sqlite3* raw = nullptr;
-  if (sqlite3_open(path_.string().c_str(), &raw) != SQLITE_OK) {
-    if (error != nullptr) {
-      error->assign(raw != nullptr ? sqlite3_errmsg(raw) : "sqlite3_open failed");
-    }
-    if (raw != nullptr) {
-      sqlite3_close(raw);
-    }
+  sqlite3* raw = dirtoo::hash::open_database(path_, /*foreign_keys=*/true, error);
+  if (raw == nullptr) {
     return false;
   }
   db_ = raw;
-  sqlite3_exec(static_cast<sqlite3*>(db_), "PRAGMA foreign_keys = ON;", nullptr, nullptr, nullptr);
-  sqlite3_exec(static_cast<sqlite3*>(db_), "PRAGMA journal_mode = WAL;", nullptr, nullptr, nullptr);
   if (!ensure_schema(error)) {
     close();
     return false;
