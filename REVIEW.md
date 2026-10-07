@@ -100,7 +100,7 @@ Conventions:
 | G3 | L | read | Name sorting lower-cases ASCII only and compares raw bytes: non-ASCII names sort by UTF-8 byte order (`Ärger` after `zebra`). Use `QCollator` (ICU) or `strxfrm`-style keys. |
 | G4 | L | read | `SortKey::Type` is identical to `SortKey::Extension`. Either differentiate (MIME category) or drop. |
 | G5 | M | unverified | Media sort keys (`Width`, `Duration`, …) read the memory cache only; items without metadata sort as 0. Check that the view re-sorts when `MediaMetaCache` fills in (`notify_row_changed` only regroups for Duration). |
-| G6 | L | read | `SortKey::Random` reshuffles on every `apply_sort`/rebuild, so any watcher refresh or filter change reorders the whole view. Keep a stable per-session seed. |
+| G6 | L | read | `SortKey::Random` reshuffles on every `apply_sort`/rebuild, so any watcher refresh or filter change reorders the whole view. Keep a stable per-session seed. **Fixed in `2bcc20d9`.** |
 | G7 | M | read | `FileCollection` keeps a full `FileInfo` copy in both `items_` and `visible_` (paths, strings, symlink targets) and re-copies on every `rebuild_visible`. Store indices into `items_`. `index_of`, `remove`, `group_label_for` are linear scans (`group_label_for` is O(n) per call: O(n²) if used per row). |
 | G8 | M | read | `rebuild_visible` evaluates the filter on the calling (GUI) thread when `set_name_filter`/`set_match_func` is used directly; the worker path (`FilterWorker`) avoids it. Make the direct path private or assert. |
 | G9 | L | read | `merge_items` appends new entries in `unordered_map` iteration order, so order of ties after a merge is nondeterministic until the next sort. |
