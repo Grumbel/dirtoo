@@ -13,6 +13,8 @@ add_library(dirtoo-app-core STATIC
   atomic_write.hpp
   path_completion_worker.cpp
   path_completion_worker.hpp
+  thread_util.cpp
+  thread_util.hpp
 )
 target_include_directories(dirtoo-app-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(dirtoo-app-core

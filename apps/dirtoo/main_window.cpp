@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include "thread_util.hpp"
 #include "activity_monitor.hpp"
 #include "fs_tree_scan_worker.hpp"
 #include "size_format.hpp"
@@ -128,8 +129,7 @@ MainWindow::~MainWindow()
     fs_tree_worker_->cancel();
   }
   if (fs_tree_thread_ != nullptr) {
-    fs_tree_thread_->quit();
-    fs_tree_thread_->wait(5000);
+    (void)stop_thread(fs_tree_thread_, 5000);
   }
   if (!fs_tree_activity_job_id_.isEmpty()) {
     ActivityMonitor::instance().end_job(fs_tree_activity_job_id_);

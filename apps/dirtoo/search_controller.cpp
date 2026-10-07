@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "search_controller.hpp"
+#include "thread_util.hpp"
 
 #include "search_worker.hpp"
 
@@ -24,9 +25,9 @@ void SearchController::cleanup_thread()
   if (thread_ == nullptr) {
     return;
   }
-  thread_->quit();
-  thread_->wait(3000);
-  thread_->deleteLater();
+  if (stop_thread(thread_)) {
+    thread_->deleteLater();  // a detached thread deletes itself when it finishes
+  }
   thread_ = nullptr;
   worker_ = nullptr;
   running_ = false;

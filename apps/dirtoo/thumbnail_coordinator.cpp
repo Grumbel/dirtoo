@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "thumbnail_coordinator.hpp"
+#include "thread_util.hpp"
 #include <QMetaObject>
 
 #include "archive_member_cache.hpp"
@@ -323,25 +324,6 @@ void ThumbnailCoordinator::setup_dir_worker()
   dir_thumb_thread_->start();
 }
 
-namespace {
-
-/// Stop a worker thread. A thread still blocked in I/O on a hung mount after
-/// the grace period is detached and leaked: deleting a running QThread aborts
-/// the process, and the stuck syscall cannot be interrupted anyway.
-void stop_thread(QThread* thread)
-{
-  if (thread == nullptr) {
-    return;
-  }
-  thread->quit();
-  if (!thread->wait(3000)) {
-    qWarning().noquote() << QStringLiteral("dirtoo: %1 still blocked at shutdown; detaching")
-                                .arg(thread->objectName());
-    thread->setParent(nullptr);
-  }
-}
-
-} // namespace
 
 void ThumbnailCoordinator::shutdown()
 {
@@ -349,12 +331,12 @@ void ThumbnailCoordinator::shutdown()
   clear_aliases();
   dir_cache_checks_.clear();
   if (thumb_thread_ != nullptr) {
-    stop_thread(thumb_thread_);
+    (void)stop_thread(thumb_thread_);
     thumb_thread_ = nullptr;
     thumbnailer_ = nullptr; // deleteLater'd on thread finish (or leaked with it)
   }
   if (dir_thumb_thread_ != nullptr) {
-    stop_thread(dir_thumb_thread_);
+    (void)stop_thread(dir_thumb_thread_);
     dir_thumb_thread_ = nullptr;
     dir_thumb_worker_ = nullptr;
   }

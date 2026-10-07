@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "transfer_controller.hpp"
+#include "thread_util.hpp"
 
 #include "transfer_dialog.hpp"
 
@@ -12,9 +13,11 @@ namespace dirtoo::app {
 TransferController::TransferController(QObject* parent)
     : QObject(parent)
 {
+  thread_ = new QThread(this);
+  thread_->setObjectName(QStringLiteral("dirtoo-transfer"));
   worker_ = new TransferWorker;
-  worker_->moveToThread(&thread_);
-  connect(&thread_, &QThread::finished, worker_, &QObject::deleteLater);
+  worker_->moveToThread(thread_);
+  connect(thread_, &QThread::finished, worker_, &QObject::deleteLater);
 
   connect(worker_, &TransferWorker::item_started, this, &TransferController::item_started);
   connect(worker_, &TransferWorker::byte_progress, this, &TransferController::byte_progress);
@@ -25,7 +28,7 @@ TransferController::TransferController(QObject* parent)
   });
   connect(worker_, &TransferWorker::log_line, this, &TransferController::log_line);
 
-  thread_.start();
+  thread_->start();
 }
 
 TransferController::~TransferController()
@@ -38,8 +41,9 @@ void TransferController::shutdown()
   if (worker_ != nullptr) {
     worker_->cancel();
   }
-  thread_.quit();
-  thread_.wait(5000);
+  // A copy blocked on a hung mount cannot be interrupted: detach, don't destroy.
+  (void)stop_thread(thread_, 5000);
+  thread_ = nullptr;
   worker_ = nullptr;
   dialog_ = nullptr;
   busy_ = false;

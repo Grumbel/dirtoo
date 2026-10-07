@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "checksum_dialog.hpp"
+#include "thread_util.hpp"
 #include "async_io.hpp"
 #include "activity_monitor.hpp"
 #include "app_settings.hpp"
@@ -312,8 +313,7 @@ void ChecksumDialog::stop_worker()
     w->request_cancel();
   }
   if (thread_ != nullptr) {
-    thread_->quit();
-    thread_->wait(3000);
+    (void)stop_thread(thread_);
     thread_ = nullptr;
     worker_ = nullptr;
   }

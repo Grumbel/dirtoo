@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "list_pipeline_workers.hpp"
+#include "thread_util.hpp"
 
 #include "dirtoo/collection/file_collection.hpp"
 #include "dirtoo/fs/file_info.hpp"
@@ -53,11 +54,8 @@ void ListPipelineWorkers::setup()
 void ListPipelineWorkers::shutdown()
 {
   auto stop = [](QThread*& th) {
-    if (th != nullptr) {
-      th->quit();
-      th->wait(3000);
-      th = nullptr;
-    }
+    (void)stop_thread(th);
+    th = nullptr;
   };
   stop(dir_load_thread_);
   dir_load_worker_ = nullptr;

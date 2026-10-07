@@ -51,7 +51,7 @@ public slots:
   void resolve_conflict(dirops::ConflictPolicy policy, bool apply, bool apply_to_all);
 
 private:
-  QThread thread_;
+  QThread* thread_ = nullptr;  ///< owned by this; detached by shutdown() if stuck
   TransferWorker* worker_ = nullptr;
   TransferDialog* dialog_ = nullptr;
   bool busy_ = false;

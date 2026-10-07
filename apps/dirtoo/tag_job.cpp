@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "tag_job.hpp"
+#include "thread_util.hpp"
 #include "hash_service.hpp"
 
 #include "archive_member_cache.hpp"
@@ -190,8 +191,7 @@ TagJob::~TagJob()
 {
   cancel();
   if (impl_ != nullptr && impl_->thread != nullptr) {
-    impl_->thread->quit();
-    impl_->thread->wait(5000);
+    (void)stop_thread(impl_->thread, 5000);
   }
   delete impl_;
   impl_ = nullptr;

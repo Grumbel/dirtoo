@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "path_completion_service.hpp"
+#include "thread_util.hpp"
 
 #include <QMetaObject>
 
@@ -53,8 +54,7 @@ void PathCompletionService::shutdown()
     worker_->cancel();
   }
   if (thread_ != nullptr) {
-    thread_->quit();
-    thread_->wait(2000);
+    (void)stop_thread(thread_, 2000);
     thread_ = nullptr;
     worker_ = nullptr;
   }
