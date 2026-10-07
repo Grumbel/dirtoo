@@ -212,12 +212,13 @@
             pkgs.qt6.qtsvg
             pkgs.catch2_3
           ];
+          # Runtime helpers the media probe shells out to: ffprobe (ffmpeg)
+          # and pdfinfo (poppler-utils); bsdtar comes with libarchive. Archive
+          # browsing itself is libarchive-only (no unzip/tar/7z).
           propagatedBuildInputs = with pkgs; [
             libarchive
-            unzip
-            gnutar
-            p7zip
             ffmpeg
+            poppler-utils
           ];
           cmakeFlags = [
             versionFlag
@@ -333,7 +334,7 @@
           libarchive sqlite openssl catch2_3
         ];
         # Runtime tools the packaged GUI propagates (archive/media helpers).
-        devRuntime = with pkgs; [ unzip gnutar p7zip ffmpeg ];
+        devRuntime = with pkgs; [ ffmpeg poppler-utils ];
         devTools = with pkgs; [ gdb clang-tools ];
 
         # Same plugin path the wrapQtAppsHook wrapper gives `nix run .#dirtoo`;
