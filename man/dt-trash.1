@@ -1,0 +1,53 @@
+.\" SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+.\" SPDX-License-Identifier: GPL-3.0-or-later
+.TH DT-TRASH 1 "October 2026" "dirtoo tools" "User Commands"
+.SH NAME
+dt-trash \- move files to the trash, list, restore or empty it
+.SH SYNOPSIS
+.B dt-trash
+[\fIOPTIONS\fR]
+.I PATH\fR...
+.br
+.B dt-trash \-\-list
+.br
+.B dt-trash \-\-restore
+.IR NAME | PATH \fR...
+.br
+.B dt-trash \-\-empty
+.SH DESCRIPTION
+Implements the freedesktop.org Trash specification (version 1.0). Files on the
+same filesystem as the home trash (\fI$XDG_DATA_HOME/Trash\fR) are moved
+there; files on other filesystems go to a trash directory in the top directory
+of that filesystem (\fI.Trash/$uid\fR if \fI.Trash\fR is a sticky,
+non-symlink directory, otherwise \fI.Trash\-$uid\fR). Items are never copied
+across devices and never overwritten.
+.SH OPTIONS
+.TP
+.BR \-l ", " \-\-list
+List trashed items as: deletion date, original path, trash name (tab separated).
+.TP
+.BR \-r ", " \-\-restore
+Restore items. Each argument is a trash name (from \-\-list) or an original path.
+Restoring never overwrites an existing file.
+.TP
+.BR \-e ", " \-\-empty
+Permanently delete everything in the trash.
+.TP
+.BR \-n ", " \-\-dry\-run
+Show what would happen.
+.TP
+.BR \-v ", " \-\-verbose
+Print each item.
+.TP
+.BR \-V ", " \-\-version
+.TQ
+.BR \-h ", " \-\-help
+.SH EXAMPLES
+.nf
+dt-trash old.log build/
+dt-trash --list
+dt-trash --restore old.log
+dt-trash --empty
+.fi
+.SH SEE ALSO
+.BR dt-rm (1)

@@ -9,6 +9,7 @@ set(DIRTOO_MAN_PAGES
   dt-move.1
   dt-rename.1
   dt-rm.1
+  dt-trash.1
   dt-rmdir.1
   dt-mkdir.1
   dt-mkfile.1

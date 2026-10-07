@@ -3,7 +3,7 @@
 
 # CLI tools. dirops-backed tools always; others when packages are available.
 
-set(_dirops_tools rename mkdir copy move swap rm mkfile symlink)
+set(_dirops_tools rename mkdir copy move swap rm mkfile symlink trash)
 foreach(tool ${_dirops_tools})
   add_executable(dt-${tool} dt_${tool}.cpp)
   target_link_libraries(dt-${tool} PRIVATE dirops::dirops dirtoo_warnings)
