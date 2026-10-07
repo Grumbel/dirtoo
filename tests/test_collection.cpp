@@ -287,3 +287,56 @@ TEST_CASE("sort descending and by size keep name tie-breaks", "[collection][sort
   CHECK(sorted_names({"b10", "b2", "B1"}, false)
         == std::vector<std::string>{"b10", "b2", "B1"});
 }
+
+TEST_CASE("random sort is stable until reshuffled", "[collection][sort]")
+{
+  const auto dir = fs::temp_directory_path() / "dirtoo-collection-random";
+  fs::remove_all(dir);
+  fs::create_directories(dir / "adir");
+  fs::create_directories(dir / "zdir");
+  for (int i = 0; i < 40; ++i) {
+    std::ofstream(dir / ("f" + std::to_string(i))) << "x";
+  }
+  auto items = dirtoo::fs::list_directory(dirtoo::fs::Location::from_path(dir));
+
+  dirtoo::collection::Sorter sorter;
+  sorter.set_key(dirtoo::collection::SortKey::Random);
+  auto names = [](const std::vector<dirtoo::fs::FileInfo>& v) {
+    std::vector<std::string> out;
+    for (const auto& fi : v) {
+      out.push_back(fi.basename());
+    }
+    return out;
+  };
+
+  auto first = items;
+  sorter.sort(first);
+  // Same seed, any input order -> same result (a watcher refresh hands in a
+  // differently ordered list).
+  auto reversed = items;
+  std::reverse(reversed.begin(), reversed.end());
+  sorter.sort(reversed);
+  CHECK(names(first) == names(reversed));
+
+  // Removing one entry does not reshuffle the others.
+  auto fewer = first;
+  fewer.erase(fewer.begin() + 10);
+  sorter.sort(fewer);
+  auto expected = names(first);
+  expected.erase(expected.begin() + 10);
+  CHECK(names(fewer) == expected);
+
+  // Directories still come first.
+  CHECK(first[0].is_directory());
+  CHECK(first[1].is_directory());
+
+  // A new seed deals a different order.
+  sorter.set_random_seed(1);
+  auto other = items;
+  sorter.sort(other);
+  sorter.set_random_seed(2);
+  auto third = items;
+  sorter.sort(third);
+  CHECK(names(other) != names(third));
+  fs::remove_all(dir);
+}

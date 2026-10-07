@@ -32,10 +32,11 @@ void MainWindow::request_async_sort()
   const auto key = collection_.sorter().key();
   const bool asc = collection_.sorter().ascending();
   const bool dirs_first = collection_.sorter().directories_first();
+  const quint32 seed = collection_.sorter().random_seed();
   QMetaObject::invokeMethod(list_workers_.sort(), "sort_items", Qt::QueuedConnection,
                             Q_ARG(std::vector<dirtoo::fs::FileInfo>, items),
                             Q_ARG(dirtoo::collection::SortKey, key), Q_ARG(bool, asc),
-                            Q_ARG(bool, dirs_first), Q_ARG(quint64, gen));
+                            Q_ARG(bool, dirs_first), Q_ARG(quint32, seed), Q_ARG(quint64, gen));
 }
 
 void MainWindow::on_sort_finished(quint64 generation, std::vector<fs::FileInfo> items)
@@ -64,6 +65,9 @@ void MainWindow::apply_sort_key(collection::SortKey key, bool toggle_if_same)
     sort_ascending_ = true;
   }
   collection_.sorter().set_key(key);
+  if (key == collection::SortKey::Random) {
+    collection_.sorter().reshuffle();  // choosing "Random" (again) deals a new order
+  }
   collection_.sorter().set_ascending(sort_ascending_);
   {
     AppSettings s = load_settings();

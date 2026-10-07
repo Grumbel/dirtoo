@@ -234,15 +234,30 @@ int Sorter::compare(const fs::FileInfo& a, const fs::FileInfo& b) const
   return compare_keyed(key_, directories_first_, a, b, make_keys(a, key_), make_keys(b, key_));
 }
 
+void Sorter::reshuffle()
+{
+  random_seed_ = std::random_device{}();
+}
+
 void Sorter::sort(std::vector<fs::FileInfo>& items) const
 {
   if (key_ == SortKey::Random) {
-    static thread_local std::mt19937 rng{std::random_device{}()};
-    std::shuffle(items.begin(), items.end(), rng);
-    if (directories_first_) {
-      std::stable_partition(items.begin(), items.end(),
-                            [](const fs::FileInfo& fi) { return fi.is_directory(); });
-    }
+    // Order by a seeded hash of the path (splitmix64 finaliser): stable across
+    // rebuilds and independent of the current order, unlike a std::shuffle.
+    auto rank = [seed = random_seed_](const fs::FileInfo& fi) {
+      std::uint64_t x = std::hash<std::string>{}(fi.path().string()) ^ (std::uint64_t{seed} << 32 | seed);
+      x += 0x9e3779b97f4a7c15ull;
+      x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ull;
+      x = (x ^ (x >> 27)) * 0x94d049bb133111ebull;
+      return x ^ (x >> 31);
+    };
+    std::stable_sort(items.begin(), items.end(),
+                     [&](const fs::FileInfo& a, const fs::FileInfo& b) {
+                       if (directories_first_ && a.is_directory() != b.is_directory()) {
+                         return a.is_directory();
+                       }
+                       return rank(a) < rank(b);
+                     });
     return;
   }
 

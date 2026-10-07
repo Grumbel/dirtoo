@@ -49,6 +49,14 @@ public:
   void set_directories_first(bool v) { directories_first_ = v; }
   [[nodiscard]] bool directories_first() const noexcept { return directories_first_; }
 
+  /// SortKey::Random orders items by a hash of (seed, path): the same seed
+  /// always gives the same order, independent of the input order, and an
+  /// entry keeps its relative position when other files come and go (a
+  /// watcher refresh must not reshuffle the view). reshuffle() picks a new seed.
+  void reshuffle();
+  void set_random_seed(std::uint32_t seed) { random_seed_ = seed; }
+  [[nodiscard]] std::uint32_t random_seed() const noexcept { return random_seed_; }
+
   void set_ascending(bool v) { ascending_ = v; }
   [[nodiscard]] bool ascending() const noexcept { return ascending_; }
 
@@ -63,6 +71,7 @@ private:
   SortKey key_ = SortKey::Name;
   bool directories_first_ = true;
   bool ascending_ = true;
+  std::uint32_t random_seed_ = 0x9e3779b9u;
 };
 
 } // namespace dirtoo::collection

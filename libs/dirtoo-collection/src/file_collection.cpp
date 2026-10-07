@@ -174,6 +174,9 @@ void FileCollection::sort_items_only()
 void FileCollection::set_sort_key(SortKey key)
 {
   sorter_.set_key(key);
+  if (key == SortKey::Random) {
+    sorter_.reshuffle();  // picking "Random" again deals a new order
+  }
   apply_sort();
 }
 

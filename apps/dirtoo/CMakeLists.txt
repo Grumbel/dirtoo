@@ -17,10 +17,12 @@ add_library(dirtoo-app-core STATIC
   thread_util.hpp
   archive_listing.cpp
   archive_listing.hpp
+  sort_worker.cpp
+  sort_worker.hpp
 )
 target_include_directories(dirtoo-app-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(dirtoo-app-core
-  PUBLIC dirtoo::fs dirtoo::archive dirtoo::dirops Qt6::Core Qt6::Gui Qt6::Concurrent
+  PUBLIC dirtoo::fs dirtoo::archive dirtoo::collection dirtoo::dirops Qt6::Core Qt6::Gui Qt6::Concurrent
   PRIVATE dirtoo_warnings)
 
 qt_add_executable(dirtoo-app
@@ -158,8 +160,6 @@ qt_add_executable(dirtoo-app
   view_zoom.cpp
   fs_tree_scan_worker.cpp
   treemap_view.cpp
-  sort_worker.cpp
-  sort_worker.hpp
   filter_worker.cpp
   filter_worker.hpp
   directory_thumbnail_worker.cpp

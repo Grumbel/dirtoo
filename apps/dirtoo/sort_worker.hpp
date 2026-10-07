@@ -21,7 +21,8 @@ public:
 
 public slots:
   void sort_items(std::vector<dirtoo::fs::FileInfo> items, dirtoo::collection::SortKey key,
-                  bool ascending, bool directories_first, quint64 generation);
+                  bool ascending, bool directories_first, quint32 random_seed,
+                  quint64 generation);
 
 signals:
   void sorted(quint64 generation, std::vector<dirtoo::fs::FileInfo> items);
