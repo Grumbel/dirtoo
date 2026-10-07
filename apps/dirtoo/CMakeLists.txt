@@ -7,6 +7,8 @@ add_library(dirtoo-app-core STATIC
   clipboard.hpp
   directory_load_worker.cpp
   directory_load_worker.hpp
+  desktop_entry.cpp
+  desktop_entry.hpp
 )
 target_include_directories(dirtoo-app-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(dirtoo-app-core

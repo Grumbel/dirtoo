@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "open_with.hpp"
+#include "desktop_entry.hpp"
 
 #include "mime_util.hpp"
 
@@ -21,7 +22,6 @@
 #include <QMimeDatabase>
 #include <QProcess>
 #include <QSet>
-#include <QSettings>
 #include <QStandardPaths>
 #include <QTextStream>
 #include <QUrl>
@@ -86,16 +86,14 @@ DesktopApp parse_desktop_file(const QString& path)
   if (path.isEmpty()) {
     return app;
   }
-  QSettings ini(path, QSettings::IniFormat);
-  ini.beginGroup(QStringLiteral("Desktop Entry"));
-  if (ini.value(QStringLiteral("NoDisplay")).toBool() || ini.value(QStringLiteral("Hidden")).toBool()) {
+  const auto entry = parse_desktop_entry_file(path);
+  if (!entry || entry->no_display || entry->hidden) {
     return app;
   }
   app.id = QFileInfo(path).fileName();
-  app.name = ini.value(QStringLiteral("Name")).toString();
-  app.exec = ini.value(QStringLiteral("Exec")).toString();
-  app.icon = ini.value(QStringLiteral("Icon")).toString();
-  ini.endGroup();
+  app.name = entry->name;
+  app.exec = entry->exec;
+  app.icon = entry->icon;
   return app;
 }
 
@@ -165,26 +163,13 @@ QStringList desktop_ids_from_desktop_mimetypes(const QString& mime)
     const QStringList files =
         app_dir.entryList(QStringList{QStringLiteral("*.desktop")}, QDir::Files);
     for (const QString& name : files) {
-      const QString path = app_dir.filePath(name);
-      QSettings ini(path, QSettings::IniFormat);
-      ini.beginGroup(QStringLiteral("Desktop Entry"));
-      if (ini.value(QStringLiteral("NoDisplay")).toBool()
-          || ini.value(QStringLiteral("Hidden")).toBool()) {
-        ini.endGroup();
+      const auto entry = parse_desktop_entry_file(app_dir.filePath(name));
+      if (!entry || entry->no_display || entry->hidden) {
         continue;
       }
-      const QString mime_line = ini.value(QStringLiteral("MimeType")).toString();
-      ini.endGroup();
-      if (mime_line.isEmpty()) {
-        continue;
-      }
-      const QStringList declared = mime_line.split(QLatin1Char(';'), Qt::SkipEmptyParts);
-      for (QString m : declared) {
-        if (m.trimmed() == mime && !seen.contains(name)) {
-          seen.insert(name);
-          ids << name;
-          break;
-        }
+      if (entry->mime_types.contains(mime) && !seen.contains(name)) {
+        seen.insert(name);
+        ids << name;
       }
     }
   }
