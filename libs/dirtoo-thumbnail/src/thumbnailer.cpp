@@ -307,7 +307,11 @@ void Thumbnailer::request_many(const std::vector<fs::Location>& locations,
 
 void Thumbnailer::on_ready(uint handle, const QStringList& uris)
 {
-  (void)handle;
+  // The signals are bus-wide: every application using the thumbnail service
+  // gets them. Only handle the ones for requests this client queued.
+  if (!pending_.contains(handle)) {
+    return;
+  }
   for (const QString& uri : uris) {
     fs::Location loc;
     try {
@@ -334,7 +338,9 @@ void Thumbnailer::on_ready(uint handle, const QStringList& uris)
 void Thumbnailer::on_error(uint handle, const QStringList& uris, int error_code,
                            const QString& message)
 {
-  (void)handle;
+  if (!pending_.contains(handle)) {
+    return;  // another application's request
+  }
   for (const QString& uri : uris) {
     try {
       const auto loc = fs::Location::from_url(uri.toStdString());
