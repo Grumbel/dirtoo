@@ -74,11 +74,11 @@ Conventions:
 |----|-----|----------|-------|
 | E1 | M | read | **Tag lookups ignore staleness.** `TagStore::tags_for_path` (used by the tag filter, the GUI tag chips and QuickFilter via `tags_for_sha256`) and `resolve_path` use `ChecksumStore::get()` without checking size/mtime, so after a file is edited it keeps showing the tags of its *old* content. `dt-tag` calls `resolve_path` **before** hashing, so on a modified file with a cached row it attaches the tag to the old hash (the GUI `TagJob` is fine: it runs `ensure_full`, which revalidates, first). Fix: use `get_if_valid` with the file's current size/mtime supplied by the caller (no stat on the GUI thread) and make `dt-tag` call `ensure` first — see E2 for the unit mismatch. (Corrected 2026-10-07: first version of this entry overstated the GUI tagging impact.) |
 | E2 | M | read | The stored `mtime_ns` is `file_time_type::time_since_epoch().count()`: libstdc++'s file clock has a non-Unix epoch (I believe 2174, not verified) and an unspecified unit. The filter/collection use whole Unix seconds, so the two cannot be compared. Store Unix nanoseconds (`clock_cast<system_clock>`); this invalidates the existing cache once. Touches `checksum_store.cpp`, `hash_file.cpp`, `apps/dirtoo/hash_service.cpp`. |
-| E3 | M | read | `ChecksumStore::put/remove` ignore SQLite errors (e.g. `SQLITE_BUSY` after the 5 s timeout). A lost write looks like success. Return `bool`/`std::expected` and log. |
+| E3 | M | read | `ChecksumStore::put/remove` ignore SQLite errors (e.g. `SQLITE_BUSY` after the 5 s timeout). A lost write looks like success. Return `bool`/`std::expected` and log. **Fixed in `bbeafb54`.** |
 | E4 | L | read | Nothing prunes the stores: moved/deleted files stay in `checksums` and `paths`, so `paths_for_hash` can return paths that no longer exist (ghost duplicates), and `files` rows without tags accumulate. Add a vacuum/prune command (and a GUI action or periodic job). |
 | E5 | L | read | `get_if_valid` accepts an entry when the *current* mtime is unknown (size match only). |
-| E6 | L | read | The databases are created with the process umask (typically 0644); they list a user's file inventory and tags. Create with 0600. |
-| E7 | L | read | Several store functions still ignore `sqlite3_exec` results for PRAGMAs (`journal_mode=WAL` can fail on network filesystems → silently falls back to rollback journal; `foreign_keys=ON` failing would disable cascades). Check and log. |
+| E6 | L | read | The databases are created with the process umask (typically 0644); they list a user's file inventory and tags. Create with 0600. **Fixed in `bbeafb54`.** |
+| E7 | L | read | Several store functions still ignore `sqlite3_exec` results for PRAGMAs (`journal_mode=WAL` can fail on network filesystems → silently falls back to rollback journal; `foreign_keys=ON` failing would disable cascades). Check and log. **Fixed in `bbeafb54`.** |
 
 ## F. dirtoo-filter
 
