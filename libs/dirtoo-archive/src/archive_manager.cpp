@@ -12,7 +12,11 @@
 #include <QPointer>
 #include <QStandardPaths>
 
+#include <unistd.h>
+
 #include <fstream>
+#include <functional>
+#include <string>
 #include <thread>
 
 namespace dirtoo::archive {
@@ -125,17 +129,37 @@ void ArchiveManager::open(const fs::Location& archive_location)
     QString err;
     std::error_code ec;
     if (!std::filesystem::exists(marker, ec)) {
-      std::filesystem::remove_all(cache_dir, ec);
-      std::filesystem::create_directories(cache_dir, ec);
+      // Extract into a private temp dir and rename it into place, so another
+      // window/process opening the same archive never sees (or deletes) a
+      // half-written tree. The marker is written last, inside the temp dir.
+      auto tmp = cache_dir;
+      tmp += ".tmp-" + std::to_string(::getpid()) + "-"
+             + std::to_string(std::hash<std::thread::id>{}(std::this_thread::get_id()));
+      std::filesystem::remove_all(tmp, ec);
+      std::filesystem::create_directories(tmp, ec);
       if (ec) {
         err = QString::fromStdString(ec.message());
-      } else if (const auto ok = extract_archive_libarchive(archive_path, cache_dir); !ok) {
+      } else if (const auto ok = extract_archive_libarchive(archive_path, tmp); !ok) {
         err = QString::fromStdString(ok.error());
       } else {
-        std::ofstream out(marker);
+        std::ofstream out(tmp / ".dirtoo-extracted");
         out << archive_path.string() << '\n';
         out << cache_dir.filename().string() << '\n'; // stamp segment (mtime-size)
+        out.close();
+        if (!out) {
+          err = QStringLiteral("cannot write extraction marker in %1")
+                    .arg(QString::fromStdString(tmp.string()));
+        } else if (std::filesystem::exists(marker, ec)) {
+          // Someone else finished first; keep theirs.
+        } else {
+          std::filesystem::remove_all(cache_dir, ec);  // stale partial from an old version
+          std::filesystem::rename(tmp, cache_dir, ec);
+          if (ec && !std::filesystem::exists(marker)) {
+            err = QString::fromStdString(ec.message());
+          }
+        }
       }
+      std::filesystem::remove_all(tmp, ec);  // no-op after a successful rename
     }
     // Post to the application object (always alive) and re-check the guard on
     // the GUI thread: the manager may have been destroyed while extracting.

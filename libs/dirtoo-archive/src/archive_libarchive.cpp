@@ -7,6 +7,7 @@
 #include <archive_entry.h>
 
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -33,6 +34,13 @@ struct ArchiveWriteGuard {
   }
 };
 
+/// libarchive: ARCHIVE_WARN means "done, with caveats" (e.g. a malformed
+/// extended attribute); only worse results are failures.
+constexpr bool failed(int r)
+{
+  return r < ARCHIVE_WARN;
+}
+
 int copy_data(::archive* ar, ::archive* aw)
 {
   const void* buff = nullptr;
@@ -43,7 +51,7 @@ int copy_data(::archive* ar, ::archive* aw)
     if (r == ARCHIVE_EOF) {
       return ARCHIVE_OK;
     }
-    if (r < ARCHIVE_OK) {
+    if (failed(r)) {
       return r;
     }
     const la_ssize_t written = archive_write_data_block(aw, buff, size, offset);
@@ -51,6 +59,51 @@ int copy_data(::archive* ar, ::archive* aw)
       return static_cast<int>(written);
     }
   }
+}
+
+/// Entry names come from an untrusted archive. Return a normalised relative
+/// path, or nullopt for names that are empty, absolute or climb out via "..".
+/// (`dest / "/abs"` would otherwise silently discard `dest`.)
+std::optional<std::filesystem::path> safe_relative(std::string name)
+{
+  while (name.starts_with("./")) {
+    name.erase(0, 2);
+  }
+  const std::filesystem::path p = std::filesystem::path{name}.lexically_normal();
+  if (p.empty() || p.is_absolute() || p.has_root_name() || p.has_root_directory()) {
+    return std::nullopt;
+  }
+  for (const auto& part : p) {
+    if (part == "..") {
+      return std::nullopt;
+    }
+  }
+  return p;
+}
+
+/// Rewrite pathname (and any hardlink target) of @p entry to live under
+/// @p dest_dir. Returns false if the entry must be skipped.
+bool rebase_entry(archive_entry* entry, const std::filesystem::path& dest_dir)
+{
+  const char* pathname = archive_entry_pathname(entry);
+  if (pathname == nullptr) {
+    return false;
+  }
+  const auto rel = safe_relative(pathname);
+  if (!rel) {
+    return false;
+  }
+  archive_entry_set_pathname(entry, (dest_dir / *rel).c_str());
+  // Hardlink targets are archive-relative; libarchive would resolve them
+  // against the process cwd (or an absolute path elsewhere on the system).
+  if (const char* target = archive_entry_hardlink(entry); target != nullptr) {
+    const auto trel = safe_relative(target);
+    if (!trel) {
+      return false;
+    }
+    archive_entry_set_hardlink(entry, (dest_dir / *trel).c_str());
+  }
+  return true;
 }
 
 std::string archive_err(::archive* a, const char* fallback)
@@ -88,7 +141,7 @@ list_archive_entries_libarchive(const std::filesystem::path& archive_file)
     if (r == ARCHIVE_EOF) {
       break;
     }
-    if (r < ARCHIVE_OK) {
+    if (failed(r)) {
       return std::unexpected(archive_err(guard.a, "archive_read_next_header failed"));
     }
     const char* pathname = archive_entry_pathname(entry);
@@ -157,22 +210,20 @@ extract_archive_libarchive(const std::filesystem::path& archive_file,
     if (r == ARCHIVE_EOF) {
       break;
     }
-    if (r < ARCHIVE_OK) {
+    if (failed(r)) {
       return std::unexpected(archive_err(rin.a, "archive_read_next_header failed"));
     }
-    const char* pathname = archive_entry_pathname(entry);
-    if (pathname == nullptr) {
+    if (!rebase_entry(entry, dest_dir)) {
+      // Absolute / ".."-escaping / unnamed entry: never extract it.
       archive_read_data_skip(rin.a);
       continue;
     }
-    const auto full = dest_dir / pathname;
-    archive_entry_set_pathname(entry, full.string().c_str());
 
-    if (archive_write_header(wout.a, entry) != ARCHIVE_OK) {
+    if (failed(archive_write_header(wout.a, entry))) {
       return std::unexpected(archive_err(wout.a, "archive_write_header failed"));
     }
     if (archive_entry_size(entry) > 0) {
-      if (copy_data(rin.a, wout.a) < ARCHIVE_OK) {
+      if (failed(copy_data(rin.a, wout.a))) {
         return std::unexpected(archive_err(rin.a, "archive extract data failed"));
       }
     }
@@ -192,7 +243,11 @@ extract_member_libarchive(const std::filesystem::path& archive_file,
     return std::unexpected(ec.message());
   }
 
-  const std::string want = member.generic_string();
+  const auto want_rel = safe_relative(member.generic_string());
+  if (!want_rel) {
+    return std::unexpected("unsafe archive member path: " + member.generic_string());
+  }
+  const std::string want = want_rel->generic_string();
 
   ArchiveReadGuard rin;
   rin.a = archive_read_new();
@@ -221,7 +276,7 @@ extract_member_libarchive(const std::filesystem::path& archive_file,
     if (r == ARCHIVE_EOF) {
       break;
     }
-    if (r < ARCHIVE_OK) {
+    if (failed(r)) {
       return std::unexpected(archive_err(rin.a, "archive_read_next_header failed"));
     }
     const char* pathname = archive_entry_pathname(entry);
@@ -230,27 +285,27 @@ extract_member_libarchive(const std::filesystem::path& archive_file,
       continue;
     }
     std::string name = pathname;
-    if (name.starts_with("./")) {
-      name.erase(0, 2);
-    }
     if (!name.empty() && name.back() == '/') {
       name.pop_back();
     }
-    if (name != want) {
+    const auto name_rel = safe_relative(name);
+    if (!name_rel || name_rel->generic_string() != want) {
       archive_read_data_skip(rin.a);
       continue;
     }
     found = true;
-    const auto full = dest_dir / member;
+    const auto full = dest_dir / *want_rel;
     if (auto parent = full.parent_path(); !parent.empty()) {
       std::filesystem::create_directories(parent, ec);
     }
-    archive_entry_set_pathname(entry, full.string().c_str());
-    if (archive_write_header(wout.a, entry) != ARCHIVE_OK) {
+    if (!rebase_entry(entry, dest_dir)) {
+      return std::unexpected("unsafe archive member entry: " + want);
+    }
+    if (failed(archive_write_header(wout.a, entry))) {
       return std::unexpected(archive_err(wout.a, "archive_write_header failed"));
     }
     if (archive_entry_size(entry) > 0) {
-      if (copy_data(rin.a, wout.a) < ARCHIVE_OK) {
+      if (failed(copy_data(rin.a, wout.a))) {
         return std::unexpected(archive_err(rin.a, "archive extract data failed"));
       }
     }
@@ -260,7 +315,7 @@ extract_member_libarchive(const std::filesystem::path& archive_file,
   if (!found) {
     return std::unexpected("member not found in archive: " + want);
   }
-  const auto dest = dest_dir / member;
+  const auto dest = dest_dir / *want_rel;
   if (!std::filesystem::exists(dest)) {
     return std::unexpected("extracted member not found at " + dest.string());
   }

@@ -4,6 +4,7 @@
 # Catch2 3 is required when tests are enabled (nix develop provides it);
 # pass -DDIRTOO_BUILD_TESTS=OFF to build without.
 find_package(Catch2 3 REQUIRED)
+find_package(LibArchive REQUIRED)
 
 add_executable(dirtoo-tests
   test_location.cpp
@@ -12,6 +13,7 @@ add_executable(dirtoo-tests
   test_collection.cpp
   test_clipboard_text.cpp
   test_archive_index.cpp
+  test_archive_extract.cpp
   test_filter.cpp
   test_hash.cpp
   test_tag_store.cpp
@@ -28,6 +30,7 @@ target_link_libraries(dirtoo-tests
     dirops::dirops
     dirtoo-collection::dirtoo-collection
     dirtoo-archive::dirtoo-archive
+    LibArchive::LibArchive
     dirtoo-filter::dirtoo-filter
     dirtoo-tags::dirtoo-tags
     dirtoo-hash::dirtoo-hash
