@@ -19,6 +19,7 @@ add_executable(dirtoo-tests
   test_atomic_write.cpp
   test_path_completion.cpp
   test_thread_util.cpp
+  test_archive_listing.cpp
   test_filter.cpp
   test_hash.cpp
   test_tag_store.cpp

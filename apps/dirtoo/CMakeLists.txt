@@ -15,10 +15,12 @@ add_library(dirtoo-app-core STATIC
   path_completion_worker.hpp
   thread_util.cpp
   thread_util.hpp
+  archive_listing.cpp
+  archive_listing.hpp
 )
 target_include_directories(dirtoo-app-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(dirtoo-app-core
-  PUBLIC dirtoo::fs dirtoo::dirops Qt6::Core Qt6::Gui Qt6::Concurrent
+  PUBLIC dirtoo::fs dirtoo::archive dirtoo::dirops Qt6::Core Qt6::Gui Qt6::Concurrent
   PRIVATE dirtoo_warnings)
 
 qt_add_executable(dirtoo-app
@@ -91,8 +93,6 @@ qt_add_executable(dirtoo-app
   search_controller.hpp
   properties_dialog.cpp
   properties_dialog.hpp
-  archive_listing.cpp
-  archive_listing.hpp
   file_context_menu.cpp
   file_context_menu.hpp
   archive_member_cache.cpp

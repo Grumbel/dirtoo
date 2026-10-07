@@ -26,8 +26,22 @@ public:
 
   /// Re-list only if the archive file's size or mtime changed since the last load.
   /// Returns true when the in-memory index is usable afterward.
+  /// Does file I/O (stat, and a full TOC read when stale): never call it on
+  /// the GUI thread — use `stamp()` + `stamp_matches()` + `load()` on a worker.
   [[nodiscard]] bool refresh_if_stale(const std::filesystem::path& archive_file,
                                       std::string* error_out = nullptr);
+
+  /// Size/mtime of the archive file as of the last load().
+  struct Stamp {
+    std::uintmax_t size = 0;
+    std::filesystem::file_time_type mtime{};
+  };
+  [[nodiscard]] Stamp stamp() const noexcept { return {indexed_size_, indexed_mtime_}; }
+
+  /// True if @p archive_file still has the given size and mtime (stats it:
+  /// worker threads only). A file that cannot be stat'ed does not match.
+  [[nodiscard]] static bool stamp_matches(const std::filesystem::path& archive_file,
+                                          const Stamp& stamp);
 
   /// True when index matches @p archive_file and is ready.
   [[nodiscard]] bool ready_for(const std::filesystem::path& archive_file) const;

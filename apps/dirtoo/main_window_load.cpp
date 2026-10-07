@@ -6,6 +6,7 @@
 #include "activity_monitor.hpp"
 
 #include "archive_listing.hpp"
+#include "async_io.hpp"
 #include "tag_paint.hpp"
 #include <QSet>
 #include <QCoreApplication>
@@ -15,12 +16,62 @@
 
 namespace dirtoo::app {
 
+void MainWindow::verify_archive_listing_then_reload(bool soft)
+{
+  const auto path = location_.as_path();
+  const auto stamp = archive_listing_.stamp();
+  const quint64 gen = ++archive_verify_generation_;
+  struct Check {
+    bool changed = false;
+    bool ok = true;
+    ArchiveListing fresh;
+    std::string error;
+  };
+  // The stat of the archive (possibly on a slow drive) and, when it changed,
+  // the full TOC read must not run on the GUI thread.
+  run_io(
+      this,
+      [path, stamp] {
+        Check c;
+        if (!ArchiveListing::stamp_matches(path, stamp)) {
+          c.changed = true;
+          c.ok = c.fresh.load(path, &c.error);
+        }
+        return c;
+      },
+      [this, path, soft, gen](Check c) {
+        if (gen != archive_verify_generation_ || !location_.is_archive()
+            || location_.as_path() != path) {
+          return;  // navigated elsewhere meanwhile
+        }
+        if (c.changed) {
+          if (c.ok) {
+            archive_listing_ = std::move(c.fresh);
+          } else {
+            qWarning().noquote() << QStringLiteral("archive re-index failed: %1")
+                                        .arg(QString::fromStdString(c.error));
+            archive_listing_.clear();  // falls back to the extracted copy below
+          }
+        }
+        archive_stamp_verified_ = true;
+        reload_directory(soft);
+      });
+}
+
 void MainWindow::reload_directory(bool soft)
 {
   if (search_session_.active) {
     // Keep recursive search results until the user navigates away or closes search.
     return;
   }
+  // Is the in-memory archive index still current? That needs a stat (and maybe
+  // a re-read): do it on the I/O pool and re-enter here once it is known.
+  if (location_.is_archive() && !archive_stamp_verified_
+      && archive_listing_.ready_for(location_.as_path())) {
+    verify_archive_listing_then_reload(soft);
+    return;
+  }
+  archive_stamp_verified_ = false;
   if (location_.is_tag()) {
     load_tag_location_listing();
     return;
@@ -48,12 +99,8 @@ void MainWindow::reload_directory(bool soft)
     filter::MediaMetaCache::instance().bump_generation();
   }
 
-  // In-memory archive index: apply on UI thread (no directory walk).
-  // Soft watcher ticks refresh the TOC only when the archive file stamp changes.
-  if (location_.is_archive()) {
-    std::string list_err;
-    (void)archive_listing_.refresh_if_stale(location_.as_path(), &list_err);
-  }
+  // In-memory archive index: apply on UI thread (no directory walk, no I/O —
+  // staleness was checked above).
   if (location_.is_archive() && archive_listing_.ok()) {
     dir_session_.soft_reload = false;
     auto items = archive_listing_.fileinfos_for(location_);

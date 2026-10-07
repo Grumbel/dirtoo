@@ -115,6 +115,9 @@ private slots:
                              const QStringList& created_paths);
   /// @param soft If true (watcher), keep current listing until load completes.
   void reload_directory(bool soft);
+  /// Stat the open archive (and re-index it if it changed) on the I/O pool,
+  /// then continue with reload_directory(soft).
+  void verify_archive_listing_then_reload(bool soft);
   void on_directory_loaded(quint64 generation, std::vector<dirtoo::fs::FileInfo> items);
   void on_directory_load_failed(quint64 generation, QString error);
   void on_directory_load_progress(quint64 generation, int entries_seen);
@@ -321,6 +324,8 @@ private:
   ArchiveListing archive_listing_;
   /// Bumped when starting an async archive TOC load; stale results ignored.
   quint64 archive_index_generation_ = 0;
+  quint64 archive_verify_generation_ = 0;
+  bool archive_stamp_verified_ = false; ///< set by verify_archive_listing_then_reload for one pass
   /// Bumped per tag:// / set:// listing; stale async results are dropped.
   quint64 virtual_listing_generation_ = 0;
   DirectorySession dir_session_;

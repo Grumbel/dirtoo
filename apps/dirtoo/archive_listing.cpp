@@ -3,7 +3,8 @@
 
 #include "archive_listing.hpp"
 
-#include <set>
+#include <string_view>
+#include <unordered_set>
 
 namespace dirtoo::app {
 namespace {
@@ -46,6 +47,11 @@ bool ArchiveListing::stamp_matches(const std::filesystem::path& archive_file,
     return false;
   }
   return cur_size == size && cur_mtime == mtime;
+}
+
+bool ArchiveListing::stamp_matches(const std::filesystem::path& archive_file, const Stamp& stamp)
+{
+  return stamp_matches(archive_file, stamp.size, stamp.mtime);
 }
 
 bool ArchiveListing::load(const std::filesystem::path& archive_file, std::string* error_out)
@@ -101,32 +107,39 @@ ArchiveListing::child_counts_for(const fs::Location& location) const
     return counts;
   }
   const std::string prefix = location.entry_path().lexically_normal().generic_string();
-  const auto items = fileinfos_for(location);
-  for (const auto& fi : items) {
+  const std::string base = prefix.empty() ? std::string{} : prefix + "/";
+
+  // One pass over the TOC: for every entry below `base`, the first component is
+  // the directory row it belongs to and the second the distinct child to count.
+  // (The old per-directory rescan was O(directories × entries).)
+  std::unordered_map<std::string, std::unordered_set<std::string>> children;
+  for (const auto& entry : entries_) {
+    const std::string rel_all = entry.path.generic_string();
+    if (!rel_all.starts_with(base)) {
+      continue;
+    }
+    const std::string_view rel = std::string_view{rel_all}.substr(base.size());
+    const auto slash = rel.find('/');
+    if (slash == std::string_view::npos) {
+      continue;  // a direct child itself, not an entry inside a directory row
+    }
+    const std::string dir{rel.substr(0, slash)};
+    const std::string_view inner = rel.substr(slash + 1);
+    if (inner.empty()) {
+      continue;
+    }
+    const auto next = inner.find('/');
+    children[dir].emplace(inner.substr(0, next));
+  }
+
+  for (const auto& fi : fileinfos_for(location)) {
     if (!fi.is_directory()) {
       continue;
     }
-    const std::string name = fi.basename();
-    const std::string needed =
-        prefix.empty() ? name + "/" : prefix + "/" + name + "/";
-    std::int64_t n = 0;
-    std::set<std::string> seen;
-    for (const auto& entry : entries_) {
-      std::string rel = entry.path.generic_string();
-      if (!rel.starts_with(needed)) {
-        continue;
-      }
-      rel = rel.substr(needed.size());
-      if (rel.empty()) {
-        continue;
-      }
-      const auto slash = rel.find('/');
-      const std::string child = (slash == std::string::npos) ? rel : rel.substr(0, slash);
-      if (seen.insert(child).second) {
-        ++n;
-      }
-    }
-    counts.emplace(fi.path().string(), n);
+    const auto it = children.find(fi.basename());
+    counts.emplace(fi.path().string(), it == children.end()
+                                           ? 0
+                                           : static_cast<std::int64_t>(it->second.size()));
   }
   return counts;
 }
