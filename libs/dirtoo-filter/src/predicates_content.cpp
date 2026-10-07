@@ -105,8 +105,8 @@ public:
     std::string chunk(kChunk, '\0');
     std::size_t total = 0;
     std::string carry;
-    // Overlap keep: up to 4KiB so multi-line patterns spanning chunks can still match.
-    constexpr std::size_t kOverlap = 4096;
+    // Overlap keep: up to 1KiB (== window overlap) so short matches spanning chunks still match.
+    constexpr std::size_t kOverlap = 1024;
     while (in && total < max_bytes_) {
       const auto to_read = std::min(kChunk, max_bytes_ - total);
       in.read(chunk.data(), static_cast<std::streamsize>(to_read));
@@ -117,12 +117,8 @@ public:
       total += n;
       std::string view = carry;
       view.append(chunk.data(), n);
-      try {
-        if (std::regex_search(view, re_)) {
-          return true;
-        }
-      } catch (...) {
-        return false;
+      if (search_windows(view)) {
+        return true;
       }
       if (view.size() > kOverlap) {
         carry = view.substr(view.size() - kOverlap);
@@ -134,6 +130,35 @@ public:
   }
 
 private:
+  /// libstdc++'s std::regex recurses once per input character, so a plain
+  /// regex_search over a 64 KiB chunk (".*x", "a+b", ...) overflows the stack.
+  /// Search bounded windows instead; consecutive windows overlap so matches
+  /// shorter than kWindowOverlap that straddle a boundary are still found.
+  static constexpr std::size_t kWindow = 4096;
+  static constexpr std::size_t kWindowOverlap = 1024;
+
+  [[nodiscard]] bool search_windows(const std::string& text) const
+  {
+    try {
+      for (std::size_t pos = 0; pos < text.size(); pos += kWindow - kWindowOverlap) {
+        const std::size_t len = std::min(kWindow, text.size() - pos);
+        const auto first = text.begin() + static_cast<std::ptrdiff_t>(pos);
+        // match_prev_avail: ^ and \b must look at the real preceding character.
+        const auto flags = pos > 0 ? std::regex_constants::match_prev_avail
+                                   : std::regex_constants::match_default;
+        if (std::regex_search(first, first + static_cast<std::ptrdiff_t>(len), re_, flags)) {
+          return true;
+        }
+        if (pos + len >= text.size()) {
+          break;
+        }
+      }
+    } catch (const std::regex_error&) {
+      return false;  // e.g. error_complexity / error_stack
+    }
+    return false;
+  }
+
   std::regex re_;
   std::size_t max_bytes_;
 };
@@ -211,7 +236,7 @@ private:
 MatchFuncPtr make_contains(std::string argument, bool case_sensitive, std::size_t max_bytes)
 {
   if (argument.empty()) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   return std::make_shared<ContainsMatch>(std::move(argument), case_sensitive, max_bytes);
 }
@@ -219,7 +244,7 @@ MatchFuncPtr make_contains(std::string argument, bool case_sensitive, std::size_
 MatchFuncPtr make_contains_regex(std::string argument, bool case_sensitive, std::size_t max_bytes)
 {
   if (argument.empty()) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   try {
     const auto flags =
@@ -227,7 +252,7 @@ MatchFuncPtr make_contains_regex(std::string argument, bool case_sensitive, std:
                        : (std::regex::ECMAScript | std::regex::icase);
     return std::make_shared<ContainsRegexMatch>(std::regex(argument, flags), max_bytes);
   } catch (const std::regex_error&) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
 }
 
@@ -271,7 +296,7 @@ MatchFuncPtr make_contains_fuzzy(std::string argument, std::size_t max_bytes)
     }
   }
   if (needle.empty()) {
-    return std::make_shared<AlwaysFalse>();
+    return std::make_shared<InvalidMatch>();
   }
   if (n < 1) {
     n = 1;
