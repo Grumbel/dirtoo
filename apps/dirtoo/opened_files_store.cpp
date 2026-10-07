@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "opened_files_store.hpp"
+#include "atomic_write.hpp"
 
 #include "open_history.hpp"
 
@@ -77,28 +78,12 @@ void OpenedFilesStore::load()
 
 void OpenedFilesStore::save() const
 {
-  const auto parent = path_.parent_path();
-  if (!parent.empty()) {
-    std::error_code ec;
-    std::filesystem::create_directories(parent, ec);
+  std::string text = "# dirtoo opened-files marks (one absolute path per line)\n";
+  for (const auto& p : opened_) {
+    text += p;
+    text += '\n';
   }
-  const std::filesystem::path tmp = path_.string() + ".tmp";
-  {
-    std::ofstream out(tmp, std::ios::trunc);
-    if (!out) {
-      return;
-    }
-    out << "# dirtoo opened-files marks (one absolute path per line)\n";
-    for (const auto& p : opened_) {
-      out << p << '\n';
-    }
-  }
-  std::error_code ec;
-  std::filesystem::rename(tmp, path_, ec);
-  if (ec) {
-    std::filesystem::remove(path_, ec);
-    std::filesystem::rename(tmp, path_, ec);
-  }
+  (void)write_file_atomic(path_, text);  // failure is logged; the old file is kept
 }
 
 bool OpenedFilesStore::is_opened(const QString& path) const

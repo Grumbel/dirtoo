@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "open_history.hpp"
+#include "atomic_write.hpp"
 #include "file_icons.hpp"
 #include "path_availability.hpp"
 
@@ -234,21 +235,18 @@ void OpenHistory::load()
 
 void OpenHistory::save() const
 {
-  if (auto parent = path_.parent_path(); !parent.empty()) {
-    std::error_code ec;
-    std::filesystem::create_directories(parent, ec);
-  }
-  std::ofstream out(path_, std::ios::trunc);
-  out << "# dirtoo open history: when|app_id|app_name|app_icon|path…\n";
+  std::string text = "# dirtoo open history: when|app_id|app_name|app_icon|path…\n";
   for (const OpenHistoryEntry& e : entries_) {
-    out << escape_field(e.when.toString(Qt::ISODate)).toStdString() << '|'
-        << escape_field(e.app_id).toStdString() << '|' << escape_field(e.app_name).toStdString()
-        << '|' << escape_field(e.app_icon).toStdString();
+    text += escape_field(e.when.toString(Qt::ISODate)).toStdString();
+    text += '|' + escape_field(e.app_id).toStdString();
+    text += '|' + escape_field(e.app_name).toStdString();
+    text += '|' + escape_field(e.app_icon).toStdString();
     for (const QString& p : e.paths) {
-      out << '|' << escape_field(p).toStdString();
+      text += '|' + escape_field(p).toStdString();
     }
-    out << '\n';
+    text += '\n';
   }
+  (void)write_file_atomic(path_, text);  // failure is logged; the old file is kept
 }
 
 void OpenHistory::record(OpenHistoryEntry entry)

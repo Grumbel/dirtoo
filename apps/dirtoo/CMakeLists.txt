@@ -9,6 +9,8 @@ add_library(dirtoo-app-core STATIC
   directory_load_worker.hpp
   desktop_entry.cpp
   desktop_entry.hpp
+  atomic_write.cpp
+  atomic_write.hpp
 )
 target_include_directories(dirtoo-app-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(dirtoo-app-core

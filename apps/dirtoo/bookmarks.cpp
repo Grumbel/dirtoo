@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "bookmarks.hpp"
+#include "atomic_write.hpp"
 
 #include <QStandardPaths>
 
@@ -75,14 +76,12 @@ bool Bookmarks::contains(const fs::Location& location) const
 
 void Bookmarks::write_all(const std::vector<fs::Location>& entries) const
 {
-  if (auto parent = path_.parent_path(); !parent.empty()) {
-    std::error_code ec;
-    std::filesystem::create_directories(parent, ec);
-  }
-  std::ofstream out(path_, std::ios::trunc);
+  std::string text;
   for (const auto& e : entries) {
-    out << e.as_url() << '\n';
+    text += e.as_url();
+    text += '\n';
   }
+  (void)write_file_atomic(path_, text);  // failure is logged; the old file is kept
 }
 
 void Bookmarks::append(const fs::Location& location)
