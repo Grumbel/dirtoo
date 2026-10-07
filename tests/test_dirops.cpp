@@ -456,3 +456,17 @@ TEST_CASE("cross-device move of a directory moves it", "[dirops]")
   fs::remove_all(src_dir);
   fs::remove_all(dst_dir);
 }
+
+TEST_CASE("copy_path onto itself with Overwrite fails and keeps the file", "[dirops][safety]")
+{
+  const auto dir = make_temp_dir("dirtoo-test-copy-self");
+  const auto f = dir / "a.txt";
+  write_file(f, "precious");
+
+  dirops::Options opts;
+  opts.conflict = dirops::ConflictPolicy::Overwrite;
+  auto result = dirops::copy_path(f, dir, opts);  // dest resolves to dir/a.txt
+  REQUIRE_FALSE(result.has_value());
+  REQUIRE(read_file(f) == "precious");
+  fs::remove_all(dir);
+}

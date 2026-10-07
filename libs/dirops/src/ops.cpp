@@ -386,6 +386,15 @@ OpResult copy_path(const std::filesystem::path& from,
     dest = to / from.filename();
   }
 
+  // Overwrite would unlink the destination first — which is the source.
+  if (options.conflict == ConflictPolicy::Overwrite && same_node(from, dest)) {
+    return std::unexpected(Error{
+        std::make_error_code(std::errc::invalid_argument),
+        from,
+        "source and destination are the same file",
+    });
+  }
+
   if (fs::is_symlink(from_status)) {
     auto resolved = resolve_destination(dest, options);
     if (!resolved) {
