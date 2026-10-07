@@ -71,10 +71,12 @@ namespace {
   auto opts = std::filesystem::directory_options::skip_permission_denied;
   std::size_t count = 0;
   std::uint64_t name_hash = 14695981039346656037ull; // FNV-1a offset
-  for (const auto& entry : std::filesystem::directory_iterator(dir, opts, ec)) {
-    if (ec) {
-      break;
-    }
+  // Explicit increment(ec): operator++ throws on I/O errors, and an exception
+  // here is swallowed by the QtConcurrent future — the result would never be
+  // posted and poll_in_flight would stay set forever.
+  std::filesystem::directory_iterator it(dir, opts, ec);
+  for (; !ec && it != std::filesystem::directory_iterator{}; it.increment(ec)) {
+    const auto& entry = *it;
     ++count;
     const auto name = entry.path().filename().string();
     for (unsigned char c : name) {

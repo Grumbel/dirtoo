@@ -54,19 +54,17 @@ std::vector<TreeInfo> list_extract_trees(const std::filesystem::path& cache_root
     return trees;
   }
   const auto opts = std::filesystem::directory_options::skip_permission_denied;
-  for (const auto& entry : std::filesystem::directory_iterator(cache_root, opts, ec)) {
-    if (ec) {
-      ec.clear();
-      continue;
-    }
-    if (!entry.is_directory(ec)) {
+  std::filesystem::directory_iterator dit(cache_root, opts, ec);
+  for (; !ec && dit != std::filesystem::directory_iterator{}; dit.increment(ec)) {
+    const auto& entry = *dit;
+    std::error_code sec;  // per-entry stat errors must not end the iteration
+    if (!entry.is_directory(sec)) {
       continue;
     }
     TreeInfo info;
     info.path = entry.path();
-    info.mtime = entry.last_write_time(ec);
-    if (ec) {
-      ec.clear();
+    info.mtime = entry.last_write_time(sec);
+    if (sec) {
       info.mtime = {};
     }
     info.size_bytes = directory_size_bytes(info.path);
@@ -122,19 +120,17 @@ ArchiveCachePruneStats prune_archive_member_cache(const std::filesystem::path& c
   if (trees.empty()) {
     // Also remove loose files left at the root (legacy layout).
     const auto opts = std::filesystem::directory_options::skip_permission_denied;
-    for (const auto& entry : std::filesystem::directory_iterator(cache_root, opts, ec)) {
-      if (ec) {
-        ec.clear();
-        continue;
-      }
-      if (entry.is_regular_file(ec)) {
-        const auto sz = static_cast<std::uint64_t>(entry.file_size(ec));
-        std::filesystem::remove(entry.path(), ec);
-        if (!ec) {
+    std::filesystem::directory_iterator dit(cache_root, opts, ec);
+    for (; !ec && dit != std::filesystem::directory_iterator{}; dit.increment(ec)) {
+      const auto& entry = *dit;
+      std::error_code sec;
+      if (entry.is_regular_file(sec)) {
+        const auto sz = static_cast<std::uint64_t>(entry.file_size(sec));
+        std::filesystem::remove(entry.path(), sec);
+        if (!sec) {
           stats.trees_removed += 1;
           stats.bytes_removed += sz;
         }
-        ec.clear();
       }
     }
     return stats;

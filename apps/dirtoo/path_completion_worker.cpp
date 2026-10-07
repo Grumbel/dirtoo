@@ -115,14 +115,15 @@ void PathCompletionWorker::complete(quint64 request_id, const QString& text)
   };
 
   const auto opts = std::filesystem::directory_options::skip_permission_denied;
-  for (const auto& entry : std::filesystem::directory_iterator(dir_path, opts, ec)) {
+  // operator++ would throw on an I/O error (drive pulled mid-scan) and take
+  // the worker thread, and the process, down; use increment(ec).
+  std::filesystem::directory_iterator it(dir_path, opts, ec);
+  for (; !ec && it != std::filesystem::directory_iterator{}; it.increment(ec)) {
+    const auto& entry = *it;
     if (cancel_.load(std::memory_order_relaxed)
         || active_id_.load(std::memory_order_relaxed) != request_id) {
       emit completions_ready(request_id, text, {});
       return;
-    }
-    if (ec) {
-      break;
     }
     std::error_code is_ec;
     if (!entry.is_directory(is_ec)) {

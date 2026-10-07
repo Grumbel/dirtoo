@@ -75,15 +75,31 @@ SearchStats search_directory(const std::filesystem::path& root, const MatchFunc&
     opts |= std::filesystem::directory_options::follow_directory_symlink;
   }
 
+  // skip_permission_denied would turn an unreadable *root* into an empty,
+  // error-free result, so open the root once without it.
+  {
+    std::error_code root_ec;
+    const std::filesystem::directory_iterator probe(root, root_ec);
+    if (root_ec) {
+      ++stats.errors;
+      return stats;
+    }
+  }
+
+  // Throughout: never the throwing operator++ (the header promises "never
+  // throws"), and a failed increment() leaves the iterator at end() with the
+  // error set — count it, or a truncated search looks complete.
   if (options.max_depth == 0) {
-    for (const auto& entry : std::filesystem::directory_iterator(root, opts, ec)) {
+    std::error_code inc_ec;
+    std::filesystem::directory_iterator dit(root, opts, inc_ec);
+    if (inc_ec) {
+      ++stats.errors;
+      return stats;
+    }
+    for (; dit != std::filesystem::directory_iterator{}; dit.increment(inc_ec)) {
+      const auto& entry = *dit;
       if (options.should_cancel && options.should_cancel()) {
-        break;
-      }
-      if (ec) {
-        ++stats.errors;
-        ec.clear();
-        continue;
+        return stats;
       }
       ++stats.visited;
       if (!options.show_hidden && is_hidden_name(entry.path())) {
@@ -97,6 +113,9 @@ SearchStats search_directory(const std::filesystem::path& root, const MatchFunc&
         }
       }
     }
+    if (inc_ec) {
+      ++stats.errors;
+    }
     return stats;
   }
 
@@ -109,16 +128,11 @@ SearchStats search_directory(const std::filesystem::path& root, const MatchFunc&
     return stats;
   }
 
-  for (; it != end; it.increment(ec)) {
+  std::error_code inc_ec;
+  for (; it != end; it.increment(inc_ec)) {
     if (options.should_cancel && options.should_cancel()) {
       break;
     }
-    if (ec) {
-      ++stats.errors;
-      ec.clear();
-      continue;
-    }
-
     const auto& entry = *it;
     if (options.max_depth >= 0) {
       // depth of this entry relative to root
@@ -148,6 +162,9 @@ SearchStats search_directory(const std::filesystem::path& root, const MatchFunc&
         on_match(item);
       }
     }
+  }
+  if (inc_ec) {
+    ++stats.errors;  // iterator hit an I/O error and stopped: results are partial
   }
   return stats;
 }

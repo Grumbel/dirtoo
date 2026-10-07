@@ -13,6 +13,7 @@
 #include <filesystem>
 #include <fstream>
 #include <ctime>
+#include <unistd.h>
 
 using dirtoo::filter::FilterItem;
 using dirtoo::filter::parse_filter;
@@ -551,5 +552,32 @@ TEST_CASE("containsre handles large single-line files without overflowing the st
   m = parse_filter("Cre:NEEDLE");
   REQUIRE(m);
   REQUIRE((*m)->matches(item));
+  std::filesystem::remove_all(dir);
+}
+
+TEST_CASE("search_directory counts an unreadable root as an error", "[filter][search]")
+{
+  if (::geteuid() == 0) {
+    SKIP("permissions are not enforced for root");
+  }
+  const auto dir = std::filesystem::temp_directory_path() / "dirtoo-test-search-locked";
+  std::filesystem::remove_all(dir);
+  std::filesystem::create_directories(dir / "locked");
+  {
+    std::ofstream(dir / "locked" / "f.txt") << "x";
+  }
+  std::filesystem::permissions(dir / "locked", std::filesystem::perms::none);
+
+  auto m = parse_filter("f");
+  REQUIRE(m);
+  for (int depth : {0, -1}) {
+    dirtoo::filter::SearchOptions opts;
+    opts.max_depth = depth;
+    const auto stats = dirtoo::filter::search_directory(dir / "locked", **m, opts, nullptr);
+    INFO("max_depth=" << depth);
+    CHECK(stats.errors == 1);
+    CHECK(stats.matched == 0);
+  }
+  std::filesystem::permissions(dir / "locked", std::filesystem::perms::owner_all);
   std::filesystem::remove_all(dir);
 }
