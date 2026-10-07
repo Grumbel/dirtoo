@@ -289,9 +289,38 @@ Location Location::from_url(std::string_view url)
     loc = from_tag(percent_decode(std::string{url.substr(6)}));
   } else if (url.starts_with("set://")) {
     loc = from_set(percent_decode(std::string{url.substr(6)}));
-  } else if (url.starts_with("file://")) {
-    std::string rest{url.substr(7)};
-    const auto payload_sep = rest.find("//");
+  } else if (url.starts_with("file:")) {
+    // RFC 8089: "file:///path", "file://localhost/path" and "file:/path".
+    std::string rest;
+    if (url.starts_with("file://")) {
+      rest = std::string{url.substr(7)};
+      if (!rest.empty() && rest.front() != '/') {
+        const auto slash = rest.find('/');
+        const std::string host = rest.substr(0, slash);
+        if (host != "localhost") {
+          throw std::invalid_argument("unsupported host in file URL: " + host);
+        }
+        rest = slash == std::string::npos ? std::string{"/"} : rest.substr(slash);
+      }
+    } else {
+      rest = std::string{url.substr(5)};  // "file:/path"
+    }
+
+    // Python-style archive payload: "<abspath>//archive[:entry]". Only that
+    // exact marker counts; any other "//" is just a redundant slash in the
+    // path ("file:///tmp/a//b" is /tmp/a/b, not /tmp/a plus a payload).
+    std::size_t payload_sep = std::string::npos;
+    for (std::size_t pos = rest.find("//"); pos != std::string::npos;
+         pos = rest.find("//", pos + 1)) {
+      constexpr std::string_view kKind = "archive";
+      const std::string_view tail = std::string_view{rest}.substr(pos + 2);
+      if (tail.starts_with(kKind)
+          && (tail.size() == kKind.size() || tail[kKind.size()] == ':'
+              || tail[kKind.size()] == '/')) {
+        payload_sep = pos;
+        break;
+      }
+    }
     if (payload_sep != std::string::npos) {
       const std::string abspath = percent_decode(rest.substr(0, payload_sep));
       std::string payload = rest.substr(payload_sep + 2);
@@ -300,14 +329,9 @@ Location Location::from_url(std::string_view url)
         payload = payload.substr(0, next);
       }
       const auto colon = payload.find(':');
-      const std::string kind = (colon == std::string::npos) ? payload : payload.substr(0, colon);
       const std::string entry =
           (colon == std::string::npos) ? std::string{} : percent_decode(payload.substr(colon + 1));
-      if (kind == "archive") {
-        loc = from_archive(std::filesystem::path{abspath}, std::filesystem::path{entry});
-      } else {
-        loc = from_path(std::filesystem::path{abspath});
-      }
+      loc = from_archive(std::filesystem::path{abspath}, std::filesystem::path{entry});
     } else {
       loc = from_path(std::filesystem::path{percent_decode(rest)});
     }

@@ -235,3 +235,35 @@ TEST_CASE("Location path trailing slash normalization", "[location]")
   REQUIRE(ar.entry_path() == ar2.entry_path());
   REQUIRE(ar.as_url() == ar2.as_url());
 }
+
+TEST_CASE("file URL forms resolve to the right path", "[location]")
+{
+  using dirtoo::fs::Location;
+  // A redundant "//" inside the path is not an archive payload.
+  CHECK(Location::from_url("file:///tmp/a//b").as_path() == "/tmp/a/b");
+  CHECK_FALSE(Location::from_url("file:///tmp/a//b").is_archive());
+  // RFC 8089 variants.
+  CHECK(Location::from_url("file://localhost/home/x").as_path() == "/home/x");
+  CHECK(Location::from_url("file:/tmp/x").as_path() == "/tmp/x");
+  CHECK(Location::from_url("file:///tmp/a%20b").as_path() == "/tmp/a b");
+  // Other hosts are refused instead of being read as a relative path.
+  CHECK_THROWS_AS(Location::from_url("file://otherhost/share/x"), std::invalid_argument);
+}
+
+TEST_CASE("archive payload marker is exact", "[location]")
+{
+  using dirtoo::fs::Location;
+  const auto a = Location::from_url("file:///data//archive:inner/x.txt");
+  REQUIRE(a.is_archive());
+  CHECK(a.as_path() == "/data");
+  CHECK(a.entry_path() == "inner/x.txt");
+
+  const auto root = Location::from_url("file:///data/pack.zip//archive");
+  REQUIRE(root.is_archive());
+  CHECK(root.as_path() == "/data/pack.zip");
+
+  // A directory merely *named* like the marker prefix is a plain path.
+  const auto plain = Location::from_url("file:///data//archived/x");
+  CHECK_FALSE(plain.is_archive());
+  CHECK(plain.as_path() == "/data/archived/x");
+}
