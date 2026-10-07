@@ -35,7 +35,7 @@ Conventions:
 |----|-----|----------|-------|
 | B1 | M | read | `unique_path()` + create is check-then-act; another process can take the name in between. Fix by creating with `O_EXCL`/`mkdir` and retrying with the next suffix inside dirops instead of probing first. |
 | B2 | L | read | `swap_names` cannot roll back if the final rename fails; the error names the temp path that holds the original. A journal or retry would be better. |
-| B3 | H | read | **Delete is permanent** (`remove_all` after a confirmation dialog). No trash (freedesktop `trash-spec`), no undo. Probably the biggest safety gap for a file manager. Needs a design decision (trash vs. permanent as separate commands). |
+| B3 | H | read | **Delete is permanent** (`remove_all` after a confirmation dialog). No trash (freedesktop `trash-spec`), no undo. Probably the biggest safety gap for a file manager. Needs a design decision (trash vs. permanent as separate commands). **Fixed in `33b60c2d`.** |
 | B4 | M | read | `TransferWorker` stops at the first failed item; the remaining items are neither tried nor reported as untouched. Options: continue and collect errors, or ask (Skip/Retry/Abort). |
 | B5 | L | read | Paste-as-Link in the folder of the source fails with "already exists" instead of picking a free name (`x (2)` / Python's "Link to x"). Use `ConflictPolicy::Rename` or ask. |
 | B6 | M | read | `TransferController::shutdown()` waits 5 s for the worker thread; if a copy is blocked on a slow drive the `QThread` is then destroyed while running (Qt aborts). Detach like `ThumbnailCoordinator::stop_thread` does. **Fixed in `c233c0fb`.** |
