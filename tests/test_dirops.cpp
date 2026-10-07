@@ -497,3 +497,285 @@ TEST_CASE("remove_path refuses root, dot and dot-dot", "[dirops][safety]")
   REQUIRE(dirops::remove_path(dir / "a.txt").has_value());
   fs::remove_all(dir);
 }
+
+// ---------------------------------------------------------------------------
+// freedesktop.org Trash specification
+// ---------------------------------------------------------------------------
+
+#include "dirops/trash.hpp"
+
+#include <sys/stat.h>
+#include <unistd.h>
+
+namespace {
+
+dirops::TrashOptions trash_opts(const fs::path& base)
+{
+  dirops::TrashOptions t;
+  t.home_trash = base / "Trash";
+  t.mount_points = std::vector<fs::path>{};  // no volume trashes unless a test asks
+  return t;
+}
+
+std::string trashinfo_field(const fs::path& info, const std::string& key)
+{
+  std::ifstream in(info);
+  std::string line;
+  while (std::getline(in, line)) {
+    if (line.starts_with(key + "=")) {
+      return line.substr(key.size() + 1);
+    }
+  }
+  return {};
+}
+
+} // namespace
+
+TEST_CASE("trash moves a file into the home trash with a trashinfo", "[dirops][trash]")
+{
+  const auto dir = make_temp_dir("dirtoo-test-trash-basic");
+  const auto t = trash_opts(dir);
+  fs::create_directories(dir / "docs");
+  const auto file = dir / "docs" / "my report #1.txt";
+  write_file(file, "content");
+
+  auto e = dirops::trash_entry(file, t);
+  REQUIRE(e.has_value());
+  CHECK_FALSE(fs::exists(file));
+  CHECK(e->stored_path() == dir / "Trash" / "files" / "my report #1.txt");
+  CHECK(read_file(e->stored_path()) == "content");
+
+  // The info file follows the spec: [Trash Info], percent-encoded absolute
+  // Path for the home trash, local-time DeletionDate.
+  const auto info = e->info_path();
+  REQUIRE(fs::exists(info));
+  CHECK(read_file(info).starts_with("[Trash Info]\n"));
+  CHECK(trashinfo_field(info, "Path") == (dir / "docs").string() + "/my%20report%20%231.txt");
+  const auto date = trashinfo_field(info, "DeletionDate");
+  REQUIRE(date.size() == 19);
+  CHECK(date[4] == '-');
+  CHECK(date[10] == 'T');
+  CHECK(date[13] == ':');
+
+  // Private directories as required.
+  struct stat st {};
+  REQUIRE(::stat((dir / "Trash").c_str(), &st) == 0);
+  CHECK((st.st_mode & 0777) == 0700);
+  fs::remove_all(dir);
+}
+
+TEST_CASE("trash picks unique names and never overwrites", "[dirops][trash]")
+{
+  const auto dir = make_temp_dir("dirtoo-test-trash-names");
+  const auto t = trash_opts(dir);
+  std::vector<std::string> names;
+  for (int i = 0; i < 3; ++i) {
+    fs::create_directories(dir / ("d" + std::to_string(i)));
+    const auto f = dir / ("d" + std::to_string(i)) / "same.txt";
+    write_file(f, "v" + std::to_string(i));
+    auto e = dirops::trash_entry(f, t);
+    REQUIRE(e.has_value());
+    names.push_back(e->name);
+    CHECK(read_file(e->stored_path()) == "v" + std::to_string(i));
+  }
+  CHECK(names[0] == "same.txt");
+  CHECK(names[1] != names[0]);
+  CHECK(names[2] != names[1]);
+  CHECK(names[2] != names[0]);
+  fs::remove_all(dir);
+}
+
+TEST_CASE("trash handles directories, symlinks and refuses bad targets", "[dirops][trash][safety]")
+{
+  const auto dir = make_temp_dir("dirtoo-test-trash-kinds");
+  const auto t = trash_opts(dir);
+
+  fs::create_directories(dir / "tree" / "sub");
+  write_file(dir / "tree" / "sub" / "f", "x");
+  auto d = dirops::trash_entry(dir / "tree/", t);  // trailing slash
+  REQUIRE(d.has_value());
+  CHECK(fs::exists(d->stored_path() / "sub" / "f"));
+
+  // A symlink is trashed as a link; its target is left alone.
+  write_file(dir / "target.txt", "t");
+  fs::create_symlink(dir / "target.txt", dir / "link");
+  auto l = dirops::trash_entry(dir / "link", t);
+  REQUIRE(l.has_value());
+  CHECK(fs::is_symlink(l->stored_path()));
+  CHECK(fs::exists(dir / "target.txt"));
+
+  // Dangling symlinks work too.
+  fs::create_symlink("nowhere", dir / "dangling");
+  CHECK(dirops::trash_entry(dir / "dangling", t).has_value());
+
+  // Refused: missing path, root, '.' / '..', something already in the trash.
+  CHECK_FALSE(dirops::trash_entry(dir / "missing", t).has_value());
+  CHECK_FALSE(dirops::trash_entry("/", t).has_value());
+  CHECK_FALSE(dirops::trash_entry(dir / "..", t).has_value());
+  CHECK_FALSE(dirops::trash_entry(d->stored_path(), t).has_value());
+  fs::remove_all(dir);
+}
+
+TEST_CASE("trash list, restore, delete and empty", "[dirops][trash]")
+{
+  const auto dir = make_temp_dir("dirtoo-test-trash-cycle");
+  const auto t = trash_opts(dir);
+  fs::create_directories(dir / "a" / "b");
+  const auto f1 = dir / "a" / "b" / "one.txt";
+  const auto f2 = dir / "two.txt";
+  write_file(f1, "1");
+  write_file(f2, "2");
+  REQUIRE(dirops::trash_entry(f1, t).has_value());
+  REQUIRE(dirops::trash_entry(f2, t).has_value());
+
+  auto items = dirops::list_trash(t);
+  REQUIRE(items.size() == 2);
+  auto find = [&](const fs::path& orig) {
+    return std::find_if(items.begin(), items.end(),
+                        [&](const auto& e) { return e.original_path == orig; });
+  };
+  REQUIRE(find(f1) != items.end());
+  REQUIRE(find(f2) != items.end());
+  CHECK(find(f1)->deletion_date.size() == 19);
+
+  // Restore recreates a removed parent directory.
+  fs::remove_all(dir / "a");
+  auto r = dirops::restore_trash_entry(*find(f1));
+  REQUIRE(r.has_value());
+  CHECK(read_file(f1) == "1");
+  CHECK(dirops::list_trash(t).size() == 1);
+
+  // Restoring onto an existing path fails and keeps the item in the trash.
+  write_file(f2, "new two");
+  auto clash = dirops::restore_trash_entry(*find(f2));
+  REQUIRE_FALSE(clash.has_value());
+  CHECK(read_file(f2) == "new two");
+  CHECK(dirops::list_trash(t).size() == 1);
+
+  // Permanent delete of one entry, then empty.
+  items = dirops::list_trash(t);
+  REQUIRE(dirops::delete_trash_entry(items.front()).has_value());
+  CHECK(dirops::list_trash(t).empty());
+
+  write_file(dir / "three.txt", "3");
+  REQUIRE(dirops::trash_entry(dir / "three.txt", t).has_value());
+  // Orphans and the directorysizes cache go as well.
+  write_file(dir / "Trash" / "files" / "orphan", "o");
+  write_file(dir / "Trash" / "directorysizes", "1 2 x\n");
+  REQUIRE(dirops::empty_trash(t).has_value());
+  CHECK(dirops::list_trash(t).empty());
+  CHECK(fs::is_empty(dir / "Trash" / "files"));
+  CHECK(fs::is_empty(dir / "Trash" / "info"));
+  CHECK_FALSE(fs::exists(dir / "Trash" / "directorysizes"));
+  fs::remove_all(dir);
+}
+
+TEST_CASE("trash on another filesystem uses a volume trash directory", "[dirops][trash]")
+{
+  const fs::path shm = "/dev/shm";
+  const auto home = make_temp_dir("dirtoo-test-trash-volume");
+  if (!fs::is_directory(shm) || dirops::same_filesystem(home, shm)) {
+    fs::remove_all(home);
+    SKIP("no second filesystem available");
+  }
+  const auto vol = shm / ("dirtoo-trash-vol-" + std::to_string(::getpid()));
+  fs::remove_all(vol);
+  fs::create_directories(vol / "data");
+  const auto file = vol / "data" / "x y.txt";
+  write_file(file, "vol");
+
+  // Pretend /dev/shm/<vol> is the volume's top directory by listing it as a
+  // mount point; the real top directory (/dev/shm) is found by walking up.
+  auto t = trash_opts(home);
+  t.mount_points = std::vector<fs::path>{shm};
+  const uid_t uid = ::geteuid();
+
+  auto e = dirops::trash_entry(file, t);
+  REQUIRE(e.has_value());
+  CHECK_FALSE(fs::exists(file));
+  const auto expected_dir = shm / (".Trash-" + std::to_string(uid));
+  CHECK(e->trash_dir == expected_dir);
+  CHECK(e->topdir == shm);
+  // Volume trashes record the path relative to the top directory.
+  const auto rel = trashinfo_field(e->info_path(), "Path");
+  CHECK(rel == vol.filename().string() + "/data/x%20y.txt");
+
+  const auto items = dirops::list_trash(t);
+  REQUIRE(items.size() == 1);
+  CHECK(items[0].original_path == file);
+  REQUIRE(dirops::restore_trash_entry(items[0]).has_value());
+  CHECK(read_file(file) == "vol");
+
+  fs::remove_all(vol);
+  fs::remove_all(expected_dir);
+  fs::remove_all(home);
+}
+
+TEST_CASE("volume trash: .Trash must be a sticky real directory, else .Trash-$uid",
+          "[dirops][trash][safety]")
+{
+  const fs::path shm = "/dev/shm";
+  const auto home = make_temp_dir("dirtoo-test-trash-shared");
+  if (!fs::is_directory(shm) || dirops::same_filesystem(home, shm)) {
+    fs::remove_all(home);
+    SKIP("no second filesystem available");
+  }
+  const auto top = shm / ("dirtoo-trash-top-" + std::to_string(::getpid()));
+  const uid_t uid = ::geteuid();
+  auto fresh_top = [&] {
+    fs::remove_all(top);
+    fs::create_directories(top);
+  };
+  auto opts = [&] {
+    auto t = trash_opts(home);
+    t.topdir_override = top;
+    t.mount_points = std::vector<fs::path>{top};
+    return t;
+  };
+
+  // 1. sticky, real directory -> $top/.Trash/$uid
+  fresh_top();
+  fs::create_directories(top / ".Trash");
+  ::chmod((top / ".Trash").c_str(), 01777);
+  write_file(top / "a", "a");
+  auto e1 = dirops::trash_entry(top / "a", opts());
+  REQUIRE(e1.has_value());
+  CHECK(e1->trash_dir == top / ".Trash" / std::to_string(uid));
+  struct stat st {};
+  REQUIRE(::stat(e1->trash_dir.c_str(), &st) == 0);
+  CHECK((st.st_mode & 0777) == 0700);
+  CHECK(dirops::list_trash(opts()).size() == 1);
+
+  // 2. .Trash without the sticky bit is not trusted -> $top/.Trash-$uid
+  fresh_top();
+  fs::create_directories(top / ".Trash");
+  ::chmod((top / ".Trash").c_str(), 0777);
+  write_file(top / "b", "b");
+  auto e2 = dirops::trash_entry(top / "b", opts());
+  REQUIRE(e2.has_value());
+  CHECK(e2->trash_dir == top / (".Trash-" + std::to_string(uid)));
+
+  // 3. .Trash as a symlink is never followed
+  fresh_top();
+  fs::create_directories(top / "elsewhere");
+  ::chmod((top / "elsewhere").c_str(), 01777);
+  fs::create_directory_symlink(top / "elsewhere", top / ".Trash");
+  write_file(top / "c", "c");
+  auto e3 = dirops::trash_entry(top / "c", opts());
+  REQUIRE(e3.has_value());
+  CHECK(e3->trash_dir == top / (".Trash-" + std::to_string(uid)));
+  CHECK(fs::is_empty(top / "elsewhere"));
+
+  // 4. an existing .Trash-$uid owned by someone else is not used
+  //    (cannot chown in a test; check that a *symlinked* one is refused)
+  fresh_top();
+  fs::create_directories(top / "decoy");
+  fs::create_directory_symlink(top / "decoy", top / (".Trash-" + std::to_string(uid)));
+  write_file(top / "d", "d");
+  CHECK_FALSE(dirops::trash_entry(top / "d", opts()).has_value());
+  CHECK(fs::exists(top / "d"));
+  CHECK(fs::is_empty(top / "decoy"));
+
+  fs::remove_all(top);
+  fs::remove_all(home);
+}

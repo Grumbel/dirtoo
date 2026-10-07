@@ -25,6 +25,7 @@ include(CMakePackageConfigHelpers)
 add_library(dirops
   src/error.cpp
   src/ops.cpp
+  src/trash.cpp
   src/util.cpp
 )
 add_library(dirops::dirops ALIAS dirops)
