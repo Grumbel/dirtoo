@@ -12,6 +12,47 @@
 namespace dirops {
 namespace {
 
+/// True if something (including a dangling symlink) occupies `p`.
+bool lexists(const std::filesystem::path& p)
+{
+  std::error_code ec;
+  return std::filesystem::exists(std::filesystem::symlink_status(p, ec));
+}
+
+/// True if `inner` is `outer` or lies below it (after resolving existing parts).
+bool is_within(const std::filesystem::path& inner, const std::filesystem::path& outer)
+{
+  std::error_code ec;
+  const auto a = std::filesystem::weakly_canonical(inner, ec);
+  if (ec) {
+    return false;
+  }
+  const auto b = std::filesystem::weakly_canonical(outer, ec);
+  if (ec) {
+    return false;
+  }
+  auto ai = a.begin();
+  for (auto bi = b.begin(); bi != b.end(); ++bi, ++ai) {
+    if (ai == a.end() || *ai != *bi) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/// Same directory entry (resolved parent + file name), without following the
+/// final component if it is a symlink.
+bool same_node(const std::filesystem::path& a, const std::filesystem::path& b)
+{
+  std::error_code ec1;
+  std::error_code ec2;
+  const auto pa = std::filesystem::weakly_canonical(
+      a.has_parent_path() ? a.parent_path() : std::filesystem::path{"."}, ec1);
+  const auto pb = std::filesystem::weakly_canonical(
+      b.has_parent_path() ? b.parent_path() : std::filesystem::path{"."}, ec2);
+  return !ec1 && !ec2 && pa == pb && a.filename() == b.filename();
+}
+
 bool cancelled(const Options& options)
 {
   return options.is_cancelled && options.is_cancelled();
@@ -38,8 +79,7 @@ std::expected<ResolvedDest, Error> resolve_destination(const std::filesystem::pa
                                                        const Options& options)
 {
   namespace fs = std::filesystem;
-  std::error_code ec;
-  if (!fs::exists(to, ec)) {
+  if (!lexists(to)) {
     return ResolvedDest{.path = to};
   }
 
@@ -112,7 +152,7 @@ OpResult copy_regular_file(const std::filesystem::path& from,
     return r;
   }
 
-  if (options.conflict == ConflictPolicy::Overwrite && fs::exists(dest)) {
+  if (options.conflict == ConflictPolicy::Overwrite && lexists(dest)) {
     if (auto rm = remove_for_overwrite(dest); !rm) {
       return std::unexpected(rm.error());
     }
@@ -139,6 +179,13 @@ OpResult copy_regular_file(const std::filesystem::path& from,
           "failed to open destination for copy",
       });
     }
+    // Never leave a truncated copy behind after a failure.
+    auto fail = [&](const std::filesystem::path& where, const char* what) {
+      out.close();
+      std::error_code rm_ec;
+      fs::remove(dest, rm_ec);
+      return std::unexpected(Error{std::make_error_code(std::errc::io_error), where, what});
+    };
     constexpr std::size_t kBuf = 256 * 1024;
     std::vector<char> buf(kBuf);
     std::uint64_t done = 0;
@@ -157,24 +204,20 @@ OpResult copy_regular_file(const std::filesystem::path& from,
       if (n > 0) {
         out.write(buf.data(), n);
         if (!out) {
-          return std::unexpected(Error{
-              std::make_error_code(std::errc::io_error),
-              dest,
-              "write failed during copy",
-          });
+          return fail(dest, "write failed during copy");
         }
         done += static_cast<std::uint64_t>(n);
         report_progress(options, done, total > 0 ? total : done, dest);
       }
     }
     if (in.bad()) {
-      return std::unexpected(Error{
-          std::make_error_code(std::errc::io_error),
-          from,
-          "read failed during copy",
-      });
+      return fail(from, "read failed during copy");
     }
+    // close() flushes; a full disk shows up here.
     out.close();
+    if (!out) {
+      return fail(dest, "flush failed at end of copy");
+    }
     // Preserve mtime/permissions best-effort (copy_file would do this).
     std::error_code cec;
     fs::last_write_time(dest, fs::last_write_time(from, cec), cec);
@@ -233,10 +276,17 @@ OpResult copy_directory_recursive(const std::filesystem::path& from,
   acc.items.push_back(ItemResult{.source = from, .destination = dest_root});
 
   std::error_code ec;
-  for (const auto& entry : fs::directory_iterator(from, ec)) {
+  fs::directory_iterator it(from, ec);
+  if (ec) {
+    // An unreadable directory must not look like an empty one (a move would
+    // then report success).
+    return std::unexpected(Error{ec, from, "cannot read directory"});
+  }
+  for (; it != fs::directory_iterator{}; it.increment(ec)) {
     if (ec) {
       return std::unexpected(Error{ec, from, "directory iteration failed"});
     }
+    const auto& entry = *it;
     if (cancelled(options)) {
       acc.cancelled = true;
       return acc;
@@ -253,15 +303,25 @@ OpResult copy_directory_recursive(const std::filesystem::path& from,
         if (lec) {
           return std::unexpected(Error{lec, src, "read_symlink failed"});
         }
-        if (options.conflict == ConflictPolicy::Overwrite && fs::exists(dst)) {
+        auto resolved_link = resolve_destination(dst, options);
+        if (!resolved_link) {
+          return std::unexpected(resolved_link.error());
+        }
+        if (resolved_link->skipped) {
+          acc.items.push_back(ItemResult{.source = src, .destination = dst, .skipped = true});
+          continue;
+        }
+        if (options.conflict == ConflictPolicy::Overwrite && lexists(dst)) {
           if (auto rm = remove_for_overwrite(dst); !rm) {
             return std::unexpected(rm.error());
           }
         }
-        fs::create_symlink(target, dst, lec);
+        fs::create_symlink(target, resolved_link->path, lec);
         if (lec) {
-          return std::unexpected(Error{lec, dst, "create_symlink failed"});
+          return std::unexpected(Error{lec, resolved_link->path, "create_symlink failed"});
         }
+        acc.items.push_back(ItemResult{.source = src, .destination = resolved_link->path});
+        continue;
       }
       acc.items.push_back(ItemResult{.source = src, .destination = dst});
     } else if (entry.is_directory()) {
@@ -280,6 +340,18 @@ OpResult copy_directory_recursive(const std::filesystem::path& from,
       for (auto& item : file_result->items) {
         acc.items.push_back(std::move(item));
       }
+      if (file_result->cancelled) {
+        acc.cancelled = true;
+        return acc;
+      }
+    } else {
+      // FIFOs, sockets, devices: refuse instead of silently dropping them
+      // (a cross-device move would then delete the source).
+      return std::unexpected(Error{
+          std::make_error_code(std::errc::operation_not_supported),
+          src,
+          "unsupported file type (not a regular file, directory or symlink)",
+      });
     }
   }
   return acc;
@@ -298,7 +370,9 @@ OpResult copy_path(const std::filesystem::path& from,
   }
 
   std::error_code ec;
-  if (!fs::exists(from, ec)) {
+  // symlink_status: a dangling symlink is a valid source.
+  const auto from_status = fs::symlink_status(from, ec);
+  if (ec || !fs::exists(from_status)) {
     return std::unexpected(Error{
         ec ? ec : std::make_error_code(std::errc::no_such_file_or_directory),
         from,
@@ -312,11 +386,7 @@ OpResult copy_path(const std::filesystem::path& from,
     dest = to / from.filename();
   }
 
-  if (fs::is_directory(from, ec)) {
-    Result acc;
-    return copy_directory_recursive(from, dest, options, acc);
-  }
-  if (fs::is_symlink(from, ec)) {
+  if (fs::is_symlink(from_status)) {
     auto resolved = resolve_destination(dest, options);
     if (!resolved) {
       return std::unexpected(resolved.error());
@@ -332,7 +402,7 @@ OpResult copy_path(const std::filesystem::path& from,
       if (lec) {
         return std::unexpected(Error{lec, from, "read_symlink failed"});
       }
-      if (options.conflict == ConflictPolicy::Overwrite && fs::exists(resolved->path)) {
+      if (options.conflict == ConflictPolicy::Overwrite && lexists(resolved->path)) {
         if (auto rm = remove_for_overwrite(resolved->path); !rm) {
           return std::unexpected(rm.error());
         }
@@ -345,6 +415,26 @@ OpResult copy_path(const std::filesystem::path& from,
     Result r;
     r.items.push_back(ItemResult{.source = from, .destination = resolved->path});
     return r;
+  }
+
+  if (fs::is_directory(from_status)) {
+    if (is_within(dest, from)) {
+      return std::unexpected(Error{
+          std::make_error_code(std::errc::invalid_argument),
+          from,
+          "cannot copy a directory into itself",
+      });
+    }
+    Result acc;
+    return copy_directory_recursive(from, dest, options, acc);
+  }
+
+  if (!fs::is_regular_file(from_status)) {
+    return std::unexpected(Error{
+        std::make_error_code(std::errc::operation_not_supported),
+        from,
+        "unsupported file type (not a regular file, directory or symlink)",
+    });
   }
 
   return copy_regular_file(from, dest, options);
@@ -361,7 +451,8 @@ OpResult move_path(const std::filesystem::path& from,
   }
 
   std::error_code ec;
-  if (!fs::exists(from, ec)) {
+  const auto from_status = fs::symlink_status(from, ec);
+  if (ec || !fs::exists(from_status)) {
     return std::unexpected(Error{
         ec ? ec : std::make_error_code(std::errc::no_such_file_or_directory),
         from,
@@ -372,6 +463,14 @@ OpResult move_path(const std::filesystem::path& from,
   fs::path dest = to;
   if (fs::is_directory(to, ec) && !ec) {
     dest = to / from.filename();
+  }
+
+  // Moving a node onto itself is a no-op. Without this, Overwrite would unlink
+  // the destination — which is the source — first.
+  if (same_node(from, dest)) {
+    Result r;
+    r.items.push_back(ItemResult{.source = from, .destination = dest, .skipped = true});
+    return r;
   }
 
   auto resolved = resolve_destination(dest, options);
@@ -385,19 +484,30 @@ OpResult move_path(const std::filesystem::path& from,
   }
   dest = resolved->path;
 
+  if (fs::is_directory(from_status) && is_within(dest, from)) {
+    return std::unexpected(Error{
+        std::make_error_code(std::errc::invalid_argument),
+        from,
+        "cannot move a directory into itself",
+    });
+  }
+
   if (options.dry_run) {
     Result r;
     r.items.push_back(ItemResult{.source = from, .destination = dest});
     return r;
   }
 
+  // Clear an existing file/symlink destination up front (directories are
+  // refused), so both the rename and the copy path see a free name.
+  if (options.conflict == ConflictPolicy::Overwrite && lexists(dest)) {
+    if (auto rm = remove_for_overwrite(dest); !rm) {
+      return std::unexpected(rm.error());
+    }
+  }
+
   // Prefer atomic rename when on the same filesystem.
   if (same_filesystem(from, dest)) {
-    if (options.conflict == ConflictPolicy::Overwrite && fs::exists(dest)) {
-      if (auto rm = remove_for_overwrite(dest); !rm) {
-        return std::unexpected(rm.error());
-      }
-    }
     fs::rename(from, dest, ec);
     if (!ec) {
       Result r;
@@ -410,24 +520,21 @@ OpResult move_path(const std::filesystem::path& from,
     }
   }
 
-  // Cross-device: copy then remove source.
+  // Cross-device: copy to the (now free) destination, then remove the source.
+  // The source is only removed after a copy that completed without error and
+  // without cancellation; otherwise the partial copy is discarded instead.
   Options copy_opts = options;
-  copy_opts.conflict = ConflictPolicy::Overwrite;
+  copy_opts.conflict = ConflictPolicy::Fail;
   auto copied = copy_path(from, dest, copy_opts);
-  if (!copied) {
+  if (!copied || copied->cancelled) {
+    std::error_code rm_ec;
+    fs::remove_all(dest, rm_ec);  // dest did not exist before this call
     return copied;
   }
 
   fs::remove_all(from, ec);
   if (ec) {
     return std::unexpected(Error{ec, from, "copied but failed to remove source"});
-  }
-
-  // Rewrite item sources for clarity.
-  for (auto& item : copied->items) {
-    if (item.source == from) {
-      item.source = from;
-    }
   }
   return copied;
 }
@@ -458,7 +565,7 @@ OpResult rename_path(const std::filesystem::path& from,
 
   std::error_code ec;
   if (options.conflict == ConflictPolicy::Overwrite
-      && std::filesystem::exists(resolved->path)
+      && lexists(resolved->path)
       && resolved->path != from) {
     if (auto rm = remove_for_overwrite(resolved->path); !rm) {
       return std::unexpected(rm.error());
@@ -576,6 +683,8 @@ OpResult create_file(const std::filesystem::path& path, const Options& options)
 OpResult create_symlink(const std::filesystem::path& target, const std::filesystem::path& link_path,
                         const Options& options)
 {
+  namespace fs = std::filesystem;
+
   if (cancelled(options)) {
     return Result{.items = {}, .cancelled = true};
   }
@@ -587,7 +696,8 @@ OpResult create_symlink(const std::filesystem::path& target, const std::filesyst
   }
 
   std::error_code ec;
-  if (std::filesystem::exists(link_path, ec)) {
+  fs::path final_path = link_path;
+  if (lexists(link_path)) {
     if (options.conflict == ConflictPolicy::Fail) {
       return std::unexpected(Error{
           std::make_error_code(std::errc::file_exists),
@@ -604,16 +714,18 @@ OpResult create_symlink(const std::filesystem::path& target, const std::filesyst
       if (auto rm = remove_for_overwrite(link_path); !rm) {
         return std::unexpected(rm.error());
       }
+    } else if (options.conflict == ConflictPolicy::Rename) {
+      final_path = unique_path(link_path);
     }
   }
 
-  std::filesystem::create_symlink(target, link_path, ec);
+  fs::create_symlink(target, final_path, ec);
   if (ec) {
-    return std::unexpected(Error{ec, link_path, "create_symlink failed"});
+    return std::unexpected(Error{ec, final_path, "create_symlink failed"});
   }
 
   Result r;
-  r.items.push_back(ItemResult{.source = target, .destination = link_path});
+  r.items.push_back(ItemResult{.source = target, .destination = final_path});
   return r;
 }
 
@@ -628,7 +740,7 @@ OpResult swap_names(const std::filesystem::path& a,
   }
 
   std::error_code ec;
-  if (!fs::exists(a, ec) || !fs::exists(b, ec)) {
+  if (!lexists(a) || !lexists(b)) {
     return std::unexpected(Error{
         std::make_error_code(std::errc::no_such_file_or_directory),
         a,
@@ -666,7 +778,8 @@ OpResult swap_names(const std::filesystem::path& a,
   }
   fs::rename(tmp, b, ec);
   if (ec) {
-    return std::unexpected(Error{ec, tmp, "swap: rename tmp -> b failed"});
+    // `a` already holds b's old content; the original a survives at `tmp`.
+    return std::unexpected(Error{ec, tmp, "swap: rename tmp -> b failed (original of a kept at this path)"});
   }
 
   Result r;

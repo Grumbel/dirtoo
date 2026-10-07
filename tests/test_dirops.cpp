@@ -10,6 +10,8 @@
 #include <fstream>
 #include <string>
 
+#include <unistd.h>
+
 namespace fs = std::filesystem;
 
 namespace {
@@ -323,4 +325,134 @@ TEST_CASE("create_symlink makes link", "[dirops]")
   REQUIRE(result.has_value());
   REQUIRE(fs::is_symlink(link));
   fs::remove_all(dir);
+}
+
+TEST_CASE("move_path onto itself with Overwrite keeps the file", "[dirops][safety]")
+{
+  const auto dir = make_temp_dir("dirtoo-test-move-self");
+  const auto f = dir / "a.txt";
+  write_file(f, "precious");
+
+  dirops::Options opts;
+  opts.conflict = dirops::ConflictPolicy::Overwrite;
+  auto result = dirops::move_path(f, f, opts);
+  REQUIRE(result.has_value());
+  REQUIRE(fs::exists(f));
+  REQUIRE(read_file(f) == "precious");
+  fs::remove_all(dir);
+}
+
+TEST_CASE("dangling symlinks can be copied and moved", "[dirops][symlink]")
+{
+  const auto dir = make_temp_dir("dirtoo-test-dangling");
+  const auto link = dir / "dangling";
+  fs::create_symlink("does-not-exist", link);
+
+  auto copied = dirops::copy_path(link, dir / "copy");
+  REQUIRE(copied.has_value());
+  REQUIRE(fs::is_symlink(dir / "copy"));
+  REQUIRE(fs::read_symlink(dir / "copy") == fs::path("does-not-exist"));
+
+  auto moved = dirops::move_path(link, dir / "moved");
+  REQUIRE(moved.has_value());
+  REQUIRE(fs::is_symlink(dir / "moved"));
+  REQUIRE_FALSE(fs::is_symlink(link));
+  fs::remove_all(dir);
+}
+
+TEST_CASE("copy_path copies a symlink to a directory as a symlink", "[dirops][symlink]")
+{
+  const auto dir = make_temp_dir("dirtoo-test-dirlink");
+  fs::create_directories(dir / "real");
+  write_file(dir / "real" / "f.txt", "x");
+  fs::create_directory_symlink("real", dir / "link");
+
+  auto copied = dirops::copy_path(dir / "link", dir / "link2");
+  REQUIRE(copied.has_value());
+  REQUIRE(fs::is_symlink(dir / "link2"));
+  REQUIRE(fs::read_symlink(dir / "link2") == fs::path("real"));
+  fs::remove_all(dir);
+}
+
+TEST_CASE("copy_path refuses to copy a directory into itself", "[dirops][safety]")
+{
+  const auto dir = make_temp_dir("dirtoo-test-copy-into-self");
+  fs::create_directories(dir / "a" / "b");
+  write_file(dir / "a" / "f.txt", "x");
+
+  auto result = dirops::copy_path(dir / "a", dir / "a" / "b");
+  REQUIRE_FALSE(result.has_value());
+  REQUIRE(fs::exists(dir / "a" / "f.txt"));
+  fs::remove_all(dir);
+}
+
+TEST_CASE("copy_path reports an unreadable source directory", "[dirops][safety]")
+{
+  if (::geteuid() == 0) {
+    SKIP("permissions are not enforced for root");
+  }
+  const auto dir = make_temp_dir("dirtoo-test-unreadable");
+  fs::create_directories(dir / "locked");
+  write_file(dir / "locked" / "f.txt", "x");
+  fs::permissions(dir / "locked", fs::perms::none);
+
+  auto result = dirops::copy_path(dir / "locked", dir / "out");
+  fs::permissions(dir / "locked", fs::perms::owner_all);
+  REQUIRE_FALSE(result.has_value());
+  fs::remove_all(dir);
+}
+
+TEST_CASE("cancelled cross-device move keeps the source", "[dirops][safety]")
+{
+  const fs::path shm = "/dev/shm";
+  const auto src_dir = make_temp_dir("dirtoo-test-xdev-src");
+  if (!fs::is_directory(shm) || dirops::same_filesystem(src_dir, shm)) {
+    fs::remove_all(src_dir);
+    SKIP("no second filesystem available");
+  }
+  const auto dst_dir = shm / "dirtoo-test-xdev-dst";
+  fs::remove_all(dst_dir);
+  fs::create_directories(dst_dir);
+
+  fs::create_directories(src_dir / "tree");
+  write_file(src_dir / "tree" / "a.txt", "aaa");
+  write_file(src_dir / "tree" / "b.txt", "bbb");
+
+  dirops::Options opts;
+  // Cancel only once the move is underway.
+  int calls = 0;
+  opts.is_cancelled = [&calls] { return ++calls > 3; };
+
+  auto result = dirops::move_path(src_dir / "tree", dst_dir / "tree", opts);
+  REQUIRE(result.has_value());
+  REQUIRE(result->cancelled);
+  REQUIRE(fs::exists(src_dir / "tree" / "a.txt"));
+  REQUIRE(fs::exists(src_dir / "tree" / "b.txt"));
+  fs::remove_all(src_dir);
+  fs::remove_all(dst_dir);
+}
+
+TEST_CASE("cross-device move of a directory moves it", "[dirops]")
+{
+  const fs::path shm = "/dev/shm";
+  const auto src_dir = make_temp_dir("dirtoo-test-xdev2-src");
+  if (!fs::is_directory(shm) || dirops::same_filesystem(src_dir, shm)) {
+    fs::remove_all(src_dir);
+    SKIP("no second filesystem available");
+  }
+  const auto dst_dir = shm / "dirtoo-test-xdev2-dst";
+  fs::remove_all(dst_dir);
+  fs::create_directories(dst_dir);
+
+  fs::create_directories(src_dir / "tree" / "sub");
+  write_file(src_dir / "tree" / "a.txt", "aaa");
+  write_file(src_dir / "tree" / "sub" / "b.txt", "bbb");
+
+  auto result = dirops::move_path(src_dir / "tree", dst_dir / "moved");
+  REQUIRE(result.has_value());
+  REQUIRE_FALSE(fs::exists(src_dir / "tree"));
+  REQUIRE(read_file(dst_dir / "moved" / "a.txt") == "aaa");
+  REQUIRE(read_file(dst_dir / "moved" / "sub" / "b.txt") == "bbb");
+  fs::remove_all(src_dir);
+  fs::remove_all(dst_dir);
 }

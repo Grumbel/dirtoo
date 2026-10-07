@@ -15,7 +15,12 @@ namespace dirops {
 std::filesystem::path unique_path(const std::filesystem::path& desired)
 {
   namespace fs = std::filesystem;
-  if (!fs::exists(desired)) {
+  // Without following symlinks: a dangling link still occupies the name.
+  auto taken = [](const fs::path& p) {
+    std::error_code ec;
+    return fs::exists(fs::symlink_status(p, ec));
+  };
+  if (!taken(desired)) {
     return desired;
   }
 
@@ -25,7 +30,7 @@ std::filesystem::path unique_path(const std::filesystem::path& desired)
 
   for (int n = 2; n < 100000; ++n) {
     const auto candidate = parent / std::format("{} ({}){}", stem, n, ext);
-    if (!fs::exists(candidate)) {
+    if (!taken(candidate)) {
       return candidate;
     }
   }

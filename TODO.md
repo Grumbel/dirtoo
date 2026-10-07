@@ -1324,6 +1324,27 @@ root’s children change.
 
 ---
 
+### dirops review (2026-10-07)
+
+Fixed, with regression tests in `tests/test_dirops.cpp`:
+
+- Cancelling a cross-device `move_path` used to delete the source after a
+  partial copy; the partial copy is now discarded and the source kept.
+- `move_path(a, a)` with Overwrite unlinked the file it was moving.
+- Dangling symlinks could not be copied/moved; symlinks to directories were
+  deep-copied instead of copied as links (all existence checks now use
+  `symlink_status`).
+- An unreadable source directory copied as "empty success".
+- Copying a directory into itself recursed; now rejected. Special files
+  (FIFO/socket/device) are refused instead of silently dropped.
+- Streaming copy removes its truncated output on write/flush failure.
+
+Residual: `unique_path` + create is check-then-act (racy against other
+processes); `swap_names` cannot fully roll back if the final rename fails
+(the original is kept at the temp path named in the error).
+
+---
+
 ### Intentionally out of scope (still)
 
 - Archive write/modify
