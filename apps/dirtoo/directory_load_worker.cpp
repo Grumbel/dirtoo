@@ -31,13 +31,20 @@ void DirectoryLoadWorker::load(const QString& path, quint64 generation)
     std::vector<fs::FileInfo> items;
     items.reserve(256);
     std::error_code ec;
-    const auto opts = std::filesystem::directory_options::skip_permission_denied;
-    int seen = 0;
-    for (const auto& entry : std::filesystem::directory_iterator(dir_path, opts, ec)) {
-      if (ec) {
-        ec.clear();
-        continue;
+    // No skip_permission_denied: for a non-recursive listing it turns an
+    // unreadable (or vanished) directory into an empty, "successful" one.
+    std::filesystem::directory_iterator it(dir_path, ec);
+    if (ec) {
+      if (cancel_generation_.load(std::memory_order_relaxed) != generation) {
+        return;
       }
+      emit failed(generation, QStringLiteral("%1: %2")
+                                  .arg(path, QString::fromStdString(ec.message())));
+      return;
+    }
+    int seen = 0;
+    for (; it != std::filesystem::directory_iterator{}; it.increment(ec)) {
+      const auto& entry = *it;
       if (cancel_generation_.load(std::memory_order_relaxed) != generation) {
         return; // superseded
       }
@@ -56,6 +63,14 @@ void DirectoryLoadWorker::load(const QString& path, quint64 generation)
       }
     }
     if (cancel_generation_.load(std::memory_order_relaxed) != generation) {
+      return;
+    }
+    if (ec) {
+      // A failed increment() leaves the iterator at end() with ec set: I/O
+      // error mid-listing (drive pulled, ...). Report it instead of showing
+      // a silently truncated directory.
+      emit failed(generation, QStringLiteral("%1: %2")
+                                  .arg(path, QString::fromStdString(ec.message())));
       return;
     }
     emit loaded(generation, std::move(items));

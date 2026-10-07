@@ -282,14 +282,15 @@ std::vector<FileInfo> list_directory(const Location& location)
   if (location.is_archive()) {
     return result;
   }
+  // Error-code overloads throughout: the range-for's operator++ throws on
+  // I/O errors, which must not cross a library boundary. On error the
+  // entries read so far are returned.
   std::error_code ec;
-  const auto opts = std::filesystem::directory_options::skip_permission_denied;
-  for (const auto& entry : std::filesystem::directory_iterator(location.as_path(), opts, ec)) {
-    if (ec) {
-      ec.clear();
-      continue;
-    }
-    result.push_back(FileInfo::from_directory_entry(entry));
+  std::filesystem::directory_iterator it(location.as_path(),
+                                         std::filesystem::directory_options::skip_permission_denied,
+                                         ec);
+  for (; !ec && it != std::filesystem::directory_iterator{}; it.increment(ec)) {
+    result.push_back(FileInfo::from_directory_entry(*it));
   }
   return result;
 }

@@ -117,3 +117,53 @@ TEST_CASE("DirectoryLoadWorker cancel before load still allows next generation",
   worker.load(QString::fromStdString(dir.string()), 3);
   REQUIRE(loaded.load());
 }
+
+TEST_CASE("DirectoryLoadWorker reports a missing directory as failed", "[dir-load]")
+{
+  int argc = 0;
+  QCoreApplication app(argc, nullptr);
+
+  const auto dir = make_temp_dir_with_files(1);
+  const auto gone = dir / "no-such-subdir";
+  DirectoryLoadWorker worker;
+
+  bool loaded = false;
+  QString err;
+  QObject::connect(&worker, &DirectoryLoadWorker::loaded, &app,
+                   [&](quint64, std::vector<dirtoo::fs::FileInfo>) { loaded = true; },
+                   Qt::DirectConnection);
+  QObject::connect(&worker, &DirectoryLoadWorker::failed, &app,
+                   [&](quint64, QString e) { err = std::move(e); }, Qt::DirectConnection);
+
+  worker.load(QString::fromStdString(gone.string()), 1);
+  REQUIRE_FALSE(loaded);
+  REQUIRE_FALSE(err.isEmpty());
+}
+
+TEST_CASE("DirectoryLoadWorker reports an unreadable directory as failed", "[dir-load]")
+{
+  if (::geteuid() == 0) {
+    SKIP("permissions are not enforced for root");
+  }
+  int argc = 0;
+  QCoreApplication app(argc, nullptr);
+
+  const auto dir = make_temp_dir_with_files(1);
+  const auto locked = dir / "locked";
+  fs::create_directory(locked);
+  fs::permissions(locked, fs::perms::none);
+  DirectoryLoadWorker worker;
+
+  bool loaded = false;
+  QString err;
+  QObject::connect(&worker, &DirectoryLoadWorker::loaded, &app,
+                   [&](quint64, std::vector<dirtoo::fs::FileInfo>) { loaded = true; },
+                   Qt::DirectConnection);
+  QObject::connect(&worker, &DirectoryLoadWorker::failed, &app,
+                   [&](quint64, QString e) { err = std::move(e); }, Qt::DirectConnection);
+
+  worker.load(QString::fromStdString(locked.string()), 1);
+  fs::permissions(locked, fs::perms::owner_all);
+  REQUIRE_FALSE(loaded);
+  REQUIRE_FALSE(err.isEmpty());
+}
