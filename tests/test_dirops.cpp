@@ -470,3 +470,30 @@ TEST_CASE("copy_path onto itself with Overwrite fails and keeps the file", "[dir
   REQUIRE(read_file(f) == "precious");
   fs::remove_all(dir);
 }
+
+TEST_CASE("remove_path refuses root, dot and dot-dot", "[dirops][safety]")
+{
+  const auto dir = make_temp_dir("dirtoo-test-rm-guard");
+  fs::create_directories(dir / "sub");
+  write_file(dir / "a.txt", "a");
+  write_file(dir / "sub" / "b.txt", "b");
+
+  const auto cwd = fs::current_path();
+  fs::current_path(dir);
+  for (const char* bad : {"", ".", "..", "./", "sub/..", "sub/.", "/", "//", "/."}) {
+    INFO("path: '" << bad << "'");
+    auto r = dirops::remove_path(bad);
+    REQUIRE_FALSE(r.has_value());
+  }
+  fs::current_path(cwd);
+
+  // Nothing was touched.
+  REQUIRE(fs::exists(dir / "a.txt"));
+  REQUIRE(fs::exists(dir / "sub" / "b.txt"));
+
+  // Normal removal still works, including a trailing slash.
+  REQUIRE(dirops::remove_path(dir / "sub/").has_value());
+  REQUIRE_FALSE(fs::exists(dir / "sub"));
+  REQUIRE(dirops::remove_path(dir / "a.txt").has_value());
+  fs::remove_all(dir);
+}

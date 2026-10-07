@@ -597,6 +597,25 @@ OpResult remove_path(const std::filesystem::path& path, const Options& options)
     return Result{.items = {}, .cancelled = true};
   }
 
+  // remove_all() has `rm -rf` semantics. Like GNU rm, refuse the targets that
+  // would wipe far more than the caller can mean: nothing, the filesystem
+  // root, and "." / ".." (remove_all(".") deletes the contents of the current
+  // directory and only then fails).
+  {
+    auto last = path;
+    while (last.has_relative_path() && last.filename().empty()) {
+      last = last.parent_path();  // strip trailing slashes: "dir/" -> "dir"
+    }
+    const auto name = last.filename();
+    if (path.empty() || !path.has_relative_path() || name == "." || name == "..") {
+      return std::unexpected(Error{
+          std::make_error_code(std::errc::invalid_argument),
+          path,
+          "refusing to remove an empty path, the filesystem root, '.' or '..'",
+      });
+    }
+  }
+
   if (options.dry_run) {
     Result r;
     r.items.push_back(ItemResult{.source = path, .destination = {}});
