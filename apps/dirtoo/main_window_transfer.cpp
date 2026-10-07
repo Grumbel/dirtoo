@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "main_window_common.hpp"
+#include "mutation_support.hpp"
 
 #include "async_io.hpp"
 
@@ -327,6 +328,12 @@ void MainWindow::on_urls_dropped_to(const QList<QUrl>& urls, Qt::DropAction acti
   // Dropping into the current view while browsing an archive is read-only.
   if (dest_dir.isEmpty() && location_.is_archive()) {
     set_status(QStringLiteral("Cannot drop into an archive (read-only)"));
+    return;
+  }
+  // Tag and set views are virtual: there is no directory to drop into (their
+  // as_path() is empty). Dropping *onto a folder* inside them is still fine.
+  if (dest_dir.isEmpty() && !location_allows_filesystem_mutations(location_)) {
+    set_status(QStringLiteral("Read-only: cannot modify this location"));
     return;
   }
 
