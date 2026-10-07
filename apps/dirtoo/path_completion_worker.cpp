@@ -61,10 +61,22 @@ void PathCompletionWorker::cancel()
   cancel_.store(true, std::memory_order_relaxed);
 }
 
+void PathCompletionWorker::supersede(quint64 latest_id)
+{
+  latest_id_.store(latest_id, std::memory_order_relaxed);
+}
+
 void PathCompletionWorker::complete(quint64 request_id, const QString& text)
 {
-  cancel_.store(false, std::memory_order_relaxed);
-  active_id_.store(request_id, std::memory_order_relaxed);
+  // A newer request was queued while this one waited: skip the scan.
+  auto stale = [&] {
+    return cancel_.load(std::memory_order_relaxed)
+           || latest_id_.load(std::memory_order_relaxed) > request_id;
+  };
+  if (stale()) {
+    emit completions_ready(request_id, text, {});
+    return;
+  }
 
   const QString expanded = expand_user(text);
   if (expanded.isEmpty()) {
@@ -120,8 +132,7 @@ void PathCompletionWorker::complete(quint64 request_id, const QString& text)
   std::filesystem::directory_iterator it(dir_path, opts, ec);
   for (; !ec && it != std::filesystem::directory_iterator{}; it.increment(ec)) {
     const auto& entry = *it;
-    if (cancel_.load(std::memory_order_relaxed)
-        || active_id_.load(std::memory_order_relaxed) != request_id) {
+    if (stale()) {
       emit completions_ready(request_id, text, {});
       return;
     }
@@ -149,6 +160,22 @@ void PathCompletionWorker::complete(quint64 request_id, const QString& text)
   // Prefer returning the expanded form for longest when it is a strict extension.
   if (!candidates.isEmpty() && longest.size() < expanded.size()) {
     longest = expanded;
+  }
+
+  // The user typed "~/…": give the completer candidates in the same form,
+  // otherwise its starts-with filter drops every absolute /home/… path.
+  if (expanded != text) {
+    const QString home = QDir::homePath();
+    auto to_tilde = [&home](const QString& p) {
+      if (home.size() > 1 && (p == home || p.startsWith(home + QLatin1Char('/')))) {
+        return QLatin1Char('~') + p.mid(home.size());
+      }
+      return p;
+    };
+    for (QString& c : candidates) {
+      c = to_tilde(c);
+    }
+    longest = to_tilde(longest);
   }
 
   emit completions_ready(request_id, longest, candidates);

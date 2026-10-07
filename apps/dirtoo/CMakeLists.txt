@@ -11,6 +11,8 @@ add_library(dirtoo-app-core STATIC
   desktop_entry.hpp
   atomic_write.cpp
   atomic_write.hpp
+  path_completion_worker.cpp
+  path_completion_worker.hpp
 )
 target_include_directories(dirtoo-app-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(dirtoo-app-core
@@ -71,7 +73,6 @@ qt_add_executable(dirtoo-app
   graphics_file_view.hpp
   graphics_file_item.cpp
   graphics_file_item.hpp
-  clipboard.hpp
   conflict_dialog.cpp
   conflict_dialog.hpp
   transfer_dialog.cpp
@@ -136,7 +137,6 @@ qt_add_executable(dirtoo-app
   bookmarks.hpp
   search_worker.cpp
   search_worker.hpp
-  path_completion_worker.cpp
   path_completion_service.cpp
   location_chrome.cpp
   filter_search_chrome.cpp
@@ -154,10 +154,8 @@ qt_add_executable(dirtoo-app
   activity_dialog.cpp
   activity_indicator.cpp
   view_zoom.cpp
-  path_completion_worker.hpp
   fs_tree_scan_worker.cpp
   treemap_view.cpp
-  directory_load_worker.hpp
   sort_worker.cpp
   sort_worker.hpp
   filter_worker.cpp

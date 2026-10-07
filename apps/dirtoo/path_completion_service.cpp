@@ -75,12 +75,15 @@ void PathCompletionService::on_timeout()
   }
   const QString text = pending_;
   if (text.isEmpty()) {
+    // Also stops a scan still running for the previous text.
+    worker_->supersede(++request_id_);
     if (model_ != nullptr) {
       model_->setStringList({});
     }
     return;
   }
   const quint64 id = ++request_id_;
+  worker_->supersede(id);  // immediate; the queued complete() below may wait behind a scan
   QMetaObject::invokeMethod(
       worker_, [worker = worker_, id, text] { worker->complete(id, text); },
       Qt::QueuedConnection);

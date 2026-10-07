@@ -39,4 +39,6 @@ private:
 
 } // namespace dirtoo::app
 
-Q_DECLARE_METATYPE(std::vector<dirtoo::fs::FileInfo>)
+// std::vector<FileInfo> needs no Q_DECLARE_METATYPE: Qt 6 declares sequential
+// containers itself, and a second declaration only compiles when the moc file
+// containing it happens to come before the first use.
