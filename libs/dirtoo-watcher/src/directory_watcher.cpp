@@ -6,7 +6,9 @@
 #include <QFileSystemWatcher>
 #include <QSocketNotifier>
 #include <QTimer>
+#include <QCoreApplication>
 #include <QMetaObject>
+#include <QPointer>
 #include <QtConcurrent>
 
 #include <cerrno>
@@ -195,11 +197,19 @@ DirectoryWatcher::DirectoryWatcher(QObject* parent)
     impl_->poll_in_flight = true;
     const std::uint64_t gen = impl_->start_generation;
     const auto paths = impl_->poll_paths;
-    (void)QtConcurrent::run([this, gen, paths]() {
+    // Pool threads never touch `this`: they post to the (always alive)
+    // application object and the GUI-thread continuation re-checks the guard.
+    QPointer<DirectoryWatcher> guard(this);
+    (void)QtConcurrent::run([guard, gen, paths]() {
       const std::string fp = paths_fingerprint(paths);
       QMetaObject::invokeMethod(
-          this,
-          [this, gen, fp]() {
+          QCoreApplication::instance(),
+          [guard, gen, fp]() {
+            if (!guard) {
+              return;
+            }
+            auto* self = guard.data();
+            auto* impl_ = self->impl_;
             impl_->poll_in_flight = false;
             if (!impl_->running || gen != impl_->start_generation || !impl_->poll_enabled) {
               return;
@@ -210,7 +220,7 @@ DirectoryWatcher::DirectoryWatcher(QObject* parent)
             }
             if (fp != impl_->last_fingerprint) {
               impl_->last_fingerprint = fp;
-              emit directory_changed();
+              emit self->directory_changed();
             }
           },
           Qt::QueuedConnection);
@@ -296,7 +306,8 @@ void DirectoryWatcher::start()
 
   // is_directory / inotify_add_watch / QFileSystemWatcher::addPath can all
   // block for a long time on hung network mounts — never do that on the GUI thread.
-  (void)QtConcurrent::run([this, paths, gen]() {
+  QPointer<DirectoryWatcher> guard(this);
+  (void)QtConcurrent::run([guard, paths, gen]() {
     struct Result {
       bool name_deltas = false;
       int inotify_fd = -1;
@@ -355,9 +366,9 @@ void DirectoryWatcher::start()
     }
 
     QMetaObject::invokeMethod(
-        this,
-        [this, gen, result = std::move(result)]() mutable {
-          if (gen != impl_->start_generation) {
+        QCoreApplication::instance(),
+        [guard, gen, result = std::move(result)]() mutable {
+          if (!guard || gen != guard->impl_->start_generation) {
             // Superseded by stop/start — drop any fd we opened.
 #if defined(__linux__)
             if (result.inotify_fd >= 0) {
@@ -366,8 +377,10 @@ void DirectoryWatcher::start()
 #endif
             return;
           }
+          DirectoryWatcher* const self = guard.data();
+          auto* const impl_ = self->impl_;
           for (const QString& m : result.messages) {
-            emit message(m);
+            emit self->message(m);
           }
 #if defined(__linux__)
           // Clear any previous inotify state (stop() should have, but be safe).
@@ -387,9 +400,9 @@ void DirectoryWatcher::start()
             impl_->wd_to_dir.emplace(wd, key);
           }
           if (impl_->inotify_fd >= 0 && impl_->name_deltas) {
-            impl_->notifier = new QSocketNotifier(impl_->inotify_fd, QSocketNotifier::Read, this);
-            QObject::connect(impl_->notifier, &QSocketNotifier::activated, this,
-                             [this](QSocketDescriptor) {
+            impl_->notifier = new QSocketNotifier(impl_->inotify_fd, QSocketNotifier::Read, self);
+            QObject::connect(impl_->notifier, &QSocketNotifier::activated, self,
+                             [self, impl_](QSocketDescriptor) {
               if (!impl_->running || impl_->inotify_fd < 0) {
                 return;
               }
@@ -409,12 +422,19 @@ void DirectoryWatcher::start()
                 while (off < n) {
                   const auto* ev = reinterpret_cast<const struct inotify_event*>(buf + off);
                   off += static_cast<ssize_t>(sizeof(struct inotify_event) + ev->len);
+                  // Overflow (wd == -1) means events were dropped, and an
+                  // unmount (USB pulled) invalidates the watch: only a full
+                  // reload is correct in both cases.
+                  if ((ev->mask & (IN_Q_OVERFLOW | IN_UNMOUNT)) != 0) {
+                    emit self->directory_changed();
+                    continue;
+                  }
                   const auto it = impl_->wd_to_dir.find(ev->wd);
                   if (it == impl_->wd_to_dir.end()) {
                     continue;
                   }
                   if ((ev->mask & (IN_DELETE_SELF | IN_MOVE_SELF)) != 0) {
-                    emit directory_changed();
+                    emit self->directory_changed();
                     continue;
                   }
                   if (ev->len == 0 || ev->name[0] == '\0') {
@@ -427,20 +447,30 @@ void DirectoryWatcher::start()
                   }
                   const auto full = it->second / ev->name;
                   const QString q = QString::fromStdString(full.string());
+                  // A busy file raises an event per write(); keep one entry per
+                  // run so the pending lists stay small.
+                  auto note = [&q](QStringList& list) {
+                    if (list.isEmpty() || list.last() != q) {
+                      list.push_back(q);
+                    }
+                  };
                   if ((ev->mask & (IN_CREATE | IN_MOVED_TO)) != 0) {
-                    impl_->pending_created.push_back(q);
+                    note(impl_->pending_created);
                   }
                   if ((ev->mask & (IN_DELETE | IN_MOVED_FROM)) != 0) {
-                    impl_->pending_removed.push_back(q);
+                    note(impl_->pending_removed);
                   }
                   if ((ev->mask & (IN_MODIFY | IN_ATTRIB | IN_CLOSE_WRITE)) != 0) {
-                    impl_->pending_modified.push_back(q);
+                    note(impl_->pending_modified);
                   }
                 }
               }
               if (impl_->coalesce_timer != nullptr
+                  && !impl_->coalesce_timer->isActive()
                   && (!impl_->pending_created.isEmpty() || !impl_->pending_removed.isEmpty()
                       || !impl_->pending_modified.isEmpty())) {
+                // Throttle, not debounce: restarting on every batch would
+                // starve updates for as long as a file keeps being written.
                 impl_->coalesce_timer->start();
               }
             });
@@ -457,14 +487,14 @@ void DirectoryWatcher::start()
             if (impl_->qwatcher.addPath(qpath)) {
               ++added;
             } else {
-              emit message(QStringLiteral("DirectoryWatcher: failed to watch %1").arg(qpath));
+              emit self->message(QStringLiteral("DirectoryWatcher: failed to watch %1").arg(qpath));
             }
           }
           if (impl_->name_deltas) {
             added += static_cast<int>(impl_->wd_to_dir.size());
           }
           if (added == 0 && !impl_->name_deltas) {
-            emit message(QStringLiteral("DirectoryWatcher: failed to watch any path"));
+            emit self->message(QStringLiteral("DirectoryWatcher: failed to watch any path"));
           }
 
           // Poll fallback: network mounts often claim inotify success but miss
@@ -482,11 +512,15 @@ void DirectoryWatcher::start()
             // Seed fingerprint asynchronously so the first tick only compares.
             const auto seed_paths = impl_->poll_paths;
             const std::uint64_t seed_gen = gen;
-            (void)QtConcurrent::run([this, seed_gen, seed_paths]() {
+            (void)QtConcurrent::run([guard, seed_gen, seed_paths]() {
               const std::string fp = paths_fingerprint(seed_paths);
               QMetaObject::invokeMethod(
-                  this,
-                  [this, seed_gen, fp]() {
+                  QCoreApplication::instance(),
+                  [guard, seed_gen, fp]() {
+                    if (!guard) {
+                      return;
+                    }
+                    auto* const impl_ = guard->impl_;
                     if (!impl_->running || seed_gen != impl_->start_generation) {
                       return;
                     }
@@ -498,10 +532,10 @@ void DirectoryWatcher::start()
               impl_->poll_timer->start();
             }
             if (remote) {
-              emit message(QStringLiteral(
+              emit self->message(QStringLiteral(
                   "DirectoryWatcher: network filesystem detected — enabling poll fallback"));
             } else {
-              emit message(QStringLiteral(
+              emit self->message(QStringLiteral(
                   "DirectoryWatcher: no native watches — enabling poll fallback"));
             }
           }

@@ -14,6 +14,7 @@ add_executable(dirtoo-tests
   test_clipboard_text.cpp
   test_archive_index.cpp
   test_archive_extract.cpp
+  test_directory_watcher.cpp
   test_filter.cpp
   test_hash.cpp
   test_tag_store.cpp
@@ -30,6 +31,7 @@ target_link_libraries(dirtoo-tests
     dirops::dirops
     dirtoo-collection::dirtoo-collection
     dirtoo-archive::dirtoo-archive
+    dirtoo-watcher::dirtoo-watcher
     LibArchive::LibArchive
     dirtoo-filter::dirtoo-filter
     dirtoo-tags::dirtoo-tags
