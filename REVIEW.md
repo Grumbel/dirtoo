@@ -56,8 +56,8 @@ Conventions:
 | C3 | L | read | `ARCHIVE_EXTRACT_PERM` keeps archive directory modes; a directory stored as `000` becomes un-browsable and `remove_all` of the cache dir may fail. Mask dirs with at least `u+rwx` after extraction. |
 | C4 | L | read | `extract_member_libarchive` does not pass `ARCHIVE_EXTRACT_SECURE_SYMLINKS` (full extraction does). Low risk (single entry) but inconsistent. Note: libarchive's symlink check also looks at the destination prefix; verify it is happy with a symlinked `~/.cache` before adding it. |
 | C5 | L | read | Archive entries with absolute or `..` names are **skipped silently** on extraction (and listed as normal entries in `list_archive_entries`). Surface a warning to the user. |
-| C6 | M | read | `MainWindow::reload_directory` (GUI thread) calls `ArchiveListing::refresh_if_stale`: a `stat` of the archive plus, when the stamp changed, a **synchronous full TOC read** (`list_archive_entries`). Violates the GUI-I/O rule on slow drives and for big archives; the initial load is async, the reload path is not. |
-| C7 | M | read | `ArchiveListing::child_counts_for` is O(directories × entries) with a `std::set<std::string>` and string copies per entry, run on the GUI thread on every archive reload. 200k entries × 2k folders ≈ 400M string operations. Build one pass over the entries into a `parent → children` map. |
+| C6 | M | read | `MainWindow::reload_directory` (GUI thread) calls `ArchiveListing::refresh_if_stale`: a `stat` of the archive plus, when the stamp changed, a **synchronous full TOC read** (`list_archive_entries`). Violates the GUI-I/O rule on slow drives and for big archives; the initial load is async, the reload path is not. **Fixed in `1f5f0360`.** |
+| C7 | M | read | `ArchiveListing::child_counts_for` is O(directories × entries) with a `std::set<std::string>` and string copies per entry, run on the GUI thread on every archive reload. 200k entries × 2k folders ≈ 400M string operations. Build one pass over the entries into a `parent → children` map. **Fixed in `1f5f0360`.** |
 
 ## D. dirtoo-fs / FileInfo
 
@@ -123,6 +123,7 @@ Conventions:
 | H12 | M | read | **Path-completion cancellation does not work.** `PathCompletionWorker::complete` sets `active_id_` when it *starts*, so a running scan never sees a newer request (queued behind it on the same thread). Typing quickly in a slow or huge directory stacks full scans (one `stat` per entry), each finishing before the next starts. Set the "latest id" atomic from the service at request time. **Fixed in `84dc0f60`.** |
 | H13 | M | read | **`~` completion probably never shows anything:** the worker expands `~/fo` to `/home/user/fo` and returns absolute candidates, but the `QCompleter` filters (`MatchStartsWith`) against the text the user typed (`~/fo`); `on_completions_ready` ignores the `longest` prefix and does not map candidates back to the `~` form. **Fixed in `84dc0f60`.** |
 | H14 | L | read | `open_location` updates `location_`, history and clears the old listing before knowing that the target exists/is a directory; a typo blanks the current view and pushes a bad entry onto the history (the failure only arrives later via `directory_load_failed`). Typing a path to a *file* shows "not a directory" instead of opening it. Probe asynchronously first, then switch. |
+| H15 | L | repro | Browsing an archive logs `directory thumbnail failed for file:///…` / `thumbnail failed for <cwd>/file:…`: directory-montage thumbnails are requested for *folders inside archives*, and `fi.path()` of such an entry is the archive URL, which is then used as a filesystem path. Skip montage requests for archive locations (they can never succeed). Seen when starting the app headless on a tar (2026-10-07). |
 
 ## I. Tests
 
