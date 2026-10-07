@@ -489,7 +489,7 @@ smells, and gaps worth scheduling. Not every item is a user-visible crash.
 
 | ID | Smell | Why it hurts | Direction |
 |----|-------|--------------|-----------|
-| S1 | **Archive listing/extract shells out to `bsdtar` / `tar` / `unzip` / `7z`** | Fragile verbose-text parsers | **Done** — **libarchive required** (CMake `REQUIRED`, flake); no CLI fallback (see AGENTS.md) |
+| S1 | **Archive listing/extract shells out to `bsdtar` / `tar` / `unzip` / `7z`** | Fragile verbose-text parsers | **Done** — **libarchive required** (CMake `REQUIRED`, flake); no CLI fallback (see AGENTS.md). Last holdout, `bsdtar -tf` for the `{file_count}` media field in `dirtoo-filter`, now uses libarchive too |
 | S2 | **`std::filesystem::remove_all` as the Overwrite primitive** | Same as A3 — policy API looks like “replace file” but implementation is “delete subtree” | **Done (refuse path)** — Overwrite is file/symlink only; dirs rejected at API + UI |
 | S3 | **MainWindow multi-TU / god-header** | Core still large; header owns everything | **In progress** — R1 ops TU done (`main_window_ops.cpp`); see **Refactoring track** |
 | S4 | **Dual icon paint paths** | `GraphicsFileItem` and `FileItemDelegate` must stay twin for montage/badges | **Done** — `icon_tile_paint.hpp` (badge, directory montage, status stickers) shared by both |
@@ -498,7 +498,7 @@ smells, and gaps worth scheduling. Not every item is a user-visible crash.
 
 | ID | Issue | Direction |
 |----|-------|-----------|
-| B1 | Archive member **size 0** when verbose parse fails | Fixed properly by S1 (libarchive sizes); until then, fixture tests for `parse_tv_lines` / `unzip -l` |
+| B1 | Archive member **size 0** when verbose parse fails | Fixed properly by S1 (libarchive sizes); the CLI-output parsers (`parse_tv_lines` / `unzip -l`) and their fixture tests were removed |
 | B2 | Search jank on huge result sets | **Done** — batched `append_visible_items` + `notify_rows_appended` (32); Graphics `on_rows_inserted` relayouts without clearing tiles/selection |
 | B3 | Watcher: directory-only events, full soft rescan | **Improved** — inotify names + incremental patch (≤48); else soft merge |
 | B4 | Icon dir discovery | **Mostly done** — CMake installs full icon set to `share/dirtoo/icons`; runtime probes that path |

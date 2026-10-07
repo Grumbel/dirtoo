@@ -3,6 +3,7 @@
 # Static libdirtoo-filter still lists SQLite on its link interface; pull it in for dependents.
 include(CMakeFindDependencyMacro)
 find_dependency(SQLite3 REQUIRED)
+find_dependency(LibArchive REQUIRED)
 find_dependency(dirtoo-hash REQUIRED)
 find_dependency(dirtoo-tags REQUIRED)
 

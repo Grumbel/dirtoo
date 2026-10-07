@@ -3,6 +3,9 @@
 
 #include "dirtoo/filter/media_probe.hpp"
 
+#include <archive.h>
+#include <archive_entry.h>
+
 #include <array>
 #include <cstdio>
 #include <cctype>
@@ -245,6 +248,35 @@ std::string quote_path(const std::string& key)
   return out;
 }
 
+/// Number of non-directory members, read with libarchive (no process spawn).
+std::optional<std::uint64_t> count_archive_files(const std::filesystem::path& path)
+{
+  struct archive* a = archive_read_new();
+  if (a == nullptr) {
+    return std::nullopt;
+  }
+  archive_read_support_filter_all(a);
+  archive_read_support_format_all(a);
+  std::optional<std::uint64_t> result;
+  if (archive_read_open_filename(a, path.c_str(), 64 * 1024) == ARCHIVE_OK) {
+    std::uint64_t n = 0;
+    struct archive_entry* e = nullptr;
+    int rc = ARCHIVE_OK;
+    while ((rc = archive_read_next_header(a, &e)) == ARCHIVE_OK
+           || rc == ARCHIVE_WARN) {
+      if (archive_entry_filetype(e) != AE_IFDIR) {
+        ++n;
+      }
+      archive_read_data_skip(a);
+    }
+    if (rc == ARCHIVE_EOF) {
+      result = n;
+    }
+  }
+  archive_read_free(a);
+  return result;
+}
+
 void enrich_pages_and_filecount(const std::filesystem::path& path, MediaInfo& info)
 {
   const std::string key = path.string();
@@ -279,26 +311,8 @@ void enrich_pages_and_filecount(const std::filesystem::path& path, MediaInfo& in
       }
     }
     if (is_arch) {
-      if (auto out = run_capture("bsdtar -tf " + quote_path(key) + " 2>/dev/null")) {
-        std::uint64_t n = 0;
-        std::size_t start = 0;
-        while (start < out->size()) {
-          auto end = out->find('\n', start);
-          if (end == std::string::npos) {
-            end = out->size();
-          }
-          if (end > start) {
-            std::string_view line{out->data() + start, end - start};
-            while (!line.empty() && (line.back() == '\r' || line.back() == ' ')) {
-              line.remove_suffix(1);
-            }
-            if (!line.empty() && line.back() != '/') {
-              ++n;
-            }
-          }
-          start = end + 1;
-        }
-        info.file_count = n;
+      if (const auto n = count_archive_files(path)) {
+        info.file_count = *n;
       }
     }
   }
@@ -346,7 +360,7 @@ std::optional<MediaInfo> probe_media_raw(const std::filesystem::path& path)
 
   // Skip ffprobe for archives/PDFs/docs — they only produce FFmpeg stderr noise
   // ("Invalid data found when processing input"). File counts / PDF pages come
-  // from enrich_pages_and_filecount (bsdtar / pdfinfo) instead.
+  // from enrich_pages_and_filecount (libarchive / pdfinfo) instead.
   if (!is_archive_or_document_name(name)) {
     const std::string ffprobe = find_ffprobe();
     // Redirect stderr so unknown/non-media files cannot spam the console.

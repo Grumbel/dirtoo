@@ -47,7 +47,7 @@ filter::FilterItem to_filter_item(const fs::FileInfo& fi)
 
 bool filter_expression_needs_content_io(const QString& expression)
 {
-  // Predicates that may read file contents or run ffprobe/pdfinfo/bsdtar.
+  // Predicates that may read file contents or run ffprobe/pdfinfo or read archives.
   // Must not run on the GUI thread (lookup_media → resolve_media_cached).
   const QString lower = expression.toLower();
   // Anything that may open SQLite, run ffprobe/pdfinfo, or read file bytes.
