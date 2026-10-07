@@ -4,6 +4,12 @@ Python reference: https://github.com/Grumbel/dirtoo-py.git — Active code: this
 
 ---
 
+**Code review backlog (2026-10-07):** open issues from the full review — build, dirops,
+archive, stores, filter, collection, GUI perf — are tracked with IDs in
+[`REVIEW.md`](REVIEW.md). Reference them as `REVIEW <id>` in commits.
+
+---
+
 ## MVP status (revised)
 
 Critical freezes, DnD/Link, content-filter offload, Graphics reuse, and core
