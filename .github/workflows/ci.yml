@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2026 Ingo Ruhnke <grumbel@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  # Builds every flake package (libraries, tools, GUI) and runs the unit tests
+  # from the built package: catches packaging breakage such as missing
+  # propagated dependencies or CMake config files.
+  flake-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - run: nix flake check --print-build-logs
+      - run: nix build .#dirtoo-full --print-build-logs
+
+  # The in-tree dev-shell build with AddressSanitizer + UBSan. (ThreadSanitizer
+  # is not used: Qt and libstdc++ are not instrumented, which makes its reports
+  # mostly noise.)
+  sanitizers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - name: Build and test with ASan + UBSan
+        run: |
+          nix develop --command bash -c '
+            set -euo pipefail
+            export DIRTOO_BUILD_TYPE=Debug
+            export DIRTOO_BUILD_DIR="$RUNNER_TEMP/build-asan"
+            export ASAN_OPTIONS=detect_leaks=0
+            export UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1
+            dirtoo-configure \
+              -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -O1" \
+              -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined" \
+              -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=address,undefined"
+            dirtoo-test
+          '
