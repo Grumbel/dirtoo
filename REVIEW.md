@@ -147,7 +147,7 @@ Conventions:
 
 | ID | Sev | Verified | Issue |
 |----|-----|----------|-------|
-| L1 | M | read | `Bookmarks::write_all` and `OpenHistory::save` write with `std::ofstream(path, trunc)` and never check the result. A full disk or a crash mid-write truncates the file and **loses all bookmarks/history**. `OpenedFilesStore::save` uses tmp+rename (good) but on a rename error it *removes the existing file first* and retries. Add one shared atomic-write helper (`QSaveFile`, or tmp + fsync + rename) and use it everywhere. |
+| L1 | M | read | `Bookmarks::write_all` and `OpenHistory::save` write with `std::ofstream(path, trunc)` and never check the result. A full disk or a crash mid-write truncates the file and **loses all bookmarks/history**. `OpenedFilesStore::save` uses tmp+rename (good) but on a rename error it *removes the existing file first* and retries. Add one shared atomic-write helper (`QSaveFile`, or tmp + fsync + rename) and use it everywhere. **Fixed in `8d776de8`.** |
 | L2 | L | read | `Bookmarks::contains/append/remove` re-read the whole file on every call (GUI thread) and do read-modify-write, so two dirtoo windows can overwrite each other's bookmarks. |
 | L3 | L | read | `OpenedFilesStore` keeps an unbounded set of every opened path and rewrites the whole file on save. |
 
