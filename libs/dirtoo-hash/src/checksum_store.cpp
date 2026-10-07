@@ -3,6 +3,7 @@
 
 #include "dirtoo/hash/checksum_store.hpp"
 #include "dirtoo/hash/hash_file.hpp"
+#include "dirtoo/hash/file_stamp.hpp"
 #include "dirtoo/hash/sqlite_open.hpp"
 
 #include <sqlite3.h>
@@ -130,17 +131,73 @@ void ChecksumStore::close()
   }
 }
 
+namespace {
+
+/// Schema versions (PRAGMA user_version):
+///   0  rows written before the mtime fix: mtime_ns was the raw tick count of
+///      std::filesystem::file_time_type (implementation-defined epoch, 2174 on
+///      libstdc++) - not comparable to anything else;
+///   1  mtime_ns is nanoseconds since the Unix epoch (st_mtim).
+constexpr int kSchemaVersion = 1;
+
+int read_user_version(sqlite3* db)
+{
+  int v = 0;
+  sqlite3_exec(
+      db, "PRAGMA user_version",
+      [](void* ctx, int n, char** vals, char**) -> int {
+        if (n > 0 && vals[0] != nullptr) {
+          *static_cast<int*>(ctx) = std::atoi(vals[0]);
+        }
+        return 0;
+      },
+      &v, nullptr);
+  return v;
+}
+
+} // namespace
+
 bool ChecksumStore::ensure_schema(std::string* error)
 {
+  auto* db = static_cast<sqlite3*>(db_);
   char* err = nullptr;
-  if (sqlite3_exec(static_cast<sqlite3*>(db_), kSchema, nullptr, nullptr, &err) != SQLITE_OK) {
+  auto fail = [&](const char* fallback) {
     if (error) {
-      *error = err ? err : "schema failed";
+      *error = err ? err : fallback;
     }
     if (err) {
       sqlite3_free(err);
+      err = nullptr;
     }
     return false;
+  };
+  if (sqlite3_exec(db, kSchema, nullptr, nullptr, &err) != SQLITE_OK) {
+    return fail("schema failed");
+  }
+
+  // Migrate old rows once. IMMEDIATE + re-reading the version inside the
+  // transaction keeps two processes opening the same old database from both
+  // applying the offset.
+  if (read_user_version(db) < kSchemaVersion) {
+    if (sqlite3_exec(db, "BEGIN IMMEDIATE", nullptr, nullptr, &err) != SQLITE_OK) {
+      return fail("cannot start schema migration");
+    }
+    if (read_user_version(db) < kSchemaVersion) {
+      const std::int64_t offset = legacy_file_clock_offset_ns();
+      // offset == 0 would also be right for a clock whose epoch is the Unix
+      // epoch; for non-nanosecond clocks legacy_file_clock_offset_ns() cannot
+      // convert and the stale rows are simply re-hashed on demand.
+      const std::string sql =
+          "UPDATE checksums SET mtime_ns = mtime_ns + " + std::to_string(offset) +
+          " WHERE mtime_ns IS NOT NULL; PRAGMA user_version=" + std::to_string(kSchemaVersion) + ";";
+      if (sqlite3_exec(db, sql.c_str(), nullptr, nullptr, &err) != SQLITE_OK) {
+        sqlite3_exec(db, "ROLLBACK", nullptr, nullptr, nullptr);
+        return fail("schema migration failed");
+      }
+    }
+    if (sqlite3_exec(db, "COMMIT", nullptr, nullptr, &err) != SQLITE_OK) {
+      return fail("cannot commit schema migration");
+    }
   }
   return true;
 }
@@ -290,11 +347,8 @@ ChecksumStore::ensure(const std::filesystem::path& path, std::string_view path_k
     return std::nullopt;
   }
   std::optional<std::int64_t> mtime_ns;
-  {
-    const auto ftime = std::filesystem::last_write_time(path, ec);
-    if (!ec) {
-      mtime_ns = static_cast<std::int64_t>(ftime.time_since_epoch().count());
-    }
+  if (const auto stamp = stat_stamp(path)) {
+    mtime_ns = stamp->mtime_ns;  // Unix nanoseconds
   }
 
   if (!refresh) {

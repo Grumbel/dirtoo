@@ -2,9 +2,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "dirtoo/hash/checksum_store.hpp"
+#include "dirtoo/hash/file_stamp.hpp"
+
+#include <sqlite3.h>
 #include "dirtoo/hash/hash_file.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+
+#include <fcntl.h>
+#include <sys/stat.h>
 
 #include <filesystem>
 #include <fstream>
@@ -212,5 +218,78 @@ TEST_CASE("databases are created private and report failed writes", "[hash][safe
   CHECK_FALSE(err.empty());
   CHECK_FALSE(closed.remove("/tmp/x"));
   CHECK_FALSE(closed.put_quick("/tmp/x", d));
+  fs::remove_all(dir);
+}
+
+TEST_CASE("stored mtimes are Unix nanoseconds", "[hash][mtime]")
+{
+  const auto dir = fs::temp_directory_path() / "dirtoo-test-mtime-ns";
+  fs::remove_all(dir);
+  fs::create_directories(dir);
+  const auto file = dir / "f.txt";
+  {
+    std::ofstream(file) << "hello";
+  }
+  // A known time: 2020-01-02 03:04:05.123456789 UTC.
+  constexpr std::int64_t kNs = 1577934245LL * 1'000'000'000LL + 123456789LL;
+  timespec times[2] = {{1577934245, 123456789}, {1577934245, 123456789}};
+  REQUIRE(::utimensat(AT_FDCWD, file.c_str(), times, 0) == 0);
+
+  const auto stamp = dirtoo::hash::stat_stamp(file);
+  REQUIRE(stamp);
+  CHECK(stamp->size == 5);
+  CHECK(stamp->mtime_ns == kNs);
+  // The std::filesystem route agrees.
+  CHECK(dirtoo::hash::unix_ns_from_file_time(fs::last_write_time(file)) == kNs);
+
+  // hash_file records the same value.
+  HashError err;
+  const auto d = hash_file(file, HashOptions{}, &err);
+  REQUIRE(d);
+  CHECK(d->mtime_ns == kNs);
+  fs::remove_all(dir);
+}
+
+TEST_CASE("checksum database migrates legacy file_clock mtimes once", "[hash][mtime]")
+{
+  const auto dir = fs::temp_directory_path() / "dirtoo-test-mtime-migrate";
+  fs::remove_all(dir);
+  fs::create_directories(dir);
+  const auto file = dir / "f.txt";
+  {
+    std::ofstream(file) << "hello";
+  }
+  const auto db = dir / "checksums.sqlite";
+  const auto stamp = dirtoo::hash::stat_stamp(file);
+  REQUIRE(stamp);
+  // What an old dirtoo stored: raw file_time_type ticks.
+  const auto legacy_ticks = fs::last_write_time(file).time_since_epoch().count();
+
+  {
+    dirtoo::hash::ChecksumStore store;
+    REQUIRE(store.open(db));
+    FileDigests d;
+    d.size = stamp->size;
+    d.mtime_ns = 0;
+    d.sha256_hex = std::string(64, 'c');
+    REQUIRE(store.put("/some/file", d));
+  }
+  {
+    // Turn it into a version-0 database holding the legacy value.
+    sqlite3* raw = nullptr;
+    REQUIRE(sqlite3_open(db.c_str(), &raw) == SQLITE_OK);
+    const std::string sql = "UPDATE checksums SET mtime_ns=" + std::to_string(legacy_ticks) +
+                            "; PRAGMA user_version=0;";
+    REQUIRE(sqlite3_exec(raw, sql.c_str(), nullptr, nullptr, nullptr) == SQLITE_OK);
+    sqlite3_close(raw);
+  }
+  for (int reopen = 0; reopen < 3; ++reopen) {  // migrated once, not on every open
+    dirtoo::hash::ChecksumStore store;
+    REQUIRE(store.open(db));
+    INFO("open #" << reopen);
+    const auto hit = store.get_if_valid("/some/file", stamp->size, stamp->mtime_ns);
+    REQUIRE(hit);
+    CHECK(hit->mtime_ns == stamp->mtime_ns);
+  }
   fs::remove_all(dir);
 }

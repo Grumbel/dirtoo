@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "dirtoo/hash/hash_file.hpp"
+#include "dirtoo/hash/file_stamp.hpp"
 
 #include <openssl/evp.h>
 
@@ -90,12 +91,8 @@ std::optional<FileDigests> hash_file(const std::filesystem::path& path, const Ha
 
   FileDigests out;
   out.size = size;
-  {
-    const auto ftime = std::filesystem::last_write_time(path, ec);
-    if (!ec) {
-      // file_clock ticks — only used for equality with a later stat of the same file.
-      out.mtime_ns = static_cast<std::int64_t>(ftime.time_since_epoch().count());
-    }
+  if (const auto stamp = stat_stamp(path)) {
+    out.mtime_ns = stamp->mtime_ns;  // Unix nanoseconds
   }
 
   std::ifstream in(path, std::ios::binary);
@@ -214,11 +211,8 @@ std::optional<FileDigests> hash_file_quick(const std::filesystem::path& path,
   }
 
   std::optional<std::int64_t> mtime_ns;
-  {
-    const auto ftime = std::filesystem::last_write_time(path, ec);
-    if (!ec) {
-      mtime_ns = static_cast<std::int64_t>(ftime.time_since_epoch().count());
-    }
+  if (const auto stamp = stat_stamp(path)) {
+    mtime_ns = stamp->mtime_ns;  // Unix nanoseconds
   }
 
   const std::uint64_t window =

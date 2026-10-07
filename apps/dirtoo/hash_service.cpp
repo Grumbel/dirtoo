@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "hash_service.hpp"
+#include "dirtoo/hash/file_stamp.hpp"
 
 #include <filesystem>
 
@@ -34,13 +35,13 @@ HashService::ensure_full(const std::filesystem::path& path, std::string_view pat
                          const dirtoo::hash::HashOptions& hash_options)
 {
   std::error_code ec;
-  const auto size = static_cast<std::uint64_t>(std::filesystem::file_size(path, ec));
+  std::uint64_t size = 0;
   std::optional<std::int64_t> mtime_ns;
-  if (!ec) {
-    const auto ftime = std::filesystem::last_write_time(path, ec);
-    if (!ec) {
-      mtime_ns = static_cast<std::int64_t>(ftime.time_since_epoch().count());
-    }
+  if (const auto stamp = dirtoo::hash::stat_stamp(path)) {
+    size = stamp->size;
+    mtime_ns = stamp->mtime_ns;  // Unix nanoseconds
+  } else {
+    ec = std::make_error_code(std::errc::no_such_file_or_directory);
   }
 
   // Cache lookup under lock only.

@@ -12,7 +12,7 @@ namespace dirtoo::hash {
 /// Digests from a single sequential read of a regular file.
 struct FileDigests {
   std::uint64_t size = 0;
-  /// Nanoseconds since epoch when known (from stat).
+  /// Modification time in nanoseconds since the Unix epoch, when known (st_mtim).
   std::optional<std::int64_t> mtime_ns;
 
   std::string crc32_hex;  // 8 hex digits, lowercase

@@ -5,6 +5,7 @@
 # pass -DDIRTOO_BUILD_TESTS=OFF to build without.
 find_package(Catch2 3 REQUIRED)
 find_package(LibArchive REQUIRED)
+find_package(SQLite3 REQUIRED)
 
 add_executable(dirtoo-tests
   test_location.cpp
@@ -39,6 +40,7 @@ target_link_libraries(dirtoo-tests
     dirtoo-archive::dirtoo-archive
     dirtoo-watcher::dirtoo-watcher
     LibArchive::LibArchive
+    SQLite3::SQLite3
     dirtoo-filter::dirtoo-filter
     dirtoo-tags::dirtoo-tags
     dirtoo-hash::dirtoo-hash
