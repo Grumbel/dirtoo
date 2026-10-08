@@ -25,7 +25,6 @@
 #include <QGroupBox>
 #include <QLabel>
 #include <QMessageBox>
-#include <QMimeDatabase>
 #include <QPushButton>
 #include <QSizePolicy>
 #include <QVBoxLayout>
@@ -144,8 +143,7 @@ struct PropertiesProbe {
 PropertiesProbe probe_properties(const std::filesystem::path& path)
 {
   PropertiesProbe probe;
-  QMimeDatabase mime_db;
-  probe.mime = mime_db.mimeTypeForFile(QString::fromStdString(path.string())).name();
+  probe.mime = mime_from_default(path);
   if (::stat(path.c_str(), &probe.st) == 0) {
     probe.have_stat = true;
     probe.user = user_name(probe.st.st_uid);

@@ -3,6 +3,8 @@
 
 #include "mime_util.hpp"
 
+#include <QByteArray>
+#include <QFile>
 #include <QFileInfo>
 #include <QMimeDatabase>
 #include <QMimeType>
@@ -22,6 +24,21 @@ QString name_or_octet(const QMimeType& mt)
     return mt.name();
   }
   return QStringLiteral("application/octet-stream");
+}
+
+// QMimeDatabase serialises every call on one global mutex, and the
+// file-based entry points (mimeTypeForFile) open and read the file *while
+// holding it*.  On a slow drive that stalls the GUI thread, whose cheap
+// name-only lookups (mime_from_extension) then block on the mutex.  So read
+// the bytes here, unlocked, and hand only the in-memory buffer to the
+// database (mimeTypeForData / ...AndData never touch the filesystem).
+QByteArray read_sniff_data(const QString& path)
+{
+  QFile f(path);
+  if (!f.open(QIODevice::ReadOnly)) {
+    return {};
+  }
+  return f.read(16384); // Qt's own sniff limit
 }
 
 } // namespace
@@ -62,7 +79,7 @@ QString mime_from_content(const QString& path)
   if (!fi.isFile()) {
     return mime_from_extension(path);
   }
-  return name_or_octet(mime_db().mimeTypeForFile(fi, QMimeDatabase::MatchContent));
+  return name_or_octet(mime_db().mimeTypeForData(read_sniff_data(path)));
 }
 
 QString mime_from_content(const std::filesystem::path& path)
@@ -82,7 +99,13 @@ QString mime_from_default(const QString& path)
     return QStringLiteral("inode/directory");
   }
   if (fi.isFile()) {
-    return name_or_octet(mime_db().mimeTypeForFile(fi, QMimeDatabase::MatchDefault));
+    // MatchDefault: an unambiguous glob wins without reading the file.
+    const QList<QMimeType> globs = mime_db().mimeTypesForFileName(path);
+    if (globs.size() == 1) {
+      return name_or_octet(globs.first());
+    }
+    return name_or_octet(
+        mime_db().mimeTypeForFileNameAndData(path, read_sniff_data(path)));
   }
   return mime_from_extension(path);
 }
