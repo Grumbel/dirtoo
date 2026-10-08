@@ -32,6 +32,9 @@ void FileInfo::apply_posix_stat(const struct stat& st)
   is_regular_file_ = S_ISREG(st.st_mode) != 0;
   size_ = static_cast<std::uint64_t>(st.st_size >= 0 ? st.st_size : 0);
   permissions_ = static_cast<std::filesystem::perms>(st.st_mode & 07777);
+  has_owner_ = true;
+  owner_uid_ = static_cast<std::uint32_t>(st.st_uid);
+  owner_gid_ = static_cast<std::uint32_t>(st.st_gid);
 
   // Prefer st_mtim.tv_sec when available; fall back to st_mtime.
 #  if defined(__APPLE__)

@@ -84,6 +84,12 @@ public:
 
   [[nodiscard]] std::filesystem::perms permissions() const noexcept { return permissions_; }
 
+  /// Owner / group from the lstat taken when the entry was built; `has_owner()`
+  /// is false when no stat was available (then the ids are meaningless).
+  [[nodiscard]] bool has_owner() const noexcept { return has_owner_; }
+  [[nodiscard]] std::uint32_t owner_uid() const noexcept { return owner_uid_; }
+  [[nodiscard]] std::uint32_t owner_gid() const noexcept { return owner_gid_; }
+
 private:
   void fill_posix_times_from_path(const std::filesystem::path& path);
   void fill_symlink_target(const std::filesystem::path& path);
@@ -111,6 +117,9 @@ private:
   bool symlink_target_is_directory_ = false;
   std::filesystem::path symlink_target_;
   std::filesystem::perms permissions_{};
+  bool has_owner_ = false;
+  std::uint32_t owner_uid_ = 0;
+  std::uint32_t owner_gid_ = 0;
 };
 
 /// List non-recursive directory entries. Hidden files included; caller filters.

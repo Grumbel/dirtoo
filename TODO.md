@@ -191,6 +191,7 @@ window. Rule: GUI code touches the filesystem only through `run_io()`
 | History / Bookmarks / back-forward menus: `icon_for_location` stat'ed every entry | **Fixed** — no stat; `PathAvailability` disables missing entries after the menu opened (cached, no re-queue while a check hangs) |
 | Recently Opened: first-open icon theme lookups (~100 ms) | **Fixed** — menu pre-built while idle after startup; entries with all files gone get disabled in the background |
 | Name-only `QMimeDatabase` lookups on the GUI thread blocked on the DB's global mutex while a worker held it across `mimeTypeForFile(MatchContent)` file I/O (freeze when browsing a big dir with ungenerated thumbnails; seen in `on_thumbnailer_failed`) | **Fixed** — `mime_util` reads the sniff bytes unlocked and passes only the buffer to `mimeTypeForData` / `...FileNameAndData`; never call `mimeTypeForFile` anywhere |
+| `access(2)` per item in `FileListModel::data` (Unreadable/Unwritable roles, called from every paint → freeze on slow drives) | **Fixed** — `FileInfo` records uid/gid at listing time; access is computed from mode bits + euid/groups (no ACL / ro-mount modelling; symlinks assumed accessible) |
 | Raw-`this` `QtConcurrent` / global-pool lambdas (use-after-free if window closes mid-I/O) | **Fixed** — `run_io` (`QFuture::then(context, …)`) |
 
 Residual (accepted / open):

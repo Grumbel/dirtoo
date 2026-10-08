@@ -7,9 +7,11 @@
 #include "size_format.hpp"
 #include "fs_tree_scan_worker.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <cstdlib>
 #include <string>
+#include <vector>
 
 #include <QTimer>
 
@@ -76,6 +78,41 @@ QString type_label(const fs::FileInfo& fi)
     return QString::fromStdString(ext.substr(1));
   }
   return QString::fromStdString(ext);
+}
+
+// Would this process get read/write access?  Computed from the mode/owner
+// captured at listing time — access(2) in data() ran per item per paint and
+// stalled the GUI on slow drives.  Root and ACLs/read-only mounts are not
+// modelled (display hint only); symlinks are assumed accessible because the
+// lstat bits describe the link, not its target.
+bool process_may_access(const fs::FileInfo& fi, bool write)
+{
+  if (!fi.has_owner() || fi.is_symlink()) {
+    return true;
+  }
+  static const uid_t euid = ::geteuid();
+  if (euid == 0) {
+    return true;
+  }
+  static const std::vector<gid_t> groups = [] {
+    std::vector<gid_t> g(static_cast<std::size_t>(std::max(::getgroups(0, nullptr), 0)));
+    const int n = g.empty() ? 0 : ::getgroups(static_cast<int>(g.size()), g.data());
+    g.resize(static_cast<std::size_t>(std::max(n, 0)));
+    g.push_back(::getegid());
+    return g;
+  }();
+  using P = std::filesystem::perms;
+  const P bit_u = write ? P::owner_write : P::owner_read;
+  const P bit_g = write ? P::group_write : P::group_read;
+  const P bit_o = write ? P::others_write : P::others_read;
+  const P perms = fi.permissions();
+  if (fi.owner_uid() == euid) {
+    return (perms & bit_u) != P::none;
+  }
+  if (std::find(groups.begin(), groups.end(), static_cast<gid_t>(fi.owner_gid())) != groups.end()) {
+    return (perms & bit_g) != P::none;
+  }
+  return (perms & bit_o) != P::none;
 }
 
 } // namespace
@@ -579,15 +616,14 @@ QVariant FileListModel::data(const QModelIndex& index, int role) const
     if (fi->is_synthetic() || fi->path().empty()) {
       return false;
     }
-    // Effective access for the current process (more accurate than mode bits alone).
-    return ::access(fi->path().c_str(), R_OK) != 0;
+    return !process_may_access(*fi, /*write=*/false);
   }
 
   if (role == IsUnwritableRole) {
     if (fi->is_synthetic() || fi->path().empty()) {
       return false;
     }
-    return ::access(fi->path().c_str(), W_OK) != 0;
+    return !process_may_access(*fi, /*write=*/true);
   }
 
   if (role == GroupLabelRole) {
