@@ -14,6 +14,8 @@ it permanently once you’re comfortable.
 
 **License:** GPL-3.0-or-later (REUSE-style SPDX headers on sources).
 
+![dirtoo screenshots](docs/screenshot.png)
+
 ---
 
 ## Who it’s for
