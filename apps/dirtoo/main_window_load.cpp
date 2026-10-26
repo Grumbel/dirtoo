@@ -64,6 +64,11 @@ void MainWindow::reload_directory(bool soft)
     // Keep recursive search results until the user navigates away or closes search.
     return;
   }
+  if (!soft) {
+    // A fresh, sorted listing: queued watcher changes and the "out of date"
+    // mark are superseded (also for Reload while live updates are paused).
+    reset_live_updates();
+  }
   // Is the in-memory archive index still current? That needs a stat (and maybe
   // a re-read): do it on the I/O pool and re-enter here once it is known.
   if (location_.is_archive() && !archive_stamp_verified_
@@ -224,14 +229,14 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
   collection_.sorter().set_ascending(sort_ascending_);
   const bool soft = dir_session_.soft_reload;
   dir_session_.soft_reload = false;
-  // Soft watcher refresh: merge into existing collection (preserve order of
-  // survivors, append newcomers) instead of replacing the whole vector.
-  const bool content_filter =
-      !filter_search_.filter_text().isEmpty()
-      && (filter_expression_needs_content_io(filter_search_.filter_text())
-          || set_membership::pure_set_query(filter_search_.filter_text().toStdString()).has_value()
-          || set_membership::pure_set_or_queries(filter_search_.filter_text().toStdString()).has_value());
-  if (soft && !collection_.empty()) {
+  const bool content_filter = filter_runs_on_worker();
+  // Soft watcher refresh: merge into the existing collection — survivors keep
+  // their place, newcomers go to the end — and do not re-sort. A watched
+  // directory that keeps changing (downloads) must not shuffle under the user;
+  // the order is restored on an explicit Reload or sort change, and the Reload
+  // button shows when it is out of date.
+  const bool keep_order = soft && !collection_.empty();
+  if (keep_order) {
     // Avoid rebuild_visible when content matchers would hit the GUI thread.
     collection_.merge_items(std::move(items), !content_filter);
   } else {
@@ -241,22 +246,30 @@ void MainWindow::on_directory_loaded(quint64 generation, std::vector<fs::FileInf
     if (content_filter) {
       // Keep previous visible list until FilterWorker finishes (no empty flash).
       request_async_filter(/*keep_previous_visible=*/true);
+      if (keep_order) {
+        dir_session_.keep_order_filter_generation = list_workers_.filter_generation();
+      }
     } else {
       collection_.set_name_filter(filter_search_.filter_text().toStdString());
     }
   }
-  // Soft (watcher) reloads: keep the previous paint until sort finishes to avoid
-  // unsorted→sorted double flicker. Hard navigation still paints ASAP.
+  // Hard navigation paints ASAP (then again once sorted).
   if (!soft) {
     refresh_list();
     apply_pending_nav_scroll();
   }
   set_status(QStringLiteral("%1 items").arg(
       soft ? dir_session_.known_paths.size() : collection_.visible_items().size()));
-  // After soft path, visible may still be old until sort/filter apply; status updated again later.
   // Content filters own the visible list via FilterWorker; replace_items_sorted would
   // rebuild_visible with matchers (GUI I/O) or wipe the async filter result.
-  if (!content_filter) {
+  if (keep_order) {
+    if (!content_filter) {
+      if (!collection_.items_in_sort_order()) {
+        set_view_stale(true);
+      }
+      refresh_list_preserving_selection();
+    }
+  } else if (!content_filter) {
     request_async_sort();
   }
   request_thumbnails_for_visible();

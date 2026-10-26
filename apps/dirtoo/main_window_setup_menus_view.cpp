@@ -160,6 +160,9 @@ void MainWindow::setup_view_menu()
     auto* act = view_menu->addAction(theme_icon("view-refresh"), QStringLiteral("Refresh"), this, &MainWindow::on_refresh);
     act->setShortcut(QKeySequence(Qt::Key_F5));
   }
+  if (pause_live_act_ != nullptr) {
+    view_menu->addAction(pause_live_act_);
+  }
   {
     auto* act = view_menu->addAction(theme_icon("view-refresh"), QStringLiteral("Reload Thumbnails"), this,
                                      &MainWindow::on_reload_thumbnails);

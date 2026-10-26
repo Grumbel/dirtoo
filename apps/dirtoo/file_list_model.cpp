@@ -197,6 +197,34 @@ void FileListModel::notify_rows_appended(int count)
   endInsertRows();
 }
 
+void FileListModel::notify_row_updated(int row)
+{
+  if (row < 0 || row >= rowCount()) {
+    return;
+  }
+  emit dataChanged(index(row, 0), index(row, static_cast<int>(FileListColumn::Count) - 1));
+}
+
+bool FileListModel::remove_entry(const fs::Location& location)
+{
+  if (collection_ == nullptr) {
+    return false;
+  }
+  int row = row_for_path(QString::fromStdString(location.as_path().string()));
+  if (row < 0) {
+    // Location identity is authoritative; the path index is only a fast path.
+    if (const auto idx = collection_->index_of(location)) {
+      row = static_cast<int>(*idx);
+    } else {
+      return collection_->erase_in_place(location);  // listed but not visible
+    }
+  }
+  beginRemoveRows(QModelIndex{}, row, row);
+  const bool removed = collection_->erase_in_place(location);
+  endRemoveRows();
+  return removed;
+}
+
 void FileListModel::emit_path_changed(const QString& path)
 {
   if (collection_ == nullptr) {

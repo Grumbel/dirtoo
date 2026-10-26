@@ -191,18 +191,26 @@ void MainWindow::setup_status_and_services()
     }
   });
 
-  // Debounce watcher storms (busy dirs otherwise clear+reload+rethumb every event).
+  // Watcher changes go through LiveUpdateQueue (throttled; modify-only bursts
+  // such as a running download at most once per second) and are applied in
+  // place without re-sorting. Rescans are throttled by watcher_reload_timer_.
   watcher_reload_timer_ = new QTimer(this);
   watcher_reload_timer_->setSingleShot(true);
-  watcher_reload_timer_->setInterval(200);
-  connect(watcher_reload_timer_, &QTimer::timeout, this, [this] { reload_directory(true); });
-  connect(&watcher_, &watcher::DirectoryWatcher::directory_changed, this, [this] {
-  if (watcher_reload_timer_ != nullptr) {
-    watcher_reload_timer_->start();
-  }
+  watcher_reload_timer_->setInterval(500);
+  connect(watcher_reload_timer_, &QTimer::timeout, this, [this] {
+    if (live_updates_.paused()) {
+      live_updates_.add_missed(1);
+      return;
+    }
+    reload_directory(true);
   });
+  connect(&watcher_, &watcher::DirectoryWatcher::directory_changed, &live_updates_,
+          &LiveUpdateQueue::add_rescan);
   connect(&watcher_, &watcher::DirectoryWatcher::entries_changed, this,
           &MainWindow::on_entries_changed);
+  connect(&live_updates_, &LiveUpdateQueue::ready, this, &MainWindow::on_live_updates_ready);
+  connect(&live_updates_, &LiveUpdateQueue::missed_changed, this,
+          [this](int) { update_live_update_indicator(); });
   connect(&watcher_, &watcher::DirectoryWatcher::message, this, [this](const QString& msg) {
   set_status(msg);
   });

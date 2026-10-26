@@ -77,6 +77,11 @@ public:
   void refresh();
   /// Notify views that @p count rows were appended at the end of the visible list.
   void notify_rows_appended(int count);
+  /// Notify views that every column of visible @p row changed (entry replaced in place).
+  void notify_row_updated(int row);
+  /// Erase @p location from the collection in place (no reorder), with the
+  /// matching row-removal signals. Returns false if it was not listed.
+  bool remove_entry(const fs::Location& location);
 
   void set_thumbnail(const QString& path, const QIcon& icon);
   void set_thumbnail_pending(const QString& path);

@@ -64,6 +64,12 @@ Manager, and open “everything with this tag” from there.
 Folders can show a montage of children. Force a reload when something looks
 stale.
 
+**Live updates** never reshuffle the list: when files change on disk (a
+running download, a log), rows update in place and new files are appended at
+the end. The **Reload** button gets an orange dot when the order or filter is
+out of date; **F5** sorts again. **Pause Live Updates** (toolbar / View menu)
+freezes the listing entirely until resumed.
+
 **Archives** (zip, tar, 7z, rar, and similar) open **read-only** for browsing;
 members can be extracted on demand for thumbnails and tagging.
 
@@ -94,7 +100,7 @@ Writing into archives, remote filesystems (SMB, SFTP, …), and a full undo stac
 | **Ctrl+T** | Tag selection |
 | **Ctrl+D** | Toggle bookmark for this location |
 | **Alt+Return** | Properties |
-| **F5** | Refresh |
+| **F5** | Refresh (re-sorts after live updates) |
 | **Backspace** / **Alt+Up** | Parent directory |
 | **Alt+Home** | Home |
 | **Alt+Left** / **Alt+Right** | History back / forward |

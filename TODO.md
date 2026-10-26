@@ -128,8 +128,9 @@ tints, badges, and indicators.
 | Content filter I/O on GUI thread | **Mitigated** — `FilterWorker` + `replace_visible`; soft reload keeps list; sort uses `sort_items_only` + re-filter |
 | Graphics full scene rebuild | **Mitigated** — item reuse; softer `layoutChanged` refresh |
 | Thumbnails for every visible row | **Mitigated** — viewport batch (cap 64), scroll-driven |
-| Watcher full rescan storms | **Mitigated** — debounce + soft reload + **merge_items** + cancel in-flight; **no emit on start**; hard nav cancels pending soft timer |
-| Double paint unsorted→sorted | **Mitigated** for soft watcher reloads (skip intermediate paint; refresh after sort) |
+| Watcher full rescan storms | **Mitigated** — `LiveUpdateQueue` throttle (structural 100 ms, modify-only 1 s) + soft reload throttle (500 ms) + **merge_items** + cancel in-flight; **no emit on start**; hard nav cancels pending soft timer |
+| Constant refresh / reorder while a file is written (downloads) | **done** — live updates are order-stable: modified rows update in place (`upsert_in_place` + per-row `dataChanged`), new entries append at the end, removals erase in place; soft reloads and their refilter keep the current order. Reload button shows an attention dot while the view is stale (order/filter/group out of date); F5 or a sort change re-sorts. **Pause Live Updates** toggle (toolbar + View) drops and counts changes, catches up with a soft reload on resume. Residual: a file that finished downloading in place (no rename) keeps a failed/early thumbnail; grouped views get rows appended under the last section until reload; a sort finishing after a live upsert can drop that upsert (pre-existing race) |
+| Double paint unsorted→sorted | **Mitigated** — soft watcher reloads no longer re-sort at all (order-stable merge) |
 | Full-range dataChanged on every refresh | **Mitigated** — `FileListModel::refresh` uses layoutChanged only |
 | No list virtualization | **Mitigated** for Icons/Graphics — viewport window; Detail: uniform heights + no GUI-thread mtime stat; model is still full (Qt paints visible rows only) |
 
@@ -981,7 +982,7 @@ Keep: `predicates_name/media/fuzzy/meta/content/misc.cpp` and `predicates_detail
       filter_row_; unchecks show_filter_act_)
 - [x] slow IO (USB HDD that has to spin up) still locks up the GUI
       (mitigated: watcher create/modify deltas stat via QThreadPool +
-       apply_watcher_upserts; removals stay on GUI with no FS I/O. Residual:
+       apply_live_upserts; removals stay on GUI with no FS I/O. Residual:
        rare single-path exists checks in thumbs/ops/conflict dialog; full
        directory load already off-thread)
 - [x] clicking on folders in filter view might open the wrong folder

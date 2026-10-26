@@ -7,6 +7,9 @@
 
 #include <QSet>
 #include <QString>
+#include <QtGlobal>
+
+#include <optional>
 
 namespace dirtoo::app {
 
@@ -16,6 +19,9 @@ struct DirectorySession {
   QSet<QString> known_paths;
   fs::Location known_paths_location;
   fs::Location pending_archive_location;
+  /// FilterWorker generation started by a soft reload: its result keeps the
+  /// current row order instead of being sorted.
+  std::optional<quint64> keep_order_filter_generation;
 
   void clear_known_paths()
   {

@@ -30,6 +30,7 @@ add_executable(dirtoo-tests
   test_file_set_store.cpp
   test_directory_load_worker.cpp
   test_fs_tree.cpp
+  test_live_updates.cpp
 )
 
 target_link_libraries(dirtoo-tests

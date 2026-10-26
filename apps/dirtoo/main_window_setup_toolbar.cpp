@@ -70,7 +70,18 @@ void MainWindow::setup_toolbar()
     connect(btn, &QWidget::customContextMenuRequested, this, &MainWindow::on_forward_history_menu);
   }
   toolbar->addSeparator();
-  toolbar->addAction(theme_icon("view-refresh", "reload"), QStringLiteral("Reload"), this, &MainWindow::on_refresh);
+  reload_icon_ = theme_icon("view-refresh", "reload");
+  reload_attention_icon_ = with_attention_dot(reload_icon_, QColor(0xe6, 0x7e, 0x22));
+  reload_act_ = toolbar->addAction(reload_icon_, QStringLiteral("Reload"), this, &MainWindow::on_refresh);
+  reload_act_->setToolTip(QStringLiteral("Reload (F5)"));
+  // Live updates never reorder the list (see on_live_updates_ready); pausing
+  // stops them altogether, e.g. to read a folder a download keeps changing.
+  pause_live_act_ = toolbar->addAction(theme_icon("media-playback-pause", "process-stop"),
+                                       QStringLiteral("Pause Live Updates"));
+  pause_live_act_->setCheckable(true);
+  pause_live_act_->setToolTip(
+      QStringLiteral("Pause live updates\nFile changes are not shown until resumed or reloaded"));
+  connect(pause_live_act_, &QAction::toggled, this, &MainWindow::on_toggle_live_updates_paused);
   toolbar->addAction(theme_icon("image-x-generic"), QStringLiteral("Prepare Thumbnails"), this,
                    &MainWindow::on_prepare_thumbnails);
   toolbar->addSeparator();

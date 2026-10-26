@@ -14,10 +14,7 @@ void MainWindow::request_async_sort()
 {
   // Content filters own visible_ via FilterWorker. Sorting must not call
   // replace_items_sorted → rebuild_visible (GUI content I/O / wipe filter).
-  if (!filter_search_.filter_text().isEmpty()
-      && (filter_expression_needs_content_io(filter_search_.filter_text())
-          || set_membership::pure_set_query(filter_search_.filter_text().toStdString()).has_value()
-          || set_membership::pure_set_or_queries(filter_search_.filter_text().toStdString()).has_value())) {
+  if (filter_runs_on_worker()) {
     collection_.sort_items_only();
     request_async_filter(/*keep_previous_visible=*/true);
     return;
@@ -25,6 +22,7 @@ void MainWindow::request_async_sort()
   if (list_workers_.sort() == nullptr) {
     collection_.apply_sort();
     refresh_list_preserving_selection();
+    set_view_stale(false);
     return;
   }
   const quint64 gen = list_workers_.next_sort_generation();
@@ -47,6 +45,7 @@ void MainWindow::on_sort_finished(quint64 generation, std::vector<fs::FileInfo> 
   // match_/filter and show_hidden stay; only item order changes.
   collection_.replace_items_sorted(std::move(items));
   refresh_list_preserving_selection();
+  set_view_stale(false);
   set_status(QStringLiteral("%1 items").arg(collection_.visible_items().size()));
   request_thumbnails_for_visible();
   if (pending_nav_scroll_.has_value()) {

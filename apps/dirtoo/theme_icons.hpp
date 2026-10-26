@@ -5,7 +5,10 @@
 
 #include "badge_icons.hpp"
 
+#include <QApplication>
+#include <QColor>
 #include <QFile>
+#include <QPen>
 #include <QHash>
 #include <QIcon>
 #include <QPainter>
@@ -14,6 +17,8 @@
 #include <QStringList>
 #include <QSvgRenderer>
 #include <QtDebug>
+
+#include <algorithm>
 
 namespace dirtoo::app {
 
@@ -128,6 +133,32 @@ inline QIcon theme_icon(const char* name, const char* fallback = nullptr)
     icon = QIcon::fromTheme(fb);
   }
   return icon;
+}
+
+/// @p base with a filled dot in the top-right corner ("needs attention", e.g.
+/// the Reload button while the listing is out of date).
+inline QIcon with_attention_dot(const QIcon& base, const QColor& color)
+{
+  QIcon out;
+  for (const int px : {16, 22, 24, 32, 48}) {
+    QPixmap pm = base.pixmap(QSize(px, px));
+    if (pm.isNull()) {
+      pm = QPixmap(QSize(px, px) * qApp->devicePixelRatio());
+      pm.setDevicePixelRatio(qApp->devicePixelRatio());
+      pm.fill(Qt::transparent);
+    }
+    const qreal side = pm.width() / pm.devicePixelRatio();
+    QPainter p(&pm);
+    p.setRenderHint(QPainter::Antialiasing);
+    const qreal d = side * 0.45;
+    const QRectF dot(side - d, 0, d, d);
+    p.setPen(QPen(Qt::white, std::max<qreal>(1.0, side / 16.0)));
+    p.setBrush(color);
+    p.drawEllipse(dot.adjusted(0.5, 0.5, -0.5, -0.5));
+    p.end();
+    out.addPixmap(pm);
+  }
+  return out;
 }
 
 } // namespace dirtoo::app

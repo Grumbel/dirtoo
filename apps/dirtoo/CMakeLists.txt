@@ -23,6 +23,8 @@ add_library(dirtoo-app-core STATIC
   transfer_worker.hpp
   conflict_probe.cpp
   conflict_probe.hpp
+  live_update_queue.cpp
+  live_update_queue.hpp
 )
 target_include_directories(dirtoo-app-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(dirtoo-app-core

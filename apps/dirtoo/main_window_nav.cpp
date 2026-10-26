@@ -4,6 +4,7 @@
 #include "main_window_common.hpp"
 
 #include "async_io.hpp"
+#include "set_membership.hpp"
 #include "path_availability.hpp"
 #include "mime_util.hpp"
 #include "activity_monitor.hpp"
@@ -57,6 +58,7 @@ void MainWindow::open_location(const fs::Location& location, bool record_history
     update_filter_chrome(false);
   }
   location_ = location;
+  reset_live_updates();
   location_chrome_.set_location(location_);
   location_chrome_.set_bookmarked(!location_.empty() && bookmarks_.contains(location_));
   update_window_title();
@@ -303,158 +305,235 @@ void MainWindow::on_directory_changed()
 void MainWindow::on_entries_changed(const QStringList& created, const QStringList& removed,
                                     const QStringList& modified)
 {
-  // Prefer incremental updates when the change set is small and we are not in a
-  // mode that needs a full rescan (search, archive index, content filter).
-  if (search_session_.active || location_.is_archive()) {
-    if (watcher_reload_timer_ != nullptr) {
-      watcher_reload_timer_->start();
-    }
-    return;
-  }
-  const int n = created.size() + removed.size() + modified.size();
-  if (n == 0) {
-    return;
-  }
-  // Large bursts (e.g. unpack) — fall back to soft full merge.
-  if (n > 48) {
-    if (watcher_reload_timer_ != nullptr) {
-      watcher_reload_timer_->start();
-    }
-    return;
-  }
-  if (!filter_search_.filter_text().isEmpty()) {
-    // Content/name filter: cheaper to soft-reload and re-filter than patch visible.
-    if (watcher_reload_timer_ != nullptr) {
-      watcher_reload_timer_->start();
-    }
-    return;
-  }
+  live_updates_.add(created, removed, modified);
+}
 
-  // Sidebar tree: soft-refresh parent dirs of created/removed subdirs when loaded.
-  if (auto* tree_model = sidebar_.places().model()) {
-    QSet<QString> parents;
-    auto add_parent = [&](const QString& path) {
-      const QString parent = QFileInfo(path).absolutePath();
-      if (!parent.isEmpty()) {
-        parents.insert(parent);
-      }
-    };
-    for (const QString& path : created) {
-      add_parent(path);
-    }
-    for (const QString& path : removed) {
-      add_parent(path);
-    }
-    for (const QString& parent : parents) {
-      tree_model->refresh_if_loaded(parent);
-    }
+bool MainWindow::filter_runs_on_worker() const
+{
+  const QString text = filter_search_.filter_text();
+  if (text.isEmpty()) {
+    return false;
+  }
+  const std::string expr = text.toStdString();
+  return filter_expression_needs_content_io(text)
+         || set_membership::pure_set_query(expr).has_value()
+         || set_membership::pure_set_or_queries(expr).has_value();
+}
+
+void MainWindow::schedule_soft_reload()
+{
+  // Throttle, not debounce: a steady stream of changes must still refresh.
+  if (watcher_reload_timer_ != nullptr && !watcher_reload_timer_->isActive()) {
+    watcher_reload_timer_->start();
+  }
+}
+
+void MainWindow::reset_live_updates()
+{
+  live_updates_.clear();
+  live_updates_.reset_missed();
+  set_view_stale(false);
+}
+
+void MainWindow::on_live_updates_ready()
+{
+  auto batch = live_updates_.take();
+  if (batch.empty()) {
+    return;
+  }
+  qInfo().noquote() << QStringLiteral("live_updates upserts=%1 removed=%2 rescan=%3")
+                           .arg(batch.upserts.size())
+                           .arg(batch.removed.size())
+                           .arg(batch.rescan);
+  // Rescans: coarse watcher signals, search results, archive indexes, content
+  // filters (the visible list belongs to FilterWorker), and large bursts (an
+  // unpack) where one directory read beats many stats. The soft reload keeps
+  // the current order as well (on_directory_loaded).
+  const auto n = batch.upserts.size() + batch.removed.size();
+  if (batch.rescan || search_session_.active || location_.is_archive() || location_.is_tag()
+      || location_.is_set() || n > 48 || filter_runs_on_worker()) {
+    schedule_soft_reload();
+    return;
   }
 
   // Removals need no FS I/O — path identity only.
-  bool removed_any = false;
-  for (const QString& path : removed) {
-    const auto loc = fs::Location::from_path(std::filesystem::path{path.toStdString()});
-    if (collection_.remove(loc)) {
-      removed_any = true;
-    }
-    if (model_ != nullptr) {
-      model_->clear_thumbnail(path);
-    }
+  QStringList structural;
+  for (const QString& path : batch.removed) {
+    remove_live_entry(path);
+    structural.push_back(path);
   }
-  if (removed_any && model_ != nullptr) {
-    model_->refresh();
+  if (!batch.removed.isEmpty()) {
+    refresh_sidebar_parents(structural);
     update_status_selection();
   }
-
-  // Create/modify: exists() + FileInfo::from_path (stat) can block for seconds on a
-  // spinning USB volume. Never do that on the GUI thread.
-  QStringList upsert_paths = created;
-  for (const QString& path : modified) {
-    if (!upsert_paths.contains(path)) {
-      upsert_paths.append(path);
-    }
-  }
-  if (upsert_paths.isEmpty()) {
-    if (removed_any) {
-      schedule_directory_thumbnails_low_priority();
-    }
+  if (batch.upserts.isEmpty()) {
     return;
   }
 
-  const QStringList created_copy = created;
+  // exists() + FileInfo::from_path (stat) can block for seconds on a spinning
+  // USB volume. Never do that on the GUI thread.
+  struct Stat {
+    std::vector<fs::FileInfo> infos;
+    QStringList missing;
+  };
+  const fs::Location at = location_;
   run_io(
       this,
-      [upsert_paths] {
-        std::vector<fs::FileInfo> infos;
-        infos.reserve(static_cast<std::size_t>(upsert_paths.size()));
-        for (const QString& path : upsert_paths) {
+      [paths = std::move(batch.upserts)] {
+        Stat r;
+        r.infos.reserve(static_cast<std::size_t>(paths.size()));
+        for (const QString& path : paths) {
           std::error_code ec;
           const std::filesystem::path p{path.toStdString()};
           if (!std::filesystem::exists(std::filesystem::symlink_status(p, ec)) || ec) {
+            r.missing.push_back(path);
             continue;
           }
-          infos.push_back(fs::FileInfo::from_path(p));
+          r.infos.push_back(fs::FileInfo::from_path(p));
         }
-        return infos;
+        return r;
       },
-      [this, created_copy](std::vector<fs::FileInfo> infos) {
-        apply_watcher_upserts(std::move(infos), created_copy);
-      });
+      [this, at](Stat r) { apply_live_upserts(at, std::move(r.infos), r.missing); });
 }
 
-void MainWindow::apply_watcher_upserts(std::vector<fs::FileInfo> infos,
-                                       const QStringList& created_paths)
+void MainWindow::remove_live_entry(const QString& path)
 {
-  if (search_session_.active) {
+  if (model_ == nullptr) {
     return;
   }
-  bool changed = false;
-  for (auto& info : infos) {
-    if (const auto idx = collection_.index_of(info.location())) {
-      (void)idx;
-      collection_.remove(info.location());
-      collection_.add(std::move(info));
-    } else {
-      collection_.add(std::move(info));
+  model_->remove_entry(fs::Location::from_path(std::filesystem::path{path.toStdString()}));
+  model_->clear_thumbnail(path);
+  dir_session_.known_paths.remove(path);
+}
+
+void MainWindow::refresh_sidebar_parents(const QStringList& paths)
+{
+  auto* tree_model = sidebar_.places().model();
+  if (tree_model == nullptr) {
+    return;
+  }
+  QSet<QString> parents;
+  for (const QString& path : paths) {
+    const QString parent = QFileInfo(path).absolutePath();
+    if (!parent.isEmpty()) {
+      parents.insert(parent);
     }
-    changed = true;
   }
-  if (!changed) {
+  for (const QString& parent : parents) {
+    tree_model->refresh_if_loaded(parent);
+  }
+}
+
+void MainWindow::apply_live_upserts(const fs::Location& at, std::vector<fs::FileInfo> infos,
+                                    const QStringList& missing)
+{
+  // The stat ran on the pool: the window may have moved on (or paused) since.
+  if (location_ != at || search_session_.active || model_ == nullptr) {
     return;
   }
-  if (model_ != nullptr) {
-    model_->refresh();
+  if (live_updates_.paused()) {
+    live_updates_.add_missed(static_cast<int>(infos.size()) + static_cast<int>(missing.size()));
+    return;
+  }
+  if (filter_runs_on_worker()) {  // filter changed while the stat ran
+    schedule_soft_reload();
+    return;
+  }
+  QStringList structural;
+  for (const QString& path : missing) {
+    // Created and deleted within one burst, or gone since: either way not listed.
+    remove_live_entry(path);
+    structural.push_back(path);
+  }
+
+  const auto update = collection_.upsert_in_place(std::move(infos));
+  // Rows only change in place or at the end: no layoutChanged, no reorder, no
+  // re-sort. The user re-sorts explicitly (Reload) when the order is stale.
+  for (const std::size_t row : update.changed_rows) {
+    model_->notify_row_updated(static_cast<int>(row));
+  }
+  if (update.appended_rows > 0) {
+    model_->notify_rows_appended(static_cast<int>(update.appended_rows));
+  }
+  if (update.stale) {
+    set_view_stale(true);
+  }
+
+  // "New" badge and thumbnails for entries that just appeared (extension MIME
+  // only — no stat).
+  std::vector<fs::Location> locs;
+  QStringList mimes;
+  for (const std::string& added : update.added_paths) {
+    const QString path = QString::fromStdString(added);
+    structural.push_back(path);
+    dir_session_.known_paths.insert(path);
+    if (dir_session_.known_paths_location == location_) {
+      model_->mark_new(path);
+    }
+    const auto loc = fs::Location::from_path(std::filesystem::path{added});
+    const auto idx = collection_.index_of(loc);
+    if (!idx) {
+      continue;  // hidden / filtered out
+    }
+    const auto& entry = collection_.visible_items()[*idx];
+    model_->clear_thumbnail(path);  // stale thumb or directory montage
+    if (!entry.is_regular_file()) {
+      continue;
+    }
+    model_->set_thumbnail_pending(path);
+    locs.push_back(loc);
+    mimes.push_back(mime_for_thumbnail_fast(path));
+  }
+  if (!locs.empty()) {
+    request_thumbnails_for_paths(locs, mimes);
   }
   update_status_selection();
-
-  // Thumbnails for newly created regular files (extension MIME only — no stat).
-  if (model_ != nullptr && !created_paths.isEmpty()) {
-    std::vector<fs::Location> locs;
-    QStringList mimes;
-    for (const QString& path : created_paths) {
-      const auto loc = fs::Location::from_path(std::filesystem::path{path.toStdString()});
-      const auto idx = collection_.index_of(loc);
-      if (!idx) {
-        continue;
-      }
-      const auto& existing = collection_.items()[*idx];
-      if (!existing.is_regular_file()) {
-        if (existing.is_directory()) {
-          model_->clear_thumbnail(path); // stale montage
-        }
-        continue;
-      }
-      model_->clear_thumbnail(path);
-      model_->set_thumbnail_pending(path);
-      locs.push_back(loc);
-      mimes.push_back(mime_for_thumbnail_fast(path));
-    }
-    if (!locs.empty()) {
-      request_thumbnails_for_paths(locs, mimes);
-    }
+  if (!structural.isEmpty()) {
+    refresh_sidebar_parents(structural);
+    request_thumbnails_for_visible();
+    schedule_directory_thumbnails_low_priority();
   }
-  request_thumbnails_for_visible();
-  schedule_directory_thumbnails_low_priority();
+}
+
+void MainWindow::set_view_stale(bool stale)
+{
+  if (view_stale_ == stale) {
+    return;
+  }
+  view_stale_ = stale;
+  update_live_update_indicator();
+}
+
+void MainWindow::update_live_update_indicator()
+{
+  if (reload_act_ == nullptr) {
+    return;
+  }
+  const int missed = live_updates_.missed();
+  QString tip = QStringLiteral("Reload (F5)");
+  if (missed > 0) {
+    tip += QStringLiteral("\nLive updates paused: %1 change(s) not shown").arg(missed);
+  } else if (view_stale_) {
+    tip += QStringLiteral("\nFiles changed while shown: new entries were appended at the end "
+                          "and the order is out of date. Reload to sort again.");
+  }
+  reload_act_->setToolTip(tip);
+  reload_act_->setIcon(missed > 0 || view_stale_ ? reload_attention_icon_ : reload_icon_);
+}
+
+void MainWindow::on_toggle_live_updates_paused(bool paused)
+{
+  live_updates_.set_paused(paused);
+  if (!paused && live_updates_.missed() > 0) {
+    // Catch up on what was missed, without reordering (soft reload).
+    live_updates_.reset_missed();
+    schedule_soft_reload();
+  }
+  if (pause_live_act_ != nullptr && pause_live_act_->isChecked() != paused) {
+    pause_live_act_->setChecked(paused);
+  }
+  set_status(paused ? QStringLiteral("Live updates paused") : QStringLiteral("Live updates resumed"));
+  update_live_update_indicator();
 }
 
 

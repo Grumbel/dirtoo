@@ -10,6 +10,7 @@
 #include "dirtoo/collection/file_collection.hpp"
 #include "dirtoo/fs/location.hpp"
 #include "dirtoo/watcher/directory_watcher.hpp"
+#include "live_update_queue.hpp"
 #include "dirops/ops.hpp"
 #include "app_settings.hpp"
 #include "bookmarks.hpp"
@@ -48,6 +49,7 @@
 #include <QMainWindow>
 class QListWidgetItem;
 #include <QHash>
+#include <QIcon>
 #include <QSet>
 #include <QThread>
 
@@ -110,9 +112,13 @@ private slots:
   void on_directory_changed();
   void on_entries_changed(const QStringList& created, const QStringList& removed,
                            const QStringList& modified);
-  /// Apply FileInfo results produced off-thread for watcher create/modify deltas.
-  void apply_watcher_upserts(std::vector<dirtoo::fs::FileInfo> infos,
-                             const QStringList& created_paths);
+  /// Watcher deltas are due (LiveUpdateQueue throttle elapsed).
+  void on_live_updates_ready();
+  /// Apply FileInfo stat'ed off-thread for watcher create/modify deltas in
+  /// place: known rows update where they are, new ones are appended.
+  void apply_live_upserts(const dirtoo::fs::Location& at, std::vector<dirtoo::fs::FileInfo> infos,
+                          const QStringList& missing);
+  void on_toggle_live_updates_paused(bool paused);
   /// @param soft If true (watcher), keep current listing until load completes.
   void reload_directory(bool soft);
   /// Stat the open archive (and re-index it if it changed) on the I/O pool,
@@ -294,6 +300,18 @@ private:
                                const std::filesystem::path& dest_dir);
   /// Watch real dir, archive extract tree, or archive file as appropriate.
   void start_watcher_for_location();
+  void remove_live_entry(const QString& path);
+  void refresh_sidebar_parents(const QStringList& paths);
+  /// Throttled soft reload (keeps the current order, see on_directory_loaded).
+  void schedule_soft_reload();
+  /// Drop queued watcher changes and the stale/missed marks (new listing).
+  void reset_live_updates();
+  /// The listing differs from what a fresh sort/filter would show.
+  void set_view_stale(bool stale);
+  /// Reload button icon/tooltip: attention mark while stale or paused with changes.
+  void update_live_update_indicator();
+  /// Content / set filters own the visible list via FilterWorker.
+  [[nodiscard]] bool filter_runs_on_worker() const;
   void setup_background_workers();
   void setup_toolbar();
   void setup_menus();
@@ -386,6 +404,12 @@ private:
   TagController tag_{this};
   FileSetController file_sets_{this};
   QTimer* watcher_reload_timer_ = nullptr;
+  LiveUpdateQueue live_updates_{this};
+  bool view_stale_ = false;
+  QAction* reload_act_ = nullptr;
+  QAction* pause_live_act_ = nullptr;
+  QIcon reload_icon_;
+  QIcon reload_attention_icon_;
   /// Debounces filter textChanged so each keystroke does not refilter/rebuild.
   QTimer* filter_apply_timer_ = nullptr;
   /// Coalesces scroll-driven thumbnail requests (must not stack singleShots).

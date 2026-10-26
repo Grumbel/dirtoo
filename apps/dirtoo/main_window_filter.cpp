@@ -221,10 +221,21 @@ void MainWindow::on_filter_finished(quint64 generation, std::vector<dirtoo::fs::
   if (generation != list_workers_.filter_generation() || search_session_.active) {
     return;
   }
-  // Apply current sort to the filtered list (in-memory only; no FS I/O).
-  collection_.sorter().sort(visible);
-  collection_.replace_visible(std::move(visible), parse_ok);
-  refresh_list();
+  const bool keep_order = dir_session_.keep_order_filter_generation == generation;
+  dir_session_.keep_order_filter_generation.reset();
+  if (keep_order) {
+    // Watcher-driven refilter: rows already shown stay where they are.
+    if (!collection_.replace_visible_keep_order(std::move(visible), parse_ok)) {
+      set_view_stale(true);
+    }
+    refresh_list_preserving_selection();
+  } else {
+    // Apply current sort to the filtered list (in-memory only; no FS I/O).
+    collection_.sorter().sort(visible);
+    collection_.replace_visible(std::move(visible), parse_ok);
+    refresh_list();
+    set_view_stale(false);
+  }
   apply_pending_nav_scroll();
   request_thumbnails_for_visible();
   if (!parse_ok && message_area_ != nullptr) {

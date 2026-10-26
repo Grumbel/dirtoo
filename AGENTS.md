@@ -324,6 +324,7 @@ implementations of the same library capability.
 | DnD | **done** — modifiers, folder drop, nested-drop guard |
 | Select All / Swap Names / Full Paths / Time Gaps | **done** (Graphics Select All = all rows) |
 | Soft watcher merge | **done** (`merge_items`); full readdir still used |
+| Live updates (downloads etc.) | **done** — order-stable: in-place row updates, append-only newcomers, no re-sort until Reload/sort change; stale dot on Reload; Pause Live Updates (`LiveUpdateQueue`) |
 | Checksums + tags (CLI + GUI Tag… / Tag Manager) | **done**; chip cache; no hash on GUI |
 | QuickFilter bar + pinned filters (scoped) | **done** (rebuild-on-keystroke polish open) |
 | Filter inclusive ranges (`lo-hi` / `lo..hi`) | **done** |
