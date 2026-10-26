@@ -38,6 +38,33 @@ public:
   void append_visible_items(std::vector<fs::FileInfo> items);
   bool remove(const fs::Location& location);
 
+  /// Outcome of a live (watcher-driven) update that keeps the current order.
+  struct LiveUpdate {
+    std::vector<std::size_t> changed_rows;  ///< visible rows replaced in place
+    std::size_t appended_rows = 0;          ///< rows appended at the end of visible
+    std::vector<std::string> added_paths;   ///< entries that were not in the collection
+    /// The view no longer equals a fresh sort/filter/group pass: an entry is
+    /// out of order, landed at the end, or would now enter/leave the filter.
+    bool stale = false;
+  };
+
+  /// Apply refreshed FileInfo without reordering anything. A known entry is
+  /// replaced in place and keeps its visibility (it neither appears nor
+  /// disappears because of a filter); an unknown one is appended to items and,
+  /// if it passes the hidden/name filter, to the end of the visible list.
+  /// The filter is evaluated here, so callers must not use this while a
+  /// content filter owns the visible list. Cost O(n·k) for k infos.
+  LiveUpdate upsert_in_place(std::vector<fs::FileInfo> infos);
+  /// Erase one entry from items and visible without rebuilding or reordering.
+  bool erase_in_place(const fs::Location& location);
+  /// Install a freshly filtered visible list, but keep the rows that were
+  /// already shown in their current order and append newcomers in the given
+  /// order. Returns false when the result is not in sort order.
+  bool replace_visible_keep_order(std::vector<fs::FileInfo> visible,
+                                  std::optional<bool> parse_ok = std::nullopt);
+  /// True when items are in the current sort order (O(n)).
+  [[nodiscard]] bool items_in_sort_order() const { return sorter_.is_sorted(items_); }
+
   [[nodiscard]] std::size_t size() const noexcept { return items_.size(); }
   [[nodiscard]] bool empty() const noexcept { return items_.empty(); }
 
@@ -95,6 +122,7 @@ public:
 
 private:
   void rebuild_visible();
+  [[nodiscard]] bool passes_visibility(const fs::FileInfo& fi) const;
 
   std::vector<fs::FileInfo> items_;
   std::vector<fs::FileInfo> visible_;

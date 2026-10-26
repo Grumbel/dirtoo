@@ -67,6 +67,14 @@ public:
   /// (not reverse). Used by tests.
   [[nodiscard]] int compare(const fs::FileInfo& a, const fs::FileInfo& b) const;
 
+  /// True when `a` may stand before `b` under the current settings (ties count
+  /// as in order, matching the stable sort).
+  [[nodiscard]] bool in_order(const fs::FileInfo& a, const fs::FileInfo& b) const;
+
+  /// True when `items` is already in the order sort() would produce (up to
+  /// ties). O(n); derives each item's keys once.
+  [[nodiscard]] bool is_sorted(const std::vector<fs::FileInfo>& items) const;
+
 private:
   SortKey key_ = SortKey::Name;
   bool directories_first_ = true;

@@ -151,6 +151,108 @@ bool FileCollection::remove(const fs::Location& location)
   return true;
 }
 
+FileCollection::LiveUpdate FileCollection::upsert_in_place(std::vector<fs::FileInfo> infos)
+{
+  LiveUpdate result;
+  const auto find_path = [](const std::vector<fs::FileInfo>& list, const fs::FileInfo& fi)
+      -> std::optional<std::size_t> {
+    const auto& key = fi.path().native();
+    for (std::size_t i = 0; i < list.size(); ++i) {
+      if (list[i].path().native() == key) {
+        return i;
+      }
+    }
+    return std::nullopt;
+  };
+  for (auto& info : infos) {
+    if (const auto item = find_path(items_, info)) {
+      const auto vis = find_path(visible_, info);
+      if (vis.has_value() != passes_visibility(info)) {
+        result.stale = true;
+      }
+      if (vis) {
+        if (group_mode_ == GroupMode::Session) {
+          result.stale = result.stale || visible_[*vis].mtime_unix_ns() != info.mtime_unix_ns();
+        } else if (group_mode_ != GroupMode::None) {
+          result.stale = result.stale || visible_group_labels_[*vis] != group_label(info, group_mode_);
+        }
+        visible_[*vis] = info;
+        result.changed_rows.push_back(*vis);
+      }
+      const std::size_t i = *item;
+      items_[i] = std::move(info);
+      if ((i > 0 && !sorter_.in_order(items_[i - 1], items_[i]))
+          || (i + 1 < items_.size() && !sorter_.in_order(items_[i], items_[i + 1]))) {
+        result.stale = true;
+      }
+      continue;
+    }
+    result.added_paths.push_back(info.path().string());
+    items_.push_back(std::move(info));
+    const fs::FileInfo& added = items_.back();
+    if (items_.size() > 1 && !sorter_.in_order(items_[items_.size() - 2], added)) {
+      result.stale = true;
+    }
+    if (!passes_visibility(added)) {
+      continue;
+    }
+    // Session labels need a global pass; an appended row simply joins the
+    // last section until the next regroup.
+    std::string label = group_mode_ == GroupMode::None || group_mode_ == GroupMode::Session
+                            ? std::string{}
+                            : group_label(added, group_mode_);
+    if (group_mode_ != GroupMode::None
+        && (group_mode_ == GroupMode::Session || visible_group_labels_.empty()
+            || visible_group_labels_.back() != label)) {
+      result.stale = true;
+    }
+    visible_.push_back(added);
+    visible_group_labels_.push_back(std::move(label));
+    ++result.appended_rows;
+  }
+  return result;
+}
+
+bool FileCollection::erase_in_place(const fs::Location& location)
+{
+  const auto it = std::ranges::find_if(items_, [&](const fs::FileInfo& fi) {
+    return fi.location() == location;
+  });
+  if (it == items_.end()) {
+    return false;
+  }
+  items_.erase(it);
+  const auto vit = std::ranges::find_if(visible_, [&](const fs::FileInfo& fi) {
+    return fi.location() == location;
+  });
+  if (vit != visible_.end()) {
+    const auto row = vit - visible_.begin();
+    visible_.erase(vit);
+    if (static_cast<std::size_t>(row) < visible_group_labels_.size()) {
+      visible_group_labels_.erase(visible_group_labels_.begin() + row);
+    }
+  }
+  return true;
+}
+
+bool FileCollection::replace_visible_keep_order(std::vector<fs::FileInfo> visible,
+                                                std::optional<bool> parse_ok)
+{
+  std::unordered_map<std::string, std::size_t> old_rank;
+  old_rank.reserve(visible_.size());
+  for (std::size_t i = 0; i < visible_.size(); ++i) {
+    old_rank.emplace(visible_[i].path().string(), i);
+  }
+  const auto rank = [&](const fs::FileInfo& fi) {
+    const auto it = old_rank.find(fi.path().string());
+    return it != old_rank.end() ? it->second : old_rank.size();
+  };
+  std::ranges::stable_sort(visible, {}, rank);
+  const bool sorted = sorter_.is_sorted(visible);
+  replace_visible(std::move(visible), parse_ok);
+  return sorted;
+}
+
 std::optional<std::size_t> FileCollection::index_of(const fs::Location& location) const
 {
   for (std::size_t i = 0; i < visible_.size(); ++i) {
@@ -325,18 +427,22 @@ bool FileCollection::is_group_start_at(std::size_t visible_index) const
   return visible_group_labels_[visible_index - 1] != label;
 }
 
+bool FileCollection::passes_visibility(const fs::FileInfo& fi) const
+{
+  if (!show_hidden_ && is_hidden_name(fi.basename())) {
+    return false;
+  }
+  return match_ == nullptr || match_->matches(to_filter_item(fi));
+}
+
 void FileCollection::rebuild_visible()
 {
   visible_.clear();
   visible_group_labels_.clear();
   for (const auto& fi : items_) {
-    if (!show_hidden_ && is_hidden_name(fi.basename())) {
-      continue;
+    if (passes_visibility(fi)) {
+      visible_.push_back(fi);
     }
-    if (match_ != nullptr && !match_->matches(to_filter_item(fi))) {
-      continue;
-    }
-    visible_.push_back(fi);
   }
   // One pass: reorder + materialize labels so paint/sizeHint stay O(1).
   visible_group_labels_ = apply_grouping(visible_, group_mode_);

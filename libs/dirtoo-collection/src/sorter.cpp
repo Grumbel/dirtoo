@@ -181,6 +181,17 @@ int three_way(const T& a, const T& b)
 
 namespace {
 
+// Position of an entry under SortKey::Random (splitmix64 finaliser over a
+// seeded path hash).
+std::uint64_t random_rank(std::uint32_t seed, const fs::FileInfo& fi)
+{
+  std::uint64_t x = std::hash<std::string>{}(fi.path().string()) ^ (std::uint64_t{seed} << 32 | seed);
+  x += 0x9e3779b97f4a7c15ull;
+  x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ull;
+  x = (x ^ (x >> 27)) * 0x94d049bb133111ebull;
+  return x ^ (x >> 31);
+}
+
 int compare_keyed(SortKey key, bool directories_first, const fs::FileInfo& a,
                   const fs::FileInfo& b, const SortKeys& ka, const SortKeys& kb)
 {
@@ -230,11 +241,62 @@ int compare_keyed(SortKey key, bool directories_first, const fs::FileInfo& a,
   return by_name();
 }
 
+// The strict "a goes before b" relation of Sorter::sort().
+bool precedes_keyed(SortKey key, bool directories_first, bool ascending, const fs::FileInfo& a,
+                    const fs::FileInfo& b, const SortKeys& ka, const SortKeys& kb)
+{
+  const int c = compare_keyed(key, directories_first, a, b, ka, kb);
+  if (ascending) {
+    return c < 0;
+  }
+  // Reverse payload but keep directories first if enabled
+  if (directories_first && a.is_directory() != b.is_directory()) {
+    return a.is_directory();
+  }
+  return c > 0;
+}
+
 } // namespace
 
 int Sorter::compare(const fs::FileInfo& a, const fs::FileInfo& b) const
 {
   return compare_keyed(key_, directories_first_, a, b, make_keys(a, key_), make_keys(b, key_));
+}
+
+bool Sorter::in_order(const fs::FileInfo& a, const fs::FileInfo& b) const
+{
+  if (key_ == SortKey::Random) {
+    if (directories_first_ && a.is_directory() != b.is_directory()) {
+      return a.is_directory();
+    }
+    return random_rank(random_seed_, a) <= random_rank(random_seed_, b);
+  }
+  return !precedes_keyed(key_, directories_first_, ascending_, b, a, make_keys(b, key_),
+                         make_keys(a, key_));
+}
+
+bool Sorter::is_sorted(const std::vector<fs::FileInfo>& items) const
+{
+  if (items.size() < 2) {
+    return true;
+  }
+  if (key_ == SortKey::Random) {
+    for (std::size_t i = 1; i < items.size(); ++i) {
+      if (!in_order(items[i - 1], items[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+  SortKeys prev = make_keys(items[0], key_);
+  for (std::size_t i = 1; i < items.size(); ++i) {
+    SortKeys cur = make_keys(items[i], key_);
+    if (precedes_keyed(key_, directories_first_, ascending_, items[i], items[i - 1], cur, prev)) {
+      return false;
+    }
+    prev = std::move(cur);
+  }
+  return true;
 }
 
 void Sorter::reshuffle()
@@ -247,13 +309,7 @@ void Sorter::sort(std::vector<fs::FileInfo>& items) const
   if (key_ == SortKey::Random) {
     // Order by a seeded hash of the path (splitmix64 finaliser): stable across
     // rebuilds and independent of the current order, unlike a std::shuffle.
-    auto rank = [seed = random_seed_](const fs::FileInfo& fi) {
-      std::uint64_t x = std::hash<std::string>{}(fi.path().string()) ^ (std::uint64_t{seed} << 32 | seed);
-      x += 0x9e3779b97f4a7c15ull;
-      x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ull;
-      x = (x ^ (x >> 27)) * 0x94d049bb133111ebull;
-      return x ^ (x >> 31);
-    };
+    auto rank = [seed = random_seed_](const fs::FileInfo& fi) { return random_rank(seed, fi); };
     std::stable_sort(items.begin(), items.end(),
                      [&](const fs::FileInfo& a, const fs::FileInfo& b) {
                        if (directories_first_ && a.is_directory() != b.is_directory()) {
@@ -277,15 +333,7 @@ void Sorter::sort(std::vector<fs::FileInfo>& items) const
     order[i] = i;
   }
   std::stable_sort(order.begin(), order.end(), [&](std::size_t x, std::size_t y) {
-    const int c = compare_keyed(key_, directories_first_, items[x], items[y], keys[x], keys[y]);
-    if (ascending_) {
-      return c < 0;
-    }
-    // Reverse payload but keep directories first if enabled
-    if (directories_first_ && items[x].is_directory() != items[y].is_directory()) {
-      return items[x].is_directory();
-    }
-    return c > 0;
+    return precedes_keyed(key_, directories_first_, ascending_, items[x], items[y], keys[x], keys[y]);
   });
   std::vector<fs::FileInfo> sorted;
   sorted.reserve(n);
